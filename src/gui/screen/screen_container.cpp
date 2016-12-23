@@ -1,5 +1,9 @@
 #include "screen_container.h"
 
+#include <iostream>
+#include <algorithm>
+
+
 #include "screen.h"
 
 #include "screen_text.h"
@@ -52,6 +56,8 @@ int ScreenContainer::getMaxX() const {
 		int res = 0;
 		for (DisplayObject *child : children) {
 			if (!child->enabled()) continue;
+			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
+			if (scrChild && scrChild->isFakeContainer()) continue;
 
 			size_t w = child->getWidth();
 			if (w) {
@@ -70,6 +76,8 @@ int ScreenContainer::getMaxY() const {
 		int res = 0;
 		for (DisplayObject *child : children) {
 			if (!child->enabled()) continue;
+			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
+			if (scrChild && scrChild->isFakeContainer()) continue;
 
 			size_t h = child->getHeight();
 			if (h) {
@@ -105,6 +113,8 @@ void ScreenContainer::draw() const {
 
 	for (DisplayObject *child : children) {
 		if (!child->enabled()) continue;
+		ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
+		if (scrChild && scrChild->isFakeContainer()) continue;
 
 		if (hasVBox) {
 			child->setY(indentY);
@@ -159,8 +169,12 @@ void ScreenContainer::addChildrenFromNode() {
 		if (childCommand == "use") {
 			if (!inited) --countInitChildren;
 
-			Screen *scr = Screen::show(childNode->params, true);
-			usedScreens.push_back(scr);
+			DisplayObject *t = this;
+			while (t && !dynamic_cast<Screen*>(t)) {
+				t = t->parent;
+			}
+			Screen *scr = dynamic_cast<Screen*>(t);
+			Screen::addToShow(childNode->params, scr ? scr->name : "");
 		}else
 
 		if (childCommand == "key") {
@@ -169,46 +183,38 @@ void ScreenContainer::addChildrenFromNode() {
 
 		if (childCommand == "window") {
 			child = new ScreenWindow(childNode);
-			addChild(child);
 		}else
 
 		if (childCommand == "vbox") {
 			child = new ScreenVBox(childNode);
-			screenParent->addChild(child);
 		}else
 
 		if (childCommand == "hbox") {
 			child = new ScreenHBox(childNode);
-			screenParent->addChild(child);
 		}else
 
 		if (childCommand == "null") {
-			child = new ScreenNull(childNode, screenParent);
+			child = new ScreenNull(childNode);
 		}else
 
 		if (childCommand == "imagemap") {
 			child = new ScreenImagemap(childNode);
-			screenParent->addChild(child);
 		}else
 
 		if (childCommand == "hotspot") {
 			child = new ScreenHotspot(childNode);
-			screenParent->addChild(child);
 		}else
 
-		if (childCommand == "add" || childCommand == "image") {
+		if (childCommand == "image") {
 			child = new ScreenImage(childNode);
-			screenParent->addChild(child);
 		}else
 
 		if (childCommand == "text") {
 			child = new ScreenText(childNode);
-			screenParent->addChild(child);
 		}else
 
 		if (childCommand == "button" || childCommand == "textbutton") {//button is textbutton with empty text
 			child = new ScreenTextButton(childNode);
-			screenParent->addChild(child);
 		}else
 
 		if (childCommand == "if") {
@@ -236,20 +242,14 @@ void ScreenContainer::addChildrenFromNode() {
 		}else
 
 		if (childCommand == "break") {
-			if (!inited) --countInitChildren;
-
 			child = new ScreenBreak(childNode);
 		}else
 
 		if (childCommand == "continue") {
-			if (!inited) --countInitChildren;
-
 			child = new ScreenContinue(childNode);
 		}else
 
 		if (childCommand == "command" || childCommand == "python") {
-			if (!inited) --countInitChildren;
-
 			child = new ScreenPython(childNode);
 		}else
 
@@ -260,7 +260,7 @@ void ScreenContainer::addChildrenFromNode() {
 
 			static const std::vector<String> props = String("has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
 															"align, anchor, pos, xysize, "
-															"background, hover_background, ground, hover, action, "
+															"modal, background, hover_background, ground, hover, action, "
 															"color, font, size, text_align").split(", ");
 
 			if (!Utils::in(childNode->command, props)) {
@@ -270,6 +270,21 @@ void ScreenContainer::addChildrenFromNode() {
 
 		if (child) {
 			child->propsUpdater = this;
+
+			Group *parent = screenParent;
+
+			int index;
+			if (parent == this) {
+				index = children.size();
+			}else {
+				ScreenChild *prev = this;
+				while (prev->isFakeContainer() && prev->screenChildren.size()) {
+					prev = prev->screenChildren.back();
+				}
+				index = parent->getChildIndex(prev) + 1;
+			}
+
+			addChildAt(child, index);
 			screenChildren.push_back(child);
 		}
 	}
@@ -277,66 +292,20 @@ void ScreenContainer::addChildrenFromNode() {
 
 void ScreenContainer::addChildAt(DisplayObject *child, size_t index) {
 	if (child == screenParent) {
-		Utils::outMsg("ScreenChild::addChild(At)", "Добавление объекта в самого себя");
+		Utils::outMsg("ScreenContainer::addChild(At)", "Добавление объекта в самого себя");
 		return;
 	}
 
 	Group *parent = screenParent;
-	if (!parent) {
-		parent = this;
-	}
-
-	if (child->parent == parent) {
-		if (parent->children[parent->children.size() - 1] != child) {
-			for (size_t i = 0; i < parent->children.size(); ++i) {
-				if (parent->children[i] == child) {
-					parent->children.erase(parent->children.begin() + i);
-					break;
-				}
-			}
-			parent->children.push_back(child);
-		}
-		return;
-	}
+	auto &pChildren = parent->children;
 
 	if (child->parent) {
 		child->parent->removeChild(child);
 	}
+	auto to = std::min(pChildren.begin() + index, pChildren.end());
+	pChildren.insert(to, child);
 
 	child->parent = parent;
 	child->updateGlobalX();
 	child->updateGlobalY();
-
-	if (parent->children.size() < index) {
-		parent->children.insert(parent->children.begin() + index, child);
-	}else {
-		parent->children.push_back(child);
-	}
-}
-
-void ScreenContainer::removeChild(DisplayObject *child) {
-	Group *parent = child->parent;
-
-	for (size_t i = 0; i < parent->children.size(); ++i) {
-		if (parent->children[i] == child) {
-			parent->children.erase(parent->children.begin() + i);
-			break;
-		}
-	}
-}
-
-void ScreenContainer::removeChildAt(size_t index) {
-	DisplayObject *child = children[index];
-	Group *parent = child->parent;
-
-	parent->children.erase(parent->children.begin() + index);
-}
-
-
-ScreenContainer::~ScreenContainer() {
-	for (ScreenContainer *obj : usedScreens) {
-		Screen *scr = dynamic_cast<Screen*>(obj);
-		Screen::hide(scr->name, true);
-	}
-	usedScreens.clear();
 }

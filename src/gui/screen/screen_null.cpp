@@ -1,7 +1,12 @@
 #include "screen_null.h"
 
-ScreenNull::ScreenNull(Node *node, ScreenChild *screenParent): ScreenChild(node, screenParent) {
-	rect.w = rect.h = 0;
+#include "gv.h"
+
+#include "parser/node.h"
+
+ScreenNull::ScreenNull(Node *node): ScreenChild(node, this) {
+	rect.w = 0;
+	rect.h = 0;
 }
 
 int ScreenNull::getMaxX() const {
@@ -12,11 +17,19 @@ int ScreenNull::getMaxY() const {
 }
 
 void ScreenNull::updateProps() {
+	enable = true;
+
 	String widthStr = node->getProp("width");
 	String heightStr = node->getProp("height");
 
-	rect.w = widthStr ? widthStr.toInt() : 0;
-	rect.h = heightStr ? heightStr.toInt() : 0;
+	double w = widthStr.toDouble();
+	double h = heightStr.toDouble();
+
+	if (w >= 0 && w <= 1) w *= GV::width;
+	if (h >= 0 && h <= 1) h *= GV::height;
+
+	rect.w = w;
+	rect.h = h;
 }
 
 void ScreenNull::update() {

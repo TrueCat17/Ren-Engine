@@ -6,7 +6,7 @@
 #include <boost/python.hpp>
 namespace py = boost::python;
 
-#include <utils/string.h>
+class String;
 
 class PyGuard {
 private:

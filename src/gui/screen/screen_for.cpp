@@ -1,5 +1,8 @@
 #include "screen_for.h"
 
+#include "parser/node.h"
+#include "utils/utils.h"
+
 ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(node, screenParent) {
 	needUpdateChildren = false;
 
@@ -22,7 +25,6 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 	init = iterName + " = iter(" + afterIn + ")";
 	onStep = beforeIn + " = " + iterName + ".next()";
 }
-
 void ScreenFor::updateProps() {
 	skipped = true;
 	size_t i = 0;

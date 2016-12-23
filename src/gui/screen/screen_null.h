@@ -8,7 +8,7 @@ public:
 	virtual int getMaxX() const;
 	virtual int getMaxY() const;
 
-	ScreenNull(Node* node, ScreenChild *screenParent);
+	ScreenNull(Node* node);
 
 	virtual void updateProps();
 	virtual void update();

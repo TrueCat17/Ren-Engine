@@ -1,12 +1,13 @@
 #include "screen_elif.h"
 
+#include "parser/node.h"
 #include "utils/utils.h"
 
 ScreenElif::ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer):
-	ScreenContainer(node, screenParent)
+	ScreenContainer(node, screenParent),
+	condition("bool(" + node->params + ")")
 {
 	this->prevContainer = prevContainer;
-	condition = "bool(" + node->params + ")";
 }
 
 bool ScreenElif::enabled() const {

@@ -55,11 +55,11 @@ void SyntaxChecker::setSuperParents(const String &nodesStr, const int superParen
 }
 
 void SyntaxChecker::init() {
-	const String screenElems = ", vbox, hbox, null, add, image, text, textbutton, button, imagebutton, ";
+	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, imagebutton, ";
 
 	const String windowProps = ", use, key, ";
 	const String containerProps = ", has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, ";
-	const String textProps = ", color, size, font, size, text_align, ";
+	const String textProps = ", color, size, font, size, text_align, text_valign, ";
 
 	const String transformProps = containerProps +
 								  "repeat, linear, ease, easein, easeout, pause, rotate, zoom, alpha, crop, size, reset, ";
@@ -90,6 +90,7 @@ void SyntaxChecker::init() {
 	addBlockChildren("imagemap", "hotspot, ground, hover" + containerProps);
 	addBlockChildren("hotspot", "action");
 
+	addBlockChildren("window", "modal");
 	addBlockChildren("window, vbox, hbox", containerProps);
 	addBlockChildren("window, vbox, hbox, if, else, elif, for, while", "$, python");
 	addBlockChildren("null", "width, height", true);
@@ -101,7 +102,7 @@ void SyntaxChecker::init() {
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
 	setSuperParents("play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem", SuperParent::LABEL);
 	setSuperParents("window" + screenElems + "imagemap, hotspot, ground, hover" + windowProps + containerProps + textProps +
-					"spacing, action, background, hover_background, width, height", SuperParent::SCREEN);
+					"modal, spacing, action, background, hover_background, width, height", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
 	setSuperParents(transformProps + "$, pass, break, continue, python, if, elif, else, for, while, image", ALL);

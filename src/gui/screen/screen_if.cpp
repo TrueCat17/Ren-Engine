@@ -1,12 +1,13 @@
 #include "screen_if.h"
 
+#include "parser/node.h"
 #include "utils/utils.h"
 
 ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent):
-	ScreenContainer(node, screenParent)
+	ScreenContainer(node, screenParent),
+	condition("bool(" + node->params + ")")
 {
 	prevContainer = nullptr;
-	condition = "bool(" + node->params + ")";
 }
 
 bool ScreenIf::enabled() const {

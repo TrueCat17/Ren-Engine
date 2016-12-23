@@ -13,19 +13,23 @@ private:
 	bool buttonMode = true;
 
 	DisplayObject *owner = nullptr;
-	std::function<void(DisplayObject*)> onClick = nullptr;
+	std::function<void(DisplayObject*)> _onClick = nullptr;
 
 public:
 	static void checkMouseCursor();
-	static void checkMouseClick();
+	static bool checkMouseClick();
 
 	bool mouseOvered = false;
+	bool mouseDown = false;
 
 	BtnRect();
+	~BtnRect();
+
 	void init(DisplayObject *owner, std::function<void(DisplayObject*)> onClick = nullptr, bool buttonMode = true);
 	void click() const;
 	DisplayObject* getOwner() const { return owner; }
-	~BtnRect();
+
+	void onClick() const;
 };
 
 #endif // BTNRECT_H

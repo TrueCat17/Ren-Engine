@@ -11,6 +11,7 @@
 #include "gui/gui.h"
 #include "gui/display_object.h"
 #include "gui/screen/screen_child.h"
+#include "gui/screen/screen_key.h"
 
 #include "utils/btn_rect.h"
 #include "utils/game.h"
@@ -89,10 +90,6 @@ bool init() {
 		return true;
 	}
 
-	GV::stage = new Group();
-	GV::screens = new Group();
-	GV::stage->addChild(GV::screens);
-
 	return false;
 }
 
@@ -101,8 +98,8 @@ void render() {
 
 	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 0);
 	SDL_RenderClear(mainRenderer);
-	if (GV::stage) {
-		GV::stage->draw();
+	if (GV::screens) {
+		GV::screens->draw();
 	}
 	SDL_RenderPresent(mainRenderer);
 
@@ -111,7 +108,11 @@ void render() {
 
 void loop() {
 	while (!GV::exit) {
+		GV::updateGuard.lock();
+
 		int startTime = Utils::getTimer();
+
+		BtnRect::checkMouseCursor();
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
@@ -163,31 +164,68 @@ void loop() {
 			}else
 
 			if (event.type == SDL_KEYDOWN) {
-				SDL_Keycode key = event.key.keysym.sym;
-				if (key == SDLK_RETURN || key == SDLK_SPACE) {
-					BtnRect::checkMouseClick();
+				if (!event.key.repeat) {
+					Game::updateKeyboard();
+
+					SDL_Scancode key = event.key.keysym.scancode;
+
+					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_SPACE) {
+						if (BtnRect::checkMouseClick()) {
+							ScreenKey::setToNotReact(key);
+						}else {
+							ScreenKey::setFirstDownState(key);
+						}
+					}else {
+						ScreenKey::setFirstDownState(key);
+					}
 				}
+			}else
+
+			if (event.type == SDL_KEYUP) {
+				SDL_Scancode key = event.key.keysym.scancode;
+
+				Game::updateKeyboard();
+				ScreenKey::setUpState(key);
 			}
 		}
-		Game::updateKeyboard();
-		BtnRect::checkMouseCursor();
 
 		GUI::update();
 		render();
 		Config::save();
 
-		size_t spent = Utils::getTimer() - startTime;
-		size_t timeToSleep = Game::getFrameTime() - spent;
+		int spent = Utils::getTimer() - startTime;
+		int timeToSleep = Game::getFrameTime() - spent;
 //		std::cout << spent << ' ' << timeToSleep << '\n';
 
+		if (false) {
+			auto screenObjects = ScreenChild::getScreenObjects();
+
+			std::cout << "FPS: " << Game::getFps() << '\n';
+
+			size_t count = std::count_if(screenObjects.begin(), screenObjects.end(), [](ScreenChild* scr) { return scr->enable; });
+			std::cout << count << '/' << screenObjects.size() << '\n';
+
+			std::map<String, int> m;
+			for (ScreenChild *i : screenObjects) {
+				auto c = i->getType();
+				m[c] = m[c] + 1;
+			}
+			for (auto p : m) {
+				std::cout << p.first << ": " << p.second << '\n';
+			}
+			std::cout << '\n';
+		}
+
+		GV::updateGuard.unlock();
 		Utils::sleep(timeToSleep);
 	}
 }
 
 void destroy() {
 	GV::inGame = false;
+
 	int toSleep = Game::getFrameTime() * 2;
-	Utils::sleep(toSleep);
+	Utils::sleep(toSleep, false);
 
 	DisplayObject::destroyAll();
 	Utils::destroyAllTextures();
@@ -210,6 +248,8 @@ int main(int argc, char **argv) {
 	//Чтобы не было варнингов
 	argc += 1;
 	argv += 1;
+
+	setlocale(LC_ALL, "ru_RU.utf8");
 
 	if (init()) {
 		return 0;

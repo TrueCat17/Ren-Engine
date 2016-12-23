@@ -31,11 +31,11 @@ public:
 
 	static const Uint8 *keyBoardState;
 
-	static Group *stage;
 	static Group *screens;
 
-	static std::mutex renderGuard;
+	static std::mutex initGuard;
 	static std::mutex updateGuard;
+	static std::mutex renderGuard;
 
 	static Node *mainExecNode;
 };

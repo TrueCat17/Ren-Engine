@@ -3,7 +3,7 @@
 
 #include "screen_container.h"
 
-#include "utils/utils.h"
+#include "utils/string.h"
 
 class ScreenWhile: public ScreenContainer {
 private:

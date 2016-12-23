@@ -1,9 +1,14 @@
 #include "screen_while.h"
 
-ScreenWhile::ScreenWhile(Node *node, ScreenChild *screenParent): ScreenContainer(node, screenParent) {
+#include "parser/node.h"
+#include "utils/utils.h"
+
+ScreenWhile::ScreenWhile(Node *node, ScreenChild *screenParent):
+	ScreenContainer(node, screenParent),
+	condition(node->params)
+{
 	needUpdateChildren = false;
 
-	condition = node->params;
 	if (!condition) {
 		Utils::outMsg("ScreenWhile::ScreenWhile", "Неправильный синтаксис команды while:\n<" + node->params + ">");
 		enable = false;

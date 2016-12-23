@@ -10,17 +10,20 @@ BtnRect::BtnRect() {
 
 void BtnRect::init(DisplayObject *owner, std::function<void (DisplayObject *)> onClick, bool buttonMode) {
 	this->owner = owner;
-	this->onClick = onClick;
+	this->_onClick = onClick;
 	this->buttonMode = buttonMode;
 }
 
 void BtnRect::click() const {
-	if (onClick != nullptr) {
-		onClick(owner);
+	if (_onClick != nullptr) {
+		_onClick(owner);
 	}
 }
 
 BtnRect::~BtnRect() {
+	owner = nullptr;
+	_onClick = nullptr;
+
 	for (size_t i = 0; i < btnRects.size(); ++i) {
 		BtnRect *btnRect = btnRects[i];
 		if (btnRect == this) {
@@ -36,6 +39,7 @@ void BtnRect::checkMouseCursor() {
 
 	for (BtnRect *btnRect : btnRects) {
 		btnRect->mouseOvered = false;
+		btnRect->mouseDown = false;
 	}
 
 	for (int i = btnRects.size() - 1; i >= 0; --i) {
@@ -60,7 +64,7 @@ void BtnRect::checkMouseCursor() {
 	Mouse::setUsualMode();
 }
 
-void BtnRect::checkMouseClick() {
+bool BtnRect::checkMouseClick() {
 	int mouseX, mouseY;
 	Mouse::getPos(mouseX, mouseY);
 
@@ -74,8 +78,13 @@ void BtnRect::checkMouseClick() {
 		) {
 			if (!owner->checkAlpha(mouseX - owner->getGlobalX(), mouseY - owner->getGlobalY())) continue;
 
-			btnRect->click();
-			return;
+			btnRect->mouseDown = true;
+			return true;
 		}
 	}
+	return false;
+}
+
+void BtnRect::onClick() const {
+	_onClick(owner);
 }

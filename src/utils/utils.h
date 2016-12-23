@@ -19,7 +19,7 @@ class StopException {};
 class BreakException {};
 class ContinueException {};
 class ReturnException {};
-
+class ThreadExitException {};
 
 namespace py = boost::python;
 
@@ -73,10 +73,9 @@ public:
 	static Uint32 getPixel(SDL_Texture *texture, int x, int y, int drawW, int drawH);
 
 	static void registerImage(const String &desc);
-	static std::string getImage(const std::string &name);
+	static std::string getImageCode(const std::string &name);
 
 	static String execPython(String code, bool retRes = false);
-	static py::object getPythonObj(const String &code);
 };
 
 #endif // UTILS_H

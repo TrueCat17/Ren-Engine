@@ -1,5 +1,6 @@
 #include "text.h"
 
+#include "gv.h"
 #include "utils/utils.h"
 
 
@@ -182,8 +183,6 @@ void Text::setText(const String &text, int color) {
 	}
 	popStyle();
 
-	setAlign(align);
-
 	rect.w = std::max(maxWidth, maxLineWidth);
 	int textHeight = charHeight * lines.size();
 
@@ -219,6 +218,7 @@ void Text::setText(const String &text, int color) {
 	for (numLine = 0; numLine < lines.size(); ++numLine) {
 		addText();
 	}
+	setAlign(hAlign, vAlign);
 }
 
 void Text::addText() {
@@ -287,7 +287,7 @@ void Text::addText() {
 					curColor = mainColor;
 				}
 			}
-			else Utils::outMsg("Неизвестный тэг '" + type + "'");
+			else Utils::outMsg("Неизвестный тэг <" + type + ">");
 
 			if (isBold < 0) isBold = 0;
 			if (isItalic < 0) isItalic = 0;
@@ -340,7 +340,7 @@ int Text::getLineWidth(String text, bool resetPrevStyle) {
 			else if (type == "u") isUnderline += k;
 			else if (type == "s") isStrike += k;
 			else if (type.startsWith("color"));
-			else Utils::outMsg("Неизвестный тэг '" + type + "'");
+			else Utils::outMsg("Неизвестный тэг <" + type + ">");
 
 			if (isBold < 0) isBold = 0;
 			if (isItalic < 0) isItalic = 0;
@@ -425,18 +425,31 @@ void Text::addChars(String c, int color) {
 	}
 	SDL_DestroyTexture(textureText);
 }
-void Text::setAlign(String align) {
-	this->align = align;
 
-	if (align != "left" && align != "center" && align != "right") {
-		Utils::outMsg("Text::setAlign", "Недопустимое значение align = <" + align + ">\n");
-		align = "left";
+void Text::setAlign(String hAlign, String vAlign) {
+	if (hAlign != "left" && hAlign != "center" && hAlign != "right") {
+		Utils::outMsg("Text::setAlign", "Недопустимое значение hAlign: <" + hAlign + ">\n");
+		hAlign = "left";
+	}
+	if (vAlign != "top" && vAlign != "center" && vAlign != "down") {
+		Utils::outMsg("Text::setAlign", "Недопустимое значение vAlign: <" + vAlign + ">\n");
+		vAlign = "top";
+	}
+	this->hAlign = hAlign;
+	this->vAlign = vAlign;
+
+	int indentY = 0;
+	if (vAlign == "center") {
+		indentY = (getHeight() - lines.size() * charHeight) / 2;
+	}else if (vAlign == "down") {
+		indentY = getHeight() - lines.size() * charHeight;
 	}
 
-	if (align == "left") {
+
+	if (hAlign == "left") {
 		for (size_t i = 0; i < rects.size(); ++i) {
 			rects[i].x = 0;
-			rects[i].y = i * charHeight;
+			rects[i].y = i * charHeight + indentY;
 		}
 	}else {
 		int maxWidth = this->maxWidth;
@@ -446,14 +459,14 @@ void Text::setAlign(String align) {
 			}
 		}
 
-		bool isCenter = align == "center";
+		bool isCenter = hAlign == "center";
 		for (size_t i = 0; i < rects.size(); ++i) {
 			if (isCenter) {
 				rects[i].x = (maxWidth - rects[i].w) / 2;
 			}else {
 				rects[i].x = maxWidth - rects[i].w;
 			}
-			rects[i].y = i * charHeight;
+			rects[i].y = i * charHeight + indentY;
 		}
 	}
 }

@@ -11,11 +11,14 @@ class Node {
 private:
 	static std::vector<Node*> nodes;
 
-	static void jump(String label);
+	static bool initing;
+
+	static void jump(const String &label);
 
 public:
 	static bool jumped;
 	static void destroyAll();
+
 
 	String firstParam;
 	std::map<String, String> props;

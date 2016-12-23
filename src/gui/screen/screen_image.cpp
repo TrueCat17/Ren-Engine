@@ -1,10 +1,12 @@
 #include "screen_image.h"
 
+#include "parser/node.h"
 #include "utils/utils.h"
 
-ScreenImage::ScreenImage(Node *node): ScreenContainer(node, this) {
-	imageCode = node->getFirstParam();
-}
+ScreenImage::ScreenImage(Node *node):
+	ScreenContainer(node, this),
+	imageCode(node->getFirstParam())
+{ }
 
 void ScreenImage::updateProps() {
 	ScreenContainer::updateProps();
@@ -19,8 +21,4 @@ void ScreenImage::update() {
 	if (ySize <= 0) ySize = Utils::getTextureHeight(texture);
 
 	ScreenContainer::update();
-}
-
-void ScreenImage::draw() const {
-	ScreenContainer::draw();
 }

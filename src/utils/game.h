@@ -1,7 +1,9 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <thread>
 #include <string>
+
 
 class Game {
 private:

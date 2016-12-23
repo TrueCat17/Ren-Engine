@@ -1,5 +1,10 @@
 #include "screen_text.h"
 
+#include "gv.h"
+
+#include "gui/text.h"
+
+#include "parser/node.h"
 #include "utils/utils.h"
 
 ScreenText::ScreenText(Node *node): ScreenContainer(node, this) {
@@ -17,6 +22,8 @@ void ScreenText::updateProps() {
 		if (!font) {
 			font = Text::defaultFontName;
 		}
+		textHAlign = node->getProp("text_align");
+		textVAlign = node->getProp("text_valign");
 
 		String colorStr = node->getProp("color");
 		color = 0xFFFFFF;
@@ -28,20 +35,24 @@ void ScreenText::updateProps() {
 			}
 		}
 
-		String textAlign = node->getProp("text_align");
-		tf->setAlign(textAlign);
-
 		size = node->getProp("size").toInt();
 		if (!size) size = 20;
+
+		if (size % 2) size += 1;
 	}
 
 	ScreenContainer::updateProps();
 }
 
-double ScreenText::getDefaultWidth() const { return 0.2; }
-double ScreenText::getDefaultHeight() const { return 0.1; }
-
 void ScreenText::update() {
+	double w = xSize;
+	if (w > 0 && w <= 1) w *= GV::width;
+	double h = ySize;
+	if (h > 0 && h <= 1) h *= GV::height;
+
+	setSize(w, h);
+
+
 	bool needUpdate = false;
 
 	if (tf->getMaxWidth() != rect.w) {
@@ -65,6 +76,9 @@ void ScreenText::update() {
 
 	if (needUpdate) {
 		tf->setText(text, color);
+	}else
+	if (text && (tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign)) {
+		tf->setAlign(textHAlign, textVAlign);
 	}
 
 	ScreenContainer::update();

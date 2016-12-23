@@ -1,10 +1,12 @@
 #include "screen_imagemap.h"
 
+#include "parser/node.h"
 #include "utils/utils.h"
 
-ScreenImagemap::ScreenImagemap(Node *node): ScreenContainer(node, this) {
+ScreenImagemap::ScreenImagemap(Node *node):
+	ScreenContainer(node, this)
+{ }
 
-}
 void ScreenImagemap::updateProps() {
 	String groundPath = node->getProp("ground");
 	String hoverPath = node->getProp("hover");

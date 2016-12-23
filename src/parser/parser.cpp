@@ -232,6 +232,12 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	i = headLine.find(type);
 	size_t startCommandName = i + type.size() + 1;
 	size_t endCommandName = headLine.size() - 1;
+	if (headLine[endCommandName] != ':') {
+		Utils::outMsg("Parser::getNode", "Объявление блока должно заканчиваться двоеточием\n"
+										 "Строка <" + headLine + ">");
+		++endCommandName;
+	}
+
 	if (type == "label" || type == "screen") {
 		res->name = headLine.substr(startCommandName, endCommandName - startCommandName);
 	}else
@@ -293,15 +299,15 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 				i = headLine.size();
 			}
 			headWord = headLine.substr(startLine, i - startLine);
-			if (headWord.endsWith(":")){
-				headWord.erase(headWord.size() - 1);
-			}
+		}
+		if (headWord.endsWith(":")){
+			headWord.erase(headWord.size() - 1);
 		}
 
 		bool isText;
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
 			Utils::outMsg("Parser::getNode", "Неверный синтаксис в строке <" + headLine + ">\n"
-						  "(node: " + headWord + ", parentNode: " + type + ", prevNode: " + prevHeadWord + ")");
+						  "(node: <" + headWord + ">, parentNode: <" + type + ">, prevNode: <" + prevHeadWord + ">)");
 			childStart = getNextStart(childStart);
 			continue;
 		}
@@ -311,13 +317,6 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		Node *node = getNode(childStart, nextChildStart, superParent, isText);
 		if (node->command == "elif" || node->command == "else") {
 			node->prevNode = res->children[res->children.size() - 1];
-		}else
-		if (type == "menuItem") {
-			if (headWord == "$") {
-				headWord = "python";
-			}
-			node->command = headWord;
-			node->params = headLine.substr(i + (headLine[i] == ' '));
 		}
 
 		res->children.push_back(node);

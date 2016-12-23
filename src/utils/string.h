@@ -30,6 +30,9 @@ public:
 	int toInt(int base = 10) const;
 	double toDouble() const;
 
+	bool isDouble() const;
+	bool isSimpleString() const;
+
 	bool startsWith(const String &str, bool withSpaces = true) const;
 	bool endsWith(const String &str) const;
 

@@ -3,6 +3,8 @@
 
 #include "screen_container.h"
 
+#include "utils/string.h"
+
 class ScreenIf: public ScreenContainer {
 private:
 	String condition;

@@ -1,48 +1,65 @@
 #include "game.h"
 
-#include <thread>
-
 
 #include "gv.h"
 
+#include "gui/screen/screen.h"
+#include "gui/screen/style.h"
+
+#include "parser/music_channel.h"
 #include "parser/parser.h"
 #include "parser/py_guard.h"
 
 #include "utils/utils.h"
 
 
-bool Game::modeStarting = false;
-
 size_t Game::fps = 1;
 size_t Game::frameTime = 1000;
 
+bool Game::modeStarting = false;
+
+
 void Game::startMod(const std::string &dir) {
 	std::thread([=] { Game::_startMod(dir); }).detach();
+
+	int toSleep = frameTime * 2;
+	Utils::sleep(toSleep, false);
 }
 
 void Game::_startMod(const std::string &dir) {
-	Game::modeStarting = true;
-	GV::inGame = false;//указать потоку предыдущего мода на то, что пора заканчивать
-	const int toSleep = Game::getFrameTime() * 2;
-	Utils::sleep(toSleep, false);//Подождать, пока он не завершиться (он должен отслеживать состояние GV::inGame)
+	GV::updateGuard.lock();
+	modeStarting = true;
+
+	GV::inGame = false;
+	int toSleep = frameTime * 2;
+	Utils::sleep(toSleep, false);
 
 	delete GV::pyGuard;
 	GV::pyGuard = new PyGuard();
 
 	Node::destroyAll();
 	Node::jumped = false;
-	Game::modeStarting = false;
 
-	try {
-		Parser p(Utils::ROOT + "mods/" + dir);
-		GV::mainExecNode = p.parse();
+	Screen::clear();
+	DisplayObject::destroyAll();
+	GV::screens = new Group();
 
-		GV::inGame = true;//Указываем создаваемому потоку, что можно работать и не надо будет завершаться при исполнении первой же команды
+	Utils::destroyAllTextures();
+	Utils::destroyAllSurfaces();
 
-		GV::mainExecNode->execute();
-	}catch (String e) {
-		Utils::outMsg(e);
-	}
+	MusicChannel::clear();
+	Style::destroyAll();
+
+	GV::updateGuard.unlock();
+
+
+	Parser p(Utils::ROOT + "mods/" + dir);
+	GV::mainExecNode = p.parse();
+
+	GV::inGame = true;
+	modeStarting = false;
+
+	GV::mainExecNode->execute();
 
 }
 

@@ -2,13 +2,15 @@
 
 #include <vector>
 
+#include "gv.h"
+
 #include "utils/utils.h"
 
 
 std::map<String, Style*> Style::styles;
 
 void Style::updateAll() {
-	if (Utils::execPython("globals().has_key('get_styles')", true) == "False") return;
+	if (!GV::inGame || Utils::execPython("globals().has_key('get_styles')", true) == "False") return;
 
 	String stylesStr = Utils::execPython("get_styles()", true);
 	std::vector<String> stylesVec = stylesStr.split(' ');
@@ -22,7 +24,7 @@ void Style::updateAll() {
 		std::vector<String> propsVec = propsStr.split(' ');
 
 		std::map<String, String> &props = styles[style]->props;
-		for (String prop : propsVec) {
+		for (String &prop : propsVec) {
 			props[prop] = Utils::execPython("style." + style + "." + prop, true);
 		}
 	}

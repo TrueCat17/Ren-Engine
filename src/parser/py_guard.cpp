@@ -3,6 +3,8 @@
 #include <boost/python.hpp>
 #include <Python.h>
 
+#include "gui/screen/screen.h"
+
 #include "parser/music_channel.h"
 
 #include "utils/game.h"
@@ -36,7 +38,9 @@ PyGuard::PyGuard() {
 	pythonGlobal["register_channel"] = py::make_function(MusicChannel::make);
 	pythonGlobal["volume"] = py::make_function(MusicChannel::setVolume);
 
-	pythonGlobal["get_image"] = py::make_function(Utils::getImage);
+	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
+	pythonGlobal["show_screen"] = py::make_function(Screen::addToShowSimply);
+	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHideSimply);
 
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
 	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);

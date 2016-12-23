@@ -82,6 +82,44 @@ double String::toDouble() const {
 	return res;
 }
 
+bool String::isDouble() const {
+	if (empty()) return false;
+
+	char f = front();
+	size_t i = f == '-' || f == '+';
+	if (i && size() == 1) return false;
+
+	bool wasDot = false;
+	for (; i < size(); ++i) {
+		char c = at(i);
+		if (c == '.') {
+			if (wasDot) {
+				return false;
+			}
+			wasDot = true;
+		}
+
+		if (c < '0' || c > '9') {
+			return false;
+		}
+	}
+	return true;
+}
+bool String::isSimpleString() const {
+	if (size() < 2) return false;
+
+	char f = front();
+	if (f != '\'' && f != '"') return false;
+	char b = back();
+	if (f != b) return false;
+
+	for (size_t i = 1; i < size() - 1; ++i) {
+		char c = at(i);
+		if (c == f || c == '\\') return false;
+	}
+	return true;
+}
+
 bool String::startsWith(const String &str, bool withSpaces) const {
 	if (size() < str.size()) return false;
 

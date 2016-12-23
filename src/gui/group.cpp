@@ -28,6 +28,8 @@ int Group::getMinX() const {
 	int res = 0;
 	for (size_t i = 0; i < children.size(); ++i) {
 		const DisplayObject *child = children[i];
+		if (!child->enabled()) continue;
+
 		int childMinX = child->getMinX();
 		if (childMinX < res) {
 			res = childMinX;
@@ -39,6 +41,8 @@ int Group::getMinY() const {
 	int res = 0;
 	for (size_t i = 0; i < children.size(); ++i) {
 		const DisplayObject *child = children[i];
+		if (!child->enabled()) continue;
+
 		int childMinY = child->getMinY();
 		if (childMinY < res) {
 			res = childMinY;
@@ -57,6 +61,8 @@ int Group::getMaxX() const {
 
 	for (size_t i = 0; i < children.size(); ++i) {
 		const DisplayObject *child = children[i];
+		if (!child->enabled()) continue;
+
 		int childMaxX = child->getX() + child->getMaxX();
 		if (childMaxX > res) {
 			res = childMaxX;
@@ -74,6 +80,8 @@ int Group::getMaxY() const {
 
 	for (size_t i = 0; i < children.size(); ++i) {
 		const DisplayObject *child = children[i];
+		if (!child->enabled()) continue;
+
 		int childMaxY = child->getY() + child->getMaxY();
 		if (childMaxY > res) {
 			res = childMaxY;
@@ -212,8 +220,5 @@ SDL_Texture* Group::getTextureIfOne(size_t &count) const {
 }
 
 Group::~Group() {
-	if (parent) {
-		parent->removeChild(this);
-	}
 	clearChildren();
 }

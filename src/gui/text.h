@@ -7,8 +7,6 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
-#include "gv.h"
-
 #include "gui/display_object.h"
 #include "utils/string.h"
 
@@ -39,7 +37,8 @@ private:
 
 	TTF_Font *font = nullptr;
 
-	String align = "left";
+	String hAlign = "left";
+	String vAlign = "top";
 
 	int maxWidth = -1;
 	int maxHeight = -1;
@@ -84,8 +83,9 @@ public:
 	Text(String fontName = "", int textSize = 20);
 	virtual ~Text();
 
-	void setFont(String fontName = "", int textSize = 20, bool setAsOriginal = true);
-	void setAlign(String align = "left");
+	String getHAlign() const { return hAlign; }
+	String getVAlign() const { return vAlign; }
+	void setAlign(String hAlign = "left", String vAlign = "top");
 
 	String getText() const;
 	void setText(const String &text, int color = 0x000000);
@@ -95,6 +95,7 @@ public:
 	void setMaxWidth(int width);
 	void setMaxHeight(int height);
 
+	void setFont(String fontName = "", int textSize = 20, bool setAsOriginal = true);
 	String getFontName() const { return fontName; }
 	int getFontSize() const { return textSize; }
 	int getOriginalFontSize() const { return originalTextSize; }

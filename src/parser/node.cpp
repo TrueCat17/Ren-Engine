@@ -5,7 +5,6 @@
 #include "gv.h"
 #include "config.h"
 
-#include "gui/gui.h"
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
@@ -16,9 +15,10 @@
 
 std::vector<Node*> Node::nodes;
 bool Node::jumped = false;
+bool Node::initing = false;
 
 void Node::execute() {
-	if (jumped) return;
+	if (jumped || !GV::inGame) return;
 
 	if (command == "main") {
 		for (size_t i = 0; i < children.size(); ++i) {
@@ -37,61 +37,41 @@ void Node::execute() {
 		}
 		std::sort(initBlocks.begin(), initBlocks.end(), [](Node* a, Node* b) { return a->priority < b->priority; });
 
-		for (Node *i : initBlocks) {
-			i->execute();
+		try {
+			GV::initGuard.lock();
+			initing = true;
+			for (Node *i : initBlocks) {
+				i->execute();
+			}
+			initing = false;
+			GV::initGuard.unlock();
+
+			mainLabel = Utils::execPython("mods_last_key", true);
+			if (mainLabel.find("_menu") == size_t(-1)) {
+				Screen::addToShowSimply("sprites");
+				Screen::addToShowSimply("dialogue_box");
+			}
+
+			jump(mainLabel);
+		}catch (ContinueException) {
+			Utils::outMsg("Node::execute", "continue вне цикла");
+		}catch (BreakException) {
+			Utils::outMsg("Node::execute", "break вне цикла");
+		}catch (StopException) {
+			Utils::outMsg("Node::execute", "Неожидаемое исключение StopException (конец итератора)");
 		}
 
-		mainLabel = Utils::execPython("mods_last_key", true);
-		if (mainLabel.find("_menu") == size_t(-1)) {
-			Screen::show("dialogue_box", false);
-		}
-		jump(mainLabel);
-
-		if (!GV::exit && Utils::execPython("cur_location_name", true) == "None") {
-			GV::updateGuard.lock();
-			GV::renderGuard.lock();
-			{
-				GV::inGame = false;
-
-				if (GV::screens) {
-					GV::screens->clearChildren();
-				}
-				Screen::clear();
-
-				Utils::destroyAllTextures();
-				Utils::destroyAllSurfaces();
-			}
-			GV::renderGuard.unlock();
-			GV::updateGuard.unlock();
-
-			MusicChannel::clear();
-			Style::destroyAll();
-
-			if (!Game::modeStarting) {
-				Game::startMod("main_menu");
-			}
+		if (!Game::modeStarting && !GV::exit && Utils::execPython("cur_location_name", true) == "None") {
+			Game::startMod("main_menu");
 		}
 	}else
 
 	if (command == "init" || command == "label") {
 		for (size_t i = 0; GV::inGame && i < children.size(); ++i) {
 			Node *node = children[i];
-
-			for (size_t j = 1;
-				  j < size_t(Config::get("count_image_commands_to_processing_beforehand").toInt())
-				  &&
-				  i + j < children.size();
-				 ++j)
-			{
-				Node *node = children[i + j];
-				if ((node->command == "show" && !node->params.startsWith("screen ")) || node->command == "scene") {
-					//Sprite::loadResources(node->params);
-				}
-			}
-
 			node->execute();
 
-			while (GV::inGame && Utils::execPython("waiting_moving", true) == "True") {
+			while (!initing && Utils::execPython("waiting_moving", true) == "True") {
 				Utils::sleep(1);
 			}
 		}
@@ -100,7 +80,7 @@ void Node::execute() {
 	if (command == "show") {
 		if (params.startsWith("screen ")) {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
-			Screen::show(screenName, false);
+			Screen::addToShowSimply(screenName);
 		}else {
 			//Sprite::show(params);
 		}
@@ -109,7 +89,7 @@ void Node::execute() {
 	if (command == "hide") {
 		if (params.startsWith("screen ")) {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
-			Screen::hide(screenName, false);
+			Screen::addToHideSimply(screenName);
 		}else {
 			//Sprite::hide(params);
 		}
@@ -124,8 +104,7 @@ void Node::execute() {
 	}else
 
 	if (command == "window") {
-		String code = "window_" + params + "()";
-		Utils::execPython(code);
+		Utils::execPython("window_" + params + "()");
 	}else
 
 	if (command == "text") {
@@ -165,7 +144,12 @@ void Node::execute() {
 	}else
 
 	if (command == "jump") {
-		jump(params);
+		String label = params;
+		if (label.startsWith("expression ")) {
+			label = Utils::execPython(label.substr(String("expression ").size()), true);
+		}
+
+		jump(label);
 	}else
 
 	if (command == "play") {
@@ -186,14 +170,40 @@ void Node::execute() {
 	}else
 
 
-	if (command == "menu") {/*
-		ChooseMenu::make(this);
+	if (command == "menu") {
+		String variants = children[0]->params;
+		if (children.size() == 1) {
+			variants += ", ";
+		}else {
+			for (size_t i = 1; i < children.size(); ++i) {
+				variants += ", " + children[i]->params;
+			}
+		}
+		Utils::execPython("choose_menu_variants = (" + variants + ")");
+		Utils::execPython("renpy.call_screen('choose_menu', 'choose_menu_result')");
 
-		Node *chooseNode = ChooseMenu::chooseNode;
-		for (size_t i = 0; GV::inGame && i < chooseNode->children.size(); ++i) {
-			Node *childNode = chooseNode->children[i];
-			childNode->execute();
-		}*/
+		int toSleep = Game::getFrameTime();
+		while (GV::inGame && Utils::execPython("read", true) != "True") {
+			Utils::sleep(toSleep);
+		}
+		if (!GV::inGame) return;
+
+		String resStr = Utils::execPython("choose_menu_result", true);
+		int res = resStr.toInt();
+
+		if (res < 0 || res >= int(children.size())) {
+			Utils::outMsg("Node::execute",
+						  String() +
+						  "Номер выбранного пункта меню находится вне допустимых пределов\n"
+						  "choose_menu_result = " + res + ", min = 0, max = " + int(children.size())
+						  );
+			res = 0;
+		}
+		Node *menuItem = children[res];
+		for (size_t i = 0; i < menuItem->children.size(); ++i) {
+			Node *node = menuItem->children[i];
+			node->execute();
+		}
 	}else
 
 	if (command == "if") {
@@ -201,7 +211,7 @@ void Node::execute() {
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
-			for (size_t i = 0; GV::inGame && i < children.size(); ++i) {
+			for (size_t i = 0; i < children.size(); ++i) {
 				Node *node = children[i];
 				node->execute();
 			}
@@ -219,7 +229,7 @@ void Node::execute() {
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
-			for (size_t i = 0; GV::inGame && i < children.size(); ++i) {
+			for (size_t i = 0; i < children.size(); ++i) {
 				Node *node = children[i];
 				node->execute();
 			}
@@ -233,20 +243,77 @@ void Node::execute() {
 		}
 		if (t->condIsTrue) return;
 
-		for (size_t i = 0; GV::inGame && i < children.size(); ++i) {
+		for (size_t i = 0; i < children.size(); ++i) {
 			Node *node = children[i];
 			node->execute();
 		}
 	}else
 
 	if (command == "while") {
+		condIsTrue = true;
 		String cond = "bool(" + params + ")";
 		while (GV::inGame && Utils::execPython(cond, true) == "True") {
-			for (size_t i = 0; GV::inGame && i < children.size(); ++i) {
-				Node* node = children[i];
-				node->execute();
+			if (jumped || !GV::inGame) return;
+
+			try {
+				for (size_t i = 0; i < children.size(); ++i) {
+					Node* node = children[i];
+					node->execute();
+				}
+			}catch (ContinueException) {
+			}catch (BreakException) {
+				condIsTrue = false;
+				break;
 			}
 		}
+	}else
+
+	if (command == "for") {
+		condIsTrue = true;
+
+		String in = " in ";
+		size_t inPos = params.find(in);
+		String beforeIn = params.substr(0, params.find_last_not_of(' ', inPos) + 1);
+		String afterIn = params.substr(params.find_first_not_of(' ', inPos + in.size()));
+
+		if (!beforeIn || !afterIn) {
+			Utils::outMsg("Node::execute", "Неправильный синтаксис команды for:\n<" + params + ">");
+			return;
+		}
+
+		static int numCicle = 0;
+		String iterName = "iter_" + String(numCicle++);
+
+		String init = iterName + " = iter(" + afterIn + ")";
+		String onStep = beforeIn + " = " + iterName + ".next()";
+
+		Utils::execPython(init);
+		while (true) {
+			if (jumped || !GV::inGame) return;
+
+			try {
+				Utils::execPython(onStep);
+
+				for (size_t i = 0; i < children.size(); ++i) {
+					Node* node = children[i];
+					node->execute();
+				}
+			}catch (ContinueException) {
+			}catch (BreakException) {
+				condIsTrue = false;
+				break;
+			}catch (StopException) {
+				break;
+			}
+		}
+	}else
+
+	if (command == "continue") {
+		throw ContinueException();
+	}else
+
+	if (command == "break") {
+		throw BreakException();
 	}else
 
 	{
@@ -257,12 +324,12 @@ void Node::execute() {
 	}
 
 	int toSleep = Game::getFrameTime();
-	while (GV::inGame && Utils::execPython("read", true) != "True") {
+	while (GV::inGame && !initing && Utils::execPython("read", true) != "True") {
 		Utils::sleep(toSleep);
 	}
 }
 
-void Node::jump(String label) {
+void Node::jump(const String &label) {
 	for (size_t i = 0; i < GV::mainExecNode->children.size(); ++i) {
 		Node *node = GV::mainExecNode->children[i];
 		if (node->command == "label" && node->name == label) {
@@ -285,7 +352,11 @@ String Node::getProp(const String& name) const {
 	if (!res) {
 		static std::vector<String> exceptions = String("screen if elif for while else hotspot").split(' ');
 		if (!Utils::in(command, exceptions)) {
-			res = Style::getProp(command, name);//command is type of this screenChild
+			String styleName = getPropCode("style");
+			if (!styleName) {
+				styleName = command;
+			}
+			res = Style::getProp(styleName, name);//command is a type of this screenChild
 		}
 	}
 

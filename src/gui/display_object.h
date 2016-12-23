@@ -5,9 +5,6 @@
 
 #include <SDL2/SDL.h>
 
-#include "gv.h"
-#include "utils/string.h"
-
 class Group;
 
 class DisplayObject {

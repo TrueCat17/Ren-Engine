@@ -1,16 +1,15 @@
 #include "screen_hotspot.h"
 
-#include <iostream>
-
-
 #include "screen_imagemap.h"
 
 #include "gv.h"
+#include "parser/node.h"
 #include "utils/utils.h"
 
-ScreenHotspot::ScreenHotspot(Node *node): ScreenChild(node, this) {
-	rectStr = node->getFirstParam();
-
+ScreenHotspot::ScreenHotspot(Node *node):
+	ScreenChild(node, this),
+	rectStr(node->getFirstParam())
+{
 	auto onClick = [this](DisplayObject*) {
 		const String action = this->node->getPropCode("action");
 		if (action) {
@@ -21,6 +20,8 @@ ScreenHotspot::ScreenHotspot(Node *node): ScreenChild(node, this) {
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
+	if (!parent) return false;
+
 	x = (getGlobalX() + x) / scaleX;
 	y = (getGlobalY() + y) / scaleY;
 
@@ -29,7 +30,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 
 	ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
 	if (!imagemap) {
-		Utils::outMsg("ScreenHotspot::update", "Тип родителя должен быть ScreenImagemap");
+		Utils::outMsg("ScreenHotspot::checkAlpha", "Тип родителя должен быть ScreenImagemap");
 		return true;
 	}
 	SDL_Texture *hover = imagemap->hover;
@@ -66,6 +67,11 @@ void ScreenHotspot::updateProps() {
 	int w = rectVec[2].toInt() * scaleX;
 	int h = rectVec[3].toInt() * scaleY;
 	setSize(w, h);
+
+
+	if (btnRect.mouseDown && isModal()) {
+		btnRect.onClick();
+	}
 }
 
 void ScreenHotspot::update() {

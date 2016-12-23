@@ -1,9 +1,11 @@
 #ifndef SCREENTEXT_H
 #define SCREENTEXT_H
 
-#include "gui/text.h"
 #include "gui/screen/screen_container.h"
-#include "parser/node.h"
+
+#include "utils/string.h"
+
+class Text;
 
 class ScreenText: public ScreenContainer {
 private:
@@ -12,6 +14,8 @@ private:
 	String textExec;
 
 	String font;
+	String textHAlign;
+	String textVAlign;
 	int size = 20;
 
 	int color = 0;
@@ -19,9 +23,6 @@ private:
 
 protected:
 	Text *tf;
-
-	virtual double getDefaultWidth() const;
-	virtual double getDefaultHeight() const;
 
 public:
 	ScreenText(Node *node);

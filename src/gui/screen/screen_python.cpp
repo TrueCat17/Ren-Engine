@@ -1,5 +1,6 @@
 #include "screen_python.h"
 
+#include "parser/node.h"
 #include "utils/utils.h"
 
 ScreenPython::ScreenPython(Node *node): ScreenChild(node, nullptr) {

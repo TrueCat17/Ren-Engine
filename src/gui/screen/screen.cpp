@@ -8,7 +8,10 @@
 std::vector<Node*> Screen::declared;
 std::vector<Screen*> Screen::created;
 
-Node* Screen::getDeclared(const String& name) {
+std::vector<std::pair<String, String>> Screen::toShowList;
+std::vector<std::pair<String, String>> Screen::toHideList;
+
+Node* Screen::getDeclared(const String &name) {
 	for (Node *node : declared) {
 		if (node->name == name) {
 			return node;
@@ -16,7 +19,7 @@ Node* Screen::getDeclared(const String& name) {
 	}
 	return nullptr;
 }
-Screen* Screen::getCreated(const String& name) {
+Screen* Screen::getCreated(const String &name) {
 	for (size_t i = 0; i < created.size(); ++i) {
 		Screen *scr = created[i];
 		if (scr->name == name) {
@@ -26,27 +29,62 @@ Screen* Screen::getCreated(const String& name) {
 	return nullptr;
 }
 
-Screen* Screen::show(const String& name, bool depended) {
+
+void Screen::updateLists() {
+	for (size_t i = 0 ; i < toHideList.size(); ++i) {
+		auto &p = toHideList[i];
+		const String &name = p.first;
+		const String &dependOn = p.second;
+		hide(name, dependOn);
+	}
+	toHideList.clear();
+
+	for (size_t i = 0 ; i < toShowList.size(); ++i) {
+		auto &p = toShowList[i];
+		const String &name = p.first;
+		const String &dependOn = p.second;
+		show(name, dependOn);
+	}
+	toShowList.clear();
+}
+
+
+void Screen::addToShowSimply(const std::string &name) {
+	Screen::addToShow(name, "");
+}
+void Screen::addToShow(const String &name, const String &dependsOn) {
+	toShowList.push_back(std::make_pair(name, dependsOn));
+}
+
+void Screen::show(const String &name, const String &dependOn) {
 	Screen *scr = getCreated(name);
 	if (scr) {
-		scr->addShowedCount(depended);
+		scr->addShowedCount(dependOn);
 		scr->parent->addChild(scr);//Наверх в списке потомков своего родителя
-		return scr;
+		return;
 	}
 
 	Node *node = getDeclared(name);
 	if (!node) {
 		Utils::outMsg("Screen::show", "Скрин с именем <" + name + "> не существует");
-		return nullptr;
+		return;
 	}
 
-	scr = new Screen(node, depended);
+	scr = new Screen(node, dependOn);
 	scr->name = name;
 	GV::screens->addChild(scr);
 
-	return scr;
+	scr->updateProps();
 }
-void Screen::hide(const String& name, bool depended) {
+
+void Screen::addToHideSimply(const std::string &name) {
+	Screen::addToHide(name, "");
+}
+void Screen::addToHide(const String &name, const String &dependsOn) {
+	toHideList.push_back(std::make_pair(name, dependsOn));
+}
+
+void Screen::hide(const String &name, const String &dependOn) {
 	if (!getDeclared(name)) {
 		Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не существует");
 		return;
@@ -55,16 +93,8 @@ void Screen::hide(const String& name, bool depended) {
 	for (size_t i = 0; i < created.size(); ++i) {
 		Screen *scr = created[i];
 		if (scr->name == name) {
-			if (!scr->subShowedCount(depended)) {
-				static size_t depth = 0;
-				++depth;
-
-				bool inGame = GV::inGame;
-				if (inGame && depth == 1) GV::updateGuard.lock(), GV::renderGuard.lock();
+			if (!scr->subShowedCount(dependOn)) {
 				delete scr;
-				if (inGame && depth == 1) GV::updateGuard.unlock(), GV::renderGuard.unlock();
-
-				--depth;
 			}
 			return;
 		}
@@ -81,22 +111,30 @@ void Screen::clear() {
 }
 
 
-void Screen::addShowedCount(bool depended) {
-	if (depended) {
+void Screen::addShowedCount(const String &dependOn) {
+	if (dependOn) {
+		auto i = std::find_if(created.begin(), created.end(),
+								[&dependOn](Screen *scr) { return scr->name == dependOn; }
+				 );
+		if (i != created.end()) {
+			Screen *scr = *i;
+			scr->usedScreens.push_back(this);
+		}
+
 		countAsUsed += 1;
 	}else {
 		countAsMain += 1;
 	}
 }
-bool Screen::subShowedCount(bool depended) {
-	if (depended) {
+bool Screen::subShowedCount(const String &dependOn) {
+	if (dependOn) {
 		countAsUsed -= 1;
 	}else {
 		if (countAsMain) {
 			countAsMain -= 1;
 		}else {
-			String extra = countAsUsed == 1 ? "другом скрине" : "других скринах (в " + String(int(countAsUsed)) + ")";
-			Utils::outMsg("Screen::subShowedCount(depended == false)",
+			String extra = countAsUsed == 1 ? "другом скрине" : ("других скринах (в " + String(int(countAsUsed)) + ")");
+			Utils::outMsg("Screen::subShowedCount(!depended)",
 						  "Скрин с именем <" + name + "> нельзя скрыть командой hide,\n"
 						  "потому что он отображается командой use в " + extra);
 		}
@@ -104,9 +142,9 @@ bool Screen::subShowedCount(bool depended) {
 	return countAsMain || countAsUsed;
 }
 
-Screen::Screen(Node *node, bool depended): ScreenContainer(node, nullptr) {
+Screen::Screen(Node *node, const String &dependOn): ScreenContainer(node, this) {
 	created.push_back(this);
-	addShowedCount(depended);
+	addShowedCount(dependOn);
 }
 Screen::~Screen() {
 	for (size_t i = 0; i < created.size(); ++i) {
@@ -116,4 +154,11 @@ Screen::~Screen() {
 			break;
 		}
 	}
+
+	for (Screen *scr : usedScreens) {
+		if (!scr->subShowedCount(name)) {
+			delete scr;
+		}
+	}
+	usedScreens.clear();
 }

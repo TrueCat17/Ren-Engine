@@ -2,18 +2,23 @@
 
 #include "gv.h"
 
-#include "gui/text.h"
-#include "gui/screen/screen.h"
 #include "gui/screen/screen_child.h"
+#include "gui/screen/screen.h"
+#include "gui/screen/screen_window.h"
 
 #include "gui/screen/style.h"
 
 #include "utils/utils.h"
 
 void GUI::update() {
-	GV::updateGuard.lock();
-	if (GV::inGame && GV::screens) {
+	if (GV::screens) {
+		GV::initGuard.lock();
 		Style::updateAll();
+		GV::initGuard.unlock();
+
+		Screen::updateLists();
+		ScreenWindow::updateModality();
+
 		ScreenChild::disableAll();
 
 		for (DisplayObject *child : GV::screens->children) {
@@ -31,6 +36,8 @@ void GUI::update() {
 				}
 			}
 		}
+
+		Screen::updateLists();
+		ScreenWindow::updateModality();
 	}
-	GV::updateGuard.unlock();
 }

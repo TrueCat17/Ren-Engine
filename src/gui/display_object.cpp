@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "gv.h"
+
 #include "group.h"
 #include "utils/utils.h"
 
@@ -110,7 +112,6 @@ SDL_Texture* DisplayObject::getTextureIfOne(size_t &count) const {
 }
 
 void DisplayObject::destroyAll() {
-	GV::stage = nullptr;
 	GV::screens = nullptr;
 
 	while (objects.size()) {

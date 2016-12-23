@@ -21,6 +21,10 @@ void ScreenTextButton::updateProps() {
 	if (!hoverBackground && background) {
 		hoverBackground = Utils::execPython("im.MatrixColor('" + background + "', im.matrix.contrast(1.5))", true);
 	}
+
+	if (btnRect.mouseDown && isModal()) {
+		btnRect.onClick();
+	}
 }
 
 void ScreenTextButton::update() {

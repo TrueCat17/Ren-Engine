@@ -2,7 +2,9 @@
 #define SCREENHOTSPOT_H
 
 #include "screen_child.h"
+
 #include "utils/btn_rect.h"
+#include "utils/string.h"
 
 class ScreenHotspot: public ScreenChild {
 private:

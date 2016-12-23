@@ -341,16 +341,16 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, int x, int y, int drawW, int 
 	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
 
 	switch(bpp) {
-	case 1:
-		return *p;
-	case 2:
-		return *(Uint16*)p;
+	case 4:
+		return *(Uint32*)p;
 	case 3:
 		if(SDL_BYTEORDER == SDL_BIG_ENDIAN)
 			return p[0] << 16 | p[1] << 8 | p[2];
 		return p[0] | p[1] << 8 | p[2] << 16;
-	case 4:
-		return *(Uint32*)p;
+	case 2:
+		return *(Uint16*)p;
+	case 1:
+		return *p;
 	default:
 		return 0;       /* shouldn't happen, but avoids warnings */
 	}
@@ -371,9 +371,9 @@ void Utils::registerImage(const String &desc) {
 
 	const String name = desc.substr(0, i - spaceL);
 	const String path = desc.substr(i + spaceR + 1);
-	images[name] = execPython(path, true);
+	images[name] = path;
 }
-std::string Utils::getImage(const std::string &name) {
+std::string Utils::getImageCode(const std::string &name) {
 	if (images.find(name) == images.end()) {
 		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
 		return "";
@@ -385,15 +385,25 @@ std::string Utils::getImage(const std::string &name) {
 String Utils::execPython(String code, bool retRes) {
 	if (!code) return "";
 
+	if (code.isDouble()) {
+		return code;
+	}
+	if (code.isSimpleString()) {
+		return code.substr(1, code.size() - 2);
+	}
+	if (code == "True" || code == "False") {
+		return code;
+	}
+
+
 	String res = "empty";
 	if (retRes) {
 		code = "res = str(" + code + ")";
 	}
 
-
 	static std::mutex pyExecGuard;
-	pyExecGuard.lock();
 
+	pyExecGuard.lock();
 	try {
 		PyCodeObject *co = PyGuard::getCompileObject(code);
 		if (co) {
@@ -456,23 +466,5 @@ String Utils::execPython(String code, bool retRes) {
 	}
 	pyExecGuard.unlock();
 
-	return res;
-}
-py::object Utils::getPythonObj(const String& code) {
-	static std::mutex pyExecGuard;
-
-	py::object res;
-
-	pyExecGuard.lock();
-	try {
-		res = py::exec(code.c_str(), GV::pyGuard->pythonGlobal);
-	}catch (py::error_already_set) {
-		PyErr_Print();
-		std::cout << "Code:\n" << code << '\n';
-	}catch (...) {
-		std::cout << "Python Unknown Error\n";
-		std::cout << "Code:\n" << code << '\n';
-	}
-	pyExecGuard.unlock();
 	return res;
 }

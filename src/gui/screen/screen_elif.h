@@ -3,6 +3,8 @@
 
 #include "screen_container.h"
 
+#include "utils/string.h"
+
 class ScreenElif: public ScreenContainer {
 private:
 	String condition;

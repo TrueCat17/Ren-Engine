@@ -15,7 +15,6 @@ protected:
 
 	bool inited = false;
 	void addChildrenFromNode();
-	std::vector<ScreenContainer*> usedScreens;
 
 	bool prevContainersSkipped() const;
 
@@ -29,11 +28,8 @@ public:
 	virtual int getMaxY() const;
 
 	ScreenContainer(Node* node, ScreenChild *screenParent);
-	virtual ~ScreenContainer();
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
-	virtual void removeChild(DisplayObject *child);
-	virtual void removeChildAt(size_t index);
 
 	virtual void updateProps();
 	virtual void draw() const;

@@ -1,26 +1,78 @@
 #include "screen_key.h"
 
+#include "gv.h"
+
+#include "parser/node.h"
 #include "utils/utils.h"
 
+
+std::vector<ScreenKey*> ScreenKey::screenKeys;
+
 ScreenKey::ScreenKey(Node *node): ScreenChild(node, nullptr) {
+	screenKeys.push_back(this);
 	keyStr = node->getFirstParam();
 }
+ScreenKey::~ScreenKey() {
+	for (size_t i = 0; i < screenKeys.size(); ++i) {
+		if (screenKeys[i] == this) {
+			screenKeys.erase(screenKeys.begin() + i);
+			break;
+		}
+	}
+}
+
+void ScreenKey::setToNotReact(SDL_Scancode key) {
+	for (ScreenKey *sk : screenKeys) {
+		SDL_Scancode skKey = sk->getKey();
+		if (skKey == key) {
+			sk->toNotReact = true;
+		}
+	}
+}
+void ScreenKey::setFirstDownState(SDL_Scancode key) {
+	for (ScreenKey *sk : screenKeys) {
+		SDL_Scancode skKey = sk->getKey();
+		if (skKey == key) {
+			sk->lastDown = 0;
+			sk->inFirstDown = true;
+			sk->wasFirstDelay = false;
+		}
+	}
+}
+void ScreenKey::setUpState(SDL_Scancode key) {
+	for (ScreenKey *sk : screenKeys) {
+		SDL_Scancode skKey = sk->getKey();
+		if (skKey == key) {
+			sk->lastDown = 0;
+			sk->prevIsDown = false;
+			if (sk->toNotReact) {
+				sk->inFirstDown = false;
+			}
+			sk->toNotReact = false;
+		}
+	}
+}
+
 
 void ScreenKey::updateProps() {
-	String keyName = Utils::execPython(keyStr, true);
+	if (!isModal() || toNotReact) return;
 
-	SDL_Scancode key = SDL_GetScancodeFromName(keyName.c_str());
+	SDL_Scancode key = getKey();
 
-	prevIsDown = false;
 	if (key == SDL_SCANCODE_UNKNOWN) {
+		String keyName = Utils::execPython(keyStr, true);
 		Utils::outMsg("SDL_GetScancodeFromName", "KeyName <" + keyName + ">\n" + SDL_GetError());
 	}else
 
-	if (GV::keyBoardState && GV::keyBoardState[key]) {
+	if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
 		int dTime = Utils::getTimer() - lastDown;
-		int delay = prevIsDown ? keyDelay : firstKeyDelay;
+		int delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
 		if (dTime >= delay) {
+			if (!inFirstDown) {
+				wasFirstDelay = true;
+			}
+			inFirstDown = false;
 			lastDown = Utils::getTimer();
 
 			const String action = node->getPropCode("action");
@@ -30,7 +82,23 @@ void ScreenKey::updateProps() {
 		}
 		prevIsDown = true;
 	}
+
+	else {
+		prevIsDown = false;
+		inFirstDown = false;
+		lastDown = 0;
+	}
 }
 void ScreenKey::update() {
 	return;
+}
+
+SDL_Scancode ScreenKey::getKey() const {
+	String keyName = Utils::execPython(keyStr, true);
+	if (keyName.startsWith("K_", false)) {
+		keyName = keyName.substr(2);
+	}
+
+	SDL_Scancode res = SDL_GetScancodeFromName(keyName.c_str());
+	return res;
 }

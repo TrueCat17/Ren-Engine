@@ -3,10 +3,9 @@
 
 #include "screen_container.h"
 
-
 class ScreenImagemap: public ScreenContainer {
 public:
-	SDL_Texture *hover;
+	SDL_Texture *hover = nullptr;
 
 	ScreenImagemap(Node *node);
 
