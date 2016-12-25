@@ -116,6 +116,7 @@ void loop() {
 
 		int startTime = Utils::getTimer();
 
+		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;
 		bool mouseWasUp = false;
 		bool mouseOutDown = SDL_GetGlobalMouseState(0, 0);
@@ -129,7 +130,7 @@ void loop() {
 				return;
 			}else
 
-			if (event.window.event == SDL_WINDOWEVENT_MOVED || event.window.event == SDL_WINDOWEVENT_RESIZED) {
+			if (event.window.event == SDL_WINDOWEVENT_MOVED) {
 				int x, y;
 				SDL_GetWindowPosition(GV::mainWindow, &x, &y);
 				if (x || y) {//Если оба равны 0, то скорее всего это глюк, игнорируем его
@@ -142,6 +143,12 @@ void loop() {
 					
 					Config::set("window_x", x);
 					Config::set("window_y", y);
+				}
+			}else
+
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+				if (!startWindowWidth && !startWindowHeight) {
+					resizeWithoutMouseDown = true;
 				}
 			}else
 
@@ -179,8 +186,10 @@ void loop() {
 			}
 		}
 
-		if (!mouseWasDown && !mouseWasUp) {
-			if (mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight) {
+		if (resizeWithoutMouseDown || !(mouseWasDown || mouseWasUp)) {
+			if (resizeWithoutMouseDown ||
+				(mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight)
+			) {
 				int w, h;
 				SDL_GetWindowSize(GV::mainWindow, &w, &h);
 
@@ -191,6 +200,11 @@ void loop() {
 						h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
 					}else {
 						w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
+					}
+
+					if (w < 640 || h < 360) {
+						w = 640;
+						h = 360;
 					}
 					SDL_SetWindowSize(GV::mainWindow, w, h);
 

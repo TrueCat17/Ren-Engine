@@ -417,7 +417,7 @@ String Utils::execPython(String code, bool retRes) {
 				res = resStr;
 			}
 		}else {
-			Utils::outMsg("Utils::execPython", "Не удалось скомпилировать код\n" + code);
+			throw py::error_already_set();
 		}
 	}catch (py::error_already_set) {
 		PyObject *ptype, *pvalue, *ptraceback;
