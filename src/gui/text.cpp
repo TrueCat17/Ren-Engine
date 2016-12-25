@@ -271,6 +271,8 @@ void Text::addText() {
 
 			int k = line[start] == '/' ? (++start, -1) : 1;//открытие или закрытие тэга
 
+			start = line.find_first_not_of(' ', start);
+			end = line.find_last_not_of(' ', end);
 			String type = line.substr(start, end - start);
 
 			if (type == "b") isBold += k;
@@ -287,7 +289,11 @@ void Text::addText() {
 					curColor = mainColor;
 				}
 			}
-			else Utils::outMsg("Неизвестный тэг <" + type + ">");
+
+			else {
+				Utils::outMsg("Text::addText",
+							  "Неизвестный тэг <" + type + ">");
+			}
 
 			if (isBold < 0) isBold = 0;
 			if (isItalic < 0) isItalic = 0;
@@ -333,6 +339,8 @@ int Text::getLineWidth(String text, bool resetPrevStyle) {
 
 			int k = text[start] == '/' ? (++start, -1) : 1;//открытие или закрытие тэга
 
+			start = text.find_first_not_of(' ', start);
+			end = text.find_last_not_of(' ', end);
 			String type = text.substr(start, end - start);
 
 			if (type == "b") isBold += k;
@@ -340,7 +348,10 @@ int Text::getLineWidth(String text, bool resetPrevStyle) {
 			else if (type == "u") isUnderline += k;
 			else if (type == "s") isStrike += k;
 			else if (type.startsWith("color"));
-			else Utils::outMsg("Неизвестный тэг <" + type + ">");
+			else {
+				Utils::outMsg("Text::getLineWidth",
+							  "Неизвестный тэг <" + type + ">");
+			}
 
 			if (isBold < 0) isBold = 0;
 			if (isItalic < 0) isItalic = 0;

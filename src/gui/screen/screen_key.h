@@ -17,7 +17,7 @@ private:
 	bool wasFirstDelay = false;
 
 	int keyDelay = 10;
-	int firstKeyDelay = 333;
+	int firstKeyDelay = 500;
 
 	String keyStr;
 

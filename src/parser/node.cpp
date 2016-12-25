@@ -82,7 +82,17 @@ void Node::execute() {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToShowSimply(screenName);
 		}else {
-			//Sprite::show(params);
+			const std::vector<String> args = Utils::getArgs(params);
+			if (args.empty()) {
+				Utils::outMsg("Строка <show " + params + "> некорректна");
+				return;
+			}
+
+			String argsStr = "'" + args[0] + "'";
+			for (size_t i = 1; i < args.size(); ++i) {
+				argsStr += ", '" + args[i] + "'";
+			}
+			Utils::execPython("add_sprite_to_showlist([" + argsStr + "], None)");
 		}
 	}else
 
@@ -91,7 +101,7 @@ void Node::execute() {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToHideSimply(screenName);
 		}else {
-			//Sprite::hide(params);
+			Utils::execPython("remove_sprite_from_showlist('" + params + "')");
 		}
 	}else
 
