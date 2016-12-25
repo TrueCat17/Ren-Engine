@@ -107,10 +107,18 @@ void render() {
 }
 
 void loop() {
+	int startWindowWidth = 0;
+	int startWindowHeight = 0;
+	bool mouseOutPrevDown = false;
+
 	while (!GV::exit) {
 		GV::updateGuard.lock();
 
 		int startTime = Utils::getTimer();
+
+		bool mouseWasDown = false;
+		bool mouseWasUp = false;
+		bool mouseOutDown = SDL_GetGlobalMouseState(0, 0);
 
 		BtnRect::checkMouseCursor();
 
@@ -135,32 +143,14 @@ void loop() {
 					Config::set("window_x", x);
 					Config::set("window_y", y);
 				}
-
-
-				static int newW = GV::width;
-				static int newH = GV::height;
-
-				int oldW = newW;
-				int oldH = newH;
-
-				SDL_GetWindowSize(GV::mainWindow, &newW, &newH);
-
-				int dW = newW - oldW;
-				int dH = newH - oldH;
-
-				if (dW * dW + dH * dH > 10) {
-					newH = newW / double(GV::STD_WIDTH) * GV::STD_HEIGHT;
-					GV::width = newW;
-					GV::height = newH;
-					SDL_SetWindowSize(mainWindow, GV::width, GV::height);
-
-					Config::set("window_width", GV::width);
-					Config::set("window_height", GV::height);
-				}
 			}else
 
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
+				mouseWasDown = true;
 				BtnRect::checkMouseClick();
+			}else
+			if (event.type == SDL_MOUSEBUTTONUP) {
+				mouseWasUp = true;
 			}else
 
 			if (event.type == SDL_KEYDOWN) {
@@ -188,6 +178,36 @@ void loop() {
 				ScreenKey::setUpState(key);
 			}
 		}
+
+		if (!mouseWasDown && !mouseWasUp) {
+			if (mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight) {
+				int w, h;
+				SDL_GetWindowSize(GV::mainWindow, &w, &h);
+
+				int dX = w - startWindowWidth;
+				int dY = h - startWindowHeight;
+				if (dX || dY) {
+					if (abs(dX) >= abs(dY)) {
+						h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
+					}else {
+						w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
+					}
+					SDL_SetWindowSize(GV::mainWindow, w, h);
+
+					GV::width = w;
+					GV::height = h;
+					Config::set("window_width", w);
+					Config::set("window_height", h);
+				}
+
+				startWindowWidth = 0;
+				startWindowHeight = 0;
+			}
+			if (mouseOutDown && !mouseOutPrevDown) {
+				SDL_GetWindowSize(GV::mainWindow, &startWindowWidth, &startWindowHeight);
+			}
+		}
+		mouseOutPrevDown = mouseOutDown;
 
 		GUI::update();
 		render();
