@@ -10,7 +10,7 @@
 ScreenText::ScreenText(Node *node): ScreenContainer(node, this) {
 	textExec = node->getFirstParam();
 
-	tf = new Text(font, size);
+	tf = new Text();
 	tf->wordWrap = true;
 	addChild(tf);
 }
@@ -19,9 +19,6 @@ void ScreenText::updateProps() {
 	text = Utils::execPython(textExec, true);
 	if (text) {
 		font = node->getProp("font");
-		if (!font) {
-			font = Text::defaultFontName;
-		}
 		textHAlign = node->getProp("text_align");
 		textVAlign = node->getProp("text_valign");
 
@@ -37,7 +34,6 @@ void ScreenText::updateProps() {
 
 		size = node->getProp("size").toInt();
 		if (!size) size = 20;
-
 		if (size % 2) size += 1;
 	}
 
@@ -54,32 +50,32 @@ void ScreenText::update() {
 
 
 	bool needUpdate = false;
+	if (text || prevText) {
+		if (tf->getMaxWidth() != rect.w) {
+			tf->setMaxWidth(rect.w);
+			needUpdate = true;
+		}
+		if (tf->getMaxHeight() != rect.h) {
+			tf->setMaxHeight(rect.h);
+			needUpdate = true;
+		}
 
-	if (tf->getMaxWidth() != rect.w) {
-		tf->setMaxWidth(rect.w);
-		needUpdate = true;
-	}
-	if (tf->getMaxHeight() != rect.h) {
-		tf->setMaxHeight(rect.h);
-		needUpdate = true;
-	}
+		if (tf->getFontName() != font || tf->getFontSize() != size) {
+			tf->setFont(font, size);
+			needUpdate = true;
+		}
+		if (prevText != text || color != prevColor) {
+			prevText = text;
+			prevColor = color;
+			needUpdate = true;
+		}
 
-	if (tf->getFontName() != font || tf->getFontSize() != size) {
-		tf->setFont(font, size);
-		needUpdate = true;
+		if (needUpdate) {
+			tf->setText(text, color);
+		}else
+			if (text && (tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign)) {
+				tf->setAlign(textHAlign, textVAlign);
+			}
 	}
-	if (prevText != text || color != prevColor) {
-		prevText = text;
-		prevColor = color;
-		needUpdate = true;
-	}
-
-	if (needUpdate) {
-		tf->setText(text, color);
-	}else
-	if (text && (tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign)) {
-		tf->setAlign(textHAlign, textVAlign);
-	}
-
 	ScreenContainer::update();
 }

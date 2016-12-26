@@ -21,9 +21,65 @@
 
 #include "parser/py_guard.h"
 
+
 SDL_DisplayMode displayMode;
 SDL_Window *mainWindow;
 SDL_Renderer *mainRenderer;
+
+
+//before windowSize-changes
+int startWindowWidth = 0;
+int startWindowHeight = 0;
+
+void changeWindowSize() {
+	int w, h;
+	SDL_GetWindowSize(GV::mainWindow, &w, &h);
+
+	int dX = w - startWindowWidth;
+	int dY = h - startWindowHeight;
+	if (dX || dY) {
+		SDL_Rect usableBounds;
+		SDL_GetDisplayUsableBounds(0, &usableBounds);
+
+		int wTop, wLeft, wBottom, wRight;
+		SDL_GetWindowBordersSize(mainWindow, &wTop, &wLeft, &wBottom, &wRight);
+
+		usableBounds.w -= wLeft + wRight;
+		usableBounds.h -= wTop + wBottom;
+
+
+		if (abs(dX) >= abs(dY)) {
+			h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
+		}else {
+			w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
+		}
+
+		if (w < 640 || h < 360) {
+			w = 640;
+			h = 360;
+		}
+		if (w > usableBounds.w) {
+			w = usableBounds.w;
+			h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
+		}
+		if (h > usableBounds.h) {
+			h = usableBounds.h;
+			w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
+		}
+
+		SDL_SetWindowSize(GV::mainWindow, w, h);
+
+		GV::width = w;
+		GV::height = h;
+		Config::set("window_width", w);
+		Config::set("window_height", h);
+	}
+
+	startWindowWidth = 0;
+	startWindowHeight = 0;
+}
+
+
 
 bool init() {
 	Utils::init();
@@ -63,8 +119,8 @@ bool init() {
 
 	int x = Config::get("window_x").toInt();
 	int y = Config::get("window_y").toInt();
-	GV::width = Utils::inBounds(Config::get("window_width").toInt(), 320, 2000);
-	GV::height = Utils::inBounds(Config::get("window_height").toInt(), 240, 1500);
+	GV::width = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
+	GV::height = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
 
 	size_t fps = Config::get("fps").toInt();
 	Game::setFps(fps);
@@ -79,6 +135,7 @@ bool init() {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;
 	}
+	changeWindowSize();
 
 	SDL_Surface *icon = IMG_Load((Utils::ROOT + "images/misc/icon16.png").c_str());
 	SDL_SetWindowIcon(mainWindow, icon);
@@ -98,8 +155,9 @@ void render() {
 
 	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 0);
 	SDL_RenderClear(mainRenderer);
-	if (GV::screens) {
-		GV::screens->draw();
+	Group *screens = GV::screens;
+	if (screens) {
+		screens->draw();
 	}
 	SDL_RenderPresent(mainRenderer);
 
@@ -107,8 +165,6 @@ void render() {
 }
 
 void loop() {
-	int startWindowWidth = 0;
-	int startWindowHeight = 0;
 	bool mouseOutPrevDown = false;
 
 	while (!GV::exit) {
@@ -190,32 +246,7 @@ void loop() {
 			if (resizeWithoutMouseDown ||
 				(mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight)
 			) {
-				int w, h;
-				SDL_GetWindowSize(GV::mainWindow, &w, &h);
-
-				int dX = w - startWindowWidth;
-				int dY = h - startWindowHeight;
-				if (dX || dY) {
-					if (abs(dX) >= abs(dY)) {
-						h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
-					}else {
-						w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
-					}
-
-					if (w < 640 || h < 360) {
-						w = 640;
-						h = 360;
-					}
-					SDL_SetWindowSize(GV::mainWindow, w, h);
-
-					GV::width = w;
-					GV::height = h;
-					Config::set("window_width", w);
-					Config::set("window_height", h);
-				}
-
-				startWindowWidth = 0;
-				startWindowHeight = 0;
+				changeWindowSize();
 			}
 			if (mouseOutDown && !mouseOutPrevDown) {
 				SDL_GetWindowSize(GV::mainWindow, &startWindowWidth, &startWindowHeight);

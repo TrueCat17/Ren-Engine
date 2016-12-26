@@ -23,11 +23,15 @@ DisplayObject::DisplayObject() {
 void DisplayObject::updateGlobalX() {
 	if (parent) {
 		globalX = parent->getGlobalX() + rect.x;
+	}else {
+		globalX = rect.x;
 	}
 }
 void DisplayObject::updateGlobalY() {
 	if (parent) {
 		globalY = parent->getGlobalY() + rect.y;
+	}else {
+		globalY = rect.y;
 	}
 }
 

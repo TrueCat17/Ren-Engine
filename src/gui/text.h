@@ -80,7 +80,7 @@ public:
 	virtual int getMaxX() const;
 	virtual int getMaxY() const;
 
-	Text(String fontName = "", int textSize = 20);
+	Text();
 	virtual ~Text();
 
 	String getHAlign() const { return hAlign; }

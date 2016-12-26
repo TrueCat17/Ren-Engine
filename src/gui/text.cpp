@@ -4,10 +4,10 @@
 #include "utils/utils.h"
 
 
-const char *Text::defaultFontName = "FixEx3";
+const char *Text::defaultFontName = "Arial";
 
-Text::Text(String fontName, int textSize) {
-	setFont(fontName, textSize, true);
+Text::Text() {
+
 }
 
 void Text::setFont(String fontName, int textSize, bool setAsOriginal) {
@@ -128,6 +128,10 @@ String Text::getText() const {
 }
 
 void Text::setText(const String &text, int color) {
+	if (text && !font) {
+		setFont("", 20, true);
+	}
+
 	size_t countLinesAtStart = 0;
 
 	const int maxW = maxWidth > 0  ? maxWidth  : 1e9;
