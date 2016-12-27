@@ -1,6 +1,5 @@
 #include "game.h"
 
-
 #include "gv.h"
 
 #include "gui/screen/screen.h"
@@ -13,8 +12,10 @@
 #include "utils/utils.h"
 
 
-size_t Game::fps = 1;
-size_t Game::frameTime = 1000;
+size_t Game::maxFps = 30;
+
+size_t Game::fps = 60;
+size_t Game::frameTime = 17;
 
 bool Game::modeStarting = false;
 
@@ -85,6 +86,10 @@ void Game::updateKeyboard() {
 }
 
 
+void Game::setMaxFps(size_t fps) {
+	maxFps = Utils::inBounds(fps, 1, 60);
+}
+
 size_t Game::getFrameTime() {
 	return frameTime;
 }
@@ -93,7 +98,7 @@ size_t Game::getFps() {
 	return fps;
 }
 void Game::setFps(size_t fps) {
-	fps = Utils::inBounds(fps, 1, 60);
+	fps = Utils::inBounds(fps, 1, maxFps);
 
 	Game::fps = fps;
 	frameTime = 1000 / fps;

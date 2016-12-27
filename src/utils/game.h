@@ -7,6 +7,8 @@
 
 class Game {
 private:
+	static size_t maxFps;
+
 	static size_t fps;
 	static size_t frameTime;
 
@@ -22,6 +24,8 @@ public:
 	static int getStageHeight();
 
 	static void updateKeyboard();
+
+	static void setMaxFps(size_t fps);
 
 	static size_t getFrameTime();
 	static size_t getFps();

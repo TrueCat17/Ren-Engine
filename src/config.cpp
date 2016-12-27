@@ -62,9 +62,8 @@ void Config::setDefault() {
 	set("window_y", "70");
 	set("window_width", "800");
 	set("window_height", "600");
-	set("window_fullscreen", "False");
 
-	set("fps", "60");
+	set("max_fps", "30");
 	set("person_walk_fps", "8");
 	set("person_run_fps", "16");
 
@@ -74,18 +73,9 @@ void Config::setDefault() {
 	set("person_walk_speed", "50");
 	set("person_run_speed", "100");
 
-	set("person_wood_control", "False");
-
-	set("person_anim_went_to_wall", "False");
-	set("persons_collisions", "True");
-
-	set("music_volume", "100");
-	set("voice_volume", "100");
-	set("ambience_volume", "100");
-
 	set("max_size_textures_cache", "70");
 	set("max_size_surfaces_cache", "20");
-	set("count_image_commands_to_processing_beforehand", "10");
+	set("count_preload_commands", "10");
 }
 
 void Config::load() {

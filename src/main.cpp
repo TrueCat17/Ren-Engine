@@ -122,14 +122,10 @@ bool init() {
 	GV::width = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
 	GV::height = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
 
-	size_t fps = Config::get("fps").toInt();
-	Game::setFps(fps);
+	size_t fps = Config::get("max_fps").toInt();
+	Game::setMaxFps(fps);
 
 	int flags = SDL_WINDOW_RESIZABLE;
-	if (Config::get("window_fullscreen") == "True") {
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-	}
-
 	mainWindow = GV::mainWindow = SDL_CreateWindow("ES 2D", x, y, GV::width, GV::height, flags);
 	if (!mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
@@ -257,6 +253,8 @@ void loop() {
 		GUI::update();
 		render();
 		Config::save();
+
+		Utils::execPython("globals().has_key('persistent_save') and persistent_save()");
 
 		int spent = Utils::getTimer() - startTime;
 		int timeToSleep = Game::getFrameTime() - spent;
