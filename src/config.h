@@ -22,8 +22,8 @@ private:
 
 public:
 	static void init();
-	static String get(String name);
-	static void set(String name, String value, String comment = "");
+	static String get(const String &name);
+	static void set(const String &name, const String &value, const String &comment = "");
 	static void save();
 };
 

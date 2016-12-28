@@ -16,7 +16,7 @@ void Config::init() {
 	initing = false;
 }
 
-String Config::get(String name) {
+String Config::get(const String &name) {
 	for (size_t i = 0; i < params.size(); ++i) {
 		if (params[i].name == name) {
 			return params[i].value;
@@ -27,18 +27,20 @@ String Config::get(String name) {
 	return "";
 }
 
-void Config::set(String name, String value, String comment) {
+void Config::set(const String &name, const String &value, const String &comment) {
 	bool assigned = false;
 	for (size_t i = 0; i < params.size(); ++i) {
-		if (params[i].name == name) {
-			if (params[i].value == value) {
+		Param &param = params[i];
+		if (param.name == name) {
+			if (param.value == value && param.comment == comment) {
 				return;
 			}
 
-			params[i].value = value;
+			param.value = value;
 			if (comment) {
-				params[i].comment = comment;
+				param.comment = comment;
 			}
+
 			assigned = true;
 			break;
 		}
@@ -64,6 +66,10 @@ void Config::setDefault() {
 	set("window_height", "600");
 
 	set("max_fps", "30");
+	set("max_size_textures_cache", "70");
+	set("max_size_surfaces_cache", "20");
+	set("count_preload_commands", "10");
+
 	set("person_walk_fps", "8");
 	set("person_run_fps", "16");
 
@@ -72,10 +78,6 @@ void Config::setDefault() {
 
 	set("person_walk_speed", "50");
 	set("person_run_speed", "100");
-
-	set("max_size_textures_cache", "70");
-	set("max_size_surfaces_cache", "20");
-	set("count_preload_commands", "10");
 }
 
 void Config::load() {
@@ -138,7 +140,7 @@ void Config::save() {
 	if (!changed) return;
 	changed = false;
 
-	auto getCountLetters = [](String s) {
+	auto getCountLetters = [](const String &s) {
 		size_t res = 0;
 
 		for (size_t i = 0; i < s.size(); ++i) {
@@ -164,12 +166,14 @@ void Config::save() {
 	std::ofstream os(Utils::ROOT + "params.conf");
 
 	for (size_t i = 0; i < params.size(); ++i) {
-		String name = params[i].name;
-		String value = params[i].value;
+		const Param &param = params[i];
+
+		const String &name = param.name;
+		const String &value = param.value;
+		const String &comment = param.comment;
 
 		os << name << " = " << value;
 
-		String comment = params[i].comment;
 		if (comment) {
 			size_t size = getCountLetters(name) + 3 + getCountLetters(value);//3 = getCountLetters(" = ")
 
