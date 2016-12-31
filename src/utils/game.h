@@ -23,6 +23,11 @@ public:
 	static int getStageWidth();
 	static int getStageHeight();
 
+	static int getTextureWidth(const std::string &image);
+	static int getTextureHeight(const std::string &image);
+
+	static std::string getFromConfig(const std::string &param);
+
 	static void updateKeyboard();
 
 	static void setMaxFps(size_t fps);

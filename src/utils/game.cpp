@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include "config.h"
 #include "gv.h"
 
 #include "gui/screen/screen.h"
@@ -75,6 +76,27 @@ int Game::getStageWidth() {
 }
 int Game::getStageHeight() {
 	return GV::height;
+}
+
+int Game::getTextureWidth(const std::string &image) {
+	SDL_Surface *surface = Utils::getSurface(image);
+	if (surface) {
+		return surface->w;
+	}
+	Utils::outMsg("Game::getTextureWidth", "surface == nullptr");
+	return -1;
+}
+int Game::getTextureHeight(const std::string &image) {
+	SDL_Surface *surface = Utils::getSurface(image);
+	if (surface) {
+		return surface->h;
+	}
+	Utils::outMsg("Game::getTextureHeight", "surface == nullptr");
+	return -1;
+}
+
+std::string Game::getFromConfig(const std::string &param) {
+	return Config::get(param);
 }
 
 

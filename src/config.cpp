@@ -70,14 +70,13 @@ void Config::setDefault() {
 	set("max_size_surfaces_cache", "20");
 	set("count_preload_commands", "10");
 
-	set("person_walk_fps", "8");
-	set("person_run_fps", "16");
+	set("character_walk_fps", "4");
+	set("character_run_fps", "8");
 
-	set("person_walk_acceleration_time", "2");
-	set("person_run_acceleration_time", "1");
+	set("character_acceleration_time", "1");
 
-	set("person_walk_speed", "50");
-	set("person_run_speed", "100");
+	set("character_walk_speed", "50");
+	set("character_run_speed", "100");
 }
 
 void Config::load() {

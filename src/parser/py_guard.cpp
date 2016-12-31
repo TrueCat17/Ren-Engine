@@ -32,11 +32,11 @@ PyGuard::PyGuard() {
 	pythonGlobal = mainModule.attr("__dict__");
 
 
-	pythonGlobal["sleep"] = py::make_function(Utils::sleep);
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
 
 	pythonGlobal["register_channel"] = py::make_function(MusicChannel::make);
 	pythonGlobal["volume"] = py::make_function(MusicChannel::setVolume);
+	pythonGlobal["play"] = py::make_function(MusicChannel::play);
 
 	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
 	pythonGlobal["show_screen"] = py::make_function(Screen::addToShowSimply);
@@ -45,11 +45,15 @@ PyGuard::PyGuard() {
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
 	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);
 
+	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
 	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
 	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
 
 	pythonGlobal["get_stage_width"] = py::make_function(Game::getStageWidth);
 	pythonGlobal["get_stage_height"] = py::make_function(Game::getStageHeight);
+
+	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);
+	pythonGlobal["get_texture_height"] = py::make_function(Game::getTextureHeight);
 }
 
 PyGuard::~PyGuard() {

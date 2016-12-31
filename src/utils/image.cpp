@@ -55,6 +55,8 @@ SDL_Surface* Image::getImage(String desc) {
 
 	if (command == "Scale") {
 		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
+
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
 
 		SDL_Rect resRect = { 0, 0, clear(args[2]).toInt(), clear(args[3]).toInt() };
@@ -65,6 +67,8 @@ SDL_Surface* Image::getImage(String desc) {
 
 	if (command == "FactorScale") {
 		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
+
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
 		double k = clear(args[2]).toDouble();
 		SDL_Rect resRect = { 0, 0, int(img->w * k), int(img->h * k) };
@@ -75,6 +79,8 @@ SDL_Surface* Image::getImage(String desc) {
 
 	if (command == "Crop") {
 		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
+
 		String rectStr = clear(args[2]);
 		std::vector<String> rectVec = rectStr.split(' ');
 
@@ -100,6 +106,7 @@ SDL_Surface* Image::getImage(String desc) {
 
 			String imgStr = clear(args[i + 1]);
 			SDL_Surface *img = getImage(imgStr);
+			if (!img) return nullptr;
 
 			if (!img) {
 				Utils::outMsg("Image::getImage, Composite", "Не удалось получить изображение <" + imgStr + ">");
@@ -114,6 +121,8 @@ SDL_Surface* Image::getImage(String desc) {
 
 	if (command == "Flip") {
 		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
+
 		bool horizontal = clear(args[2]) == "True";
 		bool vertical = clear(args[3]) == "True";
 
@@ -172,6 +181,7 @@ SDL_Surface* Image::getImage(String desc) {
 
 	if (command == "MatrixColor") {
 		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
 
 		String matrixStr = clear(args[2]);
 		std::vector<String> matrixVec = matrixStr.split(' ');
@@ -248,6 +258,7 @@ SDL_Surface* Image::getImage(String desc) {
 
 	if (command == "ReColor") {
 		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
 
 		String colorsStr = clear(args[2]);
 		std::vector<String> colorsVec = colorsStr.split(' ');

@@ -304,9 +304,27 @@ SDL_Surface* Utils::getSurface(const String &path) {
 		}
 
 		const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt();
-		if (surfaces.size() >= MAX_SIZE) {
-			SDL_FreeSurface(surfaces[0].second);
-			surfaces.erase(surfaces.begin(), surfaces.begin() + 1);
+
+		auto usedSomeTexture = [&](const SDL_Surface *s) -> bool {
+			for (auto i : textureSurfaces) {
+				if (i.second == s) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		size_t i = 0;
+		while (surfaces.size() >= MAX_SIZE) {
+			SDL_Surface *_surface = surfaces[i].second;
+			while (i < surfaces.size() && usedSomeTexture(_surface)) {
+				++i;
+				_surface = surfaces[i].second;
+			}
+			if (i == surfaces.size()) break;
+
+			SDL_FreeSurface(_surface);
+			surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 		}
 		surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
 		return surface;
@@ -328,6 +346,7 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, int x, int y, int drawW, int 
 		Utils::outMsg("Utils::getPixel", "surface == nullptr");
 		return 0;
 	}
+
 	int w = surface->w;
 	int h = surface->h;
 

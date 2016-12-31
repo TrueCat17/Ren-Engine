@@ -39,8 +39,8 @@ void MusicChannel::setVolume(float value, const std::string& channelName) {
 	Utils::outMsg("MusicChannel::setVolume", "Канал <" + channelName + "> не найден");
 }
 
-void MusicChannel::play(const String &desc) {
-	std::vector<String> words = desc.split(" ");
+void MusicChannel::play(const std::string &desc) {
+	std::vector<String> words = String(desc).split(" ");
 
 	String soundCodeName = words[1];
 	String soundName = Utils::execPython(soundCodeName, true);

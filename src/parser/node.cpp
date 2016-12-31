@@ -48,6 +48,7 @@ void Node::execute() {
 
 			mainLabel = Utils::execPython("mods_last_key", true);
 			if (mainLabel.find("_menu") == size_t(-1)) {
+				Screen::addToShowSimply("location");
 				Screen::addToShowSimply("sprites");
 				Screen::addToShowSimply("dialogue_box");
 			}
@@ -71,7 +72,7 @@ void Node::execute() {
 			Node *node = children[i];
 			node->execute();
 
-			while (!initing && Utils::execPython("waiting_moving", true) == "True") {
+			while (!initing && Utils::execPython("character_moving", true) == "True") {
 				Utils::sleep(1);
 			}
 		}
@@ -148,9 +149,7 @@ void Node::execute() {
 	}else
 
 	if (command == "pause") {
-		String strTime = Utils::execPython(params, true);
-		int time = strTime.toDouble() * 1000;
-		Utils::sleep(time);
+		Utils::execPython("pause_end = time.time() + (" + params + ")");
 	}else
 
 	if (command == "jump") {
@@ -333,8 +332,12 @@ void Node::execute() {
 		}
 	}
 
+	while (GV::inGame && !initing && Utils::execPython("pause_end > time.time()", true) == "True") {
+		Utils::sleep(1);
+	}
+
 	int toSleep = Game::getFrameTime();
-	while (GV::inGame && !initing && Utils::execPython("read", true) != "True") {
+	while (GV::inGame && !initing && Utils::execPython("(not read) or (character_moving)", true) == "True") {
 		Utils::sleep(toSleep);
 	}
 }
