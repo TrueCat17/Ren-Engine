@@ -72,7 +72,7 @@ void Node::execute() {
 			Node *node = children[i];
 			node->execute();
 
-			while (!initing && Utils::execPython("character_moving", true) == "True") {
+			while (!initing && GV::inGame && Utils::execPython("character_moving", true) == "True") {
 				Utils::sleep(1);
 			}
 		}
@@ -369,7 +369,7 @@ String Node::getProp(const String& name) const {
 			if (!styleName) {
 				styleName = command;
 			}
-			res = Style::getProp(styleName, name);//command is a type of this screenChild
+			res = Style::getProp(styleName, name);
 		}
 	}
 
