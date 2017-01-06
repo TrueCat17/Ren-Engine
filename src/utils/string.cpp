@@ -124,14 +124,17 @@ bool String::startsWith(const String &str, bool withSpaces) const {
 	if (size() < str.size()) return false;
 
 	size_t k = 0;
+	if (!withSpaces) {
+		while (k < size() && (at(k) == ' ' || at(k) == '\t')) {
+			++k;
+		}
+		if (k == size()) {
+			return str.empty();
+		}
+	}
+
 	for (size_t i = 0; i < str.size(); ++i) {
 		char c = at(i + k);
-		if (!withSpaces && (c == ' ' || c == '\t')) {
-			--i;
-			++k;
-			continue;
-		}
-
 		if (c != str.at(i)) {
 			return false;
 		}

@@ -20,8 +20,8 @@ public:
 	virtual bool checkAlpha(int x, int y) const;
 
 	virtual void updateProps();
-	virtual void update();
-
+	virtual void updateSize();
+	virtual void updatePos();
 	virtual void draw() const;
 };
 

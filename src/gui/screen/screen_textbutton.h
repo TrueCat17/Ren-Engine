@@ -16,7 +16,7 @@ public:
 
 	ScreenTextButton(Node *node);
 	virtual void updateProps();
-	virtual void update();
+	virtual void updateSize();
 };
 
 #endif // SCREENTEXTBUTTON_H

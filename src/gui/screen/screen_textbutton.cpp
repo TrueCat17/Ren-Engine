@@ -27,9 +27,9 @@ void ScreenTextButton::updateProps() {
 	}
 }
 
-void ScreenTextButton::update() {
+void ScreenTextButton::updateSize() {
 	const String &path = !btnRect.mouseOvered ? background : hoverBackground;
 	texture = Utils::getTexture(path);
 
-	ScreenText::update();
+	ScreenText::updateSize();
 }

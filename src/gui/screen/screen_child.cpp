@@ -108,7 +108,7 @@ void ScreenChild::updateProps() {
 	ySize = ySizeStr.toDouble();
 }
 
-void ScreenChild::update() {
+void ScreenChild::updateSize() {
 	double w = xSize;
 	if (w > 0 && w <= 1) w *= GV::width;
 	double h = ySize;
@@ -118,18 +118,29 @@ void ScreenChild::update() {
 
 
 	for (ScreenChild *screenChild : screenChildren) {
-		screenChild->update();
+		screenChild->updateSize();
+	}
+}
+void ScreenChild::updatePos() {
+	for (ScreenChild *screenChild : screenChildren) {
+		screenChild->updatePos();
 	}
 	if (!node) {
 		setPos(0, 0);
 		return;
 	}
 
-	if (xPos >= -1 && xPos <= 1) xPos *= parent->getWidth();
+	int parentWidth = 0;
+	int parentHeight = 0;
+	parent->getSize(parentWidth, parentHeight);
+	if (parentWidth <= 0) parentWidth = parent->getWidth();
+	if (parentHeight <= 0) parentHeight = parent->getHeight();
+
+	if (xPos >= -1 && xPos <= 1) xPos *= parentWidth;
 	if (xAnchor >= -1 && xAnchor <= 1) xAnchor *= getWidth();
 	double x = xPos - xAnchor;
 
-	if (yPos >= -1 && yPos <= 1) yPos *= parent->getHeight();
+	if (yPos >= -1 && yPos <= 1) yPos *= parentHeight;
 	if (yAnchor >= -1 && yAnchor <= 1) yAnchor *= getHeight();
 	double y = yPos - yAnchor;
 

@@ -68,13 +68,6 @@ void ScreenHotspot::updateProps() {
 	int h = rectVec[3].toInt() * scaleY;
 	setSize(w, h);
 
-
-	if (btnRect.mouseDown && isModal()) {
-		btnRect.onClick();
-	}
-}
-
-void ScreenHotspot::update() {
 	if (btnRect.mouseOvered) {
 		ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
 		if (!imagemap) {
@@ -85,6 +78,16 @@ void ScreenHotspot::update() {
 	}else {
 		texture = nullptr;
 	}
+
+	if (btnRect.mouseDown && isModal()) {
+		btnRect.onClick();
+	}
+}
+void ScreenHotspot::updateSize() {
+	return;
+}
+void ScreenHotspot::updatePos() {
+	return;
 }
 
 void ScreenHotspot::draw() const {

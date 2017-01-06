@@ -17,7 +17,7 @@ private:
 	Node* getNode(size_t start, size_t end, int superParent, bool isText);
 	Node* getMainNode();
 public:
-	static std::map<String, String> getModNamesAndLabels();
+	static const std::string getMods();
 
 	Parser(String dir);
 	Node* parse();

@@ -218,10 +218,12 @@ void Text::setText(const String &text, int color) {
 		SDL_DestroyTexture(textLine);
 	}
 
+	isBold = isItalic = isUnderline = isStrike = 0;
 	rect.h = std::max(maxHeight, textHeight);
 	for (numLine = 0; numLine < lines.size(); ++numLine) {
 		addText();
 	}
+
 	setAlign(hAlign, vAlign);
 }
 

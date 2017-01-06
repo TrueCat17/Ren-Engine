@@ -27,7 +27,7 @@ protected:
 public:
 	ScreenText(Node *node);
 	virtual void updateProps();
-	virtual void update();
+	virtual void updateSize();
 };
 
 #endif // SCREENTEXT_H

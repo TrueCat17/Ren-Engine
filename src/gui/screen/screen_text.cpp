@@ -40,7 +40,7 @@ void ScreenText::updateProps() {
 	ScreenContainer::updateProps();
 }
 
-void ScreenText::update() {
+void ScreenText::updateSize() {
 	double w = xSize;
 	if (w > 0 && w <= 1) w *= GV::width;
 	double h = ySize;
@@ -72,10 +72,11 @@ void ScreenText::update() {
 
 		if (needUpdate) {
 			tf->setText(text, color);
-		}else
-			if (text && (tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign)) {
-				tf->setAlign(textHAlign, textVAlign);
-			}
+		}
+
+		if (text && (needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign)) {
+			tf->setAlign(textHAlign, textVAlign);
+		}
 	}
-	ScreenContainer::update();
+	ScreenContainer::updateSize();
 }

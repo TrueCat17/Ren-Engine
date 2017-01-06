@@ -5,6 +5,7 @@
 
 #include "gui/screen/screen.h"
 
+#include "parser/parser.h"
 #include "parser/music_channel.h"
 
 #include "utils/game.h"
@@ -33,6 +34,7 @@ PyGuard::PyGuard() {
 
 
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
+	pythonGlobal["_get_mods"] = py::make_function(Parser::getMods);
 
 	pythonGlobal["register_channel"] = py::make_function(MusicChannel::make);
 	pythonGlobal["volume"] = py::make_function(MusicChannel::setVolume);

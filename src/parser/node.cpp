@@ -11,6 +11,7 @@
 #include "parser/music_channel.h"
 
 #include "utils/game.h"
+#include "utils/image.h"
 #include "utils/utils.h"
 
 std::vector<Node*> Node::nodes;
@@ -72,6 +73,10 @@ void Node::execute() {
 			Node *node = children[i];
 			node->execute();
 
+			if (node->command == "show" || node->command == "scene") {
+				preloadImages(this, i, Config::get("count_preload_commands"));
+			}
+
 			while (!initing && GV::inGame && Utils::execPython("character_moving", true) == "True") {
 				Utils::sleep(1);
 			}
@@ -107,7 +112,16 @@ void Node::execute() {
 	}else
 
 	if (command == "scene") {
-		Utils::execPython("set_scene('" + params + "')");
+		const std::vector<String> args = Utils::getArgs(params);
+
+		String argsStr;
+		if (args.size()) {
+			argsStr = "'" + args[0] + "'";
+			for (size_t i = 1; i < args.size(); ++i) {
+				argsStr += ", '" + args[i] + "'";
+			}
+		}
+		Utils::execPython("set_scene([" + argsStr + "], None)");
 	}else
 
 	if (command == "with") {
@@ -352,6 +366,47 @@ void Node::jump(const String &label) {
 		}
 	}
 	Utils::outMsg("Метка <" + label + "> не найдена");
+}
+void Node::preloadImages(Node *node, int start, int count) {
+	for (size_t i = start; i < node->children.size() && count > 0; ++i) {
+		Node *child = node->children[i];
+		String childCommand = child->command;
+		String childParams = child->params;
+
+		if ((childCommand == "show" && !childParams.startsWith("screen ")) || childCommand == "scene") {
+			static std::vector<String> words = {"at", "with", "behind", "as"};
+
+			--count;
+
+			std::vector<String> args = Utils::getArgs(childParams);
+			while (args.size() > 2 && Utils::in(args[args.size() - 2], words)) {
+				args.erase(args.end() - 2, args.end());
+			}
+			if (args.empty()) continue;
+
+			String imageName = args[0];
+			for (size_t j = 1; j < args.size(); ++j) {
+				imageName += ' ' + args[j];
+			}
+			String imageCode = Utils::execPython(Utils::getImageCode(imageName), true);
+			Image::getImage(imageCode);
+		}else
+
+		if (childCommand == "jump") {
+			String label = childParams;
+			for (size_t i = 0; i < GV::mainExecNode->children.size(); ++i) {
+				Node *t = GV::mainExecNode->children[i];
+				if (t->command == "label" && t->name == label) {
+					i = -1;
+					node = t;
+				}
+			}
+		}else
+
+		if (childCommand == "if" || childCommand == "elif" || childCommand == "else") {
+			preloadImages(child, 0, 1);
+		}
+	}
 }
 
 String Node::getProp(const String& name) const {

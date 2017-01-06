@@ -34,14 +34,16 @@ String Image::clear(String s) {
 }
 
 SDL_Surface* Image::getImage(String desc) {
-	SDL_Surface *res = nullptr;
-
 	desc = clear(desc);
+
+	SDL_Surface *res = Utils::getThereIsSurfaceOrNull(desc);
+	if (res) return res;
+
 	std::vector<String> args = Utils::getArgs(desc);
 
 	if (args.empty()) {
 		Utils::outMsg("Image::getImage", "Список аргументов пуст");
-		return res;
+		return nullptr;
 	}
 	if (args.size() == 1) {
 		String imagePath = clear(args[0]);
@@ -252,8 +254,6 @@ SDL_Surface* Image::getImage(String desc) {
 		while (countFinished != countThreads) {
 			Utils::sleep(1);
 		}
-
-		return res;
 	}else
 
 	if (command == "ReColor") {
@@ -323,13 +323,12 @@ SDL_Surface* Image::getImage(String desc) {
 		while (countFinished != countThreads) {
 			Utils::sleep(1);
 		}
-
-		return res;
 	}
 
 	else {
 		Utils::outMsg("Image::getImage", "Неизвестная команда <" + command + ">");
 	}
 
+	Utils::setSurface(desc, res);
 	return res;
 }

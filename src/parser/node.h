@@ -13,6 +13,7 @@ private:
 
 	static bool initing;
 
+	static void preloadImages(Node *node, int start, int count);
 	static void jump(const String &label);
 
 public:

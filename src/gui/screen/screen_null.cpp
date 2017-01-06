@@ -32,7 +32,10 @@ void ScreenNull::updateProps() {
 	rect.h = h;
 }
 
-void ScreenNull::update() {
+void ScreenNull::updateSize() {
+	return;
+}
+void ScreenNull::updatePos() {
 	return;
 }
 

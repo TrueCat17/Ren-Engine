@@ -26,7 +26,8 @@ void GUI::update() {
 			if (scr) {
 				try {
 					scr->updateProps();
-					scr->update();
+					scr->updateSize();
+					scr->updatePos();
 				}catch (ContinueException) {
 					Utils::outMsg("GUI::update", "continue вне цикла");
 				}catch (BreakException) {

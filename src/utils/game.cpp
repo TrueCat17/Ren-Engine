@@ -46,9 +46,6 @@ void Game::_startMod(const std::string &dir) {
 	DisplayObject::destroyAll();
 	GV::screens = new Group();
 
-	Utils::destroyAllTextures();
-	Utils::destroyAllSurfaces();
-
 	MusicChannel::clear();
 	Style::destroyAll();
 

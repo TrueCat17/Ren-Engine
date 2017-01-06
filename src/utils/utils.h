@@ -64,8 +64,14 @@ public:
 	static size_t getTextureWidth(SDL_Texture *texture);
 	static size_t getTextureHeight(SDL_Texture *texture);
 
+	static void trimTexturesCache();
 	static SDL_Texture* getTexture(const String &path);
+
+	static void trimSurfacesCache();
+	static SDL_Surface* getThereIsSurfaceOrNull(const String &path);
 	static SDL_Surface* getSurface(const String &path);
+	static void setSurface(const String &path, SDL_Surface *surface);
+
 	static void destroyAllTextures();
 	static void destroyAllSurfaces();
 

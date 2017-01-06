@@ -44,7 +44,8 @@ public:
 	const String& getType() const;
 
 	virtual void updateProps();
-	virtual void update();
+	virtual void updateSize();
+	virtual void updatePos();
 
 	bool isModal() const;
 	bool isFakeContainer() const { return _isFakeContainer; }

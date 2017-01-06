@@ -14,7 +14,7 @@ public:
 	ScreenImage(Node *node);
 
 	virtual void updateProps();
-	virtual void update();
+	virtual void updateSize();
 };
 
 #endif // SCREENIMAGE_H

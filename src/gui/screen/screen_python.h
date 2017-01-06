@@ -7,7 +7,8 @@ class ScreenPython: public ScreenChild {
 public:
 	ScreenPython(Node *node);
 	virtual void updateProps();
-	virtual void update();
+	virtual void updateSize();
+	virtual void updatePos();
 	virtual void draw() const;
 };
 

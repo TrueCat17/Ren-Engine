@@ -7,8 +7,8 @@
 #include "utils/utils.h"
 
 
-std::map<String, String> Parser::getModNamesAndLabels() {
-	std::map<String, String> res;
+const std::string Parser::getMods() {
+	std::string res;
 
 	std::vector<String> files = Utils::getFileNames(Utils::ROOT + "mods/");
 
@@ -22,25 +22,31 @@ std::map<String, String> Parser::getModNamesAndLabels() {
 			std::getline(is, s);
 
 			if (s.startsWith("$ mods[", false) || s.startsWith("mods[", false)) {
-				std::vector<String> tmp = s.split("\"");
+				std::vector<String> tmp1 = s.split("'");
+				std::vector<String> tmp2 = s.split("\"");
+				std::vector<String> &tmp = tmp1.size() == 5 ? tmp1 : tmp2;
+
 				if (tmp.size() != 5) {
 					Utils::outMsg(
-						"Файл '" + fileName + "',\n"
-						"строка <" + s + ">:\n"
-						"неверное количество кавычек (ожидалось 4)"
+						"Файл <" + fileName + ">,\n"
+						"Строка <" + s + ">:\n"
+						"Неверное количество двойных кавычек (ожидалось 4)"
 					);
 				}else {
 					String label = tmp[1];
 					String name = tmp[3];
 
-					res[name] = label;
+					if (res.size()) {
+						res += ", ";
+					}
+					res += '"' + name + "\":\"" + label + '"';
 				}
 				break;
 			}
 		}
 	}
 
-	return res;
+	return "{" + res + "}";
 }
 
 Parser::Parser(String dir) {

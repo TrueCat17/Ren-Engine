@@ -89,7 +89,10 @@ void ScreenKey::updateProps() {
 		lastDown = 0;
 	}
 }
-void ScreenKey::update() {
+void ScreenKey::updateSize() {
+	return;
+}
+void ScreenKey::updatePos() {
 	return;
 }
 

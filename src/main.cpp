@@ -285,6 +285,13 @@ void loop() {
 }
 
 void destroy() {
+	//0.5 sec -> 0
+	bool fastExit = true;
+	if (fastExit) {
+		std::cout << "\nOk! (Fast Exit)\n";
+		std::exit(0);
+	}
+
 	GV::inGame = false;
 
 	int toSleep = Game::getFrameTime() * 2;
@@ -305,6 +312,8 @@ void destroy() {
 	SDL_Quit();
 
 	delete GV::pyGuard;
+
+	std::cout << "\nOk!\n";
 }
 
 int main(int argc, char **argv) {
@@ -323,6 +332,5 @@ int main(int argc, char **argv) {
 	loop();
 	destroy();
 
-	std::cout << "\nOk!\n";
 	return 0;
 }
