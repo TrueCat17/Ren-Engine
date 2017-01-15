@@ -14,11 +14,10 @@ private:
 	static bool initing;
 
 	static void preloadImages(Node *node, int start, int count);
-	static void jump(const String &label);
+	static void jump(const String &label, bool isCall);
 
 	std::map<String, String> props;
 public:
-	static bool jumped;
 	static void destroyAll();
 
 

@@ -41,7 +41,6 @@ void Game::_startMod(const std::string &dir) {
 	GV::pyUtils = new PyUtils();
 
 	Node::destroyAll();
-	Node::jumped = false;
 
 	Screen::clear();
 	DisplayObject::destroyAll();

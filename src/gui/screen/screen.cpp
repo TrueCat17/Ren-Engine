@@ -164,9 +164,9 @@ Screen::~Screen() {
 
 
 bool Screen::_hasModal = false;
-void Screen::updateModality() {
+void Screen::updateScreens() {
 	for (Screen *w : created) {
-		w->updateModalProp();
+		w->updateScreenProps();
 	}
 
 	_hasModal = false;
@@ -176,7 +176,17 @@ void Screen::updateModality() {
 			break;
 		}
 	}
+
+	auto zOrderCmp = [](DisplayObject *a, DisplayObject *b) -> int {
+		Screen *sA = dynamic_cast<Screen*>(a);
+		Screen *sB = dynamic_cast<Screen*>(b);
+		double zA = sA ? sA->zOrder() : 0;
+		double zB = sB ? sB->zOrder() : 0;
+		return zA < zB;
+	};
+	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
-void Screen::updateModalProp() {
+void Screen::updateScreenProps() {
 	_isModal = node->getProp("modal") == "True";
+	_zOrder = node->getProp("zorder").toDouble();
 }

@@ -14,7 +14,7 @@ void GUI::update() {
 		Style::disableAll();
 
 		Screen::updateLists();
-		Screen::updateModality();
+		Screen::updateScreens();
 
 		ScreenChild::disableAll();
 		for (DisplayObject *child : GV::screens->children) {
@@ -41,6 +41,6 @@ void GUI::update() {
 		}
 
 		Screen::updateLists();
-		Screen::updateModality();
+		Screen::updateScreens();
 	}
 }

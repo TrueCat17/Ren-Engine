@@ -26,8 +26,9 @@ private:
 
 	void addShowedCount(const String &dependOn);
 	bool subShowedCount(const String &dependOn);
-	void updateModalProp();
+	void updateScreenProps();
 
+	double _zOrder = 0;
 	bool _isModal = false;
 
 	Screen(Node *node, const String &dependOn);
@@ -39,7 +40,7 @@ public:
 	static void clear();
 
 	static void updateLists();
-	static void updateModality();
+	static void updateScreens();
 	static bool hasModal() { return _hasModal; }
 
 	static void addToShowSimply(const std::string &name);
@@ -47,7 +48,9 @@ public:
 	static void addToShow(const String &name, const String &dependsOn);
 	static void addToHide(const String &name, const String &dependsOn);
 
+
 	String name;
+	double zOrder() const { return _zOrder; }
 	bool screenIsModal() const { return _isModal; }
 };
 

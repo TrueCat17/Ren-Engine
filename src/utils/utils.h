@@ -19,7 +19,7 @@ class StopException {};
 class BreakException {};
 class ContinueException {};
 class ReturnException {};
-class ThreadExitException {};
+class ExitException {};
 
 namespace py = boost::python;
 

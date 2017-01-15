@@ -69,7 +69,7 @@ void SyntaxChecker::init() {
 	addBlockChildren("main", "init, init---python, label, screen");
 	addBlockChildren("init", "for, while, " + conditions + "$, python, image");
 	mapSyntax["init python"] = mapSyntax["menu"] = std::vector<SyntaxPart>();
-	addBlockChildren("label, if, elif, else, for, while", "for, while" + conditions + "pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with");
+	addBlockChildren("label, if, elif, else, for, while", "pass, return, for, while" + conditions + "pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with");
 	addBlockChildren("menu", "menuItem");
 
 	mapSyntax["menuItem"] = mapSyntax["label"];
@@ -83,7 +83,7 @@ void SyntaxChecker::init() {
 
 	addBlockChildren("show, scene, window" + screenElems, transformProps);
 
-	addBlockChildren("screen", "modal");
+	addBlockChildren("screen", "modal, zorder");
 	addBlockChildren("screen, if, elif, else, for, while", screenProps);
 	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python");
 	addBlockChildren("screen" + screenElems, containerProps + transformProps);
@@ -98,9 +98,9 @@ void SyntaxChecker::init() {
 	addBlockChildren("button, textbutton", "background, hover_background");
 
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
-	setSuperParents("play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem", SuperParent::LABEL);
+	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem", SuperParent::LABEL);
 	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" + screenProps + containerProps + textProps +
-					"modal, spacing, action, background, hover_background", SuperParent::SCREEN);
+					"modal, zorder, spacing, action, background, hover_background", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
 	setSuperParents(transformProps + "$, pass, break, continue, python, if, elif, else, for, while, image", ALL);

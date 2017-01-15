@@ -17,11 +17,10 @@
 #include "utils/utils.h"
 
 std::vector<Node*> Node::nodes;
-bool Node::jumped = false;
 bool Node::initing = false;
 
 void Node::execute() {
-	if (jumped || !GV::inGame) return;
+	if (!GV::inGame) return;
 
 	if (command == "main") {
 		for (size_t i = 0; i < children.size(); ++i) {
@@ -47,14 +46,25 @@ void Node::execute() {
 			}
 			initing = false;
 
-			mainLabel = PyUtils::exec("mods_last_key", true);
-			if (mainLabel.find("_menu") == size_t(-1)) {
-				Screen::addToShowSimply("location");
-				Screen::addToShowSimply("sprites");
-				Screen::addToShowSimply("dialogue_box");
+			String startScreensStr = PyUtils::exec("start_screens", true);
+			std::vector<String> startScreensVec = startScreensStr.split(' ');
+			for (String screenName : startScreensVec) {
+				if (screenName) {
+					Screen::addToShowSimply(screenName);
+				}
 			}
 
-			jump(mainLabel);
+			mainLabel = PyUtils::exec("mods_last_key", true);
+			try {
+				jump(mainLabel, false);
+			}catch (ExitException) {
+				while (PyUtils::exec("bool(auto_exit)", true) == "False") {
+					try {
+						jump("update", false);
+					}catch (ExitException) {}
+					Utils::sleep(Game::getFrameTime(), true);
+				}
+			}
 		}catch (ContinueException) {
 			Utils::outMsg("Node::execute", "continue вне цикла");
 		}catch (BreakException) {
@@ -63,7 +73,7 @@ void Node::execute() {
 			Utils::outMsg("Node::execute", "Неожидаемое исключение StopException (конец итератора)");
 		}
 
-		if (!Game::modeStarting && !GV::exit && PyUtils::exec("cur_location_name", true) == "None") {
+		if (!Game::modeStarting && !GV::exit) {
 			Game::startMod("main_menu");
 		}
 	}else
@@ -133,8 +143,6 @@ void Node::execute() {
 	}else
 
 	if (command == "text") {
-		//return;
-
 		size_t i = params.find_first_not_of(' ');
 		params.erase(0, i);
 
@@ -172,7 +180,16 @@ void Node::execute() {
 			label = PyUtils::exec(label.substr(String("expression ").size()), true);
 		}
 
-		jump(label);
+		jump(label, false);
+	}else
+
+	if (command == "call") {
+		String label = params;
+		if (label.startsWith("expression ")) {
+			label = PyUtils::exec(label.substr(String("expression ").size()), true);
+		}
+
+		jump(label, true);
 	}else
 
 	if (command == "play") {
@@ -276,7 +293,7 @@ void Node::execute() {
 		condIsTrue = true;
 		String cond = "bool(" + params + ")";
 		while (GV::inGame && PyUtils::exec(cond, true) == "True") {
-			if (jumped || !GV::inGame) return;
+			if (!GV::inGame) return;
 
 			try {
 				for (size_t i = 0; i < children.size(); ++i) {
@@ -312,7 +329,7 @@ void Node::execute() {
 
 		PyUtils::exec(init);
 		while (true) {
-			if (jumped || !GV::inGame) return;
+			if (!GV::inGame) return;
 
 			try {
 				PyUtils::exec(onStep);
@@ -339,6 +356,10 @@ void Node::execute() {
 		throw BreakException();
 	}else
 
+	if (command == "return") {
+		throw ReturnException();
+	}else
+
 	{
 
 		if (command != "pass") {
@@ -346,21 +367,25 @@ void Node::execute() {
 		}
 	}
 
-	int toSleep = Game::getFrameTime();
 	while (GV::inGame && !initing && PyUtils::exec("pause_end > time.time()", true) == "True") {
-		Utils::sleep(toSleep);
+		Utils::sleep(Game::getFrameTime());
 	}
 	while (GV::inGame && !initing && PyUtils::exec("(not read) or (character_moving)", true) == "True") {
-		Utils::sleep(toSleep);
+		Utils::sleep(Game::getFrameTime());
 	}
 }
 
-void Node::jump(const String &label) {
+void Node::jump(const String &label, bool isCall) {
 	for (size_t i = 0; i < GV::mainExecNode->children.size(); ++i) {
 		Node *node = GV::mainExecNode->children[i];
 		if (node->command == "label" && node->name == label) {
-			node->execute();
-			jumped = true;
+			try {
+				node->execute();
+			}catch (ReturnException) {}
+
+			if (!isCall) {
+				throw ExitException();
+			}
 			return;
 		}
 	}
@@ -391,7 +416,7 @@ void Node::preloadImages(Node *node, int start, int count) {
 			Image::getImage(imageCode);
 		}else
 
-		if (childCommand == "jump") {
+		if (childCommand == "jump" or childCommand == "call") {
 			String label = childParams;
 			for (size_t j = 0; j < GV::mainExecNode->children.size(); ++j) {
 				Node *t = GV::mainExecNode->children[j];
