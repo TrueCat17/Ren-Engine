@@ -1,19 +1,11 @@
 #ifndef SCREENNULL_H
 #define SCREENNULL_H
 
-#include "screen_child.h"
+#include "screen_container.h"
 
-class ScreenNull: public ScreenChild {
+class ScreenNull: public ScreenContainer {
 public:
-	virtual int getMaxX() const;
-	virtual int getMaxY() const;
-
 	ScreenNull(Node* node);
-
-	virtual void updateProps();
-	virtual void updateSize();
-	virtual void updatePos();
-	virtual void draw() const;
 };
 
 #endif // SCREENNULL_H

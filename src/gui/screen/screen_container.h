@@ -22,16 +22,16 @@ public:
 	bool skipped = false;
 	ScreenContainer *prevContainer = nullptr;
 
-	virtual int getMinX() const;
-	virtual int getMinY() const;
-	virtual int getMaxX() const;
-	virtual int getMaxY() const;
+	bool isHBox() const { return hasHBox; }
+	bool isVBox() const { return hasVBox; }
 
 	ScreenContainer(Node* node, ScreenChild *screenParent);
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
 	virtual void updateProps();
+	virtual void updateSize();
+
 	virtual void draw() const;
 };
 

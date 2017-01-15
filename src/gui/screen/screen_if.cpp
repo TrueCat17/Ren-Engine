@@ -1,7 +1,7 @@
 #include "screen_if.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
-#include "utils/utils.h"
 
 ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent):
 	ScreenContainer(node, screenParent),
@@ -10,12 +10,8 @@ ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent):
 	prevContainer = nullptr;
 }
 
-bool ScreenIf::enabled() const {
-	return !skipped && ScreenContainer::enabled();
-}
-
 void ScreenIf::updateProps() {
-	skipped = Utils::execPython(condition, true) != "True";
+	skipped = PyUtils::exec(condition, true) != "True";
 	if (!skipped) {
 		ScreenContainer::updateProps();
 	}

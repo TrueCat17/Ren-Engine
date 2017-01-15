@@ -5,6 +5,8 @@
 
 #include "utils/utils.h"
 
+std::map<String, double> String::doubleConvertCache;
+
 String::String(int i, int base) {
 	std::stringstream ss;
 	ss << std::setbase(base) << i;
@@ -73,30 +75,47 @@ int String::toInt(int base) const {
 double String::toDouble() const {
 	if (empty()) return 0;
 
+	auto i = doubleConvertCache.find(*this);
+	if (i != doubleConvertCache.end()) {
+		return i->second;
+	}
+
 	std::stringstream ss;
 	ss << *this;
 
 	double res;
 	ss >> res;
 
+	if (doubleConvertCache.size() < 100000) {
+		doubleConvertCache[*this] = res;
+	}
 	return res;
 }
 
-bool String::isDouble() const {
+bool String::isNumber() const {
 	if (empty()) return false;
 
-	char f = front();
-	size_t i = f == '-' || f == '+';
-	if (i && size() == 1) return false;
+	size_t start = 0;
+	char f = at(start);
+	while (f == ' ' || f == '\t') {
+		++start;
+		f = at(start);
+	}
+
+	if (f == '-' || f == '+') {
+		++start;
+		if (start == size()) return false;
+	}
 
 	bool wasDot = false;
-	for (; i < size(); ++i) {
+	for (size_t i = start; i < size(); ++i) {
 		char c = at(i);
 		if (c == '.') {
 			if (wasDot) {
 				return false;
 			}
 			wasDot = true;
+			continue;
 		}
 
 		if (c < '0' || c > '9') {

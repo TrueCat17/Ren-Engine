@@ -1,5 +1,6 @@
 #include "screen_imagemap.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
 
@@ -8,12 +9,16 @@ ScreenImagemap::ScreenImagemap(Node *node):
 { }
 
 void ScreenImagemap::updateProps() {
-	String groundPath = node->getProp("ground");
-	String hoverPath = node->getProp("hover");
+	String newGroundPath = node->getProp("ground");
+	String newHoverPath = node->getProp("hover");
 
-	if (!hoverPath && groundPath) {
-		hoverPath = Utils::execPython("im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
+	if (newHoverPath) {
+		hoverPath = newHoverPath;
+	}else
+	if (groundPath != newGroundPath) {
+		hoverPath = PyUtils::exec("im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
 	}
+	groundPath = newGroundPath;
 
 	texture = Utils::getTexture(groundPath);
 	hover = Utils::getTexture(hoverPath);

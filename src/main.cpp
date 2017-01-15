@@ -13,13 +13,14 @@
 #include "gui/screen/screen_child.h"
 #include "gui/screen/screen_key.h"
 
+#include "media/py_utils.h"
+
+#include "parser/syntax_checker.h"
+
 #include "utils/btn_rect.h"
 #include "utils/game.h"
 #include "utils/mouse.h"
-#include "utils/syntax_checker.h"
 #include "utils/utils.h"
-
-#include "parser/py_guard.h"
 
 
 SDL_DisplayMode displayMode;
@@ -254,7 +255,7 @@ void loop() {
 		render();
 		Config::save();
 
-		Utils::execPython("globals().has_key('persistent_save') and persistent_save()");
+		PyUtils::exec("globals().has_key('persistent_save') and persistent_save()");
 
 		int spent = Utils::getTimer() - startTime;
 		int timeToSleep = Game::getFrameTime() - spent;
@@ -288,7 +289,7 @@ void destroy() {
 	//0.5 sec -> 0
 	bool fastExit = true;
 	if (fastExit) {
-		std::cout << "\nOk! (Fast Exit)\n";
+		std::cout << "\nOk!\n";
 		std::exit(0);
 	}
 
@@ -311,7 +312,7 @@ void destroy() {
 	SDL_DestroyWindow(mainWindow);
 	SDL_Quit();
 
-	delete GV::pyGuard;
+	delete GV::pyUtils;
 
 	std::cout << "\nOk!\n";
 }

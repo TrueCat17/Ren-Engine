@@ -55,9 +55,9 @@ void SyntaxChecker::setSuperParents(const String &nodesStr, const int superParen
 }
 
 void SyntaxChecker::init() {
-	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, imagebutton, ";
+	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
 
-	const String windowProps = ", use, key, ";
+	const String screenProps = ", use, key, ";
 	const String containerProps = ", has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, ";
 	const String textProps = ", color, size, font, size, text_align, text_valign, ";
 
@@ -81,28 +81,26 @@ void SyntaxChecker::init() {
 	addBlockChildren("if, elif, else, for, while", screenElems + "pass, pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with, continue, break");
 	addBlockChildren("for, while", "continue, break");
 
-	addBlockChildren("show, scene, transform, window" + screenElems, transformProps);
+	addBlockChildren("show, scene, window" + screenElems, transformProps);
 
-	addBlockChildren("screen", "window");
-	addBlockChildren("window, if, elif, else, for, while", windowProps);
-	addBlockChildren("window" + screenElems, screenElems + "imagemap" + conditions + "for, while, pass");
+	addBlockChildren("screen", "modal");
+	addBlockChildren("screen, if, elif, else, for, while", screenProps);
+	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python");
+	addBlockChildren("screen" + screenElems, containerProps + transformProps);
+	addBlockChildren("if, else, elif, for, while", "$, python");
+
+	addBlockChildren("text, textbutton", textProps);
 
 	addBlockChildren("imagemap", "hotspot, ground, hover" + containerProps);
 	addBlockChildren("hotspot", "action");
-
-	addBlockChildren("window", "modal");
-	addBlockChildren("window, vbox, hbox", containerProps);
-	addBlockChildren("window, vbox, hbox, if, else, elif, for, while", "$, python");
-	addBlockChildren("null", "width, height", true);
-	addBlockChildren("text, textbutton", textProps);
 
 	addBlockChildren("key, button, textbutton", "action");
 	addBlockChildren("button, textbutton", "background, hover_background");
 
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
 	setSuperParents("play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem", SuperParent::LABEL);
-	setSuperParents("window" + screenElems + "imagemap, hotspot, ground, hover" + windowProps + containerProps + textProps +
-					"modal, spacing, action, background, hover_background, width, height", SuperParent::SCREEN);
+	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" + screenProps + containerProps + textProps +
+					"modal, spacing, action, background, hover_background", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
 	setSuperParents(transformProps + "$, pass, break, continue, python, if, elif, else, for, while, image", ALL);

@@ -1,8 +1,7 @@
 #include "screen.h"
 
-#include "screen_window.h"
-
 #include "gv.h"
+#include "parser/parser.h"
 #include "utils/utils.h"
 
 std::vector<Node*> Screen::declared;
@@ -161,4 +160,23 @@ Screen::~Screen() {
 		}
 	}
 	usedScreens.clear();
+}
+
+
+bool Screen::_hasModal = false;
+void Screen::updateModality() {
+	for (Screen *w : created) {
+		w->updateModalProp();
+	}
+
+	_hasModal = false;
+	for (Screen *w : created) {
+		if (w->screenIsModal()) {
+			_hasModal = true;
+			break;
+		}
+	}
+}
+void Screen::updateModalProp() {
+	_isModal = node->getProp("modal") == "True";
 }

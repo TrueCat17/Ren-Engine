@@ -16,13 +16,13 @@ private:
 	static void preloadImages(Node *node, int start, int count);
 	static void jump(const String &label);
 
+	std::map<String, String> props;
 public:
 	static bool jumped;
 	static void destroyAll();
 
 
 	String firstParam;
-	std::map<String, String> props;
 
 	String command;
 	int priority;
@@ -40,9 +40,10 @@ public:
 	Node() { nodes.push_back(this); }
 	void execute();
 
-	String getProp(const String& name) const;
+	void initProp(const String &name, const String &value);
+	String getProp(const String& name, const String &commonName = "", const String &indexStr = "") const;
 	String getPropCode(const String& name) const;
-	String getFirstParam() const { return firstParam; }
+	const String& getFirstParam() const { return firstParam; }
 };
 
 #endif // NODE_H

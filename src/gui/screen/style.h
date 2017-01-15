@@ -9,10 +9,10 @@ class Style {
 private:
 	static std::map<String, Style*> styles;
 
-	std::map<String, String> props;
+	std::map<String, std::pair<bool, String>> props;
 
 public:
-	static void updateAll();
+	static void disableAll();
 	static void destroyAll();
 
 	static String getProp(const String &styleName, const String &propName);

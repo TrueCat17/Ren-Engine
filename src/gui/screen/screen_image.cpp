@@ -1,5 +1,6 @@
 #include "screen_image.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
 
@@ -11,7 +12,7 @@ ScreenImage::ScreenImage(Node *node):
 void ScreenImage::updateProps() {
 	ScreenContainer::updateProps();
 
-	imagePath = Utils::execPython(imageCode, true);
+	imagePath = PyUtils::exec(imageCode, true);
 }
 
 void ScreenImage::updateSize() {

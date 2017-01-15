@@ -80,8 +80,6 @@ public:
 
 	static void registerImage(const String &desc);
 	static std::string getImageCode(const std::string &name);
-
-	static String execPython(String code, bool retRes = false);
 };
 
 #endif // UTILS_H

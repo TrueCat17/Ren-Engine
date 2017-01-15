@@ -1,14 +1,14 @@
 #include "screen_python.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
-#include "utils/utils.h"
 
 ScreenPython::ScreenPython(Node *node): ScreenChild(node, nullptr) {
 
 }
 
 void ScreenPython::updateProps() {
-	Utils::execPython(node->params);
+	PyUtils::exec(node->params);
 }
 void ScreenPython::updateSize() {
 	return;

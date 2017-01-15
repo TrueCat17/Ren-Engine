@@ -1,7 +1,7 @@
 #include "gv.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
-#include "parser/py_guard.h"
 
 int GV::width;
 int GV::height;
@@ -9,7 +9,7 @@ int GV::height;
 bool GV::inGame = false;
 bool GV::exit = false;
 
-PyGuard *GV::pyGuard = nullptr;
+PyUtils *GV::pyUtils = nullptr;
 
 SDL_Window *GV::mainWindow;
 SDL_Renderer *GV::mainRenderer;
@@ -18,7 +18,6 @@ const Uint8 *GV::keyBoardState = nullptr;
 
 Group *GV::screens = nullptr;
 
-std::mutex GV::initGuard;
 std::mutex GV::updateGuard;
 std::mutex GV::renderGuard;
 

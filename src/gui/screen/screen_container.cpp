@@ -1,6 +1,5 @@
 #include "screen_container.h"
 
-#include <iostream>
 #include <algorithm>
 
 
@@ -22,7 +21,6 @@
 #include "screen_null.h"
 #include "screen_vbox.h"
 #include "screen_hbox.h"
-#include "screen_window.h"
 
 #include "screen_imagemap.h"
 #include "screen_hotspot.h"
@@ -38,98 +36,103 @@
 ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent):
 	ScreenChild(node, screenParent) { }
 
-int ScreenContainer::getMinX() const {
-	if (hasHBox) {
-		return 0;
-	}
-	return Group::getMinX();
-}
-int ScreenContainer::getMinY() const {
-	if (hasVBox) {
-		return 0;
-	}
-	return Group::getMinY();
-}
-
-int ScreenContainer::getMaxX() const {
-	if (hasHBox) {
-		int res = 0;
-		for (DisplayObject *child : children) {
-			if (!child->enabled()) continue;
-			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
-			if (scrChild && scrChild->isFakeContainer()) continue;
-
-			size_t w = child->getWidth();
-			if (w) {
-				res += w + indent;
-			}
-		}
-		if (res && children.size()) {
-			res -= indent;
-		}
-		return res;
-	}
-	return Group::getMaxX();
-}
-int ScreenContainer::getMaxY() const {
-	if (hasVBox) {
-		int res = 0;
-		for (DisplayObject *child : children) {
-			if (!child->enabled()) continue;
-			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
-			if (scrChild && scrChild->isFakeContainer()) continue;
-
-			size_t h = child->getHeight();
-			if (h) {
-				res += h + indent;
-			}
-		}
-		if (res && children.size()) {
-			res -= indent;
-		}
-		return res;
-	}
-	return Group::getMaxY();
-}
-
 void ScreenContainer::updateProps() {
 	if (!inited) {
 		addChildrenFromNode();
 		inited = true;
 	}
 
-	String indentStr = node->getProp("spacing");
-	indent = indentStr.toInt();
+	if (hasVBox || hasHBox) {
+		String indentStr = node->getProp("spacing");
+		indent = indentStr.toInt();
+	}
 
 	ScreenChild::updateProps();
 }
-void ScreenContainer::draw() const {
-	if (!enabled()) return;
+void ScreenContainer::updateSize() {
+	ScreenChild::updateSize();
 
+	//Установлено через [x/y/xy]size
+	int userWidth = getWidth();
+	int userHeight = getHeight();
+
+	int width = 0;
+	if (hasHBox) {
+		for (DisplayObject *child : children) {
+			if (!child->enable) continue;
+			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
+			if (scrChild && scrChild->isFakeContainer()) continue;
+
+			child->setX(width + indent);
+
+			int w = child->getWidth();
+			if (w) {
+				width += w + indent;
+			}
+		}
+		if (width && children.size()) {
+			width -= indent;
+		}
+	}else {
+		width = getWidth();
+		if (!width) {
+			for (DisplayObject *child : children) {
+				if (child->enable) {
+					int w = child->getWidth();
+					if (w > width) {
+						width = w;
+					}
+				}
+			}
+		}
+	}
+
+	int height = 0;
+	if (hasVBox) {
+		for (DisplayObject *child : children) {
+			if (!child->enable) continue;
+			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
+			if (scrChild && scrChild->isFakeContainer()) continue;
+
+			child->setY(height + indent);
+
+			int h = child->getHeight();
+			if (h) {
+				height += h + indent;
+			}
+		}
+		if (height && children.size()) {
+			height -= indent;
+		}
+	}else {
+		height = getHeight();
+		if (!height) {
+			for (DisplayObject *child : children) {
+				if (child->enable) {
+					int h = child->getHeight();
+					if (h > height) {
+						height = h;
+					}
+				}
+			}
+		}
+	}
+
+	if (userWidth <= 0 || userHeight <= 0) {
+		if (userWidth > 0) width = userWidth;
+		if (userHeight > 0) height = userHeight;
+		setSize(width, height);
+	}
+}
+
+void ScreenContainer::draw() const {
 	DisplayObject::draw();
 
-	size_t indentX = 0;
-	size_t indentY = 0;
-
 	for (DisplayObject *child : children) {
-		if (!child->enabled()) continue;
+		if (!child->enable) continue;
 		ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
 		if (scrChild && scrChild->isFakeContainer()) continue;
 
-		if (hasVBox) {
-			child->setY(indentY);
-			size_t h = child->getHeight();
-			if (h) {
-				indentY += h + indent;
-			}
-		}
-		if (hasHBox) {
-			child->setX(indentX);
-			size_t w = child->getWidth();
-			if (w) {
-				indentX += w + indent;
-			}
-		}
 		child->draw();
 	}
 }
@@ -179,10 +182,6 @@ void ScreenContainer::addChildrenFromNode() {
 
 		if (childCommand == "key") {
 			child = new ScreenKey(childNode);
-		}else
-
-		if (childCommand == "window") {
-			child = new ScreenWindow(childNode);
 		}else
 
 		if (childCommand == "vbox") {

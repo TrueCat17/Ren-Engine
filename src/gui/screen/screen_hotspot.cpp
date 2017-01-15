@@ -3,6 +3,7 @@
 #include "screen_imagemap.h"
 
 #include "gv.h"
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
 
@@ -11,9 +12,9 @@ ScreenHotspot::ScreenHotspot(Node *node):
 	rectStr(node->getFirstParam())
 {
 	auto onClick = [this](DisplayObject*) {
-		const String action = this->node->getPropCode("action");
+		String action = this->node->getPropCode("action");
 		if (action) {
-			Utils::execPython("exec_funcs(" + action + ")");
+			PyUtils::exec("exec_funcs(" + action + ")");
 		}
 	};
 	btnRect.init(this, onClick);
@@ -40,7 +41,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 }
 
 void ScreenHotspot::updateProps() {
-	String t = Utils::execPython("' '.join(map(str, " + rectStr + "))", true);
+	String t = PyUtils::exec("' '.join(map(str, " + rectStr + "))", true);
 	std::vector<String> rectVec = t.split(' ');
 	if (rectVec.size() != 4) {
 		Utils::outMsg("ScreenHotspot::updateProps",
@@ -53,8 +54,8 @@ void ScreenHotspot::updateProps() {
 	SDL_Texture *ground = parent->texture;
 	scaleX = 1;
 	scaleY = 1;
-	int parentWidth, parentHeight;
-	parent->getSize(parentWidth, parentHeight);
+	int parentWidth = parent->getWidth();
+	int parentHeight = parent->getHeight();
 	if (ground && parentWidth && parentHeight) {
 		scaleX = double(parentWidth) / Utils::getTextureWidth(ground);
 		scaleY = double(parentHeight) / Utils::getTextureHeight(ground);
@@ -91,7 +92,7 @@ void ScreenHotspot::updatePos() {
 }
 
 void ScreenHotspot::draw() const {
-	if (!enabled() || !texture) return;
+	if (!enable || !texture) return;
 
 	int x = getGlobalX();
 	int y = getGlobalY();

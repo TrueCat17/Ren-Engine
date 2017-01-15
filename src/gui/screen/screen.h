@@ -13,6 +13,7 @@ private:
 	static Node* getDeclared(const String &name);
 
 	static std::vector<Screen*> created;
+	static bool _hasModal;
 
 	static std::vector<std::pair<String, String>> toShowList;
 	static std::vector<std::pair<String, String>> toHideList;
@@ -25,6 +26,9 @@ private:
 
 	void addShowedCount(const String &dependOn);
 	bool subShowedCount(const String &dependOn);
+	void updateModalProp();
+
+	bool _isModal = false;
 
 	Screen(Node *node, const String &dependOn);
 	virtual ~Screen();
@@ -35,6 +39,8 @@ public:
 	static void clear();
 
 	static void updateLists();
+	static void updateModality();
+	static bool hasModal() { return _hasModal; }
 
 	static void addToShowSimply(const std::string &name);
 	static void addToHideSimply(const std::string &name);
@@ -42,6 +48,7 @@ public:
 	static void addToHide(const String &name, const String &dependsOn);
 
 	String name;
+	bool screenIsModal() const { return _isModal; }
 };
 
 #endif // SCREEN_H

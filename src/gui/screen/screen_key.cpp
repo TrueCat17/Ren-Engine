@@ -1,7 +1,7 @@
 #include "screen_key.h"
 
 #include "gv.h"
-
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
 
@@ -60,7 +60,7 @@ void ScreenKey::updateProps() {
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		String keyName = Utils::execPython(keyStr, true);
+		String keyName = PyUtils::exec(keyStr, true);
 		Utils::outMsg("SDL_GetScancodeFromName", "KeyName <" + keyName + ">\n" + SDL_GetError());
 	}else
 
@@ -75,9 +75,9 @@ void ScreenKey::updateProps() {
 			inFirstDown = false;
 			lastDown = Utils::getTimer();
 
-			const String action = node->getPropCode("action");
+			String action = node->getPropCode("action");
 			if (action) {
-				Utils::execPython("exec_funcs(" + action + ")");
+				PyUtils::exec("exec_funcs(" + action + ")");
 			}
 		}
 		prevIsDown = true;
@@ -97,7 +97,7 @@ void ScreenKey::updatePos() {
 }
 
 SDL_Scancode ScreenKey::getKey() const {
-	String keyName = Utils::execPython(keyStr, true);
+	String keyName = PyUtils::exec(keyStr, true);
 	if (keyName.startsWith("K_", false)) {
 		keyName = keyName.substr(2);
 	}

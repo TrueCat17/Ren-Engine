@@ -4,19 +4,20 @@
 
 #include "gui/text.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
-#include "utils/utils.h"
 
-ScreenText::ScreenText(Node *node): ScreenContainer(node, this) {
-	textExec = node->getFirstParam();
-
+ScreenText::ScreenText(Node *node):
+	ScreenChild(node, this),
+	textExec(node->getFirstParam())
+{
 	tf = new Text();
 	tf->wordWrap = true;
 	addChild(tf);
 }
 
 void ScreenText::updateProps() {
-	text = Utils::execPython(textExec, true);
+	text = PyUtils::exec(textExec, true);
 	if (text) {
 		font = node->getProp("font");
 		textHAlign = node->getProp("text_align");
@@ -37,26 +38,20 @@ void ScreenText::updateProps() {
 		if (size % 2) size += 1;
 	}
 
-	ScreenContainer::updateProps();
+	ScreenChild::updateProps();
 }
 
 void ScreenText::updateSize() {
-	double w = xSize;
-	if (w > 0 && w <= 1) w *= GV::width;
-	double h = ySize;
-	if (h > 0 && h <= 1) h *= GV::height;
-
-	setSize(w, h);
-
+	ScreenChild::updateSize();
 
 	bool needUpdate = false;
 	if (text || prevText) {
-		if (tf->getMaxWidth() != rect.w) {
-			tf->setMaxWidth(rect.w);
+		if (tf->getMaxWidth() != getWidth()) {
+			tf->setMaxWidth(getWidth());
 			needUpdate = true;
 		}
-		if (tf->getMaxHeight() != rect.h) {
-			tf->setMaxHeight(rect.h);
+		if (tf->getMaxHeight() != getHeight()) {
+			tf->setMaxHeight(getHeight());
 			needUpdate = true;
 		}
 
@@ -78,5 +73,10 @@ void ScreenText::updateSize() {
 			tf->setAlign(textHAlign, textVAlign);
 		}
 	}
-	ScreenContainer::updateSize();
+
+	int w = getWidth();
+	int h = getHeight();
+	if (w <= 0) w = tf->getWidth();
+	if (h <= 0) h = tf->getHeight();
+	setSize(w, h);
 }

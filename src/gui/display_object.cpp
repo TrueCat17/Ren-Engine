@@ -35,28 +35,10 @@ void DisplayObject::updateGlobalY() {
 	}
 }
 
-int DisplayObject::getMinX() const {
-	return 0;
-}
-int DisplayObject::getMinY() const {
-	return 0;
-}
-int DisplayObject::getMaxX() const {
-	return rect.x + rect.w;
-}
-int DisplayObject::getMaxY() const {
-	return rect.y + rect.h;
-}
-
 void DisplayObject::setPos(int x, int y) {
 	setX(x);
 	setY(y);
 }
-void DisplayObject::getSize(int &w, int &h) const {
-	w = rect.w;
-	h = rect.h;
-}
-
 void DisplayObject::setSize(int w, int h) {
 	rect.w = w;
 	rect.h = h;
@@ -74,7 +56,7 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 }
 
 void DisplayObject::draw() const {
-	if (!enabled()) return;
+	if (!enable) return;
 
 	if (texture) {
 		SDL_Rect t = rect;

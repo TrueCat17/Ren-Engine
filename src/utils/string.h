@@ -3,8 +3,12 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 class String: public std::string {
+private:
+	static std::map<String, double> doubleConvertCache;
+
 public:
 	String() {}
 	String(char c) { char a[2] = {c, 0}; *this = a; }
@@ -30,8 +34,11 @@ public:
 	int toInt(int base = 10) const;
 	double toDouble() const;
 
-	bool isDouble() const;
+	bool isNumber() const;
 	bool isSimpleString() const;
+
+	template <typename T>
+	bool contains(const T &sub) const { return find(sub) != size_t(-1); }
 
 	bool startsWith(const String &str, bool withSpaces = true) const;
 	bool endsWith(const String &str) const;

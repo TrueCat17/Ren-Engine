@@ -6,9 +6,10 @@
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
-#include "parser/music_channel.h"
+#include "media/music_channel.h"
+#include "media/py_utils.h"
+
 #include "parser/parser.h"
-#include "parser/py_guard.h"
 
 #include "utils/utils.h"
 
@@ -36,8 +37,8 @@ void Game::_startMod(const std::string &dir) {
 	int toSleep = frameTime * 2;
 	Utils::sleep(toSleep, false);
 
-	delete GV::pyGuard;
-	GV::pyGuard = new PyGuard();
+	delete GV::pyUtils;
+	GV::pyUtils = new PyUtils();
 
 	Node::destroyAll();
 	Node::jumped = false;
@@ -112,7 +113,6 @@ void Game::setMaxFps(size_t fps) {
 size_t Game::getFrameTime() {
 	return frameTime;
 }
-
 size_t Game::getFps() {
 	return fps;
 }

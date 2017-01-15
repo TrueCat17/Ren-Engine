@@ -10,8 +10,6 @@ private:
 	String condition;
 
 public:
-	virtual bool enabled() const;
-
 	ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer);
 	virtual void updateProps();
 };

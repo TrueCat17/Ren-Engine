@@ -10,7 +10,7 @@ class ScreenChild;
 
 class Node;
 
-class PyGuard;
+class PyUtils;
 
 
 class GV {
@@ -24,7 +24,7 @@ public:
 	static bool inGame;
 	static bool exit;
 
-	static PyGuard *pyGuard;
+	static PyUtils *pyUtils;
 
 	static SDL_Window *mainWindow;
 	static SDL_Renderer *mainRenderer;
@@ -33,7 +33,6 @@ public:
 
 	static Group *screens;
 
-	static std::mutex initGuard;
 	static std::mutex updateGuard;
 	static std::mutex renderGuard;
 

@@ -3,9 +3,9 @@
 #include <algorithm>
 
 #include "gv.h"
+#include "gui/screen/screen.h"
 
-#include "screen_window.h"
-
+#include "parser/node.h"
 #include "utils/utils.h"
 
 
@@ -42,114 +42,139 @@ void ScreenChild::updateProps() {
 			screenChild->updateProps();
 		}
 	}
-	if (!node) return;
 
-	if (!window) {
+	if (!screen) {
 		const DisplayObject *t = this;
-		while (t && !dynamic_cast<const ScreenWindow*>(t)) {
+		while (t && !dynamic_cast<const Screen*>(t)) {
 			t = t->parent;
 		}
-		window = dynamic_cast<const ScreenWindow*>(t);
+		screen = dynamic_cast<const Screen*>(t);
 	}
 
-
-	String xAnchorStr;
-	String yAnchorStr;
-	String anchorStr = node->getProp("anchor");
-	if (anchorStr) {
-		xAnchorStr = Utils::execPython(anchorStr + "[0]", true);
-		yAnchorStr = Utils::execPython(anchorStr + "[1]", true);
-	}else {
-		xAnchorStr = node->getProp("xanchor");
-		yAnchorStr = node->getProp("yanchor");
+	bool inHBox = false;
+	bool inVBox = false;
+	ScreenContainer *p = dynamic_cast<ScreenContainer*>(parent);
+	if (p) {
+		ScreenContainer *pScreenParent = dynamic_cast<ScreenContainer*>(p->screenParent);
+		if (pScreenParent) {
+			inHBox = pScreenParent->isHBox();
+			inVBox = pScreenParent->isVBox();
+		}
 	}
-	xAnchor = xAnchorStr.toDouble();
-	yAnchor = yAnchorStr.toDouble();
 
-	String xPosStr;
-	String yPosStr;
-	String posStr = node->getProp("pos");
-	if (posStr) {
-		xPosStr = Utils::execPython(posStr + "[0]", true);
-		yPosStr = Utils::execPython(posStr + "[1]", true);
-	}else {
-		xPosStr = node->getProp("xpos");
-		yPosStr = node->getProp("ypos");
+	if (!inHBox) {
+		String xAnchorStr = node->getProp("xanchor", "anchor", "[0]");
+		xAnchor = xAnchorStr.toDouble();
+		xAnchorIsDouble = xAnchorStr.contains('.') && xAnchor > 0 && xAnchor <= 1;
+		if (xAnchorStr != "None" && !xAnchorStr.isNumber()) {
+			Utils::outMsg("ScreenChild::updateProps", "xanchor is not a number (" + xAnchorStr + ")");
+		}
+
+		String xPosStr = node->getProp("xpos", "pos", "[0]");
+		xPos = xPosStr.toDouble();
+		xPosIsDouble = xPosStr.contains('.') && xPos > 0 && xPos <= 1;
+		if (xPosStr != "None" && !xPosStr.isNumber()) {
+			Utils::outMsg("ScreenChild::updateProps", "xpos is not a number (" + xPosStr + ")");
+		}
+
+		String xAlignStr = node->getProp("xalign", "align", "[0]");
+		if (xAlignStr.isNumber()) {
+			xAnchor = xPos = xAlignStr.toDouble();
+			xAnchorIsDouble = xPosIsDouble = xAlignStr.contains('.') && xAnchor > 0 && xAnchor <= 1;
+		}else if (xAlignStr != "None") {
+			Utils::outMsg("ScreenChild::updateProps", "xalign is not a number (" + xAlignStr + ")");
+		}
 	}
-	xPos = xPosStr.toDouble();
-	yPos = yPosStr.toDouble();
+	if (!inVBox) {
+		String yAnchorStr = node->getProp("yanchor", "anchor", "[1]");
+		yAnchor = yAnchorStr.toDouble();
+		yAnchorIsDouble = yAnchorStr.contains('.') && yAnchor > 0 && yAnchor <= 1;
+		if (yAnchorStr != "None" && !yAnchorStr.isNumber()) {
+			Utils::outMsg("ScreenChild::updateProps", "yanchor is not a number (" + yAnchorStr + ")");
+		}
 
+		String yPosStr = node->getProp("ypos", "pos", "[1]");
+		yPos = yPosStr.toDouble();
+		yPosIsDouble = yPosStr.contains('.') && yPos > 0 && yPos <= 1;
+		if (yPosStr != "None" && !yPosStr.isNumber()) {
+			Utils::outMsg("ScreenChild::updateProps", "ypos is not a number (" + yPosStr + ")");
+		}
 
-	String xAlignStr;
-	String yAlignStr;
-	String alignStr = node->getProp("align");
-	if (alignStr) {
-		xAlignStr = Utils::execPython(alignStr + "[0]", true);
-		yAlignStr = Utils::execPython(alignStr + "[1]", true);
-	}else {
-		xAlignStr = node->getProp("xalign");
-		yAlignStr = node->getProp("yalign");
+		String yAlignStr = node->getProp("yalign", "align", "[1]");
+		if (yAlignStr.isNumber()) {
+			yAnchor = yPos = yAlignStr.toDouble();
+			yAnchorIsDouble = yPosIsDouble = yAlignStr.contains('.') && yAnchor > 0 && yAnchor <= 1;
+		}else if (yAlignStr && yAlignStr != "None") {
+			Utils::outMsg("ScreenChild::updateProps", "yalign is not a number (" + yAlignStr + ")");
+		}
 	}
-	if (xAlignStr) xAnchor = xPos = xAlignStr.toDouble();
-	if (yAlignStr) yAnchor = yPos = yAlignStr.toDouble();
 
-
-	String xSizeStr;
-	String ySizeStr;
-	String sizeStr = node->getProp("xysize");
-	if (sizeStr) {
-		xSizeStr = Utils::execPython(sizeStr + "[0]", true);
-		ySizeStr = Utils::execPython(sizeStr + "[1]", true);
-	}else {
-		xSizeStr = node->getProp("xsize");
-		ySizeStr = node->getProp("ysize");
-	}
+	String xSizeStr = node->getProp("xsize", "xysize", "[0]");
 	xSize = xSizeStr.toDouble();
+	xSizeIsDouble = xSizeStr.contains('.') && xSize > 0 && xSize <= 1;
+	if (xSizeStr != "None" && !xSizeStr.isNumber()) {
+		Utils::outMsg("ScreenChild::updateProps", "xsize is not a number (" + xSizeStr + ")");
+	}
+
+	String ySizeStr = node->getProp("ysize", "xysize", "[1]");
 	ySize = ySizeStr.toDouble();
+	ySizeIsDouble = ySizeStr.contains('.') && ySize > 0 && ySize <= 1;
+	if (ySizeStr != "None" && !ySizeStr.isNumber()) {
+		Utils::outMsg("ScreenChild::updateProps", "ysize is not a number (" + ySizeStr + ")");
+	}
 }
 
 void ScreenChild::updateSize() {
 	double w = xSize;
-	if (w > 0 && w <= 1) w *= GV::width;
+	if (xSizeIsDouble) w *= GV::width;
 	double h = ySize;
-	if (h > 0 && h <= 1) h *= GV::height;
+	if (ySizeIsDouble) h *= GV::height;
 
 	setSize(w, h);
 
-
 	for (ScreenChild *screenChild : screenChildren) {
-		screenChild->updateSize();
+		if (screenChild->enable) {
+			screenChild->updateSize();
+		}
 	}
 }
 void ScreenChild::updatePos() {
+	bool inHBox = false;
+	bool inVBox = false;
+	ScreenContainer *p = dynamic_cast<ScreenContainer*>(parent);
+	if (p) {
+		ScreenContainer *pScreenParent = dynamic_cast<ScreenContainer*>(p->screenParent);
+		if (pScreenParent) {
+			inHBox = pScreenParent->isHBox();
+			inVBox = pScreenParent->isVBox();
+		}
+	}
+
+	if (!inHBox) {
+		if (xPosIsDouble) xPos *= parent->getWidth();
+		if (xAnchorIsDouble) xAnchor *= getWidth();
+		double x = xPos - xAnchor;
+		setX(x);
+	}
+
+	if (!inVBox) {
+		if (yPosIsDouble) yPos *= parent->getHeight();
+		if (yAnchorIsDouble) yAnchor *= getHeight();
+		double y = yPos - yAnchor;
+		setY(y);
+	}
+
+
 	for (ScreenChild *screenChild : screenChildren) {
-		screenChild->updatePos();
+		if (screenChild->enable) {
+			screenChild->updatePos();
+		}
 	}
-	if (!node) {
-		setPos(0, 0);
-		return;
-	}
-
-	int parentWidth = 0;
-	int parentHeight = 0;
-	parent->getSize(parentWidth, parentHeight);
-	if (parentWidth <= 0) parentWidth = parent->getWidth();
-	if (parentHeight <= 0) parentHeight = parent->getHeight();
-
-	if (xPos >= -1 && xPos <= 1) xPos *= parentWidth;
-	if (xAnchor >= -1 && xAnchor <= 1) xAnchor *= getWidth();
-	double x = xPos - xAnchor;
-
-	if (yPos >= -1 && yPos <= 1) yPos *= parentHeight;
-	if (yAnchor >= -1 && yAnchor <= 1) yAnchor *= getHeight();
-	double y = yPos - yAnchor;
-
-	setPos(x, y);
 }
 
 
 bool ScreenChild::isModal() const {
-	bool windowIsModal = window ? window->isModal() : false;
-	bool hasModal = ScreenWindow::hasModal();
-	return !hasModal || windowIsModal;//Нет модальных окон или есть, но мы находимся внутри такого окна
+	bool screenIsModal = screen ? screen->screenIsModal() : false;
+	bool hasModal = Screen::hasModal();
+	return !hasModal || screenIsModal;//Нет модальных окон или есть, но мы находимся внутри такого окна
 }

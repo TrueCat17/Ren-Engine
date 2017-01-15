@@ -3,7 +3,7 @@
 #include "iostream"
 #include <fstream>
 
-#include "utils/syntax_checker.h"
+#include "parser/syntax_checker.h"
 #include "utils/utils.h"
 
 
@@ -147,7 +147,7 @@ void Parser::initScreenNode(Node *node) {
 	bool initOnlyChildren = !Utils::in(node->command, compsMbWithParams);
 	for (Node *childNode : node->children) {
 		if (childNode && childNode->children.empty()) {
-			node->props[childNode->command] = childNode->params;
+			node->initProp(childNode->command, childNode->params);
 		}
 	}
 	if (initOnlyChildren) return;
@@ -174,7 +174,7 @@ void Parser::initScreenNode(Node *node) {
 			break;
 		}
 		String value = args[i + 1];
-		node->props[name] = value;
+		node->initProp(name, value);
 	}
 }
 

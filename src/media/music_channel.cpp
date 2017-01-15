@@ -1,5 +1,6 @@
 #include "music_channel.h"
 
+#include "py_utils.h"
 #include "utils/utils.h"
 
 
@@ -43,7 +44,7 @@ void MusicChannel::play(const std::string &desc) {
 	std::vector<String> words = String(desc).split(" ");
 
 	String soundCodeName = words[1];
-	String soundName = Utils::execPython(soundCodeName, true);
+	String soundName = PyUtils::exec(soundCodeName, true);
 
 	String soundChannelName = words[0];
 	MusicChannel *soundChannel = nullptr;

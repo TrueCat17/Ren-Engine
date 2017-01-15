@@ -1,5 +1,6 @@
 ﻿#include "node.h"
 
+#include <iostream>
 #include <algorithm>
 
 #include "gv.h"
@@ -8,10 +9,11 @@
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
-#include "parser/music_channel.h"
+#include "media/image.h"
+#include "media/music_channel.h"
+#include "media/py_utils.h"
 
 #include "utils/game.h"
-#include "utils/image.h"
 #include "utils/utils.h"
 
 std::vector<Node*> Node::nodes;
@@ -39,15 +41,13 @@ void Node::execute() {
 		std::sort(initBlocks.begin(), initBlocks.end(), [](Node* a, Node* b) { return a->priority < b->priority; });
 
 		try {
-			GV::initGuard.lock();
 			initing = true;
 			for (Node *i : initBlocks) {
 				i->execute();
 			}
 			initing = false;
-			GV::initGuard.unlock();
 
-			mainLabel = Utils::execPython("mods_last_key", true);
+			mainLabel = PyUtils::exec("mods_last_key", true);
 			if (mainLabel.find("_menu") == size_t(-1)) {
 				Screen::addToShowSimply("location");
 				Screen::addToShowSimply("sprites");
@@ -63,7 +63,7 @@ void Node::execute() {
 			Utils::outMsg("Node::execute", "Неожидаемое исключение StopException (конец итератора)");
 		}
 
-		if (!Game::modeStarting && !GV::exit && Utils::execPython("cur_location_name", true) == "None") {
+		if (!Game::modeStarting && !GV::exit && PyUtils::exec("cur_location_name", true) == "None") {
 			Game::startMod("main_menu");
 		}
 	}else
@@ -73,11 +73,11 @@ void Node::execute() {
 			Node *node = children[i];
 			node->execute();
 
-			if (node->command == "show" || node->command == "scene") {
+			if ((node->command == "show" && !node->params.startsWith("screen ")) || node->command == "scene") {
 				preloadImages(this, i, Config::get("count_preload_commands"));
 			}
 
-			while (!initing && GV::inGame && Utils::execPython("character_moving", true) == "True") {
+			while (!initing && GV::inGame && PyUtils::exec("character_moving", true) == "True") {
 				Utils::sleep(1);
 			}
 		}
@@ -98,7 +98,7 @@ void Node::execute() {
 			for (size_t i = 1; i < args.size(); ++i) {
 				argsStr += ", '" + args[i] + "'";
 			}
-			Utils::execPython("add_sprite_to_showlist([" + argsStr + "], None)");
+			PyUtils::exec("add_sprite_to_showlist([" + argsStr + "], None)");
 		}
 	}else
 
@@ -107,7 +107,7 @@ void Node::execute() {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToHideSimply(screenName);
 		}else {
-			Utils::execPython("remove_sprite_from_showlist('" + params + "')");
+			PyUtils::exec("remove_sprite_from_showlist('" + params + "')");
 		}
 	}else
 
@@ -121,7 +121,7 @@ void Node::execute() {
 				argsStr += ", '" + args[i] + "'";
 			}
 		}
-		Utils::execPython("set_scene([" + argsStr + "], None)");
+		PyUtils::exec("set_scene([" + argsStr + "], None)");
 	}else
 
 	if (command == "with") {
@@ -129,7 +129,7 @@ void Node::execute() {
 	}else
 
 	if (command == "window") {
-		Utils::execPython("window_" + params + "()");
+		PyUtils::exec("window_" + params + "()");
 	}else
 
 	if (command == "text") {
@@ -155,21 +155,21 @@ void Node::execute() {
 		}
 
 		String code = nick + "(" + text + ")";
-		Utils::execPython(code);
+		PyUtils::exec(code);
 	}else
 
 	if (command == "python" || command == "init python") {
-		Utils::execPython(params);
+		PyUtils::exec(params);
 	}else
 
 	if (command == "pause") {
-		Utils::execPython("pause_end = time.time() + (" + params + ")");
+		PyUtils::exec("pause_end = time.time() + (" + params + ")");
 	}else
 
 	if (command == "jump") {
 		String label = params;
 		if (label.startsWith("expression ")) {
-			label = Utils::execPython(label.substr(String("expression ").size()), true);
+			label = PyUtils::exec(label.substr(String("expression ").size()), true);
 		}
 
 		jump(label);
@@ -189,7 +189,7 @@ void Node::execute() {
 
 	if (command == "nvl") {
 		String code = "nvl_" + params + "()";
-		Utils::execPython(code);
+		PyUtils::exec(code);
 	}else
 
 
@@ -202,16 +202,16 @@ void Node::execute() {
 				variants += ", " + children[i]->params;
 			}
 		}
-		Utils::execPython("choose_menu_variants = (" + variants + ")");
-		Utils::execPython("renpy.call_screen('choose_menu', 'choose_menu_result')");
+		PyUtils::exec("choose_menu_variants = (" + variants + ")");
+		PyUtils::exec("renpy.call_screen('choose_menu', 'choose_menu_result')");
 
 		int toSleep = Game::getFrameTime();
-		while (GV::inGame && Utils::execPython("read", true) != "True") {
+		while (GV::inGame && PyUtils::exec("read", true) != "True") {
 			Utils::sleep(toSleep);
 		}
 		if (!GV::inGame) return;
 
-		String resStr = Utils::execPython("choose_menu_result", true);
+		String resStr = PyUtils::exec("choose_menu_result", true);
 		int res = resStr.toInt();
 
 		if (res < 0 || res >= int(children.size())) {
@@ -230,7 +230,7 @@ void Node::execute() {
 	}else
 
 	if (command == "if") {
-		String execRes = Utils::execPython(params, true);
+		String execRes = PyUtils::exec(params, true);
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
@@ -248,7 +248,7 @@ void Node::execute() {
 		}
 		if (t->condIsTrue) return;
 
-		String execRes = Utils::execPython(params, true);
+		String execRes = PyUtils::exec(params, true);
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
@@ -275,7 +275,7 @@ void Node::execute() {
 	if (command == "while") {
 		condIsTrue = true;
 		String cond = "bool(" + params + ")";
-		while (GV::inGame && Utils::execPython(cond, true) == "True") {
+		while (GV::inGame && PyUtils::exec(cond, true) == "True") {
 			if (jumped || !GV::inGame) return;
 
 			try {
@@ -310,12 +310,12 @@ void Node::execute() {
 		String init = iterName + " = iter(" + afterIn + ")";
 		String onStep = beforeIn + " = " + iterName + ".next()";
 
-		Utils::execPython(init);
+		PyUtils::exec(init);
 		while (true) {
 			if (jumped || !GV::inGame) return;
 
 			try {
-				Utils::execPython(onStep);
+				PyUtils::exec(onStep);
 
 				for (size_t i = 0; i < children.size(); ++i) {
 					Node* node = children[i];
@@ -346,12 +346,11 @@ void Node::execute() {
 		}
 	}
 
-	while (GV::inGame && !initing && Utils::execPython("pause_end > time.time()", true) == "True") {
-		Utils::sleep(1);
-	}
-
 	int toSleep = Game::getFrameTime();
-	while (GV::inGame && !initing && Utils::execPython("(not read) or (character_moving)", true) == "True") {
+	while (GV::inGame && !initing && PyUtils::exec("pause_end > time.time()", true) == "True") {
+		Utils::sleep(toSleep);
+	}
+	while (GV::inGame && !initing && PyUtils::exec("(not read) or (character_moving)", true) == "True") {
 		Utils::sleep(toSleep);
 	}
 }
@@ -388,14 +387,14 @@ void Node::preloadImages(Node *node, int start, int count) {
 			for (size_t j = 1; j < args.size(); ++j) {
 				imageName += ' ' + args[j];
 			}
-			String imageCode = Utils::execPython(Utils::getImageCode(imageName), true);
+			String imageCode = PyUtils::exec(Utils::getImageCode(imageName), true);
 			Image::getImage(imageCode);
 		}else
 
 		if (childCommand == "jump") {
 			String label = childParams;
-			for (size_t i = 0; i < GV::mainExecNode->children.size(); ++i) {
-				Node *t = GV::mainExecNode->children[i];
+			for (size_t j = 0; j < GV::mainExecNode->children.size(); ++j) {
+				Node *t = GV::mainExecNode->children[j];
 				if (t->command == "label" && t->name == label) {
 					i = -1;
 					node = t;
@@ -409,31 +408,45 @@ void Node::preloadImages(Node *node, int start, int count) {
 	}
 }
 
-String Node::getProp(const String& name) const {
-	String res;
+void Node::initProp(const String &name, const String &value) {
+	props[name] = value;
+}
 
-	if (props.find(name) != props.end()) {
-		String toExec = props.at(name);
-		res = Utils::execPython(toExec, true);
+String Node::getProp(const String& name, const String& commonName, const String& indexStr) const {
+	static std::vector<String> exceptions = String("if elif for while else hotspot").split(' ');
+	if (Utils::in(command, exceptions)) {
+		return "None";
 	}
 
-	if (!res) {
-		static std::vector<String> exceptions = String("screen if elif for while else hotspot").split(' ');
-		if (!Utils::in(command, exceptions)) {
-			String styleName = getPropCode("style");
-			if (!styleName) {
-				styleName = command;
-			}
-			res = Style::getProp(styleName, name);
+	String res;
+	auto i = props.find(name);
+	if (i != props.end()) {
+		String toExec = i->second;
+		res = PyUtils::exec(toExec, true);
+		return res;
+	}
+
+	if (commonName) {
+		i = props.find(commonName);
+		if (i != props.end()) {
+			String toExec = i->second;
+			String res = PyUtils::exec(toExec + indexStr, true);
+			return res;
 		}
 	}
 
+	String styleName = getPropCode("style");
+	if (!styleName) {
+		styleName = command;
+	}
+	res = Style::getProp(styleName, name);
 	return res;
 }
 String Node::getPropCode(const String& name) const {
-	if (props.find(name) == props.end()) return "";
+	auto i = props.find(name);
+	if (i == props.end()) return "";
 
-	String res = props.at(name);
+	const String& res = i->second;
 	return res;
 }
 

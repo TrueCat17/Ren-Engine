@@ -5,8 +5,6 @@
 
 class ScreenElse: public ScreenContainer {
 public:
-	virtual bool enabled() const;
-
 	ScreenElse(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer);
 	virtual void updateProps();
 };

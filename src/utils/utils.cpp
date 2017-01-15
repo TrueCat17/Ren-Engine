@@ -12,10 +12,10 @@
 
 #include "gui/display_object.h"
 
-#include "parser/py_guard.h"
+#include "media/image.h"
+#include "media/py_utils.h"
 
 #include "game.h"
-#include "image.h"
 
 
 String Utils::ROOT;
@@ -450,98 +450,4 @@ std::string Utils::getImageCode(const std::string &name) {
 	}
 
 	return images[name];
-}
-
-String Utils::execPython(String code, bool retRes) {
-	if (!code) return "";
-
-	if (code.isDouble()) {
-		return code;
-	}
-	if (code.isSimpleString()) {
-		return code.substr(1, code.size() - 2);
-	}
-	if (code == "True" || code == "False") {
-		return code;
-	}
-
-
-	String res = "empty";
-	if (retRes) {
-		code = "res = str(" + code + ")";
-	}
-
-	static std::mutex pyExecGuard;
-
-	pyExecGuard.lock();
-	try {
-		PyCodeObject *co = PyGuard::getCompileObject(code);
-		if (co) {
-			if (!PyEval_EvalCode(co, GV::pyGuard->pythonGlobal.ptr(), nullptr)) {
-				throw py::error_already_set();
-			}
-
-			if (retRes) {
-				py::object resObj = GV::pyGuard->pythonGlobal["res"];
-				const std::string resStr = py::extract<const std::string>(resObj);
-				res = resStr;
-			}
-		}else {
-			std::cout << "Python Compile Error:\n";
-			throw py::error_already_set();
-		}
-	}catch (py::error_already_set) {
-		PyObject *ptype, *pvalue, *ptraceback;
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
-		if (!ptype || !pvalue || !ptraceback) {
-			std::cout << "Python Unknown Error\n"
-						 "Code: " << code << '\n';
-			pyExecGuard.unlock();
-			return res;
-		}
-
-		py::handle<> htype(ptype);
-		std::string excType = py::extract<std::string>(py::str(htype));
-		if (excType == "<type 'exceptions.StopIteration'>") {
-			pyExecGuard.unlock();
-			Py_DecRef(pvalue);
-			Py_DecRef(ptraceback);
-			throw StopException();
-		}
-
-		py::handle<> hvalue(py::allow_null(pvalue));
-		std::string excValue = py::extract<std::string>(py::str(hvalue));
-
-		std::string traceback;
-		if (!String(excValue).startsWith("invalid syntax")) {
-			py::handle<> htraceback(py::allow_null(ptraceback));
-			GV::pyGuard->pythonGlobal["traceback"] = htraceback;
-
-			String code = "traceback_str = get_traceback(traceback)";
-			try {
-				py::exec(code.c_str(), GV::pyGuard->pythonGlobal);
-				traceback = py::extract<std::string>(GV::pyGuard->pythonGlobal["traceback_str"]);
-			}catch (py::error_already_set) {
-				traceback = "Error on call get_traceback\n";
-			}
-		}
-
-		std::cout << "Python Error (" + excType + "):\n"
-				  << '\t' << excValue << '\n';
-
-		if (traceback.size()) {
-			std::cout << "Traceback:\n"
-					  << '\t' << traceback;
-		}
-
-		std::cout << "Code:\n"
-				  << code << "\n\n";
-	}catch (...) {
-		std::cout << "Python Unknown Error\n";
-		std::cout << "Code:\n" << code << '\n';
-	}
-	pyExecGuard.unlock();
-
-	return res;
 }

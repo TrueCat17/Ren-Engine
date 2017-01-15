@@ -1,5 +1,6 @@
 #include "screen_for.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
 
@@ -29,14 +30,18 @@ void ScreenFor::updateProps() {
 	skipped = true;
 	size_t i = 0;
 
-	Utils::execPython(init);
+	PyUtils::exec(init);
 	while (true) {
 		try {
-			Utils::execPython(onStep);
+			PyUtils::exec(onStep);
 
 			bool adding = i >= screenChildren.size();
 			if (adding) {
+				if (screenChildren.empty()) {
+					inited = false;
+				}
 				addChildrenFromNode();
+				inited = true;
 			}
 			for (size_t j = 0; j < countInitChildren; ++j) {
 				ScreenChild *child = dynamic_cast<ScreenChild*>(screenChildren[i + j]);
@@ -55,5 +60,6 @@ void ScreenFor::updateProps() {
 		i += countInitChildren;
 	}
 
+	inited = true;
 	ScreenContainer::updateProps();
 }

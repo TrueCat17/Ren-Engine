@@ -1,7 +1,7 @@
 #include "screen_elif.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
-#include "utils/utils.h"
 
 ScreenElif::ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer):
 	ScreenContainer(node, screenParent),
@@ -10,13 +10,9 @@ ScreenElif::ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *p
 	this->prevContainer = prevContainer;
 }
 
-bool ScreenElif::enabled() const {
-	return !skipped && ScreenContainer::enabled();
-}
-
 void ScreenElif::updateProps() {
 	if (prevContainersSkipped()) {
-		skipped = Utils::execPython(condition, true) != "True";
+		skipped = PyUtils::exec(condition, true) != "True";
 		if (!skipped) {
 			ScreenContainer::updateProps();
 		}

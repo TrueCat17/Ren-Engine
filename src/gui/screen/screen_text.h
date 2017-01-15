@@ -1,13 +1,13 @@
 #ifndef SCREENTEXT_H
 #define SCREENTEXT_H
 
-#include "gui/screen/screen_container.h"
+#include "gui/screen/screen_child.h"
 
 #include "utils/string.h"
 
 class Text;
 
-class ScreenText: public ScreenContainer {
+class ScreenText: public ScreenChild {
 private:
 	String prevText;
 	String text;

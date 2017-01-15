@@ -24,72 +24,6 @@ void Group::updateGlobalY() {
 	}
 }
 
-int Group::getMinX() const {
-	int res = 0;
-	for (size_t i = 0; i < children.size(); ++i) {
-		const DisplayObject *child = children[i];
-		if (!child->enabled()) continue;
-
-		int childMinX = child->getMinX();
-		if (childMinX < res) {
-			res = childMinX;
-		}
-	}
-	return res;
-}
-int Group::getMinY() const {
-	int res = 0;
-	for (size_t i = 0; i < children.size(); ++i) {
-		const DisplayObject *child = children[i];
-		if (!child->enabled()) continue;
-
-		int childMinY = child->getMinY();
-		if (childMinY < res) {
-			res = childMinY;
-		}
-	}
-	return res;
-}
-
-int Group::getMaxX() const {
-	int res = std::max(0, rect.w);
-	if (!texture) {
-		if (children.empty()) return res;
-
-		res = std::max(res, children[0]->getX() + children[0]->getMaxX());
-	}
-
-	for (size_t i = 0; i < children.size(); ++i) {
-		const DisplayObject *child = children[i];
-		if (!child->enabled()) continue;
-
-		int childMaxX = child->getX() + child->getMaxX();
-		if (childMaxX > res) {
-			res = childMaxX;
-		}
-	}
-	return res;
-}
-int Group::getMaxY() const {
-	int res = std::max(0, rect.h);
-	if (!texture) {
-		if (children.empty()) return res;
-
-		res = std::max(res, children[0]->getY() + children[0]->getMaxY());
-	}
-
-	for (size_t i = 0; i < children.size(); ++i) {
-		const DisplayObject *child = children[i];
-		if (!child->enabled()) continue;
-
-		int childMaxY = child->getY() + child->getMaxY();
-		if (childMaxY > res) {
-			res = childMaxY;
-		}
-	}
-	return res;
-}
-
 DisplayObject* Group::getChildAt(size_t index) const {
 	return children[index];
 }
@@ -183,7 +117,7 @@ bool Group::checkAlpha(int x, int y) const {
 }
 
 void Group::draw() const {
-	if (!enabled()) return;
+	if (!enable) return;
 
 	DisplayObject::draw();
 

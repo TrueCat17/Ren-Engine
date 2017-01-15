@@ -75,11 +75,6 @@ public:
 
 	bool wordWrap = false;
 
-	virtual int getMinX() const;
-	virtual int getMinY() const;
-	virtual int getMaxX() const;
-	virtual int getMaxY() const;
-
 	Text();
 	virtual ~Text();
 

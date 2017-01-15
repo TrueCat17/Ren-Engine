@@ -12,13 +12,8 @@ public:
 	Group();
 	virtual ~Group();
 
-	void updateGlobalX();
-	void updateGlobalY();
-
-	virtual int getMinX() const;
-	virtual int getMinY() const;
-	virtual int getMaxX() const;
-	virtual int getMaxY() const;
+	virtual void updateGlobalX();
+	virtual void updateGlobalY();
 
 	DisplayObject* getChildAt(size_t index) const;
 	size_t getChildIndex(DisplayObject *child) const;

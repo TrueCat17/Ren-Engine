@@ -1,5 +1,6 @@
 #include "screen_while.h"
 
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
 
@@ -19,11 +20,15 @@ void ScreenWhile::updateProps() {
 	skipped = true;
 	size_t i = 0;
 
-	while (Utils::execPython(condition) == "True") {
+	while (PyUtils::exec(condition) == "True") {
 		try {
 			bool adding = i >= screenChildren.size();
 			if (adding) {
+				if (screenChildren.empty()) {
+					inited = false;
+				}
 				addChildrenFromNode();
+				inited = true;
 			}
 			for (size_t j = 0; j < countInitChildren; ++j) {
 				ScreenChild *child = dynamic_cast<ScreenChild*>(screenChildren[i + j]);
@@ -42,5 +47,6 @@ void ScreenWhile::updateProps() {
 		i += countInitChildren;
 	}
 
+	inited = true;
 	ScreenContainer::updateProps();
 }

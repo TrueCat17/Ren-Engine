@@ -1,5 +1,5 @@
-#ifndef PYGUARD_H
-#define PYGUARD_H
+#ifndef PYUTILS_H
+#define PYUTILS_H
 
 #include <map>
 
@@ -8,19 +8,19 @@ namespace py = boost::python;
 
 class String;
 
-class PyGuard {
+class PyUtils {
 private:
 	static std::map<String, PyCodeObject*> compiledObjects;
 
 public:
 	static PyCodeObject* getCompileObject(const String &code);
-
+	static String exec(String code, bool retRes = false);
 
 	py::object mainModule;
 	py::object pythonGlobal;
 
-	PyGuard();
-	~PyGuard();
+	PyUtils();
+	~PyUtils();
 };
 
-#endif // PYGUARD_H
+#endif // PYUTILS_H

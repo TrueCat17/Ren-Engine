@@ -42,41 +42,6 @@ void Text::setFont(String fontName, int textSize, bool setAsOriginal) {
 }
 
 
-
-int Text::getMinX() const {
-	if (rects.empty()) {
-		return 0;
-	}
-
-	int res = 0;
-	for (const SDL_Rect &rect : rects) {
-		int rectMinX = rect.x;
-		if (rectMinX < res) {
-			res = rectMinX;
-		}
-	}
-	return res;
-}
-int Text::getMinY() const {
-	return 0;
-}
-
-int Text::getMaxX() const {
-	int res = rect.w;
-
-	for (const SDL_Rect &rect : rects) {
-		int rectMaxX = rect.x + rect.w;
-		if (rectMaxX > res) {
-			res = rectMaxX;
-		}
-	}
-	return res;
-}
-int Text::getMaxY() const {
-	return std::max(rect.h, int(rects.size() * charHeight));
-}
-
-
 int Text::getMaxWidth() const {
 	return maxWidth;
 }
@@ -219,7 +184,7 @@ void Text::setText(const String &text, int color) {
 	}
 
 	isBold = isItalic = isUnderline = isStrike = 0;
-	rect.h = std::max(maxHeight, textHeight);
+	rect.h = maxHeight > 0 ? maxHeight : textHeight;
 	for (numLine = 0; numLine < lines.size(); ++numLine) {
 		addText();
 	}
@@ -489,16 +454,6 @@ void Text::setAlign(String hAlign, String vAlign) {
 }
 
 bool Text::checkAlpha(int x, int y) const {
-	if (texture) {
-		if (x < rect.w && y < rect.h) {
-			Uint32 color = Utils::getPixel(texture, x, y, rect.w, rect.h);
-			Uint32 alpha = color & 0xFF;
-			if (alpha > 0) {
-				return true;
-			}
-		}
-	}
-
 	for (const SDL_Rect &rect : rects) {
 		if (rect.x < x && x < rect.x + rect.w && rect.y < y && y < rect.y + rect.h) {
 			return true;
@@ -508,7 +463,7 @@ bool Text::checkAlpha(int x, int y) const {
 }
 
 void Text::draw() const {
-	if (!enabled()) return;
+	if (!enable) return;
 
 	for (size_t i = 0; i < lineTextures.size(); ++i) {
 		SDL_Texture *texture = lineTextures[i];

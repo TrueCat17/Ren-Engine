@@ -3,9 +3,8 @@
 
 #include "../group.h"
 
-class ScreenWindow;
+class Screen;
 class Node;
-
 class String;
 
 class ScreenChild: public Group {
@@ -15,19 +14,25 @@ private:
 protected:
 	static std::vector<ScreenChild*> screenObjects;
 
-	const ScreenWindow *window = nullptr;
+	const Screen *screen = nullptr;
 	ScreenChild *screenParent;
 
 	Node *node;
 
 	double xAnchor = 0;
 	double yAnchor = 0;
+	bool xAnchorIsDouble = false;
+	bool yAnchorIsDouble = false;
 
 	double xPos = 0;
 	double yPos = 0;
+	bool xPosIsDouble = false;
+	bool yPosIsDouble = false;
 
 	double xSize = 0.5;
 	double ySize = 0.5;
+	bool xSizeIsDouble = false;
+	bool ySizeIsDouble = false;
 
 	bool needUpdateChildren = true;
 

@@ -20,7 +20,6 @@ public:
 	static void destroyAll();
 
 	bool enable = true;
-	virtual bool enabled() const { return enable; }
 
 	SDL_Texture* texture = nullptr;
 
@@ -37,22 +36,16 @@ public:
 	virtual void updateGlobalX();
 	virtual void updateGlobalY();
 
-	virtual int getMinX() const;
-	virtual int getMinY() const;
-	virtual int getMaxX() const;
-	virtual int getMaxY() const;
+	int getX() const { return rect.x; }
+	int getY() const { return rect.y; }
 
-	int getWidth() const { return enabled() ? getMaxX() - getMinX() : 0; }
-	int getHeight() const { return enabled() ? getMaxY() - getMinY() : 0; }
+	void setX(int value) { rect.x = value; updateGlobalX(); }
+	void setY(int value) { rect.y = value; updateGlobalY(); }
 
-	virtual int getX() const { return rect.x; }
-	virtual int getY() const { return rect.y; }
-
-	virtual void setX(int value) { rect.x = value; updateGlobalX(); }
-	virtual void setY(int value) { rect.y = value; updateGlobalY(); }
+	int getWidth() const { return rect.w; }
+	int getHeight() const { return rect.h; }
 
 	void setPos(int x, int y);
-	void getSize(int &w, int &h) const;
 	void setSize(int w, int h);
 
 	virtual bool checkAlpha(int x, int y) const;
