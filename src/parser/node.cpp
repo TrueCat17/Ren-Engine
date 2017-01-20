@@ -223,7 +223,7 @@ void Node::execute() {
 		PyUtils::exec("renpy.call_screen('choose_menu', 'choose_menu_result')");
 
 		int toSleep = Game::getFrameTime();
-		while (GV::inGame && PyUtils::exec("read", true) != "True") {
+		while (GV::inGame && PyUtils::exec("menu_item_choosed", true) != "True") {
 			Utils::sleep(toSleep);
 		}
 		if (!GV::inGame) return;
@@ -389,7 +389,7 @@ void Node::jump(const String &label, bool isCall) {
 			return;
 		}
 	}
-	Utils::outMsg("Метка <" + label + "> не найдена");
+	Utils::outMsg("Node::jump(call)", "Метка <" + label + "> не найдена");
 }
 void Node::preloadImages(Node *node, int start, int count) {
 	for (size_t i = start; i < node->children.size() && count > 0; ++i) {
@@ -416,7 +416,7 @@ void Node::preloadImages(Node *node, int start, int count) {
 			Image::getImage(imageCode);
 		}else
 
-		if (childCommand == "jump" or childCommand == "call") {
+		if (childCommand == "jump" || childCommand == "call") {
 			String label = childParams;
 			for (size_t j = 0; j < GV::mainExecNode->children.size(); ++j) {
 				Node *t = GV::mainExecNode->children[j];

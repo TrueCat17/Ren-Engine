@@ -85,8 +85,8 @@ void MusicChannel::play(const std::string &desc) {
 	}
 	soundChannel->sound = sound;
 }
-void MusicChannel::stop(const String &desc) {
-	std::vector<String> words = desc.split(" ");
+void MusicChannel::stop(const std::string &desc) {
+	std::vector<String> words = String(desc).split(" ");
 	String channelName = words[0];
 
 	MusicChannel *soundChannel = nullptr;

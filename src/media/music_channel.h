@@ -18,7 +18,7 @@ public:
 	static void clear();
 	static void make(const std::string &name, const std::string &mixer, bool loop);
 	static void play(const std::string &desc);
-	static void stop(const String &desc);
+	static void stop(const std::string &desc);
 	static void setVolume(float value, const std::string &channelName);
 
 	String name;

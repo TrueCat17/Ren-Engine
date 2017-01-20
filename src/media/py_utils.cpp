@@ -44,9 +44,10 @@ PyUtils::PyUtils() {
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
 	pythonGlobal["_get_mods"] = py::make_function(Parser::getMods);
 
-	pythonGlobal["register_channel"] = py::make_function(MusicChannel::make);
-	pythonGlobal["volume"] = py::make_function(MusicChannel::setVolume);
-	pythonGlobal["play"] = py::make_function(MusicChannel::play);
+	pythonGlobal["_register_channel"] = py::make_function(MusicChannel::make);
+	pythonGlobal["_set_volume"] = py::make_function(MusicChannel::setVolume);
+	pythonGlobal["_play"] = py::make_function(MusicChannel::play);
+	pythonGlobal["_stop"] = py::make_function(MusicChannel::stop);
 
 	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
 	pythonGlobal["show_screen"] = py::make_function(Screen::addToShowSimply);

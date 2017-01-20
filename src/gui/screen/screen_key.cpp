@@ -57,6 +57,9 @@ void ScreenKey::setUpState(SDL_Scancode key) {
 void ScreenKey::updateProps() {
 	if (!isModal() || toNotReact) return;
 
+	firstKeyDelay = node->getProp("first_delay").toDouble() * 1000;
+	keyDelay = node->getProp("delay").toDouble() * 1000;
+
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {

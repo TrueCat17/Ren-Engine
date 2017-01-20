@@ -177,7 +177,7 @@ void Screen::updateScreens() {
 		}
 	}
 
-	auto zOrderCmp = [](DisplayObject *a, DisplayObject *b) -> int {
+	auto zOrderCmp = [](DisplayObject *a, DisplayObject *b) -> bool {
 		Screen *sA = dynamic_cast<Screen*>(a);
 		Screen *sB = dynamic_cast<Screen*>(b);
 		double zA = sA ? sA->zOrder() : 0;

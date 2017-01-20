@@ -95,12 +95,13 @@ void SyntaxChecker::init() {
 	addBlockChildren("hotspot", "action");
 
 	addBlockChildren("key, button, textbutton", "action");
+	addBlockChildren("key", "first_delay, delay");
 	addBlockChildren("button, textbutton", "background, hover_background");
 
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
 	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem", SuperParent::LABEL);
 	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" + screenProps + containerProps + textProps +
-					"modal, zorder, spacing, action, background, hover_background", SuperParent::SCREEN);
+					"modal, zorder, spacing, action, first_delay, delay, background, hover_background", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
 	setSuperParents(transformProps + "$, pass, break, continue, python, if, elif, else, for, while, image", ALL);
