@@ -137,8 +137,10 @@ void Text::setText(const String &text, int color) {
 			}
 
 			//Если перенос возможен, то разделяем текущую строку на две
-			String newLine = line.substr(n);
-			lines.insert(lines.begin() + i + 1, newLine);
+			if (int(line.size()) > n + 1) {
+				String newLine = line.substr(n + 1);
+				lines.insert(lines.begin() + i + 1, newLine);
+			}
 			lines[i].erase(n);
 			//И обрабатываем текущую строку снова
 			--i;

@@ -56,7 +56,7 @@ void MusicChannel::play(const std::string &desc) {
 	}
 
 	if (!soundChannel) {
-		Utils::outMsg("NusicChannel::play", "Канал <" + soundChannelName + "> не найден");
+		Utils::outMsg("MusicChannel::play", "Канал <" + soundChannelName + "> не найден");
 		return;
 	}
 
@@ -75,7 +75,7 @@ void MusicChannel::play(const std::string &desc) {
 
 	sound->volume = soundChannel->volume;
 	if (Mix_FadeInChannel(soundChannel->num, sound, soundChannel->loop ? -1 : 0, 0) == -1) {
-		Utils::outMsg("Mix_PlayChannel", Mix_GetError());
+		Utils::outMsg("Mix_FadeInChannel", Mix_GetError());
 		Mix_FreeChunk(sound);
 		return;
 	}
@@ -106,7 +106,10 @@ void MusicChannel::stop(const std::string &desc) {
 		Mix_FreeChunk(soundChannel->sound);
 		soundChannel->sound = nullptr;
 	}
-	Mix_HaltChannel(soundChannel->num);
+	if (Mix_FadeOutChannel(soundChannel->num, 0)){
+		Utils::outMsg("Mix_FadeOutChannel", Mix_GetError());
+		return;
+	}
 }
 
 MusicChannel::MusicChannel(const String &name, const String &mixer, bool loop):

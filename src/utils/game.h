@@ -4,6 +4,8 @@
 #include <thread>
 #include <string>
 
+#include <SDL2/SDL_stdinc.h> //Uint32
+
 
 class Game {
 private:
@@ -20,11 +22,15 @@ public:
 	static void startMod(const std::string &dir);
 	static void exitFromGame();
 
+	static bool hasLabel(const std::string &label);
+
 	static int getStageWidth();
 	static int getStageHeight();
 
 	static int getTextureWidth(const std::string &image);
 	static int getTextureHeight(const std::string &image);
+
+	static Uint32 getPixel(const std::string &image, int x, int y);
 
 	static std::string getFromConfig(const std::string &param);
 

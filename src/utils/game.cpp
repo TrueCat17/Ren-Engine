@@ -6,6 +6,7 @@
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
+#include "media/image.h"
 #include "media/music_channel.h"
 #include "media/py_utils.h"
 
@@ -14,7 +15,7 @@
 #include "utils/utils.h"
 
 
-size_t Game::maxFps = 30;
+size_t Game::maxFps = 60;
 
 size_t Game::fps = 60;
 size_t Game::frameTime = 17;
@@ -67,6 +68,15 @@ void Game::exitFromGame() {
 	GV::exit = true;
 }
 
+bool Game::hasLabel(const std::string &label) {
+	for (Node *node : GV::mainExecNode->children) {
+		if (node->command == "label" && node->name == label) {
+			return true;
+		}
+	}
+	return false;
+}
+
 
 int Game::getStageWidth() {
 	return GV::width;
@@ -91,6 +101,16 @@ int Game::getTextureHeight(const std::string &image) {
 	Utils::outMsg("Game::getTextureHeight", "surface == nullptr");
 	return -1;
 }
+
+Uint32 Game::getPixel(const std::string &image, int x, int y) {
+	SDL_Surface *surface = Image::getImage(image);
+	if (surface) {
+		return Utils::getPixel(surface, x, y, 0, 0);
+	}
+	Utils::outMsg("Game::getPixel", "surface == nullptr");
+	return -1;
+}
+
 
 std::string Game::getFromConfig(const std::string &param) {
 	return Config::get(param);

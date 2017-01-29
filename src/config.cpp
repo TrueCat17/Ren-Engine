@@ -60,6 +60,8 @@ void Config::set(const String &name, const String &value, const String &comment)
 }
 
 void Config::setDefault() {
+	set("window_title", "Ren-Engine");
+
 	set("window_x", "300");
 	set("window_y", "70");
 	set("window_width", "800");
@@ -106,7 +108,7 @@ void Config::load() {
 		}
 
 		line.deleteAll("\t");
-		line.deleteAll(" ");
+		//line.deleteAll(" ");
 
 		if (!line) continue;
 		if (line[0] == '#') {
@@ -129,7 +131,18 @@ void Config::load() {
 		}
 
 		String name = line.substr(0, indexAssign);
+		size_t startName = name.find_first_not_of(' ');
+		size_t endName = name.find_last_not_of(' ');
+		if (startName != endName) {
+			name = name.substr(startName, endName - startName + 1);
+		}
+
 		String value = line.substr(indexAssign + 1, indexComment - (indexAssign + 1));
+		size_t startValue = value.find_first_not_of(' ');
+		size_t endValue = value.find_last_not_of(' ');
+		if (startValue != endValue) {
+			value = value.substr(startValue, endValue - startValue + 1);
+		}
 
 		set(name, value, comment);
 	}

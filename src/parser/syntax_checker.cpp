@@ -62,7 +62,7 @@ void SyntaxChecker::init() {
 	const String textProps = ", color, size, font, size, text_align, text_valign, ";
 
 	const String transformProps = containerProps +
-								  "repeat, linear, ease, easein, easeout, pause, rotate, zoom, alpha, crop, size, reset, ";
+								  "repeat, linear, ease, easein, easeout, pause, rotate, zoom, alpha, crop, xysize, reset, ";
 
 	const String conditions = ", if, elif if elif, else if elif for while, ";
 

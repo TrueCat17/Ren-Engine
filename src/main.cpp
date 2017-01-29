@@ -126,8 +126,10 @@ bool init() {
 	size_t fps = Config::get("max_fps").toInt();
 	Game::setMaxFps(fps);
 
+	String windowTitle = Config::get("window_title");
+
 	int flags = SDL_WINDOW_RESIZABLE;
-	mainWindow = GV::mainWindow = SDL_CreateWindow("ES 2D", x, y, GV::width, GV::height, flags);
+	mainWindow = GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
 	if (!mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;

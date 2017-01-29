@@ -56,6 +56,8 @@ PyUtils::PyUtils() {
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
 	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);
 
+	pythonGlobal["_has_label"] = py::make_function(Game::hasLabel);
+
 	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
 	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
 	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
@@ -65,6 +67,7 @@ PyUtils::PyUtils() {
 
 	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);
 	pythonGlobal["get_texture_height"] = py::make_function(Game::getTextureHeight);
+	pythonGlobal["get_pixel"] = py::make_function(Game::getPixel);
 }
 
 PyUtils::~PyUtils() {

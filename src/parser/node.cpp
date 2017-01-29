@@ -57,14 +57,8 @@ void Node::execute() {
 			mainLabel = PyUtils::exec("mods_last_key", true);
 			try {
 				jump(mainLabel, false);
-			}catch (ExitException) {
-				while (PyUtils::exec("bool(auto_exit)", true) == "False") {
-					try {
-						jump("update", false);
-					}catch (ExitException) {}
-					Utils::sleep(Game::getFrameTime(), true);
-				}
-			}
+			}catch (ExitException) {}
+
 		}catch (ContinueException) {
 			Utils::outMsg("Node::execute", "continue вне цикла");
 		}catch (BreakException) {
@@ -247,7 +241,7 @@ void Node::execute() {
 	}else
 
 	if (command == "if") {
-		String execRes = PyUtils::exec(params, true);
+		String execRes = PyUtils::exec("bool(" + params + ")", true);
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
@@ -265,7 +259,7 @@ void Node::execute() {
 		}
 		if (t->condIsTrue) return;
 
-		String execRes = PyUtils::exec(params, true);
+		String execRes = PyUtils::exec("bool(" + params + ")", true);
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
