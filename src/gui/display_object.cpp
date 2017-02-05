@@ -46,7 +46,8 @@ void DisplayObject::setSize(int w, int h) {
 
 bool DisplayObject::checkAlpha(int x, int y) const {
 	if (texture && (x < rect.w && y < rect.h)) {
-		Uint32 color = Utils::getPixel(texture, x, y, rect.w, rect.h);
+		SDL_Rect rect = {x, y, this->rect.w, this->rect.h};
+		Uint32 color = Utils::getPixel(texture, rect, crop);
 		Uint32 alpha = color & 0xFF;
 		if (alpha > 0) {
 			return true;
@@ -63,7 +64,7 @@ void DisplayObject::draw() const {
 		t.x = globalX;
 		t.y = globalY;
 
-		if (SDL_RenderCopy(GV::mainRenderer, texture, nullptr, &t)) {
+		if (SDL_RenderCopy(GV::mainRenderer, texture, &crop, &t)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 		}
 	}

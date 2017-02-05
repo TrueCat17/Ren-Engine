@@ -27,7 +27,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 	y = (getGlobalY() + y) / scaleY;
 
 	SDL_Texture *ground = parent->texture;
-	Uint32 groundPixel = Utils::getPixel(ground, x, y, 0, 0);
+	Uint32 groundPixel = Utils::getPixel(ground, parent->getDrawRect(), parent->getCropRect());
 
 	ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
 	if (!imagemap) {
@@ -35,7 +35,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 		return true;
 	}
 	SDL_Texture *hover = imagemap->hover;
-	Uint32 hoverPixel = Utils::getPixel(hover, x, y, 0, 0);
+	Uint32 hoverPixel = Utils::getPixel(hover, parent->getDrawRect(), parent->getCropRect());
 
 	return groundPixel != hoverPixel;
 }

@@ -10,6 +10,7 @@ class String;
 class ScreenChild: public Group {
 private:
 	bool _isFakeContainer = false;
+	bool _canCrop = false;
 
 protected:
 	static std::vector<ScreenChild*> screenObjects;
@@ -54,6 +55,7 @@ public:
 
 	bool isModal() const;
 	bool isFakeContainer() const { return _isFakeContainer; }
+	bool canCrop() const { return _canCrop; }
 };
 
 #endif // SCREENCHILD_H

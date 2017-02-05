@@ -75,8 +75,8 @@ public:
 	static void destroyAllTextures();
 	static void destroyAllSurfaces();
 
-	static Uint32 getPixel(const SDL_Surface *surface, int x, int y, int drawW, int drawH);
-	static Uint32 getPixel(SDL_Texture *texture, int x, int y, int drawW, int drawH);
+	static Uint32 getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop);
+	static Uint32 getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop);
 
 	static void registerImage(const String &desc);
 	static std::string getImageCode(const std::string &name);

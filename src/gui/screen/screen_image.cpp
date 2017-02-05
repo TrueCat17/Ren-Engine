@@ -10,14 +10,13 @@ ScreenImage::ScreenImage(Node *node):
 { }
 
 void ScreenImage::updateProps() {
-	ScreenContainer::updateProps();
-
 	imagePath = PyUtils::exec(imageCode, true);
+	texture = Utils::getTexture(imagePath);
+
+	ScreenContainer::updateProps();
 }
 
 void ScreenImage::updateSize() {
-	texture = Utils::getTexture(imagePath);
-
 	if (xSize <= 0) xSize = Utils::getTextureWidth(texture);
 	if (ySize <= 0) ySize = Utils::getTextureHeight(texture);
 

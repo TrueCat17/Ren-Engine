@@ -14,10 +14,13 @@ std::vector<ScreenChild*> ScreenChild::screenObjects;
 ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent) {
 	screenObjects.push_back(this);
 
+	this->node = node;
+
 	this->screenParent = screenParent;
 	_isFakeContainer = screenParent && screenParent != this;
 
-	this->node = node;
+	const String &type = getType();
+	_canCrop = type == "image" || type == "button" || type == "textbutton" || type == "imagemap";
 }
 ScreenChild::~ScreenChild() {
 	auto i = std::find(screenObjects.begin(), screenObjects.end(), this);
@@ -121,6 +124,41 @@ void ScreenChild::updateProps() {
 	ySizeIsDouble = ySizeStr.contains('.') && ySize > 0 && ySize <= 1;
 	if (ySizeStr != "None" && !ySizeStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps", "ysize is not a number (" + ySizeStr + ")");
+	}
+
+	if (canCrop()) {
+		String cropStr = node->getProp("crop");
+		if (cropStr && cropStr != "None") {
+			char start = cropStr.front();
+			char end = cropStr.back();
+			if ((start == '(' && end == ')') ||
+				(start == '[' && end == ']'))
+			{
+				cropStr = cropStr.substr(1, cropStr.size() - 2);
+				std::vector<String> cropVec = cropStr.split(", ");
+				if (cropVec.size() == 4) {
+					double x = cropVec[0].toDouble();
+					double y = cropVec[1].toDouble();
+					double w = cropVec[2].toDouble();
+					double h = cropVec[3].toDouble();
+
+					if ((x > 0 && x < 1) || cropVec[0] == "1.0") x *= Utils::getTextureWidth(texture);
+					if ((y > 0 && y < 1) || cropVec[1] == "1.0") y *= Utils::getTextureHeight(texture);
+					if ((w > 0 && w < 1) || cropVec[2] == "1.0") w *= Utils::getTextureWidth(texture);
+					if ((h > 0 && h < 1) || cropVec[3] == "1.0") h *= Utils::getTextureHeight(texture);
+
+					crop = {int(x), int(y), int(w), int(h)};
+				}else {
+					Utils::outMsg("ScreenChild::updateProps", String() +
+								  "В свойстве crop ожидался список из 4-х значений, получено " + cropStr.size() + "\n"
+								  "crop: <" + start + cropStr + end + ">");
+				}
+			}else {
+				Utils::outMsg("ScreenChild::updateProps", String() +
+							  "В свойстве crop ожидался список из 4-х значений\n"
+							  "crop: <" + cropStr + ">");
+			}
+		}
 	}
 }
 

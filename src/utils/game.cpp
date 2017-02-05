@@ -103,9 +103,11 @@ int Game::getTextureHeight(const std::string &image) {
 }
 
 Uint32 Game::getPixel(const std::string &image, int x, int y) {
-	SDL_Surface *surface = Image::getImage(image);
+	const SDL_Surface *surface = Image::getImage(image);
 	if (surface) {
-		return Utils::getPixel(surface, x, y, 0, 0);
+		SDL_Rect draw = {x, y, surface->w, surface->h};
+		SDL_Rect crop = {0, 0, surface->w, surface->h};
+		return Utils::getPixel(surface, draw, crop);
 	}
 	Utils::outMsg("Game::getPixel", "surface == nullptr");
 	return -1;

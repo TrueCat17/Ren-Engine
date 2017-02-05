@@ -13,11 +13,13 @@ protected:
 	int globalY = 0;
 
 	SDL_Rect rect;
+	SDL_Rect crop;
 
 public:
 	static std::vector<DisplayObject*> objects;
 	static bool useTexture(SDL_Texture *texture);
 	static void destroyAll();
+
 
 	bool enable = true;
 
@@ -29,6 +31,9 @@ public:
 	virtual ~DisplayObject();
 
 	void removeFromParent();
+
+	const SDL_Rect& getDrawRect() const { return rect; }
+	const SDL_Rect& getCropRect() const { return crop; }
 
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }

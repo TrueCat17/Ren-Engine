@@ -257,10 +257,12 @@ void ScreenContainer::addChildrenFromNode() {
 				--countInitChildren;
 			}
 
-			static const std::vector<String> props = String("has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
-															"align, anchor, pos, xysize, "
-															"modal, zorder, background, hover_background, ground, hover, action, "
-															"color, font, size, text_align").split(", ");
+			static const std::vector<String> props = String(
+				"has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
+				"align, anchor, pos, xysize, crop, "
+				"modal, zorder, ground, hover, action, "
+				"color, font, size, text_align"
+			).split(", ");
 
 			if (!Utils::in(childNode->command, props)) {
 				Utils::outMsg("ScreenContainer::addChildrenFromNode", "Неизвестный тип потомка <" + childNode->command + ">");

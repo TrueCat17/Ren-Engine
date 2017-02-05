@@ -140,9 +140,7 @@ void Config::load() {
 		String value = line.substr(indexAssign + 1, indexComment - (indexAssign + 1));
 		size_t startValue = value.find_first_not_of(' ');
 		size_t endValue = value.find_last_not_of(' ');
-		if (startValue != endValue) {
-			value = value.substr(startValue, endValue - startValue + 1);
-		}
+		value = value.substr(startValue, endValue - startValue + 1);
 
 		set(name, value, comment);
 	}

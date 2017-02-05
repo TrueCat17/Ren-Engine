@@ -14,18 +14,21 @@ ScreenTextButton::ScreenTextButton(Node* node): ScreenText(node) {
 }
 
 void ScreenTextButton::updateProps() {
-	ScreenText::updateProps();
+	String newGround = node->getProp("ground");
+	String newHover = node->getProp("hover");
 
-	String newBackground = node->getProp("background");
-	String newHoverBackground = node->getProp("hover_background");
-
-	if (newHoverBackground) {
-		hoverBackground = newHoverBackground;
+	if (newHover) {
+		hover = newHover;
 	}else
-	if (background != newBackground) {
-		hoverBackground = PyUtils::exec("im.MatrixColor('" + newBackground + "', im.matrix.contrast(1.5))", true);
+	if (ground != newGround) {
+		hover = PyUtils::exec("im.MatrixColor('" + newGround + "', im.matrix.contrast(1.5))", true);
 	}
-	background = newBackground;
+	ground = newGround;
+
+	String path = !btnRect.mouseOvered ? ground : hover;
+	texture = Utils::getTexture(path);
+
+	ScreenText::updateProps();
 
 	if (btnRect.mouseDown && isModal()) {
 		btnRect.onClick();
@@ -33,9 +36,6 @@ void ScreenTextButton::updateProps() {
 }
 
 void ScreenTextButton::updateSize() {
-	String path = !btnRect.mouseOvered ? background : hoverBackground;
-	texture = Utils::getTexture(path);
-
 	if (xSize <= 0) xSize = Utils::getTextureWidth(texture);
 	if (ySize <= 0) ySize = Utils::getTextureHeight(texture);
 

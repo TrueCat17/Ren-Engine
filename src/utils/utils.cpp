@@ -392,19 +392,14 @@ void Utils::destroyAllSurfaces() {
 	surfaces.clear();
 }
 
-Uint32 Utils::getPixel(const SDL_Surface *surface, int x, int y, int drawW, int drawH) {
+Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {
 		Utils::outMsg("Utils::getPixel", "surface == nullptr");
 		return 0;
 	}
 
-	int w = surface->w;
-	int h = surface->h;
-
-	if (drawW && drawH) {
-		x = double(x) * w / drawW;
-		y = double(y) * h / drawH;
-	}
+	int x = crop.x + draw.x * crop.w / draw.w;
+	int y = crop.y + draw.y * crop.h / draw.h;
 
 	const int bpp = surface->format->BytesPerPixel;
 	/* Here p is the address to the pixel we want to retrieve */
@@ -425,9 +420,9 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, int x, int y, int drawW, int 
 		return 0;       /* shouldn't happen, but avoids warnings */
 	}
 }
-Uint32 Utils::getPixel(SDL_Texture *texture, int x, int y, int drawW, int drawH) {
+Uint32 Utils::getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop) {
 	const SDL_Surface *surface = textureSurfaces[texture];
-	return getPixel(surface, x, y, drawW, drawH);
+	return getPixel(surface, draw, crop);
 }
 
 void Utils::registerImage(const String &desc) {

@@ -8,8 +8,8 @@
 
 class ScreenTextButton: public ScreenText {
 private:
-	String background;
-	String hoverBackground;
+	String ground;
+	String hover;
 
 public:
 	BtnRect btnRect;

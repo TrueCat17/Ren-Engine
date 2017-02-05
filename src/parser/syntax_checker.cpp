@@ -58,11 +58,11 @@ void SyntaxChecker::init() {
 	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
 
 	const String screenProps = ", use, key, ";
-	const String containerProps = ", has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, ";
+	const String simpleProps = ", xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, crop, ";
+	const String containerProps = ", has, spacing, ";
 	const String textProps = ", color, size, font, size, text_align, text_valign, ";
 
-	const String transformProps = containerProps +
-								  "repeat, linear, ease, easein, easeout, pause, rotate, zoom, alpha, crop, xysize, reset, ";
+	const String imageProps = simpleProps + "repeat, linear, ease, easein, easeout, pause, rotate, zoom, alpha, reset, ";
 
 	const String conditions = ", if, elif if elif, else if elif for while, ";
 
@@ -81,30 +81,32 @@ void SyntaxChecker::init() {
 	addBlockChildren("if, elif, else, for, while", screenElems + "pass, pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with, continue, break");
 	addBlockChildren("for, while", "continue, break");
 
-	addBlockChildren("show, scene, window" + screenElems, transformProps);
+	addBlockChildren("show, scene, image", imageProps);
+	addBlockChildren(screenElems, simpleProps + containerProps);
 
 	addBlockChildren("screen", "modal, zorder");
 	addBlockChildren("screen, if, elif, else, for, while", screenProps);
 	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python");
-	addBlockChildren("screen" + screenElems, containerProps + transformProps);
+	addBlockChildren("screen" + screenElems, simpleProps + containerProps);
 	addBlockChildren("if, else, elif, for, while", "$, python");
 
 	addBlockChildren("text, textbutton", textProps);
 
-	addBlockChildren("imagemap", "hotspot, ground, hover" + containerProps);
+	addBlockChildren("imagemap", "hotspot" + simpleProps + containerProps);
 	addBlockChildren("hotspot", "action");
 
 	addBlockChildren("key, button, textbutton", "action");
 	addBlockChildren("key", "first_delay, delay");
-	addBlockChildren("button, textbutton", "background, hover_background");
+	addBlockChildren("imagemap, button, textbutton", "ground, hover");
 
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
-	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem", SuperParent::LABEL);
-	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" + screenProps + containerProps + textProps +
-					"modal, zorder, spacing, action, first_delay, delay, background, hover_background", SuperParent::SCREEN);
+	setSuperParents(imageProps, SuperParent::INIT);
+	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem" + imageProps, SuperParent::LABEL);
+	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" + screenProps + simpleProps + containerProps + textProps +
+					"modal, zorder, spacing, action, first_delay, delay", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
-	setSuperParents(transformProps + "$, pass, break, continue, python, if, elif, else, for, while, image", ALL);
+	setSuperParents("$, pass, break, continue, python, if, elif, else, for, while, image", ALL);
 
 	//check
 	if (!true) {
