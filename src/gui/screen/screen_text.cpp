@@ -35,7 +35,6 @@ void ScreenText::calculateProps() {
 
 		size = node->getProp("size").toInt();
 		if (!size) size = 20;
-		if (size % 2) size += 1;
 	}
 
 	ScreenChild::calculateProps();

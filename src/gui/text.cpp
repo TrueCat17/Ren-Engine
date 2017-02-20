@@ -17,7 +17,6 @@ void Text::setFont(String fontName, int textSize, bool setAsOriginal) {
 
 	if (textSize < MIN_TEXT_SIZE) textSize = MIN_TEXT_SIZE;
 	if (textSize > MAX_TEXT_SIZE) textSize = MAX_TEXT_SIZE;
-	if (textSize % 2) textSize += 1;
 	this->textSize = textSize;
 	this->fontName = fontName;
 
