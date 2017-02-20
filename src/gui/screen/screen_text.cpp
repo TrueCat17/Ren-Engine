@@ -16,7 +16,7 @@ ScreenText::ScreenText(Node *node):
 	addChild(tf);
 }
 
-void ScreenText::updateProps() {
+void ScreenText::calculateProps() {
 	text = PyUtils::exec(textExec, true);
 	if (text) {
 		font = node->getProp("font");
@@ -38,7 +38,7 @@ void ScreenText::updateProps() {
 		if (size % 2) size += 1;
 	}
 
-	ScreenChild::updateProps();
+	ScreenChild::calculateProps();
 }
 
 void ScreenText::updateSize() {

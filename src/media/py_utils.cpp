@@ -11,7 +11,7 @@
 
 #include "gui/screen/screen.h"
 
-#include "music_channel.h"
+#include "music.h"
 
 #include "parser/parser.h"
 
@@ -44,10 +44,11 @@ PyUtils::PyUtils() {
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
 	pythonGlobal["_get_mods"] = py::make_function(Parser::getMods);
 
-	pythonGlobal["_register_channel"] = py::make_function(MusicChannel::make);
-	pythonGlobal["_set_volume"] = py::make_function(MusicChannel::setVolume);
-	pythonGlobal["_play"] = py::make_function(MusicChannel::play);
-	pythonGlobal["_stop"] = py::make_function(MusicChannel::stop);
+	pythonGlobal["_register_channel"] = py::make_function(Music::registerChannel);
+	pythonGlobal["_set_volume"] = py::make_function(Music::setVolume);
+	pythonGlobal["_set_mixer_volume"] = py::make_function(Music::setMixerVolume);
+	pythonGlobal["_play"] = py::make_function(Music::play);
+	pythonGlobal["_stop"] = py::make_function(Music::stop);
 
 	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
 	pythonGlobal["show_screen"] = py::make_function(Screen::addToShowSimply);

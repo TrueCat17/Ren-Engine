@@ -6,7 +6,7 @@
 class ScreenContinue: public ScreenChild {
 public:
 	ScreenContinue(Node *node);
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENCONTINUE_H

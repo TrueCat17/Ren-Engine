@@ -10,7 +10,7 @@ private:
 	String condition;
 public:
 	ScreenIf(Node* node, ScreenChild *screenParent);
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENIF_H

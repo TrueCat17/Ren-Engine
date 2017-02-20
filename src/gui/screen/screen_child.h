@@ -3,8 +3,9 @@
 
 #include "../group.h"
 
+#include "parser/node.h"
+
 class Screen;
-class Node;
 class String;
 
 class ScreenChild: public Group {
@@ -47,9 +48,9 @@ public:
 	ScreenChild(Node *node, ScreenChild *screenParent);
 	virtual ~ScreenChild();
 
-	const String& getType() const;
+	const String& getType() const { return node->command; }
 
-	virtual void updateProps();
+	virtual void calculateProps();
 	virtual void updateSize();
 	virtual void updatePos();
 

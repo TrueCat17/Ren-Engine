@@ -22,7 +22,7 @@ void GUI::update() {
 			if (scr) {
 				try {
 					//int a = Utils::getTimer();
-					scr->updateProps();
+					scr->calculateProps();
 					//int b = Utils::getTimer();
 					scr->updateSize();
 					//int c = Utils::getTimer();

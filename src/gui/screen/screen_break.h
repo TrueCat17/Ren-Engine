@@ -6,7 +6,7 @@
 class ScreenBreak: public ScreenChild {
 public:
 	ScreenBreak(Node *node);
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENBREAK_H

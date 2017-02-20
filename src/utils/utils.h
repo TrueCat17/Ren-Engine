@@ -29,7 +29,7 @@ private:
 	static std::map<String, String> images;
 
 	static std::vector<std::pair<String, SDL_Texture*>> textures;
-	static std::map<SDL_Texture*, SDL_Surface*> textureSurfaces;
+	static std::map<const SDL_Texture*, SDL_Surface*> textureSurfaces;
 
 	static std::vector<std::pair<String, SDL_Surface*>> surfaces;
 
@@ -59,15 +59,16 @@ public:
 
 	static size_t getStartArg(const String& args, size_t end);
 	static size_t getEndArg(const String& args, size_t start);
+	static String clear(String s);
 	static std::vector<String> getArgs(String args);
 
 	static size_t getTextureWidth(SDL_Texture *texture);
 	static size_t getTextureHeight(SDL_Texture *texture);
 
-	static void trimTexturesCache();
+	static void trimTexturesCache(const SDL_Surface *last);
 	static SDL_Texture* getTexture(const String &path);
 
-	static void trimSurfacesCache();
+	static void trimSurfacesCache(const SDL_Surface* last);
 	static SDL_Surface* getThereIsSurfaceOrNull(const String &path);
 	static SDL_Surface* getSurface(const String &path);
 	static void setSurface(const String &path, SDL_Surface *surface);

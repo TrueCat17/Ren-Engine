@@ -7,7 +7,7 @@
 #include "gui/screen/style.h"
 
 #include "media/image.h"
-#include "media/music_channel.h"
+#include "media/music.h"
 #include "media/py_utils.h"
 
 #include "parser/parser.h"
@@ -47,7 +47,7 @@ void Game::_startMod(const std::string &dir) {
 	DisplayObject::destroyAll();
 	GV::screens = new Group();
 
-	MusicChannel::clear();
+	Music::clear();
 	Style::destroyAll();
 
 	GV::updateGuard.unlock();

@@ -9,11 +9,11 @@ ScreenImage::ScreenImage(Node *node):
 	imageCode(node->getFirstParam())
 { }
 
-void ScreenImage::updateProps() {
+void ScreenImage::calculateProps() {
 	imagePath = PyUtils::exec(imageCode, true);
 	texture = Utils::getTexture(imagePath);
 
-	ScreenContainer::updateProps();
+	ScreenContainer::calculateProps();
 }
 
 void ScreenImage::updateSize() {

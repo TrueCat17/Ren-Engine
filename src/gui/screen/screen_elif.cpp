@@ -10,11 +10,11 @@ ScreenElif::ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *p
 	this->prevContainer = prevContainer;
 }
 
-void ScreenElif::updateProps() {
+void ScreenElif::calculateProps() {
 	if (prevContainersSkipped()) {
 		skipped = PyUtils::exec(condition, true) != "True";
 		if (!skipped) {
-			ScreenContainer::updateProps();
+			ScreenContainer::calculateProps();
 		}
 	}else {
 		skipped = true;

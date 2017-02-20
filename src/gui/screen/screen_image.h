@@ -13,7 +13,7 @@ private:
 public:
 	ScreenImage(Node *node);
 
-	virtual void updateProps();
+	virtual void calculateProps();
 	virtual void updateSize();
 };
 

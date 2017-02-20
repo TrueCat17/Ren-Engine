@@ -26,7 +26,7 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 	init = iterName + " = iter(" + afterIn + ")";
 	onStep = beforeIn + " = " + iterName + ".next()";
 }
-void ScreenFor::updateProps() {
+void ScreenFor::calculateProps() {
 	skipped = true;
 	size_t i = 0;
 
@@ -46,7 +46,7 @@ void ScreenFor::updateProps() {
 			for (size_t j = 0; j < countInitChildren; ++j) {
 				ScreenChild *child = dynamic_cast<ScreenChild*>(screenChildren[i + j]);
 				if (child) {
-					child->updateProps();
+					child->calculateProps();
 				}
 			}
 		}catch (ContinueException) {
@@ -61,5 +61,5 @@ void ScreenFor::updateProps() {
 	}
 
 	inited = true;
-	ScreenContainer::updateProps();
+	ScreenContainer::calculateProps();
 }

@@ -6,10 +6,10 @@ ScreenElse::ScreenElse(Node *node, ScreenChild *screenParent, ScreenContainer *p
 	this->prevContainer = prevContainer;
 }
 
-void ScreenElse::updateProps() {
+void ScreenElse::calculateProps() {
 	if (prevContainersSkipped()) {
 		skipped = false;
-		ScreenContainer::updateProps();
+		ScreenContainer::calculateProps();
 	}else {
 		skipped = true;
 	}

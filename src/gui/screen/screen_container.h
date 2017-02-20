@@ -29,7 +29,7 @@ public:
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
-	virtual void updateProps();
+	virtual void calculateProps();
 	virtual void updateSize();
 
 	virtual void draw() const;

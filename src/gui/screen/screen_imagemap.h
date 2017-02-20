@@ -14,7 +14,7 @@ public:
 
 	ScreenImagemap(Node *node);
 
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENIMAGEMAP_H

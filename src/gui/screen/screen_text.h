@@ -26,7 +26,7 @@ protected:
 
 public:
 	ScreenText(Node *node);
-	virtual void updateProps();
+	virtual void calculateProps();
 	virtual void updateSize();
 };
 

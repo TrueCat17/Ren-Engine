@@ -1,9 +1,10 @@
 #include <iostream>
 
 #include <SDL2/SDL.h>
+#undef main //on Windows: int main(int argc, char **argv), but need: int main()
+
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_mixer.h>
 
 #include "gv.h"
 #include "config.h"
@@ -13,6 +14,7 @@
 #include "gui/screen/screen_child.h"
 #include "gui/screen/screen_key.h"
 
+#include "media/music.h"
 #include "media/py_utils.h"
 
 #include "parser/syntax_checker.h"
@@ -91,25 +93,12 @@ bool init() {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
 	}
+	Music::init();
 
 	Mouse::init();
 
 	if (TTF_Init()) {
 		Utils::outMsg("TTF_Init", TTF_GetError());
-		return true;
-	}
-
-	int mixInitFlags = MIX_INIT_OGG | MIX_INIT_MP3;
-	if ((Mix_Init(mixInitFlags) & mixInitFlags) != mixInitFlags) {
-		Utils::outMsg("Mix_Init", Mix_GetError());
-		return true;
-	}
-	if (Mix_SetSoundFonts((Utils::ROOT + "sounds/TimGM6mb.sf2").c_str()) == -1) {
-		Utils::outMsg("Mix_SetSoundFonts", Mix_GetError());
-		return true;
-	}
-	if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 4096) == -1) {
-		Utils::outMsg("Mix_OpenAudio", Mix_GetError());
 		return true;
 	}
 
@@ -288,42 +277,11 @@ void loop() {
 }
 
 void destroy() {
-	//0.5 sec -> 0
-	bool fastExit = true;
-	if (fastExit) {
-		std::cout << "\nOk!\n";
-		std::exit(0);
-	}
-
-	GV::inGame = false;
-
-	int toSleep = Game::getFrameTime() * 2;
-	Utils::sleep(toSleep, false);
-
-	DisplayObject::destroyAll();
-	Utils::destroyAllTextures();
-	Utils::destroyAllSurfaces();
-	Utils::destroyAllFonts();
-
-	Mouse::quit();
-	TTF_Quit();
-	Mix_CloseAudio();
-	Mix_Quit();
-
-	SDL_DestroyRenderer(mainRenderer);
-	SDL_DestroyWindow(mainWindow);
-	SDL_Quit();
-
-	delete GV::pyUtils;
-
 	std::cout << "\nOk!\n";
+	std::exit(0);
 }
 
-int main(int argc, char **argv) {
-	//Чтобы не было варнингов
-	argc += 1;
-	argv += 1;
-
+int main() {
 	setlocale(LC_ALL, "ru_RU.utf8");
 
 	if (init()) {

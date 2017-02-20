@@ -16,7 +16,7 @@ ScreenWhile::ScreenWhile(Node *node, ScreenChild *screenParent):
 	}
 }
 
-void ScreenWhile::updateProps() {
+void ScreenWhile::calculateProps() {
 	skipped = true;
 	size_t i = 0;
 
@@ -33,7 +33,7 @@ void ScreenWhile::updateProps() {
 			for (size_t j = 0; j < countInitChildren; ++j) {
 				ScreenChild *child = dynamic_cast<ScreenChild*>(screenChildren[i + j]);
 				if (child) {
-					child->updateProps();
+					child->calculateProps();
 				}
 			}
 		}catch (ContinueException) {
@@ -48,5 +48,5 @@ void ScreenWhile::updateProps() {
 	}
 
 	inited = true;
-	ScreenContainer::updateProps();
+	ScreenContainer::calculateProps();
 }

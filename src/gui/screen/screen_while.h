@@ -11,7 +11,7 @@ private:
 
 public:
 	ScreenWhile(Node *node, ScreenChild *screenParent);
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENWHILE_H

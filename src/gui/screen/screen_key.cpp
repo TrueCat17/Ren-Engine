@@ -54,7 +54,7 @@ void ScreenKey::setUpState(SDL_Scancode key) {
 }
 
 
-void ScreenKey::updateProps() {
+void ScreenKey::calculateProps() {
 	if (!isModal() || toNotReact) return;
 
 	firstKeyDelay = node->getProp("first_delay").toDouble() * 1000;

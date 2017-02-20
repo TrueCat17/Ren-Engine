@@ -31,7 +31,7 @@ public:
 	ScreenKey(Node *node);
 	~ScreenKey();
 
-	virtual void updateProps();
+	virtual void calculateProps();
 	virtual void updateSize();
 	virtual void updatePos();
 };

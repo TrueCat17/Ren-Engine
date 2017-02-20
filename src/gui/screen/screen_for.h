@@ -12,7 +12,7 @@ private:
 
 public:
 	ScreenFor(Node *node, ScreenChild *screenParent);
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENFOR_H

@@ -11,7 +11,7 @@ private:
 
 public:
 	ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer);
-	virtual void updateProps();
+	virtual void calculateProps();
 };
 
 #endif // SCREENELIF_H

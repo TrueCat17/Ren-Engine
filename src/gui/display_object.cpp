@@ -63,7 +63,7 @@ void DisplayObject::draw() const {
 		SDL_Rect t = rect;
 		t.x = globalX;
 		t.y = globalY;
-
+		//SDL_SetTextureAlphaMod(texture, 128 + 64);
 		if (SDL_RenderCopy(GV::mainRenderer, texture, &crop, &t)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 		}
@@ -71,7 +71,7 @@ void DisplayObject::draw() const {
 }
 bool DisplayObject::useTexture(SDL_Texture *texture) {
 	for (const DisplayObject *obj : objects) {
-		if (obj->texture == texture) {
+		if (obj->enable && obj->texture == texture) {
 			return true;
 		}
 	}

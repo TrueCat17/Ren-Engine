@@ -6,8 +6,6 @@
 #include "utils/string.h"
 
 class Image {
-private:
-	static String clear(String s);
 public:
 	static SDL_Surface* getImage(String desc);
 };

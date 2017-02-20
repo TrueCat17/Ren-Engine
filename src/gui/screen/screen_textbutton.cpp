@@ -13,7 +13,7 @@ ScreenTextButton::ScreenTextButton(Node* node): ScreenText(node) {
 	btnRect.init(this, onClick);
 }
 
-void ScreenTextButton::updateProps() {
+void ScreenTextButton::calculateProps() {
 	String newGround = node->getProp("ground");
 	String newHover = node->getProp("hover");
 
@@ -28,7 +28,7 @@ void ScreenTextButton::updateProps() {
 	String path = !btnRect.mouseOvered ? ground : hover;
 	texture = Utils::getTexture(path);
 
-	ScreenText::updateProps();
+	ScreenText::calculateProps();
 
 	if (btnRect.mouseDown && isModal()) {
 		btnRect.onClick();

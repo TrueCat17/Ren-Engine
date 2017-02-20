@@ -73,7 +73,7 @@ void Screen::show(const String &name, const String &dependOn) {
 	scr->name = name;
 	GV::screens->addChild(scr);
 
-	scr->updateProps();
+	scr->calculateProps();
 }
 
 void Screen::addToHideSimply(const std::string &name) {

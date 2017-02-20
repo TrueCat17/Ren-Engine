@@ -25,7 +25,7 @@ std::map<String, TTF_Font*> Utils::fonts;
 std::map<String, String> Utils::images;
 
 std::vector<std::pair<String, SDL_Texture*>> Utils::textures;
-std::map<SDL_Texture*, SDL_Surface*> Utils::textureSurfaces;
+std::map<const SDL_Texture*, SDL_Surface*> Utils::textureSurfaces;
 
 std::vector<std::pair<String, SDL_Surface*>> Utils::surfaces;
 
@@ -166,6 +166,32 @@ size_t Utils::getEndArg(const String& args, size_t start) {
 	}
 	return i;
 }
+
+String Utils::clear(String s) {
+	size_t start = s.find_first_not_of(' ');
+	size_t end = s.find_last_not_of(' ') + 1;
+
+	if (start == size_t(-1)) start = 0;
+	if (!end) end = s.size();
+	s = s.substr(start, end - start);
+
+
+	size_t n = 0;
+	while (n < s.size() && s[n] == '(') {
+		if (s[s.size() - n - 1] == ')') {
+			++n;
+		}else{
+			Utils::outMsg("Utils::clear", "Путаница в скобках:\n<" + s + ">");
+			return nullptr;
+		}
+	}
+	start = n;
+	end = s.size() - n;
+	s = s.substr(start, end - start);
+
+	return s;
+}
+
 std::vector<String> Utils::getArgs(String args) {
 	size_t start = args.find_first_not_of(' ');
 	size_t end = args.find_last_not_of(' ') + 1;
@@ -209,7 +235,7 @@ size_t Utils::getTextureHeight(SDL_Texture *texture) {
 }
 
 
-void Utils::trimTexturesCache() {
+void Utils::trimTexturesCache(const SDL_Surface *last) {
 	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
 	 * пока кэш не уменьшится до нужных размеров
 	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
@@ -217,20 +243,30 @@ void Utils::trimTexturesCache() {
 	 * После всего этого новая текстура добавляется в конец кэша
 	 */
 
-	const size_t MAX_SIZE = Config::get("max_size_textures_cache").toInt();
+	const size_t MAX_SIZE = Config::get("max_size_textures_cache").toInt() * (1 << 20);//в МБ
+
+	size_t cacheSize = last->w * last->h * 4;
+	for (auto &p : textures) {
+		const SDL_Texture *texture = p.second;
+		const SDL_Surface *surface = textureSurfaces[texture];
+		cacheSize += surface->w * surface->h * 4;
+	}
 
 	size_t i = 0;
-	while (textures.size() >= MAX_SIZE) {
-		SDL_Texture *_texture = textures[i].second;
-		while (i < textures.size() && DisplayObject::useTexture(_texture)) {
+	while (cacheSize > MAX_SIZE) {
+		SDL_Texture *texture = textures[i].second;
+		while (i < textures.size() && DisplayObject::useTexture(texture)) {
 			++i;
-			_texture = textures[i].second;
+			texture = textures[i].second;
 		}
 		if (i == textures.size()) break;
 
-		SDL_DestroyTexture(_texture);
+		const SDL_Surface *surface = textureSurfaces[texture];
+		cacheSize -= surface->w * surface->h * 4;
 
-		textureSurfaces.erase(textureSurfaces.find(_texture));
+		SDL_DestroyTexture(texture);
+
+		textureSurfaces.erase(textureSurfaces.find(texture));
 		textures.erase(textures.begin() + i, textures.begin() + i + 1);
 	}
 }
@@ -258,7 +294,7 @@ SDL_Texture* Utils::getTexture(const String &path) {
 		if (texture) {
 			textureSurfaces[texture] = surface;
 
-			trimTexturesCache();
+			trimTexturesCache(surface);
 			textures.push_back(std::pair<String, SDL_Texture*>(path, texture));
 			return texture;
 		}
@@ -287,7 +323,6 @@ void Utils::destroyAllTextures() {
 				}
 			}
 			if (!thereIs) {
-				//std::cout << "free: " << textures[i].first << "\n";
 				SDL_FreeSurface(surface);
 			}
 
@@ -298,8 +333,8 @@ void Utils::destroyAllTextures() {
 	}
 }
 
-void Utils::trimSurfacesCache() {
-	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt();
+void Utils::trimSurfacesCache(const SDL_Surface* last) {
+	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
 	auto usedSomeTexture = [&](const SDL_Surface *s) -> bool {
 		for (auto i : textureSurfaces) {
@@ -310,16 +345,24 @@ void Utils::trimSurfacesCache() {
 		return false;
 	};
 
+	size_t cacheSize = last->w * last->h * 4;
+	for (auto &p : surfaces) {
+		const SDL_Surface *surface = p.second;
+		cacheSize += surface->w * surface->h * 4;
+	}
+
 	size_t i = 0;
-	while (surfaces.size() >= MAX_SIZE) {
-		SDL_Surface *_surface = surfaces[i].second;
-		while (i < surfaces.size() && usedSomeTexture(_surface)) {
+	while (cacheSize > MAX_SIZE) {
+		SDL_Surface *surface = surfaces[i].second;
+		while (i < surfaces.size() && usedSomeTexture(surface)) {
 			++i;
-			_surface = surfaces[i].second;
+			surface = surfaces[i].second;
 		}
 		if (i == surfaces.size()) break;
 
-		SDL_FreeSurface(_surface);
+		cacheSize -= surface->w * surface->h * 4;
+
+		SDL_FreeSurface(surface);
 		surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 	}
 }
@@ -348,7 +391,7 @@ void Utils::setSurface(const String &path, SDL_Surface *surface) {
 		}
 	}
 
-	trimSurfacesCache();
+	trimSurfacesCache(surface);
 	surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
 }
 
@@ -376,7 +419,7 @@ SDL_Surface* Utils::getSurface(const String &path) {
 			Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
 		}
 
-		trimSurfacesCache();
+		trimSurfacesCache(surface);
 		surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
 		return surface;
 	}

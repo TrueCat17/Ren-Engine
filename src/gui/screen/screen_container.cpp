@@ -36,7 +36,7 @@
 ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent):
 	ScreenChild(node, screenParent) { }
 
-void ScreenContainer::updateProps() {
+void ScreenContainer::calculateProps() {
 	if (!inited) {
 		addChildrenFromNode();
 		inited = true;
@@ -47,7 +47,7 @@ void ScreenContainer::updateProps() {
 		indent = indentStr.toInt();
 	}
 
-	ScreenChild::updateProps();
+	ScreenChild::calculateProps();
 }
 void ScreenContainer::updateSize() {
 	ScreenChild::updateSize();

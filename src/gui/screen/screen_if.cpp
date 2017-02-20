@@ -10,9 +10,9 @@ ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent):
 	prevContainer = nullptr;
 }
 
-void ScreenIf::updateProps() {
+void ScreenIf::calculateProps() {
 	skipped = PyUtils::exec(condition, true) != "True";
 	if (!skipped) {
-		ScreenContainer::updateProps();
+		ScreenContainer::calculateProps();
 	}
 }

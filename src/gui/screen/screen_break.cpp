@@ -6,6 +6,6 @@ ScreenBreak::ScreenBreak(Node *node): ScreenChild(node, nullptr) {
 
 }
 
-void ScreenBreak::updateProps() {
+void ScreenBreak::calculateProps() {
 	throw BreakException();
 }

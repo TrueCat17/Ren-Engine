@@ -10,7 +10,7 @@
 #include "gui/screen/style.h"
 
 #include "media/image.h"
-#include "media/music_channel.h"
+#include "media/music.h"
 #include "media/py_utils.h"
 
 #include "utils/game.h"
@@ -187,11 +187,11 @@ void Node::execute() {
 	}else
 
 	if (command == "play") {
-		MusicChannel::play(params);
+		Music::play(params);
 	}else
 
 	if (command == "stop") {
-		MusicChannel::stop(params);
+		Music::stop(params);
 	}else
 
 	if (command == "image") {

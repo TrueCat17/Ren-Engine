@@ -15,7 +15,7 @@ public:
 	BtnRect btnRect;
 
 	ScreenTextButton(Node *node);
-	virtual void updateProps();
+	virtual void calculateProps();
 	virtual void updateSize();
 };
 

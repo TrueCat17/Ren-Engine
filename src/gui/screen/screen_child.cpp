@@ -28,9 +28,6 @@ ScreenChild::~ScreenChild() {
 		screenObjects.erase(i);
 	}
 }
-const String& ScreenChild::getType() const {
-	return node->command;
-}
 
 void ScreenChild::disableAll() {
 	for (ScreenChild* obj : screenObjects) {
@@ -38,11 +35,11 @@ void ScreenChild::disableAll() {
 	}
 }
 
-void ScreenChild::updateProps() {
+void ScreenChild::calculateProps() {
 	enable = true;
 	if (needUpdateChildren) {
 		for (ScreenChild *screenChild : screenChildren) {
-			screenChild->updateProps();
+			screenChild->calculateProps();
 		}
 	}
 

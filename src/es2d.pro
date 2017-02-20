@@ -34,9 +34,9 @@ HEADERS += \
 	gui/screen/screen_while.h \
 	gui/screen/style.h \
 	\
-	media/music_channel.h \
-	media/py_utils.h \
 	media/image.h \
+	media/music.h \
+	media/py_utils.h \
 	\
 	parser/node.h \
 	parser/parser.h \
@@ -80,9 +80,9 @@ SOURCES += \
 	gui/screen/screen_while.cpp \
 	gui/screen/style.cpp \
 	\
-	media/music_channel.cpp \
-	media/py_utils.cpp \
 	media/image.cpp \
+	media/music.cpp \
+	media/py_utils.cpp \
 	\
 	parser/node.cpp \
 	parser/parser.cpp \
@@ -94,7 +94,8 @@ SOURCES += \
 	utils/string.cpp \
 	utils/utils.cpp
 
-LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer \
+LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf \
+		-lavformat -lavcodec -lavutil -lswresample \
 		-pthread \
 		-lboost_system -lboost_filesystem \
 		-lboost_python -lpython2.7

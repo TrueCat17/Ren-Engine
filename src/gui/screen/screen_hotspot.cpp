@@ -40,7 +40,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 	return groundPixel != hoverPixel;
 }
 
-void ScreenHotspot::updateProps() {
+void ScreenHotspot::calculateProps() {
 	String t = PyUtils::exec("' '.join(map(str, " + rectStr + "))", true);
 	std::vector<String> rectVec = t.split(' ');
 	if (rectVec.size() != 4) {

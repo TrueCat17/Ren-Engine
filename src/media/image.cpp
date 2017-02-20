@@ -8,33 +8,9 @@
 
 #include "utils/utils.h"
 
-String Image::clear(String s) {
-	size_t start = s.find_first_not_of(' ');
-	size_t end = s.find_last_not_of(' ') + 1;
-
-	if (start == size_t(-1)) start = 0;
-	if (!end) end = s.size();
-	s = s.substr(start, end - start);
-
-
-	size_t n = 0;
-	while (n < s.size() && s[n] == '(') {
-		if (s[s.size() - n - 1] == ')') {
-			++n;
-		}else{
-			Utils::outMsg("Image::clear", "Путаница в скобках:\n<" + s + ">");
-			return nullptr;
-		}
-	}
-	start = n;
-	end = s.size() - n;
-	s = s.substr(start, end - start);
-
-	return s;
-}
 
 SDL_Surface* Image::getImage(String desc) {
-	desc = clear(desc);
+	desc = Utils::clear(desc);
 
 	SDL_Surface *res = Utils::getThereIsSurfaceOrNull(desc);
 	if (res) return res;
@@ -46,7 +22,7 @@ SDL_Surface* Image::getImage(String desc) {
 		return nullptr;
 	}
 	if (args.size() == 1) {
-		String imagePath = clear(args[0]);
+		String imagePath = Utils::clear(args[0]);
 
 		res = Utils::getSurface(imagePath);
 		return res;
@@ -61,7 +37,7 @@ SDL_Surface* Image::getImage(String desc) {
 
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
 
-		SDL_Rect resRect = { 0, 0, clear(args[2]).toInt(), clear(args[3]).toInt() };
+		SDL_Rect resRect = { 0, 0, Utils::clear(args[2]).toInt(), Utils::clear(args[3]).toInt() };
 		res = SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
 								   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask);
 		SDL_BlitScaled(img, &imgRect, res, &resRect);
@@ -72,7 +48,7 @@ SDL_Surface* Image::getImage(String desc) {
 		if (!img) return nullptr;
 
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
-		double k = clear(args[2]).toDouble();
+		double k = Utils::clear(args[2]).toDouble();
 		SDL_Rect resRect = { 0, 0, int(img->w * k), int(img->h * k) };
 		res = SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
 								   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask);
@@ -83,7 +59,7 @@ SDL_Surface* Image::getImage(String desc) {
 		SDL_Surface *img = getImage(args[1]);
 		if (!img) return nullptr;
 
-		String rectStr = clear(args[2]);
+		String rectStr = Utils::clear(args[2]);
 		std::vector<String> rectVec = rectStr.split(' ');
 
 		SDL_Rect imgRect = { rectVec[0].toInt(), rectVec[1].toInt(), rectVec[2].toInt(), rectVec[3].toInt() };
@@ -95,7 +71,7 @@ SDL_Surface* Image::getImage(String desc) {
 	}else
 
 	if (command == "Composite") {
-		String sizeStr = clear(args[1]);
+		String sizeStr = Utils::clear(args[1]);
 		std::vector<String> sizeVec = sizeStr.split(' ');
 
 		SDL_Rect resRect = { 0, 0, sizeVec[0].toInt(), sizeVec[1].toInt() };
@@ -103,10 +79,10 @@ SDL_Surface* Image::getImage(String desc) {
 								   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF);
 
 		for (size_t i = 2; i < args.size(); i += 2) {
-			String posStr = clear(args[i]);
+			String posStr = Utils::clear(args[i]);
 			std::vector<String> posVec = posStr.split(' ');
 
-			String imgStr = clear(args[i + 1]);
+			String imgStr = Utils::clear(args[i + 1]);
 			SDL_Surface *img = getImage(imgStr);
 			if (!img) return nullptr;
 
@@ -125,8 +101,8 @@ SDL_Surface* Image::getImage(String desc) {
 		SDL_Surface *img = getImage(args[1]);
 		if (!img) return nullptr;
 
-		bool horizontal = clear(args[2]) == "True";
-		bool vertical = clear(args[3]) == "True";
+		bool horizontal = Utils::clear(args[2]) == "True";
+		bool vertical = Utils::clear(args[3]) == "True";
 
 		Uint8 *imgPixels = (Uint8*)img->pixels;
 		SDL_PixelFormat *imgPixelFormat = img->format;
@@ -185,7 +161,7 @@ SDL_Surface* Image::getImage(String desc) {
 		SDL_Surface *img = getImage(args[1]);
 		if (!img) return nullptr;
 
-		String matrixStr = clear(args[2]);
+		String matrixStr = Utils::clear(args[2]);
 		std::vector<String> matrixVec = matrixStr.split(' ');
 		if (matrixVec.size() != 25) {
 			Utils::outMsg("Image::getImage, MatrixColor",
@@ -260,7 +236,7 @@ SDL_Surface* Image::getImage(String desc) {
 		SDL_Surface *img = getImage(args[1]);
 		if (!img) return nullptr;
 
-		String colorsStr = clear(args[2]);
+		String colorsStr = Utils::clear(args[2]);
 		std::vector<String> colorsVec = colorsStr.split(' ');
 
 		std::vector<double> colors;
