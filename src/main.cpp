@@ -85,17 +85,10 @@ void changeWindowSize() {
 
 
 bool init() {
-	Utils::init();
-	SyntaxChecker::init();
-	Config::init();
-
-	if (SDL_Init(SDL_INIT_EVERYTHING)) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
 	}
-	Music::init();
-
-	Mouse::init();
 
 	if (TTF_Init()) {
 		Utils::outMsg("TTF_Init", TTF_GetError());
@@ -106,6 +99,13 @@ bool init() {
 		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
 		return true;
 	}
+
+	Utils::init();
+	Music::init();
+	SyntaxChecker::init();
+	Mouse::init();
+
+	Config::init();
 
 	int x = Config::get("window_x").toInt();
 	int y = Config::get("window_y").toInt();
@@ -165,6 +165,7 @@ void loop() {
 		bool mouseWasUp = false;
 		bool mouseOutDown = SDL_GetGlobalMouseState(0, 0);
 
+		Mouse::update();
 		BtnRect::checkMouseCursor();
 
 		SDL_Event event;
@@ -276,22 +277,18 @@ void loop() {
 	}
 }
 
-void destroy() {
-	std::cout << "\nOk!\n";
-	std::exit(0);
-}
 
 int main() {
-	setlocale(LC_ALL, "ru_RU.utf8");
+	setlocale(LC_ALL, "en_EN.utf8");
 
 	if (init()) {
 		return 0;
 	}
-
 	Game::startMod("main_menu");
 
 	loop();
-	destroy();
 
+	GV::exitGuard.lock();
+	std::cout << "\nOk!\n";
 	return 0;
 }

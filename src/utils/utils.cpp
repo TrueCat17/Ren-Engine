@@ -27,6 +27,7 @@ std::map<String, String> Utils::images;
 std::vector<std::pair<String, SDL_Texture*>> Utils::textures;
 std::map<const SDL_Texture*, SDL_Surface*> Utils::textureSurfaces;
 
+std::mutex Utils::surfaceGuard;
 std::vector<std::pair<String, SDL_Surface*>> Utils::surfaces;
 
 std::chrono::system_clock::time_point Utils::startTime = std::chrono::system_clock::now();
@@ -254,13 +255,12 @@ void Utils::trimTexturesCache(const SDL_Surface *last) {
 
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		SDL_Texture *texture = textures[i].second;
-		while (i < textures.size() && DisplayObject::useTexture(texture)) {
+		while (i < textures.size() && DisplayObject::useTexture(textures[i].second)) {
 			++i;
-			texture = textures[i].second;
 		}
 		if (i == textures.size()) break;
 
+		SDL_Texture *texture = textures[i].second;
 		const SDL_Surface *surface = textureSurfaces[texture];
 		cacheSize -= surface->w * surface->h * 4;
 
@@ -306,34 +306,10 @@ SDL_Texture* Utils::getTexture(const String &path) {
 
 	return nullptr;
 }
-void Utils::destroyAllTextures() {
-	for (size_t i = 0; i < textures.size(); ++i) {
-		SDL_Texture *texture = textures[i].second;
-
-		if (!DisplayObject::useTexture(texture)) {
-			SDL_DestroyTexture(texture);
-
-			SDL_Surface *surface = textureSurfaces[texture];
-			bool thereIs = false;
-			for (auto &t : surfaces) {
-				auto s = t.second;
-				if (s == surface) {
-					thereIs = true;
-					break;
-				}
-			}
-			if (!thereIs) {
-				SDL_FreeSurface(surface);
-			}
-
-			textures.erase(textures.begin() + i, textures.begin() + i + 1);
-			textureSurfaces.erase(textureSurfaces.find(texture));
-			--i;
-		}
-	}
-}
 
 void Utils::trimSurfacesCache(const SDL_Surface* last) {
+	surfaceGuard.lock();
+
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
 	auto usedSomeTexture = [&](const SDL_Surface *s) -> bool {
@@ -353,10 +329,9 @@ void Utils::trimSurfacesCache(const SDL_Surface* last) {
 
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		SDL_Surface *surface = surfaces[i].second;
-		while (i < surfaces.size() && usedSomeTexture(surface)) {
+		SDL_Surface *surface = nullptr;
+		while (i < surfaces.size() && usedSomeTexture(surface = surfaces[i].second)) {
 			++i;
-			surface = surfaces[i].second;
 		}
 		if (i == surfaces.size()) break;
 
@@ -365,8 +340,10 @@ void Utils::trimSurfacesCache(const SDL_Surface* last) {
 		SDL_FreeSurface(surface);
 		surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 	}
+	surfaceGuard.unlock();
 }
 SDL_Surface* Utils::getThereIsSurfaceOrNull(const String &path) {
+	surfaceGuard.lock();
 	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
 		std::pair<String, SDL_Surface*> t = surfaces[i];
 		if (t.first == path) {
@@ -374,39 +351,48 @@ SDL_Surface* Utils::getThereIsSurfaceOrNull(const String &path) {
 				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 				surfaces.push_back(t);
 			}
+			surfaceGuard.unlock();
 			return t.second;
 		}
 	}
+	surfaceGuard.unlock();
 	return nullptr;
 }
 
 void Utils::setSurface(const String &path, SDL_Surface *surface) {
 	if (!surface) return;
 
+	surfaceGuard.lock();
 	for (auto &p : surfaces) {
 		String &pPath = p.first;
 		if (pPath == path) {
 			p.second = surface;
+			surfaceGuard.unlock();
 			return;
 		}
 	}
+	surfaceGuard.unlock();
 
 	trimSurfacesCache(surface);
+
+	surfaceGuard.lock();
 	surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
+	surfaceGuard.unlock();
 }
 
 SDL_Surface* Utils::getSurface(const String &path) {
 	if (!path) return nullptr;
 
-	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
-		std::pair<String, SDL_Surface*> t = surfaces[i];
-		if (t.first == path) {
-			if (i < surfaces.size() - 10) {
-				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
-				surfaces.push_back(t);
-			}
-			return t.second;
-		}
+	SDL_Surface *t = getThereIsSurfaceOrNull(path);
+	if (t) return t;
+
+	static std::mutex mutex;
+	mutex.lock();
+
+	t = getThereIsSurfaceOrNull(path);
+	if (t)  {
+		mutex.unlock();
+		return t;
 	}
 
 	SDL_Surface *surface = IMG_Load((Utils::ROOT + path).c_str());
@@ -420,19 +406,18 @@ SDL_Surface* Utils::getSurface(const String &path) {
 		}
 
 		trimSurfacesCache(surface);
+
+		surfaceGuard.lock();
 		surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
+		surfaceGuard.unlock();
+
+		mutex.unlock();
 		return surface;
 	}
 
 	outMsg("IMG_Load", IMG_GetError());
+	mutex.unlock();
 	return nullptr;
-}
-void Utils::destroyAllSurfaces() {
-	for (auto i : surfaces) {
-		SDL_Surface *surface = i.second;
-		SDL_FreeSurface(surface);
-	}
-	surfaces.clear();
 }
 
 Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop) {
@@ -465,13 +450,24 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const S
 }
 Uint32 Utils::getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop) {
 	const SDL_Surface *surface = textureSurfaces[texture];
+
+	if (!surface) {
+		String path;
+		for (auto p : textures) {
+			if (p.second == texture) {
+				path = p.first;
+				break;
+			}
+		}
+	}
+
 	return getPixel(surface, draw, crop);
 }
 
 void Utils::registerImage(const String &desc) {
 	size_t i = desc.find("=");
 	if (i == size_t(-1)) {
-		outMsg("Неверное объявление изображения (нет знака '='):\n" + desc);
+		outMsg("Utils::registerImage", "Неверное объявление изображения (нет знака '='):\n" + desc);
 		return;
 	}
 	bool spaceL = desc[i - 1] == ' ';

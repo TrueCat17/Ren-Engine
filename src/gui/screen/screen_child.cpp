@@ -188,14 +188,14 @@ void ScreenChild::updatePos() {
 	if (!inHBox) {
 		if (xPosIsDouble) xPos *= parent->getWidth();
 		if (xAnchorIsDouble) xAnchor *= getWidth();
-		double x = xPos - xAnchor;
+		int x = xPos - xAnchor;
 		setX(x);
 	}
 
 	if (!inVBox) {
 		if (yPosIsDouble) yPos *= parent->getHeight();
 		if (yAnchorIsDouble) yAnchor *= getHeight();
-		double y = yPos - yAnchor;
+		int y = yPos - yAnchor;
 		setY(y);
 	}
 

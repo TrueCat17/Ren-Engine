@@ -44,8 +44,8 @@ public:
 	int getX() const { return rect.x; }
 	int getY() const { return rect.y; }
 
-	void setX(int value) { rect.x = value; updateGlobalX(); }
-	void setY(int value) { rect.y = value; updateGlobalY(); }
+	void setX(int value) { rect.x = value; }
+	void setY(int value) { rect.y = value; }
 
 	int getWidth() const { return rect.w; }
 	int getHeight() const { return rect.h; }

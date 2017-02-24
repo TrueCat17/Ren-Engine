@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include "gv.h"
 #include "media/py_utils.h"
 #include "utils/utils.h"
 
@@ -50,12 +51,14 @@ void Music::init() {
 
 	auto loop = [&] {
 		while (true) {
+			startUpdateTime = Utils::getTimer();
+
+			GV::exitGuard.lock();
+
 			if (needToClear) {
 				needToClear = false;
 				realClear();
 			}
-
-			startUpdateTime = Utils::getTimer();
 
 			for (size_t i = 0; i < musics.size(); ++i) {
 				Music *music = musics[i];
@@ -87,6 +90,8 @@ void Music::init() {
 				}
 			}
 
+			GV::exitGuard.unlock();
+
 			int spend = Utils::getTimer() - startUpdateTime;
 			Utils::sleep(10 - spend);
 		}
@@ -115,8 +120,6 @@ void Music::clear() {
 }
 
 void Music::realClear() {
-	globalMutex.lock();
-
 	mixerVolumes.clear();
 
 	for (size_t i = 0; i < channels.size(); ++i) {
@@ -130,8 +133,6 @@ void Music::realClear() {
 		delete t;
 	}
 	musics.clear();
-
-	globalMutex.unlock();
 }
 
 void Music::registerChannel(const std::string &name, const std::string &mixer, bool loop) {
@@ -139,6 +140,7 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 		Channel *channel = channels[i];
 		if (channel->name == name) {
 			Utils::outMsg("Music::registerChannel", "Channel with name <" + name + "> is there");
+			globalMutex.unlock();
 			return;
 		}
 	}
@@ -155,6 +157,7 @@ void Music::setVolume(double volume, const std::string &channelName) {
 		Channel *channel = channels[i];
 		if (channel->name == channelName) {
 			channel->volume = Utils::inBounds(volume, 0, 1);
+			globalMutex.unlock();
 			return;
 		}
 	}
@@ -186,7 +189,9 @@ void Music::play(const std::string &desc) {
 	int fadeIn = 0;
 	if (args.size() > 2) {
 		if (args[2] != "fadein") {
-			Utils::outMsg("Music::play", "3-м параметром ожидалось слово <fadein>");
+			Utils::outMsg("Music::play",
+						  "3-м параметром ожидалось слово <fadein>\n"
+						  "Строка <" + desc + ">");
 			return;
 		}
 		String fadeInStr = PyUtils::exec("float(" + args[3] + ")", true);
@@ -244,7 +249,9 @@ void Music::stop(const std::string &desc) {
 	int fadeOut = 0;
 	if (args.size() > 1) {
 		if (args[1] != "fadeout") {
-			Utils::outMsg("Music::stop", "3-м параметром ожидалось слово <fadeout>");
+			Utils::outMsg("Music::stop",
+						  "3-м параметром ожидалось слово <fadeout>\n"
+						  "Строка <" + desc + ">");
 			return;
 		}
 		String fadeOutStr = PyUtils::exec("float(" + args[2] + ")", true);
@@ -339,7 +346,6 @@ bool Music::initCodec() {
 
 	return false;
 }
-
 
 Music::~Music() {
 	audioPos = 0;

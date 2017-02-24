@@ -45,7 +45,7 @@ void BtnRect::checkMouseCursor() {
 	for (int i = btnRects.size() - 1; i >= 0; --i) {
 		BtnRect *btnRect = btnRects[i];
 		DisplayObject *owner = btnRect->getOwner();
-		if (!owner) continue;
+		if (!owner || !owner->enable) continue;
 
 		if (mouseX > owner->getGlobalX() && mouseX < owner->getGlobalX() + owner->getWidth() &&
 			mouseY > owner->getGlobalY() && mouseY < owner->getGlobalY() + owner->getHeight()
@@ -71,7 +71,7 @@ bool BtnRect::checkMouseClick() {
 	for (int i = btnRects.size() - 1; i >= 0; --i) {
 		BtnRect *btnRect = btnRects[i];
 		DisplayObject *owner = btnRect->getOwner();
-		if (!owner) continue;
+		if (!owner || !owner->enable) continue;
 
 		if (mouseX > owner->getGlobalX() && mouseX < owner->getGlobalX() + owner->getWidth() &&
 			mouseY > owner->getGlobalY() && mouseY < owner->getGlobalY() + owner->getHeight()

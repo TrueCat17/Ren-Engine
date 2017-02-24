@@ -68,17 +68,17 @@ void Config::setDefault() {
 	set("window_height", "600");
 
 	set("max_fps", "30");
-	set("max_size_textures_cache", "70");
-	set("max_size_surfaces_cache", "20");
-	set("count_preload_commands", "10");
+	set("max_size_textures_cache", "50");
+	set("max_size_surfaces_cache", "200");
+	set("count_preload_commands", "0");
 
 	set("character_walk_fps", "4");
-	set("character_run_fps", "8");
+	set("character_run_fps", "12");
 
-	set("character_acceleration_time", "1");
+	set("character_acceleration_time", "0.5");
 
 	set("character_walk_speed", "50");
-	set("character_run_speed", "100");
+	set("character_run_speed", "150");
 }
 
 void Config::load() {
@@ -108,7 +108,6 @@ void Config::load() {
 		}
 
 		line.deleteAll("\t");
-		//line.deleteAll(" ");
 
 		if (!line) continue;
 		if (line[0] == '#') {

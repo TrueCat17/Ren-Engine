@@ -18,7 +18,7 @@
 size_t Game::maxFps = 60;
 
 size_t Game::fps = 60;
-size_t Game::frameTime = 17;
+size_t Game::frameTime = 16;
 
 bool Game::modeStarting = false;
 
@@ -34,6 +34,8 @@ void Game::_startMod(const std::string &dir) {
 	GV::updateGuard.lock();
 	modeStarting = true;
 
+	Music::clear();
+
 	GV::inGame = false;
 	int toSleep = frameTime * 2;
 	Utils::sleep(toSleep, false);
@@ -47,11 +49,9 @@ void Game::_startMod(const std::string &dir) {
 	DisplayObject::destroyAll();
 	GV::screens = new Group();
 
-	Music::clear();
 	Style::destroyAll();
 
 	GV::updateGuard.unlock();
-
 
 	Parser p(Utils::ROOT + "mods/" + dir);
 	GV::mainExecNode = p.parse();

@@ -78,7 +78,7 @@ void Node::execute() {
 			node->execute();
 
 			if ((node->command == "show" && !node->params.startsWith("screen ")) || node->command == "scene") {
-				preloadImages(this, i, Config::get("count_preload_commands"));
+				preloadImages(this, i, Config::get("count_preload_commands").toInt());
 			}
 
 			while (!initing && GV::inGame && PyUtils::exec("character_moving", true) == "True") {
@@ -386,6 +386,8 @@ void Node::jump(const String &label, bool isCall) {
 	Utils::outMsg("Node::jump(call)", "Метка <" + label + "> не найдена");
 }
 void Node::preloadImages(Node *node, int start, int count) {
+	return;
+
 	for (size_t i = start; i < node->children.size() && count > 0; ++i) {
 		Node *child = node->children[i];
 		String childCommand = child->command;
@@ -407,7 +409,12 @@ void Node::preloadImages(Node *node, int start, int count) {
 				imageName += ' ' + args[j];
 			}
 			String imageCode = PyUtils::exec(Utils::getImageCode(imageName), true);
-			Image::getImage(imageCode);
+			if (!imageCode) return;
+
+			auto loadImage = [=]() {
+				Image::getImage(imageCode);
+			};
+			std::thread(loadImage).detach();
 		}else
 
 		if (childCommand == "jump" || childCommand == "call") {
@@ -417,6 +424,7 @@ void Node::preloadImages(Node *node, int start, int count) {
 				if (t->command == "label" && t->name == label) {
 					i = -1;
 					node = t;
+					break;
 				}
 			}
 		}else

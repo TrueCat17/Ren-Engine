@@ -5,8 +5,13 @@
 
 #include "utils/utils.h"
 
+
 SDL_Cursor *Mouse::usualModeCursor = nullptr;
 SDL_Cursor *Mouse::btnModeCursor = nullptr;
+
+int Mouse::x = 0;
+int Mouse::y = 0;
+
 
 void Mouse::init() {
 	SDL_Surface *usual = IMG_Load((Utils::ROOT + "images/misc/mouse/1.png").c_str());
@@ -19,13 +24,8 @@ void Mouse::init() {
 
 	SDL_SetCursor(usualModeCursor);
 }
-void Mouse::quit() {
-	if (usualModeCursor) {
-		SDL_FreeCursor(usualModeCursor);
-	}
-	if (btnModeCursor) {
-		SDL_FreeCursor(btnModeCursor);
-	}
+void Mouse::update() {
+	SDL_GetMouseState(&x, &y);
 }
 
 void Mouse::setUsualMode() {
@@ -36,5 +36,6 @@ void Mouse::setButtonMode() {
 }
 
 void Mouse::getPos(int &x, int &y) {
-	SDL_GetMouseState(&x, &y);
+	x = Mouse::x;
+	y = Mouse::y;
 }

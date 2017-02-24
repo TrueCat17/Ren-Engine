@@ -10,6 +10,8 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+#include <mutex>
+
 #include <boost/python.hpp>
 
 #include "utils/string.h"
@@ -31,6 +33,7 @@ private:
 	static std::vector<std::pair<String, SDL_Texture*>> textures;
 	static std::map<const SDL_Texture*, SDL_Surface*> textureSurfaces;
 
+	static std::mutex surfaceGuard;
 	static std::vector<std::pair<String, SDL_Surface*>> surfaces;
 
 public:
@@ -72,9 +75,6 @@ public:
 	static SDL_Surface* getThereIsSurfaceOrNull(const String &path);
 	static SDL_Surface* getSurface(const String &path);
 	static void setSurface(const String &path, SDL_Surface *surface);
-
-	static void destroyAllTextures();
-	static void destroyAllSurfaces();
 
 	static Uint32 getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop);
 	static Uint32 getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop);

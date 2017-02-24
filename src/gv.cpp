@@ -9,6 +9,8 @@ int GV::height;
 bool GV::inGame = false;
 bool GV::exit = false;
 
+std::mutex GV::exitGuard;
+
 PyUtils *GV::pyUtils = nullptr;
 
 SDL_Window *GV::mainWindow;

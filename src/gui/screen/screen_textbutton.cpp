@@ -30,8 +30,10 @@ void ScreenTextButton::calculateProps() {
 
 	ScreenText::calculateProps();
 
-	if (btnRect.mouseDown && isModal()) {
-		btnRect.onClick();
+	if (btnRect.mouseDown) {
+		if (isModal()) {
+			btnRect.onClick();
+		}
 	}
 }
 

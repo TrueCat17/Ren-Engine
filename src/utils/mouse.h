@@ -8,14 +8,19 @@ private:
 	static SDL_Cursor *usualModeCursor;
 	static SDL_Cursor *btnModeCursor;
 
+	static int x;
+	static int y;
+
 public:
 	static void init();
-	static void quit();
+	static void update();
 
 	static void setUsualMode();
 	static void setButtonMode();
 
 	static void getPos(int &x, int &y);
+	static int getX() { return x; }
+	static int getY() { return y; }
 };
 
 #endif // MOUSE_H

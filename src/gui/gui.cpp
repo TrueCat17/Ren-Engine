@@ -1,5 +1,6 @@
 #include "gui.h"
 
+
 #include "gv.h"
 
 #include "gui/screen/screen_child.h"
@@ -28,8 +29,11 @@ void GUI::update() {
 					//int c = Utils::getTimer();
 					scr->updatePos();
 					//int d = Utils::getTimer();
+					scr->updateGlobalX();
+					scr->updateGlobalY();
+					//int e = Utils::getTimer();
 
-					//std::cout << (b-a) << '-' << (c-b) << '-' << (d-c) << '\n';
+					//std::cout << (b-a) << '-' << (c-b) << '-' << (d-c) << '-' << (e-d) << '\n';
 				}catch (ContinueException) {
 					Utils::outMsg("GUI::update", "continue вне цикла");
 				}catch (BreakException) {

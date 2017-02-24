@@ -24,6 +24,8 @@ public:
 	static bool inGame;
 	static bool exit;
 
+	static std::mutex exitGuard;
+
 	static PyUtils *pyUtils;
 
 	static SDL_Window *mainWindow;
