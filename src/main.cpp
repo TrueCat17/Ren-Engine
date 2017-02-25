@@ -52,9 +52,9 @@ void changeWindowSize() {
 
 
 		if (abs(dX) >= abs(dY)) {
-			h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
+			h = w * 9 / 16;
 		}else {
-			w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
+			w = h * 16 / 9;
 		}
 
 		if (w < 640 || h < 360) {
@@ -63,11 +63,11 @@ void changeWindowSize() {
 		}
 		if (w > usableBounds.w) {
 			w = usableBounds.w;
-			h = w * GV::STD_HEIGHT / GV::STD_WIDTH;
+			h = w * 9 / 16;
 		}
 		if (h > usableBounds.h) {
 			h = usableBounds.h;
-			w = h * GV::STD_WIDTH / GV::STD_HEIGHT;
+			w = h * 16 / 9;
 		}
 
 		SDL_SetWindowSize(GV::mainWindow, w, h);
@@ -277,6 +277,12 @@ void loop() {
 	}
 }
 
+void destroy() {
+	GV::exitGuard.lock();
+
+	SDL_CloseAudio();
+	SDL_Quit();
+}
 
 int main() {
 	setlocale(LC_ALL, "en_EN.utf8");
@@ -287,8 +293,8 @@ int main() {
 	Game::startMod("main_menu");
 
 	loop();
+	destroy();
 
-	GV::exitGuard.lock();
 	std::cout << "\nOk!\n";
 	return 0;
 }

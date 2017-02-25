@@ -15,9 +15,6 @@ class PyUtils;
 
 class GV {
 public:
-	static const int STD_WIDTH = 1920;//Размеры картинок в оригинальной игре
-	static const int STD_HEIGHT = 1080;
-
 	static int width;
 	static int height;
 
