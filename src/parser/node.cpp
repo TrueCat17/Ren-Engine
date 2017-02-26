@@ -161,7 +161,7 @@ void Node::execute() {
 	}else
 
 	if (command == "python" || command == "init python") {
-		PyUtils::exec(getFileName(), getNumLine(), params);
+		PyUtils::exec(getFileName(), getNumLine() + 1, params);
 	}else
 
 	if (command == "pause") {
