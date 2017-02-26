@@ -53,14 +53,14 @@ void Music::init() {
 		while (true) {
 			startUpdateTime = Utils::getTimer();
 
-			GV::exitGuard.lock();
-
 			if (needToClear) {
 				needToClear = false;
 				realClear();
 			}
 
 			for (size_t i = 0; i < musics.size(); ++i) {
+				if (GV::exit) return;
+
 				Music *music = musics[i];
 
 				if (music->isEnded()) {
@@ -89,8 +89,6 @@ void Music::init() {
 					music->update();
 				}
 			}
-
-			GV::exitGuard.unlock();
 
 			int spend = Utils::getTimer() - startUpdateTime;
 			Utils::sleep(10 - spend);
@@ -184,7 +182,7 @@ void Music::play(const std::string &desc) {
 	}
 
 	String channelName = Utils::clear(args[0]);
-	String url = Utils::ROOT + PyUtils::exec(args[1], true);
+	String url = Utils::ROOT + PyUtils::exec("CPP_EMBED: music.cpp", 0, args[1], true);
 
 	int fadeIn = 0;
 	if (args.size() > 2) {
@@ -194,7 +192,7 @@ void Music::play(const std::string &desc) {
 						  "Строка <" + desc + ">");
 			return;
 		}
-		String fadeInStr = PyUtils::exec("float(" + args[3] + ")", true);
+		String fadeInStr = PyUtils::exec("CPP_EMBED: music.cpp", 0, "float(" + args[3] + ")", true);
 		if (!fadeInStr.isNumber()) {
 			Utils::outMsg("Music::play",
 						  "Значением параметра fadein ожидалось число, получено <" + args[3] + ">\n" +
@@ -254,7 +252,7 @@ void Music::stop(const std::string &desc) {
 						  "Строка <" + desc + ">");
 			return;
 		}
-		String fadeOutStr = PyUtils::exec("float(" + args[2] + ")", true);
+		String fadeOutStr = PyUtils::exec("CPP_EMBED: music.cpp", 0, "float(" + args[2] + ")", true);
 		if (!fadeOutStr.isNumber()) {
 			Utils::outMsg("Music::stop",
 						  "Значением параметра fadeout ожидалось число, получено <" + args[2] + ">\n" +

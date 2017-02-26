@@ -55,7 +55,7 @@ Parser::Parser(String dir) {
 	std::vector<String> stdFiles = Utils::getFileNames(Utils::ROOT + "mods/inc/");
 	files.insert(files.begin(), stdFiles.begin(), stdFiles.end());
 
-	for (int i = 0; i < int(files.size()); ++i) {
+	for (size_t i = 0; i < files.size(); ++i) {
 		String fileName = files[i];
 		if (!fileName.endsWith(".rpy")) continue;
 
@@ -63,17 +63,27 @@ Parser::Parser(String dir) {
 
 		String s;
 		std::ifstream is(fileName);
+		code.push_back("FILENAME " + fileName);
 		while (!is.eof()) {
 			std::getline(is, s);
 
 			s.replaceAll('\t', "    ");
 
+			if (s.startsWith("FILENAME")) {
+				Utils::outMsg("Parser::Parser", "Строка не может начинаться с FILENAME (файл <" + fileName + ">");
+				s = "";
+			}
+
 			size_t n = s.find_last_not_of(' ');
 			s.erase(n + 1);
 
 			n = s.find_first_not_of(' ');
+			if (n <= pythonIndent) {
+				pythonIndent = s.endsWith("python:") ? n : size_t(-1);
+			}
+
 			if (n != size_t(-1) && s[n] != '#') {
-				if (toPrevLine) {
+				if (toPrevLine && n <= pythonIndent) {
 					s.erase(0, n);
 					code[code.size() - 1] += s;
 				}else {
@@ -84,7 +94,7 @@ Parser::Parser(String dir) {
 			}
 
 			if (s) {
-				char last = s[s.size() - 1];
+				char last = s.back();
 
 				static String ops = "(,+-*/=[{";
 				toPrevLine = (ops.find(last) != size_t(-1));
@@ -98,7 +108,7 @@ Node* Parser::parse() {
 }
 
 Node* Parser::getMainNode() {
-	Node *res = new Node();
+	Node *res = new Node("NO_FILE", 0);
 	res->command = "main";
 
 	size_t start = 0;
@@ -106,6 +116,10 @@ Node* Parser::getMainNode() {
 	String prevHeadWord = "None";
 	while (start < end) {
 		String headLine = code[start];
+		if (!headLine) {
+			++start;
+			continue;
+		}
 
 		size_t i = headLine.find(' ');
 		if (i == size_t(-1)) {
@@ -116,10 +130,20 @@ Node* Parser::getMainNode() {
 			headWord.erase(i - 1);
 		}
 
+		if (headWord == "FILENAME") {
+			fileName = headLine.substr(headWord.size() + 1);
+			startFile = start;
+			++start;
+			continue;
+		}
+
 		bool t;
 		bool ok = SyntaxChecker::check("main", headWord, prevHeadWord, SuperParent::MAIN, t);
 		if (!ok) {
-			Utils::outMsg("Parser::getMainNode", "Неверный синтаксис в строке <" + headLine + ">");
+			Utils::outMsg("Parser::getMainNode",
+						  "Неверный синтаксис в строке <" + headLine + ">\n\n" +
+						  "Файл <" + fileName + ">\n"
+						  "Номер строки: " + String(start - startFile));
 		}
 		prevHeadWord = headWord;
 
@@ -147,7 +171,7 @@ void Parser::initScreenNode(Node *node) {
 	bool initOnlyChildren = !Utils::in(node->command, compsMbWithParams);
 	for (Node *childNode : node->children) {
 		if (childNode && childNode->children.empty()) {
-			node->initProp(childNode->command, childNode->params);
+			node->initProp(childNode->command, childNode->params, childNode->getNumLine());
 		}
 	}
 	if (initOnlyChildren) return;
@@ -155,31 +179,34 @@ void Parser::initScreenNode(Node *node) {
 	bool firstIsProp = Utils::in(node->command, compsWithFirstParam);
 	std::vector<String> args = Utils::getArgs(node->params);
 	if (firstIsProp) {
-		node->firstParam = args[0];
+		node->setFirstParam(args[0]);
 	}
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
 		String name = args[i];
 		bool t;
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
 			String str = node->command + ' ' + node->params;
-			Utils::outMsg("Parser::initScreenNode", "Неверный синтаксис в строке <" + str + ">\n"
-						  "Параметр <" + name + "> не является свойством объекта типа <" + node->command + ">");
+			Utils::outMsg("Parser::initScreenNode",
+						  "Неверный синтаксис в строке <" + str + ">\n"
+						  "Параметр <" + name + "> не является свойством объекта типа <" + node->command + ">\n\n" +
+						  node->getPlace());
 			continue;
 		}
 
 		if (i + 1 >= args.size()) {
 			Utils::outMsg("Parser::initScreenNode",
 						  "У параметра <" + name + "> пропущено значение в строке\n" +
-						  "<" + node->params + ">");
+						  "<" + node->params + ">\n\n" +
+						  node->getPlace());
 			break;
 		}
 		String value = args[i + 1];
-		node->initProp(name, value);
+		node->initProp(name, value, node->getNumLine());
 	}
 }
 
 Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
-	Node *res = new Node();
+	Node *res = new Node(fileName, start - startFile);
 
 	String headLine = code[start];
 
@@ -239,8 +266,10 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	size_t startCommandName = i + type.size() + 1;
 	size_t endCommandName = headLine.size() - 1;
 	if (headLine[endCommandName] != ':') {
-		Utils::outMsg("Parser::getNode", "Объявление блока должно заканчиваться двоеточием\n"
-										 "Строка <" + headLine + ">");
+		Utils::outMsg("Parser::getNode",
+					  "Объявление блока должно заканчиваться двоеточием\n"
+					  "Строка <" + headLine + ">\n\n" +
+					  res->getPlace());
 		++endCommandName;
 	}
 
@@ -312,8 +341,10 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 		bool isText;
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
-			Utils::outMsg("Parser::getNode", "Неверный синтаксис в строке <" + headLine + ">\n"
-						  "(node: <" + headWord + ">, parentNode: <" + type + ">, prevNode: <" + prevHeadWord + ">)");
+			Utils::outMsg("Parser::getNode",
+						  "Неверный синтаксис в строке <" + headLine + ">\n"
+						  "(node: <" + headWord + ">, parentNode: <" + type + ">, prevNode: <" + prevHeadWord + ">)\n\n" +
+						  res->getPlace());
 			childStart = getNextStart(childStart);
 			continue;
 		}

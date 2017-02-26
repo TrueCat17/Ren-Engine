@@ -16,7 +16,7 @@ void ScreenImagemap::calculateProps() {
 		hoverPath = newHoverPath;
 	}else
 	if (groundPath != newGroundPath) {
-		hoverPath = PyUtils::exec("im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
+		hoverPath = PyUtils::exec("CPP_EMBED: screen_imagemap.cpp", 0, "im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
 	}
 	groundPath = newGroundPath;
 

@@ -57,6 +57,9 @@ public:
 	bool isModal() const;
 	bool isFakeContainer() const { return _isFakeContainer; }
 	bool canCrop() const { return _canCrop; }
+
+	const String& getFileName() const { return node->getFileName(); }
+	size_t getNumLine() const { return node->getNumLine(); }
 };
 
 #endif // SCREENCHILD_H

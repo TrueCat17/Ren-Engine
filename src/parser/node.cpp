@@ -46,7 +46,7 @@ void Node::execute() {
 			}
 			initing = false;
 
-			String startScreensStr = PyUtils::exec("start_screens", true);
+			String startScreensStr = PyUtils::exec("CPP_EMBED: node.cpp", 0, "start_screens", true);
 			std::vector<String> startScreensVec = startScreensStr.split(' ');
 			for (String screenName : startScreensVec) {
 				if (screenName) {
@@ -54,7 +54,7 @@ void Node::execute() {
 				}
 			}
 
-			mainLabel = PyUtils::exec("mods_last_key", true);
+			mainLabel = PyUtils::exec("CPP_EMBED: node.cpp", 0, "mods_last_key", true);
 			try {
 				jump(mainLabel, false);
 			}catch (ExitException) {}
@@ -81,7 +81,7 @@ void Node::execute() {
 				preloadImages(this, i, Config::get("count_preload_commands").toInt());
 			}
 
-			while (!initing && GV::inGame && PyUtils::exec("character_moving", true) == "True") {
+			while (!initing && GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", 0, "character_moving", true) == "True") {
 				Utils::sleep(1);
 			}
 		}
@@ -102,7 +102,7 @@ void Node::execute() {
 			for (size_t i = 1; i < args.size(); ++i) {
 				argsStr += ", '" + args[i] + "'";
 			}
-			PyUtils::exec("add_sprite_to_showlist([" + argsStr + "], None)");
+			PyUtils::exec(getFileName(), getNumLine(), "add_sprite_to_showlist([" + argsStr + "], None)");
 		}
 	}else
 
@@ -111,7 +111,7 @@ void Node::execute() {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToHideSimply(screenName);
 		}else {
-			PyUtils::exec("remove_sprite_from_showlist('" + params + "')");
+			PyUtils::exec(getFileName(), getNumLine(), "remove_sprite_from_showlist('" + params + "')");
 		}
 	}else
 
@@ -125,7 +125,7 @@ void Node::execute() {
 				argsStr += ", '" + args[i] + "'";
 			}
 		}
-		PyUtils::exec("set_scene([" + argsStr + "], None)");
+		PyUtils::exec(getFileName(), getNumLine(), "set_scene([" + argsStr + "], None)");
 	}else
 
 	if (command == "with") {
@@ -133,7 +133,7 @@ void Node::execute() {
 	}else
 
 	if (command == "window") {
-		PyUtils::exec("window_" + params + "()");
+		PyUtils::exec(getFileName(), getNumLine(), "window_" + params + "()");
 	}else
 
 	if (command == "text") {
@@ -157,21 +157,21 @@ void Node::execute() {
 		}
 
 		String code = nick + "(" + text + ")";
-		PyUtils::exec(code);
+		PyUtils::exec(getFileName(), getNumLine(), code);
 	}else
 
 	if (command == "python" || command == "init python") {
-		PyUtils::exec(params);
+		PyUtils::exec(getFileName(), getNumLine(), params);
 	}else
 
 	if (command == "pause") {
-		PyUtils::exec("pause_end = time.time() + (" + params + ")");
+		PyUtils::exec(getFileName(), getNumLine(), "pause_end = time.time() + (" + params + ")");
 	}else
 
 	if (command == "jump") {
 		String label = params;
 		if (label.startsWith("expression ")) {
-			label = PyUtils::exec(label.substr(String("expression ").size()), true);
+			label = PyUtils::exec(getFileName(), getNumLine(), label.substr(String("expression ").size()), true);
 		}
 
 		jump(label, false);
@@ -180,7 +180,7 @@ void Node::execute() {
 	if (command == "call") {
 		String label = params;
 		if (label.startsWith("expression ")) {
-			label = PyUtils::exec(label.substr(String("expression ").size()), true);
+			label = PyUtils::exec(getFileName(), getNumLine(), label.substr(String("expression ").size()), true);
 		}
 
 		jump(label, true);
@@ -200,7 +200,7 @@ void Node::execute() {
 
 	if (command == "nvl") {
 		String code = "nvl_" + params + "()";
-		PyUtils::exec(code);
+		PyUtils::exec(getFileName(), getNumLine(), code);
 	}else
 
 
@@ -213,16 +213,16 @@ void Node::execute() {
 				variants += ", " + children[i]->params;
 			}
 		}
-		PyUtils::exec("choose_menu_variants = (" + variants + ")");
-		PyUtils::exec("renpy.call_screen('choose_menu', 'choose_menu_result')");
+		PyUtils::exec(getFileName(), getNumLine(), "choose_menu_variants = (" + variants + ")");
+		PyUtils::exec(getFileName(), getNumLine(), "renpy.call_screen('choose_menu', 'choose_menu_result')");
 
 		int toSleep = Game::getFrameTime();
-		while (GV::inGame && PyUtils::exec("menu_item_choosed", true) != "True") {
+		while (GV::inGame && PyUtils::exec(getFileName(), getNumLine(), "menu_item_choosed", true) != "True") {
 			Utils::sleep(toSleep);
 		}
 		if (!GV::inGame) return;
 
-		String resStr = PyUtils::exec("choose_menu_result", true);
+		String resStr = PyUtils::exec(getFileName(), getNumLine(), "choose_menu_result", true);
 		int res = resStr.toInt();
 
 		if (res < 0 || res >= int(children.size())) {
@@ -241,7 +241,7 @@ void Node::execute() {
 	}else
 
 	if (command == "if") {
-		String execRes = PyUtils::exec("bool(" + params + ")", true);
+		String execRes = PyUtils::exec(getFileName(), getNumLine(), "bool(" + params + ")", true);
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
@@ -259,7 +259,7 @@ void Node::execute() {
 		}
 		if (t->condIsTrue) return;
 
-		String execRes = PyUtils::exec("bool(" + params + ")", true);
+		String execRes = PyUtils::exec(getFileName(), getNumLine(), "bool(" + params + ")", true);
 		condIsTrue = execRes == "True";
 
 		if (condIsTrue) {
@@ -286,7 +286,7 @@ void Node::execute() {
 	if (command == "while") {
 		condIsTrue = true;
 		String cond = "bool(" + params + ")";
-		while (GV::inGame && PyUtils::exec(cond, true) == "True") {
+		while (GV::inGame && PyUtils::exec(getFileName(), getNumLine(), cond, true) == "True") {
 			if (!GV::inGame) return;
 
 			try {
@@ -321,12 +321,12 @@ void Node::execute() {
 		String init = iterName + " = iter(" + afterIn + ")";
 		String onStep = beforeIn + " = " + iterName + ".next()";
 
-		PyUtils::exec(init);
+		PyUtils::exec(getFileName(), getNumLine(), init);
 		while (true) {
 			if (!GV::inGame) return;
 
 			try {
-				PyUtils::exec(onStep);
+				PyUtils::exec(getFileName(), getNumLine(), onStep);
 
 				for (size_t i = 0; i < children.size(); ++i) {
 					Node* node = children[i];
@@ -361,10 +361,10 @@ void Node::execute() {
 		}
 	}
 
-	while (GV::inGame && !initing && PyUtils::exec("pause_end > time.time()", true) == "True") {
+	while (GV::inGame && !initing && PyUtils::exec("CPP_EMBED: node.cpp", 0, "pause_end > time.time()", true) == "True") {
 		Utils::sleep(Game::getFrameTime());
 	}
-	while (GV::inGame && !initing && PyUtils::exec("(not read) or (character_moving)", true) == "True") {
+	while (GV::inGame && !initing && PyUtils::exec("CPP_EMBED: node.cpp", 0, "(not read) or (character_moving)", true) == "True") {
 		Utils::sleep(Game::getFrameTime());
 	}
 }
@@ -408,7 +408,7 @@ void Node::preloadImages(Node *node, int start, int count) {
 			for (size_t j = 1; j < args.size(); ++j) {
 				imageName += ' ' + args[j];
 			}
-			String imageCode = PyUtils::exec(Utils::getImageCode(imageName), true);
+			String imageCode = PyUtils::exec(node->getFileName(), node->getNumLine(), Utils::getImageCode(imageName), true);
 			if (!imageCode) return;
 
 			auto loadImage = [=]() {
@@ -435,11 +435,11 @@ void Node::preloadImages(Node *node, int start, int count) {
 	}
 }
 
-void Node::initProp(const String &name, const String &value) {
-	props[name] = value;
+void Node::initProp(const String &name, const String &value, size_t numLine) {
+	props[name] = { value, numLine };
 }
 
-String Node::getProp(const String& name, const String& commonName, const String& indexStr) const {
+String Node::getProp(const String &name, const String &commonName, const String &indexStr) const {
 	static std::vector<String> exceptions = String("if elif for while else hotspot").split(' ');
 	if (Utils::in(command, exceptions)) {
 		return "None";
@@ -448,16 +448,16 @@ String Node::getProp(const String& name, const String& commonName, const String&
 	String res;
 	auto i = props.find(name);
 	if (i != props.end()) {
-		String toExec = i->second;
-		res = PyUtils::exec(toExec, true);
+		String toExec = i->second.pyExpr;
+		res = PyUtils::exec(getFileName(), i->second.numLine, toExec, true);
 		return res;
 	}
 
 	if (commonName) {
 		i = props.find(commonName);
 		if (i != props.end()) {
-			String toExec = i->second;
-			String res = PyUtils::exec(toExec + indexStr, true);
+			String toExec = i->second.pyExpr;
+			String res = PyUtils::exec(getFileName(), i->second.numLine, toExec + indexStr, true);
 			return res;
 		}
 	}
@@ -469,12 +469,17 @@ String Node::getProp(const String& name, const String& commonName, const String&
 	res = Style::getProp(styleName, name);
 	return res;
 }
-String Node::getPropCode(const String& name) const {
+String Node::getPropCode(const String &name) const {
 	auto i = props.find(name);
 	if (i == props.end()) return "";
 
-	const String& res = i->second;
+	const String& res = i->second.pyExpr;
 	return res;
+}
+String Node::getPlace() const {
+	return "Место объявления объекта <" + command + ">:\n"
+			"  Файл <" + fileName + ">\n" +
+			"  Номер строки: " + String(numLine);
 }
 
 

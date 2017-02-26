@@ -19,17 +19,25 @@
 #include "utils/utils.h"
 
 
-std::map<String, PyCodeObject*> PyUtils::compiledObjects;
+std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
 
-PyCodeObject* PyUtils::getCompileObject(const String& code) {
-	if (compiledObjects.find(code) != compiledObjects.end()) {
-		return compiledObjects[code];
+PyCodeObject* PyUtils::getCompileObject(const String code, const String fileName, size_t numLine) {
+	PyCode pyCode(code, fileName, numLine);
+
+	if (compiledObjects.find(pyCode) != compiledObjects.end()) {
+		return compiledObjects[pyCode];
 	}
 
-	PyObject *t = Py_CompileString(code.c_str(), "<string>", Py_file_input);
+
+	String indent;
+	if (numLine > 1) {
+		indent.resize(numLine - 1, '\n');
+	}
+
+	PyObject *t = Py_CompileString((indent + code).c_str(), fileName.c_str(), Py_file_input);
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
-	compiledObjects[code] = co;
+	compiledObjects[pyCode] = co;
 	return co;
 }
 
@@ -76,7 +84,7 @@ PyUtils::~PyUtils() {
 }
 
 
-String PyUtils::exec(String code, bool retRes) {
+String PyUtils::exec(const String &fileName, size_t numLine, String code, bool retRes) {
 	if (!code) return "";
 
 	if (code.isNumber()) {
@@ -120,7 +128,7 @@ String PyUtils::exec(String code, bool retRes) {
 
 	pyExecGuard.lock();
 	try {
-		PyCodeObject *co = getCompileObject(execCode);
+		PyCodeObject *co = getCompileObject(execCode, fileName, numLine);
 		if (co) {
 			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
 				throw py::error_already_set();

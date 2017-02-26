@@ -10,7 +10,7 @@ ScreenImage::ScreenImage(Node *node):
 { }
 
 void ScreenImage::calculateProps() {
-	imagePath = PyUtils::exec(imageCode, true);
+	imagePath = PyUtils::exec(getFileName(), getNumLine(), imageCode, true);
 	texture = Utils::getTexture(imagePath);
 
 	ScreenContainer::calculateProps();

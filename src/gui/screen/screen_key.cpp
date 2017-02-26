@@ -63,8 +63,11 @@ void ScreenKey::calculateProps() {
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		String keyName = PyUtils::exec(keyStr, true);
-		Utils::outMsg("SDL_GetScancodeFromName", "KeyName <" + keyName + ">\n" + SDL_GetError());
+		String keyName = PyUtils::exec(getFileName(), getNumLine(), keyStr, true);
+		Utils::outMsg("SDL_GetScancodeFromName",
+					  "KeyName <" + keyName + ">\n" +
+					  SDL_GetError() + '\n' +
+					  node->getPlace());
 	}else
 
 	if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
@@ -80,7 +83,7 @@ void ScreenKey::calculateProps() {
 
 			String action = node->getPropCode("action");
 			if (action) {
-				PyUtils::exec("exec_funcs(" + action + ")");
+				PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
 			}
 		}
 		prevIsDown = true;
@@ -100,7 +103,7 @@ void ScreenKey::updatePos() {
 }
 
 SDL_Scancode ScreenKey::getKey() const {
-	String keyName = PyUtils::exec(keyStr, true);
+	String keyName = PyUtils::exec(getFileName(), getNumLine(), keyStr, true);
 	if (keyName.startsWith("K_", false)) {
 		keyName = keyName.substr(2);
 	}

@@ -30,10 +30,10 @@ void ScreenFor::calculateProps() {
 	skipped = true;
 	size_t i = 0;
 
-	PyUtils::exec(init);
+	PyUtils::exec(getFileName(), getNumLine(), init);
 	while (true) {
 		try {
-			PyUtils::exec(onStep);
+			PyUtils::exec(getFileName(), getNumLine(), onStep);
 
 			bool adding = i >= screenChildren.size();
 			if (adding) {

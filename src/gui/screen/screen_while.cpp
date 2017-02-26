@@ -20,7 +20,7 @@ void ScreenWhile::calculateProps() {
 	skipped = true;
 	size_t i = 0;
 
-	while (PyUtils::exec(condition) == "True") {
+	while (PyUtils::exec(getFileName(), getNumLine(), condition) == "True") {
 		try {
 			bool adding = i >= screenChildren.size();
 			if (adding) {

@@ -8,7 +8,7 @@ ScreenPython::ScreenPython(Node *node): ScreenChild(node, nullptr) {
 }
 
 void ScreenPython::calculateProps() {
-	PyUtils::exec(node->params);
+	PyUtils::exec(getFileName(), getNumLine(), node->params);
 }
 void ScreenPython::updateSize() {
 	return;

@@ -11,7 +11,7 @@ ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent):
 }
 
 void ScreenIf::calculateProps() {
-	skipped = PyUtils::exec(condition, true) != "True";
+	skipped = PyUtils::exec(getFileName(), getNumLine(), condition, true) != "True";
 	if (!skipped) {
 		ScreenContainer::calculateProps();
 	}

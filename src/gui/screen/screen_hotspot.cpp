@@ -14,7 +14,7 @@ ScreenHotspot::ScreenHotspot(Node *node):
 	auto onClick = [this](DisplayObject*) {
 		String action = this->node->getPropCode("action");
 		if (action) {
-			PyUtils::exec("exec_funcs(" + action + ")");
+			PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
 		}
 	};
 	btnRect.init(this, onClick);
@@ -41,7 +41,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 }
 
 void ScreenHotspot::calculateProps() {
-	String t = PyUtils::exec("' '.join(map(str, " + rectStr + "))", true);
+	String t = PyUtils::exec(getFileName(), getNumLine(), "' '.join(map(str, " + rectStr + "))", true);
 	std::vector<String> rectVec = t.split(' ');
 	if (rectVec.size() != 4) {
 		Utils::outMsg("ScreenHotspot::updateProps",

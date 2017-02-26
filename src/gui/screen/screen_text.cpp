@@ -17,7 +17,7 @@ ScreenText::ScreenText(Node *node):
 }
 
 void ScreenText::calculateProps() {
-	text = PyUtils::exec(textExec, true);
+	text = PyUtils::exec(getFileName(), getNumLine(), textExec, true);
 	if (text) {
 		font = node->getProp("font");
 		textHAlign = node->getProp("text_align");

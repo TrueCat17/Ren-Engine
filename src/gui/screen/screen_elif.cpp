@@ -12,7 +12,7 @@ ScreenElif::ScreenElif(Node *node, ScreenChild *screenParent, ScreenContainer *p
 
 void ScreenElif::calculateProps() {
 	if (prevContainersSkipped()) {
-		skipped = PyUtils::exec(condition, true) != "True";
+		skipped = PyUtils::exec(getFileName(), getNumLine(), condition, true) != "True";
 		if (!skipped) {
 			ScreenContainer::calculateProps();
 		}

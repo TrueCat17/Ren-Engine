@@ -7,6 +7,12 @@
 #include "utils/string.h"
 
 
+struct NodeProp {
+	String pyExpr;
+	String numLine;
+};
+
+
 class Node {
 private:
 	static std::vector<Node*> nodes;
@@ -16,12 +22,15 @@ private:
 	static void preloadImages(Node *node, int start, int count);
 	static void jump(const String &label, bool isCall);
 
-	std::map<String, String> props;
+
+	String fileName;
+	size_t numLine;
+
+	String firstParam;
+	std::map<String, NodeProp> props;
 public:
 	static void destroyAll();
 
-
-	String firstParam;
 
 	String command;
 	int priority;
@@ -29,20 +38,31 @@ public:
 	String params;//text to out, command to execute, condition to check...
 	String name;//for label
 
-	Node *prevNode;//for blocks `elif` and `else`
+	Node *prevNode;//for blocks <elif> and <else>
 	bool condIsTrue = false;
 
 	String mainLabel;//for type == main
 
 	std::vector<Node*> children;
 
-	Node() { nodes.push_back(this); }
+
+	Node(String fileName, size_t numLine):
+		fileName(fileName),
+		numLine(numLine)
+	{ nodes.push_back(this); }
+
 	void execute();
 
-	void initProp(const String &name, const String &value);
-	String getProp(const String& name, const String &commonName = "", const String &indexStr = "") const;
-	String getPropCode(const String& name) const;
+	void initProp(const String &name, const String &value, size_t numLine);
+	String getProp(const String &name, const String &commonName = "", const String &indexStr = "") const;
+	String getPropCode(const String &name) const;
+
 	const String& getFirstParam() const { return firstParam; }
+	void setFirstParam(const String &value) { firstParam = value; }
+
+	const String& getFileName() const { return fileName; }
+	size_t getNumLine() const { return numLine; }
+	String getPlace() const;
 };
 
 #endif // NODE_H

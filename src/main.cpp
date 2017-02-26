@@ -247,7 +247,7 @@ void loop() {
 		render();
 		Config::save();
 
-		PyUtils::exec("globals().has_key('persistent_save') and persistent_save()");
+		PyUtils::exec("CPP_EMBED: main.cpp", 0, "globals().has_key('persistent_save') and persistent_save()");
 
 		int spent = Utils::getTimer() - startTime;
 		int timeToSleep = Game::getFrameTime() - spent;
@@ -278,7 +278,11 @@ void loop() {
 }
 
 void destroy() {
-	GV::exitGuard.lock();
+	GV::exit = true;
+	GV::inGame = false;
+
+	int toSleep = Game::getFrameTime() * 2;
+	Utils::sleep(toSleep, false);
 
 	SDL_CloseAudio();
 	SDL_Quit();
