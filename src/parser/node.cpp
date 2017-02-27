@@ -160,6 +160,10 @@ void Node::execute() {
 		PyUtils::exec(getFileName(), getNumLine(), code);
 	}else
 
+	if (command == "$") {
+		PyUtils::exec(getFileName(), getNumLine(), params);
+	}else
+
 	if (command == "python" || command == "init python") {
 		PyUtils::exec(getFileName(), getNumLine() + 1, params);
 	}else

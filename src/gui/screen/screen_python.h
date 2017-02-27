@@ -4,8 +4,11 @@
 #include "screen_child.h"
 
 class ScreenPython: public ScreenChild {
+private:
+	bool isBlock;
+
 public:
-	ScreenPython(Node *node);
+	ScreenPython(Node *node, bool isBlock);
 	virtual void calculateProps();
 	virtual void updateSize();
 	virtual void updatePos();

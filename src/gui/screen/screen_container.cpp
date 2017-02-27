@@ -248,8 +248,8 @@ void ScreenContainer::addChildrenFromNode() {
 			child = new ScreenContinue(childNode);
 		}else
 
-		if (childCommand == "command" || childCommand == "python") {
-			child = new ScreenPython(childNode);
+		if (childCommand == "$" || childCommand == "python") {
+			child = new ScreenPython(childNode, childCommand != "$");
 		}else
 
 		{

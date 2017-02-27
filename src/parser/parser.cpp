@@ -1,6 +1,5 @@
 #include "parser.h"
 
-#include "iostream"
 #include <fstream>
 
 #include "parser/syntax_checker.h"
@@ -85,7 +84,13 @@ Parser::Parser(String dir) {
 			if (n != size_t(-1) && s[n] != '#') {
 				if (toPrevLine && n <= pythonIndent) {
 					s.erase(0, n);
-					code[code.size() - 1] += s;
+
+					for (size_t j = code.size() - 1; j != size_t(-1) ; --j) {
+						if (code[j]) {
+							code[j] += s;
+							break;
+						}
+					}
 				}else {
 					code.push_back(s);
 				}
@@ -232,10 +237,6 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			res->params = "";
 		}
 
-		if (res->command == "$") {
-			res->command = "python";
-		}
-
 		if (superParent & SuperParent::SCREEN) {
 			initScreenNode(res);
 		}
@@ -359,10 +360,6 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		res->children.push_back(node);
 
 		childStart = nextChildStart;
-	}
-
-	if (type == "menu" && !res->children.size()) {
-		Utils::outMsg("Parse::getNode", "Меню без пунктов выбора недопустимо");
 	}
 
 
