@@ -429,6 +429,12 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const S
 	int x = crop.x + draw.x * crop.w / draw.w;
 	int y = crop.y + draw.y * crop.h / draw.h;
 
+	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
+		Utils::outMsg("Utils::getPixel", String() +
+					  "Попытка получить цвет точки (" + x + ", " + y + ") у картинки размера " + surface->w + "x" + surface->h);
+		return 0;
+	}
+
 	const int bpp = surface->format->BytesPerPixel;
 	/* Here p is the address to the pixel we want to retrieve */
 	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
@@ -450,17 +456,6 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const S
 }
 Uint32 Utils::getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop) {
 	const SDL_Surface *surface = textureSurfaces[texture];
-
-	if (!surface) {
-		String path;
-		for (auto p : textures) {
-			if (p.second == texture) {
-				path = p.first;
-				break;
-			}
-		}
-	}
-
 	return getPixel(surface, draw, crop);
 }
 

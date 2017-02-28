@@ -86,7 +86,7 @@ int Game::getStageHeight() {
 }
 
 int Game::getTextureWidth(const std::string &image) {
-	SDL_Surface *surface = Utils::getSurface(image);
+	SDL_Surface *surface = Image::getImage(image);
 	if (surface) {
 		return surface->w;
 	}
@@ -94,7 +94,7 @@ int Game::getTextureWidth(const std::string &image) {
 	return -1;
 }
 int Game::getTextureHeight(const std::string &image) {
-	SDL_Surface *surface = Utils::getSurface(image);
+	SDL_Surface *surface = Image::getImage(image);
 	if (surface) {
 		return surface->h;
 	}
@@ -110,7 +110,7 @@ Uint32 Game::getPixel(const std::string &image, int x, int y) {
 		return Utils::getPixel(surface, draw, crop);
 	}
 	Utils::outMsg("Game::getPixel", "surface == nullptr");
-	return -1;
+	return 0;
 }
 
 
