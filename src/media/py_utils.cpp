@@ -187,8 +187,7 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 				  << '\t' << excValue << '\n';
 
 		if (traceback.size()) {
-			std::cout << "Traceback:\n"
-					  << '\t' << traceback;
+			std::cout << "Traceback:\n" << traceback;
 		}
 
 		std::cout << "Code:\n"
