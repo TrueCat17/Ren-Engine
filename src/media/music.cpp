@@ -138,7 +138,6 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 		Channel *channel = channels[i];
 		if (channel->name == name) {
 			Utils::outMsg("Music::registerChannel", "Channel with name <" + name + "> is there");
-			globalMutex.unlock();
 			return;
 		}
 	}
@@ -155,7 +154,6 @@ void Music::setVolume(double volume, const std::string &channelName) {
 		Channel *channel = channels[i];
 		if (channel->name == channelName) {
 			channel->volume = Utils::inBounds(volume, 0, 1);
-			globalMutex.unlock();
 			return;
 		}
 	}
