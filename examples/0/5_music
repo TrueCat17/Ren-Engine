@@ -41,6 +41,8 @@ renpy.music.set_volume(vol, channel)
 volume(vol, channel)
 Она делает то же самое.
 
+Для установки громкости всех каналов с определённым микшером есть функция set_mixer_volume(vol, mixer).
+
 
 Проигрывание:
 
@@ -48,26 +50,27 @@ volume(vol, channel)
 play channel file_name [fadein time = 0]
 Где channel - звуковой канал,
 	file_name - имя проигрываемого файла,
-	time - время усиления звука от нуля до полной громкости (по-умолчанию 0).
+	time - время (в сек.) усиления звука от нуля до полной громкости (по-умолчанию 0).
 Примеры:
 play sound sfx_intro_bus_stop_steps
 play music music_list["a_promise_from_distant_days_v2"] fadein 1.5
 
 В питоне:
-renpy.play(file_name, channel)
+renpy.play(file_name, channel, fadein = 0)
 
 
 Остановка:
 
 В сценарии:
-stop channel
+stop channel [fadeout time = 0]
 Где channel - звуковой канал.
+	time - время (в сек.) убавления звука от полной громкости до нуля (по-умолчанию 0).
 
 Пример:
 stop ambience
 
 В питоне:
-renpy.stop(channel)
+renpy.stop(channel, fadeout = 0)
 
 
 Наверно, будут вопросы, почему тут так часто встречается renpy?
