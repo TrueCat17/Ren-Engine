@@ -34,6 +34,13 @@ void DisplayObject::updateGlobalY() {
 		globalY = rect.y;
 	}
 }
+void DisplayObject::updateGlobalAlpha() {
+	if (parent) {
+		globalAlpha = parent->getGlobalAlpha() * alpha;
+	}else {
+		globalAlpha = alpha;
+	}
+}
 
 void DisplayObject::setPos(int x, int y) {
 	setX(x);
@@ -57,13 +64,17 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 }
 
 void DisplayObject::draw() const {
-	if (!enable) return;
+	if (!enable || globalAlpha <= 0) return;
 
 	if (texture) {
 		SDL_Rect t = rect;
 		t.x = globalX;
 		t.y = globalY;
-		//SDL_SetTextureAlphaMod(texture, 128 + 64);
+
+		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
+		if (SDL_SetTextureAlphaMod(texture, intAlpha)) {
+			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
+		}
 		if (SDL_RenderCopy(GV::mainRenderer, texture, &crop, &t)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 		}

@@ -141,8 +141,9 @@ bool init() {
 void render() {
 	GV::renderGuard.lock();
 
-	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 0);
+	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 255);
 	SDL_RenderClear(mainRenderer);
+
 	Group *screens = GV::screens;
 	if (screens) {
 		screens->draw();

@@ -58,11 +58,11 @@ void SyntaxChecker::init() {
 	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
 
 	const String screenProps = ", use, key, ";
-	const String simpleProps = ", xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, crop, ";
+	const String simpleProps = ", xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, crop, alpha, ";
 	const String containerProps = ", has, spacing, ";
 	const String textProps = ", color, size, font, size, text_align, text_valign, ";
 
-	const String imageProps = simpleProps + "repeat, linear, ease, easein, easeout, pause, rotate, zoom, alpha, reset, ";
+	const String imageProps = simpleProps + "repeat, linear, ease, easein, easeout, pause, rotate, alpha, reset, ";
 
 	const String conditions = ", if, elif if elif, else if elif for while, ";
 
@@ -121,9 +121,22 @@ void SyntaxChecker::init() {
 }
 
 bool SyntaxChecker::check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &thereIsNot) {
+	if (superParent == SuperParent::INIT || superParent == SuperParent::LABEL) {
+		//Эти блоки внутри init/label могут содержать в себе абсолютно всё
+		//Поэтому проверка для них отключена
+		static const std::vector<String> blocksWithAny = { "scene", "show", "image", "contains", "parallel" };
+
+		for (const String &blockName : blocksWithAny) {
+			if (parent == blockName) {
+				thereIsNot = false;
+				return true;
+			}
+		}
+	}
+
 	thereIsNot = mapSyntax.find(parent) == mapSyntax.end();
 	if (thereIsNot) {
-		return superParent == SuperParent::LABEL;
+		return false;
 	}
 	const std::vector<SyntaxPart> sps = mapSyntax[parent];
 

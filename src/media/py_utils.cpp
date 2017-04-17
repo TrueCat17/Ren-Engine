@@ -1,7 +1,6 @@
 #include "py_utils.h"
 
 #include <iostream>
-#include <mutex>
 
 #include <boost/python.hpp>
 #include <Python.h>
@@ -20,6 +19,7 @@
 
 
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
+std::mutex PyUtils::pyExecGuard;
 
 PyCodeObject* PyUtils::getCompileObject(const String code, const String fileName, size_t numLine) {
 	PyCode pyCode(code, fileName, numLine);
@@ -58,7 +58,10 @@ PyUtils::PyUtils() {
 	pythonGlobal["_play"] = py::make_function(Music::play);
 	pythonGlobal["_stop"] = py::make_function(Music::stop);
 
+	pythonGlobal["image_was_registered"] = py::make_function(Utils::imageWasRegistered);
 	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
+	pythonGlobal["get_image_decl_at"] = py::make_function(Utils::getImageDeclAt);
+
 	pythonGlobal["show_screen"] = py::make_function(Screen::addToShowSimply);
 	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHideSimply);
 
@@ -68,6 +71,8 @@ PyUtils::PyUtils() {
 	pythonGlobal["_has_label"] = py::make_function(Game::hasLabel);
 
 	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
+	pythonGlobal["get_args"] = py::make_function(Game::getArgs);
+
 	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
 	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
 
@@ -122,9 +127,6 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 	if (retRes) {
 		execCode = "res = str(" + code + ")";
 	}
-
-
-	static std::mutex pyExecGuard;
 
 	pyExecGuard.lock();
 	try {

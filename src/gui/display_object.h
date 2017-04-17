@@ -12,6 +12,9 @@ protected:
 	int globalX = 0;
 	int globalY = 0;
 
+	double alpha = 1;
+	double globalAlpha = 1;
+
 	SDL_Rect rect;
 	SDL_Rect crop;
 
@@ -37,15 +40,19 @@ public:
 
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
+	double getGlobalAlpha() const { return globalAlpha; }
 
 	virtual void updateGlobalX();
 	virtual void updateGlobalY();
+	virtual void updateGlobalAlpha();
 
 	int getX() const { return rect.x; }
 	int getY() const { return rect.y; }
+	double getAlpha() const { return alpha; }
 
 	void setX(int value) { rect.x = value; }
 	void setY(int value) { rect.y = value; }
+	void steAlpha(double value) { alpha = value; }
 
 	int getWidth() const { return rect.w; }
 	int getHeight() const { return rect.h; }

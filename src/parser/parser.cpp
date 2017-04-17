@@ -214,6 +214,9 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	Node *res = new Node(fileName, start - startFile);
 
 	String headLine = code[start];
+	headLine.erase(0, headLine.find_first_not_of(' '));
+	headLine.erase(headLine.find_last_not_of(' ') + 1);
+
 
 	if (isText) {
 		res->command = "text";
@@ -221,61 +224,38 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		return res;
 	}
 
-	if (start == end - 1) {
-		size_t startLine = headLine.find_first_not_of(' ');
+	bool block = start != end - 1;
 
-		size_t i = headLine.find(' ', startLine);
-		if (i == size_t(-1)) {
-			i = headLine.size();
-		}
-		String headWord = headLine.substr(startLine, i - startLine);
+	size_t endType = headLine.find_first_of(' ');
+	if (endType == size_t(-1)) {
+		endType = headLine.size() - block;
+	}
+	String type = res->command = headLine.substr(0, endType);
 
-		res->command = headWord;
-		if (i + 1 < headLine.size()) {
-			res->params = headLine.substr(i + 1);
-		}else {
-			res->params = "";
-		}
+	size_t startParams = endType + 1;
+	size_t endParams = headLine.size() - 1;
+	if (startParams > endParams) {
+		startParams = endParams + 1;
+	}
 
+	if (!block) {
+		res->params = headLine.substr(startParams, endParams - startParams + 1);
 		if (superParent & SuperParent::SCREEN) {
 			initScreenNode(res);
 		}
 		return res;
 	}
 
-	String type;
-	int wasNotSpace = -1;
-	for (size_t i = 0; i < headLine.size(); ++i) {
-		char c = headLine[i];
-		if (wasNotSpace == -1 && c != ' ') {
-			wasNotSpace = i;
-		}
 
-		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && wasNotSpace != -1) {
-			res->command = type = headLine.substr(wasNotSpace, i - wasNotSpace);
-			break;
-		}
-	}
-
-	size_t i = headLine.size() - 1;
-	while (i != size_t(-1) && headLine[i] == ' ') {
-		--i;
-	}
-	headLine.erase(i + 1);
-
-	i = headLine.find(type);
-	size_t startCommandName = i + type.size() + 1;
-	size_t endCommandName = headLine.size() - 1;
-	if (headLine[endCommandName] != ':') {
+	if (headLine.back() != ':') {
 		Utils::outMsg("Parser::getNode",
 					  "Объявление блока должно заканчиваться двоеточием\n"
 					  "Строка <" + headLine + ">\n\n" +
 					  res->getPlace());
-		++endCommandName;
 	}
 
 	if (type == "label" || type == "screen") {
-		res->name = headLine.substr(startCommandName, endCommandName - startCommandName);
+		res->name = headLine.substr(startParams, endParams - startParams);
 	}else
 	if (headLine.startsWith("init")) {
 		if (headLine.endsWith(" python") || headLine.endsWith(" python:")) {
@@ -288,7 +268,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			res->priority = 0;
 		}
 	}else {
-		res->params = headLine.substr(startCommandName, endCommandName - startCommandName);
+		res->params = headLine.substr(startParams, endParams - startParams);
 	}
 
 	if (type == "python" || type == "init python") {
@@ -330,7 +310,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 		String headWord;
 		if (headLine[startLine] != '\'' && headLine[startLine] != '"') {
-			i = headLine.find(' ', startLine);
+			size_t i = headLine.find(' ', startLine);
 			if (i == size_t(-1)) {
 				i = headLine.size();
 			}
@@ -357,6 +337,20 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			node->prevNode = res->children[res->children.size() - 1];
 		}
 
+		if (node->command == "with") {
+			size_t i = res->children.size() - 1;
+			while (i != size_t(-1) &&
+			 (res->children[i]->command == "scene" ||
+			  res->children[i]->command == "show" ||
+			  res->children[i]->command == "hide"))
+			{
+				res->children[i]->params += " with " + node->params;
+				--i;
+			}
+			++i;
+			node->children.insert(node->children.begin(), res->children.begin() + i, res->children.end());
+			res->children.erase(res->children.begin() + i, res->children.end());
+		}
 		res->children.push_back(node);
 
 		childStart = nextChildStart;

@@ -14,6 +14,7 @@ public:
 
 	virtual void updateGlobalX();
 	virtual void updateGlobalY();
+	virtual void updateGlobalAlpha();
 
 	DisplayObject* getChildAt(size_t index) const;
 	size_t getChildIndex(DisplayObject *child) const;

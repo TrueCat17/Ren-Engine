@@ -94,11 +94,8 @@ void ScreenHotspot::updatePos() {
 void ScreenHotspot::draw() const {
 	if (!enable || !texture) return;
 
-	int x = getGlobalX();
-	int y = getGlobalY();
-
-	SDL_Rect from = { int(x / scaleX), int(y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
-	SDL_Rect to = { x, y, rect.w, rect.h };
+	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
+	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
 	if (SDL_RenderCopy(GV::mainRenderer, texture, &from, &to)) {
 		Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 	}

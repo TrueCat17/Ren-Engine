@@ -15,6 +15,8 @@
 #include "media/image.h"
 #include "media/py_utils.h"
 
+#include "parser/node.h"
+
 #include "game.h"
 
 
@@ -22,7 +24,9 @@ String Utils::ROOT;
 String Utils::FONTS;
 
 std::map<String, TTF_Font*> Utils::fonts;
+
 std::map<String, String> Utils::images;
+std::map<String, Node*> Utils::declAts;
 
 std::vector<std::pair<String, SDL_Texture*>> Utils::textures;
 std::map<const SDL_Texture*, SDL_Surface*> Utils::textureSurfaces;
@@ -397,12 +401,36 @@ SDL_Surface* Utils::getSurface(const String &path) {
 
 	SDL_Surface *surface = IMG_Load((Utils::ROOT + path).c_str());
 	if (surface) {
-		SDL_Surface *newSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-		if (newSurface) {
-			SDL_FreeSurface(surface);
-			surface = newSurface;
-		}else{
-			Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
+		/*
+		 * Вот это вот - это костыль
+		 *
+		 * Текстура от результата от SDL_ConvertSurfaceFormat почему-то не хочет менять прозрачность
+		 * Поэтому для непрозрачных картинок (все jpg, например) используется SDL_CreateRGBSurface и SDL_BlitSurface
+		 *
+		 * Ну а SDL_BlitSurface почему-то искажает _полупрозрачные_ пиксели (например, красные -> чёрные)
+		 * Поэтому для поверхностей с прозрачностью используется SDL_ConvertSurfaceFormat
+		 *
+		 * Как сделать нормально - я не знаю
+		 */
+		if (surface->format->Amask) {
+			SDL_Surface *newSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+			if (newSurface) {
+				SDL_FreeSurface(surface);
+				surface = newSurface;
+			}else{
+				Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
+			}
+		}else {
+			SDL_Rect imgRect = { 0, 0, surface->w, surface->h };
+			SDL_Surface *newSurface = SDL_CreateRGBSurface(0, imgRect.w, imgRect.h, 32,
+														   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF);
+			if (newSurface) {
+				SDL_BlitSurface(surface, &imgRect, newSurface, &imgRect);
+				SDL_FreeSurface(surface);
+				surface = newSurface;
+			}else{
+				Utils::outMsg("SDL_CreateRGBSurface", SDL_GetError());
+			}
 		}
 
 		trimSurfacesCache(surface);
@@ -459,19 +487,60 @@ Uint32 Utils::getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rec
 	return getPixel(surface, draw, crop);
 }
 
-void Utils::registerImage(const String &desc) {
+bool Utils::registerImage(const String &desc, Node *declAt) {
+	String name;
+	String path;
+
 	size_t i = desc.find("=");
 	if (i == size_t(-1)) {
-		outMsg("Utils::registerImage", "Неверное объявление изображения (нет знака '='):\n" + desc);
-		return;
+		name = desc;
+		path = "";
+	}else {
+		name = desc.substr(0, i - 1);
+		path = desc.substr(i + 1);
 	}
-	bool spaceL = desc[i - 1] == ' ';
-	bool spaceR = desc[i + 1] == ' ';
 
-	const String name = desc.substr(0, i - spaceL);
-	const String path = desc.substr(i + spaceR + 1);
+	auto clear = [](String str) -> String {
+		size_t start = str.find_first_not_of(' ');
+		size_t end = str.find_last_not_of(' ');
+		if (start == size_t(-1) || end == size_t(-1)) {
+			return "";
+		}
+		return str.substr(start, end - start + 1);
+	};
+
+	name = clear(name);
+	if (!name) {
+		return false;
+	}
+
+	path = clear(path);
+
 	images[name] = path;
+	declAts[name] = declAt;
+
+	if (declAt->children.empty()) {
+		PyUtils::pyExecGuard.lock();
+		py::list defaultDeclAt = py::list(GV::pyUtils->pythonGlobal["default_decl_at"]);
+		PyUtils::pyExecGuard.unlock();
+
+		size_t sizeDefaultDeclAt = py::len(defaultDeclAt);
+		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
+			py::str params = py::str(defaultDeclAt[i]);
+
+			Node *node = new Node("some assign default_decl_at", 0);
+			node->params = std::string(py::extract<std::string>(params));
+			declAt->children.push_back(node);
+		}
+	}
+
+	return true;
 }
+
+bool Utils::imageWasRegistered(const std::string &name) {
+	return images.find(name) != images.end();
+}
+
 std::string Utils::getImageCode(const std::string &name) {
 	if (images.find(name) == images.end()) {
 		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
@@ -479,4 +548,15 @@ std::string Utils::getImageCode(const std::string &name) {
 	}
 
 	return images[name];
+}
+py::list Utils::getImageDeclAt(const std::string &name) {
+	if (declAts.find(name) == declAts.end()) {
+		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
+		return py::list();
+	}
+
+	Node *node = declAts[name];
+	if (!node) return py::list();
+
+	return node->getPyList();
 }

@@ -12,7 +12,9 @@ void Group::updateGlobalX() {
 
 	for (size_t i = 0; i < children.size(); ++i) {
 		DisplayObject *child = children[i];
-		child->updateGlobalX();
+		if (child->enable) {
+			child->updateGlobalX();
+		}
 	}
 }
 void Group::updateGlobalY() {
@@ -20,7 +22,19 @@ void Group::updateGlobalY() {
 
 	for (size_t i = 0; i < children.size(); ++i) {
 		DisplayObject *child = children[i];
-		child->updateGlobalY();
+		if (child->enable) {
+			child->updateGlobalY();
+		}
+	}
+}
+void Group::updateGlobalAlpha() {
+	DisplayObject::updateGlobalAlpha();
+
+	for (size_t i = 0; i < children.size(); ++i) {
+		DisplayObject *child = children[i];
+		if (child->enable) {
+			child->updateGlobalAlpha();
+		}
 	}
 }
 
@@ -117,7 +131,7 @@ bool Group::checkAlpha(int x, int y) const {
 }
 
 void Group::draw() const {
-	if (!enable) return;
+	if (!enable || globalAlpha <= 0) return;
 
 	DisplayObject::draw();
 

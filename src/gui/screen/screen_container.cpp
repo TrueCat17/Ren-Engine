@@ -259,7 +259,7 @@ void ScreenContainer::addChildrenFromNode() {
 
 			static const std::vector<String> props = String(
 				"has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
-				"align, anchor, pos, xysize, crop, "
+				"align, anchor, pos, xysize, crop, alpha, "
 				"modal, zorder, ground, hover, action, "
 				"color, font, size, text_align"
 			).split(", ");

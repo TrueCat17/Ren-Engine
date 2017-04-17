@@ -6,6 +6,8 @@
 
 #include <SDL2/SDL_stdinc.h> //Uint32
 
+#include "media/py_utils.h"
+
 
 class Game {
 private:
@@ -33,6 +35,8 @@ public:
 	static Uint32 getPixel(const std::string &image, int x, int y);
 
 	static std::string getFromConfig(const std::string &param);
+
+	static py::object getArgs(const std::string &str);
 
 	static void updateKeyboard();
 

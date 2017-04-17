@@ -23,12 +23,16 @@ class ContinueException {};
 class ReturnException {};
 class ExitException {};
 
+class Node;
+
 namespace py = boost::python;
 
 class Utils {
 private:
 	static std::map<String, TTF_Font*> fonts;
+
 	static std::map<String, String> images;
+	static std::map<String, Node*> declAts;
 
 	static std::vector<std::pair<String, SDL_Texture*>> textures;
 	static std::map<const SDL_Texture*, SDL_Surface*> textureSurfaces;
@@ -79,8 +83,10 @@ public:
 	static Uint32 getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop);
 	static Uint32 getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop);
 
-	static void registerImage(const String &desc);
+	static bool registerImage(const String &desc, Node *declAt);
+	static bool imageWasRegistered(const std::string &name);
 	static std::string getImageCode(const std::string &name);
+	static py::list getImageDeclAt(const std::string &name);
 };
 
 #endif // UTILS_H

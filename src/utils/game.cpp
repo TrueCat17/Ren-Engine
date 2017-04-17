@@ -8,7 +8,6 @@
 
 #include "media/image.h"
 #include "media/music.h"
-#include "media/py_utils.h"
 
 #include "parser/parser.h"
 
@@ -116,6 +115,15 @@ Uint32 Game::getPixel(const std::string &image, int x, int y) {
 
 std::string Game::getFromConfig(const std::string &param) {
 	return Config::get(param);
+}
+py::object Game::getArgs(const std::string &str) {
+	std::vector<String> vec = Utils::getArgs(str);
+
+	py::list res;
+	for (const std::string& s : vec) {
+		res.append(s);
+	}
+	return res;
 }
 
 

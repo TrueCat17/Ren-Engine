@@ -108,6 +108,7 @@ bool String::isNumber() const {
 	}
 
 	bool wasDot = false;
+	int wasE = -1;
 	for (size_t i = start; i < size(); ++i) {
 		char c = at(i);
 		if (c == '.') {
@@ -116,6 +117,19 @@ bool String::isNumber() const {
 			}
 			wasDot = true;
 			continue;
+		}
+		if (c == 'e') {
+			if (wasE != -1) {
+				return false;
+			}
+			wasE = i;
+			continue;
+		}
+		if (c == '-' || c == '+') {
+			if (wasE != -1 && wasE == int(i) - 1) {
+				continue;
+			}
+			return false;
 		}
 
 		if (c < '0' || c > '9') {

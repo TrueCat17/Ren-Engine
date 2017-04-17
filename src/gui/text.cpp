@@ -389,6 +389,13 @@ void Text::addChars(String c, int color) {
 		Utils::outMsg("TTF_RenderUTF8_Blended", TTF_GetError());
 		return;
 	}
+	SDL_Surface *rgbaSurface = SDL_ConvertSurfaceFormat(surfaceText, SDL_PIXELFORMAT_RGBA8888, 0);
+	if (rgbaSurface) {
+		SDL_FreeSurface(surfaceText);
+		surfaceText = rgbaSurface;
+	}else {
+		Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
+	}
 
 	SDL_Texture *textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
 	SDL_FreeSurface(surfaceText);
@@ -464,11 +471,16 @@ bool Text::checkAlpha(int x, int y) const {
 }
 
 void Text::draw() const {
-	if (!enable) return;
+	if (!enable || globalAlpha <= 0) return;
 
 	for (size_t i = 0; i < lineTextures.size(); ++i) {
 		SDL_Texture *texture = lineTextures[i];
 		if (!texture) continue;
+
+		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
+		if (SDL_SetTextureAlphaMod(texture, intAlpha)) {
+			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
+		}
 
 		SDL_Rect t = rects[i];
 		t.x += globalX;

@@ -31,6 +31,7 @@ void GUI::update() {
 					//int d = Utils::getTimer();
 					scr->updateGlobalX();
 					scr->updateGlobalY();
+					scr->updateGlobalAlpha();
 					//int e = Utils::getTimer();
 
 					//std::cout << (b-a) << '-' << (c-b) << '-' << (d-c) << '-' << (e-d) << '\n';

@@ -17,9 +17,11 @@
 #include "utils/utils.h"
 
 std::vector<Node*> Node::nodes;
-bool Node::initing = false;
 
 void Node::execute() {
+	static bool initing = false;
+	static bool inWithBlock = false;
+
 	if (!GV::inGame) return;
 
 	if (command == "main") {
@@ -80,10 +82,6 @@ void Node::execute() {
 			if ((node->command == "show" && !node->params.startsWith("screen ")) || node->command == "scene") {
 				preloadImages(this, i, Config::get("count_preload_commands").toInt());
 			}
-
-			while (!initing && GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", 0, "character_moving", true) == "True") {
-				Utils::sleep(1);
-			}
 		}
 	}else
 
@@ -94,7 +92,9 @@ void Node::execute() {
 		}else {
 			const std::vector<String> args = Utils::getArgs(params);
 			if (args.empty()) {
-				Utils::outMsg("Строка <show " + params + "> некорректна");
+				Utils::outMsg("Node::execute",
+							  "Строка <show " + params + "> некорректна\n" +
+							  getPlace());
 				return;
 			}
 
@@ -102,7 +102,12 @@ void Node::execute() {
 			for (size_t i = 1; i < args.size(); ++i) {
 				argsStr += ", '" + args[i] + "'";
 			}
-			PyUtils::exec(getFileName(), getNumLine(), "add_sprite_to_showlist([" + argsStr + "], None)");
+
+			PyUtils::pyExecGuard.lock();
+			GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
+			PyUtils::pyExecGuard.unlock();
+
+			PyUtils::exec(getFileName(), getNumLine(), "add_sprite_to_showlist([" + argsStr + "], last_show_at)");
 		}
 	}else
 
@@ -111,7 +116,20 @@ void Node::execute() {
 			String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToHideSimply(screenName);
 		}else {
-			PyUtils::exec(getFileName(), getNumLine(), "remove_sprite_from_showlist('" + params + "')");
+			const std::vector<String> args = Utils::getArgs(params);
+			if (args.empty()) {
+				Utils::outMsg("Node::execute",
+							  "Строка <hide " + params + "> некорректна\n" +
+							  getPlace());
+				return;
+			}
+
+			String argsStr = "'" + args[0] + "'";
+			for (size_t i = 1; i < args.size(); ++i) {
+				argsStr += ", '" + args[i] + "'";
+			}
+
+			PyUtils::exec(getFileName(), getNumLine(), "add_sprite_to_hidelist([" + argsStr + "])");
 		}
 	}else
 
@@ -125,11 +143,12 @@ void Node::execute() {
 				argsStr += ", '" + args[i] + "'";
 			}
 		}
-		PyUtils::exec(getFileName(), getNumLine(), "set_scene([" + argsStr + "], None)");
-	}else
 
-	if (command == "with") {
-		Utils::sleep(100);
+		PyUtils::pyExecGuard.lock();
+		GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
+		PyUtils::pyExecGuard.unlock();
+
+		PyUtils::exec(getFileName(), getNumLine(), "set_scene([" + argsStr + "], last_show_at)");
 	}else
 
 	if (command == "window") {
@@ -199,7 +218,11 @@ void Node::execute() {
 	}else
 
 	if (command == "image") {
-		Utils::registerImage(params);
+		if (!Utils::registerImage(params, this)) {
+			Utils::outMsg("Node::execute",
+						  "Некорректное имя изображения\n" +
+						  getPlace());
+		}
 	}else
 
 	if (command == "nvl") {
@@ -220,9 +243,8 @@ void Node::execute() {
 		PyUtils::exec(getFileName(), getNumLine(), "choose_menu_variants = (" + variants + ")");
 		PyUtils::exec(getFileName(), getNumLine(), "renpy.call_screen('choose_menu', 'choose_menu_result')");
 
-		int toSleep = Game::getFrameTime();
 		while (GV::inGame && PyUtils::exec(getFileName(), getNumLine(), "menu_item_choosed", true) != "True") {
-			Utils::sleep(toSleep);
+			Utils::sleep(Game::getFrameTime());
 		}
 		if (!GV::inGame) return;
 
@@ -230,11 +252,10 @@ void Node::execute() {
 		int res = resStr.toInt();
 
 		if (res < 0 || res >= int(children.size())) {
-			Utils::outMsg("Node::execute",
-						  String() +
+			Utils::outMsg("Node::execute", String() +
 						  "Номер выбранного пункта меню находится вне допустимых пределов\n"
-						  "choose_menu_result = " + res + ", min = 0, max = " + int(children.size())
-						  );
+						  "choose_menu_result = " + res + ", min = 0, max = " + children.size() + "\n" +
+						  getPlace());
 			res = 0;
 		}
 		Node *menuItem = children[res];
@@ -242,6 +263,14 @@ void Node::execute() {
 			Node *node = menuItem->children[i];
 			node->execute();
 		}
+	}else
+
+	if (command == "with") {
+		inWithBlock = true;
+		for (Node *child : children) {
+			child->execute();
+		}
+		inWithBlock = false;
 	}else
 
 	if (command == "if") {
@@ -309,13 +338,15 @@ void Node::execute() {
 	if (command == "for") {
 		condIsTrue = true;
 
-		String in = " in ";
+		static const String in = " in ";
 		size_t inPos = params.find(in);
 		String beforeIn = params.substr(0, params.find_last_not_of(' ', inPos) + 1);
 		String afterIn = params.substr(params.find_first_not_of(' ', inPos + in.size()));
 
 		if (!beforeIn || !afterIn) {
-			Utils::outMsg("Node::execute", "Неправильный синтаксис команды for:\n<" + params + ">");
+			Utils::outMsg("Node::execute",
+						  "Неправильный синтаксис команды for:\n<" + params + ">\n" +
+						  getPlace());
 			return;
 		}
 
@@ -361,16 +392,50 @@ void Node::execute() {
 	{
 
 		if (command != "pass") {
-			Utils::outMsg("Node::execute: Неизвестный тип команды <" + command + ">");
+			Utils::outMsg("Node::execute",
+						  "Неизвестный тип команды <" + command + ">\n" +
+						  getPlace());
 		}
 	}
 
-	while (GV::inGame && !initing && PyUtils::exec("CPP_EMBED: node.cpp", 0, "pause_end > time.time()", true) == "True") {
-		Utils::sleep(Game::getFrameTime());
+	if (!initing && !inWithBlock) {
+		static const String code = "pause_end > time.time() or not can_exec_next_command()";
+		while (GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", 0, code, true) == "True") {
+			Utils::sleep(Game::getFrameTime());
+		}
 	}
-	while (GV::inGame && !initing && PyUtils::exec("CPP_EMBED: node.cpp", 0, "(not read) or (character_moving)", true) == "True") {
-		Utils::sleep(Game::getFrameTime());
+}
+py::list Node::getPyList() const {
+	py::list res;
+
+	static const std::vector<String> highLevelCommands = {"image", "scene", "show", "hide"};
+	bool isHighLevelCommands = Utils::in(command, highLevelCommands);
+
+	if (!isHighLevelCommands) {
+		if (command) {
+			res.append(py::str(std::string(command)));
+		}
+		if (params) {
+			res.append(py::str(std::string(params)));
+		}
 	}
+
+	for (const Node* child : children) {
+		py::list childPyList = child->getPyList();
+
+		static const std::vector<String> blockCommandsInImage = {"contains", "parallel"};
+		bool childIsBlock = Utils::in(child->command, blockCommandsInImage);
+
+		static const py::str space = " ";
+
+		if (!childIsBlock) {
+			res.append(space.join(childPyList));
+		}else {
+			res.append(childPyList);
+		}
+	}
+
+	return res;
 }
 
 void Node::jump(const String &label, bool isCall) {
@@ -387,7 +452,8 @@ void Node::jump(const String &label, bool isCall) {
 			return;
 		}
 	}
-	Utils::outMsg("Node::jump(call)", "Метка <" + label + "> не найдена");
+	Utils::outMsg("Node::jump(call)",
+				  "Метка <" + label + "> не найдена\n");
 }
 void Node::preloadImages(Node *node, int start, int count) {
 	return;
@@ -461,7 +527,7 @@ String Node::getProp(const String &name, const String &commonName, const String 
 		i = props.find(commonName);
 		if (i != props.end()) {
 			String toExec = i->second.pyExpr;
-			String res = PyUtils::exec(getFileName(), i->second.numLine, toExec + indexStr, true);
+			res = PyUtils::exec(getFileName(), i->second.numLine, toExec + indexStr, true);
 			return res;
 		}
 	}

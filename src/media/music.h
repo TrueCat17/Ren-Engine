@@ -35,7 +35,7 @@ class Music {
 private:
 	static const size_t PART_SIZE = (1 << 20) / 4;//0.25 Mb
 	static const size_t MIN_PART_COUNT = 2;
-	static const size_t MAX_PART_COUNT = 7;
+	static const size_t MAX_PART_COUNT = 5;
 
 
 	static std::map<std::string, double> mixerVolumes;

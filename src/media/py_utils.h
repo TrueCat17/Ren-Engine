@@ -1,6 +1,7 @@
 #ifndef PYUTILS_H
 #define PYUTILS_H
 
+#include <mutex>
 #include <map>
 
 #include <boost/python.hpp>
@@ -37,6 +38,8 @@ private:
 	static std::map<PyCode, PyCodeObject*> compiledObjects;
 
 public:
+	static std::mutex pyExecGuard;
+
 	static PyCodeObject* getCompileObject(const String code, const String fileName, size_t numLine);
 	static String exec(const String &fileName, size_t numLine, String code, bool retRes = false);
 

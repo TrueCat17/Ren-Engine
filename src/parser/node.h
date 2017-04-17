@@ -4,20 +4,21 @@
 #include <vector>
 #include <map>
 
+#include <boost/python.hpp>
+
 #include "utils/string.h"
 
+namespace py = boost::python;
 
 struct NodeProp {
 	String pyExpr;
-	String numLine;
+	size_t numLine;
 };
 
 
 class Node {
 private:
 	static std::vector<Node*> nodes;
-
-	static bool initing;
 
 	static void preloadImages(Node *node, int start, int count);
 	static void jump(const String &label, bool isCall);
@@ -52,6 +53,8 @@ public:
 	{ nodes.push_back(this); }
 
 	void execute();
+
+	py::list getPyList() const;
 
 	void initProp(const String &name, const String &value, size_t numLine);
 	String getProp(const String &name, const String &commonName = "", const String &indexStr = "") const;
