@@ -124,7 +124,7 @@ bool SyntaxChecker::check(const String &parent, const String &child, const Strin
 	if (superParent == SuperParent::INIT || superParent == SuperParent::LABEL) {
 		//Эти блоки внутри init/label могут содержать в себе абсолютно всё
 		//Поэтому проверка для них отключена
-		static const std::vector<String> blocksWithAny = { "scene", "show", "image", "contains", "parallel" };
+		static const std::vector<String> blocksWithAny = { "scene", "show", "image", "contains", "block", "parallel" };
 
 		for (const String &blockName : blocksWithAny) {
 			if (parent == blockName) {

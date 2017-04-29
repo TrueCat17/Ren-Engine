@@ -423,7 +423,7 @@ py::list Node::getPyList() const {
 	for (const Node* child : children) {
 		py::list childPyList = child->getPyList();
 
-		static const std::vector<String> blockCommandsInImage = {"contains", "parallel"};
+		static const std::vector<String> blockCommandsInImage = {"contains", "block", "parallel"};
 		bool childIsBlock = Utils::in(child->command, blockCommandsInImage);
 
 		static const py::str space = " ";
