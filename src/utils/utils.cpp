@@ -41,6 +41,20 @@ std::vector<String> Utils::getFileNames(String path) {
 	std::vector<String> res;
 
 	namespace fs = boost::filesystem;
+
+	if (!fs::exists(path.c_str())) {
+		outMsg("Директории <" + path + "> не существует");
+		static const String mainMenu = "../resources/mods/main_menu/";
+		if (path != mainMenu) {
+			return getFileNames(mainMenu);
+		}
+		return res;
+	}
+	if (!fs::is_directory(path)) {
+		outMsg("<" + path + "> - это файл, а не директория");
+		return res;
+	}
+
 	fs::path dir(path.c_str());
 	for (fs::recursive_directory_iterator it(dir), end; it != end; ++it) {
 		fs::path filePath(it->path());

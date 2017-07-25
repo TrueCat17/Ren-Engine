@@ -15,6 +15,7 @@
 #include "parser/parser.h"
 
 #include "utils/game.h"
+#include "utils/mouse.h"
 #include "utils/utils.h"
 
 
@@ -82,6 +83,15 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);
 	pythonGlobal["get_texture_height"] = py::make_function(Game::getTextureHeight);
 	pythonGlobal["get_pixel"] = py::make_function(Game::getPixel);
+
+	pythonGlobal["get_mouse"] = py::make_function(PyUtils::getMouse);
+}
+
+py::list PyUtils::getMouse() {
+	py::list res;
+	res.append(Mouse::getX());
+	res.append(Mouse::getY());
+	return res;
 }
 
 PyUtils::~PyUtils() {

@@ -36,6 +36,7 @@ public:
 class PyUtils {
 private:
 	static std::map<PyCode, PyCodeObject*> compiledObjects;
+	static py::list getMouse();
 
 public:
 	static std::mutex pyExecGuard;

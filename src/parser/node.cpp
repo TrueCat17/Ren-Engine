@@ -107,7 +107,7 @@ void Node::execute() {
 			GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
 			PyUtils::pyExecGuard.unlock();
 
-			PyUtils::exec(getFileName(), getNumLine(), "add_sprite_to_showlist([" + argsStr + "], last_show_at)");
+			PyUtils::exec(getFileName(), getNumLine(), "show_sprite([" + argsStr + "], last_show_at)");
 		}
 	}else
 
@@ -129,7 +129,7 @@ void Node::execute() {
 				argsStr += ", '" + args[i] + "'";
 			}
 
-			PyUtils::exec(getFileName(), getNumLine(), "add_sprite_to_hidelist([" + argsStr + "])");
+			PyUtils::exec(getFileName(), getNumLine(), "hide_sprite([" + argsStr + "])");
 		}
 	}else
 

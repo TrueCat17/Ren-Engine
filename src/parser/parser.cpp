@@ -51,8 +51,10 @@ const std::string Parser::getMods() {
 Parser::Parser(String dir) {
 	std::vector<String> files = Utils::getFileNames(dir);
 
-	std::vector<String> stdFiles = Utils::getFileNames(Utils::ROOT + "mods/inc/");
-	files.insert(files.begin(), stdFiles.begin(), stdFiles.end());
+	std::vector<String> engineFiles = Utils::getFileNames(Utils::ROOT + "mods/engine/");
+	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
+	std::vector<String> commonFiles = Utils::getFileNames(Utils::ROOT + "mods/common/");
+	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
 
 	for (size_t i = 0; i < files.size(); ++i) {
 		String fileName = files[i];
@@ -101,8 +103,8 @@ Parser::Parser(String dir) {
 			if (s) {
 				char last = s.back();
 
-				static String ops = "(,+-*/=[{";
-				toPrevLine = (ops.find(last) != size_t(-1));
+				static const String ops = "(,+-*/=[{";
+				toPrevLine = ops.find(last) != size_t(-1);
 			}
 		}
 	}

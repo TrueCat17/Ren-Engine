@@ -296,6 +296,7 @@ int main() {
 		return 0;
 	}
 	Game::startMod("main_menu");
+//	Game::startMod("test_civ");
 
 	loop();
 	destroy();

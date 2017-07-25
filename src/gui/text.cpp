@@ -130,8 +130,10 @@ void Text::setText(const String &text, int color) {
 			while (n && (line[n] != ' ' || getLineWidth(line.substr(0, n - 1), true) >= maxW - INDENT)) {
 				--n;
 			}
-			if (!n){//Если перенести по пробелу нельзя
-				maxLineWidth = maxW + 1;//переход к попытке уместить текст меньшим шрифтом (см. условие после цикла)
+			if (!n && //Если перенести по пробелу нельзя и
+				textSize > MIN_TEXT_SIZE) //можно уменьшить шрифт
+			{
+				maxLineWidth = maxW + 1;//переход к попытке уместить текст меньшим шрифтом
 				break;
 			}
 
@@ -157,7 +159,7 @@ void Text::setText(const String &text, int color) {
 	int textHeight = charHeight * lines.size();
 
 	//Если не уместились с этим размером шрифта
-	if ((textHeight > maxH || (maxLineWidth > maxW)) && textSize > MIN_TEXT_SIZE) {
+	if ((textHeight > maxH || maxLineWidth > maxW) && textSize > MIN_TEXT_SIZE) {
 		setFont(fontName, textSize - 2, false);//Устанавливаем меньший шрифт
 		lineTextures = prevLineTextures;
 		rects = prevRects;
