@@ -1,6 +1,7 @@
 ﻿#include "node.h"
 
 #include <iostream>
+#include <thread>
 #include <algorithm>
 
 #include "gv.h"
@@ -16,6 +17,28 @@
 #include "utils/game.h"
 #include "utils/utils.h"
 
+bool Node::loading = false;
+size_t Node::stackDepth = 0;
+std::vector<std::pair<String, String>> Node::stack;
+
+struct StackRecorder {
+	StackRecorder(String i, String s) {
+		if (!Node::loading) {
+			Node::stack.push_back(std::make_pair(i, s));
+		}
+
+		++Node::stackDepth;
+		if (Node::stackDepth == Node::stack.size()) {
+			Node::loading = false;//now loaded
+		}
+	}
+	~StackRecorder() {
+		Node::stack.pop_back();
+		--Node::stackDepth;
+	}
+};
+
+
 std::vector<Node*> Node::nodes;
 
 void Node::execute() {
@@ -23,6 +46,9 @@ void Node::execute() {
 	static bool inWithBlock = false;
 
 	if (!GV::inGame) return;
+
+	StackRecorder sr(command == "label" ? name : String(childNum), command);
+
 
 	if (command == "main") {
 		for (size_t i = 0; i < children.size(); ++i) {
@@ -350,15 +376,14 @@ void Node::execute() {
 			return;
 		}
 
-		static int numCicle = 0;
-		String iterName = "iter_" + String(numCicle++);
+		String iterName = "iter_" + String(GV::numFor++);
 
 		String init = iterName + " = iter(" + afterIn + ")";
 		String onStep = beforeIn + " = " + iterName + ".next()";
 
 		PyUtils::exec(getFileName(), getNumLine(), init);
 		while (true) {
-			if (!GV::inGame) return;
+			if (!GV::inGame) break;
 
 			try {
 				PyUtils::exec(getFileName(), getNumLine(), onStep);
@@ -375,6 +400,8 @@ void Node::execute() {
 				break;
 			}
 		}
+
+		PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
 	}else
 
 	if (command == "continue") {

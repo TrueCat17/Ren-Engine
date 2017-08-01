@@ -30,8 +30,14 @@ private:
 	String firstParam;
 	std::map<String, NodeProp> props;
 public:
+	static bool loading;
+	static size_t stackDepth;
+	static std::vector<std::pair<String, String>> stack;
+
 	static void destroyAll();
 
+
+	size_t childNum;
 
 	String command;
 	int priority;
@@ -49,7 +55,8 @@ public:
 
 	Node(String fileName, size_t numLine):
 		fileName(fileName),
-		numLine(numLine)
+		numLine(numLine),
+		childNum(0)
 	{ nodes.push_back(this); }
 
 	void execute();

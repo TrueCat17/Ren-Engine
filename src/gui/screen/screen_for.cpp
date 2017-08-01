@@ -1,5 +1,6 @@
 #include "screen_for.h"
 
+#include "gv.h"
 #include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/utils.h"
@@ -20,12 +21,15 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 		return;
 	}
 
-	static int numCicle = 0;
-	String iterName = "screen_iter_" + String(numCicle++);
+	iterName = "screen_iter_" + String(GV::numScreenFor++);
 
 	init = iterName + " = iter(" + afterIn + ")";
 	onStep = beforeIn + " = " + iterName + ".next()";
 }
+ScreenFor::~ScreenFor() {
+	PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
+}
+
 void ScreenFor::calculateProps() {
 	skipped = true;
 	size_t i = 0;

@@ -3,6 +3,8 @@
 #include <fstream>
 
 #include "parser/syntax_checker.h"
+#include "parser/node.h"
+
 #include "utils/utils.h"
 
 
@@ -48,7 +50,9 @@ const std::string Parser::getMods() {
 	return "{" + res + "}";
 }
 
-Parser::Parser(String dir) {
+Parser::Parser(const String &dir) {
+	this->dir = dir;
+
 	std::vector<String> files = Utils::getFileNames(dir);
 
 	std::vector<String> engineFiles = Utils::getFileNames(Utils::ROOT + "mods/engine/");
@@ -115,8 +119,12 @@ Node* Parser::parse() {
 }
 
 Node* Parser::getMainNode() {
-	Node *res = new Node("NO_FILE", 0);
+	Node *res = new Node(dir, 0);
 	res->command = "main";
+
+	size_t lastSlash = dir.find_last_of('/');
+	res->name = dir.substr(lastSlash + 1);
+
 
 	size_t start = 0;
 	size_t end = code.size();
@@ -162,6 +170,7 @@ Node* Parser::getMainNode() {
 		if (ok) {
 			const int superParent = headWord == "label" ? SuperParent::LABEL : headWord == "init" ? SuperParent::INIT : SuperParent::SCREEN;
 			Node *node = getNode(start, nextChildStart, superParent, false);
+			node->childNum = res->children.size();
 			res->children.push_back(node);
 		}
 		start = nextChildStart;
@@ -358,6 +367,9 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		childStart = nextChildStart;
 	}
 
+	for (size_t i = 0; i < res->children.size(); ++i) {
+		res->children[i]->childNum = i;
+	}
 
 	if (superParent & SuperParent::SCREEN) {
 		initScreenNode(res);

@@ -30,7 +30,7 @@ void Style::destroyAll() {
 
 String Style::getProp(const String &styleName, const String &propName) {
 	if (styles.find(styleName) == styles.end()) {
-		String styleThereIs = PyUtils::exec("CPP_EMBED: style.cpp", 0, "'" + styleName + "' in style.__dict__", true);
+		String styleThereIs = PyUtils::exec("CPP_EMBED: style.cpp", __LINE__, "'" + styleName + "' in style.__dict__", true);
 
 		if (styleThereIs != "True") {
 			Utils::outMsg("Style::getProp", "Стиль <" + styleName + "> не существует");
@@ -41,7 +41,7 @@ String Style::getProp(const String &styleName, const String &propName) {
 	Style *style = styles[styleName];
 
 	if (style->props.find(propName) == style->props.end() || !style->props[propName].first) {
-		String propValue = PyUtils::exec("CPP_EMBED: style.cpp", 0, "style." + styleName + "." + propName, true);
+		String propValue = PyUtils::exec("CPP_EMBED: style.cpp", __LINE__, "style." + styleName + "." + propName, true);
 		style->props[propName] = std::pair<bool, String>(true, propValue);
 	}
 

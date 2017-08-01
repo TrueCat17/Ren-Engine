@@ -5,14 +5,13 @@
 #include <vector>
 #include <map>
 #include <chrono>
+#include <mutex>
+
+#include <boost/python.hpp>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-
-#include <mutex>
-
-#include <boost/python.hpp>
 
 #include "utils/string.h"
 
@@ -46,7 +45,7 @@ public:
 
 	static void init();
 
-	static std::vector<String> getFileNames(String path);
+	static std::vector<String> getFileNames(const String &path);
 
 	static std::chrono::system_clock::time_point startTime;
 	static int getTimer();

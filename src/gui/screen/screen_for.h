@@ -7,11 +7,13 @@
 
 class ScreenFor: public ScreenContainer {
 private:
+	String iterName;
 	String init;
 	String onStep;
 
 public:
 	ScreenFor(Node *node, ScreenChild *screenParent);
+	virtual ~ScreenFor();
 	virtual void calculateProps();
 };
 

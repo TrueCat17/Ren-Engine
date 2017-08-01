@@ -1,10 +1,11 @@
 #include "gv.h"
 
-#include "media/py_utils.h"
-#include "parser/node.h"
 
 int GV::width;
 int GV::height;
+
+size_t GV::numFor = 0;
+size_t GV::numScreenFor = 0;
 
 bool GV::inGame = false;
 bool GV::exit = false;

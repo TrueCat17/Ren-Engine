@@ -248,7 +248,7 @@ void loop() {
 		render();
 		Config::save();
 
-		PyUtils::exec("CPP_EMBED: main.cpp", 0, "globals().has_key('persistent_save') and persistent_save()");
+		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
 
 		int spent = Utils::getTimer() - startTime;
 		int timeToSleep = Game::getFrameTime() - spent;
@@ -271,6 +271,11 @@ void loop() {
 				std::cout << p.first << ": " << p.second << '\n';
 			}
 			std::cout << '\n';
+		}
+
+		if (py::extract<bool>(GV::pyUtils->pythonGlobal["need_save"]) == true) {
+			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save = False");
+			Game::save();
 		}
 
 		GV::updateGuard.unlock();

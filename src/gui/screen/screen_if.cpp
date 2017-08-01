@@ -6,9 +6,7 @@
 ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent):
 	ScreenContainer(node, screenParent),
 	condition("bool(" + node->params + ")")
-{
-	prevContainer = nullptr;
-}
+{}
 
 void ScreenIf::calculateProps() {
 	skipped = PyUtils::exec(getFileName(), getNumLine(), condition, true) != "True";

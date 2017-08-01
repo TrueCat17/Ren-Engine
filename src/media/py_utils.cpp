@@ -50,6 +50,8 @@ PyUtils::PyUtils() {
 	pythonGlobal = mainModule.attr("__dict__");
 
 
+	pythonGlobal["need_save"] = false;
+
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
 	pythonGlobal["_get_mods"] = py::make_function(Parser::getMods);
 

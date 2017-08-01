@@ -4,7 +4,10 @@
 #include <vector>
 #include <map>
 
-#include "parser/node.h"
+#include "utils/string.h"
+
+class Node;
+
 
 class Parser {
 private:
@@ -12,6 +15,8 @@ private:
 
 
 	std::vector<String> code;
+
+	String dir;
 	String fileName = "NO_FILE";
 	size_t startFile = 0;
 	size_t pythonIndent = -1;
@@ -23,7 +28,7 @@ private:
 public:
 	static const std::string getMods();
 
-	Parser(String dir);
+	Parser(const String &dir);
 	Node* parse();
 };
 

@@ -37,7 +37,7 @@ std::vector<std::pair<String, SDL_Surface*>> Utils::surfaces;
 std::chrono::system_clock::time_point Utils::startTime = std::chrono::system_clock::now();
 
 
-std::vector<String> Utils::getFileNames(String path) {
+std::vector<String> Utils::getFileNames(const String &path) {
 	std::vector<String> res;
 
 	namespace fs = boost::filesystem;

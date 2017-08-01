@@ -1,7 +1,6 @@
 #include "screen.h"
 
 #include "gv.h"
-#include "parser/parser.h"
 #include "utils/utils.h"
 
 std::vector<Node*> Screen::declared;

@@ -29,7 +29,7 @@ void ScreenText::calculateProps() {
 			if (colorStr[0] == '#') {
 				color = String(colorStr.substr(1)).toInt(16);
 			}else {
-				color = colorStr.toInt();
+				color = colorStr.toInt(16);
 			}
 		}
 

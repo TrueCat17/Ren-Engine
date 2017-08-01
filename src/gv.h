@@ -9,7 +9,6 @@ class Group;
 class ScreenChild;
 
 class Node;
-
 class PyUtils;
 
 
@@ -17,6 +16,9 @@ class GV {
 public:
 	static int width;
 	static int height;
+
+	static size_t numFor;
+	static size_t numScreenFor;
 
 	static bool inGame;
 	static bool exit;

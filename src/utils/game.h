@@ -1,7 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <thread>
 #include <string>
 
 #include <SDL2/SDL_stdinc.h> //Uint32
@@ -22,6 +21,8 @@ public:
 	static bool modeStarting;
 
 	static void startMod(const std::string &dir);
+	static void load(const std::string &table, int num);
+	static void save();
 	static void exitFromGame();
 
 	static bool hasLabel(const std::string &label);
