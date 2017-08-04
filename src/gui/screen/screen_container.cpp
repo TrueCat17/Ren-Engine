@@ -34,7 +34,10 @@
 
 
 ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent):
-	ScreenChild(node, screenParent) { }
+	ScreenChild(node, screenParent)
+{
+	setProp("spacing", node->getPropCode("spacing"));
+}
 
 void ScreenContainer::calculateProps() {
 	if (!inited) {
@@ -42,13 +45,13 @@ void ScreenContainer::calculateProps() {
 		inited = true;
 	}
 
-	if (hasVBox || hasHBox) {
-		String indentStr = node->getProp("spacing");
+	ScreenChild::calculateProps();
+	if (!isFakeContainer() && (hasVBox || hasHBox)) {
+		String indentStr = propValues["spacing"];
 		indent = indentStr.toInt();
 	}
-
-	ScreenChild::calculateProps();
 }
+
 void ScreenContainer::updateSize() {
 	ScreenChild::updateSize();
 

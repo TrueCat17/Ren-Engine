@@ -14,30 +14,37 @@ ScreenText::ScreenText(Node *node):
 	tf = new Text();
 	tf->wordWrap = true;
 	addChild(tf);
+
+	setProp("text", NodeProp::initPyExpr(textExec ? textExec : "''", getNumLine()));
+	setProp("font", node->getPropCode("font"));
+	setProp("text_align", node->getPropCode("text_align"));
+	setProp("text_valign", node->getPropCode("text_valign"));
+	setProp("color", node->getPropCode("color"));
+	setProp("size", node->getPropCode("size"));
 }
 
 void ScreenText::calculateProps() {
-	text = PyUtils::exec(getFileName(), getNumLine(), textExec, true);
-	if (text) {
-		font = node->getProp("font");
-		textHAlign = node->getProp("text_align");
-		textVAlign = node->getProp("text_valign");
+	ScreenChild::calculateProps();
 
-		String colorStr = node->getProp("color");
+	text = propValues["text"];
+	if (text) {
+		font = propValues["font"];
+		textHAlign = propValues["text_align"];
+		textVAlign = propValues["text_valign"];
+
+		String colorStr = propValues["color"];
 		color = 0xFFFFFF;
 		if (colorStr) {
 			if (colorStr[0] == '#') {
 				color = String(colorStr.substr(1)).toInt(16);
 			}else {
-				color = colorStr.toInt(16);
+				color = colorStr.toInt();
 			}
 		}
 
-		size = node->getProp("size").toInt();
+		size = propValues["size"].toInt();
 		if (!size) size = 20;
 	}
-
-	ScreenChild::calculateProps();
 }
 
 void ScreenText::updateSize() {

@@ -16,6 +16,7 @@ public:
 
 	ScreenTextButton(Node *node);
 	virtual void calculateProps();
+	virtual void afterPriorityUpdate();
 	virtual void updateSize();
 };
 

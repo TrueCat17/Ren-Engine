@@ -8,9 +8,17 @@
 
 std::vector<ScreenKey*> ScreenKey::screenKeys;
 
-ScreenKey::ScreenKey(Node *node): ScreenChild(node, nullptr) {
+ScreenKey::ScreenKey(Node *node):
+	ScreenChild(node, nullptr),
+	keyStr(node->getFirstParam())
+{
 	screenKeys.push_back(this);
-	keyStr = node->getFirstParam();
+
+	needUpdateFields = false;
+	removeAllProps();
+	setProp("first_delay", node->getPropCode("first_delay"));
+	setProp("delay", node->getPropCode("delay"));
+	setProp("key", NodeProp::initPyExpr(keyStr, node->getNumLine()));
 }
 ScreenKey::~ScreenKey() {
 	for (size_t i = 0; i < screenKeys.size(); ++i) {
@@ -57,13 +65,14 @@ void ScreenKey::setUpState(SDL_Scancode key) {
 void ScreenKey::calculateProps() {
 	if (!isModal() || toNotReact) return;
 
-	firstKeyDelay = node->getProp("first_delay").toDouble() * 1000;
-	keyDelay = node->getProp("delay").toDouble() * 1000;
+	ScreenChild::calculateProps();
+	firstKeyDelay = propValues["first_delay"].toDouble() * 1000;
+	keyDelay = propValues["delay"].toDouble() * 1000;
 
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		String keyName = PyUtils::exec(getFileName(), getNumLine(), keyStr, true);
+		String keyName = propValues["key"];
 		Utils::outMsg("SDL_GetScancodeFromName",
 					  "KeyName <" + keyName + ">\n" +
 					  SDL_GetError() + '\n' +
@@ -81,7 +90,7 @@ void ScreenKey::calculateProps() {
 			inFirstDown = false;
 			lastDown = Utils::getTimer();
 
-			String action = node->getPropCode("action");
+			String action = node->getPropCode("action").pyExpr;
 			if (action) {
 				PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
 			}
@@ -103,7 +112,7 @@ void ScreenKey::updatePos() {
 }
 
 SDL_Scancode ScreenKey::getKey() const {
-	String keyName = PyUtils::exec(getFileName(), getNumLine(), keyStr, true);
+	String keyName = propValues.at("key");
 	if (keyName.startsWith("K_", false)) {
 		keyName = keyName.substr(2);
 	}

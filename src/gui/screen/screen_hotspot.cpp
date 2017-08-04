@@ -12,7 +12,7 @@ ScreenHotspot::ScreenHotspot(Node *node):
 	rectStr(node->getFirstParam())
 {
 	auto onClick = [this](DisplayObject*) {
-		String action = this->node->getPropCode("action");
+		String action = this->node->getPropCode("action").pyExpr;
 		if (action) {
 			PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
 		}

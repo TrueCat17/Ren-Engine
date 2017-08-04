@@ -11,6 +11,8 @@ private:
 	String init;
 	String onStep;
 
+	String propName;
+
 public:
 	ScreenFor(Node *node, ScreenChild *screenParent);
 	virtual ~ScreenFor();

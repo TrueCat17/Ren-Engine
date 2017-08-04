@@ -101,6 +101,54 @@ PyUtils::~PyUtils() {
 }
 
 
+void PyUtils::errorProcessing(const String &code) {
+	PyObject *ptype, *pvalue, *ptraceback;
+	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
+
+	py::handle<> htype(ptype);
+	std::string excType = py::extract<std::string>(py::str(htype));
+	if (excType == "<type 'exceptions.StopIteration'>") {
+		Py_DecRef(pvalue);
+		Py_DecRef(ptraceback);
+		throw StopException();
+	}
+
+	if (!ptype || !pvalue || !ptraceback) {
+		std::cout << "Python Unknown Error\n"
+					 "Code: " << code << '\n';
+	}
+
+	py::handle<> hvalue(py::allow_null(pvalue));
+	std::string excValue = py::extract<std::string>(py::str(hvalue));
+
+	std::string traceback;
+
+	try {
+		if (!String(excValue).startsWith("invalid syntax")) {
+			py::handle<> htraceback(py::allow_null(ptraceback));
+			GV::pyUtils->pythonGlobal["traceback"] = htraceback;
+
+			String code = "traceback_str = get_traceback(traceback)";
+			py::exec(code.c_str(), GV::pyUtils->pythonGlobal);
+			traceback = py::extract<std::string>(GV::pyUtils->pythonGlobal["traceback_str"]);
+		}
+	}catch (py::error_already_set) {
+		traceback = "Error on call get_traceback\n";
+	}
+
+	std::cout << "Python Error (" + excType + "):\n"
+			  << '\t' << excValue << '\n';
+
+	if (traceback.size()) {
+		std::cout << "Traceback:\n" << traceback;
+	}
+
+	std::cout << "Code:\n"
+			  << code << "\n\n";
+}
+
+
 String PyUtils::exec(const String &fileName, size_t numLine, String code, bool retRes) {
 	if (!code) return "";
 
@@ -140,7 +188,9 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 		execCode = "res = str(" + code + ")";
 	}
 
-	pyExecGuard.lock();
+
+	std::lock_guard<std::mutex> g(pyExecGuard);
+
 	try {
 		PyCodeObject *co = getCompileObject(execCode, fileName, numLine);
 		if (co) {
@@ -161,56 +211,11 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 			throw py::error_already_set();
 		}
 	}catch (py::error_already_set) {
-		PyObject *ptype, *pvalue, *ptraceback;
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-		PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
-		if (!ptype || !pvalue || !ptraceback) {
-			std::cout << "Python Unknown Error\n"
-						 "Code: " << code << '\n';
-			pyExecGuard.unlock();
-			return res;
-		}
-
-		py::handle<> htype(ptype);
-		std::string excType = py::extract<std::string>(py::str(htype));
-		if (excType == "<type 'exceptions.StopIteration'>") {
-			pyExecGuard.unlock();
-			Py_DecRef(pvalue);
-			Py_DecRef(ptraceback);
-			throw StopException();
-		}
-
-		py::handle<> hvalue(py::allow_null(pvalue));
-		std::string excValue = py::extract<std::string>(py::str(hvalue));
-
-		std::string traceback;
-		if (!String(excValue).startsWith("invalid syntax")) {
-			py::handle<> htraceback(py::allow_null(ptraceback));
-			GV::pyUtils->pythonGlobal["traceback"] = htraceback;
-
-			String code = "traceback_str = get_traceback(traceback)";
-			try {
-				py::exec(code.c_str(), GV::pyUtils->pythonGlobal);
-				traceback = py::extract<std::string>(GV::pyUtils->pythonGlobal["traceback_str"]);
-			}catch (py::error_already_set) {
-				traceback = "Error on call get_traceback\n";
-			}
-		}
-
-		std::cout << "Python Error (" + excType + "):\n"
-				  << '\t' << excValue << '\n';
-
-		if (traceback.size()) {
-			std::cout << "Traceback:\n" << traceback;
-		}
-
-		std::cout << "Code:\n"
-				  << code << "\n\n";
+		errorProcessing(code);
 	}catch (...) {
 		std::cout << "Python Unknown Error\n";
 		std::cout << "Code:\n" << code << '\n';
 	}
-	pyExecGuard.unlock();
 
 	return res;
 }

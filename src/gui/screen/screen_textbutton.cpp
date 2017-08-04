@@ -5,17 +5,29 @@
 
 ScreenTextButton::ScreenTextButton(Node* node): ScreenText(node) {
 	auto onClick = [this](DisplayObject*) {
-		String action = this->node->getPropCode("action");
+		String action = this->node->getPropCode("action").pyExpr;
 		if (action) {
 			PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "exec_funcs(" + action + ")");
 		}
 	};
 	btnRect.init(this, onClick);
+
+	setProp("ground", node->getPropCode("ground"), true);
+	setProp("hover", node->getPropCode("hover"), true);
 }
 
 void ScreenTextButton::calculateProps() {
-	String newGround = node->getProp("ground");
-	String newHover = node->getProp("hover");
+	ScreenText::calculateProps();
+
+	if (btnRect.mouseDown) {
+		if (isModal()) {
+			btnRect.onClick();
+		}
+	}
+}
+void ScreenTextButton::afterPriorityUpdate() {
+	String newGround = propValues["ground"];
+	String newHover = propValues["hover"];
 
 	if (newHover) {
 		hover = newHover;
@@ -27,14 +39,6 @@ void ScreenTextButton::calculateProps() {
 
 	String path = !btnRect.mouseOvered ? ground : hover;
 	texture = Utils::getTexture(path);
-
-	ScreenText::calculateProps();
-
-	if (btnRect.mouseDown) {
-		if (isModal()) {
-			btnRect.onClick();
-		}
-	}
 }
 
 void ScreenTextButton::updateSize() {

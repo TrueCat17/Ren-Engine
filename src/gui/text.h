@@ -19,14 +19,14 @@ private:
 	int charOutNum = 0;
 
 	int charX = 0;
-	int charWidth;
-	int charHeight;
+	int charWidth = 0;
+	int charHeight = 0;
 
 	String fontName;
-	int textSize;
-	int originalTextSize;
+	int textSize = 0;
+	int originalTextSize = 0;
 
-	int prevDrawTextColor;
+	int prevDrawTextColor = 0;
 	TTF_Font *prevDrawFont = nullptr;
 	String prevText;
 
@@ -46,9 +46,9 @@ private:
 	int getLineWidth(String text, bool resetPrevStyle = false);
 	void addChars(String c, int color);
 
-	int mainColor;
+	int mainColor = 0;
 
-	int curColor;//Цвет
+	int curColor = 0;//Цвет
 	int isBold = 0;//Жирный
 	int isItalic = 0;//Курсив
 	int isUnderline = 0;//Подчёркнутый

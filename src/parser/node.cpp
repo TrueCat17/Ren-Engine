@@ -376,28 +376,62 @@ void Node::execute() {
 			return;
 		}
 
+		const String &propName = beforeIn;
 		String iterName = "iter_" + String(GV::numFor++);
 
 		String init = iterName + " = iter(" + afterIn + ")";
-		String onStep = beforeIn + " = " + iterName + ".next()";
-
 		PyUtils::exec(getFileName(), getNumLine(), init);
-		while (true) {
-			if (!GV::inGame) break;
 
+		String onStep;
+		for (char c : propName) {
+			if ((c >= 'a' || c <= 'z') &&
+				(c >= 'A' || c <= 'Z') &&
+				(c >= '0' || c <= '9') &&
+				 c != '_') continue;
+
+			onStep = propName + " = " + iterName + ".next()";
+			break;
+		}
+
+		py::object nextMethod;
+		if (!onStep) {
+			std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
 			try {
-				PyUtils::exec(getFileName(), getNumLine(), onStep);
+				py::object iter = GV::pyUtils->pythonGlobal[iterName.c_str()];
+				nextMethod = iter.attr("next");
+			}catch (py::error_already_set) {
+				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", "Ошибка при извлечении " + iterName);
+				PyUtils::errorProcessing(iterName);
+			}
+		}
 
-				for (size_t i = 0; i < children.size(); ++i) {
-					Node* node = children[i];
-					node->execute();
+		if (!nextMethod.is_none()) {
+			while (true) {
+				if (!GV::inGame) break;
+
+				try {
+					if (!onStep) {
+						std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
+						try {
+							GV::pyUtils->pythonGlobal[propName.c_str()] = nextMethod();
+						}catch (py::error_already_set) {
+							PyUtils::errorProcessing(propName + " = " + iterName + ".next()");
+						}
+					}else {
+						PyUtils::exec(getFileName(), getNumLine(), onStep);
+					}
+
+					for (size_t i = 0; i < children.size(); ++i) {
+						Node* node = children[i];
+						node->execute();
+					}
+				}catch (ContinueException) {
+				}catch (BreakException) {
+					condIsTrue = false;
+					break;
+				}catch (StopException) {
+					break;
 				}
-			}catch (ContinueException) {
-			}catch (BreakException) {
-				condIsTrue = false;
-				break;
-			}catch (StopException) {
-				break;
 			}
 		}
 
@@ -427,7 +461,7 @@ void Node::execute() {
 
 	if (!initing && !inWithBlock) {
 		static const String code = "pause_end > time.time() or not can_exec_next_command()";
-		while (GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", 0, code, true) == "True") {
+		while (GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, code, true) == "True") {
 			Utils::sleep(Game::getFrameTime());
 		}
 	}
@@ -533,45 +567,30 @@ void Node::preloadImages(Node *node, int start, int count) {
 }
 
 void Node::initProp(const String &name, const String &value, size_t numLine) {
-	props[name] = { value, numLine };
+	props[name] = NodeProp::initPyExpr(value, numLine);
 }
 
-String Node::getProp(const String &name, const String &commonName, const String &indexStr) const {
-	static std::vector<String> exceptions = String("if elif for while else hotspot").split(' ');
+NodeProp Node::getPropCode(const String &name, const String &commonName, const String &indexStr) const {
+	static std::vector<String> exceptions = String("if elif for while else").split(' ');
 	if (Utils::in(command, exceptions)) {
-		return "None";
+		return NodeProp::initPyExpr("None", 0);
 	}
 
-	String res;
 	auto i = props.find(name);
 	if (i != props.end()) {
-		String toExec = i->second.pyExpr;
-		res = PyUtils::exec(getFileName(), i->second.numLine, toExec, true);
-		return res;
+		return NodeProp::initPyExpr(i->second.pyExpr, i->second.numLine);
 	}
 
 	if (commonName) {
 		i = props.find(commonName);
 		if (i != props.end()) {
-			String toExec = i->second.pyExpr;
-			res = PyUtils::exec(getFileName(), i->second.numLine, toExec + indexStr, true);
-			return res;
+			return NodeProp::initPyExpr(i->second.pyExpr + indexStr, i->second.numLine);
 		}
 	}
 
-	String styleName = getPropCode("style");
-	if (!styleName) {
-		styleName = command;
-	}
-	res = Style::getProp(styleName, name);
-	return res;
-}
-String Node::getPropCode(const String &name) const {
-	auto i = props.find(name);
-	if (i == props.end()) return "";
-
-	const String& res = i->second.pyExpr;
-	return res;
+	i = props.find("style");
+	String styleName = i == props.end() ? command : i->second.pyExpr;
+	return NodeProp::initStyleProp(styleName, name);
 }
 String Node::getPlace() const {
 	return "Место объявления объекта <" + command + ">:\n"

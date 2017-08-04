@@ -10,9 +10,27 @@
 
 namespace py = boost::python;
 
+
 struct NodeProp {
 	String pyExpr;
 	size_t numLine;
+
+	String styleName;
+	String propName;
+
+
+	static NodeProp initPyExpr(const String &pyExpr, size_t numLine) {
+		NodeProp res;
+		res.pyExpr = pyExpr;
+		res.numLine = numLine;
+		return res;
+	}
+	static NodeProp initStyleProp(const String &styleName, const String &propName) {
+		NodeProp res;
+		res.styleName = styleName;
+		res.propName = propName;
+		return res;
+	}
 };
 
 
@@ -64,8 +82,7 @@ public:
 	py::list getPyList() const;
 
 	void initProp(const String &name, const String &value, size_t numLine);
-	String getProp(const String &name, const String &commonName = "", const String &indexStr = "") const;
-	String getPropCode(const String &name) const;
+	NodeProp getPropCode(const String &name, const String &commonName = "", const String &indexStr = "") const;
 
 	const String& getFirstParam() const { return firstParam; }
 	void setFirstParam(const String &value) { firstParam = value; }

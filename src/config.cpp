@@ -67,7 +67,9 @@ void Config::setDefault() {
 	set("window_width", "800");
 	set("window_height", "600");
 
+	set("software_renderer", "False");
 	set("max_fps", "30");
+
 	set("max_size_textures_cache", "50");
 	set("max_size_surfaces_cache", "200");
 	set("count_preload_commands", "0");

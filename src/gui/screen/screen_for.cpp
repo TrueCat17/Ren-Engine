@@ -21,10 +21,20 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 		return;
 	}
 
+	propName = beforeIn;
 	iterName = "screen_iter_" + String(GV::numScreenFor++);
 
 	init = iterName + " = iter(" + afterIn + ")";
-	onStep = beforeIn + " = " + iterName + ".next()";
+
+	for (char c : propName) {
+		if ((c >= 'a' || c <= 'z') &&
+			(c >= 'A' || c <= 'Z') &&
+			(c >= '0' || c <= '9') &&
+			 c != '_') continue;
+
+		onStep = propName + " = " + iterName + ".next()";
+		break;
+	}
 }
 ScreenFor::~ScreenFor() {
 	PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
@@ -35,9 +45,32 @@ void ScreenFor::calculateProps() {
 	size_t i = 0;
 
 	PyUtils::exec(getFileName(), getNumLine(), init);
+
+	py::object nextMethod;
+	if (!onStep) {
+		std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
+		try {
+			py::object iter = GV::pyUtils->pythonGlobal[iterName.c_str()];
+			nextMethod = iter.attr("next");
+		}catch (py::error_already_set) {
+			Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", "Ошибка при извлечении " + iterName);
+			PyUtils::errorProcessing(iterName);
+			return;
+		}
+	}
+
 	while (true) {
 		try {
-			PyUtils::exec(getFileName(), getNumLine(), onStep);
+			if (!onStep) {
+				std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
+				try {
+					GV::pyUtils->pythonGlobal[propName.c_str()] = nextMethod();
+				}catch (py::error_already_set) {
+					PyUtils::errorProcessing(propName + " = " + iterName + ".next()");
+				}
+			}else {
+				PyUtils::exec(getFileName(), getNumLine(), onStep);
+			}
 
 			bool adding = i >= screenChildren.size();
 			if (adding) {

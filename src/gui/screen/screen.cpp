@@ -1,6 +1,7 @@
 #include "screen.h"
 
 #include "gv.h"
+#include "media/py_utils.h"
 #include "utils/utils.h"
 
 std::vector<Node*> Screen::declared;
@@ -140,9 +141,22 @@ bool Screen::subShowedCount(const String &dependOn) {
 	return countAsMain || countAsUsed;
 }
 
-Screen::Screen(Node *node, const String &dependOn): ScreenContainer(node, this) {
+
+
+Screen::Screen(Node *node, const String &dependOn):
+	ScreenContainer(node, this)
+{
 	created.push_back(this);
 	addShowedCount(dependOn);
+
+
+	removeAllProps();
+	needUpdateFields = false;
+	setProp("spacing", node->getPropCode("spacing"));
+	setProp("modal", node->getPropCode("modal"));
+	setProp("zorder", node->getPropCode("zorder"));
+
+	xSize = ySize = 1.0;
 }
 Screen::~Screen() {
 	for (size_t i = 0; i < created.size(); ++i) {
@@ -186,6 +200,12 @@ void Screen::updateScreens() {
 	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
 void Screen::updateScreenProps() {
-	_isModal = node->getProp("modal") == "True";
-	_zOrder = node->getProp("zorder").toDouble();
+	needUpdateChildren = false;
+	xSize = GV::width;
+	ySize = GV::height;
+	calculateProps();
+	needUpdateChildren = true;
+
+	_isModal = propValues["modal"] == "True";
+	_zOrder = propValues["zorder"].toDouble();
 }

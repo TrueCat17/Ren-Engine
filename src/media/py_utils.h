@@ -11,21 +11,20 @@ namespace py = boost::python;
 
 
 struct PyCode {
-private:
-	String common;
-
 public:
 	String code;
 	String fileName;
 	size_t numLine;
+private:
+	String common;
 
+public:
 	PyCode(String code, String fileName, size_t numLine):
 		code(code),
 		fileName(fileName),
-		numLine(numLine)
-	{
-		common = code + fileName + String(numLine);
-	}
+		numLine(numLine),
+		common(code + fileName + String(numLine))
+	{}
 
 	bool operator<(const PyCode& other) const {
 		return common < other.common;
@@ -43,6 +42,7 @@ public:
 
 	static PyCodeObject* getCompileObject(const String code, const String fileName, size_t numLine);
 	static String exec(const String &fileName, size_t numLine, String code, bool retRes = false);
+	static void errorProcessing(const String &code);
 
 	py::object mainModule;
 	py::object pythonGlobal;

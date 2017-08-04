@@ -25,7 +25,7 @@ public:
 	BtnRect();
 	~BtnRect();
 
-	void init(DisplayObject *owner, std::function<void(DisplayObject*)> onClick = nullptr, bool buttonMode = true);
+	void init(DisplayObject *owner, const std::function<void (DisplayObject *)> &onClick = nullptr, bool buttonMode = true);
 	void click() const;
 	DisplayObject* getOwner() const { return owner; }
 

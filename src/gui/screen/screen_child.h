@@ -1,12 +1,16 @@
 #ifndef SCREENCHILD_H
 #define SCREENCHILD_H
 
+#include <functional>
+
 #include "../group.h"
 
 #include "parser/node.h"
 
+
 class Screen;
 class String;
+
 
 class ScreenChild: public Group {
 private:
@@ -20,6 +24,17 @@ protected:
 	ScreenChild *screenParent;
 
 	Node *node;
+
+	//pyExprs -> calculate propValue
+	std::map<String, String> propCodes;    //propName - propCode
+	std::map<String, String> propCodesPriority;    //propName - priorityPropCode
+	std::map<String, String> propValues;   //propName - calculatedPropValue
+	std::map<String, size_t> propNumLines; //propName - propNumLine
+
+	//styleProps -> propValue
+	std::map<String, NodeProp> propInStyle;//propName - path in style-Object
+
+	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
 
 	double xAnchor = 0;
 	double yAnchor = 0;
@@ -36,6 +51,7 @@ protected:
 	bool xSizeIsDouble = false;
 	bool ySizeIsDouble = false;
 
+
 	bool needUpdateChildren = true;
 
 public:
@@ -48,9 +64,13 @@ public:
 	ScreenChild(Node *node, ScreenChild *screenParent);
 	virtual ~ScreenChild();
 
+	void removeAllProps();
+	void setProp(const String &propName, const NodeProp &nodeProp, bool priority = false);
+
 	const String& getType() const { return node->command; }
 
 	virtual void calculateProps();
+	virtual void afterPriorityUpdate() {}
 	virtual void updateSize();
 	virtual void updatePos();
 

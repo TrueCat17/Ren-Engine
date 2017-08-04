@@ -50,10 +50,6 @@ std::vector<String> Utils::getFileNames(const String &path) {
 		}
 		return res;
 	}
-	if (!fs::is_directory(path)) {
-		outMsg("<" + path + "> - это файл, а не директория");
-		return res;
-	}
 
 	fs::path dir(path.c_str());
 	for (fs::recursive_directory_iterator it(dir), end; it != end; ++it) {

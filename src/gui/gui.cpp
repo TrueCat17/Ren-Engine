@@ -1,5 +1,7 @@
 #include "gui.h"
 
+#include <iostream>
+
 
 #include "gv.h"
 
@@ -9,6 +11,7 @@
 #include "gui/screen/style.h"
 
 #include "utils/utils.h"
+
 
 void GUI::update() {
 	if (GV::screens) {

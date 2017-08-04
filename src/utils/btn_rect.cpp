@@ -8,7 +8,7 @@ BtnRect::BtnRect() {
 	btnRects.push_back(this);
 }
 
-void BtnRect::init(DisplayObject *owner, std::function<void (DisplayObject *)> onClick, bool buttonMode) {
+void BtnRect::init(DisplayObject *owner, const std::function<void (DisplayObject *)> &onClick, bool buttonMode) {
 	this->owner = owner;
 	this->_onClick = onClick;
 	this->buttonMode = buttonMode;

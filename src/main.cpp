@@ -129,7 +129,13 @@ bool init() {
 	SDL_SetWindowIcon(mainWindow, icon);
 	SDL_FreeSurface(icon);
 
-	mainRenderer = GV::mainRenderer = SDL_CreateRenderer(mainWindow, -1, 0);
+
+	flags = 0;
+	if (Config::get("software_renderer") == "True") {
+		flags = SDL_RENDERER_SOFTWARE;
+	}
+
+	mainRenderer = GV::mainRenderer = SDL_CreateRenderer(mainWindow, -1, flags);
 	if (!mainRenderer) {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 		return true;

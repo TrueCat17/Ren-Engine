@@ -1,11 +1,16 @@
 #include "screen_child.h"
 
+#include <iostream>
 #include <algorithm>
 
+
 #include "gv.h"
+
 #include "gui/screen/screen.h"
+#include "gui/screen/style.h"
 
 #include "parser/node.h"
+#include "media/py_utils.h"
 #include "utils/utils.h"
 
 
@@ -21,6 +26,20 @@ ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent) {
 
 	const String &type = getType();
 	_canCrop = type == "image" || type == "button" || type == "textbutton" || type == "imagemap";
+
+
+	setProp("xanchor", node->getPropCode("xanchor", "anchor", "[0]"));
+	setProp("yanchor", node->getPropCode("yanchor", "anchor", "[1]"));
+	setProp("xpos", node->getPropCode("xpos", "pos", "[0]"));
+	setProp("ypos", node->getPropCode("ypos", "pos", "[1]"));
+	setProp("xalign", node->getPropCode("xalign", "align", "[0]"));
+	setProp("yalign", node->getPropCode("yalign", "align", "[1]"));
+
+	setProp("xsize", node->getPropCode("xsize", "xysize", "[0]"));
+	setProp("ysize", node->getPropCode("ysize", "xysize", "[1]"));
+
+	setProp("crop", node->getPropCode("crop"));
+	setProp("alpha", node->getPropCode("alpha"));
 }
 ScreenChild::~ScreenChild() {
 	auto i = std::find(screenObjects.begin(), screenObjects.end(), this);
@@ -32,6 +51,22 @@ ScreenChild::~ScreenChild() {
 void ScreenChild::disableAll() {
 	for (ScreenChild* obj : screenObjects) {
 		obj->enable = false;
+	}
+}
+
+void ScreenChild::removeAllProps() {
+	propCodes.clear();
+	propNumLines.clear();
+	propInStyle.clear();
+}
+
+void ScreenChild::setProp(const String &propName, const NodeProp &nodeProp,
+						  bool priority) {
+	if (nodeProp.pyExpr) {
+		(priority ? propCodesPriority : propCodes)[propName] = nodeProp.pyExpr;
+		propNumLines[propName] = nodeProp.numLine;
+	}else {
+		propInStyle[propName] = nodeProp;
 	}
 }
 
@@ -62,8 +97,90 @@ void ScreenChild::calculateProps() {
 		}
 	}
 
+
+	if (isFakeContainer()) return;
+
+
+
+	for (auto i : propInStyle) {
+		const String &propName = i.first;
+		const NodeProp &nodeProp = i.second;
+
+		propValues[propName] = Style::getProp(nodeProp.styleName, nodeProp.propName);
+	}
+
+
+	auto updateProps = [this](std::map<String, String> propCodes) {
+		{
+			std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+			GV::pyUtils->pythonGlobal["calc_object"] = py::object();//... = None
+		}
+
+		String code =
+				"calc_object = {\n";
+		for (auto i : propCodes) {
+			const String &propName = i.first;
+			const String &propExpr = i.second;
+
+			code += "    '" + propName + "': " + propExpr + ",\n";
+		}
+		if (propCodes.size()) {
+			code.erase(code.size() - 2);
+		}
+		code +=     "\n"
+					"}\n";
+		if (propCodes.size()) {
+			PyUtils::exec("EMBED_CPP: ScreenChild.cpp", __LINE__, code);
+		}
+
+
+		bool ok = false;
+		{
+			std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+
+			String errorDesc = "Ошибка при извлечении calc_object";
+			try {
+				py::object obj = GV::pyUtils->pythonGlobal["calc_object"];
+
+				//ok (try)
+				if (!obj.is_none()) {
+					errorDesc = "Ошибка при извлечении свойств из calc_object";
+					for (auto i : propCodes) {
+						const String &propName = i.first;
+
+						py::object res = obj[propName.c_str()];
+						propValues[propName] = String(py::extract<const std::string>(py::str(res)));
+					}
+					ok = true;
+				}
+			}catch (py::error_already_set) {
+				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", errorDesc);
+				PyUtils::errorProcessing("EMBED_CPP: ScreenChild::calculateProps");
+			}
+		}
+
+		//some error (except)
+		if (!ok) {
+			for (auto i : propCodes) {
+				const String &propName = i.first;
+				const String &propExpr = i.second;
+				const String &fileName = node->getFileName();
+				size_t numLine = propNumLines[propName];
+
+				propValues[propName] = PyUtils::exec(fileName, numLine, propExpr, true);
+			}
+		}
+	};
+	updateProps(propCodesPriority);
+	afterPriorityUpdate();
+	updateProps(propCodes);
+
+
+	if (!needUpdateFields) return;
+
+
 	if (!inHBox) {
-		String xAnchorStr = node->getProp("xanchor", "anchor", "[0]");
+		String xAnchorStr = propValues["xanchor"];
 		xAnchor = xAnchorStr.toDouble();
 		xAnchorIsDouble = xAnchorStr.contains('.') && xAnchor > 0 && xAnchor <= 1;
 		if (xAnchorStr != "None" && !xAnchorStr.isNumber()) {
@@ -71,7 +188,7 @@ void ScreenChild::calculateProps() {
 						  "xanchor is not a number (" + xAnchorStr + ")\n" + node->getPlace());
 		}
 
-		String xPosStr = node->getProp("xpos", "pos", "[0]");
+		String xPosStr = propValues["xpos"];
 		xPos = xPosStr.toDouble();
 		xPosIsDouble = xPosStr.contains('.') && xPos > 0 && xPos <= 1;
 		if (xPosStr != "None" && !xPosStr.isNumber()) {
@@ -79,7 +196,7 @@ void ScreenChild::calculateProps() {
 						  "xpos is not a number (" + xPosStr + ")\n" + node->getPlace());
 		}
 
-		String xAlignStr = node->getProp("xalign", "align", "[0]");
+		String xAlignStr = propValues["xalign"];
 		if (xAlignStr.isNumber()) {
 			xAnchor = xPos = xAlignStr.toDouble();
 			xAnchorIsDouble = xPosIsDouble = xAlignStr.contains('.') && xAnchor > 0 && xAnchor <= 1;
@@ -89,7 +206,7 @@ void ScreenChild::calculateProps() {
 		}
 	}
 	if (!inVBox) {
-		String yAnchorStr = node->getProp("yanchor", "anchor", "[1]");
+		String yAnchorStr = propValues["yanchor"];
 		yAnchor = yAnchorStr.toDouble();
 		yAnchorIsDouble = yAnchorStr.contains('.') && yAnchor > 0 && yAnchor <= 1;
 		if (yAnchorStr != "None" && !yAnchorStr.isNumber()) {
@@ -97,7 +214,7 @@ void ScreenChild::calculateProps() {
 						  "yanchor is not a number (" + yAnchorStr + ")\n" + node->getPlace());
 		}
 
-		String yPosStr = node->getProp("ypos", "pos", "[1]");
+		String yPosStr = propValues["ypos"];
 		yPos = yPosStr.toDouble();
 		yPosIsDouble = yPosStr.contains('.') && yPos > 0 && yPos <= 1;
 		if (yPosStr != "None" && !yPosStr.isNumber()) {
@@ -105,7 +222,7 @@ void ScreenChild::calculateProps() {
 						  "ypos is not a number (" + yPosStr + ")\n" + node->getPlace());
 		}
 
-		String yAlignStr = node->getProp("yalign", "align", "[1]");
+		String yAlignStr = propValues["yalign"];
 		if (yAlignStr.isNumber()) {
 			yAnchor = yPos = yAlignStr.toDouble();
 			yAnchorIsDouble = yPosIsDouble = yAlignStr.contains('.') && yAnchor > 0 && yAnchor <= 1;
@@ -115,7 +232,9 @@ void ScreenChild::calculateProps() {
 		}
 	}
 
-	String xSizeStr = node->getProp("xsize", "xysize", "[0]");
+
+
+	String xSizeStr = propValues["xsize"];
 	xSize = xSizeStr.toDouble();
 	xSizeIsDouble = xSizeStr.contains('.') && xSize > 0 && xSize <= 1;
 	if (xSizeStr != "None" && !xSizeStr.isNumber()) {
@@ -123,7 +242,7 @@ void ScreenChild::calculateProps() {
 					  "xsize is not a number (" + xSizeStr + ")\n" + node->getPlace());
 	}
 
-	String ySizeStr = node->getProp("ysize", "xysize", "[1]");
+	String ySizeStr = propValues["ysize"];
 	ySize = ySizeStr.toDouble();
 	ySizeIsDouble = ySizeStr.contains('.') && ySize > 0 && ySize <= 1;
 	if (ySizeStr != "None" && !ySizeStr.isNumber()) {
@@ -131,8 +250,8 @@ void ScreenChild::calculateProps() {
 					  "ysize is not a number (" + ySizeStr + ")\n" + node->getPlace());
 	}
 
-	if (canCrop()) {
-		String cropStr = node->getProp("crop");
+	if (canCrop() && texture) {
+		String cropStr = propValues["crop"];
 		if (cropStr && cropStr != "None") {
 			char start = cropStr.front();
 			char end = cropStr.back();
@@ -168,7 +287,7 @@ void ScreenChild::calculateProps() {
 		}
 	}
 
-	String alphaStr = node->getProp("alpha");
+	String alphaStr = propValues["alpha"];
 	alpha = alphaStr.toDouble();
 	if (alphaStr != "None" && !alphaStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",

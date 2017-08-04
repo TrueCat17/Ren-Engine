@@ -53,7 +53,7 @@ const std::string Parser::getMods() {
 Parser::Parser(const String &dir) {
 	this->dir = dir;
 
-	std::vector<String> files = Utils::getFileNames(dir);
+	std::vector<String> files = Utils::getFileNames(dir + "/");
 
 	std::vector<String> engineFiles = Utils::getFileNames(Utils::ROOT + "mods/engine/");
 	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());

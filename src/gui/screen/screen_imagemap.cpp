@@ -6,11 +6,17 @@
 
 ScreenImagemap::ScreenImagemap(Node *node):
 	ScreenContainer(node, this)
-{ }
+{
+	setProp("ground", node->getPropCode("ground"), true);
+	setProp("hover", node->getPropCode("hover"), true);
+}
 
 void ScreenImagemap::calculateProps() {
-	String newGroundPath = node->getProp("ground");
-	String newHoverPath = node->getProp("hover");
+	ScreenContainer::calculateProps();
+}
+void ScreenImagemap::afterPriorityUpdate() {
+	String newGroundPath = propValues["ground"];
+	String newHoverPath = propValues["hover"];
 
 	if (newHoverPath) {
 		hoverPath = newHoverPath;
@@ -22,6 +28,4 @@ void ScreenImagemap::calculateProps() {
 
 	texture = Utils::getTexture(groundPath);
 	hover = Utils::getTexture(hoverPath);
-
-	ScreenContainer::calculateProps();
 }
