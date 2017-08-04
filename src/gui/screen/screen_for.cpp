@@ -37,13 +37,16 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 	}
 }
 ScreenFor::~ScreenFor() {
-	PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
+	if (used) {
+		PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
+	}
 }
 
 void ScreenFor::calculateProps() {
 	skipped = true;
 	size_t i = 0;
 
+	used = true;
 	PyUtils::exec(getFileName(), getNumLine(), init);
 
 	py::object nextMethod;

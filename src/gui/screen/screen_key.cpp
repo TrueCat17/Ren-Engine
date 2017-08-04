@@ -19,6 +19,7 @@ ScreenKey::ScreenKey(Node *node):
 	setProp("first_delay", node->getPropCode("first_delay"));
 	setProp("delay", node->getPropCode("delay"));
 	setProp("key", NodeProp::initPyExpr(keyStr, node->getNumLine()));
+	calculateProps();
 }
 ScreenKey::~ScreenKey() {
 	for (size_t i = 0; i < screenKeys.size(); ++i) {

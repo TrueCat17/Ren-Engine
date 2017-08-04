@@ -145,7 +145,7 @@ bool init() {
 }
 
 void render() {
-	GV::renderGuard.lock();
+	std::lock_guard<std::mutex> g(GV::renderGuard);
 
 	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 255);
 	SDL_RenderClear(mainRenderer);
@@ -155,8 +155,6 @@ void render() {
 		screens->draw();
 	}
 	SDL_RenderPresent(mainRenderer);
-
-	GV::renderGuard.unlock();
 }
 
 void loop() {
@@ -279,7 +277,7 @@ void loop() {
 			std::cout << '\n';
 		}
 
-		if (py::extract<bool>(GV::pyUtils->pythonGlobal["need_save"]) == true) {
+		if (PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save", true) == "True") {
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save = False");
 			Game::save();
 		}

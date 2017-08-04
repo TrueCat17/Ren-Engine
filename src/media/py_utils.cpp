@@ -106,43 +106,41 @@ void PyUtils::errorProcessing(const String &code) {
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
 
-	py::handle<> htype(ptype);
-	std::string excType = py::extract<std::string>(py::str(htype));
+	std::string excType = "NoneType";
+	if (ptype) {
+		py::handle<> htype(ptype);
+		excType = py::extract<std::string>(py::str(htype));
+	}
 	if (excType == "<type 'exceptions.StopIteration'>") {
 		Py_DecRef(pvalue);
 		Py_DecRef(ptraceback);
 		throw StopException();
 	}
 
-	if (!ptype || !pvalue || !ptraceback) {
-		std::cout << "Python Unknown Error\n"
-					 "Code: " << code << '\n';
+	std::string excValue = "None";
+	if (pvalue) {
+		py::handle<> hvalue(py::allow_null(pvalue));
+		excValue = py::extract<std::string>(py::str(hvalue));
 	}
 
-	py::handle<> hvalue(py::allow_null(pvalue));
-	std::string excValue = py::extract<std::string>(py::str(hvalue));
-
-	std::string traceback;
-
-	try {
-		if (!String(excValue).startsWith("invalid syntax")) {
+	std::string traceback = "None";
+	if (ptraceback) {
+		try {
 			py::handle<> htraceback(py::allow_null(ptraceback));
 			GV::pyUtils->pythonGlobal["traceback"] = htraceback;
 
 			String code = "traceback_str = get_traceback(traceback)";
 			py::exec(code.c_str(), GV::pyUtils->pythonGlobal);
 			traceback = py::extract<std::string>(GV::pyUtils->pythonGlobal["traceback_str"]);
+		} catch (py::error_already_set) {
+			traceback = "Error on get traceback\n";
 		}
-	}catch (py::error_already_set) {
-		traceback = "Error on call get_traceback\n";
 	}
 
 	std::cout << "Python Error (" + excType + "):\n"
 			  << '\t' << excValue << '\n';
 
-	if (traceback.size()) {
-		std::cout << "Traceback:\n" << traceback;
-	}
+	std::cout << "Traceback:\n" << traceback << '\n';
 
 	std::cout << "Code:\n"
 			  << code << "\n\n";

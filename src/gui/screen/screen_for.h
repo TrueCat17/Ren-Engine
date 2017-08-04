@@ -7,6 +7,8 @@
 
 class ScreenFor: public ScreenContainer {
 private:
+	bool used = false;
+
 	String iterName;
 	String init;
 	String onStep;

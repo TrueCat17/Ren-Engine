@@ -62,11 +62,9 @@ void Game::load(const std::string &table, int num) {
 
 }
 void Game::save() {
-	GV::renderGuard.lock();
 
-
-	const String table = String(py::extract<const std::string>(GV::pyUtils->pythonGlobal["save_table"]));
-	int num = py::extract<int>(GV::pyUtils->pythonGlobal["save_num"]);
+	const String table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
+	const String num   = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_num",   true);
 
 	static const String saves = Utils::ROOT + "saves/";
 	const String tablePath = saves + table + '/';
@@ -112,10 +110,13 @@ void Game::save() {
 	{//save info
 		std::ofstream infoFile(fullPath + "info");
 		infoFile << GV::mainExecNode->name << '\n';
-		for (size_t i = 0; i < GV::screens->children.size(); ++i) {
+
+		size_t lastIndex = GV::screens->children.size() - 1;
+		for (size_t i = 0; i <= lastIndex; ++i) {
 			Screen* s = dynamic_cast<Screen*>(GV::screens->children[i]);
-			infoFile << s->name << (i == GV::screens->children.size() - 1 ? '\n' : ' ');
+			infoFile << s->name << (i == lastIndex ? '\n' : ' ');
 		}
+
 		infoFile << GV::numFor << '\n' <<
 					GV::numScreenFor << '\n';
 	}
@@ -146,7 +147,6 @@ void Game::save() {
 				if (save) {
 					IMG_SavePNG(save, (fullPath + "screenshot.png").c_str());
 					SDL_FreeSurface(save);
-					save = nullptr;
 				}else {
 					Utils::outMsg("SDL_CreateRGBSurfaceFrom", SDL_GetError());
 				}
@@ -154,7 +154,6 @@ void Game::save() {
 			delete[] pixels;
 
 			SDL_FreeSurface(info);
-			info = nullptr;
 		}else {
 			Utils::outMsg("SDL_GetWindowSurface", SDL_GetError());
 		}
@@ -162,35 +161,34 @@ void Game::save() {
 
 
 	{//save python global-vars
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "saveGlobalVars('" + fullPath + "py_globals')");
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_global_vars('" + fullPath + "py_globals')");
 	}
-
-	GV::renderGuard.unlock();
 }
 
 
 void Game::_startMod(const std::string &dir) {
-	GV::updateGuard.lock();
-	modeStarting = true;
+	{
+		std::lock_guard<std::mutex> g(GV::updateGuard);
 
-	Music::clear();
+		modeStarting = true;
 
-	GV::inGame = false;
-	int toSleep = frameTime * 2;
-	Utils::sleep(toSleep, false);
+		Music::clear();
 
-	delete GV::pyUtils;
-	GV::pyUtils = new PyUtils();
+		GV::inGame = false;
+		int toSleep = frameTime * 2;
+		Utils::sleep(toSleep, false);
 
-	Node::destroyAll();
+		delete GV::pyUtils;
+		GV::pyUtils = new PyUtils();
 
-	Screen::clear();
-	DisplayObject::destroyAll();
-	GV::screens = new Group();
+		Node::destroyAll();
 
-	Style::destroyAll();
+		Screen::clear();
+		DisplayObject::destroyAll();
+		GV::screens = new Group();
 
-	GV::updateGuard.unlock();
+		Style::destroyAll();
+	}
 
 	Parser p(Utils::ROOT + "mods/" + dir);
 	GV::mainExecNode = p.parse();

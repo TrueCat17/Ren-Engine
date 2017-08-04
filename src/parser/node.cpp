@@ -1,6 +1,5 @@
 ﻿#include "node.h"
 
-#include <iostream>
 #include <thread>
 #include <algorithm>
 
@@ -74,7 +73,7 @@ void Node::execute() {
 			}
 			initing = false;
 
-			String startScreensStr = PyUtils::exec("CPP_EMBED: node.cpp", 0, "start_screens", true);
+			String startScreensStr = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "start_screens", true);
 			std::vector<String> startScreensVec = startScreensStr.split(' ');
 			for (String screenName : startScreensVec) {
 				if (screenName) {
@@ -82,7 +81,7 @@ void Node::execute() {
 				}
 			}
 
-			mainLabel = PyUtils::exec("CPP_EMBED: node.cpp", 0, "mods_last_key", true);
+			mainLabel = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "mods_last_key", true);
 			try {
 				jump(mainLabel, false);
 			}catch (ExitException) {}
