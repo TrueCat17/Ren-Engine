@@ -27,10 +27,10 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 	init = iterName + " = iter(" + afterIn + ")";
 
 	for (char c : propName) {
-		if ((c >= 'a' || c <= 'z') &&
-			(c >= 'A' || c <= 'Z') &&
-			(c >= '0' || c <= '9') &&
-			 c != '_') continue;
+		if ((c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') ||
+			 c == '_') continue;
 
 		onStep = propName + " = " + iterName + ".next()";
 		break;
@@ -38,20 +38,27 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 }
 ScreenFor::~ScreenFor() {
 	if (used) {
-		PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		try {
+			py::dict global = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
+			if (global.has_key(iterName.c_str())) {
+				py::api::delitem(global, iterName.c_str());
+			}
+		}catch (py::error_already_set) {
+			PyUtils::errorProcessing("del " + iterName);
+		}
 	}
 }
 
 void ScreenFor::calculateProps() {
 	skipped = true;
-	size_t i = 0;
 
 	used = true;
 	PyUtils::exec(getFileName(), getNumLine(), init);
 
 	py::object nextMethod;
 	if (!onStep) {
-		std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
 		try {
 			py::object iter = GV::pyUtils->pythonGlobal[iterName.c_str()];
 			nextMethod = iter.attr("next");
@@ -62,10 +69,11 @@ void ScreenFor::calculateProps() {
 		}
 	}
 
+	size_t i = 0;
 	while (true) {
 		try {
 			if (!onStep) {
-				std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
+				std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
 				try {
 					GV::pyUtils->pythonGlobal[propName.c_str()] = nextMethod();
 				}catch (py::error_already_set) {

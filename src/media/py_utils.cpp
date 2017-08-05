@@ -210,6 +210,9 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 		}
 	}catch (py::error_already_set) {
 		errorProcessing(code);
+	}catch (std::exception &e) {
+		std::cout << "std::exception: " << e.what() << '\n';
+		std::cout << "on python code:\n" << code << '\n';
 	}catch (...) {
 		std::cout << "Python Unknown Error\n";
 		std::cout << "Code:\n" << code << '\n';

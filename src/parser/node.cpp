@@ -383,10 +383,10 @@ void Node::execute() {
 
 		String onStep;
 		for (char c : propName) {
-			if ((c >= 'a' || c <= 'z') &&
-				(c >= 'A' || c <= 'Z') &&
-				(c >= '0' || c <= '9') &&
-				 c != '_') continue;
+			if ((c >= 'a' && c <= 'z') ||
+				(c >= 'A' && c <= 'Z') ||
+				(c >= '0' && c <= '9') ||
+				 c == '_') continue;
 
 			onStep = propName + " = " + iterName + ".next()";
 			break;

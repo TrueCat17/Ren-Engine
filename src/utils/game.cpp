@@ -62,7 +62,6 @@ void Game::load(const std::string &table, int num) {
 
 }
 void Game::save() {
-
 	const String table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
 	const String num   = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_num",   true);
 
@@ -178,9 +177,6 @@ void Game::_startMod(const std::string &dir) {
 		int toSleep = frameTime * 2;
 		Utils::sleep(toSleep, false);
 
-		delete GV::pyUtils;
-		GV::pyUtils = new PyUtils();
-
 		Node::destroyAll();
 
 		Screen::clear();
@@ -188,6 +184,9 @@ void Game::_startMod(const std::string &dir) {
 		GV::screens = new Group();
 
 		Style::destroyAll();
+
+		delete GV::pyUtils;
+		GV::pyUtils = new PyUtils();
 	}
 
 	Parser p(Utils::ROOT + "mods/" + dir);
