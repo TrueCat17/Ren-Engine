@@ -184,12 +184,12 @@ void loop() {
 				int x, y;
 				SDL_GetWindowPosition(GV::mainWindow, &x, &y);
 				if (x || y) {//Если оба равны 0, то скорее всего это глюк, игнорируем его
+					int leftBorderSize;
 					int captionHeight;
-					SDL_GetWindowBordersSize(mainWindow, &captionHeight, nullptr, nullptr, nullptr);
-					y -= captionHeight;
-					if (y < 1) {
-						y = 1;
-					}
+					SDL_GetWindowBordersSize(mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+
+					x = std::max(x - leftBorderSize, 1);
+					y = std::max(y - captionHeight, 1);
 					
 					Config::set("window_x", x);
 					Config::set("window_y", y);
