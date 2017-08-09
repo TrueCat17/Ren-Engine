@@ -19,7 +19,7 @@ music (микшер music, повтор),
 sound, sound2, sound3 (микшер sfx, без повтора),
 ambience, sound_loop, sound_loop2, sound_loop3 (микшер ambience, повтор).
 
-Они зарегистрированы в файле resources/mods/inc/std_resources/sound_channels.rpy
+Они зарегистрированы в файле resources/mods/common/std_resources/sound_channels.rpy
 
 
 Регистрация звуковых каналов:

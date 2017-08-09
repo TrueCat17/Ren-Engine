@@ -319,5 +319,5 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 Скрыть:
 	hide_screen("screen_name")
 
-Также много интересного можно найти в resources/mods/inc/renpy_api.rpy.
+Также много интересного можно найти в resources/mods/common/renpy_api.rpy.
 
