@@ -20,7 +20,7 @@ ScreenText::ScreenText(Node *node):
 	setProp("text_align", node->getPropCode("text_align"));
 	setProp("text_valign", node->getPropCode("text_valign"));
 	setProp("color", node->getPropCode("color"));
-	setProp("size", node->getPropCode("size"));
+	setProp("text_size", node->getPropCode("text_size"));
 }
 
 void ScreenText::calculateProps() {
@@ -42,7 +42,7 @@ void ScreenText::calculateProps() {
 			}
 		}
 
-		size = propValues["size"].toInt();
+		size = propValues["text_size"].toInt();
 		if (!size) size = 20;
 	}
 }

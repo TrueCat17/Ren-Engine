@@ -35,8 +35,8 @@ ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent) {
 	setProp("xalign", node->getPropCode("xalign", "align", "[0]"));
 	setProp("yalign", node->getPropCode("yalign", "align", "[1]"));
 
-	setProp("xsize", node->getPropCode("xsize", "xysize", "[0]"));
-	setProp("ysize", node->getPropCode("ysize", "xysize", "[1]"));
+	setProp("xsize", node->getPropCode("xsize", "size", "[0]"));
+	setProp("ysize", node->getPropCode("ysize", "size", "[1]"));
 
 	setProp("crop", node->getPropCode("crop"));
 	setProp("alpha", node->getPropCode("alpha"));

@@ -58,9 +58,9 @@ void SyntaxChecker::init() {
 	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
 
 	const String screenProps = ", use, key, ";
-	const String simpleProps = ", xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, xysize, crop, alpha, ";
+	const String simpleProps = ", xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, size, crop, alpha, ";
 	const String containerProps = ", has, spacing, ";
-	const String textProps = ", color, size, font, size, text_align, text_valign, ";
+	const String textProps = ", color, size, font, text_size, text_align, text_valign, ";
 
 	const String imageProps = simpleProps + "repeat, linear, ease, easein, easeout, pause, rotate, alpha, reset, ";
 
