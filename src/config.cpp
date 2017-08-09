@@ -73,14 +73,6 @@ void Config::setDefault() {
 	set("max_size_textures_cache", "50");
 	set("max_size_surfaces_cache", "200");
 	set("count_preload_commands", "0");
-
-	set("character_walk_fps", "4");
-	set("character_run_fps", "12");
-
-	set("character_acceleration_time", "0.5");
-
-	set("character_walk_speed", "50");
-	set("character_run_speed", "150");
 }
 
 void Config::load() {
