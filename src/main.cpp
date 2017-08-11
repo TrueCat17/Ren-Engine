@@ -162,6 +162,10 @@ void loop() {
 	bool mouseOutPrevDown = false;
 
 	while (!GV::exit) {
+		while (!GV::inGame) {
+			Utils::sleep(10);
+		}
+
 		GV::updateGuard.lock();
 
 		int startTime = Utils::getTimer();

@@ -168,15 +168,15 @@ void Game::save() {
 #include <iostream>
 void Game::_startMod(const std::string &dir) {
 	{
+		modeStarting = true;
+		GV::inGame = false;
+
 		std::lock_guard<std::mutex> g(GV::updateGuard);
 
-		modeStarting = true;
-
-		Music::clear();
-
-		GV::inGame = false;
 		int toSleep = frameTime * 2;
 		Utils::sleep(toSleep, false);
+
+		Music::clear();
 
 		Node::destroyAll();
 
