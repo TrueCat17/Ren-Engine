@@ -165,7 +165,7 @@ void Game::save() {
 	}
 }
 
-
+#include <iostream>
 void Game::_startMod(const std::string &dir) {
 	{
 		std::lock_guard<std::mutex> g(GV::updateGuard);

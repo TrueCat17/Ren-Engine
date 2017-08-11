@@ -299,6 +299,70 @@ SDL_Surface* Image::getImage(String desc) {
 		while (countFinished != countThreads) {
 			Utils::sleep(1);
 		}
+	}else 
+		
+	if (command == "Rotozoom") {
+		SDL_Surface *img = getImage(args[1]);
+		if (!img) return nullptr;
+		
+
+		int angle = -Utils::clear(args[2]).toDouble();
+		double zoom = Utils::clear(args[3]).toDouble();
+		if (!zoom) {
+			Utils::outMsg("Image::getImage, Rotozoom", "zoom не должен быть равен 0");
+			zoom = 1;
+		}
+		SDL_RendererFlip flip = SDL_FLIP_NONE;
+		if (zoom < 0) {
+			zoom = -zoom;
+			flip = SDL_RendererFlip(SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL);
+		}
+
+		SDL_PixelFormat *imgPixelFormat = img->format;
+		Uint32 rMask = imgPixelFormat->Rmask;
+		Uint32 gMask = imgPixelFormat->Gmask;
+		Uint32 bMask = imgPixelFormat->Bmask;
+		Uint32 aMask = imgPixelFormat->Amask;
+
+		int w = std::max(img->w * zoom, 1.0);
+		int h = std::max(img->h * zoom, 1.0);
+
+		double radians = angle * M_PI / 180;
+		double sinA = std::abs(std::sin(radians));
+		double cosA = std::abs(std::cos(radians));
+		int resW = w * cosA + h * sinA;
+		int resH = w * sinA + h * cosA;
+
+		SDL_Rect srcRect = {0, 0, img->w, img->h};
+		SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
+
+		res = SDL_CreateRGBSurface(img->flags, resW, resH, 32, rMask, gMask, bMask, aMask);
+
+
+		String error;
+
+		SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res);
+
+		if (!renderer) {
+			error = "Image::getImage, Rotozoom, SDL_CreateSoftwareRenderer";
+		}else {
+			SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, img);
+			if (!texture) {
+				error = "Image::getImage, Rotozoom, SDL_CreateTextureFromSurface";
+			}else {
+				if (SDL_RenderCopyEx(renderer, texture, &srcRect, &dstRect, angle, nullptr, flip)) {
+					error = "Image::getImage, Rotozoom, SDL_RenderCopyEx";
+				}
+				SDL_DestroyTexture(texture);
+			}
+
+			SDL_DestroyRenderer(renderer);
+		}
+		if (error) {
+			Utils::outMsg(error, SDL_GetError());
+			SDL_FreeSurface(res);
+			res = nullptr;
+		}
 	}
 
 	else {
