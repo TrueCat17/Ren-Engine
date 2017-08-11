@@ -21,6 +21,9 @@ private:
 	int color = 0;
 	int prevColor = 0;
 
+	double prevXSize = 0;
+	double prevYSize = 0;
+
 protected:
 	Text *tf;
 

@@ -149,14 +149,11 @@ Screen::Screen(Node *node, const String &dependOn):
 	created.push_back(this);
 	addShowedCount(dependOn);
 
-
 	removeAllProps();
 	needUpdateFields = false;
 	setProp("spacing", node->getPropCode("spacing"));
 	setProp("modal", node->getPropCode("modal"));
 	setProp("zorder", node->getPropCode("zorder"));
-
-	xSize = ySize = 1.0;
 }
 Screen::~Screen() {
 	for (size_t i = 0; i < created.size(); ++i) {

@@ -75,7 +75,8 @@ void ScreenText::updateSize() {
 			tf->setText(text, color);
 		}
 
-		if (text && (needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign)) {
+		if (text && (needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
+					 xSize != prevXSize || ySize != prevYSize)) {
 			tf->setAlign(textHAlign, textVAlign);
 		}
 	}
@@ -85,4 +86,7 @@ void ScreenText::updateSize() {
 	if (w <= 0) w = tf->getWidth();
 	if (h <= 0) h = tf->getHeight();
 	setSize(w, h);
+
+	prevXSize = xSize;
+	prevYSize = ySize;
 }

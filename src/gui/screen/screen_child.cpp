@@ -296,12 +296,10 @@ void ScreenChild::calculateProps() {
 }
 
 void ScreenChild::updateSize() {
-	double w = xSize;
-	if (xSizeIsDouble) w *= GV::width;
-	double h = ySize;
-	if (ySizeIsDouble) h *= GV::height;
+	if (xSizeIsDouble) xSize *= GV::width;
+	if (ySizeIsDouble) ySize *= GV::height;
 
-	setSize(w, h);
+	setSize(xSize, ySize);
 
 	for (ScreenChild *screenChild : screenChildren) {
 		if (screenChild->enable) {
