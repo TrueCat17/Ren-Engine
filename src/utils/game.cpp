@@ -144,7 +144,8 @@ void Game::save() {
 				SDL_BlitScaled(screenshot, &from, save, &to);
 
 				if (save) {
-					IMG_SavePNG(save, (fullPath + "screenshot.png").c_str());
+					const String screenshotPath = fullPath + "screenshot.png";
+					IMG_SavePNG(save, screenshotPath.c_str());
 					SDL_FreeSurface(save);
 				}else {
 					Utils::outMsg("SDL_CreateRGBSurfaceFrom", SDL_GetError());

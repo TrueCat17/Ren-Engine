@@ -35,7 +35,7 @@ String Style::getProp(const String &styleName, const String &propName) {
 		py::object styleObj = GV::pyUtils->pythonGlobal["style"];
 
 		if (styles.find(styleName) == styles.end()) {
-			py::object styleThereIs = styleObj[(styleName).c_str()];
+			py::object styleThereIs = styleObj[styleName.c_str()];
 			if (styleThereIs.is_none()) {
 				Utils::outMsg("Style::getProp", "Стиль <" + styleName + "> не существует");
 				return "";

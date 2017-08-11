@@ -108,16 +108,17 @@ void SyntaxChecker::init() {
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
 	setSuperParents("$, pass, break, continue, python, if, elif, else, for, while, image", ALL);
 
-	//check
-	if (!true) {
-		for (auto it : mapSyntax) {
-			for (const SyntaxPart &sp : it.second) {
-				if (sp.superParent == SuperParent::NONE) {
-					std::cout << "Неинициализированный узел (SyntaxPart) {parent: " + it.first + ", child: " + sp.name + "}" << '\n';
-				}
+
+//check
+#if 0
+	for (auto it : mapSyntax) {
+		for (const SyntaxPart &sp : it.second) {
+			if (sp.superParent == SuperParent::NONE) {
+				std::cout << "Неинициализированный узел (SyntaxPart) {parent: " + it.first + ", child: " + sp.name + "}" << '\n';
 			}
 		}
 	}
+#endif
 }
 
 bool SyntaxChecker::check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &thereIsNot) {

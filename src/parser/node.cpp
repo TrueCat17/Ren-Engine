@@ -128,10 +128,10 @@ void Node::execute() {
 				argsStr += ", '" + args[i] + "'";
 			}
 
-			PyUtils::pyExecGuard.lock();
-			GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
-			PyUtils::pyExecGuard.unlock();
-
+			{
+				std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+				GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
+			}
 			PyUtils::exec(getFileName(), getNumLine(), "show_sprite([" + argsStr + "], last_show_at)");
 		}
 	}else
@@ -169,9 +169,10 @@ void Node::execute() {
 			}
 		}
 
-		PyUtils::pyExecGuard.lock();
-		GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
-		PyUtils::pyExecGuard.unlock();
+		{
+			std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+			GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
+		}
 
 		PyUtils::exec(getFileName(), getNumLine(), "set_scene([" + argsStr + "], last_show_at)");
 	}else

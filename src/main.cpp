@@ -125,7 +125,8 @@ bool init() {
 	}
 	changeWindowSize();
 
-	SDL_Surface *icon = IMG_Load((Utils::ROOT + "images/misc/icon16.png").c_str());
+	const String iconPath = Utils::ROOT + "images/misc/icon16.png";
+	SDL_Surface *icon = IMG_Load(iconPath.c_str());
 	SDL_SetWindowIcon(mainWindow, icon);
 	SDL_FreeSurface(icon);
 
@@ -258,24 +259,24 @@ void loop() {
 		int timeToSleep = Game::getFrameTime() - spent;
 //		std::cout << spent << ' ' << timeToSleep << '\n';
 
-		if (false) {
-			auto screenObjects = ScreenChild::getScreenObjects();
+#if 0
+		auto screenObjects = ScreenChild::getScreenObjects();
 
-			std::cout << "FPS: " << Game::getFps() << '\n';
+		std::cout << "FPS: " << Game::getFps() << '\n';
 
-			size_t count = std::count_if(screenObjects.begin(), screenObjects.end(), [](ScreenChild* scr) { return scr->enable; });
-			std::cout << count << '/' << screenObjects.size() << '\n';
+		size_t count = std::count_if(screenObjects.begin(), screenObjects.end(), [](ScreenChild* scr) { return scr->enable; });
+		std::cout << count << '/' << screenObjects.size() << '\n';
 
-			std::map<String, int> m;
-			for (ScreenChild *i : screenObjects) {
-				auto c = i->getType();
-				m[c] = m[c] + 1;
-			}
-			for (auto p : m) {
-				std::cout << p.first << ": " << p.second << '\n';
-			}
-			std::cout << '\n';
+		std::map<String, int> m;
+		for (ScreenChild *i : screenObjects) {
+			auto c = i->getType();
+			m[c] = m[c] + 1;
 		}
+		for (auto p : m) {
+			std::cout << p.first << ": " << p.second << '\n';
+		}
+		std::cout << '\n';
+#endif
 
 		if (PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save", true) == "True") {
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save = False");

@@ -25,7 +25,8 @@ public:
 	}
 	template<typename T>
 	String& operator+=(const T& t) {
-		*(dynamic_cast<std::string*>(this)) += String(t).c_str();
+		const String tStr = String(t);
+		*(dynamic_cast<std::string*>(this)) += tStr.c_str();
 
 		return *this;
 	}

@@ -130,6 +130,7 @@ void Utils::destroyAllFonts() {
 		TTF_Font *font = i->second;
 		TTF_CloseFont(font);
 	}
+	fonts.clear();
 }
 
 
@@ -300,9 +301,11 @@ SDL_Texture* Utils::getTexture(const String &path) {
 
 	SDL_Surface *surface = Image::getImage(path);
 	if (surface) {
-		GV::renderGuard.lock();
-		SDL_Texture *texture = SDL_CreateTextureFromSurface(GV::mainRenderer, surface);
-		GV::renderGuard.unlock();
+		SDL_Texture *texture;
+		{
+			std::lock_guard<std::mutex> g(GV::renderGuard);
+			texture = SDL_CreateTextureFromSurface(GV::mainRenderer, surface);
+		}
 
 		if (texture) {
 			textureSurfaces[texture] = surface;
@@ -321,7 +324,7 @@ SDL_Texture* Utils::getTexture(const String &path) {
 }
 
 void Utils::trimSurfacesCache(const SDL_Surface* last) {
-	surfaceGuard.lock();
+	std::lock_guard<std::mutex> g(surfaceGuard);
 
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
@@ -353,10 +356,10 @@ void Utils::trimSurfacesCache(const SDL_Surface* last) {
 		SDL_FreeSurface(surface);
 		surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 	}
-	surfaceGuard.unlock();
 }
 SDL_Surface* Utils::getThereIsSurfaceOrNull(const String &path) {
-	surfaceGuard.lock();
+	std::lock_guard<std::mutex> g(surfaceGuard);
+
 	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
 		std::pair<String, SDL_Surface*> t = surfaces[i];
 		if (t.first == path) {
@@ -364,33 +367,31 @@ SDL_Surface* Utils::getThereIsSurfaceOrNull(const String &path) {
 				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 				surfaces.push_back(t);
 			}
-			surfaceGuard.unlock();
 			return t.second;
 		}
 	}
-	surfaceGuard.unlock();
 	return nullptr;
 }
 
 void Utils::setSurface(const String &path, SDL_Surface *surface) {
 	if (!surface) return;
 
-	surfaceGuard.lock();
-	for (auto &p : surfaces) {
-		String &pPath = p.first;
-		if (pPath == path) {
-			p.second = surface;
-			surfaceGuard.unlock();
-			return;
+	{
+		std::lock_guard<std::mutex> g(surfaceGuard);
+		for (auto &p : surfaces) {
+			String &pPath = p.first;
+			if (pPath == path) {
+				p.second = surface;
+				return;
+			}
 		}
 	}
-	surfaceGuard.unlock();
 
-	trimSurfacesCache(surface);
-
-	surfaceGuard.lock();
-	surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
-	surfaceGuard.unlock();
+	{
+		trimSurfacesCache(surface);
+		std::lock_guard<std::mutex> g(surfaceGuard);
+		surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
+	}
 }
 
 SDL_Surface* Utils::getSurface(const String &path) {
@@ -400,15 +401,15 @@ SDL_Surface* Utils::getSurface(const String &path) {
 	if (t) return t;
 
 	static std::mutex mutex;
-	mutex.lock();
+	std::lock_guard<std::mutex> g(mutex);
 
 	t = getThereIsSurfaceOrNull(path);
 	if (t)  {
-		mutex.unlock();
 		return t;
 	}
 
-	SDL_Surface *surface = IMG_Load((Utils::ROOT + path).c_str());
+	const String fullPath = Utils::ROOT + path;
+	SDL_Surface *surface = IMG_Load(fullPath.c_str());
 	if (surface) {
 		/*
 		 * Вот это вот - это костыль
@@ -444,16 +445,15 @@ SDL_Surface* Utils::getSurface(const String &path) {
 
 		trimSurfacesCache(surface);
 
-		surfaceGuard.lock();
-		surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
-		surfaceGuard.unlock();
+		{
+			std::lock_guard<std::mutex> g2(surfaceGuard);
+			surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
+		}
 
-		mutex.unlock();
 		return surface;
 	}
 
 	outMsg("IMG_Load", IMG_GetError());
-	mutex.unlock();
 	return nullptr;
 }
 
@@ -529,11 +529,11 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 	declAts[name] = declAt;
 
 	if (declAt->children.empty()) {
-		PyUtils::pyExecGuard.lock();
-		py::list defaultDeclAt = py::list(GV::pyUtils->pythonGlobal["default_decl_at"]);
-		PyUtils::pyExecGuard.unlock();
+		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
 
+		py::list defaultDeclAt = py::list(GV::pyUtils->pythonGlobal["default_decl_at"]);
 		size_t sizeDefaultDeclAt = py::len(defaultDeclAt);
+
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
 			py::str params = py::str(defaultDeclAt[i]);
 

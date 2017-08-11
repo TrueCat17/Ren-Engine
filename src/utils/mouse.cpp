@@ -14,11 +14,13 @@ int Mouse::y = 0;
 
 
 void Mouse::init() {
-	SDL_Surface *usual = IMG_Load((Utils::ROOT + "images/misc/mouse/1.png").c_str());
+	const String usualPath = Utils::ROOT + "images/misc/mouse/1.png";
+	SDL_Surface *usual = IMG_Load(usualPath.c_str());
 	usualModeCursor = SDL_CreateColorCursor(usual, 0, 0);
 	SDL_FreeSurface(usual);
 
-	SDL_Surface *btn = IMG_Load((Utils::ROOT + "images/misc/mouse/2.png").c_str());
+	const String btnPath = Utils::ROOT + "images/misc/mouse/2.png";
+	SDL_Surface *btn = IMG_Load(btnPath.c_str());
 	btnModeCursor = SDL_CreateColorCursor(btn, 0, 0);
 	SDL_FreeSurface(btn);
 

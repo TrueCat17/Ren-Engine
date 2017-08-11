@@ -20,14 +20,13 @@ std::vector<Music*> Music::musics;
 void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 	SDL_memset(stream, 0, globalLen);
 
-	globalMutex.lock();
+	std::lock_guard<std::mutex> g(globalMutex);
 
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
-		music->mutex.lock();
+		std::lock_guard<std::mutex> g(music->mutex);
 
 		if (!music->audioPos || music->audioLen <= 0) {
-			music->mutex.unlock();
 			continue;
 		}
 
@@ -39,11 +38,7 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 		}
 		music->audioPos += len;
 		music->audioLen -= len;
-
-		music->mutex.unlock();
 	}
-
-	globalMutex.unlock();
 }
 void Music::init() {
 	av_register_all();
@@ -79,11 +74,11 @@ void Music::init() {
 					}
 
 					if (needToDelete) {
-						globalMutex.lock();
+						std::lock_guard<std::mutex> g(globalMutex);
+
 						musics.erase(musics.begin() + i, musics.begin() + i + 1);
 						--i;
 						delete music;
-						globalMutex.unlock();
 					}
 				}else {
 					music->update();
@@ -204,9 +199,10 @@ void Music::play(const std::string &desc) {
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
 		if (music->channel->name == channelName) {
-			globalMutex.lock();
-			musics.erase(musics.begin() + i, musics.begin() + i + 1);
-			globalMutex.unlock();
+			{
+				std::lock_guard<std::mutex> g(globalMutex);
+				musics.erase(musics.begin() + i, musics.begin() + i + 1);
+			}
 			delete music;
 			break;
 		}
@@ -220,9 +216,9 @@ void Music::play(const std::string &desc) {
 				delete music;
 			}else {
 				music->loadNextParts(MIN_PART_COUNT);
-				globalMutex.lock();
+
+				std::lock_guard<std::mutex> g(globalMutex);
 				musics.push_back(music);
-				globalMutex.unlock();
 			}
 			return;
 		}
@@ -405,7 +401,9 @@ void Music::loadNextParts(size_t count) {
 			}
 		}
 
-		mutex.lock();
+		{
+			std::lock_guard<std::mutex> g(mutex);
+
 			int lastLen = countSamples * 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
 
 			if (audioPos && audioLen && audioPos != buffer) {
@@ -419,7 +417,7 @@ void Music::loadNextParts(size_t count) {
 
 			audioPos = buffer;
 			audioLen += lastLen;
-		mutex.unlock();
+		}
 
 		av_frame_unref(frame);
 		av_packet_unref(packet);

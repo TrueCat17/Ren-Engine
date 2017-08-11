@@ -35,7 +35,8 @@ PyCodeObject* PyUtils::getCompileObject(const String code, const String fileName
 		indent.resize(numLine - 1, '\n');
 	}
 
-	PyObject *t = Py_CompileString((indent + code).c_str(), fileName.c_str(), Py_file_input);
+	const String tmp = indent + code;
+	PyObject *t = Py_CompileString(tmp.c_str(), fileName.c_str(), Py_file_input);
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
 	compiledObjects[pyCode] = co;

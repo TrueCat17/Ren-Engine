@@ -283,9 +283,7 @@ void Text::addText() {
 			charOutNum = endStyle - 1;
 			String oneStyleStr = line.substr(startStyle, endStyle - startStyle);
 
-			GV::renderGuard.lock();
 			addChars(oneStyleStr, curColor);
-			GV::renderGuard.unlock();
 		}
 	}
 
@@ -350,10 +348,8 @@ int Text::getLineWidth(String text, bool resetPrevStyle) {
 			if (isUnderline) style |= TTF_STYLE_UNDERLINE;
 			if (isStrike) style |= TTF_STYLE_STRIKETHROUGH;
 
-			GV::renderGuard.lock();
 			TTF_SetFontStyle(font, style);
 			TTF_SizeUTF8(font, oneStyleStr.c_str(), &charsWidth, &charsHeight);
-			GV::renderGuard.unlock();
 
 			res += charsWidth;
 		}
@@ -399,7 +395,11 @@ void Text::addChars(String c, int color) {
 		Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
 	}
 
-	SDL_Texture *textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
+	SDL_Texture *textureText;
+	{
+		std::lock_guard<std::mutex> g(GV::renderGuard);
+		textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
+	}
 	SDL_FreeSurface(surfaceText);
 
 	if (!textureText) {
@@ -409,6 +409,8 @@ void Text::addChars(String c, int color) {
 
 	SDL_Texture *texture = lineTextures.size() ? lineTextures[lineTextures.size() - 1] : nullptr;
 	if (texture) {
+		std::lock_guard<std::mutex> g(GV::renderGuard);
+
 		SDL_SetRenderTarget(GV::mainRenderer, texture);
 		if (SDL_RenderCopy(GV::mainRenderer, textureText, nullptr, &rect)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
