@@ -5,6 +5,7 @@
 
 #include "gv.h"
 #include "config.h"
+#include "logger.h"
 
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
@@ -67,11 +68,13 @@ void Node::execute() {
 		std::sort(initBlocks.begin(), initBlocks.end(), [](Node* a, Node* b) { return a->priority < b->priority; });
 
 		try {
+			int initingStartTime = Utils::getTimer();
 			initing = true;
 			for (Node *i : initBlocks) {
 				i->execute();
 			}
 			initing = false;
+			Logger::logEvent("Mod Initing (" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
 
 			String startScreensStr = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "start_screens", true);
 			std::vector<String> startScreensVec = startScreensStr.split(' ');

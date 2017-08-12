@@ -8,6 +8,7 @@
 
 #include "gv.h"
 #include "config.h"
+#include "logger.h"
 
 #include "gui/gui.h"
 #include "gui/display_object.h"
@@ -85,6 +86,9 @@ void changeWindowSize() {
 
 
 bool init() {
+	Utils::init();
+	Logger::init();
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
@@ -100,7 +104,6 @@ bool init() {
 		return true;
 	}
 
-	Utils::init();
 	Music::init();
 	SyntaxChecker::init();
 	Mouse::init();
@@ -306,9 +309,12 @@ void destroy() {
 int main() {
 	setlocale(LC_ALL, "en_EN.utf8");
 
+	int initStartTime = Utils::getTimer();
 	if (init()) {
 		return 0;
 	}
+	Logger::logEvent("Engine Initing", Utils::getTimer() - initStartTime, true);
+
 	Game::startMod("main_menu");
 //	Game::startMod("test_civ");
 

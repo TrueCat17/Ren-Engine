@@ -6,6 +6,7 @@ CONFIG -= qt
 HEADERS += \
 	config.h \
 	gv.h \
+	logger.h \
 	\
 	gui/gui.h \
 	gui/display_object.h \
@@ -52,6 +53,7 @@ SOURCES += \
 	main.cpp \
 	config.cpp \
 	gv.cpp \
+	logger.cpp \
 	\
 	gui/gui.cpp \
 	gui/display_object.cpp \

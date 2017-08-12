@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "gv.h"
+#include "logger.h"
 
 #include "gui/gui.h"
 #include "gui/screen/screen.h"
@@ -30,9 +31,6 @@ bool Game::modeStarting = false;
 
 void Game::startMod(const std::string &dir) {
 	std::thread([=] { Game::_startMod(dir); }).detach();
-
-	int toSleep = frameTime * 2;
-	Utils::sleep(toSleep, false);
 }
 void Game::load(const std::string &table, int num) {
 	static const String saves = Utils::ROOT + "saves/";
@@ -165,9 +163,11 @@ void Game::save() {
 	}
 }
 
-#include <iostream>
 void Game::_startMod(const std::string &dir) {
+	Logger::log("Start mod <" + dir + ">");
 	{
+		int waitingStartTime = Utils::getTimer();
+
 		modeStarting = true;
 		GV::inGame = false;
 
@@ -175,7 +175,9 @@ void Game::_startMod(const std::string &dir) {
 
 		int toSleep = frameTime * 2;
 		Utils::sleep(toSleep, false);
+		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
+		int ClearStartTime = Utils::getTimer();
 		Music::clear();
 
 		Node::destroyAll();
@@ -188,6 +190,8 @@ void Game::_startMod(const std::string &dir) {
 
 		delete GV::pyUtils;
 		GV::pyUtils = new PyUtils();
+
+		Logger::logEvent("Clearing", Utils::getTimer() - ClearStartTime);
 	}
 
 	Parser p(Utils::ROOT + "mods/" + dir);

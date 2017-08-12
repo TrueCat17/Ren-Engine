@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include "logger.h"
+
 #include "parser/syntax_checker.h"
 #include "parser/node.h"
 
@@ -53,12 +55,18 @@ const std::string Parser::getMods() {
 Parser::Parser(const String &dir) {
 	this->dir = dir;
 
+	int searchStartTime = Utils::getTimer();
 	std::vector<String> files = Utils::getFileNames(dir + "/");
 
-	std::vector<String> engineFiles = Utils::getFileNames(Utils::ROOT + "mods/engine/");
-	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
 	std::vector<String> commonFiles = Utils::getFileNames(Utils::ROOT + "mods/common/");
 	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
+	std::vector<String> engineFiles = Utils::getFileNames(Utils::ROOT + "mods/engine/");
+	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
+	Logger::logEvent("Searching files (" + String(files.size()) + ")", Utils::getTimer() - searchStartTime);
+
+	int readStartTime = Utils::getTimer();
+	int countFiles = 0;
+	int countLines = 0;
 
 	for (size_t i = 0; i < files.size(); ++i) {
 		String fileName = files[i];
@@ -69,7 +77,10 @@ Parser::Parser(const String &dir) {
 		String s;
 		std::ifstream is(fileName);
 		code.push_back("FILENAME " + fileName);
+		++countFiles;
+
 		while (!is.eof()) {
+			++countLines;
 			std::getline(is, s);
 
 			s.replaceAll('\t', "    ");
@@ -112,10 +123,17 @@ Parser::Parser(const String &dir) {
 			}
 		}
 	}
+
+	String event = "Reading (" + String(countLines) + " lines from " + String(countFiles) + " files)";
+	Logger::logEvent(event, Utils::getTimer() - readStartTime);
 }
 
 Node* Parser::parse() {
-	return getMainNode();
+	int parsingStartTime = Utils::getTimer();
+	Node *res = getMainNode();
+	Logger::logEvent("Parsing", Utils::getTimer() - parsingStartTime);
+
+	return res;
 }
 
 Node* Parser::getMainNode() {

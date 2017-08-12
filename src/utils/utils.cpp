@@ -9,6 +9,7 @@
 
 #include "gv.h"
 #include "config.h"
+#include "logger.h"
 
 #include "gui/display_object.h"
 
@@ -102,8 +103,9 @@ void Utils::outMsg(std::string msg, const std::string& err) {
 	}
 	if (msg.size()) {
 		static std::mutex msgGuard;
-
 		std::lock_guard<std::mutex> g(msgGuard);
+
+		Logger::log(msg);
 		if (SDL_ShowSimpleMessageBox(err.size() ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING, "Message", msg.c_str(), GV::mainWindow)) {
 			std::cout << msg << '\n';
 		}
