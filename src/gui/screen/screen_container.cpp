@@ -55,7 +55,7 @@ void ScreenContainer::calculateProps() {
 void ScreenContainer::updateSize() {
 	ScreenChild::updateSize();
 
-	//Установлено через [x/y/xy]size
+	//Установлено через [x/y/]size
 	int userWidth = getWidth();
 	int userHeight = getHeight();
 

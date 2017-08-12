@@ -3,6 +3,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include "config.h"
+
 #include "utils/utils.h"
 
 
@@ -14,15 +16,27 @@ int Mouse::y = 0;
 
 
 void Mouse::init() {
-	const String usualPath = Utils::ROOT + "images/misc/mouse/1.png";
-	SDL_Surface *usual = IMG_Load(usualPath.c_str());
-	usualModeCursor = SDL_CreateColorCursor(usual, 0, 0);
-	SDL_FreeSurface(usual);
+	const String usualPath = Config::get("mouse_usual");
+	SDL_Surface *usual = nullptr;
+	if (usualPath && usualPath != "None") {
+		usual = Utils::getSurface(Utils::ROOT + usualPath);
+	}
+	if (usual) {
+		usualModeCursor = SDL_CreateColorCursor(usual, 0, 0);
+	}else {
+		usualModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+	}
 
-	const String btnPath = Utils::ROOT + "images/misc/mouse/2.png";
-	SDL_Surface *btn = IMG_Load(btnPath.c_str());
-	btnModeCursor = SDL_CreateColorCursor(btn, 0, 0);
-	SDL_FreeSurface(btn);
+	const String btnPath = Config::get("mouse_btn");
+	SDL_Surface *btn = nullptr;
+	if (btnPath && btnPath != "None") {
+		btn = Utils::getSurface(Utils::ROOT + btnPath);
+	}
+	if (btn) {
+		btnModeCursor = SDL_CreateColorCursor(btn, 0, 0);
+	}else {
+		btnModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+	}
 
 	SDL_SetCursor(usualModeCursor);
 }

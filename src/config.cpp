@@ -61,11 +61,15 @@ void Config::set(const String &name, const String &value, const String &comment)
 
 void Config::setDefault() {
 	set("window_title", "Ren-Engine");
+	set("window_icon", "None");
 
 	set("window_x", "300");
 	set("window_y", "70");
 	set("window_width", "800");
 	set("window_height", "600");
+
+	set("mouse_usual", "None");
+	set("mouse_btn", "None");
 
 	set("software_renderer", "False");
 	set("max_fps", "30");

@@ -104,11 +104,10 @@ bool init() {
 		return true;
 	}
 
+	Config::init();
+	Mouse::init();
 	Music::init();
 	SyntaxChecker::init();
-	Mouse::init();
-
-	Config::init();
 
 	int x = Config::get("window_x").toInt();
 	int y = Config::get("window_y").toInt();
@@ -128,10 +127,14 @@ bool init() {
 	}
 	changeWindowSize();
 
-	const String iconPath = Utils::ROOT + "images/misc/icon16.png";
-	SDL_Surface *icon = IMG_Load(iconPath.c_str());
-	SDL_SetWindowIcon(mainWindow, icon);
-	SDL_FreeSurface(icon);
+	const String iconPath = Config::get("window_icon");
+	SDL_Surface *icon = nullptr;
+	if (iconPath && iconPath != "None") {
+		icon = Utils::getSurface(Utils::ROOT + iconPath);
+	}
+	if (icon) {
+		SDL_SetWindowIcon(mainWindow, icon);
+	}
 
 
 	flags = 0;
@@ -262,10 +265,6 @@ void loop() {
 
 		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
 
-		int spent = Utils::getTimer() - startTime;
-		int timeToSleep = Game::getFrameTime() - spent;
-//		std::cout << spent << ' ' << timeToSleep << '\n';
-
 #if 0
 		auto screenObjects = ScreenChild::getScreenObjects();
 
@@ -291,6 +290,10 @@ void loop() {
 		}
 
 		GV::updateGuard.unlock();
+
+		int spent = Utils::getTimer() - startTime;
+		int timeToSleep = Game::getFrameTime() - spent;
+//		std::cout << spent << ' ' << timeToSleep << '\n';
 		Utils::sleep(timeToSleep);
 	}
 }
