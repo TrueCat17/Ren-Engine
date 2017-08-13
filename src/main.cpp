@@ -316,7 +316,7 @@ int main() {
 	if (init()) {
 		return 0;
 	}
-	Logger::logEvent("Engine Initing", Utils::getTimer() - initStartTime, true);
+	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime, true);
 
 	Game::startMod("main_menu");
 //	Game::startMod("test_civ");

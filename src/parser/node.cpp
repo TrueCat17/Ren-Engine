@@ -239,11 +239,11 @@ void Node::execute() {
 	}else
 
 	if (command == "play") {
-		Music::play(params);
+		Music::play(params, fileName, numLine);
 	}else
 
 	if (command == "stop") {
-		Music::stop(params);
+		Music::stop(params, fileName, numLine);
 	}else
 
 	if (command == "image") {

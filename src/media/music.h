@@ -53,7 +53,6 @@ private:
 	static void fillAudio(void *, Uint8 *stream, int globalLen);
 
 
-	std::mutex mutex;
 	std::string url;
 	Channel *channel = nullptr;
 
@@ -64,6 +63,8 @@ private:
 
 	int fadeIn = 0;
 	int fadeOut = 0;
+
+	std::string place;
 
 	int audioStream = -1;
 
@@ -80,7 +81,7 @@ private:
 	AVFrame *frame = av_frame_alloc();
 
 
-	Music(const std::string &url, Channel *channel, int fadeIn);
+	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &place);
 	~Music();
 
 	bool initCodec();
@@ -95,12 +96,17 @@ public:
 	static void init();
 	static void clear();
 
-	static void registerChannel(const std::string &name, const std::string &mixer, bool loop);
-	static void setVolume(double volume, const std::string &channelName);
-	static void setMixerVolume(double volume, const std::string &mixer);
+	static void registerChannel(const std::string &name, const std::string &mixer, bool loop,
+								const std::string &fileName, int numLine);
+	static void setVolume(double volume, const std::string &channelName,
+						  const std::string &fileName, int numLine);
+	static void setMixerVolume(double volume, const std::string &mixer,
+							   const std::string& fileName, int numLine);
 
-	static void play(const std::string &desc);
-	static void stop(const std::string &desc);
+	static void play(const std::string &desc,
+					 const std::string& fileName, int numLine);
+	static void stop(const std::string &desc,
+					 const std::string& fileName, int numLine);
 };
 
 #endif // MUSIC_H

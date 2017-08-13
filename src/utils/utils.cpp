@@ -105,7 +105,7 @@ void Utils::outMsg(std::string msg, const std::string& err) {
 		static std::mutex msgGuard;
 		std::lock_guard<std::mutex> g(msgGuard);
 
-		Logger::log(msg);
+		Logger::log(msg + "\n\n");
 		if (SDL_ShowSimpleMessageBox(err.size() ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING, "Message", msg.c_str(), GV::mainWindow)) {
 			std::cout << msg << '\n';
 		}
