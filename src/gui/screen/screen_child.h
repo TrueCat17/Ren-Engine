@@ -20,6 +20,7 @@ private:
 protected:
 	static std::vector<ScreenChild*> screenObjects;
 
+
 	const Screen *screen = nullptr;
 	ScreenChild *screenParent;
 
@@ -27,7 +28,6 @@ protected:
 
 	//pyExprs -> calculate propValue
 	std::map<String, String> propCodes;    //propName - propCode
-	std::map<String, String> propCodesPriority;    //propName - priorityPropCode
 	std::map<String, String> propValues;   //propName - calculatedPropValue
 	std::map<String, size_t> propNumLines; //propName - propNumLine
 
@@ -36,8 +36,6 @@ protected:
 
 	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
 
-	double xAnchor = 0;
-	double yAnchor = 0;
 	bool xAnchorIsDouble = false;
 	bool yAnchorIsDouble = false;
 
@@ -65,12 +63,12 @@ public:
 	virtual ~ScreenChild();
 
 	void removeAllProps();
-	void setProp(const String &propName, const NodeProp &nodeProp, bool priority = false);
+	void setProp(const String &propName, const NodeProp &nodeProp);
 
 	const String& getType() const { return node->command; }
 
 	virtual void calculateProps();
-	virtual void afterPriorityUpdate() {}
+	virtual void updateTexture() {}
 	virtual void updateSize();
 	virtual void updatePos();
 

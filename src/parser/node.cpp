@@ -76,6 +76,7 @@ void Node::execute() {
 			initing = false;
 			Logger::logEvent("Mod Initing (" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
 
+
 			String startScreensStr = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "start_screens", true);
 			std::vector<String> startScreensVec = startScreensStr.split(' ');
 			for (String screenName : startScreensVec) {
@@ -465,7 +466,7 @@ void Node::execute() {
 	if (!initing && !inWithBlock) {
 		static const String code = "pause_end > time.time() or not can_exec_next_command()";
 		while (GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, code, true) == "True") {
-			Utils::sleep(Game::getFrameTime());
+			Utils::sleep(Game::getFrameTime() * 0 + 100);
 		}
 	}
 }

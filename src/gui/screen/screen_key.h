@@ -32,8 +32,8 @@ public:
 	~ScreenKey();
 
 	virtual void calculateProps();
-	virtual void updateSize();
-	virtual void updatePos();
+	virtual void updateSize() {}
+	virtual void updatePos() {}
 };
 
 #endif // SCREENKEY_H

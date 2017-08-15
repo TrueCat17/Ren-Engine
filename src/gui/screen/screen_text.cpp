@@ -26,13 +26,13 @@ ScreenText::ScreenText(Node *node):
 void ScreenText::calculateProps() {
 	ScreenChild::calculateProps();
 
-	text = propValues["text"];
+	text = propValues.at("text");
 	if (text) {
-		font = propValues["font"];
-		textHAlign = propValues["text_align"];
-		textVAlign = propValues["text_valign"];
+		font = propValues.at("font");
+		textHAlign = propValues.at("text_align");
+		textVAlign = propValues.at("text_valign");
 
-		String colorStr = propValues["color"];
+		const String &colorStr = propValues.at("color");
 		color = 0xFFFFFF;
 		if (colorStr) {
 			if (colorStr[0] == '#') {
@@ -42,7 +42,7 @@ void ScreenText::calculateProps() {
 			}
 		}
 
-		size = propValues["text_size"].toInt();
+		size = propValues.at("text_size").toInt();
 		if (!size) size = 20;
 	}
 }
@@ -89,4 +89,13 @@ void ScreenText::updateSize() {
 
 	prevXSize = xSize;
 	prevYSize = ySize;
+}
+
+void ScreenText::updateGlobalPos() {
+	int prevGlobalRotate = getGlobalRotate();
+	ScreenChild::updateGlobalPos();
+
+	if (tf && tf->getText() && prevGlobalRotate != getGlobalRotate()) {
+		tf->setAlign(tf->getHAlign(), tf->getVAlign());
+	}
 }

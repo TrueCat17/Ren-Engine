@@ -39,11 +39,17 @@ private:
 	static std::mutex surfaceGuard;
 	static std::vector<std::pair<String, SDL_Surface*>> surfaces;
 
+	static double* sins;
+	static double* coss;
+
 public:
 	static String ROOT;
 	static String FONTS;
 
 	static void init();
+
+	static double getSin(int angle) { return sins[((angle % 360) + 360) % 360]; }
+	static double getCos(int angle) { return coss[((angle % 360) + 360) % 360]; }
 
 	static std::vector<String> getFileNames(const String &path);
 

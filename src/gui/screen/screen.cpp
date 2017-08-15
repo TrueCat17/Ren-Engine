@@ -149,9 +149,6 @@ Screen::Screen(Node *node, const String &dependOn):
 	created.push_back(this);
 	addShowedCount(dependOn);
 
-	removeAllProps();
-	needUpdateFields = false;
-	setProp("spacing", node->getPropCode("spacing"));
 	setProp("modal", node->getPropCode("modal"));
 	setProp("zorder", node->getPropCode("zorder"));
 }
@@ -203,6 +200,6 @@ void Screen::updateScreenProps() {
 	calculateProps();
 	needUpdateChildren = true;
 
-	_isModal = propValues["modal"] == "True";
-	_zOrder = propValues["zorder"].toDouble();
+	_isModal = propValues.at("modal") == "True";
+	_zOrder = propValues.at("zorder").toDouble();
 }

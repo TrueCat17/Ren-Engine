@@ -15,7 +15,7 @@ public:
 	ScreenImagemap(Node *node);
 
 	virtual void calculateProps();
-	virtual void afterPriorityUpdate();
+	virtual void updateTexture();
 };
 
 #endif // SCREENIMAGEMAP_H

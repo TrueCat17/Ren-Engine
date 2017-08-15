@@ -67,13 +67,13 @@ void ScreenKey::calculateProps() {
 	if (!isModal() || toNotReact) return;
 
 	ScreenChild::calculateProps();
-	firstKeyDelay = propValues["first_delay"].toDouble() * 1000;
-	keyDelay = propValues["delay"].toDouble() * 1000;
+	firstKeyDelay = propValues.at("first_delay").toDouble() * 1000;
+	keyDelay = propValues.at("delay").toDouble() * 1000;
 
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		String keyName = propValues["key"];
+		const String &keyName = propValues.at("key");
 		Utils::outMsg("SDL_GetScancodeFromName",
 					  "KeyName <" + keyName + ">\n" +
 					  SDL_GetError() + '\n' +
@@ -105,19 +105,17 @@ void ScreenKey::calculateProps() {
 		lastDown = 0;
 	}
 }
-void ScreenKey::updateSize() {
-	return;
-}
-void ScreenKey::updatePos() {
-	return;
-}
 
 SDL_Scancode ScreenKey::getKey() const {
-	String keyName = propValues.at("key");
+	auto i = propValues.find("key");
+	if (i == propValues.end()) return SDL_SCANCODE_UNKNOWN;
+
+	int start = 0;
+	const String &keyName = i->second;
 	if (keyName.startsWith("K_", false)) {
-		keyName = keyName.substr(2);
+		start = 2;
 	}
 
-	SDL_Scancode res = SDL_GetScancodeFromName(keyName.c_str());
+	SDL_Scancode res = SDL_GetScancodeFromName(keyName.c_str() + start);
 	return res;
 }

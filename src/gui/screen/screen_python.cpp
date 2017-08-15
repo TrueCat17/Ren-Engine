@@ -11,13 +11,3 @@ ScreenPython::ScreenPython(Node *node, bool isBlock):
 void ScreenPython::calculateProps() {
 	PyUtils::exec(getFileName(), getNumLine() + isBlock, node->params);
 }
-void ScreenPython::updateSize() {
-	return;
-}
-void ScreenPython::updatePos() {
-	return;
-}
-
-void ScreenPython::draw() const {
-	return;
-}

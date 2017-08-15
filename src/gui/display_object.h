@@ -11,6 +11,7 @@ class DisplayObject {
 protected:
 	int globalX = 0;
 	int globalY = 0;
+	int globalRotate = 0;
 
 	double alpha = 1;
 	double globalAlpha = 1;
@@ -30,6 +31,14 @@ public:
 
 	Group *parent = nullptr;
 
+
+	int rotate = 0;
+
+	//center for rotation
+	double xAnchor = 0;
+	double yAnchor = 0;
+
+
 	DisplayObject();
 	virtual ~DisplayObject();
 
@@ -40,10 +49,10 @@ public:
 
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
-	double getGlobalAlpha() const { return globalAlpha; }
+	int getGlobalRotate() const { return globalRotate; }
+	virtual void updateGlobalPos();
 
-	virtual void updateGlobalX();
-	virtual void updateGlobalY();
+	double getGlobalAlpha() const { return globalAlpha; }
 	virtual void updateGlobalAlpha();
 
 	int getX() const { return rect.x; }

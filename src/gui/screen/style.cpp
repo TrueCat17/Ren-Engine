@@ -28,11 +28,26 @@ void Style::destroyAll() {
 	styles.clear();
 }
 
+
 String Style::getProp(const String &styleName, const String &propName) {
-	std::lock_guard<std::mutex> guard(GV::pyUtils->pyExecGuard);
+	auto i = styles.find(styleName);
+	if (i != styles.end()) {
+		Style *style = i->second;
+
+		auto j = style->props.find(propName);
+		if (j != style->props.end()) {
+			const std::pair<bool, String> &p = j->second;
+			if (p.first) {
+				return p.second;
+			}
+		}
+	}
+
+
+	std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
 
 	try {
-		py::object styleObj = GV::pyUtils->pythonGlobal["style"];
+		py::object styleObj = GV::pyUtils->pythonGlobal["style"];;
 
 		if (styles.find(styleName) == styles.end()) {
 			py::object styleThereIs = styleObj[styleName.c_str()];

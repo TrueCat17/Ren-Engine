@@ -35,6 +35,9 @@ std::map<const SDL_Texture*, SDL_Surface*> Utils::textureSurfaces;
 std::mutex Utils::surfaceGuard;
 std::vector<std::pair<String, SDL_Surface*>> Utils::surfaces;
 
+double* Utils::sins = new double[360];
+double* Utils::coss = new double[360];
+
 std::chrono::system_clock::time_point Utils::startTime = std::chrono::system_clock::now();
 
 
@@ -66,6 +69,11 @@ std::vector<String> Utils::getFileNames(const String &path) {
 void Utils::init() {
 	ROOT = "../resources/";
 	FONTS = ROOT + "fonts/";
+
+	for (size_t i = 0; i < 360; ++i) {
+		sins[i] = std::sin(i * M_PI / 180);
+		coss[i] = std::cos(i * M_PI / 180);
+	}
 }
 
 bool Utils::isFirstByte(char c) {
@@ -92,7 +100,7 @@ void Utils::sleep(int ms, bool checkInGame) {
 	}
 }
 
-void Utils::outMsg(std::string msg, const std::string& err) {
+void Utils::outMsg(std::string msg, const std::string& err) { return;
 	static std::map<std::string, bool> errors;
 
 	if (err.size()) {

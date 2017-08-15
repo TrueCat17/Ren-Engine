@@ -12,8 +12,7 @@ public:
 	Group();
 	virtual ~Group();
 
-	virtual void updateGlobalX();
-	virtual void updateGlobalY();
+	virtual void updateGlobalPos();
 	virtual void updateGlobalAlpha();
 
 	DisplayObject* getChildAt(size_t index) const;

@@ -1,6 +1,9 @@
 #include "btn_rect.h"
 
+#include <iostream>
+
 #include "utils/mouse.h"
+#include "utils/utils.h"
 
 std::vector<BtnRect*> BtnRect::btnRects;
 
@@ -47,10 +50,19 @@ void BtnRect::checkMouseCursor() {
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
 
-		if (mouseX > owner->getGlobalX() && mouseX < owner->getGlobalX() + owner->getWidth() &&
-			mouseY > owner->getGlobalY() && mouseY < owner->getGlobalY() + owner->getHeight()
+		int x = mouseX - owner->getGlobalX() - owner->xAnchor;
+		int y = mouseY - owner->getGlobalY() - owner->yAnchor;
+
+		double sinA = Utils::getSin(-owner->getGlobalRotate());
+		double cosA = Utils::getCos(-owner->getGlobalRotate());
+
+		int rotX = x * cosA - y * sinA + owner->xAnchor;
+		int rotY = x * sinA + y * cosA + owner->yAnchor;
+
+		if (rotX > 0 && rotX < owner->getWidth() &&
+			rotY > 0 && rotY < owner->getHeight()
 		) {
-			if (!owner->checkAlpha(mouseX - owner->getGlobalX(), mouseY - owner->getGlobalY())) continue;
+			if (!owner->checkAlpha(rotX, rotY)) continue;
 
 			btnRect->mouseOvered = true;
 			if (btnRect->buttonMode) {
@@ -73,10 +85,19 @@ bool BtnRect::checkMouseClick() {
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
 
-		if (mouseX > owner->getGlobalX() && mouseX < owner->getGlobalX() + owner->getWidth() &&
-			mouseY > owner->getGlobalY() && mouseY < owner->getGlobalY() + owner->getHeight()
+		int x = mouseX - owner->getGlobalX() - owner->xAnchor;
+		int y = mouseY - owner->getGlobalY() - owner->yAnchor;
+
+		double sinA = Utils::getSin(-owner->getGlobalRotate());
+		double cosA = Utils::getCos(-owner->getGlobalRotate());
+
+		int rotX = x * cosA - y * sinA + owner->xAnchor;
+		int rotY = x * sinA + y * cosA + owner->yAnchor;
+
+		if (rotX > 0 && rotX < owner->getWidth() &&
+			rotY > 0 && rotY < owner->getHeight()
 		) {
-			if (!owner->checkAlpha(mouseX - owner->getGlobalX(), mouseY - owner->getGlobalY())) continue;
+			if (!owner->checkAlpha(rotX, rotY)) continue;
 
 			btnRect->mouseDown = true;
 			return true;

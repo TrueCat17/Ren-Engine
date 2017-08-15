@@ -10,9 +10,10 @@ private:
 public:
 	ScreenPython(Node *node, bool isBlock);
 	virtual void calculateProps();
-	virtual void updateSize();
-	virtual void updatePos();
-	virtual void draw() const;
+
+	virtual void updateSize() {}
+	virtual void updatePos() {}
+	virtual void draw() const {}
 };
 
 #endif // SCREENPYTHON_H

@@ -7,23 +7,13 @@ Group::Group() {
 
 }
 
-void Group::updateGlobalX() {
-	DisplayObject::updateGlobalX();
+void Group::updateGlobalPos() {
+	DisplayObject::updateGlobalPos();
 
 	for (size_t i = 0; i < children.size(); ++i) {
 		DisplayObject *child = children[i];
 		if (child->enable) {
-			child->updateGlobalX();
-		}
-	}
-}
-void Group::updateGlobalY() {
-	DisplayObject::updateGlobalY();
-
-	for (size_t i = 0; i < children.size(); ++i) {
-		DisplayObject *child = children[i];
-		if (child->enable) {
-			child->updateGlobalY();
+			child->updateGlobalPos();
 		}
 	}
 }
@@ -77,8 +67,7 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 	}
 
 	child->parent = this;
-	child->updateGlobalX();
-	child->updateGlobalY();
+	child->updateGlobalPos();
 
 	if (children.size() < index) {
 		children.insert(children.begin() + index, child);

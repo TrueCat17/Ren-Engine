@@ -47,7 +47,7 @@ void ScreenContainer::calculateProps() {
 
 	ScreenChild::calculateProps();
 	if (!isFakeContainer() && (hasVBox || hasHBox)) {
-		String indentStr = propValues["spacing"];
+		const String &indentStr = propValues.at("spacing");
 		indent = indentStr.toInt();
 	}
 }
@@ -262,7 +262,7 @@ void ScreenContainer::addChildrenFromNode() {
 
 			static const std::vector<String> props = String(
 				"has, spacing, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
-				"align, anchor, pos, xysize, crop, alpha, "
+				"align, anchor, pos, xysize, crop, rotate, alpha, "
 				"modal, zorder, ground, hover, action, "
 				"color, font, size, text_align"
 			).split(", ");
@@ -310,6 +310,5 @@ void ScreenContainer::addChildAt(DisplayObject *child, size_t index) {
 	pChildren.insert(to, child);
 
 	child->parent = parent;
-	child->updateGlobalX();
-	child->updateGlobalY();
+	child->updateGlobalPos();
 }

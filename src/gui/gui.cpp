@@ -25,19 +25,19 @@ void GUI::update() {
 			Screen *scr = dynamic_cast<Screen*>(child);
 			if (scr) {
 				try {
-					//int a = Utils::getTimer();
+//					std::cout << scr->name << ":\n";
+//					int a = Utils::getTimer();
 					scr->calculateProps();
-					//int b = Utils::getTimer();
+//					int b = Utils::getTimer();
 					scr->updateSize();
-					//int c = Utils::getTimer();
+//					int c = Utils::getTimer();
 					scr->updatePos();
-					//int d = Utils::getTimer();
-					scr->updateGlobalX();
-					scr->updateGlobalY();
+//					int d = Utils::getTimer();
+					scr->updateGlobalPos();
 					scr->updateGlobalAlpha();
-					//int e = Utils::getTimer();
+//					int e = Utils::getTimer();
 
-					//std::cout << (b-a) << '-' << (c-b) << '-' << (d-c) << '-' << (e-d) << '\n';
+//					std::cout << (b-a) << '-' << (c-b) << '-' << (d-c) << '-' << (e-d) << '\n';
 				}catch (ContinueException) {
 					Utils::outMsg("GUI::update", "continue вне цикла");
 				}catch (BreakException) {

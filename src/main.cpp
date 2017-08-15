@@ -88,10 +88,21 @@ void changeWindowSize() {
 bool init() {
 	Utils::init();
 	Logger::init();
+	Config::init();
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
+	}
+
+	String scaleQuality = Config::get("scale_quality");
+	if (scaleQuality != "0" && scaleQuality != "1" && scaleQuality != "2") {
+		scaleQuality = "0";
+		Utils::outMsg("Config::get",
+					  "Значением параметра scale_quality ожидалось 0, 1 или 2, получено: <" + scaleQuality + ">");
+	}
+	if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
+		Utils::outMsg("SDL_SetHint", "Не удалось настроить сглаживание");
 	}
 
 	if (TTF_Init()) {
@@ -104,7 +115,6 @@ bool init() {
 		return true;
 	}
 
-	Config::init();
 	Mouse::init();
 	Music::init();
 	SyntaxChecker::init();
@@ -127,7 +137,7 @@ bool init() {
 	}
 	changeWindowSize();
 
-	const String iconPath = Config::get("window_icon");
+	String iconPath = Config::get("window_icon");
 	SDL_Surface *icon = nullptr;
 	if (iconPath && iconPath != "None") {
 		icon = Utils::getSurface(Utils::ROOT + iconPath);
@@ -319,7 +329,7 @@ int main() {
 	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime, true);
 
 	Game::startMod("main_menu");
-//	Game::startMod("test_civ");
+//	Game::startMod("snow");
 
 	loop();
 	destroy();

@@ -20,19 +20,33 @@ DisplayObject::DisplayObject() {
 	objects.push_back(this);
 }
 
-void DisplayObject::updateGlobalX() {
+void DisplayObject::updateGlobalPos() {
+	int x, y;
+	int parentXAnchor, parentYAnchor;
+	int parentGlobalX, parentGlobalY, parentGlobalRotate;
 	if (parent) {
-		globalX = parent->getGlobalX() + rect.x;
+		parentXAnchor = parent->xAnchor;
+		parentYAnchor = parent->yAnchor;
+		parentGlobalX = parent->getGlobalX();
+		parentGlobalY = parent->getGlobalY();
+		parentGlobalRotate = parent->getGlobalRotate();
 	}else {
-		globalX = rect.x;
+		parentXAnchor = parentYAnchor = 0;
+		parentGlobalX = parentGlobalY = parentGlobalRotate = 0;
 	}
-}
-void DisplayObject::updateGlobalY() {
-	if (parent) {
-		globalY = parent->getGlobalY() + rect.y;
-	}else {
-		globalY = rect.y;
-	}
+
+	x = rect.x + xAnchor - parentXAnchor;
+	y = rect.y + yAnchor - parentYAnchor;
+
+	double sinA = Utils::getSin(parentGlobalRotate);
+	double cosA = Utils::getCos(parentGlobalRotate);
+
+	int rotX = std::round(x * cosA - y * sinA);
+	int rotY = std::round(x * sinA + y * cosA);
+
+	globalX = parentGlobalX + parentXAnchor + rotX - xAnchor;
+	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
+	globalRotate = parentGlobalRotate + rotate;
 }
 void DisplayObject::updateGlobalAlpha() {
 	if (parent) {
@@ -75,8 +89,16 @@ void DisplayObject::draw() const {
 		if (SDL_SetTextureAlphaMod(texture, intAlpha)) {
 			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 		}
-		if (SDL_RenderCopy(GV::mainRenderer, texture, &crop, &t)) {
-			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+
+		if (!globalRotate) {
+			if (SDL_RenderCopy(GV::mainRenderer, texture, &crop, &t)) {
+				Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+			}
+		}else {
+			SDL_Point center = { int(xAnchor), int(yAnchor) };
+			if (SDL_RenderCopyEx(GV::mainRenderer, texture, &crop, &t, globalRotate, &center, SDL_FLIP_NONE)) {
+				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+			}
 		}
 	}
 }

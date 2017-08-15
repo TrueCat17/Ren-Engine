@@ -71,6 +71,7 @@ void Config::setDefault() {
 	set("mouse_usual", "None");
 	set("mouse_btn", "None");
 
+	set("scale_quality", "1");
 	set("software_renderer", "False");
 	set("max_fps", "30");
 

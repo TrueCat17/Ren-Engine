@@ -14,7 +14,7 @@ public:
 	ScreenImage(Node *node);
 
 	virtual void calculateProps();
-	virtual void afterPriorityUpdate();
+	virtual void updateTexture();
 	virtual void updateSize();
 };
 

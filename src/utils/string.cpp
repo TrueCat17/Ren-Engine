@@ -5,7 +5,6 @@
 
 #include "utils/utils.h"
 
-std::map<String, double> String::doubleConvertCache;
 
 String::String(int i, int base) {
 	std::stringstream ss;
@@ -75,8 +74,11 @@ int String::toInt(int base) const {
 double String::toDouble() const {
 	if (empty()) return 0;
 
-	auto i = doubleConvertCache.find(*this);
-	if (i != doubleConvertCache.end()) {
+
+	static std::map<String, double> cache;
+
+	auto i = cache.find(*this);
+	if (i != cache.end()) {
 		return i->second;
 	}
 
@@ -86,8 +88,8 @@ double String::toDouble() const {
 	double res;
 	ss >> res;
 
-	if (doubleConvertCache.size() < 100000) {
-		doubleConvertCache[*this] = res;
+	if (cache.size() < 100000) {
+		cache[*this] = res;
 	}
 	return res;
 }
@@ -107,20 +109,24 @@ bool String::isNumber() const {
 		if (start == size()) return false;
 	}
 
+	bool res = true;
+
 	bool wasDot = false;
 	int wasE = -1;
 	for (size_t i = start; i < size(); ++i) {
 		char c = at(i);
 		if (c == '.') {
 			if (wasDot) {
-				return false;
+				res = false;
+				break;
 			}
 			wasDot = true;
 			continue;
 		}
 		if (c == 'e') {
 			if (wasE != -1) {
-				return false;
+				res = false;
+				break;
 			}
 			wasE = i;
 			continue;
@@ -129,14 +135,17 @@ bool String::isNumber() const {
 			if (wasE != -1 && wasE == int(i) - 1) {
 				continue;
 			}
-			return false;
+			res = false;
+			break;
 		}
 
 		if (c < '0' || c > '9') {
-			return false;
+			res = false;
+			break;
 		}
 	}
-	return true;
+
+	return res;
 }
 bool String::isSimpleString() const {
 	if (size() < 2) return false;

@@ -1,5 +1,7 @@
 #include "screen_hotspot.h"
 
+#include <iostream>
+
 #include "screen_imagemap.h"
 
 #include "gv.h"
@@ -84,19 +86,22 @@ void ScreenHotspot::calculateProps() {
 		btnRect.onClick();
 	}
 }
-void ScreenHotspot::updateSize() {
-	return;
-}
-void ScreenHotspot::updatePos() {
-	return;
-}
 
 void ScreenHotspot::draw() const {
 	if (!enable || !texture) return;
 
 	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
 	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
-	if (SDL_RenderCopy(GV::mainRenderer, texture, &from, &to)) {
-		Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+
+
+	if (!globalRotate) {
+		if (SDL_RenderCopy(GV::mainRenderer, texture, &from, &to)) {
+			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+		}
+	}else {
+		SDL_Point center = { int(xAnchor), int(yAnchor) };
+		if (SDL_RenderCopyEx(GV::mainRenderer, texture, &from, &to, globalRotate, &center, SDL_FLIP_NONE)) {
+			Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+		}
 	}
 }

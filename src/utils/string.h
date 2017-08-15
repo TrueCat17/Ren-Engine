@@ -6,9 +6,6 @@
 #include <map>
 
 class String: public std::string {
-private:
-	static std::map<String, double> doubleConvertCache;
-
 public:
 	String() {}
 	String(char c) { char a[2] = {c, 0}; *this = a; }

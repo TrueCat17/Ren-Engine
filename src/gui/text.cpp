@@ -1,6 +1,9 @@
 #include "text.h"
 
 #include "gv.h"
+
+#include "group.h"
+
 #include "utils/utils.h"
 
 
@@ -463,6 +466,21 @@ void Text::setAlign(String hAlign, String vAlign) {
 			rects[i].y = i * charHeight + indentY;
 		}
 	}
+
+
+	double sinA = Utils::getSin(getGlobalRotate());
+	double cosA = Utils::getCos(getGlobalRotate());
+
+	for (size_t i = 0; i < rects.size(); ++i) {
+		int x = rects[i].x;
+		int y = rects[i].y;
+
+		int rotX = std::round(x * cosA - y * sinA);
+		int rotY = std::round(x * sinA + y * cosA);
+
+		rects[i].x = rotX;
+		rects[i].y = rotY;
+	}
 }
 
 bool Text::checkAlpha(int x, int y) const {
@@ -490,8 +508,15 @@ void Text::draw() const {
 		t.x += globalX;
 		t.y += globalY;
 
-		if (SDL_RenderCopy(GV::mainRenderer, texture, nullptr, &t)) {
-			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+		if (!globalRotate) {
+			if (SDL_RenderCopy(GV::mainRenderer, texture, nullptr, &t)) {
+				Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+			}
+		}else {
+			SDL_Point center = { int(xAnchor), int(yAnchor) };
+			if (SDL_RenderCopyEx(GV::mainRenderer, texture, nullptr, &t, globalRotate, &center, SDL_FLIP_NONE)) {
+				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+			}
 		}
 	}
 }

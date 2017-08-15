@@ -12,8 +12,8 @@ ScreenTextButton::ScreenTextButton(Node* node): ScreenText(node) {
 	};
 	btnRect.init(this, onClick);
 
-	setProp("ground", node->getPropCode("ground"), true);
-	setProp("hover", node->getPropCode("hover"), true);
+	setProp("ground", node->getPropCode("ground"));
+	setProp("hover", node->getPropCode("hover"));
 }
 
 void ScreenTextButton::calculateProps() {
@@ -25,9 +25,9 @@ void ScreenTextButton::calculateProps() {
 		}
 	}
 }
-void ScreenTextButton::afterPriorityUpdate() {
-	String newGround = propValues["ground"];
-	String newHover = propValues["hover"];
+void ScreenTextButton::updateTexture() {
+	const String &newGround = propValues.at("ground");
+	const String &newHover = propValues.at("hover");
 
 	if (newHover) {
 		hover = newHover;
@@ -37,7 +37,7 @@ void ScreenTextButton::afterPriorityUpdate() {
 	}
 	ground = newGround;
 
-	String path = !btnRect.mouseOvered ? ground : hover;
+	const String &path = !btnRect.mouseOvered ? ground : hover;
 	texture = Utils::getTexture(path);
 }
 

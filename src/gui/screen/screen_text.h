@@ -31,6 +31,8 @@ public:
 	ScreenText(Node *node);
 	virtual void calculateProps();
 	virtual void updateSize();
+
+	virtual void updateGlobalPos();
 };
 
 #endif // SCREENTEXT_H
