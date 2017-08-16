@@ -475,8 +475,8 @@ void Text::setAlign(String hAlign, String vAlign) {
 		int x = rects[i].x;
 		int y = rects[i].y;
 
-		int rotX = std::round(x * cosA - y * sinA);
-		int rotY = std::round(x * sinA + y * cosA);
+		int rotX = x * cosA - y * sinA;
+		int rotY = x * sinA + y * cosA;
 
 		rects[i].x = rotX;
 		rects[i].y = rotY;

@@ -77,6 +77,9 @@ PyUtils::PyUtils() {
 	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
 	pythonGlobal["get_args"] = py::make_function(Game::getArgs);
 
+	pythonGlobal["_sin"] = py::make_function(Utils::getSin);
+	pythonGlobal["_cos"] = py::make_function(Utils::getCos);
+
 	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
 	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
 

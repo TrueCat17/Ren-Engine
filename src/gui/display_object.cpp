@@ -41,8 +41,8 @@ void DisplayObject::updateGlobalPos() {
 	double sinA = Utils::getSin(parentGlobalRotate);
 	double cosA = Utils::getCos(parentGlobalRotate);
 
-	int rotX = std::round(x * cosA - y * sinA);
-	int rotY = std::round(x * sinA + y * cosA);
+	int rotX = x * cosA - y * sinA;
+	int rotY = x * sinA + y * cosA;
 
 	globalX = parentGlobalX + parentXAnchor + rotX - xAnchor;
 	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
