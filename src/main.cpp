@@ -34,43 +34,66 @@ SDL_Renderer *mainRenderer;
 int startWindowWidth = 0;
 int startWindowHeight = 0;
 
-void changeWindowSize() {
-	int w, h;
-	SDL_GetWindowSize(GV::mainWindow, &w, &h);
+void changeWindowSize(bool maximized) {
+	int startW, startH;
+	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
 
-	int dX = w - startWindowWidth;
-	int dY = h - startWindowHeight;
+	int dX = startW - startWindowWidth;
+	int dY = startH - startWindowHeight;
 	if (dX || dY) {
-		SDL_Rect usableBounds;
-		SDL_GetDisplayUsableBounds(0, &usableBounds);
-
-		int wTop, wLeft, wBottom, wRight;
-		SDL_GetWindowBordersSize(mainWindow, &wTop, &wLeft, &wBottom, &wRight);
-
-		usableBounds.w -= wLeft + wRight;
-		usableBounds.h -= wTop + wBottom;
+		int w = startW;
+		int h = startH;
 
 
-		if (abs(dX) >= abs(dY)) {
-			h = w * 9 / 16;
+		if (maximized) {//Можно только уменьшать, увеличивать нельзя
+			if (double(w) / h > 16.0 / 9) {
+				w = h * 16 / 9;
+			}else {
+				h = w * 9 / 16;
+			}
 		}else {
-			w = h * 16 / 9;
+			SDL_Rect usableBounds;
+			SDL_GetDisplayUsableBounds(0, &usableBounds);
+
+			int wTop, wLeft, wBottom, wRight;
+			SDL_GetWindowBordersSize(mainWindow, &wTop, &wLeft, &wBottom, &wRight);
+
+			usableBounds.w -= wLeft + wRight;
+			usableBounds.h -= wTop + wBottom;
+
+			if (abs(dX) >= abs(dY)) {
+				h = w * 9 / 16;
+			}else {
+				w = h * 16 / 9;
+			}
+
+			if (w < 640 || h < 360) {
+				w = 640;
+				h = 360;
+			}
+			if (w > usableBounds.w) {
+				w = usableBounds.w;
+				h = w * 9 / 16;
+			}
+			if (h > usableBounds.h) {
+				h = usableBounds.h;
+				w = h * 16 / 9;
+			}
 		}
 
-		if (w < 640 || h < 360) {
-			w = 640;
-			h = 360;
-		}
-		if (w > usableBounds.w) {
-			w = usableBounds.w;
-			h = w * 9 / 16;
-		}
-		if (h > usableBounds.h) {
-			h = usableBounds.h;
-			w = h * 16 / 9;
-		}
+		if (GV::screens) {
+			int x, y;
+			if (maximized) {
+				x = (startW - w) / 2;
+				y = (startH - h) / 2;
+			}else {
+				x = y = 0;
+			}
+			SDL_SetWindowSize(GV::mainWindow, x + w, y + h);
 
-		SDL_SetWindowSize(GV::mainWindow, w, h);
+			GV::screens->setPos(x, y);
+			GV::screens->updateGlobalPos();
+		}
 
 		GV::width = w;
 		GV::height = h;
@@ -134,7 +157,7 @@ bool init() {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;
 	}
-	changeWindowSize();
+	changeWindowSize(false);
 
 	String iconPath = Config::get("window_icon");
 	SDL_Surface *icon = nullptr;
@@ -174,6 +197,7 @@ void render() {
 }
 
 void loop() {
+	bool maximazed = false;
 	bool mouseOutPrevDown = false;
 
 	while (!GV::exit) {
@@ -189,6 +213,7 @@ void loop() {
 		bool mouseWasDown = false;
 		bool mouseWasUp = false;
 		bool mouseOutDown = SDL_GetGlobalMouseState(0, 0);
+
 
 		Mouse::update();
 		BtnRect::checkMouseCursor();
@@ -214,6 +239,13 @@ void loop() {
 					Config::set("window_x", x);
 					Config::set("window_y", y);
 				}
+			}else
+
+			if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
+				maximazed = true;
+			}else
+			if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
+				maximazed = false;
 			}else
 
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
@@ -260,7 +292,7 @@ void loop() {
 			if (resizeWithoutMouseDown ||
 				(mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight)
 			) {
-				changeWindowSize();
+				changeWindowSize(maximazed);
 			}
 			if (mouseOutDown && !mouseOutPrevDown) {
 				SDL_GetWindowSize(GV::mainWindow, &startWindowWidth, &startWindowHeight);

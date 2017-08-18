@@ -26,36 +26,38 @@ String Config::get(const String &name) {
 	Utils::outMsg("Config::get", "Попытка получить значение несуществующего параметра <" + name + ">");
 	return "";
 }
-
+#include <iostream>
 void Config::set(const String &name, const String &value, const String &comment) {
 	bool assigned = false;
 	for (size_t i = 0; i < params.size(); ++i) {
 		Param &param = params[i];
 		if (param.name == name) {
-			if (param.value == value && param.comment == comment) {
-				return;
+			if (param.value != value) {
+				param.value = value;
+				assigned = true;
 			}
 
-			param.value = value;
-			if (comment) {
+			if (comment && param.comment != comment) {
 				param.comment = comment;
+				assigned = true;
 			}
 
-			assigned = true;
+			if (!assigned) return;
+
 			break;
 		}
 	}
 
-	if (!assigned) {
+	if (assigned) {
+		if (!initing) {
+			changed = true;
+		}
+	}else {
 		if (initing) {
 			params.push_back({name, value, comment});
 		}else {
 			Utils::outMsg("Config::set", "Попытка установить значение несуществующего параметра <" + name + ">");
 		}
-	}
-
-	if (!initing) {
-		changed = true;
 	}
 }
 
