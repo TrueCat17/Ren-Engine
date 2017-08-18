@@ -2,7 +2,6 @@
 
 #include "media/py_utils.h"
 #include "parser/node.h"
-#include "utils/utils.h"
 
 ScreenImagemap::ScreenImagemap(Node *node):
 	ScreenContainer(node, this)

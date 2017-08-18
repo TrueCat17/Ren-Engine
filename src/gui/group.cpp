@@ -1,7 +1,5 @@
 #include "group.h"
 
-#include "utils/utils.h"
-
 
 Group::Group() {
 
@@ -128,32 +126,6 @@ void Group::draw() const {
 		const DisplayObject *child = children[i];
 		child->draw();
 	}
-}
-
-SDL_Texture* Group::getTextureIfOne(size_t &count) const {
-	SDL_Texture *res = nullptr;
-	for (DisplayObject* child : children) {
-		size_t t = 0;
-		SDL_Texture *childTexture = child->getTextureIfOne(t);
-
-		if ((t != 0 && t != 1) || (childTexture && res)) {
-			count = size_t(-1);
-			return nullptr;
-		}
-		res = childTexture;
-	}
-	if (res && texture) {
-		count = size_t(-1);
-		return nullptr;
-	}
-
-	if (res) {
-		count = 1;
-	}else{
-		res = texture;
-		count = res ? 1 : 0;
-	}
-	return res;
 }
 
 Group::~Group() {

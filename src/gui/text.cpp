@@ -4,8 +4,6 @@
 
 #include "group.h"
 
-#include "utils/utils.h"
-
 
 const char *Text::defaultFontName = "Arial";
 

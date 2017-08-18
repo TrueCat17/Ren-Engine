@@ -17,23 +17,23 @@ int Mouse::y = 0;
 
 void Mouse::init() {
 	const String usualPath = Config::get("mouse_usual");
-	SDL_Surface *usual = nullptr;
+	std::shared_ptr<SDL_Surface> usual = nullptr;
 	if (usualPath && usualPath != "None") {
 		usual = Utils::getSurface(Utils::ROOT + usualPath);
 	}
 	if (usual) {
-		usualModeCursor = SDL_CreateColorCursor(usual, 0, 0);
+		usualModeCursor = SDL_CreateColorCursor(usual.get(), 0, 0);
 	}else {
 		usualModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 	}
 
 	const String btnPath = Config::get("mouse_btn");
-	SDL_Surface *btn = nullptr;
+	std::shared_ptr<SDL_Surface> btn = nullptr;
 	if (btnPath && btnPath != "None") {
 		btn = Utils::getSurface(Utils::ROOT + btnPath);
 	}
 	if (btn) {
-		btnModeCursor = SDL_CreateColorCursor(btn, 0, 0);
+		btnModeCursor = SDL_CreateColorCursor(btn.get(), 0, 0);
 	}else {
 		btnModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 	}

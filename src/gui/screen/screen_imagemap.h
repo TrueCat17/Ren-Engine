@@ -2,7 +2,7 @@
 #define SCREENIMAGEMAP_H
 
 #include "screen_container.h"
-#include "utils/string.h"
+
 
 class ScreenImagemap: public ScreenContainer {
 private:
@@ -10,7 +10,7 @@ private:
 	String hoverPath;
 
 public:
-	SDL_Texture *hover = nullptr;
+	TexturePtr hover = nullptr;
 
 	ScreenImagemap(Node *node);
 

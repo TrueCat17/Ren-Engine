@@ -10,8 +10,6 @@
 
 #include "gui/screen/style.h"
 
-#include "utils/utils.h"
-
 
 void GUI::update() {
 	if (GV::screens) {

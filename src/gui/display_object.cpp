@@ -5,7 +5,6 @@
 #include "gv.h"
 
 #include "group.h"
-#include "utils/utils.h"
 
 
 std::vector<DisplayObject*> DisplayObject::objects;
@@ -86,29 +85,21 @@ void DisplayObject::draw() const {
 		t.y = globalY;
 
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
-		if (SDL_SetTextureAlphaMod(texture, intAlpha)) {
+		if (SDL_SetTextureAlphaMod(texture.get(), intAlpha)) {
 			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 		}
 
 		if (!globalRotate) {
-			if (SDL_RenderCopy(GV::mainRenderer, texture, &crop, &t)) {
+			if (SDL_RenderCopy(GV::mainRenderer, texture.get(), &crop, &t)) {
 				Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 			}
 		}else {
 			SDL_Point center = { int(xAnchor), int(yAnchor) };
-			if (SDL_RenderCopyEx(GV::mainRenderer, texture, &crop, &t, globalRotate, &center, SDL_FLIP_NONE)) {
+			if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(), &crop, &t, globalRotate, &center, SDL_FLIP_NONE)) {
 				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
 			}
 		}
 	}
-}
-bool DisplayObject::useTexture(SDL_Texture *texture) {
-	for (const DisplayObject *obj : objects) {
-		if (obj->enable && obj->texture == texture) {
-			return true;
-		}
-	}
-	return false;
 }
 
 DisplayObject::~DisplayObject() {
@@ -124,11 +115,6 @@ void DisplayObject::removeFromParent() {
 	if (parent) {
 		parent->removeChild(this);
 	}
-}
-
-SDL_Texture* DisplayObject::getTextureIfOne(size_t &count) const {
-	count = 1;
-	return texture;
 }
 
 void DisplayObject::destroyAll() {

@@ -16,7 +16,6 @@
 
 #include "utils/game.h"
 #include "utils/mouse.h"
-#include "utils/utils.h"
 
 
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;

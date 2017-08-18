@@ -38,7 +38,9 @@ class Node {
 private:
 	static std::vector<Node*> nodes;
 
-	static void preloadImages(Node *node, int start, int count);
+	static int preloadImages(const Node *parent, int start, int count);
+	static void preloadImageAt(const std::vector<String> &children);
+
 	static void jump(const String &label, bool isCall);
 
 
@@ -80,6 +82,7 @@ public:
 	void execute();
 
 	py::list getPyList() const;
+	std::vector<String> getImageChildren() const;
 
 	void initProp(const String &name, const String &value, size_t numLine);
 	NodeProp getPropCode(const String &name, const String &commonName = "", const String &indexStr = "") const;

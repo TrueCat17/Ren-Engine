@@ -29,11 +29,11 @@ std::map<String, TTF_Font*> Utils::fonts;
 std::map<String, String> Utils::images;
 std::map<String, Node*> Utils::declAts;
 
-std::vector<std::pair<String, SDL_Texture*>> Utils::textures;
-std::map<const SDL_Texture*, SDL_Surface*> Utils::textureSurfaces;
+std::vector<std::pair<String, TexturePtr>> Utils::textures;
+std::map<TexturePtr, SurfacePtr> Utils::textureSurfaces;
 
 std::mutex Utils::surfaceGuard;
-std::vector<std::pair<String, SDL_Surface*>> Utils::surfaces;
+std::vector<std::pair<String, SurfacePtr>> Utils::surfaces;
 
 double* Utils::sins = new double[360];
 double* Utils::coss = new double[360];
@@ -100,7 +100,7 @@ void Utils::sleep(int ms, bool checkInGame) {
 	}
 }
 
-void Utils::outMsg(std::string msg, const std::string& err) { return;
+void Utils::outMsg(std::string msg, const std::string& err) {
 	static std::map<std::string, bool> errors;
 
 	if (err.size()) {
@@ -171,15 +171,17 @@ size_t Utils::getEndArg(const String& args, size_t start) {
 		if (c == '\'' && !q2) {
 			q1 = !q1;
 		}else
-			if (c == '"' && !q1) {
-				q2 = !q2;
-			}else
-				if (!q1 && !q2) {
-					if (c == '(') ++b1;
-					else if (c == ')') --b1;
-					else if (c == '[') ++b2;
-					else if (c == ']') --b2;
-				}
+
+		if (c == '"' && !q1) {
+			q2 = !q2;
+		}else
+
+		if (!q1 && !q2) {
+			if (c == '(') ++b1;
+			else if (c == ')') --b1;
+			else if (c == '[') ++b2;
+			else if (c == ']') --b2;
+		}
 	}
 	if (i == args.size() && (b1 || b2 || q1 || q2)) {
 		String error = "Не закрыта " +
@@ -198,8 +200,9 @@ String Utils::clear(String s) {
 
 	if (start == size_t(-1)) start = 0;
 	if (!end) end = s.size();
-	s = s.substr(start, end - start);
-
+	if (start || end != s.size()) {
+		s = s.substr(start, end - start);
+	}
 
 	size_t n = 0;
 	while (n < s.size() && s[n] == '(') {
@@ -210,9 +213,12 @@ String Utils::clear(String s) {
 			return nullptr;
 		}
 	}
-	start = n;
-	end = s.size() - n;
-	s = s.substr(start, end - start);
+
+	if (n) {
+		start = n;
+		end = s.size() - n;
+		s = s.substr(start, end - start);
+	}
 
 	return s;
 }
@@ -223,7 +229,9 @@ std::vector<String> Utils::getArgs(String args) {
 
 	if (start == size_t(-1)) start = 0;
 	if (!end) end = args.size();
-	args = args.substr(start, end - start);
+	if (start || end != args.size()) {
+		args = args.substr(start, end - start);
+	}
 
 	std::vector<String> res;
 
@@ -242,16 +250,16 @@ std::vector<String> Utils::getArgs(String args) {
 }
 
 
-size_t Utils::getTextureWidth(SDL_Texture *texture) {
-	const SDL_Surface *surface = textureSurfaces[texture];
+size_t Utils::getTextureWidth(const TexturePtr &texture) {
+	const SurfacePtr &surface = textureSurfaces[texture];
 	if (surface) {
 		return surface->w;
 	}
 	Utils::outMsg("Utils::getTextureWidth", "surface == nullptr");
 	return 0;
 }
-size_t Utils::getTextureHeight(SDL_Texture *texture) {
-	const SDL_Surface *surface = textureSurfaces[texture];
+size_t Utils::getTextureHeight(const TexturePtr &texture) {
+	const SurfacePtr &surface = textureSurfaces[texture];
 	if (surface) {
 		return surface->h;
 	}
@@ -260,7 +268,7 @@ size_t Utils::getTextureHeight(SDL_Texture *texture) {
 }
 
 
-void Utils::trimTexturesCache(const SDL_Surface *last) {
+void Utils::trimTexturesCache(const SurfacePtr &last) {
 	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
 	 * пока кэш не уменьшится до нужных размеров
 	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
@@ -271,75 +279,76 @@ void Utils::trimTexturesCache(const SDL_Surface *last) {
 	const size_t MAX_SIZE = Config::get("max_size_textures_cache").toInt() * (1 << 20);//в МБ
 
 	size_t cacheSize = last->w * last->h * 4;
-	for (auto &p : textures) {
-		const SDL_Texture *texture = p.second;
-		const SDL_Surface *surface = textureSurfaces[texture];
+	for (const std::pair<String, TexturePtr> &p : textures) {
+		const TexturePtr &texture = p.second;
+		const SurfacePtr &surface = textureSurfaces[texture];
 		cacheSize += surface->w * surface->h * 4;
 	}
 
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		while (i < textures.size() && DisplayObject::useTexture(textures[i].second)) {
+		while (i < textures.size() && textures[i].second.use_count() > 2) {//2: key in textureSurfaces + value in textures
 			++i;
 		}
 		if (i == textures.size()) break;
 
-		SDL_Texture *texture = textures[i].second;
-		const SDL_Surface *surface = textureSurfaces[texture];
+		const TexturePtr &texture = textures[i].second;
+		const SurfacePtr &surface = textureSurfaces[texture];
 		cacheSize -= surface->w * surface->h * 4;
-
-		SDL_DestroyTexture(texture);
 
 		textureSurfaces.erase(textureSurfaces.find(texture));
 		textures.erase(textures.begin() + i, textures.begin() + i + 1);
 	}
 }
 
-SDL_Texture* Utils::getTexture(const String &path) {
+TexturePtr Utils::getTexture(const String &path) {
 	if (!path) return nullptr;
 
 	for (size_t i = textures.size() - 1; i != size_t(-1); --i) {
-		std::pair<String, SDL_Texture*> t = textures[i];
-		if (t.first == path) {
+		if (textures[i].first == path) {
 			if (i < textures.size() - 10) {
+				std::pair<String, TexturePtr> t = textures[i];
+
 				textures.erase(textures.begin() + i, textures.begin() + i + 1);
 				textures.push_back(t);
+
+				i = textures.size() - 1;
 			}
-			return t.second;
+			return textures[i].second;
 		}
 	}
 
-	SDL_Surface *surface = Image::getImage(path);
+	SurfacePtr surface = Image::getImage(path);
 	if (surface) {
-		SDL_Texture *texture;
+		TexturePtr texture;
 		{
 			std::lock_guard<std::mutex> g(GV::renderGuard);
-			texture = SDL_CreateTextureFromSurface(GV::mainRenderer, surface);
+			texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
 		}
 
 		if (texture) {
 			textureSurfaces[texture] = surface;
 
 			trimTexturesCache(surface);
-			textures.push_back(std::pair<String, SDL_Texture*>(path, texture));
+			textures.push_back(std::make_pair(path, texture));
 			return texture;
 		}
 
 		outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
 	}else {
-		outMsg("IMG_Load", IMG_GetError());
+		outMsg("Utils::getTexture", "Не удалось обработать <" + path + ">");
 	}
 
 	return nullptr;
 }
 
-void Utils::trimSurfacesCache(const SDL_Surface* last) {
+void Utils::trimSurfacesCache(const SurfacePtr &last) {
 	std::lock_guard<std::mutex> g(surfaceGuard);
 
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
-	auto usedSomeTexture = [&](const SDL_Surface *s) -> bool {
-		for (auto i : textureSurfaces) {
+	auto usedSomeTexture = [&](SurfacePtr s) -> bool {
+		for (const std::pair<TexturePtr, SurfacePtr> &i : textureSurfaces) {
 			if (i.second == s) {
 				return true;
 			}
@@ -348,14 +357,14 @@ void Utils::trimSurfacesCache(const SDL_Surface* last) {
 	};
 
 	size_t cacheSize = last->w * last->h * 4;
-	for (auto &p : surfaces) {
-		const SDL_Surface *surface = p.second;
+	for (const std::pair<String, SurfacePtr> &p : surfaces) {
+		const SurfacePtr &surface = p.second;
 		cacheSize += surface->w * surface->h * 4;
 	}
 
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		SDL_Surface *surface = nullptr;
+		SurfacePtr surface = nullptr;
 		while (i < surfaces.size() && usedSomeTexture(surface = surfaces[i].second)) {
 			++i;
 		}
@@ -363,33 +372,36 @@ void Utils::trimSurfacesCache(const SDL_Surface* last) {
 
 		cacheSize -= surface->w * surface->h * 4;
 
-		SDL_FreeSurface(surface);
 		surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 	}
 }
-SDL_Surface* Utils::getThereIsSurfaceOrNull(const String &path) {
+SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
 	std::lock_guard<std::mutex> g(surfaceGuard);
 
 	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
-		std::pair<String, SDL_Surface*> t = surfaces[i];
-		if (t.first == path) {
+		if (surfaces[i].first == path) {
 			if (i < surfaces.size() - 10) {
+				std::pair<String, SurfacePtr> t = surfaces[i];
+
 				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
 				surfaces.push_back(t);
+
+				i = surfaces.size() - 1;
 			}
-			return t.second;
+			return surfaces[i].second;
 		}
 	}
 	return nullptr;
 }
 
-void Utils::setSurface(const String &path, SDL_Surface *surface) {
+void Utils::setSurface(const String &path, const SurfacePtr &surface) {
 	if (!surface) return;
 
 	{
 		std::lock_guard<std::mutex> g(surfaceGuard);
-		for (auto &p : surfaces) {
-			String &pPath = p.first;
+
+		for (std::pair<String, SurfacePtr> &p : surfaces) {
+			const String &pPath = p.first;
 			if (pPath == path) {
 				p.second = surface;
 				return;
@@ -399,27 +411,27 @@ void Utils::setSurface(const String &path, SDL_Surface *surface) {
 
 	{
 		trimSurfacesCache(surface);
+
 		std::lock_guard<std::mutex> g(surfaceGuard);
-		surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
+		surfaces.push_back(std::make_pair(path, surface));
 	}
 }
 
-SDL_Surface* Utils::getSurface(const String &path) {
+SurfacePtr Utils::getSurface(const String &path) {
 	if (!path) return nullptr;
 
-	SDL_Surface *t = getThereIsSurfaceOrNull(path);
+	SurfacePtr t = getThereIsSurfaceOrNull(path);
 	if (t) return t;
 
 	static std::mutex mutex;
 	std::lock_guard<std::mutex> g(mutex);
 
 	t = getThereIsSurfaceOrNull(path);
-	if (t)  {
-		return t;
-	}
+	if (t) return t;
+
 
 	const String fullPath = Utils::ROOT + path;
-	SDL_Surface *surface = IMG_Load(fullPath.c_str());
+	SurfacePtr surface(IMG_Load(fullPath.c_str()), SDL_FreeSurface);
 	if (surface) {
 		/*
 		 * Вот это вот - это костыль
@@ -433,20 +445,20 @@ SDL_Surface* Utils::getSurface(const String &path) {
 		 * Как сделать нормально - я не знаю
 		 */
 		if (surface->format->Amask) {
-			SDL_Surface *newSurface = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+			SurfacePtr newSurface(SDL_ConvertSurfaceFormat(surface.get(), SDL_PIXELFORMAT_RGBA8888, 0), SDL_FreeSurface);
 			if (newSurface) {
-				SDL_FreeSurface(surface);
 				surface = newSurface;
 			}else{
 				Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
 			}
 		}else {
 			SDL_Rect imgRect = { 0, 0, surface->w, surface->h };
-			SDL_Surface *newSurface = SDL_CreateRGBSurface(0, imgRect.w, imgRect.h, 32,
-														   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF);
+			SurfacePtr newSurface(SDL_CreateRGBSurface(0, imgRect.w, imgRect.h, 32,
+													   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF),
+								  SDL_FreeSurface);
 			if (newSurface) {
-				SDL_BlitSurface(surface, &imgRect, newSurface, &imgRect);
-				SDL_FreeSurface(surface);
+				std::lock_guard<std::mutex> g(Image::blitMutex);
+				SDL_BlitSurface(surface.get(), &imgRect, newSurface.get(), &imgRect);
 				surface = newSurface;
 			}else{
 				Utils::outMsg("SDL_CreateRGBSurface", SDL_GetError());
@@ -457,7 +469,7 @@ SDL_Surface* Utils::getSurface(const String &path) {
 
 		{
 			std::lock_guard<std::mutex> g2(surfaceGuard);
-			surfaces.push_back(std::pair<String, SDL_Surface*>(path, surface));
+			surfaces.push_back(std::make_pair(path, surface));
 		}
 
 		return surface;
@@ -467,7 +479,7 @@ SDL_Surface* Utils::getSurface(const String &path) {
 	return nullptr;
 }
 
-Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop) {
+Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {
 		Utils::outMsg("Utils::getPixel", "surface == nullptr");
 		return 0;
@@ -501,8 +513,8 @@ Uint32 Utils::getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const S
 		return 0;       /* shouldn't happen, but avoids warnings */
 	}
 }
-Uint32 Utils::getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop) {
-	const SDL_Surface *surface = textureSurfaces[texture];
+Uint32 Utils::getPixel(const TexturePtr &texture, const SDL_Rect &draw, const SDL_Rect &crop) {
+	const SurfacePtr &surface = textureSurfaces[texture];
 	return getPixel(surface, draw, crop);
 }
 
@@ -562,7 +574,7 @@ bool Utils::imageWasRegistered(const std::string &name) {
 
 std::string Utils::getImageCode(const std::string &name) {
 	if (images.find(name) == images.end()) {
-		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
+		Utils::outMsg("Utils::getImageCode", "Изображение <" + name + "> не зарегистрировано");
 		return "";
 	}
 
@@ -570,12 +582,35 @@ std::string Utils::getImageCode(const std::string &name) {
 }
 py::list Utils::getImageDeclAt(const std::string &name) {
 	if (declAts.find(name) == declAts.end()) {
-		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
+		Utils::outMsg("Utils::getImageDeclAt", "Изображение <" + name + "> не зарегистрировано");
 		return py::list();
 	}
 
-	Node *node = declAts[name];
+	const Node *node = declAts[name];
 	if (!node) return py::list();
 
 	return node->getPyList();
+}
+std::vector<String> Utils::getVectorImageDeclAt(const std::string &name) {
+	if (declAts.find(name) == declAts.end()) {
+		Utils::outMsg("Utils::getVectorImageDeclAt", "Изображение <" + name + "> не зарегистрировано");
+		return std::vector<String>();
+	}
+
+	const Node *node = declAts[name];
+	if (!node) return std::vector<String>();
+
+	return node->getImageChildren();
+}
+
+std::pair<String, size_t> Utils::getImagePlace(const std::string &name) {
+	if (declAts.find(name) == declAts.end()) {
+		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
+		return std::make_pair("NoFile", 0);
+	}
+
+	const Node *node = declAts[name];
+	if (!node) return std::make_pair("NoFile", 0);
+
+	return std::make_pair(node->getFileName(), node->getNumLine());
 }

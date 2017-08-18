@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "utils/string.h"
+#include "utils/utils.h"
 
 class Style {
 private:

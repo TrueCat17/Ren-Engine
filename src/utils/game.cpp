@@ -18,8 +18,6 @@
 
 #include "parser/parser.h"
 
-#include "utils/utils.h"
-
 
 size_t Game::maxFps = 60;
 
@@ -139,7 +137,10 @@ void Game::save() {
 
 				SDL_Surface *save = SDL_CreateRGBSurface(screenshot->flags, to.w, to.h, 32,
 														 screenshot->format->Rmask, screenshot->format->Gmask,screenshot->format->Bmask, screenshot->format->Amask);
-				SDL_BlitScaled(screenshot, &from, save, &to);
+				{
+					std::lock_guard<std::mutex> g(Image::blitMutex);
+					SDL_BlitScaled(screenshot, &from, save, &to);
+				}
 
 				if (save) {
 					const String screenshotPath = fullPath + "screenshot.png";
@@ -226,7 +227,7 @@ int Game::getStageHeight() {
 }
 
 int Game::getTextureWidth(const std::string &image) {
-	SDL_Surface *surface = Image::getImage(image);
+	std::shared_ptr<SDL_Surface> surface = Image::getImage(image);
 	if (surface) {
 		return surface->w;
 	}
@@ -234,7 +235,7 @@ int Game::getTextureWidth(const std::string &image) {
 	return -1;
 }
 int Game::getTextureHeight(const std::string &image) {
-	SDL_Surface *surface = Image::getImage(image);
+	std::shared_ptr<SDL_Surface> surface = Image::getImage(image);
 	if (surface) {
 		return surface->h;
 	}
@@ -243,7 +244,7 @@ int Game::getTextureHeight(const std::string &image) {
 }
 
 Uint32 Game::getPixel(const std::string &image, int x, int y) {
-	const SDL_Surface *surface = Image::getImage(image);
+	std::shared_ptr<SDL_Surface> surface = Image::getImage(image);
 	if (surface) {
 		SDL_Rect draw = {x, y, surface->w, surface->h};
 		SDL_Rect crop = {0, 0, surface->w, surface->h};

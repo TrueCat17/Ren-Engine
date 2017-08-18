@@ -1,9 +1,12 @@
 #ifndef DISPLAY_OBJECT_H
 #define DISPLAY_OBJECT_H
 
+#include <memory>
 #include <vector>
 
 #include <SDL2/SDL.h>
+
+#include "utils/utils.h"
 
 class Group;
 
@@ -21,13 +24,12 @@ protected:
 
 public:
 	static std::vector<DisplayObject*> objects;
-	static bool useTexture(SDL_Texture *texture);
 	static void destroyAll();
 
 
 	bool enable = true;
 
-	SDL_Texture* texture = nullptr;
+	TexturePtr texture = nullptr;
 
 	Group *parent = nullptr;
 
@@ -71,8 +73,6 @@ public:
 
 	virtual bool checkAlpha(int x, int y) const;
 	virtual void draw() const;
-
-	virtual SDL_Texture* getTextureIfOne(size_t &count) const;
 };
 
 #endif // DISPLAY_OBJECT_H

@@ -3,8 +3,6 @@
 #include <thread>
 #include <algorithm>
 
-#include <boost/filesystem.hpp>
-
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
@@ -530,7 +528,7 @@ py::list Node::getPyList() const {
 
 	return res;
 }
-std::vector<String> Node::getImageChildren() const {
+std::vector<String> Node::getImageChilds() {
 	std::vector<String> res;
 
 	static const std::vector<String> highLevelCommands = {"image", "scene", "show", "hide"};
@@ -546,19 +544,17 @@ std::vector<String> Node::getImageChildren() const {
 	}
 
 	for (const Node* child : children) {
+		py::list childPyList = child->getPyList();
+
 		static const std::vector<String> blockCommandsInImage = {"contains", "block", "parallel"};
 		bool childIsBlock = Utils::in(child->command, blockCommandsInImage);
 
+		static const py::str space = " ";
+
 		if (!childIsBlock) {
-			if (child->command || child->params) {
-				const String str = Utils::clear(child->command + " " + child->params);
-				res.push_back(str);
-			}
+			res.append(space.join(childPyList));
 		}else {
-			const std::vector<String> childChildren = child->getImageChildren();
-			for (const String &str : childChildren) {
-				res.push_back(str);
-			}
+			res.append(childPyList);
 		}
 	}
 
@@ -632,13 +628,6 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 	return count;
 }
 void Node::preloadImageAt(const std::vector<String> &children) {
-	auto fileExists = [](const String &path) -> bool {
-		if (boost::filesystem::exists(path.c_str())) {
-			return !boost::filesystem::is_directory(path.c_str());
-		}
-		return false;
-	};
-
 	for (const String &str : children) {
 		if (str.isSimpleString()) {
 			const String image = str.substr(1, str.size() - 2);
@@ -651,17 +640,13 @@ void Node::preloadImageAt(const std::vector<String> &children) {
 				const String code = Utils::getImageCode(imageName);
 				const String imagePath = PyUtils::exec(place.first, place.second, code, true);
 				if (imagePath) {
-					if (fileExists(imagePath)) {
-						Image::loadImage(imagePath);
-					}
+					Image::loadImage(imagePath);
 				}
 
 				const std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
 				preloadImageAt(declAt);
 			}else {
-				if (fileExists(image)) {
-					Image::loadImage(image);
-				}
+				Image::loadImage(image);
 			}
 		}
 	}

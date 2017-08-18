@@ -28,8 +28,6 @@ public:
 
 	virtual bool checkAlpha(int x, int y) const;
 	virtual void draw() const;
-
-	virtual SDL_Texture* getTextureIfOne(size_t &count) const;
 };
 
 #endif // GROUP_H

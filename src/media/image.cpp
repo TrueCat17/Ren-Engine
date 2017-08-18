@@ -6,57 +6,116 @@
 
 #include <SDL2/SDL_image.h>
 
-#include "utils/utils.h"
 
 
-SDL_Surface* Image::getImage(String desc) {
+std::mutex Image::blitMutex;
+
+
+void Image::loadImage(const std::string &desc) {
+	std::thread(getImage, desc).detach();
+}
+
+
+SurfacePtr Image::getImage(String desc) {
 	desc = Utils::clear(desc);
 
-	SDL_Surface *res = Utils::getThereIsSurfaceOrNull(desc);
+	SurfacePtr res = Utils::getThereIsSurfaceOrNull(desc);
 	if (res) return res;
 
-	std::vector<String> args = Utils::getArgs(desc);
+
+
+	static std::mutex vecMutex;
+	static std::vector<String> processingImages;
+
+	bool in = true;
+	while (in) {
+		{
+			std::lock_guard<std::mutex> g(vecMutex);
+			in = Utils::in(desc, processingImages);
+		}
+		if (in) {
+			Utils::sleep(10);
+		}
+	}
+
+	res = Utils::getThereIsSurfaceOrNull(desc);
+	if (res) return res;
+
+	{
+		std::lock_guard<std::mutex> g(vecMutex);
+		processingImages.push_back(desc);
+	}
+
+
+	struct D {
+		const String &desc;
+
+		D(const String& desc): desc(desc) {}
+
+		~D() {
+			std::lock_guard<std::mutex> g(vecMutex);
+
+			for (size_t i = 0; i < processingImages.size(); ++i) {
+				if (processingImages[i] == desc) {
+					processingImages.erase(processingImages.begin() + i, processingImages.begin() + i + 1);
+					return;
+				}
+			}
+		}
+	};
+	D d(desc);
+
+
+	const std::vector<String> args = Utils::getArgs(desc);
 
 	if (args.empty()) {
 		Utils::outMsg("Image::getImage", "Список аргументов пуст");
 		return nullptr;
 	}
 	if (args.size() == 1) {
-		String imagePath = Utils::clear(args[0]);
+		const String imagePath = Utils::clear(args[0]);
 
 		res = Utils::getSurface(imagePath);
 		return res;
 	}
 
 
-	String command = args[0];
+
+	const String command = args[0];
 
 	if (command == "Scale") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
 
 		SDL_Rect resRect = { 0, 0, Utils::clear(args[2]).toInt(), Utils::clear(args[3]).toInt() };
-		res = SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
-								   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask);
-		SDL_BlitScaled(img, &imgRect, res, &resRect);
+		res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
+									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
+				  SDL_FreeSurface);
+
+		std::lock_guard<std::mutex> g(blitMutex);
+		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 	}else
 
 	if (command == "FactorScale") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
 		double k = Utils::clear(args[2]).toDouble();
 		SDL_Rect resRect = { 0, 0, int(img->w * k), int(img->h * k) };
-		res = SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
-								   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask);
-		SDL_BlitScaled(img, &imgRect, res, &resRect);
+
+		res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
+									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
+				  SDL_FreeSurface);
+
+		std::lock_guard<std::mutex> g(blitMutex);
+		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 	}else
 
 	if (command == "Crop") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
 		String rectStr = Utils::clear(args[2]);
@@ -65,9 +124,12 @@ SDL_Surface* Image::getImage(String desc) {
 		SDL_Rect imgRect = { rectVec[0].toInt(), rectVec[1].toInt(), rectVec[2].toInt(), rectVec[3].toInt() };
 		SDL_Rect resRect = { 0, 0, imgRect.w, imgRect.h };
 
-		res = SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
-								   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask);
-		SDL_BlitScaled(img, &imgRect, res, &resRect);
+		res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
+									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
+				  SDL_FreeSurface);
+
+		std::lock_guard<std::mutex> g(blitMutex);
+		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 	}else
 
 	if (command == "Composite") {
@@ -75,15 +137,16 @@ SDL_Surface* Image::getImage(String desc) {
 		std::vector<String> sizeVec = sizeStr.split(' ');
 
 		SDL_Rect resRect = { 0, 0, sizeVec[0].toInt(), sizeVec[1].toInt() };
-		res = SDL_CreateRGBSurface(0, resRect.w, resRect.h, 32,
-								   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF);
+		res.reset(SDL_CreateRGBSurface(0, resRect.w, resRect.h, 32,
+									   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF),
+				  SDL_FreeSurface);
 
 		for (size_t i = 2; i < args.size(); i += 2) {
 			String posStr = Utils::clear(args[i]);
 			std::vector<String> posVec = posStr.split(' ');
 
 			String imgStr = Utils::clear(args[i + 1]);
-			SDL_Surface *img = getImage(imgStr);
+			SurfacePtr img = getImage(imgStr);
 			if (!img) {
 				Utils::outMsg("Image::getImage, Composite", "Не удалось получить изображение <" + imgStr + ">");
 				continue;
@@ -91,12 +154,14 @@ SDL_Surface* Image::getImage(String desc) {
 
 			SDL_Rect fromRect = { 0, 0, img->w, img->h };
 			SDL_Rect toRect = { posVec[0].toInt(), posVec[1].toInt(), img->w, img->h };
-			SDL_BlitScaled(img, &fromRect, res, &toRect);
+
+			std::lock_guard<std::mutex> g(blitMutex);
+			SDL_BlitScaled(img.get(), &fromRect, res.get(), &toRect);
 		}
 	}else
 
 	if (command == "Flip") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
 		bool horizontal = Utils::clear(args[2]) == "True";
@@ -114,7 +179,9 @@ SDL_Surface* Image::getImage(String desc) {
 		const int imgPitch = img->pitch;
 		const int imgBpp = img->format->BytesPerPixel;
 
-		res = SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask);
+		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
+				  SDL_FreeSurface);
+
 		SDL_PixelFormat *resPixelFormat = res->format;
 		const int resPitch = res->pitch;
 		const int resBpp = res->format->BytesPerPixel;
@@ -155,7 +222,7 @@ SDL_Surface* Image::getImage(String desc) {
 	}else
 
 	if (command == "MatrixColor") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
 		String matrixStr = Utils::clear(args[2]);
@@ -186,7 +253,9 @@ SDL_Surface* Image::getImage(String desc) {
 		const int imgPitch = img->pitch;
 		const int imgBpp = img->format->BytesPerPixel;
 
-		res = SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask);
+		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
+				  SDL_FreeSurface);
+
 		SDL_PixelFormat *resPixelFormat = res->format;
 		const int resPitch = res->pitch;
 		const int resBpp = res->format->BytesPerPixel;
@@ -230,7 +299,7 @@ SDL_Surface* Image::getImage(String desc) {
 	}else
 
 	if (command == "ReColor") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
 		String colorsStr = Utils::clear(args[2]);
@@ -255,7 +324,9 @@ SDL_Surface* Image::getImage(String desc) {
 		const int imgPitch = img->pitch;
 		const int imgBpp = img->format->BytesPerPixel;
 
-		res = SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask);
+		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
+				  SDL_FreeSurface);
+
 		SDL_PixelFormat *resPixelFormat = res->format;
 		const int resPitch = res->pitch;
 		const int resBpp = res->format->BytesPerPixel;
@@ -302,7 +373,7 @@ SDL_Surface* Image::getImage(String desc) {
 	}else 
 		
 	if (command == "Rotozoom") {
-		SDL_Surface *img = getImage(args[1]);
+		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 		
 
@@ -336,31 +407,30 @@ SDL_Surface* Image::getImage(String desc) {
 		SDL_Rect srcRect = {0, 0, img->w, img->h};
 		SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
 
-		res = SDL_CreateRGBSurface(img->flags, resW, resH, 32, rMask, gMask, bMask, aMask);
+		res.reset(SDL_CreateRGBSurface(img->flags, resW, resH, 32, rMask, gMask, bMask, aMask),
+				  SDL_FreeSurface);
 
 
 		String error;
 
-		SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res);
+		SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
 
 		if (!renderer) {
 			error = "Image::getImage, Rotozoom, SDL_CreateSoftwareRenderer";
 		}else {
-			SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, img);
+			TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
 			if (!texture) {
 				error = "Image::getImage, Rotozoom, SDL_CreateTextureFromSurface";
 			}else {
-				if (SDL_RenderCopyEx(renderer, texture, &srcRect, &dstRect, angle, nullptr, flip)) {
+				if (SDL_RenderCopyEx(renderer, texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
 					error = "Image::getImage, Rotozoom, SDL_RenderCopyEx";
 				}
-				SDL_DestroyTexture(texture);
 			}
 
 			SDL_DestroyRenderer(renderer);
 		}
 		if (error) {
 			Utils::outMsg(error, SDL_GetError());
-			SDL_FreeSurface(res);
 			res = nullptr;
 		}
 	}

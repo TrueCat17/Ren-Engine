@@ -23,7 +23,6 @@
 #include "utils/btn_rect.h"
 #include "utils/game.h"
 #include "utils/mouse.h"
-#include "utils/utils.h"
 
 
 SDL_DisplayMode displayMode;
@@ -140,7 +139,7 @@ bool init() {
 	String iconPath = Config::get("window_icon");
 	SDL_Surface *icon = nullptr;
 	if (iconPath && iconPath != "None") {
-		icon = Utils::getSurface(Utils::ROOT + iconPath);
+		icon = Utils::getSurface(Utils::ROOT + iconPath).get();
 	}
 	if (icon) {
 		SDL_SetWindowIcon(mainWindow, icon);

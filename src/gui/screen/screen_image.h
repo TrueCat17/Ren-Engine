@@ -3,7 +3,6 @@
 
 #include "screen_container.h"
 
-#include "utils/string.h"
 
 class ScreenImage: public ScreenContainer {
 private:

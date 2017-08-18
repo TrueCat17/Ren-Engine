@@ -16,6 +16,10 @@
 #include "utils/string.h"
 
 
+typedef std::shared_ptr<SDL_Surface> SurfacePtr;
+typedef std::shared_ptr<SDL_Texture> TexturePtr;
+
+
 class StopException {};
 class BreakException {};
 class ContinueException {};
@@ -33,11 +37,11 @@ private:
 	static std::map<String, String> images;
 	static std::map<String, Node*> declAts;
 
-	static std::vector<std::pair<String, SDL_Texture*>> textures;
-	static std::map<const SDL_Texture*, SDL_Surface*> textureSurfaces;
+	static std::vector<std::pair<String, TexturePtr>> textures;
+	static std::map<TexturePtr, SurfacePtr> textureSurfaces;
 
 	static std::mutex surfaceGuard;
-	static std::vector<std::pair<String, SDL_Surface*>> surfaces;
+	static std::vector<std::pair<String, SurfacePtr>> surfaces;
 
 	static double* sins;
 	static double* coss;
@@ -74,24 +78,28 @@ public:
 	static String clear(String s);
 	static std::vector<String> getArgs(String args);
 
-	static size_t getTextureWidth(SDL_Texture *texture);
-	static size_t getTextureHeight(SDL_Texture *texture);
+	static size_t getTextureWidth(const TexturePtr &texture);
+	static size_t getTextureHeight(const TexturePtr &texture);
 
-	static void trimTexturesCache(const SDL_Surface *last);
-	static SDL_Texture* getTexture(const String &path);
+	static void trimSurfacesCache(const SurfacePtr &last);
+	static SurfacePtr getThereIsSurfaceOrNull(const String &path);
+	static SurfacePtr getSurface(const String &path);
+	static void setSurface(const String &path, const SurfacePtr &surface);
 
-	static void trimSurfacesCache(const SDL_Surface* last);
-	static SDL_Surface* getThereIsSurfaceOrNull(const String &path);
-	static SDL_Surface* getSurface(const String &path);
-	static void setSurface(const String &path, SDL_Surface *surface);
+	static void trimTexturesCache(const SurfacePtr &last);
+	static TexturePtr getTexture(const String &path);
 
-	static Uint32 getPixel(const SDL_Surface *surface, const SDL_Rect &draw, const SDL_Rect &crop);
-	static Uint32 getPixel(SDL_Texture *texture, const SDL_Rect &draw, const SDL_Rect &crop);
+	static Uint32 getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop);
+	static Uint32 getPixel(const TexturePtr &texture, const SDL_Rect &draw, const SDL_Rect &crop);
 
 	static bool registerImage(const String &desc, Node *declAt);
 	static bool imageWasRegistered(const std::string &name);
+
 	static std::string getImageCode(const std::string &name);
 	static py::list getImageDeclAt(const std::string &name);
+	static std::vector<String> getVectorImageDeclAt(const std::string &name);
+
+	static std::pair<String, size_t> getImagePlace(const std::string &name);
 };
 
 #endif // UTILS_H

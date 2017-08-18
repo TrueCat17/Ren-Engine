@@ -7,7 +7,6 @@
 #include "gv.h"
 #include "media/py_utils.h"
 #include "parser/node.h"
-#include "utils/utils.h"
 
 ScreenHotspot::ScreenHotspot(Node *node):
 	ScreenChild(node, this),
@@ -28,7 +27,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 	x = (getGlobalX() + x) / scaleX;
 	y = (getGlobalY() + y) / scaleY;
 
-	SDL_Texture *ground = parent->texture;
+	std::shared_ptr<SDL_Texture> ground = parent->texture;
 	Uint32 groundPixel = Utils::getPixel(ground, parent->getDrawRect(), parent->getCropRect());
 
 	ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
@@ -36,7 +35,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 		Utils::outMsg("ScreenHotspot::checkAlpha", "Тип родителя должен быть ScreenImagemap");
 		return true;
 	}
-	SDL_Texture *hover = imagemap->hover;
+	std::shared_ptr<SDL_Texture> hover = imagemap->hover;
 	Uint32 hoverPixel = Utils::getPixel(hover, parent->getDrawRect(), parent->getCropRect());
 
 	return groundPixel != hoverPixel;
@@ -53,7 +52,7 @@ void ScreenHotspot::calculateProps() {
 
 	enable = true;
 
-	SDL_Texture *ground = parent->texture;
+	std::shared_ptr<SDL_Texture> ground = parent->texture;
 	scaleX = 1;
 	scaleY = 1;
 	int parentWidth = parent->getWidth();
@@ -95,12 +94,12 @@ void ScreenHotspot::draw() const {
 
 
 	if (!globalRotate) {
-		if (SDL_RenderCopy(GV::mainRenderer, texture, &from, &to)) {
+		if (SDL_RenderCopy(GV::mainRenderer, texture.get(), &from, &to)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 		}
 	}else {
 		SDL_Point center = { int(xAnchor), int(yAnchor) };
-		if (SDL_RenderCopyEx(GV::mainRenderer, texture, &from, &to, globalRotate, &center, SDL_FLIP_NONE)) {
+		if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(), &from, &to, globalRotate, &center, SDL_FLIP_NONE)) {
 			Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
 		}
 	}

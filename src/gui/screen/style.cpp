@@ -5,7 +5,6 @@
 #include "gv.h"
 
 #include "media/py_utils.h"
-#include "utils/utils.h"
 
 
 std::map<String, Style*> Style::styles;
@@ -13,8 +12,7 @@ std::map<String, Style*> Style::styles;
 void Style::disableAll() {
 	for (auto i : styles) {
 		Style *style = i.second;
-		std::map<String, std::pair<bool, String>> &props = style->props;
-		for (auto &j : props) {
+		for (auto &j : style->props) {
 			auto &pair = j.second;
 			pair.first = false;
 		}
