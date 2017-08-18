@@ -15,8 +15,7 @@ const std::string Parser::getMods() {
 
 	std::vector<String> files = Utils::getFileNames(Utils::ROOT + "mods/");
 
-	for (size_t i = 0; i < files.size(); ++i) {
-		String fileName = files[i];
+	for (const String &fileName : files) {
 		if (!fileName.endsWith(".rpy")) continue;
 
 		String s;
@@ -68,8 +67,7 @@ Parser::Parser(const String &dir) {
 	int countFiles = 0;
 	int countLines = 0;
 
-	for (size_t i = 0; i < files.size(); ++i) {
-		String fileName = files[i];
+	for (const String &fileName : files) {
 		if (!fileName.endsWith(".rpy")) continue;
 
 		bool toPrevLine = false;
@@ -148,7 +146,7 @@ Node* Parser::getMainNode() {
 	size_t end = code.size();
 	String prevHeadWord = "None";
 	while (start < end) {
-		String headLine = code[start];
+		const String &headLine = code.at(start);
 		if (!headLine) {
 			++start;
 			continue;
@@ -216,7 +214,7 @@ void Parser::initScreenNode(Node *node) {
 		node->setFirstParam(args[0]);
 	}
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
-		String name = args[i];
+		const String &name = args.at(i);
 		bool t;
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
 			String str = node->command + ' ' + node->params;
@@ -234,7 +232,7 @@ void Parser::initScreenNode(Node *node) {
 						  node->getPlace());
 			break;
 		}
-		String value = args[i + 1];
+		const String &value = args.at(i + 1);
 		node->initProp(name, value, node->getNumLine());
 	}
 }
@@ -396,7 +394,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 }
 
 size_t Parser::getNextStart(size_t start) const {
-	String line = code[start];
+	const String &line = code.at(start);
 	if (!line) return start + 1;
 
 	size_t countStartIndent = line.find_first_not_of(' ');
@@ -404,7 +402,7 @@ size_t Parser::getNextStart(size_t start) const {
 	size_t i = start + 1;
 	size_t last = start;
 	for (; i < code.size(); ++i) {
-		line = code[i];
+		const String &line = code.at(i);
 		if (!line) continue;
 
 		size_t countIndent = line.find_first_not_of(' ');

@@ -89,7 +89,10 @@ void changeWindowSize(bool maximized) {
 			}else {
 				x = y = 0;
 			}
-			SDL_SetWindowSize(GV::mainWindow, x + w, y + h);
+
+			if (x + w != startW || y + h != startH) {
+				SDL_SetWindowSize(GV::mainWindow, x + w, y + h);
+			}
 
 			GV::screens->setPos(x, y);
 			GV::screens->updateGlobalPos();
@@ -123,8 +126,10 @@ bool init() {
 		Utils::outMsg("Config::get",
 					  "Значением параметра scale_quality ожидалось 0, 1 или 2, получено: <" + scaleQuality + ">");
 	}
-	if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
-		Utils::outMsg("SDL_SetHint", "Не удалось настроить сглаживание");
+	if (scaleQuality != "0") {
+		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
+			Utils::outMsg("SDL_SetHint", "Не удалось настроить сглаживание");
+		}
 	}
 
 	if (TTF_Init()) {

@@ -165,34 +165,48 @@ void Game::save() {
 }
 
 void Game::_startMod(const std::string &dir) {
+	static std::mutex modMutex;
+
+
 	Logger::log("Start mod <" + dir + ">");
+
+	int waitingStartTime = Utils::getTimer();
+
+	modeStarting = true;
+	GV::inGame = false;
+
+	std::lock_guard<std::mutex> g2(modMutex);
+
 	{
-		int waitingStartTime = Utils::getTimer();
-
-		modeStarting = true;
-		GV::inGame = false;
-
 		std::lock_guard<std::mutex> g(GV::updateGuard);
-
-		int toSleep = frameTime * 2;
-		Utils::sleep(toSleep, false);
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
-		int ClearStartTime = Utils::getTimer();
+		int clearStartTime = Utils::getTimer();
 		Music::clear();
 
 		Node::destroyAll();
 
+		int x, y;
+		if (GV::screens) {
+			x = GV::screens->getX();
+			y = GV::screens->getY();
+		}else {
+			x = y = 0;
+		}
+
 		Screen::clear();
 		DisplayObject::destroyAll();
+
 		GV::screens = new Group();
+		GV::screens->setPos(x, y);
+		GV::screens->updateGlobalPos();
 
 		Style::destroyAll();
 
 		delete GV::pyUtils;
 		GV::pyUtils = new PyUtils();
 
-		Logger::logEvent("Clearing", Utils::getTimer() - ClearStartTime);
+		Logger::logEvent("Clearing", Utils::getTimer() - clearStartTime);
 	}
 
 	Parser p(Utils::ROOT + "mods/" + dir);
