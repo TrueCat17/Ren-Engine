@@ -1,16 +1,33 @@
 #include "screen_textbutton.h"
 
+#include "media/music.h"
 #include "media/py_utils.h"
 
 
-ScreenTextButton::ScreenTextButton(Node* node): ScreenText(node) {
-	auto onClick = [this](DisplayObject*) {
-		String action = this->node->getPropCode("action").pyExpr;
-		if (action) {
-			PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "exec_funcs(" + action + ")");
+ScreenTextButton::ScreenTextButton(Node* node):
+	ScreenText(node)
+{
+	auto onLeftClick = [this](DisplayObject*) {
+		const NodeProp activateSound = this->node->getPropCode("activate_sound");
+		const String &sound = activateSound.pyExpr;
+		if (sound) {
+			Music::play("button_click " + sound, this->getFileName(), activateSound.numLine);
+		}
+
+		const NodeProp action = this->node->getPropCode("action");
+		const String &actionExpr = action.pyExpr;
+		if (actionExpr) {
+			PyUtils::exec(this->getFileName(), action.numLine, "exec_funcs(" + actionExpr + ")");
 		}
 	};
-	btnRect.init(this, onClick);
+	auto onRightClick = [this](DisplayObject*) {
+		const NodeProp alternate = this->node->getPropCode("alternate");
+		const String &alternateExpr = alternate.pyExpr;
+		if (alternateExpr) {
+			PyUtils::exec(this->getFileName(), alternate.numLine, "exec_funcs(" + alternateExpr + ")");
+		}
+	};
+	btnRect.init(this, onLeftClick, onRightClick);
 
 	setProp("ground", node->getPropCode("ground"));
 	setProp("hover", node->getPropCode("hover"));
@@ -19,10 +36,36 @@ ScreenTextButton::ScreenTextButton(Node* node): ScreenText(node) {
 void ScreenTextButton::calculateProps() {
 	ScreenText::calculateProps();
 
-	if (btnRect.mouseDown) {
-		if (isModal()) {
-			btnRect.onClick();
+	if (btnRect.mouseOvered) {
+		if (!prevMouseOver) {
+			const NodeProp hoverSound = node->getPropCode("hover_sound");
+			const String &sound = hoverSound.pyExpr;
+			if (sound) {
+				Music::play("button_hover " + sound, getFileName(), hoverSound.numLine);
+			}
+
+			const NodeProp hovered = node->getPropCode("hovered");
+			const String &hoveredExpr = hovered.pyExpr;
+			if (hoveredExpr) {
+				PyUtils::exec(getFileName(), hovered.numLine, "exec_funcs(" + hoveredExpr + ")");
+			}
 		}
+	}else {
+		if (prevMouseOver) {
+			const NodeProp unhovered = node->getPropCode("unhovered");
+			const String &unhoveredExpr = unhovered.pyExpr;
+			if (unhoveredExpr) {
+				PyUtils::exec(getFileName(), unhovered.numLine, "exec_funcs(" + unhoveredExpr + ")");
+			}
+		}
+	}
+	prevMouseOver = btnRect.mouseOvered;
+
+	if (btnRect.mouseLeftDown && isModal()) {
+		btnRect.onLeftClick();
+	}
+	if (btnRect.mouseRightDown && isModal()) {
+		btnRect.onRightClick();
 	}
 }
 void ScreenTextButton::updateTexture() {

@@ -17,7 +17,7 @@ int Mouse::y = 0;
 
 void Mouse::init() {
 	const String usualPath = Config::get("mouse_usual");
-	std::shared_ptr<SDL_Surface> usual = nullptr;
+	SurfacePtr usual = nullptr;
 	if (usualPath && usualPath != "None") {
 		usual = Utils::getSurface(Utils::ROOT + usualPath);
 	}
@@ -28,7 +28,7 @@ void Mouse::init() {
 	}
 
 	const String btnPath = Config::get("mouse_btn");
-	std::shared_ptr<SDL_Surface> btn = nullptr;
+	SurfacePtr btn = nullptr;
 	if (btnPath && btnPath != "None") {
 		btn = Utils::getSurface(Utils::ROOT + btnPath);
 	}

@@ -5,20 +5,38 @@
 #include "screen_imagemap.h"
 
 #include "gv.h"
+
+#include "media/music.h"
 #include "media/py_utils.h"
+
 #include "parser/node.h"
+
 
 ScreenHotspot::ScreenHotspot(Node *node):
 	ScreenChild(node, this),
 	rectStr(node->getFirstParam())
 {
-	auto onClick = [this](DisplayObject*) {
-		String action = this->node->getPropCode("action").pyExpr;
-		if (action) {
-			PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
+	auto onLeftClick = [this](DisplayObject*) {
+		const NodeProp activateSound = this->node->getPropCode("activate_sound");
+		const String &sound = activateSound.pyExpr;
+		if (sound) {
+			Music::play("button_click " + sound, this->getFileName(), activateSound.numLine);
+		}
+
+		const NodeProp action = this->node->getPropCode("action");
+		const String &actionExpr = action.pyExpr;
+		if (actionExpr) {
+			PyUtils::exec(this->getFileName(), action.numLine, "exec_funcs(" + actionExpr + ")");
 		}
 	};
-	btnRect.init(this, onClick);
+	auto onRightClick = [this](DisplayObject*) {
+		const NodeProp alternate = this->node->getPropCode("alternate");
+		const String &alternateExpr = alternate.pyExpr;
+		if (alternateExpr) {
+			PyUtils::exec(this->getFileName(), alternate.numLine, "exec_funcs(" + alternateExpr + ")");
+		}
+	};
+	btnRect.init(this, onLeftClick, onRightClick);
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
@@ -27,7 +45,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 	x = (getGlobalX() + x) / scaleX;
 	y = (getGlobalY() + y) / scaleY;
 
-	std::shared_ptr<SDL_Texture> ground = parent->texture;
+	TexturePtr ground = parent->texture;
 	Uint32 groundPixel = Utils::getPixel(ground, parent->getDrawRect(), parent->getCropRect());
 
 	ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
@@ -35,7 +53,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 		Utils::outMsg("ScreenHotspot::checkAlpha", "Тип родителя должен быть ScreenImagemap");
 		return true;
 	}
-	std::shared_ptr<SDL_Texture> hover = imagemap->hover;
+	TexturePtr hover = imagemap->hover;
 	Uint32 hoverPixel = Utils::getPixel(hover, parent->getDrawRect(), parent->getCropRect());
 
 	return groundPixel != hoverPixel;
@@ -52,7 +70,7 @@ void ScreenHotspot::calculateProps() {
 
 	enable = true;
 
-	std::shared_ptr<SDL_Texture> ground = parent->texture;
+	TexturePtr ground = parent->texture;
 	scaleX = 1;
 	scaleY = 1;
 	int parentWidth = parent->getWidth();
@@ -71,6 +89,20 @@ void ScreenHotspot::calculateProps() {
 	setSize(w, h);
 
 	if (btnRect.mouseOvered) {
+		if (!prevMouseOver) {
+			const NodeProp hoverSound = node->getPropCode("hover_sound");
+			const String &sound = hoverSound.pyExpr;
+			if (sound) {
+				Music::play("button_hover " + sound, getFileName(), hoverSound.numLine);
+			}
+
+			const NodeProp hovered = node->getPropCode("hovered");
+			const String &hoveredExpr = hovered.pyExpr;
+			if (hoveredExpr) {
+				PyUtils::exec(getFileName(), hovered.numLine, "exec_funcs(" + hoveredExpr + ")");
+			}
+		}
+
 		ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
 		if (!imagemap) {
 			Utils::outMsg("ScreenHotspot::update", "Тип родителя должен быть ScreenImagemap");
@@ -78,11 +110,23 @@ void ScreenHotspot::calculateProps() {
 		}
 		texture = imagemap->hover;
 	}else {
+		if (prevMouseOver) {
+			const NodeProp unhovered = node->getPropCode("unhovered");
+			const String &unhoveredExpr = unhovered.pyExpr;
+			if (unhoveredExpr) {
+				PyUtils::exec(getFileName(), unhovered.numLine, "exec_funcs(" + unhoveredExpr + ")");
+			}
+		}
+
 		texture = nullptr;
 	}
+	prevMouseOver = btnRect.mouseOvered;
 
-	if (btnRect.mouseDown && isModal()) {
-		btnRect.onClick();
+	if (btnRect.mouseLeftDown && isModal()) {
+		btnRect.onLeftClick();
+	}
+	if (btnRect.mouseRightDown && isModal()) {
+		btnRect.onRightClick();
 	}
 }
 

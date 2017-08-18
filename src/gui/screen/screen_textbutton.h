@@ -11,6 +11,8 @@ private:
 	String ground;
 	String hover;
 
+	bool prevMouseOver = false;
+
 public:
 	BtnRect btnRect;
 

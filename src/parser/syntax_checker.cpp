@@ -60,7 +60,8 @@ void SyntaxChecker::init() {
 	const String screenProps = ", use, key, ";
 	const String simpleProps = ", style, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, size, crop, rotate, alpha, ";
 	const String containerProps = ", has, spacing, ";
-	const String textProps = ", color, size, font, text_size, text_align, text_valign, ";
+	const String textProps = ", color, font, text_size, text_align, text_valign, ";
+	const String buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, ";
 
 	const String imageProps = simpleProps + "repeat, linear, ease, easein, easeout, pause, rotate, alpha, reset, ";
 
@@ -95,6 +96,8 @@ void SyntaxChecker::init() {
 	addBlockChildren("imagemap", "hotspot" + simpleProps + containerProps);
 	addBlockChildren("hotspot", "action");
 
+	addBlockChildren("hotspot, button, textbutton", buttonProps);
+
 	addBlockChildren("key, button, textbutton", "action");
 	addBlockChildren("key", "first_delay, delay");
 	addBlockChildren("imagemap, button, textbutton", "ground, hover");
@@ -102,7 +105,8 @@ void SyntaxChecker::init() {
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
 	setSuperParents(imageProps, SuperParent::INIT);
 	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem" + imageProps, SuperParent::LABEL);
-	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" + screenProps + simpleProps + containerProps + textProps +
+	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" +
+					screenProps + simpleProps + containerProps + textProps + buttonProps +
 					"modal, zorder, spacing, action, first_delay, delay", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;

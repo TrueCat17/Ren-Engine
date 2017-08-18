@@ -10,26 +10,34 @@ class BtnRect {
 private:
 	static std::vector<BtnRect*> btnRects;
 
-	bool buttonMode = true;
 
 	DisplayObject *owner = nullptr;
-	std::function<void(DisplayObject*)> _onClick = nullptr;
+
+	std::function<void (DisplayObject*)> _onLeftClick = nullptr;
+	std::function<void (DisplayObject*)> _onRightClick = nullptr;
+
+	bool buttonMode = true;
 
 public:
 	static void checkMouseCursor();
-	static bool checkMouseClick();
+	static bool checkMouseClick(bool left);
 
 	bool mouseOvered = false;
-	bool mouseDown = false;
+	bool mouseLeftDown = false;
+	bool mouseRightDown = false;
 
 	BtnRect();
 	~BtnRect();
 
-	void init(DisplayObject *owner, const std::function<void (DisplayObject *)> &onClick = nullptr, bool buttonMode = true);
-	void click() const;
+	void init(DisplayObject *owner,
+			  const std::function<void (DisplayObject*)> &onLeftClick = nullptr,
+			  const std::function<void (DisplayObject*)> &onRightClick = nullptr,
+			  bool buttonMode = true);
+
 	DisplayObject* getOwner() const { return owner; }
 
-	void onClick() const;
+	void onLeftClick() const;
+	void onRightClick() const;
 };
 
 #endif // BTNRECT_H

@@ -241,7 +241,7 @@ int Game::getStageHeight() {
 }
 
 int Game::getTextureWidth(const std::string &image) {
-	std::shared_ptr<SDL_Surface> surface = Image::getImage(image);
+	SurfacePtr surface = Image::getImage(image);
 	if (surface) {
 		return surface->w;
 	}
@@ -249,7 +249,7 @@ int Game::getTextureWidth(const std::string &image) {
 	return -1;
 }
 int Game::getTextureHeight(const std::string &image) {
-	std::shared_ptr<SDL_Surface> surface = Image::getImage(image);
+	SurfacePtr surface = Image::getImage(image);
 	if (surface) {
 		return surface->h;
 	}
@@ -258,7 +258,7 @@ int Game::getTextureHeight(const std::string &image) {
 }
 
 Uint32 Game::getPixel(const std::string &image, int x, int y) {
-	std::shared_ptr<SDL_Surface> surface = Image::getImage(image);
+	SurfacePtr surface = Image::getImage(image);
 	if (surface) {
 		SDL_Rect draw = {x, y, surface->w, surface->h};
 		SDL_Rect crop = {0, 0, surface->w, surface->h};

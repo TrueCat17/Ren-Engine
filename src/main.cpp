@@ -260,8 +260,14 @@ void loop() {
 			}else
 
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				mouseWasDown = true;
-				BtnRect::checkMouseClick();
+				bool left = event.button.button == SDL_BUTTON_LEFT;
+				bool right = event.button.button == SDL_BUTTON_RIGHT;
+				if (left || right) {
+					if (left) {
+						mouseWasDown = true;
+					}
+					BtnRect::checkMouseClick(left);
+				}
 			}else
 			if (event.type == SDL_MOUSEBUTTONUP) {
 				mouseWasUp = true;
@@ -274,7 +280,7 @@ void loop() {
 					SDL_Scancode key = event.key.keysym.scancode;
 
 					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_SPACE) {
-						if (BtnRect::checkMouseClick()) {
+						if (BtnRect::checkMouseClick(true)) {
 							ScreenKey::setToNotReact(key);
 						}else {
 							ScreenKey::setFirstDownState(key);

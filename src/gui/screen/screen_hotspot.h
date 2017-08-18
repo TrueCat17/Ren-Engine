@@ -12,6 +12,8 @@ private:
 	double scaleX = 1;
 	double scaleY = 1;
 
+	bool prevMouseOver = false;
+
 public:
 	BtnRect btnRect;
 

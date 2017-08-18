@@ -11,21 +11,22 @@ BtnRect::BtnRect() {
 	btnRects.push_back(this);
 }
 
-void BtnRect::init(DisplayObject *owner, const std::function<void (DisplayObject *)> &onClick, bool buttonMode) {
+void BtnRect::init(DisplayObject *owner,
+				   const std::function<void (DisplayObject*)> &onLeftClick,
+				   const std::function<void (DisplayObject*)> &onRightClick,
+				   bool buttonMode)
+{
 	this->owner = owner;
-	this->_onClick = onClick;
+	_onLeftClick = onLeftClick;
+	_onRightClick = onRightClick;
 	this->buttonMode = buttonMode;
 }
 
-void BtnRect::click() const {
-	if (_onClick != nullptr) {
-		_onClick(owner);
-	}
-}
 
 BtnRect::~BtnRect() {
 	owner = nullptr;
-	_onClick = nullptr;
+	_onLeftClick = nullptr;
+	_onRightClick = nullptr;
 
 	for (size_t i = 0; i < btnRects.size(); ++i) {
 		BtnRect *btnRect = btnRects[i];
@@ -42,7 +43,8 @@ void BtnRect::checkMouseCursor() {
 
 	for (BtnRect *btnRect : btnRects) {
 		btnRect->mouseOvered = false;
-		btnRect->mouseDown = false;
+		btnRect->mouseLeftDown = false;
+		btnRect->mouseRightDown = false;
 	}
 
 	for (int i = btnRects.size() - 1; i >= 0; --i) {
@@ -76,7 +78,7 @@ void BtnRect::checkMouseCursor() {
 	Mouse::setUsualMode();
 }
 
-bool BtnRect::checkMouseClick() {
+bool BtnRect::checkMouseClick(bool left) {
 	int mouseX, mouseY;
 	Mouse::getPos(mouseX, mouseY);
 
@@ -99,13 +101,24 @@ bool BtnRect::checkMouseClick() {
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
 
-			btnRect->mouseDown = true;
+			if (left) {
+				btnRect->mouseLeftDown = true;
+			}else {
+				btnRect->mouseRightDown = true;
+			}
 			return true;
 		}
 	}
 	return false;
 }
 
-void BtnRect::onClick() const {
-	_onClick(owner);
+void BtnRect::onLeftClick() const {
+	if (_onLeftClick != nullptr) {
+		_onLeftClick(owner);
+	}
+}
+void BtnRect::onRightClick() const {
+	if (_onRightClick != nullptr) {
+		_onRightClick(owner);
+	}
 }
