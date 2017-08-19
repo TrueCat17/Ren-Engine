@@ -93,11 +93,7 @@ void BtnRect::checkMouseCursor() {
 			rotY > 0 && rotY < owner->getHeight()
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
-
-			if (!objInTop(owner, mouseX, mouseY)) {
-				Mouse::setUsualMode();
-				return;
-			}
+			if (!objInTop(owner, mouseX, mouseY)) continue;
 
 			btnRect->mouseOvered = true;
 			if (btnRect->buttonMode) {
@@ -133,8 +129,7 @@ bool BtnRect::checkMouseClick(bool left) {
 			rotY > 0 && rotY < owner->getHeight()
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
-
-			if (!objInTop(owner, mouseX, mouseY)) return false;
+			if (!objInTop(owner, mouseX, mouseY)) continue;
 
 			if (left) {
 				btnRect->mouseLeftDown = true;
