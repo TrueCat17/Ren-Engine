@@ -483,7 +483,7 @@ void Text::setAlign(String hAlign, String vAlign) {
 
 bool Text::checkAlpha(int x, int y) const {
 	for (const SDL_Rect &rect : rects) {
-		if (rect.x < x && x < rect.x + rect.w && rect.y < y && y < rect.y + rect.h) {
+		if (x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h) {
 			return true;
 		}
 	}

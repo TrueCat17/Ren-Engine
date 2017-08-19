@@ -2,10 +2,38 @@
 
 #include <iostream>
 
+#include "gui/group.h"
+
 #include "utils/mouse.h"
 
 
 std::vector<BtnRect*> BtnRect::btnRects;
+
+bool BtnRect::objInTop(DisplayObject *obj, int mouseX, int mouseY) {
+	while (obj->parent && obj->parent->enable) {
+		for (size_t i = obj->parent->getChildIndex(obj) + 1; i < obj->parent->children.size(); ++i) {
+			DisplayObject *child = obj->parent->children[i];
+			if (!child->enable) continue;
+
+			int x = mouseX - child->getGlobalX() - child->xAnchor;
+			int y = mouseY - child->getGlobalY() - child->yAnchor;
+
+			double sinA = Utils::getSin(-child->getGlobalRotate());
+			double cosA = Utils::getCos(-child->getGlobalRotate());
+
+			int rotX = x * cosA - y * sinA + child->xAnchor;
+			int rotY = x * sinA + y * cosA + child->yAnchor;
+
+			if (child->checkAlpha(rotX, rotY)) {
+				return false;
+			}
+		}
+		obj = obj->parent;
+	}
+	return true;
+}
+
+
 
 BtnRect::BtnRect() {
 	btnRects.push_back(this);
@@ -66,6 +94,11 @@ void BtnRect::checkMouseCursor() {
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
 
+			if (!objInTop(owner, mouseX, mouseY)) {
+				Mouse::setUsualMode();
+				return;
+			}
+
 			btnRect->mouseOvered = true;
 			if (btnRect->buttonMode) {
 				Mouse::setButtonMode();
@@ -100,6 +133,8 @@ bool BtnRect::checkMouseClick(bool left) {
 			rotY > 0 && rotY < owner->getHeight()
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
+
+			if (!objInTop(owner, mouseX, mouseY)) return false;
 
 			if (left) {
 				btnRect->mouseLeftDown = true;

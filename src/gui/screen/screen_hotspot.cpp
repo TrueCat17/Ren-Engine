@@ -45,6 +45,9 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 	x = (getGlobalX() + x) / scaleX;
 	y = (getGlobalY() + y) / scaleY;
 
+	if (x < getX() || x >= getX() + getWidth() || y < getY() || y >= getY() + getHeight()) return false;
+
+
 	TexturePtr ground = parent->texture;
 	Uint32 groundPixel = Utils::getPixel(ground, parent->getDrawRect(), parent->getCropRect());
 

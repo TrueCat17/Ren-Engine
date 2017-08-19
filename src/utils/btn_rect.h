@@ -10,6 +10,8 @@ class BtnRect {
 private:
 	static std::vector<BtnRect*> btnRects;
 
+	static bool objInTop(DisplayObject *obj, int mouseX, int mouseY);
+
 
 	DisplayObject *owner = nullptr;
 
