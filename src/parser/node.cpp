@@ -205,14 +205,24 @@ void Node::execute() {
 			startText = i + 1;
 		}
 		size_t endText = params.size();
-		String text = params.substr(startText, endText - startText);
+		String textCode = params.substr(startText, endText - startText);
+		String text = PyUtils::exec(getFileName(), getNumLine(), textCode, true);
 
 		if (!nick) {
 			nick = "narrator";
 		}
 
-		const String code = nick + "(" + text + ")";
-		PyUtils::exec(getFileName(), getNumLine(), code);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		try {
+			py::dict global = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
+			if (global.has_key("renpy")) {
+				py::object renpy = global["renpy"];
+				py::object say = renpy.attr("say");
+				say(nick.c_str(), text.c_str());
+			}
+		}catch (py::error_already_set) {
+			PyUtils::errorProcessing("renpy.say(" + nick + ", " + text + ")");
+		}
 	}else
 
 	if (command == "$") {
