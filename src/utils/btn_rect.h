@@ -18,11 +18,12 @@ private:
 	std::function<void (DisplayObject*)> _onLeftClick = nullptr;
 	std::function<void (DisplayObject*)> _onRightClick = nullptr;
 
-	bool buttonMode = true;
-
 public:
 	static void checkMouseCursor();
 	static bool checkMouseClick(bool left);
+
+
+	bool buttonMode = true;
 
 	bool mouseOvered = false;
 	bool mouseLeftDown = false;

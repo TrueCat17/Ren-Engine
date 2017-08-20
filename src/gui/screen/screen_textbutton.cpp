@@ -31,10 +31,14 @@ ScreenTextButton::ScreenTextButton(Node* node):
 
 	setProp("ground", node->getPropCode("ground"));
 	setProp("hover", node->getPropCode("hover"));
+	setProp("mouse", node->getPropCode("mouse"));
 }
 
 void ScreenTextButton::calculateProps() {
 	ScreenText::calculateProps();
+
+	const String &mouse = propValues.at("mouse");
+	btnRect.buttonMode = mouse == "True";
 
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {

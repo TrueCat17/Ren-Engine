@@ -61,7 +61,7 @@ void SyntaxChecker::init() {
 	const String simpleProps = ", style, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, size, crop, rotate, alpha, ";
 	const String containerProps = ", has, spacing, ";
 	const String textProps = ", color, font, text_size, text_align, text_valign, ";
-	const String buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, ";
+	const String buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";
 
 	const String imageProps = simpleProps + "repeat, linear, ease, easein, easeout, pause, rotate, alpha, reset, ";
 

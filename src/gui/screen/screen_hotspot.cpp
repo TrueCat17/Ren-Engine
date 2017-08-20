@@ -37,6 +37,11 @@ ScreenHotspot::ScreenHotspot(Node *node):
 		}
 	};
 	btnRect.init(this, onLeftClick, onRightClick);
+
+	removeAllProps();
+	needUpdateFields = false;
+	setProp("rect", NodeProp::initPyExpr("' '.join(map(str, " + rectStr + "))", node->getNumLine()));
+	setProp("mouse", node->getPropCode("mouse"));
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
@@ -63,8 +68,10 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 }
 
 void ScreenHotspot::calculateProps() {
-	String t = PyUtils::exec(getFileName(), getNumLine(), "' '.join(map(str, " + rectStr + "))", true);
-	std::vector<String> rectVec = t.split(' ');
+	ScreenChild::calculateProps();
+
+	const String &rectStr = propValues.at("rect");
+	std::vector<String> rectVec = rectStr.split(' ');
 	if (rectVec.size() != 4) {
 		Utils::outMsg("ScreenHotspot::updateProps",
 					  String() + "Ожидалось 4 параметра (x, y, width, height), получено " + rectVec.size());
@@ -72,6 +79,9 @@ void ScreenHotspot::calculateProps() {
 	}
 
 	enable = true;
+
+	const String &mouse = propValues.at("mouse");
+	btnRect.buttonMode = mouse == "True";
 
 	TexturePtr ground = parent->texture;
 	scaleX = 1;
