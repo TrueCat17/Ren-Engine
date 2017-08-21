@@ -14,10 +14,10 @@ ScreenKey::ScreenKey(Node *node):
 	screenKeys.push_back(this);
 
 	needUpdateFields = false;
-	removeAllProps();
-	setProp("first_delay", node->getPropCode("first_delay"));
-	setProp("delay", node->getPropCode("delay"));
-	setProp("key", NodeProp::initPyExpr(keyStr, node->getNumLine()));
+	clearProps();
+	setProp(ScreenProp::KEY, NodeProp::initPyExpr(keyStr, node->getNumLine()));
+	setProp(ScreenProp::FIRST_DELAY, node->getPropCode("first_delay"));
+	setProp(ScreenProp::DELAY, node->getPropCode("delay"));
 	calculateProps();
 }
 ScreenKey::~ScreenKey() {
@@ -66,13 +66,13 @@ void ScreenKey::calculateProps() {
 	if (!isModal() || toNotReact) return;
 
 	ScreenChild::calculateProps();
-	firstKeyDelay = propValues.at("first_delay").toDouble() * 1000;
-	keyDelay = propValues.at("delay").toDouble() * 1000;
+	firstKeyDelay = propValues.at(ScreenProp::FIRST_DELAY).toDouble() * 1000;
+	keyDelay = propValues.at(ScreenProp::DELAY).toDouble() * 1000;
 
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		const String &keyName = propValues.at("key");
+		const String &keyName = propValues.at(ScreenProp::KEY);
 		Utils::outMsg("SDL_GetScancodeFromName",
 					  "KeyName <" + keyName + ">\n" +
 					  SDL_GetError() + '\n' +
@@ -106,11 +106,10 @@ void ScreenKey::calculateProps() {
 }
 
 SDL_Scancode ScreenKey::getKey() const {
-	auto i = propValues.find("key");
-	if (i == propValues.end()) return SDL_SCANCODE_UNKNOWN;
+	const String &keyName = propValues.at(ScreenProp::KEY);
+	if (!keyName) return SDL_SCANCODE_UNKNOWN;
 
 	int start = 0;
-	const String &keyName = i->second;
 	if (keyName.startsWith("K_", false)) {
 		start = 2;
 	}

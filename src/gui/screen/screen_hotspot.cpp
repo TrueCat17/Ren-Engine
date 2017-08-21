@@ -38,10 +38,10 @@ ScreenHotspot::ScreenHotspot(Node *node):
 	};
 	btnRect.init(this, onLeftClick, onRightClick);
 
-	removeAllProps();
+	clearProps();
 	needUpdateFields = false;
-	setProp("rect", NodeProp::initPyExpr("' '.join(map(str, " + rectStr + "))", node->getNumLine()));
-	setProp("mouse", node->getPropCode("mouse"));
+	setProp(ScreenProp::RECT, NodeProp::initPyExpr("' '.join(map(str, " + rectStr + "))", node->getNumLine()));
+	setProp(ScreenProp::MOUSE, node->getPropCode("mouse"));
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
@@ -70,17 +70,16 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 void ScreenHotspot::calculateProps() {
 	ScreenChild::calculateProps();
 
-	const String &rectStr = propValues.at("rect");
+	const String &rectStr = propValues.at(ScreenProp::RECT);
 	std::vector<String> rectVec = rectStr.split(' ');
 	if (rectVec.size() != 4) {
+		enable = false;
 		Utils::outMsg("ScreenHotspot::updateProps",
 					  String() + "Ожидалось 4 параметра (x, y, width, height), получено " + rectVec.size());
 		return;
 	}
 
-	enable = true;
-
-	const String &mouse = propValues.at("mouse");
+	const String &mouse = propValues.at(ScreenProp::MOUSE);
 	btnRect.buttonMode = mouse == "True";
 
 	TexturePtr ground = parent->texture;

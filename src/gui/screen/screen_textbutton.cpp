@@ -29,15 +29,15 @@ ScreenTextButton::ScreenTextButton(Node* node):
 	};
 	btnRect.init(this, onLeftClick, onRightClick);
 
-	setProp("ground", node->getPropCode("ground"));
-	setProp("hover", node->getPropCode("hover"));
-	setProp("mouse", node->getPropCode("mouse"));
+	setProp(ScreenProp::GROUND, node->getPropCode("ground"));
+	setProp(ScreenProp::HOVER, node->getPropCode("hover"));
+	setProp(ScreenProp::MOUSE, node->getPropCode("mouse"));
 }
 
 void ScreenTextButton::calculateProps() {
 	ScreenText::calculateProps();
 
-	const String &mouse = propValues.at("mouse");
+	const String &mouse = propValues.at(ScreenProp::MOUSE);
 	btnRect.buttonMode = mouse == "True";
 
 	if (btnRect.mouseOvered) {
@@ -73,8 +73,8 @@ void ScreenTextButton::calculateProps() {
 	}
 }
 void ScreenTextButton::updateTexture() {
-	const String &newGround = propValues.at("ground");
-	const String &newHover = propValues.at("hover");
+	const String &newGround = propValues.at(ScreenProp::GROUND);
+	const String &newHover = propValues.at(ScreenProp::HOVER);
 
 	if (newHover) {
 		hover = newHover;

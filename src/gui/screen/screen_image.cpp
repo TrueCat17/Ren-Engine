@@ -8,14 +8,14 @@ ScreenImage::ScreenImage(Node *node):
 	ScreenContainer(node, this),
 	imageCode(node->getFirstParam())
 {
-	setProp("image_path", NodeProp::initPyExpr(imageCode, getNumLine()));
+	setProp(ScreenProp::IMAGE_PATH, NodeProp::initPyExpr(imageCode, getNumLine()));
 }
 
 void ScreenImage::calculateProps() {
 	ScreenContainer::calculateProps();
 }
 void ScreenImage::updateTexture() {
-	texture = Utils::getTexture(propValues.at("image_path"));
+	texture = Utils::getTexture(propValues.at(ScreenProp::IMAGE_PATH));
 }
 
 void ScreenImage::updateSize() {

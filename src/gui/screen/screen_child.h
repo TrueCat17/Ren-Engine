@@ -9,7 +9,56 @@
 
 
 class Screen;
-class String;
+
+
+enum ScreenProp {
+	//common
+	X_POS,
+	Y_POS,
+	X_ANCHOR,
+	Y_ANCHOR,
+	X_ALIGN,
+	Y_ALIGN,
+	X_SIZE,
+	Y_SIZE,
+	CROP,
+	ROTATE,
+	ALPHA,
+
+	//image, buttons, imagemap
+	IMAGE_PATH,
+	GROUND,
+	HOVER,
+
+	//hotspot
+	RECT,
+
+	//buttons
+	MOUSE,
+
+	//screen, vbox, hbox
+	SPACING,
+	MODAL,
+	ZORDER,
+
+	//key
+	KEY,
+	DELAY,
+	FIRST_DELAY,
+
+	//text
+	TEXT,
+	FONT,
+	TEXT_SIZE,
+	TEXT_ALIGN,
+	TEXT_VALIGN,
+	COLOR,
+
+
+	//not use, most be ALWAYS last
+	LAST_POINT
+};
+const size_t COUNT_PROPS = ScreenProp::LAST_POINT;
 
 
 class ScreenChild: public Group {
@@ -27,12 +76,13 @@ protected:
 	Node *node;
 
 	//pyExprs -> calculate propValue
-	std::map<String, String> propCodes;    //propName - propCode
-	std::map<String, String> propValues;   //propName - calculatedPropValue
-	std::map<String, size_t> propNumLines; //propName - propNumLine
+	std::vector<String> propCodes;
+	std::vector<String> propValues;
+	std::vector<size_t> propNumLines;
 
 	//styleProps -> propValue
-	std::map<String, NodeProp> propInStyle;//propName - path in style-Object
+	std::vector<NodeProp> propInStyle;//propName - path in style-Object
+
 
 	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
 
@@ -62,8 +112,8 @@ public:
 	ScreenChild(Node *node, ScreenChild *screenParent);
 	virtual ~ScreenChild();
 
-	void removeAllProps();
-	void setProp(const String &propName, const NodeProp &nodeProp);
+	void clearProps();
+	void setProp(const ScreenProp prop, const NodeProp &nodeProp);
 
 	const String& getType() const { return node->command; }
 

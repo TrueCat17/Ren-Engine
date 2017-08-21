@@ -156,7 +156,7 @@ bool init() {
 
 	String windowTitle = Config::get("window_title");
 
-	int flags = SDL_WINDOW_RESIZABLE;
+	int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
 	mainWindow = GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
 	if (!mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
@@ -370,8 +370,8 @@ int main() {
 	}
 	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime, true);
 
-	Game::startMod("main_menu");
-//	Game::startMod("snow");
+//	Game::startMod("main_menu");
+	Game::startMod("snow");
 
 	loop();
 	destroy();

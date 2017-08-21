@@ -28,7 +28,7 @@ public:
 		return *this;
 	}
 
-	operator bool() const { return size(); }
+	operator bool() const { return !empty(); }
 	int toInt(int base = 10) const;
 	double toDouble() const;
 

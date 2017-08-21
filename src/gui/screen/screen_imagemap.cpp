@@ -6,16 +6,16 @@
 ScreenImagemap::ScreenImagemap(Node *node):
 	ScreenContainer(node, this)
 {
-	setProp("ground", node->getPropCode("ground"));
-	setProp("hover", node->getPropCode("hover"));
+	setProp(ScreenProp::GROUND, node->getPropCode("ground"));
+	setProp(ScreenProp::HOVER, node->getPropCode("hover"));
 }
 
 void ScreenImagemap::calculateProps() {
 	ScreenContainer::calculateProps();
 }
 void ScreenImagemap::updateTexture() {
-	const String &newGroundPath = propValues.at("ground");
-	const String &newHoverPath = propValues.at("hover");
+	const String &newGroundPath = propValues.at(ScreenProp::GROUND);
+	const String &newHoverPath = propValues.at(ScreenProp::HOVER);
 
 	if (newHoverPath) {
 		hoverPath = newHoverPath;

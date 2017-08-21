@@ -23,7 +23,7 @@ void GUI::update() {
 			Screen *scr = dynamic_cast<Screen*>(child);
 			if (scr) {
 				try {
-//					std::cout << scr->name << ":\n";
+//					std::cout << "update <" << scr->name << ">:\n";
 //					int a = Utils::getTimer();
 					scr->calculateProps();
 //					int b = Utils::getTimer();

@@ -15,24 +15,24 @@ ScreenText::ScreenText(Node *node):
 	tf->wordWrap = true;
 	addChild(tf);
 
-	setProp("text", NodeProp::initPyExpr(textExec ? textExec : "''", getNumLine()));
-	setProp("font", node->getPropCode("font"));
-	setProp("text_align", node->getPropCode("text_align"));
-	setProp("text_valign", node->getPropCode("text_valign"));
-	setProp("color", node->getPropCode("color"));
-	setProp("text_size", node->getPropCode("text_size"));
+	setProp(ScreenProp::TEXT, NodeProp::initPyExpr(textExec ? textExec : "''", getNumLine()));
+	setProp(ScreenProp::FONT, node->getPropCode("font"));
+	setProp(ScreenProp::TEXT_SIZE, node->getPropCode("text_size"));
+	setProp(ScreenProp::TEXT_ALIGN, node->getPropCode("text_align"));
+	setProp(ScreenProp::TEXT_VALIGN, node->getPropCode("text_valign"));
+	setProp(ScreenProp::COLOR, node->getPropCode("color"));
 }
 
 void ScreenText::calculateProps() {
 	ScreenChild::calculateProps();
 
-	text = propValues.at("text");
+	text = propValues.at(ScreenProp::TEXT);
 	if (text) {
-		font = propValues.at("font");
-		textHAlign = propValues.at("text_align");
-		textVAlign = propValues.at("text_valign");
+		font = propValues.at(ScreenProp::FONT);
+		textHAlign = propValues.at(ScreenProp::TEXT_ALIGN);
+		textVAlign = propValues.at(ScreenProp::TEXT_VALIGN);
 
-		const String &colorStr = propValues.at("color");
+		const String &colorStr = propValues.at(ScreenProp::COLOR);
 		color = 0xFFFFFF;
 		if (colorStr) {
 			if (colorStr[0] == '#') {
@@ -42,7 +42,7 @@ void ScreenText::calculateProps() {
 			}
 		}
 
-		size = propValues.at("text_size").toInt();
+		size = propValues.at(ScreenProp::TEXT_SIZE).toInt();
 		if (!size) size = 20;
 	}
 }

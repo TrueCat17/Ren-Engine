@@ -148,8 +148,8 @@ Screen::Screen(Node *node, const String &dependOn):
 	created.push_back(this);
 	addShowedCount(dependOn);
 
-	setProp("modal", node->getPropCode("modal"));
-	setProp("zorder", node->getPropCode("zorder"));
+	setProp(ScreenProp::MODAL, node->getPropCode("modal"));
+	setProp(ScreenProp::ZORDER, node->getPropCode("zorder"));
 }
 Screen::~Screen() {
 	for (size_t i = 0; i < created.size(); ++i) {
@@ -199,6 +199,6 @@ void Screen::updateScreenProps() {
 	calculateProps();
 	needUpdateChildren = true;
 
-	_isModal = propValues.at("modal") == "True";
-	_zOrder = propValues.at("zorder").toDouble();
+	_isModal = propValues.at(ScreenProp::MODAL) == "True";
+	_zOrder = propValues.at(ScreenProp::ZORDER).toDouble();
 }

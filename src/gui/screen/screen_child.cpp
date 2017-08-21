@@ -1,8 +1,6 @@
 #include "screen_child.h"
 
-#include <iostream>
 #include <algorithm>
-
 
 #include "gv.h"
 
@@ -27,19 +25,21 @@ ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent) {
 	_canCrop = type == "image" || type == "button" || type == "textbutton" || type == "imagemap";
 
 
-	setProp("xanchor", node->getPropCode("xanchor", "anchor", "[0]"));
-	setProp("yanchor", node->getPropCode("yanchor", "anchor", "[1]"));
-	setProp("xpos", node->getPropCode("xpos", "pos", "[0]"));
-	setProp("ypos", node->getPropCode("ypos", "pos", "[1]"));
-	setProp("xalign", node->getPropCode("xalign", "align", "[0]"));
-	setProp("yalign", node->getPropCode("yalign", "align", "[1]"));
+	clearProps();
 
-	setProp("xsize", node->getPropCode("xsize", "size", "[0]"));
-	setProp("ysize", node->getPropCode("ysize", "size", "[1]"));
+	setProp(ScreenProp::X_ANCHOR, node->getPropCode("xanchor", "anchor", "[0]"));
+	setProp(ScreenProp::Y_ANCHOR, node->getPropCode("yanchor", "anchor", "[1]"));
+	setProp(ScreenProp::X_POS, node->getPropCode("xpos", "pos", "[0]"));
+	setProp(ScreenProp::Y_POS, node->getPropCode("ypos", "pos", "[1]"));
+	setProp(ScreenProp::X_ALIGN, node->getPropCode("xalign", "align", "[0]"));
+	setProp(ScreenProp::Y_ALIGN, node->getPropCode("yalign", "align", "[1]"));
 
-	setProp("crop", node->getPropCode("crop"));
-	setProp("rotate", node->getPropCode("rotate"));
-	setProp("alpha", node->getPropCode("alpha"));
+	setProp(ScreenProp::X_SIZE, node->getPropCode("xsize", "size", "[0]"));
+	setProp(ScreenProp::Y_SIZE, node->getPropCode("ysize", "size", "[1]"));
+
+	setProp(ScreenProp::CROP, node->getPropCode("crop"));
+	setProp(ScreenProp::ROTATE, node->getPropCode("rotate"));
+	setProp(ScreenProp::ALPHA, node->getPropCode("alpha"));
 }
 ScreenChild::~ScreenChild() {
 	auto i = std::find(screenObjects.begin(), screenObjects.end(), this);
@@ -54,21 +54,28 @@ void ScreenChild::disableAll() {
 	}
 }
 
-void ScreenChild::removeAllProps() {
+void ScreenChild::clearProps() {
 	propCodes.clear();
+	propCodes.resize(COUNT_PROPS);
+
 	propNumLines.clear();
+	propNumLines.resize(COUNT_PROPS);
+
 	propInStyle.clear();
+	propInStyle.resize(COUNT_PROPS);
+
 	propValues.clear();
+	propValues.resize(COUNT_PROPS);
 }
 
-void ScreenChild::setProp(const String &propName, const NodeProp &nodeProp) {
+void ScreenChild::setProp(const ScreenProp prop, const NodeProp &nodeProp) {
 	if (nodeProp.pyExpr) {
-		propCodes[propName] = nodeProp.pyExpr;
-		propNumLines[propName] = nodeProp.numLine;
+		propCodes[prop] = nodeProp.pyExpr;
+		propNumLines[prop] = nodeProp.numLine;
 	}else {
-		propInStyle[propName] = nodeProp;
+		propInStyle[prop] = nodeProp;
 	}
-	propValues[propName] = "";
+	propValues[prop] = "";
 }
 
 void ScreenChild::calculateProps() {
@@ -102,31 +109,42 @@ void ScreenChild::calculateProps() {
 	if (isFakeContainer()) return;
 
 
-
-	for (auto &i : propInStyle) {
-		const String &propName = i.first;
-		const NodeProp &nodeProp = i.second;
-
-		propValues[propName] = Style::getProp(nodeProp.styleName, nodeProp.propName);
+	for (size_t i = 0; i < COUNT_PROPS; ++i) {
+		const NodeProp &nodeProp = propInStyle.at(i);
+		if (nodeProp.styleName) {
+			propValues[i] = Style::getProp(nodeProp.styleName, nodeProp.propName);
+		}
 	}
 
 
-
-	if (propCodes.empty()) return;
 
 	{
 		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
 		GV::pyUtils->pythonGlobal["calc_object"] = py::object();//... = None
 	}
 
+	static std::vector<String> propNames;
+	if (propNames.empty()) {
+		for (size_t i = 0; i < COUNT_PROPS; ++i) {
+			propNames.push_back(String(i));
+		}
+	}
+
+
 	String code =
 				"calc_object = {\n";
-	for (auto &i : propCodes) {
-		const String &propName = i.first;
-		const String &propExpr = i.second;
 
-		code += "    '" + propName + "': " + propExpr + ",\n";
+	bool empty = true;
+	for (size_t i = 0; i < COUNT_PROPS; ++i) {
+		const String &propExpr = propCodes.at(i);
+		if (propExpr) {
+			empty = false;
+			const String &propName = propNames.at(i);
+			code += "    '" + propName + "': " + propExpr + ",\n";
+		}
 	}
+	if (empty) return;
+
 	code.erase(code.size() - 2);
 	code +=     "\n"
 				"}\n";
@@ -136,18 +154,20 @@ void ScreenChild::calculateProps() {
 	{
 		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
 
-		String errorDesc = "Ошибка при извлечении calc_object";
+		const char *errorDesc = "Ошибка при извлечении calc_object";
 		try {
 			py::object obj = GV::pyUtils->pythonGlobal["calc_object"];
 
 			//ok (try)
 			if (!obj.is_none()) {
 				errorDesc = "Ошибка при извлечении свойств из calc_object";
-				for (auto &i : propCodes) {
-					const String &propName = i.first;
-
-					py::object res = obj[propName.c_str()];
-					propValues[propName] = String(py::extract<const std::string>(py::str(res)));
+				for (size_t i = 0; i < COUNT_PROPS; ++i) {
+					const String &propExpr = propCodes.at(i);
+					if (propExpr) {
+						const String &propName = propNames.at(i);
+						py::object res = obj[propName.c_str()];
+						propValues[i] = String(py::extract<const std::string>(py::str(res)));
+					}
 				}
 				ok = true;
 			}
@@ -159,13 +179,15 @@ void ScreenChild::calculateProps() {
 
 	//some error (except)
 	if (!ok) {
-		for (auto &i : propCodes) {
-			const String &propName = i.first;
-			const String &propExpr = i.second;
-			const String &fileName = node->getFileName();
-			size_t numLine = propNumLines.at(propName);
+		for (size_t i = 0; i < COUNT_PROPS; ++i) {
+			const String &propExpr = propCodes[i];
 
-			propValues[propName] = PyUtils::exec(fileName, numLine, propExpr, true);
+			if (propExpr) {
+				const String &fileName = node->getFileName();
+				size_t numLine = propNumLines.at(i);
+
+				propValues[i] = PyUtils::exec(fileName, numLine, propExpr, true);
+			}
 		}
 	}
 
@@ -178,7 +200,7 @@ void ScreenChild::calculateProps() {
 
 
 	if (!inHBox) {
-		const String &xAnchorStr = propValues.at("xanchor");
+		const String &xAnchorStr = propValues.at(ScreenProp::X_ANCHOR);
 		xAnchor = xAnchorStr.toDouble();
 		xAnchorIsDouble = xAnchor > 0 && xAnchor <= 1 && xAnchorStr.contains('.');
 		if (xAnchorStr != "None" && !xAnchorStr.isNumber()) {
@@ -186,7 +208,7 @@ void ScreenChild::calculateProps() {
 						  "xanchor is not a number (" + xAnchorStr + ")\n" + node->getPlace());
 		}
 
-		const String &xPosStr = propValues.at("xpos");
+		const String &xPosStr = propValues.at(ScreenProp::X_POS);
 		xPos = xPosStr.toDouble();
 		xPosIsDouble = xPos > 0 && xPos <= 1 && xPosStr.contains('.');
 		if (xPosStr != "None" && !xPosStr.isNumber()) {
@@ -194,7 +216,7 @@ void ScreenChild::calculateProps() {
 						  "xpos is not a number (" + xPosStr + ")\n" + node->getPlace());
 		}
 
-		const String &xAlignStr = propValues.at("xalign");
+		const String &xAlignStr = propValues.at(ScreenProp::X_ALIGN);
 		if (xAlignStr.isNumber()) {
 			xAnchor = xPos = xAlignStr.toDouble();
 			xAnchorIsDouble = xPosIsDouble = xAnchor > 0 && xAnchor <= 1 && xAlignStr.contains('.');
@@ -205,7 +227,7 @@ void ScreenChild::calculateProps() {
 	}
 
 	if (!inVBox) {
-		const String &yAnchorStr = propValues.at("yanchor");
+		const String &yAnchorStr = propValues.at(ScreenProp::Y_ANCHOR);
 		yAnchor = yAnchorStr.toDouble();
 		yAnchorIsDouble = yAnchor > 0 && yAnchor <= 1 && yAnchorStr.contains('.');
 		if (yAnchorStr != "None" && !yAnchorStr.isNumber()) {
@@ -213,7 +235,7 @@ void ScreenChild::calculateProps() {
 						  "yanchor is not a number (" + yAnchorStr + ")\n" + node->getPlace());
 		}
 
-		const String &yPosStr = propValues.at("ypos");
+		const String &yPosStr = propValues.at(ScreenProp::Y_POS);
 		yPos = yPosStr.toDouble();
 		yPosIsDouble = yPos > 0 && yPos <= 1 && yPosStr.contains('.');
 		if (yPosStr != "None" && !yPosStr.isNumber()) {
@@ -221,7 +243,7 @@ void ScreenChild::calculateProps() {
 						  "ypos is not a number (" + yPosStr + ")\n" + node->getPlace());
 		}
 
-		const String &yAlignStr = propValues.at("yalign");
+		const String &yAlignStr = propValues.at(ScreenProp::Y_ALIGN);
 		if (yAlignStr.isNumber()) {
 			yAnchor = yPos = yAlignStr.toDouble();
 			yAnchorIsDouble = yPosIsDouble = yAnchor > 0 && yAnchor <= 1 && yAlignStr.contains('.');
@@ -233,7 +255,7 @@ void ScreenChild::calculateProps() {
 
 
 
-	const String &xSizeStr = propValues.at("xsize");
+	const String &xSizeStr = propValues.at(ScreenProp::X_SIZE);
 	xSize = xSizeStr.toDouble();
 	xSizeIsDouble = xSize > 0 && xSize <= 1 && xSizeStr.contains('.');
 	if (xSizeStr != "None" && !xSizeStr.isNumber()) {
@@ -241,7 +263,7 @@ void ScreenChild::calculateProps() {
 					  "xsize is not a number (" + xSizeStr + ")\n" + node->getPlace());
 	}
 
-	const String &ySizeStr = propValues.at("ysize");
+	const String &ySizeStr = propValues.at(ScreenProp::Y_SIZE);
 	ySize = ySizeStr.toDouble();
 	ySizeIsDouble = ySize > 0 && ySize <= 1 && ySizeStr.contains('.');
 	if (ySizeStr != "None" && !ySizeStr.isNumber()) {
@@ -250,7 +272,7 @@ void ScreenChild::calculateProps() {
 	}
 
 	if (canCrop() && texture) {
-		String cropStr = propValues.at("crop");
+		String cropStr = propValues.at(ScreenProp::CROP);
 		if (cropStr && cropStr != "None") {
 			char start = cropStr.front();
 			char end = cropStr.back();
@@ -293,14 +315,14 @@ void ScreenChild::calculateProps() {
 		}
 	}
 
-	const String &rotateStr = propValues.at("rotate");
+	const String &rotateStr = propValues.at(ScreenProp::ROTATE);
 	rotate = rotateStr.toDouble();
 	if (rotateStr != "None" && !rotateStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",
 					  "rotate is not a number (" + rotateStr + ")\n" + node->getPlace());
 	}
 
-	const String &alphaStr = propValues.at("alpha");
+	const String &alphaStr = propValues.at(ScreenProp::ALPHA);
 	alpha = alphaStr.toDouble();
 	if (alphaStr != "None" && !alphaStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",
