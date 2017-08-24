@@ -20,7 +20,7 @@ private:
 
 public:
 	static void checkMouseCursor();
-	static bool checkMouseClick(bool left);
+	static bool checkMouseClick(bool left, bool withKeyboard = false);
 
 
 	bool buttonMode = true;

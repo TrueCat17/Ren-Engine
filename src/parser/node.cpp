@@ -23,20 +23,30 @@ bool Node::loading = false;
 size_t Node::stackDepth = 0;
 std::vector<std::pair<String, String>> Node::stack;
 
-struct StackRecorder {
-	StackRecorder(String i, String s) {
-		if (!Node::loading) {
-			Node::stack.push_back(std::make_pair(i, s));
-		}
+class StackRecorder {
+private:
+	bool init;
 
-		++Node::stackDepth;
-		if (Node::stackDepth == Node::stack.size()) {
-			Node::loading = false;//now loaded
+public:
+	StackRecorder(bool init, String i, String s):
+		init(init)
+	{
+		if (!init) {
+			if (!Node::loading) {
+				Node::stack.push_back(std::make_pair(i, s));
+			}
+
+			++Node::stackDepth;
+			if (Node::stackDepth == Node::stack.size()) {
+				Node::loading = false;//now loaded
+			}
 		}
 	}
 	~StackRecorder() {
-		Node::stack.pop_back();
-		--Node::stackDepth;
+		if (!init) {
+			Node::stack.pop_back();
+			--Node::stackDepth;
+		}
 	}
 };
 
@@ -49,7 +59,41 @@ void Node::execute() {
 
 	if (!GV::inGame) return;
 
-	StackRecorder sr(command == "label" ? name : String(childNum), command);
+
+	size_t curStackDepth = Node::stackDepth;
+	if (!initing && curStackDepth < Node::stack.size()) {
+		const std::pair<String, String> &cur = Node::stack.at(curStackDepth);
+		if (cur.second != command) {
+			GV::inGame = false;
+			Utils::outMsg(cur.second, command);
+			Utils::outMsg("Node::execute",
+						  "Для загрузки сохранения необходима версия мода, в которой это сохранение было сделано");
+			return;
+		}
+	}
+
+	const size_t NO = size_t(-1);
+	size_t nextNum = NO;
+	String nextCommand;
+	size_t nextStackDepth = curStackDepth + 1;
+	if (!initing && nextStackDepth < Node::stack.size()) {
+		const std::pair<String, String> &next = Node::stack.at(nextStackDepth);
+		nextNum = next.first.toDouble();
+		nextCommand = next.second;
+
+		if (nextCommand != "label" && nextNum >= children.size()) {
+			GV::inGame = false;
+			Utils::outMsg("next", next.first + " " + next.second);
+			Utils::outMsg("Node::execute",
+						  "Для загрузки сохранения необходима версия мода, в которой это сохранение было сделано");
+			return;
+		}
+	}
+
+
+	StackRecorder sr(initing, command == "label" ? name : String(childNum), command);
+
+
 
 
 	if (command == "main") {
@@ -79,13 +123,23 @@ void Node::execute() {
 			Logger::logEvent("Mod Initing (" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
 
 
-			String startScreensStr = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "start_screens", true);
-			std::vector<String> startScreensVec = startScreensStr.split(' ');
-			for (String screenName : startScreensVec) {
+			std::vector<String> startScreensVec;
+			if (loadPath) {
+				PyUtils::exec("CPP_EMBED: node.cpp", __LINE__,
+							  "load_global_vars('" + loadPath + "py_globals" + "')");
+
+				startScreensVec = Game::loadInfo(loadPath);
+			}else {
+				String startScreens = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "start_screens", true);
+				startScreensVec = startScreens.split(' ');
+			}
+
+			for (const String &screenName : startScreensVec) {
 				if (screenName) {
 					Screen::addToShowSimply(screenName);
 				}
 			}
+
 
 			mainLabel = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "mods_last_key", true);
 			try {
@@ -105,17 +159,22 @@ void Node::execute() {
 		}
 	}else
 
-	if (command == "init" || command == "label") {
-		for (size_t i = 0; GV::inGame && i < children.size(); ++i) {
+	if (command == "init" || command == "label" || command == "menuItem") {
+		bool isInit = command == "init";
+		size_t i = (!isInit && nextNum != NO) ? nextNum : 0;
+
+		for (; GV::inGame && i < children.size(); ++i) {
 			Node *node = children[i];
 			node->execute();
 
-			if ((node->command == "show" && !node->params.startsWith("screen ")) ||
-				node->command == "scene" ||
-				node->command == "with"  ||
-				!i)
-			{
-				preloadImages(this, i + 1, Config::get("count_preload_commands").toInt());
+			if (!isInit) {
+				if ((node->command == "show" && !node->params.startsWith("screen ")) ||
+					node->command == "scene" ||
+					node->command == "with"  ||
+					!i)
+				{
+					preloadImages(this, i + 1, Config::get("count_preload_commands").toInt());
+				}
 			}
 		}
 	}else
@@ -237,22 +296,13 @@ void Node::execute() {
 		PyUtils::exec(getFileName(), getNumLine(), "pause_end = time.time() + (" + params + ")");
 	}else
 
-	if (command == "jump") {
+	if (command == "jump" || command == "call") {
 		String label = params;
 		if (label.startsWith("expression ")) {
 			label = PyUtils::exec(getFileName(), getNumLine(), label.substr(String("expression ").size()), true);
 		}
 
-		jump(label, false);
-	}else
-
-	if (command == "call") {
-		String label = params;
-		if (label.startsWith("expression ")) {
-			label = PyUtils::exec(getFileName(), getNumLine(), label.substr(String("expression ").size()), true);
-		}
-
-		jump(label, true);
+		jump(label, command == "call");
 	}else
 
 	if (command == "play") {
@@ -278,37 +328,46 @@ void Node::execute() {
 
 
 	if (command == "menu") {
-		String variants = children[0]->params;
-		if (children.size() == 1) {
-			variants += ", ";
-		}else {
-			for (size_t i = 1; i < children.size(); ++i) {
-				variants += ", " + children[i]->params;
+		size_t choose = nextNum;
+
+		if (choose == NO) {
+			//loaded with screen choose_menu?
+			Screen::updateLists();
+			bool screenThereIs = Screen::getCreated("choose_menu");
+
+			if (!screenThereIs) {
+				String variants = children[0]->params;
+				if (children.size() == 1) {
+					variants += ", ";
+				}else {
+					for (size_t i = 1; i < children.size(); ++i) {
+						variants += ", " + children[i]->params;
+					}
+				}
+				PyUtils::exec(getFileName(), getNumLine(), "choose_menu_variants = (" + variants + ")");
+				PyUtils::exec(getFileName(), getNumLine(), "renpy.call_screen('choose_menu', 'choose_menu_result')");
 			}
-		}
-		PyUtils::exec(getFileName(), getNumLine(), "choose_menu_variants = (" + variants + ")");
-		PyUtils::exec(getFileName(), getNumLine(), "renpy.call_screen('choose_menu', 'choose_menu_result')");
 
-		while (GV::inGame && PyUtils::exec(getFileName(), getNumLine(), "menu_item_choosed", true) != "True") {
-			Utils::sleep(Game::getFrameTime());
-		}
-		if (!GV::inGame) return;
+			while (GV::inGame && PyUtils::exec(getFileName(), getNumLine(), "call_screen_choosed", true) != "True") {
+				Utils::sleep(Game::getFrameTime());
+			}
+			if (!GV::inGame) return;
 
-		String resStr = PyUtils::exec(getFileName(), getNumLine(), "choose_menu_result", true);
-		int res = resStr.toInt();
+			String resStr = PyUtils::exec(getFileName(), getNumLine(), "choose_menu_result", true);
+			int res = resStr.toInt();
 
-		if (res < 0 || res >= int(children.size())) {
-			Utils::outMsg("Node::execute", String() +
-						  "Номер выбранного пункта меню находится вне допустимых пределов\n"
-						  "choose_menu_result = " + res + ", min = 0, max = " + children.size() + "\n" +
-						  getPlace());
-			res = 0;
+			if (res < 0 || res >= int(children.size())) {
+				Utils::outMsg("Node::execute", String() +
+							  "Номер выбранного пункта меню находится вне допустимых пределов\n"
+							  "choose_menu_result = " + res + ", min = 0, max = " + children.size() + "\n" +
+							  getPlace());
+				res = 0;
+			}
+			choose = res;
 		}
-		Node *menuItem = children[res];
-		for (size_t i = 0; i < menuItem->children.size(); ++i) {
-			Node *node = menuItem->children[i];
-			node->execute();
-		}
+
+		Node *menuItem = children[choose];
+		menuItem->execute();
 	}else
 
 	if (command == "with") {
@@ -320,11 +379,17 @@ void Node::execute() {
 	}else
 
 	if (command == "if") {
-		const String execRes = PyUtils::exec(getFileName(), getNumLine(), "bool(" + params + ")", true);
-		condIsTrue = execRes == "True";
+		if (nextNum == NO) {
+			nextNum = 0;
+
+			const String execRes = PyUtils::exec(getFileName(), getNumLine(), "bool(" + params + ")", true);
+			condIsTrue = execRes == "True";
+		}else {
+			condIsTrue = true;
+		}
 
 		if (condIsTrue) {
-			for (size_t i = 0; i < children.size(); ++i) {
+			for (size_t i = nextNum; i < children.size(); ++i) {
 				Node *node = children[i];
 				node->execute();
 			}
@@ -332,17 +397,23 @@ void Node::execute() {
 	}else
 
 	if (command == "elif") {
-		const Node *t = prevNode;
-		while (t->command != "if" && !t->condIsTrue) {
-			t = t->prevNode;
-		}
-		if (t->condIsTrue) return;
+		if (nextNum == NO) {
+			nextNum = 0;
 
-		const String execRes = PyUtils::exec(getFileName(), getNumLine(), "bool(" + params + ")", true);
-		condIsTrue = execRes == "True";
+			const Node *t = prevNode;
+			while (t->command != "if" && !t->condIsTrue) {
+				t = t->prevNode;
+			}
+			if (t->condIsTrue) return;
+
+			const String execRes = PyUtils::exec(getFileName(), getNumLine(), "bool(" + params + ")", true);
+			condIsTrue = execRes == "True";
+		}else {
+			condIsTrue = true;
+		}
 
 		if (condIsTrue) {
-			for (size_t i = 0; i < children.size(); ++i) {
+			for (size_t i = nextNum; i < children.size(); ++i) {
 				Node *node = children[i];
 				node->execute();
 			}
@@ -350,26 +421,34 @@ void Node::execute() {
 	}else
 
 	if (command == "else") {
-		const Node *t = prevNode;
-		while (t->command != "if" && !t->condIsTrue) {
-			t = t->prevNode;
-		}
-		if (t->condIsTrue) return;
+		if (nextNum == NO) {
+			nextNum = 0;
 
-		for (size_t i = 0; i < children.size(); ++i) {
+			const Node *t = prevNode;
+			while (t->command != "if" && !t->condIsTrue) {
+				t = t->prevNode;
+			}
+			if (t->condIsTrue) return;
+		}
+
+		for (size_t i = nextNum; i < children.size(); ++i) {
 			Node *node = children[i];
 			node->execute();
 		}
 	}else
 
 	if (command == "while") {
+		bool inCicle = nextNum != NO;
+
 		condIsTrue = true;
 		const String cond = "bool(" + params + ")";
-		while (GV::inGame && PyUtils::exec(getFileName(), getNumLine(), cond, true) == "True") {
+
+		while (GV::inGame && (inCicle || PyUtils::exec(getFileName(), getNumLine(), cond, true) == "True")) {
 			if (!GV::inGame) return;
 
 			try {
-				for (size_t i = 0; i < children.size(); ++i) {
+				size_t i = inCicle ? nextNum : 0;
+				for (; i < children.size(); ++i) {
 					Node* node = children[i];
 					node->execute();
 				}
@@ -378,11 +457,13 @@ void Node::execute() {
 				condIsTrue = false;
 				break;
 			}
+			inCicle = false;
 		}
 	}else
 
 	if (command == "for") {
 		condIsTrue = true;
+		bool inCicle = nextNum != NO;
 
 		static const String in = " in ";
 		size_t inPos = params.find(in);
@@ -402,60 +483,33 @@ void Node::execute() {
 		String init = iterName + " = iter(" + afterIn + ")";
 		PyUtils::exec(getFileName(), getNumLine(), init);
 
-		String onStep;
-		for (char c : propName) {
-			if ((c >= 'a' && c <= 'z') ||
-				(c >= 'A' && c <= 'Z') ||
-				(c >= '0' && c <= '9') ||
-				 c == '_') continue;
 
-			onStep = propName + " = " + iterName + ".next()";
-			break;
-		}
+		String onStep = propName + " = " + iterName + ".next()";
+		while (true) {
+			if (!GV::inGame) break;
 
-		py::object nextMethod;
-		if (!onStep) {
-			std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
 			try {
-				py::object iter = GV::pyUtils->pythonGlobal[iterName.c_str()];
-				nextMethod = iter.attr("next");
-			}catch (py::error_already_set) {
-				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", "Ошибка при извлечении " + iterName);
-				PyUtils::errorProcessing(iterName);
-			}
-		}
-
-		if (!nextMethod.is_none()) {
-			while (true) {
-				if (!GV::inGame) break;
-
-				try {
-					if (!onStep) {
-						std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
-						try {
-							GV::pyUtils->pythonGlobal[propName.c_str()] = nextMethod();
-						}catch (py::error_already_set) {
-							PyUtils::errorProcessing(propName + " = " + iterName + ".next()");
-						}
-					}else {
-						PyUtils::exec(getFileName(), getNumLine(), onStep);
-					}
-
-					for (size_t i = 0; i < children.size(); ++i) {
-						Node* node = children[i];
-						node->execute();
-					}
-				}catch (ContinueException) {
-				}catch (BreakException) {
-					condIsTrue = false;
-					break;
-				}catch (StopException) {
-					break;
+				if (!inCicle) {
+					PyUtils::exec(getFileName(), getNumLine(), onStep);
 				}
+
+				size_t i = inCicle ? nextNum : 0;
+				for (; i < children.size(); ++i) {
+					Node* node = children[i];
+					node->execute();
+				}
+			}catch (ContinueException) {
+			}catch (BreakException) {
+				condIsTrue = false;
+				break;
+			}catch (StopException) {
+				break;
 			}
+			inCicle = false;
 		}
 
 		PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
+		--GV::numFor;
 	}else
 
 	if (command == "continue") {

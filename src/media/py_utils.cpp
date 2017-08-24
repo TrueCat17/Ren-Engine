@@ -10,6 +10,7 @@
 
 #include "gui/screen/screen.h"
 
+#include "image.h"
 #include "music.h"
 
 #include "parser/parser.h"
@@ -56,6 +57,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["_get_mods"] = py::make_function(Parser::getMods);
 
 	pythonGlobal["_register_channel"] = py::make_function(Music::registerChannel);
+	pythonGlobal["_has_channel"] = py::make_function(Music::hasChannel);
 	pythonGlobal["_set_volume"] = py::make_function(Music::setVolume);
 	pythonGlobal["_set_mixer_volume"] = py::make_function(Music::setMixerVolume);
 	pythonGlobal["_play"] = py::make_function(Music::play);
@@ -69,6 +71,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHideSimply);
 
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
+	pythonGlobal["_load"] = py::make_function(Game::load);
 	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);
 
 	pythonGlobal["_has_label"] = py::make_function(Game::hasLabel);
@@ -85,6 +88,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_stage_width"] = py::make_function(Game::getStageWidth);
 	pythonGlobal["get_stage_height"] = py::make_function(Game::getStageHeight);
 
+	pythonGlobal["load_image"] = py::make_function(Image::loadImage);
 	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);
 	pythonGlobal["get_texture_height"] = py::make_function(Game::getTextureHeight);
 	pythonGlobal["get_pixel"] = py::make_function(Game::getPixel);

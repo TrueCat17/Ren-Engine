@@ -63,8 +63,11 @@ private:
 
 	int fadeIn = 0;
 	int fadeOut = 0;
+	int64_t lastFramePts = 0;
 
-	std::string place;
+	std::string fileName;
+	int numLine;
+	std::string place;//place = fileName & numLine
 
 	int audioStream = -1;
 
@@ -81,7 +84,7 @@ private:
 	AVFrame *frame = av_frame_alloc();
 
 
-	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &place);
+	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &fileName, int numLine, const std::string &place);
 	~Music();
 
 	bool initCodec();
@@ -98,15 +101,35 @@ public:
 
 	static void registerChannel(const std::string &name, const std::string &mixer, bool loop,
 								const std::string &fileName, int numLine);
+	static bool hasChannel(const std::string &name);
+
 	static void setVolume(double volume, const std::string &channelName,
 						  const std::string &fileName, int numLine);
 	static void setMixerVolume(double volume, const std::string &mixer,
 							   const std::string& fileName, int numLine);
 
 	static void play(const std::string &desc,
-					 const std::string& fileName, int numLine);
+					   const std::string& fileName, int numLine);
 	static void stop(const std::string &desc,
 					 const std::string& fileName, int numLine);
+
+	static const std::vector<Channel*>& getChannels() { return channels; }
+	static const std::vector<Music*>&   getMusics()   { return musics; }
+	static const std::map<std::string, double>& getMixerVolumes() { return mixerVolumes; }
+
+
+	const Channel* getChannel() const { return channel; }
+	const std::string& getUrl() const { return url; }
+	const std::string& getFileName() const { return fileName; }
+	int getNumLine() const { return numLine; }
+
+	int getFadeIn() const { return std::max(fadeIn + startFadeInTime - startUpdateTime, 0); }
+	int getFadeOut() const { return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0); }
+	int64_t getPos() const { return lastFramePts; }
+
+	void setFadeIn(int v) { fadeIn = v; startFadeInTime = startUpdateTime; }
+	void setFadeOut(int v) { fadeOut = v; startFadeOutTime = startUpdateTime; }
+	void setPos(int64_t pos);
 };
 
 #endif // MUSIC_H

@@ -107,7 +107,7 @@ void BtnRect::checkMouseCursor() {
 	Mouse::setUsualMode();
 }
 
-bool BtnRect::checkMouseClick(bool left) {
+bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 	int mouseX, mouseY;
 	Mouse::getPos(mouseX, mouseY);
 
@@ -115,6 +115,7 @@ bool BtnRect::checkMouseClick(bool left) {
 		BtnRect *btnRect = btnRects[i];
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
+		if (withKeyboard && !btnRect->buttonMode) continue;
 
 		int x = mouseX - owner->getGlobalX() - owner->xAnchor;
 		int y = mouseY - owner->getGlobalY() - owner->yAnchor;

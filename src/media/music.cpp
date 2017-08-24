@@ -151,6 +151,17 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 		mixerVolumes[mixer] = 1;
 	}
 }
+bool Music::hasChannel(const std::string &name) {
+	for (size_t i = 0; i < channels.size(); ++i) {
+		Channel *channel = channels[i];
+		if (channel->name == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
 void Music::setVolume(double volume, const std::string &channelName,
 					  const std::string &fileName, int numLine)
 {
@@ -233,7 +244,7 @@ void Music::play(const std::string &desc,
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
 		if (channel->name == channelName) {
-			Music *music = new Music(url, channel, fadeIn, place);
+			Music *music = new Music(url, channel, fadeIn, fileName, numLine, place);
 			if (music->initCodec()){
 				delete music;
 			}else {
@@ -292,11 +303,14 @@ void Music::stop(const std::string &desc,
 
 
 
-Music::Music(const std::string &url, Channel *channel, int fadeIn, const std::string &place):
+Music::Music(const std::string &url, Channel *channel, int fadeIn,
+			 const std::string &fileName, int numLine, const std::string &place):
 	url(url),
 	channel(channel),
 	startFadeInTime(Utils::getTimer()),
 	fadeIn(fadeIn),
+	fileName(fileName),
+	numLine(numLine),
 	place(place)
 { }
 
@@ -369,6 +383,18 @@ bool Music::initCodec() {
 
 	return false;
 }
+void Music::setPos(int64_t pos) {
+	std::lock_guard<std::mutex> g(globalMutex);
+
+	audioPos = buffer;
+	audioLen = 0;
+
+	if (av_seek_frame(formatCtx, audioStream, pos, AVSEEK_FLAG_FRAME) < 0) {
+		Utils::outMsg("Music::setPos", "Не удалось перемотать файл <" + url + ">");
+	}else {
+		loadNextParts(MIN_PART_COUNT);
+	}
+}
 
 
 Music::~Music() {
@@ -421,12 +447,13 @@ void Music::loadNextParts(size_t count) {
 						  "Не удалось принять кадр (AVFrame) потока файла <" + url + ">\n\n" + place);
 			return;
 		}
+		lastFramePts = frame->pts;
 
 		int countSamples = 0;
 		if (!sendError && !reveiveError) {
 			countSamples = swr_convert(auConvertCtx,
-											&tmpBuffer, PART_SIZE,
-											(const uint8_t **)frame->data, frame->nb_samples);
+									   &tmpBuffer, PART_SIZE,
+									   (const uint8_t **)frame->data, frame->nb_samples);
 			if (countSamples < 0) {
 				Utils::outMsg("Music::loadNextParts: swr_convert",
 							  "Не удалось конвертировать кадр (AVFrame) потока файла <" + url + ">\n\n" + place);

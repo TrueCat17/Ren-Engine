@@ -29,6 +29,9 @@ Screen* Screen::getCreated(const String &name) {
 
 
 void Screen::updateLists() {
+	static std::mutex m;
+	std::lock_guard<std::mutex> g(m);
+
 	for (size_t i = 0 ; i < toHideList.size(); ++i) {
 		auto &p = toHideList[i];
 		const String &name = p.first;

@@ -15,15 +15,20 @@ private:
 	static size_t fps;
 	static size_t frameTime;
 
-	static void _startMod(const std::string &dir);
+	static void _startMod(const String &dir, const String &loadPath = "");
 
 public:
 	static bool modeStarting;
 
+
 	static void startMod(const std::string &dir);
-	static void load(const std::string &table, int num);
+
+	static void load(const std::string &table, const std::string &num);
+	static const std::vector<String> loadInfo(const String &loadPath);
+
 	static void save();
 	static void exitFromGame();
+
 
 	static bool hasLabel(const std::string &label);
 

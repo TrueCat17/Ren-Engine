@@ -280,7 +280,7 @@ void loop() {
 					SDL_Scancode key = event.key.keysym.scancode;
 
 					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_SPACE) {
-						if (BtnRect::checkMouseClick(true)) {
+						if (BtnRect::checkMouseClick(true, true)) {
 							ScreenKey::setToNotReact(key);
 						}else {
 							ScreenKey::setFirstDownState(key);
@@ -370,8 +370,8 @@ int main() {
 	}
 	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime, true);
 
-//	Game::startMod("main_menu");
-	Game::startMod("snow");
+	Game::startMod("main_menu");
+//	Game::startMod("snow");
 
 	loop();
 	destroy();

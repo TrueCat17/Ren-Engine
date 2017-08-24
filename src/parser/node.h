@@ -62,6 +62,9 @@ public:
 	String command;
 	int priority;
 
+	//for main
+	String loadPath;
+
 	String params;//text to out, command to execute, condition to check...
 	String name;//for label
 

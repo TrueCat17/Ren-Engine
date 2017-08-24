@@ -30,7 +30,8 @@ bool Game::modeStarting = false;
 void Game::startMod(const std::string &dir) {
 	std::thread([=] { Game::_startMod(dir); }).detach();
 }
-void Game::load(const std::string &table, int num) {
+
+void Game::load(const std::string &table, const std::string &num) {
 	static const String saves = Utils::ROOT + "saves/";
 	const String tablePath = saves + table + '/';
 	const String fullPath = saves + table + '/' + num + '/';
@@ -56,7 +57,152 @@ void Game::load(const std::string &table, int num) {
 	}
 
 
+	auto fileExists = [](String path) -> bool {
+		if (!boost::filesystem::exists(path)) return false;
+		if (boost::filesystem::is_directory(path)) return false;
+		if (!boost::filesystem::file_size(path)) return false;
+		return true;
+	};
+	if (!fileExists(fullPath + "stack")) {
+		Utils::outMsg("Файл <" + fullPath + "stack" + "> не существует или пуст");
+		return;
+	}
+	if (!fileExists(fullPath + "info")) {
+		Utils::outMsg("Файл <" + fullPath + "info" + "> не существует или пуст");
+		return;
+	}
+	if (!fileExists(fullPath + "py_globals")) {
+		Utils::outMsg("Файл <" + fullPath + "py_globals" + "> не существует или пуст");
+		return;
+	}
+
+	String modName;
+	{//load info
+		std::ifstream is(fullPath + "info");
+
+		std::getline(is, modName);
+	}
+
+	std::thread([=] { Game::_startMod(modName, fullPath); }).detach();
 }
+const std::vector<String> Game::loadInfo(const String &loadPath) {
+	std::vector<String> startScreensVec;
+
+	const char *loadFile = "CPP_Embed: Game::loadInfo";
+	String tmp;
+
+
+	std::ifstream is(loadPath + "info");
+	String modName;
+	std::getline(is, modName);
+	std::getline(is, tmp);
+
+	std::getline(is, tmp);
+	size_t countScreens = tmp.toInt();
+	for (size_t i = 0; i < countScreens; ++i) {
+		String name;
+		std::getline(is, name);
+		startScreensVec.push_back(name);
+	}
+	std::getline(is, tmp);
+
+
+	std::getline(is, tmp);
+	size_t countMusicChannels = tmp.toInt();
+	for (size_t i = 0; i < countMusicChannels; ++i) {
+		std::getline(is, tmp);
+		const std::vector<String> tmpVec = tmp.split(' ');
+		if (tmpVec.size() != 4) {
+			Utils::outMsg(loadFile, "В строке <" + tmp + "> ожидалось 4 аргумента");
+			continue;
+		}
+
+		const String &name = tmpVec.at(0);
+		const String &mixer = tmpVec.at(1);
+		const String &loop = tmpVec.at(2);
+		double volume = tmpVec.at(3).toDouble();
+
+		if (!Music::hasChannel(name)) {
+			Music::registerChannel(name, mixer, loop == "True", loadFile, 0);
+		}
+		Music::setVolume(volume, name, loadFile, 0);
+	}
+	std::getline(is, tmp);
+
+	std::getline(is, tmp);
+	size_t countMusics = tmp.toInt();
+	for (size_t i = 0; i < countMusics; ++i) {
+		String url, fileName;
+
+		std::getline(is, url);
+		if (url.startsWith(Utils::ROOT)) {
+			url.erase(0, Utils::ROOT.size());
+		}
+
+
+		std::getline(is, fileName);
+
+		std::getline(is, tmp);
+		const std::vector<String> tmpVec = tmp.split(' ');
+		if (tmpVec.size() != 5) {
+			Utils::outMsg(loadFile, "В строке <" + tmp + "> ожидалось 5 аргументов");
+			continue;
+		}
+
+		int numLine = tmpVec.at(0).toInt();
+		const String &channel = tmpVec.at(1);
+		int fadeIn = tmpVec.at(2).toInt();
+		int fadeOut = tmpVec.at(3).toInt();
+		int64_t pos = tmpVec.at(4).toDouble();
+
+		Music::play(channel + " '" + url + "'", fileName, numLine);
+		Music *music = nullptr;
+		for (Music *i : Music::getMusics()) {
+			const Channel *c = i->getChannel();
+			if (c && c->name == channel) {
+				music = i;
+				break;
+			}
+		}
+
+		if (music) {
+			music->setFadeIn(fadeIn);
+			if (fadeOut) {
+				music->setFadeOut(fadeOut);
+			}
+			music->setPos(pos);
+		}else {
+			Utils::outMsg(loadFile,
+						  "Не удалось восстановить музыку из файла <" + url + ">\n"
+						  "Место вызова:\n"
+						  "  Файл <" + fileName + ">\n"
+						  "  Строка " + String(numLine));
+		}
+	}
+	std::getline(is, tmp);
+
+
+	std::getline(is, tmp);
+	size_t countMixers = tmp.toInt();
+	for (size_t i = 0; i < countMixers; ++i) {
+		std::getline(is, tmp);
+
+		const std::vector<String> tmpVec = tmp.split(' ');
+		if (tmpVec.size() != 2) {
+			Utils::outMsg(loadFile, "В строке <" + tmp + "> ожидалось 2 аргумента");
+			continue;
+		}
+
+		const String &name = tmpVec.at(0);
+		double volume = tmpVec.at(1).toDouble();
+
+		Music::setMixerVolume(volume, name, loadFile, 0);
+	}
+	std::getline(is, tmp);
+
+	return startScreensVec;
+}
+
 void Game::save() {
 	const String table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
 	const String num   = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_num",   true);
@@ -104,16 +250,51 @@ void Game::save() {
 
 	{//save info
 		std::ofstream infoFile(fullPath + "info");
-		infoFile << GV::mainExecNode->name << '\n';
 
-		size_t lastIndex = GV::screens->children.size() - 1;
-		for (size_t i = 0; i <= lastIndex; ++i) {
+		//mod-name
+		infoFile << GV::mainExecNode->name << "\n\n";
+
+		//screens
+		infoFile << GV::screens->children.size() << '\n';
+		for (size_t i = 0; i < GV::screens->children.size(); ++i) {
 			Screen* s = dynamic_cast<Screen*>(GV::screens->children[i]);
-			infoFile << s->name << (i == lastIndex ? '\n' : ' ');
+			infoFile << s->name << '\n';
 		}
+		infoFile << '\n';
 
-		infoFile << GV::numFor << '\n' <<
-					GV::numScreenFor << '\n';
+		//music-channels
+		const std::vector<Channel*> &channels = Music::getChannels();
+		infoFile << channels.size() << '\n';
+		for (size_t i = 0; i < channels.size(); ++i) {
+			const Channel *channel = channels.at(i);
+			infoFile << channel->name << ' '
+					 << channel->mixer << ' '
+					 << (channel->loop ? "True" : "False") << ' '
+					 << int(channel->volume * 1000) / 1000.0 << '\n';
+		}
+		infoFile << '\n';
+
+		//music-files
+		const std::vector<Music*> &musics = Music::getMusics();
+		infoFile << musics.size() << '\n';
+		for (size_t i = 0; i < musics.size(); ++i) {
+			const Music *music = musics.at(i);
+			infoFile << music->getUrl() << '\n'
+					 << music->getFileName() << '\n'
+					 << music->getNumLine() << ' '
+					 << music->getChannel()->name << ' '
+					 << music->getFadeIn() << ' '
+					 << music->getFadeOut() << ' '
+					 << music->getPos() << '\n';
+		}
+		infoFile << '\n';
+
+		const std::map<std::string, double> mixerVolumes = Music::getMixerVolumes();
+		infoFile << mixerVolumes.size() << '\n';
+		for (const std::pair<std::string, double> &p : mixerVolumes) {
+			infoFile << p.first << ' ' << p.second << '\n';
+		}
+		infoFile << '\n';
 	}
 
 
@@ -133,7 +314,7 @@ void Game::save() {
 																   format->Rmask, format->Gmask, format->Bmask, format->Amask);
 
 				SDL_Rect from = info->clip_rect;
-				SDL_Rect to = {0, 0, 320, 240};
+				SDL_Rect to = {0, 0, 640, 360};
 
 				SDL_Surface *save = SDL_CreateRGBSurface(screenshot->flags, to.w, to.h, 32,
 														 screenshot->format->Rmask, screenshot->format->Gmask,screenshot->format->Bmask, screenshot->format->Amask);
@@ -164,7 +345,7 @@ void Game::save() {
 	}
 }
 
-void Game::_startMod(const std::string &dir) {
+void Game::_startMod(const String &dir, const String &loadPath) {
 	static std::mutex modMutex;
 
 
@@ -175,10 +356,10 @@ void Game::_startMod(const std::string &dir) {
 	modeStarting = true;
 	GV::inGame = false;
 
-	std::lock_guard<std::mutex> g2(modMutex);
+	std::lock_guard<std::mutex> g(modMutex);
 
 	{
-		std::lock_guard<std::mutex> g(GV::updateGuard);
+		std::lock_guard<std::mutex> g2(GV::updateGuard);
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
 		int clearStartTime = Utils::getTimer();
@@ -201,6 +382,10 @@ void Game::_startMod(const std::string &dir) {
 		GV::screens->setPos(x, y);
 		GV::screens->updateGlobalPos();
 
+		GV::numFor = GV::numScreenFor = 0;
+		Node::stackDepth = 0;
+		Node::stack.clear();
+
 		Style::destroyAll();
 
 		delete GV::pyUtils;
@@ -215,6 +400,26 @@ void Game::_startMod(const std::string &dir) {
 	GV::inGame = true;
 	modeStarting = false;
 
+
+	if (loadPath) {
+		{//load stack
+			Node::loading = true;
+
+			std::ifstream is(loadPath + "stack");
+
+			while (!is.eof()) {
+				String first, second;
+				is >> first >> second;
+				if (!first || !second) break;
+
+				std::pair<String, String> p(first, second);
+				Node::stack.push_back(p);
+			}
+		}
+
+
+		GV::mainExecNode->loadPath = loadPath;
+	}
 	GV::mainExecNode->execute();
 }
 
