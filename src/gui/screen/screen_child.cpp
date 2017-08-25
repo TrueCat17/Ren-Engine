@@ -140,6 +140,7 @@ void ScreenChild::calculateProps() {
 		if (propExpr) {
 			empty = false;
 			const String &propName = propNames.at(i);
+
 			code += "    '" + propName + "': " + propExpr + ",\n";
 		}
 	}
@@ -199,11 +200,13 @@ void ScreenChild::calculateProps() {
 	if (!needUpdateFields) return;
 
 
+	static const String None = "None";
+
 	if (!inHBox) {
 		const String &xAnchorStr = propValues.at(ScreenProp::X_ANCHOR);
 		xAnchor = xAnchorStr.toDouble();
 		xAnchorIsDouble = xAnchor > 0 && xAnchor <= 1 && xAnchorStr.contains('.');
-		if (xAnchorStr != "None" && !xAnchorStr.isNumber()) {
+		if (xAnchorStr != None && !xAnchorStr.isNumber()) {
 			Utils::outMsg("ScreenChild::updateProps",
 						  "xanchor is not a number (" + xAnchorStr + ")\n" + node->getPlace());
 		}
@@ -211,7 +214,7 @@ void ScreenChild::calculateProps() {
 		const String &xPosStr = propValues.at(ScreenProp::X_POS);
 		xPos = xPosStr.toDouble();
 		xPosIsDouble = xPos > 0 && xPos <= 1 && xPosStr.contains('.');
-		if (xPosStr != "None" && !xPosStr.isNumber()) {
+		if (xPosStr != None && !xPosStr.isNumber()) {
 			Utils::outMsg("ScreenChild::updateProps",
 						  "xpos is not a number (" + xPosStr + ")\n" + node->getPlace());
 		}
@@ -220,17 +223,18 @@ void ScreenChild::calculateProps() {
 		if (xAlignStr.isNumber()) {
 			xAnchor = xPos = xAlignStr.toDouble();
 			xAnchorIsDouble = xPosIsDouble = xAnchor > 0 && xAnchor <= 1 && xAlignStr.contains('.');
-		}else if (xAlignStr != "None") {
+		}else if (xAlignStr != None) {
 			Utils::outMsg("ScreenChild::updateProps",
 						  "xalign is not a number (" + xAlignStr + ")\n" + node->getPlace());
 		}
 	}
 
+
 	if (!inVBox) {
 		const String &yAnchorStr = propValues.at(ScreenProp::Y_ANCHOR);
 		yAnchor = yAnchorStr.toDouble();
 		yAnchorIsDouble = yAnchor > 0 && yAnchor <= 1 && yAnchorStr.contains('.');
-		if (yAnchorStr != "None" && !yAnchorStr.isNumber()) {
+		if (yAnchorStr != None && !yAnchorStr.isNumber()) {
 			Utils::outMsg("ScreenChild::updateProps",
 						  "yanchor is not a number (" + yAnchorStr + ")\n" + node->getPlace());
 		}
@@ -238,7 +242,7 @@ void ScreenChild::calculateProps() {
 		const String &yPosStr = propValues.at(ScreenProp::Y_POS);
 		yPos = yPosStr.toDouble();
 		yPosIsDouble = yPos > 0 && yPos <= 1 && yPosStr.contains('.');
-		if (yPosStr != "None" && !yPosStr.isNumber()) {
+		if (yPosStr != None && !yPosStr.isNumber()) {
 			Utils::outMsg("ScreenChild::updateProps",
 						  "ypos is not a number (" + yPosStr + ")\n" + node->getPlace());
 		}
@@ -247,7 +251,7 @@ void ScreenChild::calculateProps() {
 		if (yAlignStr.isNumber()) {
 			yAnchor = yPos = yAlignStr.toDouble();
 			yAnchorIsDouble = yPosIsDouble = yAnchor > 0 && yAnchor <= 1 && yAlignStr.contains('.');
-		}else if (yAlignStr && yAlignStr != "None") {
+		}else if (yAlignStr && yAlignStr != None) {
 			Utils::outMsg("ScreenChild::updateProps",
 						  "yalign is not a number (" + yAlignStr + ")\n" + node->getPlace());
 		}
@@ -258,7 +262,7 @@ void ScreenChild::calculateProps() {
 	const String &xSizeStr = propValues.at(ScreenProp::X_SIZE);
 	xSize = xSizeStr.toDouble();
 	xSizeIsDouble = xSize > 0 && xSize <= 1 && xSizeStr.contains('.');
-	if (xSizeStr != "None" && !xSizeStr.isNumber()) {
+	if (xSizeStr != None && !xSizeStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",
 					  "xsize is not a number (" + xSizeStr + ")\n" + node->getPlace());
 	}
@@ -266,14 +270,14 @@ void ScreenChild::calculateProps() {
 	const String &ySizeStr = propValues.at(ScreenProp::Y_SIZE);
 	ySize = ySizeStr.toDouble();
 	ySizeIsDouble = ySize > 0 && ySize <= 1 && ySizeStr.contains('.');
-	if (ySizeStr != "None" && !ySizeStr.isNumber()) {
+	if (ySizeStr != None && !ySizeStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",
 					  "ysize is not a number (" + ySizeStr + ")\n" + node->getPlace());
 	}
 
 	if (canCrop() && texture) {
 		String cropStr = propValues.at(ScreenProp::CROP);
-		if (cropStr && cropStr != "None") {
+		if (cropStr && cropStr != None) {
 			char start = cropStr.front();
 			char end = cropStr.back();
 			if ((start == '(' && end == ')') ||
@@ -301,8 +305,8 @@ void ScreenChild::calculateProps() {
 						crop = {int(x), int(y), int(w), int(h)};
 					}else {
 						Utils::outMsg("ScreenChild::updateProps", String() +
-									  "В свойстве crop ожидался список из 4-х значений, получено " + cropVec.size() + "\n"
-																													  "crop: <" + start + cropStr + end + ">\n" +
+									  "В свойстве crop ожидался список из 4-х значений, получено " + cropVec.size() + "\n" +
+									  "crop: <" + start + cropStr + end + ">\n" +
 									  node->getPlace());
 					}
 				}
@@ -317,14 +321,14 @@ void ScreenChild::calculateProps() {
 
 	const String &rotateStr = propValues.at(ScreenProp::ROTATE);
 	rotate = rotateStr.toDouble();
-	if (rotateStr != "None" && !rotateStr.isNumber()) {
+	if (rotateStr != None && !rotateStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",
 					  "rotate is not a number (" + rotateStr + ")\n" + node->getPlace());
 	}
 
 	const String &alphaStr = propValues.at(ScreenProp::ALPHA);
 	alpha = alphaStr.toDouble();
-	if (alphaStr != "None" && !alphaStr.isNumber()) {
+	if (alphaStr != None && !alphaStr.isNumber()) {
 		Utils::outMsg("ScreenChild::updateProps",
 					  "alpha is not a number (" + alphaStr + ")\n" + node->getPlace());
 	}

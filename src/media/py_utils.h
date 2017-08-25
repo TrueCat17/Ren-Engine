@@ -15,19 +15,15 @@ public:
 	String code;
 	String fileName;
 	size_t numLine;
-private:
-	String common;
 
-public:
-	PyCode(String code, String fileName, size_t numLine):
+	PyCode(const String &code, const String &fileName, size_t numLine):
 		code(code),
 		fileName(fileName),
-		numLine(numLine),
-		common(code + fileName + String(numLine))
+		numLine(numLine)
 	{}
 
 	bool operator<(const PyCode& other) const {
-		return common < other.common;
+		return std::tie(numLine, code, fileName) < std::tie(other.numLine, other.code, other.fileName);
 	}
 };
 
@@ -40,8 +36,8 @@ private:
 public:
 	static std::mutex pyExecGuard;
 
-	static PyCodeObject* getCompileObject(const String code, const String fileName, size_t numLine);
-	static String exec(const String &fileName, size_t numLine, String code, bool retRes = false);
+	static PyCodeObject* getCompileObject(const String &code, const String &fileName, size_t numLine);
+	static String exec(const String &fileName, size_t numLine, const String &code, bool retRes = false);
 	static void errorProcessing(const String &code);
 
 	py::object mainModule;

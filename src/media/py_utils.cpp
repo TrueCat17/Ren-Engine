@@ -22,11 +22,12 @@
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
 std::mutex PyUtils::pyExecGuard;
 
-PyCodeObject* PyUtils::getCompileObject(const String code, const String fileName, size_t numLine) {
+PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine) {
 	PyCode pyCode(code, fileName, numLine);
 
-	if (compiledObjects.find(pyCode) != compiledObjects.end()) {
-		return compiledObjects[pyCode];
+	auto i = compiledObjects.find(pyCode);
+	if (i != compiledObjects.end()) {
+		return i->second;
 	}
 
 
@@ -154,7 +155,7 @@ void PyUtils::errorProcessing(const String &code) {
 }
 
 
-String PyUtils::exec(const String &fileName, size_t numLine, String code, bool retRes) {
+String PyUtils::exec(const String &fileName, size_t numLine, const String &code, bool retRes) {
 	if (!code) return "";
 
 	if (code.isNumber()) {
@@ -163,7 +164,8 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 	if (code.isSimpleString()) {
 		return code.substr(1, code.size() - 2);
 	}
-	if (code == "True" || code == "False" || code == "None") {
+	static const String True = "True", False = "False", None = "None";
+	if (code == True || code == False || code == None) {
 		return code;
 	}
 
@@ -187,17 +189,19 @@ String PyUtils::exec(const String &fileName, size_t numLine, String code, bool r
 		isConst = false;
 	}
 
-	String res = "empty";
-	String execCode = code;
-	if (retRes) {
-		execCode = "res = str(" + code + ")";
-	}
 
+	String res = "empty";
 
 	std::lock_guard<std::mutex> g(pyExecGuard);
 
 	try {
-		PyCodeObject *co = getCompileObject(execCode, fileName, numLine);
+		PyCodeObject *co;
+		if (!retRes) {
+			co = getCompileObject(code, fileName, numLine);
+		}else {
+			co = getCompileObject("res = str(" + code + ")", fileName, numLine);
+		}
+
 		if (co) {
 			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
 				throw py::error_already_set();

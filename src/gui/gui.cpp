@@ -30,12 +30,10 @@ void GUI::update() {
 					scr->updateSize();
 //					int c = Utils::getTimer();
 					scr->updatePos();
-//					int d = Utils::getTimer();
 					scr->updateGlobalPos();
 					scr->updateGlobalAlpha();
-//					int e = Utils::getTimer();
 
-//					std::cout << (b-a) << '-' << (c-b) << '-' << (d-c) << '-' << (e-d) << '\n';
+//					std::cout << (b-a) << '-' << (c-b) << '\n';
 				}catch (ContinueException) {
 					Utils::outMsg("GUI::update", "continue вне цикла");
 				}catch (BreakException) {
