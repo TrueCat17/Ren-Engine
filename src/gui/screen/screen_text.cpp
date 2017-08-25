@@ -50,6 +50,12 @@ void ScreenText::calculateProps() {
 void ScreenText::updateSize() {
 	ScreenChild::updateSize();
 
+	int w = getWidth();
+	int h = getHeight();
+	if (w <= 0) w = tf->getWidth();
+	if (h <= 0) h = tf->getHeight();
+	setSize(w, h);
+
 	bool needUpdate = false;
 	if (text || prevText) {
 		if (tf->getMaxWidth() != getWidth()) {
@@ -77,15 +83,10 @@ void ScreenText::updateSize() {
 
 		if (text && (needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
 					 xSize != prevXSize || ySize != prevYSize)) {
+			tf->setSize(w, h);
 			tf->setAlign(textHAlign, textVAlign);
 		}
 	}
-
-	int w = getWidth();
-	int h = getHeight();
-	if (w <= 0) w = tf->getWidth();
-	if (h <= 0) h = tf->getHeight();
-	setSize(w, h);
 
 	prevXSize = xSize;
 	prevYSize = ySize;
