@@ -457,7 +457,6 @@ SurfacePtr Utils::getSurface(const String &path) {
 													   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF),
 								  SDL_FreeSurface);
 			if (newSurface) {
-				std::lock_guard<std::mutex> g(Image::blitMutex);
 				SDL_BlitSurface(surface.get(), &imgRect, newSurface.get(), &imgRect);
 				surface = newSurface;
 			}else{

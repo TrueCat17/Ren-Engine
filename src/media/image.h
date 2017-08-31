@@ -9,8 +9,6 @@
 
 class Image {
 public:
-	static std::mutex blitMutex;
-
 	static void loadImage(const std::string &desc);
 	static SurfacePtr getImage(String desc);
 };

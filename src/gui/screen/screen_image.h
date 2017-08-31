@@ -5,10 +5,6 @@
 
 
 class ScreenImage: public ScreenContainer {
-private:
-	String imageCode;
-	String imagePath;
-
 public:
 	ScreenImage(Node *node);
 

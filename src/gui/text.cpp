@@ -28,16 +28,17 @@ void Text::setFont(String fontName, int textSize, bool setAsOriginal) {
 	font = Utils::getFont(Utils::FONTS + fontName + ".ttf", textSize);
 	if (!font && fontName != defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
-		Utils::outMsg("Text::setFont", "Загружается шрифт '" + String(defaultFontName) + "'");
+		Utils::outMsg("Text::setFont", "Загружается шрифт <" + String(defaultFontName) + ">");
 
 		fontName = defaultFontName;
 		font = Utils::getFont(Utils::FONTS + fontName + ".ttf", textSize);
 	}
 	if (!font && fontName == defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
-		Utils::outMsg("Text::setFont", "Шрифт '" + String(defaultFontName) + "' не загрузился. Текст не будет отображаться.\n");
+		Utils::outMsg("Text::setFont", "Шрифт <" + String(defaultFontName) + "> не загрузился. Текст не будет отображаться.\n");
 	}else {
-		TTF_SizeUTF8(font, "t", &charWidth, &charHeight);//просто буква наугад, роль играет только высота
+		TTF_SizeUTF8(font, "t", &charWidth, nullptr);//просто буква наугад
+		charHeight = TTF_FontHeight(font);
 	}
 }
 
@@ -126,7 +127,7 @@ void Text::setText(const String &text, int color) {
 
 		const int INDENT = charWidth * 1.5;
 
-		if (wordWrap && maxW > INDENT && lineRect.w > maxW - INDENT) {//Включён перенос строк по словам (и он возможен) и он нужен
+		if (wordWrap && maxW > INDENT && lineRect.w > maxW) {//Включён перенос строк по словам (и он возможен) и он нужен
 			int n = line.size() - 1;
 			while (n && (line[n] != ' ' || getLineWidth(line.substr(0, n - 1), true) >= maxW - INDENT)) {
 				--n;
@@ -369,12 +370,12 @@ void Text::addChars(String c, int color) {
 	if (isStrike) style |= TTF_STYLE_STRIKETHROUGH;
 	TTF_SetFontStyle(font, style);
 
-	int charWidth;
+	int strWidth;
 	int charHeight;
-	TTF_SizeUTF8(font, c.c_str(), &charWidth, &charHeight);
-	SDL_Rect rect = {charX, 0, charWidth, charHeight};
+	TTF_SizeUTF8(font, c.c_str(), &strWidth, &charHeight);
+	SDL_Rect rect = {charX, 0, strWidth, charHeight};
 
-	charX += charWidth;
+	charX += strWidth;
 //	charX -= bool(isBold || isItalic || isStrike || isUnderline) * c.size() * 1.5;
 
 	SDL_Color sdlColor;
@@ -440,6 +441,12 @@ void Text::setAlign(String hAlign, String vAlign) {
 		indentY = getHeight() - lines.size() * charHeight;
 	}
 
+	int maxWidth = this->maxWidth;
+	for (size_t i = 0; i < rects.size(); ++i) {
+		if (rects[i].w > maxWidth) {
+			maxWidth = rects[i].w;
+		}
+	}
 
 	if (hAlign == "left") {
 		for (size_t i = 0; i < rects.size(); ++i) {
@@ -447,13 +454,6 @@ void Text::setAlign(String hAlign, String vAlign) {
 			rects[i].y = i * charHeight + indentY;
 		}
 	}else {
-		int maxWidth = this->maxWidth;
-		for (size_t i = 0; i < rects.size(); ++i) {
-			if (rects[i].w > maxWidth) {
-				maxWidth = rects[i].w;
-			}
-		}
-
 		bool isCenter = hAlign == "center";
 		for (size_t i = 0; i < rects.size(); ++i) {
 			if (isCenter) {
@@ -464,6 +464,10 @@ void Text::setAlign(String hAlign, String vAlign) {
 			rects[i].y = i * charHeight + indentY;
 		}
 	}
+
+	int w = this->maxWidth  <= 0 ? maxWidth : this->maxWidth;
+	int h = this->maxHeight <= 0 ? (int(rects.size()) * charHeight) : this->maxHeight;
+	setSize(w, h);
 
 
 	double sinA = Utils::getSin(getGlobalRotate());

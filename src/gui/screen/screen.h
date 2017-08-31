@@ -52,6 +52,7 @@ public:
 	String name;
 	double zOrder() const { return _zOrder; }
 	bool screenIsModal() const { return _isModal; }
+	bool isMain() const { return countAsMain; }
 };
 
 #endif // SCREEN_H

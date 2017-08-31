@@ -14,7 +14,7 @@
 class Text: public DisplayObject {
 private:
 	static const int MIN_TEXT_SIZE = 10;
-	static const int MAX_TEXT_SIZE = 48;
+	static const int MAX_TEXT_SIZE = 72;
 
 	int charOutNum = 0;
 

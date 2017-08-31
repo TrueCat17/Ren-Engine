@@ -31,13 +31,13 @@ void Game::startMod(const std::string &dir) {
 	std::thread([=] { Game::_startMod(dir); }).detach();
 }
 
-void Game::load(const std::string &table, const std::string &num) {
+void Game::load(const std::string &table, const std::string &name) {
 	static const String saves = Utils::ROOT + "saves/";
 	const String tablePath = saves + table + '/';
-	const String fullPath = saves + table + '/' + num + '/';
+	const String fullPath = saves + table + '/' + name + '/';
 
 	auto outError = [=](const String &dir) {
-		Utils::outMsg(String() + "Ошибка при попытке открыть сохранение <" + table + "_" + num + ">\n"
+		Utils::outMsg(String() + "Ошибка при попытке открыть сохранение <" + table + "_" + name + ">\n"
 								 "Отсутствует директория <" + dir + ">");
 	};
 
@@ -205,13 +205,13 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 
 void Game::save() {
 	const String table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
-	const String num   = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_num",   true);
+	const String name  = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_name",  true);
 
 	static const String saves = Utils::ROOT + "saves/";
 	const String tablePath = saves + table + '/';
-	const String fullPath = tablePath + num + '/';
+	const String fullPath = tablePath + name + '/';
 
-
+	PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = True");
 	{//update & render
 		GUI::update();
 
@@ -221,8 +221,9 @@ void Game::save() {
 		if (GV::screens) {
 			GV::screens->draw();
 		}
-		SDL_RenderPresent(GV::mainRenderer);
+		//Важно! SDL_RenderPresent не нужен!
 	}
+	PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
 
 
 	{//check directory to save
@@ -255,9 +256,15 @@ void Game::save() {
 		infoFile << GV::mainExecNode->name << "\n\n";
 
 		//screens
-		infoFile << GV::screens->children.size() << '\n';
-		for (size_t i = 0; i < GV::screens->children.size(); ++i) {
-			Screen* s = dynamic_cast<Screen*>(GV::screens->children[i]);
+		std::vector<const Screen*> mainScreens;
+		for (const DisplayObject *d : GV::screens->children) {
+			const Screen* s = dynamic_cast<const Screen*>(d);
+			if (s && s->isMain() && s->name != "pause" && s->name != "save") {
+				mainScreens.push_back(s);
+			}
+		}
+		infoFile << mainScreens.size() << '\n';
+		for (const Screen *s : mainScreens) {
 			infoFile << s->name << '\n';
 		}
 		infoFile << '\n';
@@ -319,7 +326,6 @@ void Game::save() {
 				SDL_Surface *save = SDL_CreateRGBSurface(screenshot->flags, to.w, to.h, 32,
 														 screenshot->format->Rmask, screenshot->format->Gmask,screenshot->format->Bmask, screenshot->format->Amask);
 				{
-					std::lock_guard<std::mutex> g(Image::blitMutex);
 					SDL_BlitScaled(screenshot, &from, save, &to);
 				}
 

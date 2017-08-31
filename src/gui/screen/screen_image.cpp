@@ -5,10 +5,9 @@
 
 
 ScreenImage::ScreenImage(Node *node):
-	ScreenContainer(node, this),
-	imageCode(node->getFirstParam())
+	ScreenContainer(node, this)
 {
-	setProp(ScreenProp::IMAGE_PATH, NodeProp::initPyExpr(imageCode, getNumLine()));
+	setProp(ScreenProp::IMAGE_PATH, NodeProp::initPyExpr(node->getFirstParam(), getNumLine()));
 }
 
 void ScreenImage::calculateProps() {

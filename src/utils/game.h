@@ -23,7 +23,7 @@ public:
 
 	static void startMod(const std::string &dir);
 
-	static void load(const std::string &table, const std::string &num);
+	static void load(const std::string &table, const std::string &name);
 	static const std::vector<String> loadInfo(const String &loadPath);
 
 	static void save();

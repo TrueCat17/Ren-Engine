@@ -48,22 +48,17 @@ void ScreenText::calculateProps() {
 }
 
 void ScreenText::updateSize() {
-	ScreenChild::updateSize();
-
-	int w = getWidth();
-	int h = getHeight();
-	if (w <= 0) w = tf->getWidth();
-	if (h <= 0) h = tf->getHeight();
-	setSize(w, h);
+	if (xSizeIsDouble) xSize *= GV::width;
+	if (ySizeIsDouble) ySize *= GV::height;
 
 	bool needUpdate = false;
 	if (text || prevText) {
-		if (tf->getMaxWidth() != getWidth()) {
-			tf->setMaxWidth(getWidth());
+		if (tf->getMaxWidth() != xSize) {
+			tf->setMaxWidth(xSize);
 			needUpdate = true;
 		}
-		if (tf->getMaxHeight() != getHeight()) {
-			tf->setMaxHeight(getHeight());
+		if (tf->getMaxHeight() != ySize) {
+			tf->setMaxHeight(ySize);
 			needUpdate = true;
 		}
 
@@ -83,9 +78,15 @@ void ScreenText::updateSize() {
 
 		if (text && (needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
 					 xSize != prevXSize || ySize != prevYSize)) {
+			int w = xSize <= 0 ? tf->getWidth() : xSize;
+			int h = ySize <= 0 ? tf->getHeight() : ySize;
 			tf->setSize(w, h);
+			setSize(w, h);
+
 			tf->setAlign(textHAlign, textVAlign);
 		}
+	}else {
+		setSize(xSize, ySize);
 	}
 
 	prevXSize = xSize;

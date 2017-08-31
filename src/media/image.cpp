@@ -8,9 +8,6 @@
 
 
 
-std::mutex Image::blitMutex;
-
-
 void Image::loadImage(const std::string &desc) {
 	std::thread(getImage, desc).detach();
 }
@@ -94,7 +91,6 @@ SurfacePtr Image::getImage(String desc) {
 									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
 				  SDL_FreeSurface);
 
-		std::lock_guard<std::mutex> g(blitMutex);
 		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 	}else
 
@@ -110,7 +106,6 @@ SurfacePtr Image::getImage(String desc) {
 									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
 				  SDL_FreeSurface);
 
-		std::lock_guard<std::mutex> g(blitMutex);
 		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 	}else
 
@@ -128,7 +123,6 @@ SurfacePtr Image::getImage(String desc) {
 									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
 				  SDL_FreeSurface);
 
-		std::lock_guard<std::mutex> g(blitMutex);
 		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 	}else
 
@@ -155,7 +149,6 @@ SurfacePtr Image::getImage(String desc) {
 			SDL_Rect fromRect = { 0, 0, img->w, img->h };
 			SDL_Rect toRect = { posVec[0].toInt(), posVec[1].toInt(), img->w, img->h };
 
-			std::lock_guard<std::mutex> g(blitMutex);
 			SDL_BlitScaled(img.get(), &fromRect, res.get(), &toRect);
 		}
 	}else

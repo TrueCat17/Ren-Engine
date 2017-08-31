@@ -13,7 +13,6 @@ void Logger::init() {
 
 	time_t seconds = std::time(nullptr);
 	tm *timeInfo = std::localtime(&seconds);
-
 	log(std::asctime(timeInfo));
 }
 

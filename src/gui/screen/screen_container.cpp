@@ -64,7 +64,7 @@ void ScreenContainer::updateSize() {
 			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
 			if (scrChild && scrChild->isFakeContainer()) continue;
 
-			child->setX(width + indent);
+			child->setX(width);
 
 			int w = child->getWidth();
 			if (w) {
@@ -95,7 +95,7 @@ void ScreenContainer::updateSize() {
 			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
 			if (scrChild && scrChild->isFakeContainer()) continue;
 
-			child->setY(height + indent);
+			child->setY(height);
 
 			int h = child->getHeight();
 			if (h) {
