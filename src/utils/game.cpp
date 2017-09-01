@@ -259,13 +259,13 @@ void Game::save() {
 		std::vector<const Screen*> mainScreens;
 		for (const DisplayObject *d : GV::screens->children) {
 			const Screen* s = dynamic_cast<const Screen*>(d);
-			if (s && s->isMain() && s->name != "pause" && s->name != "save") {
+			if (s && s->getName() != "pause" && s->getName() != "save") {
 				mainScreens.push_back(s);
 			}
 		}
 		infoFile << mainScreens.size() << '\n';
 		for (const Screen *s : mainScreens) {
-			infoFile << s->name << '\n';
+			infoFile << s->getName() << '\n';
 		}
 		infoFile << '\n';
 

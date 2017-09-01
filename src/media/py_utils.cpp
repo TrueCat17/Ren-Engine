@@ -69,8 +69,8 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
 	pythonGlobal["get_image_decl_at"] = py::make_function(Utils::getImageDeclAt);
 
-	pythonGlobal["show_screen"] = py::make_function(Screen::addToShowSimply);
-	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHideSimply);
+	pythonGlobal["show_screen"] = py::make_function(Screen::addToShow);
+	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHide);
 
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
 	pythonGlobal["_load"] = py::make_function(Game::load);

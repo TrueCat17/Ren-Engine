@@ -155,7 +155,7 @@ void ScreenContainer::addChildrenFromNode() {
 	ScreenContainer *prev = nullptr;
 	for (Node *childNode : node->children) {
 		ScreenChild *child = nullptr;
-		const String childCommand = childNode->command;
+		const String &childCommand = childNode->command;
 
 		if (childCommand == "has") {
 			if (!inited) {
@@ -171,14 +171,10 @@ void ScreenContainer::addChildrenFromNode() {
 		}else
 
 		if (childCommand == "use") {
-			if (!inited) --countInitChildren;
+			const String &scrName = childNode->params;
+			Node *scrNode = Screen::getDeclared(scrName);
 
-			DisplayObject *t = this;
-			while (t && !dynamic_cast<Screen*>(t)) {
-				t = t->parent;
-			}
-			Screen *scr = dynamic_cast<Screen*>(t);
-			Screen::addToShow(childNode->params, scr ? scr->name : "");
+			child = new Screen(scrNode);
 		}else
 
 		if (childCommand == "key") {

@@ -136,7 +136,7 @@ void Node::execute() {
 
 			for (const String &screenName : startScreensVec) {
 				if (screenName) {
-					Screen::addToShowSimply(screenName);
+					Screen::addToShow(screenName);
 				}
 			}
 
@@ -182,7 +182,7 @@ void Node::execute() {
 	if (command == "show") {
 		if (params.startsWith("screen ")) {
 			const String screenName = params.substr(params.find("screen ") + String("screen ").size());
-			Screen::addToShowSimply(screenName);
+			Screen::addToShow(screenName);
 		}else {
 			const std::vector<String> args = Utils::getArgs(params);
 			if (args.empty()) {
@@ -208,7 +208,7 @@ void Node::execute() {
 	if (command == "hide") {
 		if (params.startsWith("screen ")) {
 			const String screenName = params.substr(params.find("screen ") + String("screen ").size());
-			Screen::addToHideSimply(screenName);
+			Screen::addToHide(screenName);
 		}else {
 			const std::vector<String> args = Utils::getArgs(params);
 			if (args.empty()) {
@@ -333,7 +333,7 @@ void Node::execute() {
 		if (choose == NO) {
 			//loaded with screen choose_menu?
 			Screen::updateLists();
-			bool screenThereIs = Screen::getCreated("choose_menu");
+			bool screenThereIs = Screen::getMain("choose_menu");
 
 			if (!screenThereIs) {
 				String variants = children[0]->params;

@@ -10,49 +10,42 @@
 class Screen: public ScreenContainer {
 private:
 	static std::vector<Node*> declared;
-	static Node* getDeclared(const String &name);
 
-	static std::vector<Screen*> created;
 	static bool _hasModal;
 
-	static std::vector<std::pair<String, String>> toShowList;
-	static std::vector<std::pair<String, String>> toHideList;
-	static void show(const String &name, const String &dependOn);
-	static void hide(const String &name, const String &dependOn);
+	static std::vector<String> toShowList;
+	static std::vector<String> toHideList;
+	static void show(const String &name);
+	static void hide(const String &name);
 
-	size_t countAsMain = 0;
-	size_t countAsUsed = 0;
-	std::vector<Screen*> usedScreens;
-
-	void addShowedCount(const String &dependOn);
-	bool subShowedCount(const String &dependOn);
-	void updateScreenProps();
 
 	double _zOrder = 0;
 	bool _isModal = false;
 
-	Screen(Node *node, const String &dependOn);
-	virtual ~Screen();
+	String name;
+
+	void updateScreenProps();
 
 public:
-	static void declare(Node *node);
-	static Screen* getCreated(const String &name);
-	static void clear();
+	static void declare(Node *node) { declared.push_back(node); }
+	static Node* getDeclared(const String &name);
+	static void clear() { declared.clear(); }
+
+	static Screen* getMain(const String &name);
 
 	static void updateLists();
 	static void updateScreens();
 	static bool hasModal() { return _hasModal; }
 
-	static void addToShowSimply(const std::string &name);
-	static void addToHideSimply(const std::string &name);
-	static void addToShow(const String &name, const String &dependsOn);
-	static void addToHide(const String &name, const String &dependsOn);
+	static void addToShow(const std::string &name) { toShowList.push_back(name); }
+	static void addToHide(const std::string &name) { toHideList.push_back(name); }
 
 
-	String name;
+	Screen(Node *node);
+
+	const String& getName() const { return name; }
 	double zOrder() const { return _zOrder; }
 	bool screenIsModal() const { return _isModal; }
-	bool isMain() const { return countAsMain; }
 };
 
 #endif // SCREEN_H
