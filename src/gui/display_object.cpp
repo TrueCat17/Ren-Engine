@@ -79,25 +79,11 @@ void DisplayObject::draw() const {
 	if (!enable || globalAlpha <= 0) return;
 
 	if (texture) {
-		SDL_Rect t = rect;
-		t.x = globalX;
-		t.y = globalY;
-
+		SDL_Rect t = {globalX, globalY, rect.w, rect.h};
+		SDL_Point center = { int(xAnchor), int(yAnchor) };
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
-		if (SDL_SetTextureAlphaMod(texture.get(), intAlpha)) {
-			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
-		}
 
-		if (!globalRotate) {
-			if (SDL_RenderCopy(GV::mainRenderer, texture.get(), &crop, &t)) {
-				Utils::outMsg("SDL_RenderCopy", SDL_GetError());
-			}
-		}else {
-			SDL_Point center = { int(xAnchor), int(yAnchor) };
-			if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(), &crop, &t, globalRotate, &center, SDL_FLIP_NONE)) {
-				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
-			}
-		}
+		pushToRender(texture, intAlpha, &crop, &t, globalRotate, &center);
 	}
 }
 
@@ -123,4 +109,21 @@ void DisplayObject::destroyAll() {
 		DisplayObject *obj = objects[0];
 		delete obj;
 	}
+}
+
+void DisplayObject::pushToRender(
+	const TexturePtr &texture, Uint8 alpha,
+	const SDL_Rect *srcRect, const SDL_Rect *dstRect,
+	double angle, const SDL_Point *center)
+{
+	static const SDL_Rect emptyRect = {0, 0, 0, 0};
+	static const SDL_Point emptyPoint = {0, 0};
+
+	GV::toRender.push_back({
+		texture, alpha,
+		srcRect == nullptr, dstRect == nullptr, center == nullptr,
+
+		SDL_Rect(srcRect ? *srcRect : emptyRect), SDL_Rect(dstRect ? *dstRect : emptyRect),
+		angle, SDL_Point(center ? *center : emptyPoint)
+	});
 }

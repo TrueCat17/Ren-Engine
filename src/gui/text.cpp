@@ -499,24 +499,14 @@ void Text::draw() const {
 		if (!texture) continue;
 
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
-		if (SDL_SetTextureAlphaMod(texture.get(), intAlpha)) {
-			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
-		}
 
 		SDL_Rect t = rects[i];
 		t.x += globalX;
 		t.y += globalY;
 
-		if (!globalRotate) {
-			if (SDL_RenderCopy(GV::mainRenderer, texture.get(), nullptr, &t)) {
-				Utils::outMsg("SDL_RenderCopy", SDL_GetError());
-			}
-		}else {
-			SDL_Point center = { int(xAnchor), int(yAnchor) };
-			if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(), nullptr, &t, globalRotate, &center, SDL_FLIP_NONE)) {
-				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
-			}
-		}
+		SDL_Point center = { int(xAnchor), int(yAnchor) };
+
+		pushToRender(texture, intAlpha, nullptr, &t, globalRotate, &center);
 	}
 }
 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 #include <SDL2/SDL.h>
 #undef main //on Windows: int main(int argc, char **argv), but need: int main()
@@ -188,27 +189,56 @@ bool init() {
 	return false;
 }
 
-void render() {
-	std::lock_guard<std::mutex> g(GV::renderMutex);
+bool needToRender = false;
+void renderThread() {
+	while (!GV::exit) {
+		GV::renderMutex.lock();
 
-	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 255);
-	SDL_RenderClear(mainRenderer);
+		if (needToRender) {
+			needToRender = false;
 
-	Group *screens = GV::screens;
-	if (screens) {
-		screens->draw();
+			SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 255);
+			SDL_RenderClear(mainRenderer);
+
+			for (const RenderStruct &rs : GV::toRender) {
+				if (!GV::inGame || GV::exit) break;
+
+				if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
+					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
+				}
+
+				if (SDL_RenderCopyEx(mainRenderer, rs.texture.get(),
+									 rs.srcRectIsNull ? nullptr : &rs.srcRect,
+									 rs.dstRectIsNull ? nullptr : &rs.dstRect,
+									 rs.angle,
+									 rs.centerIsNull ? nullptr : &rs.center,
+									 SDL_FLIP_NONE))
+				{
+					Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+				}
+			}
+
+			GV::toRender.clear();
+			SDL_RenderPresent(mainRenderer);
+		}
+		GV::renderMutex.unlock();
+
+		if (!needToRender) {
+			Utils::sleep(5, false);
+		}
 	}
-	SDL_RenderPresent(mainRenderer);
 }
 
 void loop() {
+	std::thread(renderThread).detach();
+
 	bool maximazed = false;
 	bool mouseOut = false;
 	bool mouseOutPrevDown = false;
 
 	while (!GV::exit) {
 		while (!GV::inGame) {
-			Utils::sleep(10);
+			Utils::sleep(10, false);
 		}
 
 		GV::updateMutex.lock();
@@ -325,7 +355,17 @@ void loop() {
 		mouseOutPrevDown = mouseOutDown;
 
 		GUI::update();
-		render();
+
+		{
+			std::lock_guard<std::mutex> g(GV::renderMutex);
+			GV::toRender.clear();
+			Group *screens = GV::screens;
+			if (screens) {
+				screens->draw();
+			}
+			needToRender = true;
+		}
+
 		Config::save();
 
 		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");

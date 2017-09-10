@@ -148,15 +148,8 @@ void ScreenHotspot::draw() const {
 	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
 	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
 
+	Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
+	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	if (!globalRotate) {
-		if (SDL_RenderCopy(GV::mainRenderer, texture.get(), &from, &to)) {
-			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
-		}
-	}else {
-		SDL_Point center = { int(xAnchor), int(yAnchor) };
-		if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(), &from, &to, globalRotate, &center, SDL_FLIP_NONE)) {
-			Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
-		}
-	}
+	pushToRender(texture, intAlpha, &from, &to, globalRotate, &center);
 }

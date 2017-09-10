@@ -1,15 +1,35 @@
 #ifndef GV_H
 #define GV_H
 
+#include <memory>
 #include <mutex>
+#include <vector>
 
 #include <SDL2/SDL.h>
+
 
 class Group;
 class ScreenChild;
 
 class Node;
 class PyUtils;
+
+
+typedef std::shared_ptr<SDL_Texture> TexturePtr;
+struct RenderStruct {
+	TexturePtr texture;
+	Uint8 alpha;
+
+	bool srcRectIsNull;
+	bool dstRectIsNull;
+	bool centerIsNull;
+
+	SDL_Rect srcRect;
+	SDL_Rect dstRect;
+
+	double angle;
+	SDL_Point center;
+};
 
 
 class GV {
@@ -34,6 +54,8 @@ public:
 
 	static std::mutex updateMutex;
 	static std::mutex renderMutex;
+
+	static std::vector<RenderStruct> toRender;
 
 	static Node *mainExecNode;
 };

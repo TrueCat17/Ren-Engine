@@ -22,4 +22,6 @@ Group *GV::screens = nullptr;
 std::mutex GV::updateMutex;
 std::mutex GV::renderMutex;
 
+std::vector<RenderStruct> GV::toRender;
+
 Node *GV::mainExecNode = nullptr;
