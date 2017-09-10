@@ -19,7 +19,7 @@ const Uint8 *GV::keyBoardState = nullptr;
 
 Group *GV::screens = nullptr;
 
-std::mutex GV::updateGuard;
-std::mutex GV::renderGuard;
+std::mutex GV::updateMutex;
+std::mutex GV::renderMutex;
 
 Node *GV::mainExecNode = nullptr;

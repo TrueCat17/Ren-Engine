@@ -198,7 +198,7 @@ void Node::execute() {
 			}
 
 			{
-				std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+				std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 				GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
 			}
 			PyUtils::exec(getFileName(), getNumLine(), "show_sprite([" + argsStr + "], last_show_at)");
@@ -239,7 +239,7 @@ void Node::execute() {
 		}
 
 		{
-			std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 			GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
 		}
 
@@ -271,7 +271,7 @@ void Node::execute() {
 			nick = "narrator";
 		}
 
-		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 		try {
 			py::dict global = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
 			if (global.has_key("renpy")) {

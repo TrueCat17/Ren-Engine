@@ -32,7 +32,7 @@ std::map<String, Node*> Utils::declAts;
 std::vector<std::pair<String, TexturePtr>> Utils::textures;
 std::map<TexturePtr, SurfacePtr> Utils::textureSurfaces;
 
-std::mutex Utils::surfaceGuard;
+std::mutex Utils::surfaceMutex;
 std::vector<std::pair<String, SurfacePtr>> Utils::surfaces;
 
 double* Utils::sins = new double[360];
@@ -322,7 +322,7 @@ TexturePtr Utils::getTexture(const String &path) {
 	if (surface) {
 		TexturePtr texture;
 		{
-			std::lock_guard<std::mutex> g(GV::renderGuard);
+			std::lock_guard<std::mutex> g(GV::renderMutex);
 			texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
 		}
 
@@ -343,7 +343,7 @@ TexturePtr Utils::getTexture(const String &path) {
 }
 
 void Utils::trimSurfacesCache(const SurfacePtr &last) {
-	std::lock_guard<std::mutex> g(surfaceGuard);
+	std::lock_guard<std::mutex> g(surfaceMutex);
 
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
@@ -376,7 +376,7 @@ void Utils::trimSurfacesCache(const SurfacePtr &last) {
 	}
 }
 SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
-	std::lock_guard<std::mutex> g(surfaceGuard);
+	std::lock_guard<std::mutex> g(surfaceMutex);
 
 	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
 		if (surfaces[i].first == path) {
@@ -398,7 +398,7 @@ void Utils::setSurface(const String &path, const SurfacePtr &surface) {
 	if (!surface) return;
 
 	{
-		std::lock_guard<std::mutex> g(surfaceGuard);
+		std::lock_guard<std::mutex> g(surfaceMutex);
 
 		for (std::pair<String, SurfacePtr> &p : surfaces) {
 			const String &pPath = p.first;
@@ -412,7 +412,7 @@ void Utils::setSurface(const String &path, const SurfacePtr &surface) {
 	{
 		trimSurfacesCache(surface);
 
-		std::lock_guard<std::mutex> g(surfaceGuard);
+		std::lock_guard<std::mutex> g(surfaceMutex);
 		surfaces.push_back(std::make_pair(path, surface));
 	}
 }
@@ -467,7 +467,7 @@ SurfacePtr Utils::getSurface(const String &path) {
 		trimSurfacesCache(surface);
 
 		{
-			std::lock_guard<std::mutex> g2(surfaceGuard);
+			std::lock_guard<std::mutex> g2(surfaceMutex);
 			surfaces.push_back(std::make_pair(path, surface));
 		}
 
@@ -550,7 +550,7 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 	declAts[name] = declAt;
 
 	if (declAt->children.empty()) {
-		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 
 		py::list defaultDeclAt = py::list(GV::pyUtils->pythonGlobal["default_decl_at"]);
 		size_t sizeDefaultDeclAt = py::len(defaultDeclAt);

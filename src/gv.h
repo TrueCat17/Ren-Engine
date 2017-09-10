@@ -32,8 +32,8 @@ public:
 
 	static Group *screens;
 
-	static std::mutex updateGuard;
-	static std::mutex renderGuard;
+	static std::mutex updateMutex;
+	static std::mutex renderMutex;
 
 	static Node *mainExecNode;
 };

@@ -34,7 +34,7 @@ private:
 	static py::list getMouse();
 
 public:
-	static std::mutex pyExecGuard;
+	static std::mutex pyExecMutex;
 
 	static PyCodeObject* getCompileObject(const String &code, const String &fileName, size_t numLine);
 	static String exec(const String &fileName, size_t numLine, const String &code, bool retRes = false);

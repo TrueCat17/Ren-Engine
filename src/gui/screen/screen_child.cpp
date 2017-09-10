@@ -119,7 +119,7 @@ void ScreenChild::calculateProps() {
 
 
 	{
-		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 		GV::pyUtils->pythonGlobal["calc_object"] = py::object();//... = None
 	}
 
@@ -153,7 +153,7 @@ void ScreenChild::calculateProps() {
 
 	bool ok = false;
 	{
-		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 
 		const char *errorDesc = "Ошибка при извлечении calc_object";
 		try {

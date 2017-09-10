@@ -20,7 +20,7 @@
 
 
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
-std::mutex PyUtils::pyExecGuard;
+std::mutex PyUtils::pyExecMutex;
 
 PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine) {
 	PyCode pyCode(code, fileName, numLine);
@@ -193,7 +193,7 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 
 	String res = "empty";
 
-	std::lock_guard<std::mutex> g(pyExecGuard);
+	std::lock_guard<std::mutex> g(pyExecMutex);
 
 	try {
 		PyCodeObject *co;

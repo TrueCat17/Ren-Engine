@@ -189,7 +189,7 @@ bool init() {
 }
 
 void render() {
-	std::lock_guard<std::mutex> g(GV::renderGuard);
+	std::lock_guard<std::mutex> g(GV::renderMutex);
 
 	SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 255);
 	SDL_RenderClear(mainRenderer);
@@ -211,7 +211,7 @@ void loop() {
 			Utils::sleep(10);
 		}
 
-		GV::updateGuard.lock();
+		GV::updateMutex.lock();
 
 		int startTime = Utils::getTimer();
 
@@ -354,7 +354,7 @@ void loop() {
 			Game::save();
 		}
 
-		GV::updateGuard.unlock();
+		GV::updateMutex.unlock();
 
 		int spent = Utils::getTimer() - startTime;
 		int timeToSleep = Game::getFrameTime() - spent;

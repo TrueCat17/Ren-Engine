@@ -37,7 +37,7 @@ ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(nod
 }
 ScreenFor::~ScreenFor() {
 	if (used) {
-		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 		try {
 			py::dict global = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
 			if (global.has_key(iterName.c_str())) {
@@ -57,7 +57,7 @@ void ScreenFor::calculateProps() {
 
 	py::object nextMethod;
 	if (!onStep) {
-		std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 		try {
 			py::object iter = GV::pyUtils->pythonGlobal[iterName.c_str()];
 			nextMethod = iter.attr("next");
@@ -72,7 +72,7 @@ void ScreenFor::calculateProps() {
 	while (true) {
 		try {
 			if (!onStep) {
-				std::lock_guard<std::mutex> g(PyUtils::pyExecGuard);
+				std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 				try {
 					GV::pyUtils->pythonGlobal[propName.c_str()] = nextMethod();
 				}catch (py::error_already_set) {

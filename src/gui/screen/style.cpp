@@ -42,7 +42,7 @@ String Style::getProp(const String &styleName, const String &propName) {
 	}
 
 
-	std::lock_guard<std::mutex> g(GV::pyUtils->pyExecGuard);
+	std::lock_guard<std::mutex> g(GV::pyUtils->pyExecMutex);
 
 	try {
 		py::object styleObj = GV::pyUtils->pythonGlobal["style"];;

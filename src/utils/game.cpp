@@ -365,7 +365,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 	std::lock_guard<std::mutex> g(modMutex);
 
 	{
-		std::lock_guard<std::mutex> g2(GV::updateGuard);
+		std::lock_guard<std::mutex> g2(GV::updateMutex);
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
 		int clearStartTime = Utils::getTimer();

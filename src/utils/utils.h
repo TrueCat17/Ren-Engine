@@ -40,7 +40,7 @@ private:
 	static std::vector<std::pair<String, TexturePtr>> textures;
 	static std::map<TexturePtr, SurfacePtr> textureSurfaces;
 
-	static std::mutex surfaceGuard;
+	static std::mutex surfaceMutex;
 	static std::vector<std::pair<String, SurfacePtr>> surfaces;
 
 	static double* sins;

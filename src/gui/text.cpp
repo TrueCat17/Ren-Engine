@@ -183,11 +183,6 @@ void Text::setText(const String &text, int color) {
 	charOutNum = 0;
 	charX = 0;
 
-	for (size_t i = 0; i < prevLineTextures.size(); ++i) {
-		SDL_Texture *textLine = prevLineTextures[i];
-		SDL_DestroyTexture(textLine);
-	}
-
 	isBold = isItalic = isUnderline = isStrike = 0;
 	rect.h = maxHeight > 0 ? maxHeight : textHeight;
 	for (numLine = 0; numLine < lines.size(); ++numLine) {
@@ -207,7 +202,7 @@ void Text::addText() {
 	}
 
 	if (charOutNum == 0) {
-		GV::renderGuard.lock();
+		GV::renderMutex.lock();
 		SDL_Texture *texture = SDL_CreateTexture(GV::mainRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, lineRect.w, lineRect.h);
 
 		if (texture) {
@@ -222,9 +217,11 @@ void Text::addText() {
 		}else {
 			Utils::outMsg("SDL_CreateTexture", SDL_GetError());
 		}
-		GV::renderGuard.unlock();
+		GV::renderMutex.unlock();
 
-		lineTextures.push_back(texture);
+		TexturePtr texturePtr(texture, SDL_DestroyTexture);
+		lineTextures.push_back(texturePtr);
+
 		if (!texture) {
 			charOutNum = 1e9;
 			return;
@@ -399,7 +396,7 @@ void Text::addChars(String c, int color) {
 
 	SDL_Texture *textureText;
 	{
-		std::lock_guard<std::mutex> g(GV::renderGuard);
+		std::lock_guard<std::mutex> g(GV::renderMutex);
 		textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
 	}
 	SDL_FreeSurface(surfaceText);
@@ -409,11 +406,11 @@ void Text::addChars(String c, int color) {
 		return;
 	}
 
-	SDL_Texture *texture = lineTextures.size() ? lineTextures[lineTextures.size() - 1] : nullptr;
+	TexturePtr texture = lineTextures.size() ? lineTextures.back() : nullptr;
 	if (texture) {
-		std::lock_guard<std::mutex> g(GV::renderGuard);
+		std::lock_guard<std::mutex> g(GV::renderMutex);
 
-		SDL_SetRenderTarget(GV::mainRenderer, texture);
+		SDL_SetRenderTarget(GV::mainRenderer, texture.get());
 		if (SDL_RenderCopy(GV::mainRenderer, textureText, nullptr, &rect)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 		}
@@ -498,11 +495,11 @@ void Text::draw() const {
 	if (!enable || globalAlpha <= 0) return;
 
 	for (size_t i = 0; i < lineTextures.size(); ++i) {
-		SDL_Texture *texture = lineTextures[i];
+		TexturePtr texture = lineTextures[i];
 		if (!texture) continue;
 
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
-		if (SDL_SetTextureAlphaMod(texture, intAlpha)) {
+		if (SDL_SetTextureAlphaMod(texture.get(), intAlpha)) {
 			Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 		}
 
@@ -511,12 +508,12 @@ void Text::draw() const {
 		t.y += globalY;
 
 		if (!globalRotate) {
-			if (SDL_RenderCopy(GV::mainRenderer, texture, nullptr, &t)) {
+			if (SDL_RenderCopy(GV::mainRenderer, texture.get(), nullptr, &t)) {
 				Utils::outMsg("SDL_RenderCopy", SDL_GetError());
 			}
 		}else {
 			SDL_Point center = { int(xAnchor), int(yAnchor) };
-			if (SDL_RenderCopyEx(GV::mainRenderer, texture, nullptr, &t, globalRotate, &center, SDL_FLIP_NONE)) {
+			if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(), nullptr, &t, globalRotate, &center, SDL_FLIP_NONE)) {
 				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
 			}
 		}
@@ -525,9 +522,4 @@ void Text::draw() const {
 
 Text::~Text() {
 	font = nullptr;
-
-	for (size_t i = 0; i < lineTextures.size(); ++i) {
-		SDL_Texture *textLine = lineTextures[i];
-		SDL_DestroyTexture(textLine);
-	}
 }

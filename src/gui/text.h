@@ -30,7 +30,7 @@ private:
 	TTF_Font *prevDrawFont = nullptr;
 	String prevText;
 
-	std::vector<SDL_Texture*> prevLineTextures;
+	std::vector<TexturePtr> prevLineTextures;
 	std::vector<SDL_Rect> prevRects;
 
 	std::vector<SDL_Rect> rects;
@@ -63,7 +63,7 @@ private:
 	void popStyle();
 	void resetStyle();
 
-	std::vector<SDL_Texture*> lineTextures;
+	std::vector<TexturePtr> lineTextures;
 
 	std::vector<String> lines;
 	size_t numLine = 0;
