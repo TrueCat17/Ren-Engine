@@ -203,6 +203,7 @@ void render() {
 
 void loop() {
 	bool maximazed = false;
+	bool mouseOut = false;
 	bool mouseOutPrevDown = false;
 
 	while (!GV::exit) {
@@ -217,7 +218,8 @@ void loop() {
 		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;
 		bool mouseWasUp = false;
-		bool mouseOutDown = SDL_GetGlobalMouseState(0, 0);
+
+		bool mouseOutDown = false;
 
 
 		Mouse::update();
@@ -228,6 +230,13 @@ void loop() {
 			if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
 				GV::exit = true;
 				return;
+			}
+
+			if (event.window.event == SDL_WINDOWEVENT_ENTER) {
+				mouseOut = false;
+			}else
+			if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
+				mouseOut = true;
 			}else
 
 			if (event.window.event == SDL_WINDOWEVENT_MOVED) {
@@ -240,7 +249,7 @@ void loop() {
 
 					x = std::max(x - leftBorderSize, 1);
 					y = std::max(y - captionHeight, 1);
-					
+
 					Config::set("window_x", x);
 					Config::set("window_y", y);
 				}
@@ -297,6 +306,10 @@ void loop() {
 				Game::updateKeyboard();
 				ScreenKey::setUpState(key);
 			}
+		}
+
+		if (mouseOut) {
+			mouseOutDown = SDL_GetGlobalMouseState(nullptr, nullptr);
 		}
 
 		if (resizeWithoutMouseDown || !(mouseWasDown || mouseWasUp)) {
