@@ -27,8 +27,6 @@
 
 
 SDL_DisplayMode displayMode;
-SDL_Window *mainWindow;
-SDL_Renderer *mainRenderer;
 
 
 //before windowSize-changes
@@ -57,7 +55,7 @@ void changeWindowSize(bool maximized) {
 			SDL_GetDisplayUsableBounds(0, &usableBounds);
 
 			int wTop, wLeft, wBottom, wRight;
-			SDL_GetWindowBordersSize(mainWindow, &wTop, &wLeft, &wBottom, &wRight);
+			SDL_GetWindowBordersSize(GV::mainWindow, &wTop, &wLeft, &wBottom, &wRight);
 
 			usableBounds.w -= wLeft + wRight;
 			usableBounds.h -= wTop + wBottom;
@@ -158,8 +156,8 @@ bool init() {
 	String windowTitle = Config::get("window_title");
 
 	int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
-	mainWindow = GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
-	if (!mainWindow) {
+	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
+	if (!GV::mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;
 	}
@@ -171,7 +169,7 @@ bool init() {
 		icon = Utils::getSurface(Utils::ROOT + iconPath).get();
 	}
 	if (icon) {
-		SDL_SetWindowIcon(mainWindow, icon);
+		SDL_SetWindowIcon(GV::mainWindow, icon);
 	}
 
 
@@ -180,8 +178,8 @@ bool init() {
 		flags = SDL_RENDERER_SOFTWARE;
 	}
 
-	mainRenderer = GV::mainRenderer = SDL_CreateRenderer(mainWindow, -1, flags);
-	if (!mainRenderer) {
+	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, flags);
+	if (!GV::mainRenderer) {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 		return true;
 	}
@@ -192,13 +190,15 @@ bool init() {
 bool needToRender = false;
 void renderThread() {
 	while (!GV::exit) {
-		GV::renderMutex.lock();
+		if (!needToRender) {
+			Utils::sleep(5, false);
+		}else {
+			std::lock_guard<std::mutex> g(GV::renderMutex);
 
-		if (needToRender) {
 			needToRender = false;
 
-			SDL_SetRenderDrawColor(mainRenderer, 0, 0, 0, 255);
-			SDL_RenderClear(mainRenderer);
+			SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
+			SDL_RenderClear(GV::mainRenderer);
 
 			for (const RenderStruct &rs : GV::toRender) {
 				if (!GV::inGame || GV::exit) break;
@@ -207,7 +207,7 @@ void renderThread() {
 					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 				}
 
-				if (SDL_RenderCopyEx(mainRenderer, rs.texture.get(),
+				if (SDL_RenderCopyEx(GV::mainRenderer, rs.texture.get(),
 									 rs.srcRectIsNull ? nullptr : &rs.srcRect,
 									 rs.dstRectIsNull ? nullptr : &rs.dstRect,
 									 rs.angle,
@@ -219,12 +219,7 @@ void renderThread() {
 			}
 
 			GV::toRender.clear();
-			SDL_RenderPresent(mainRenderer);
-		}
-		GV::renderMutex.unlock();
-
-		if (!needToRender) {
-			Utils::sleep(5, false);
+			SDL_RenderPresent(GV::mainRenderer);
 		}
 	}
 }
@@ -275,7 +270,7 @@ void loop() {
 				if (x || y) {//Если оба равны 0, то скорее всего это глюк, игнорируем его
 					int leftBorderSize;
 					int captionHeight;
-					SDL_GetWindowBordersSize(mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+					SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
 
 					x = std::max(x - leftBorderSize, 1);
 					y = std::max(y - captionHeight, 1);
@@ -413,6 +408,7 @@ void destroy() {
 	SDL_CloseAudio();
 	SDL_Quit();
 }
+
 
 int main() {
 	setlocale(LC_ALL, "en_EN.utf8");

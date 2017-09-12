@@ -30,9 +30,6 @@ private:
 	TTF_Font *prevDrawFont = nullptr;
 	String prevText;
 
-	std::vector<TexturePtr> prevLineTextures;
-	std::vector<SDL_Rect> prevRects;
-
 	std::vector<SDL_Rect> rects;
 
 	TTF_Font *font = nullptr;

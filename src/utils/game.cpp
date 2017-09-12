@@ -211,20 +211,6 @@ void Game::save() {
 	const String tablePath = saves + table + '/';
 	const String fullPath = tablePath + name + '/';
 
-	PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = True");
-	{//update & render
-		GUI::update();
-
-		SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
-		SDL_RenderClear(GV::mainRenderer);
-
-		if (GV::screens) {
-			GV::screens->draw();
-		}
-		//Важно! SDL_RenderPresent не нужен!
-	}
-	PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
-
 
 	{//check directory to save
 		namespace fs = boost::filesystem;
@@ -306,6 +292,43 @@ void Game::save() {
 
 
 	{//save screenshot
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = True");
+
+		GUI::update();
+
+		std::lock_guard<std::mutex> g(GV::renderMutex);
+
+		GV::toRender.clear();
+		if (GV::screens) {
+			GV::screens->draw();
+		}
+
+		SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
+		SDL_RenderClear(GV::mainRenderer);
+		for (const RenderStruct &rs : GV::toRender) {
+			if (!GV::inGame || GV::exit) break;
+
+			if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
+				Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
+			}
+
+			if (SDL_RenderCopyEx(GV::mainRenderer, rs.texture.get(),
+								 rs.srcRectIsNull ? nullptr : &rs.srcRect,
+								 rs.dstRectIsNull ? nullptr : &rs.dstRect,
+								 rs.angle,
+								 rs.centerIsNull ? nullptr : &rs.center,
+								 SDL_FLIP_NONE))
+			{
+				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+			}
+		}
+		//Важно! SDL_RenderPresent не нужен!
+		GV::toRender.clear();
+
+
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
+
+
 		SDL_Surface* info = SDL_GetWindowSurface(GV::mainWindow);
 		if (info) {
 			auto &format = info->format;

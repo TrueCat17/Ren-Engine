@@ -100,7 +100,7 @@ void Text::setText(const String &text, int color) {
 
 	size_t countLinesAtStart = 0;
 
-	const int maxW = maxWidth > 0  ? maxWidth  : 1e9;
+	const int maxW = maxWidth  > 0 ? maxWidth  : 1e9;
 	const int maxH = maxHeight > 0 ? maxHeight : 1e9;
 
 	if (text) {
@@ -112,13 +112,8 @@ void Text::setText(const String &text, int color) {
 	curColor = mainColor = color;
 	int maxLineWidth = 0;
 
-	prevLineTextures = lineTextures;
-	prevRects = rects;
-
-	lineTextures.clear();
-	rects.clear();
-
 	pushStyle();
+	std::vector<SDL_Rect> tmpRects;
 	for (size_t i = countLinesAtStart; i < lines.size(); ++i) {
 		String line = lines[i];
 
@@ -153,7 +148,7 @@ void Text::setText(const String &text, int color) {
 		if (lineRect.w > maxLineWidth) {
 			maxLineWidth = lineRect.w;
 		}
-		rects.push_back(lineRect);
+		tmpRects.push_back(lineRect);
 	}
 	popStyle();
 
@@ -163,16 +158,12 @@ void Text::setText(const String &text, int color) {
 	//Если не уместились с этим размером шрифта
 	if ((textHeight > maxH || maxLineWidth > maxW) && textSize > MIN_TEXT_SIZE) {
 		setFont(fontName, textSize - 2, false);//Устанавливаем меньший шрифт
-		lineTextures = prevLineTextures;
-		rects = prevRects;
 		setText(text, color);//И пытаемся ещё раз
 		return;
 	}
 
 	//Не перерисовываем, если нарисовано будет ровно то же самое, что есть уже сейчас
-	if (prevDrawFont == font && prevDrawTextColor == color && prevText == text && prevRects.size() == rects.size()) {
-		lineTextures = prevLineTextures;
-		rects = prevRects;
+	if (prevDrawFont == font && prevDrawTextColor == color && prevText == text && tmpRects.size() == rects.size()) {
 		return;
 	}
 
@@ -185,6 +176,9 @@ void Text::setText(const String &text, int color) {
 
 	isBold = isItalic = isUnderline = isStrike = 0;
 	rect.h = maxHeight > 0 ? maxHeight : textHeight;
+
+	lineTextures.clear();
+	rects = tmpRects;
 	for (numLine = 0; numLine < lines.size(); ++numLine) {
 		addText();
 	}
