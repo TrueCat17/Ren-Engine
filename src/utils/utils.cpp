@@ -430,7 +430,12 @@ SurfacePtr Utils::getSurface(const String &path) {
 	if (t) return t;
 
 
-	const String fullPath = Utils::ROOT + path;
+	String fullPath = Utils::ROOT + path;
+	size_t end = fullPath.find('?');
+	if (end != size_t(-1)) {
+		fullPath.erase(fullPath.begin() + end, fullPath.end());
+	}
+
 	SurfacePtr surface(IMG_Load(fullPath.c_str()), SDL_FreeSurface);
 	if (surface) {
 		/*
