@@ -7,6 +7,7 @@
 
 
 #include "gv.h"
+#include "logger.h"
 
 #include "gui/screen/screen.h"
 
@@ -146,13 +147,16 @@ void PyUtils::errorProcessing(const String &code) {
 		}
 	}
 
-	std::cout << "Python Error (" + excType + "):\n"
-			  << '\t' << excValue << '\n';
+	String out = "Python Error (" + excType + "):\n"
+				 "\t" + excValue + "\n"
 
-	std::cout << "Traceback:\n" << traceback << '\n';
+				 "Traceback:\n" + traceback + "\n"
 
-	std::cout << "Code:\n"
-			  << code << "\n\n";
+				 "Code:\n" +
+				 code + "\n\n";
+
+	std::cout << out;
+	Logger::log(out);
 }
 
 

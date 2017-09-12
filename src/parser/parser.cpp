@@ -107,6 +107,20 @@ Parser::Parser(const String &dir) {
 						}
 					}
 				}else {
+					bool q1 = false;
+					bool q2 = false;
+					for (size_t i = n; i < s.size(); ++i) {
+						char c = s[i];
+						if (c == '\'' && !q2) q1 = !q1;
+						if (c == '"'  && !q1) q2 = !q2;
+
+						if (!q1 && !q2) {
+							if (c == '#') {
+								s.erase(s.begin() + i, s.end());
+								break;
+							}
+						}
+					}
 					code.push_back(s);
 				}
 			}else {
