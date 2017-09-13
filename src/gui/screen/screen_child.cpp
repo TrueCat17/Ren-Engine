@@ -144,50 +144,50 @@ void ScreenChild::calculateProps() {
 			code += "    '" + propName + "': " + propExpr + ",\n";
 		}
 	}
-	if (empty) return;
+	if (!empty) {
+		code.erase(code.size() - 2);
+		code +=     "\n"
+					"}\n";
+		PyUtils::exec("EMBED_CPP: ScreenChild.cpp", __LINE__, code);
 
-	code.erase(code.size() - 2);
-	code +=     "\n"
-				"}\n";
-	PyUtils::exec("EMBED_CPP: ScreenChild.cpp", __LINE__, code);
+		bool ok = false;
+		{
+			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 
-	bool ok = false;
-	{
-		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
+			const char *errorDesc = "Ошибка при извлечении calc_object";
+			try {
+				py::object obj = GV::pyUtils->pythonGlobal["calc_object"];
 
-		const char *errorDesc = "Ошибка при извлечении calc_object";
-		try {
-			py::object obj = GV::pyUtils->pythonGlobal["calc_object"];
-
-			//ok (try)
-			if (!obj.is_none()) {
-				errorDesc = "Ошибка при извлечении свойств из calc_object";
-				for (size_t i = 0; i < COUNT_PROPS; ++i) {
-					const String &propExpr = propCodes.at(i);
-					if (propExpr) {
-						const String &propName = propNames.at(i);
-						py::object res = obj[propName.c_str()];
-						propValues[i] = String(py::extract<const std::string>(py::str(res)));
+				//ok (try)
+				if (!obj.is_none()) {
+					errorDesc = "Ошибка при извлечении свойств из calc_object";
+					for (size_t i = 0; i < COUNT_PROPS; ++i) {
+						const String &propExpr = propCodes.at(i);
+						if (propExpr) {
+							const String &propName = propNames.at(i);
+							py::object res = obj[propName.c_str()];
+							propValues[i] = String(py::extract<const std::string>(py::str(res)));
+						}
 					}
+					ok = true;
 				}
-				ok = true;
+			}catch (py::error_already_set) {
+				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", errorDesc);
+				PyUtils::errorProcessing("EMBED_CPP: ScreenChild::calculateProps");
 			}
-		}catch (py::error_already_set) {
-			Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", errorDesc);
-			PyUtils::errorProcessing("EMBED_CPP: ScreenChild::calculateProps");
 		}
-	}
 
-	//some error (except)
-	if (!ok) {
-		for (size_t i = 0; i < COUNT_PROPS; ++i) {
-			const String &propExpr = propCodes[i];
+		//some error (except)
+		if (!ok) {
+			for (size_t i = 0; i < COUNT_PROPS; ++i) {
+				const String &propExpr = propCodes[i];
 
-			if (propExpr) {
-				const String &fileName = node->getFileName();
-				size_t numLine = propNumLines.at(i);
+				if (propExpr) {
+					const String &fileName = node->getFileName();
+					size_t numLine = propNumLines.at(i);
 
-				propValues[i] = PyUtils::exec(fileName, numLine, propExpr, true);
+					propValues[i] = PyUtils::exec(fileName, numLine, propExpr, true);
+				}
 			}
 		}
 	}
