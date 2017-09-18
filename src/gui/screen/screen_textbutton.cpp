@@ -9,22 +9,36 @@ ScreenTextButton::ScreenTextButton(Node* node):
 {
 	auto onLeftClick = [this](DisplayObject*) {
 		const NodeProp activateSound = this->node->getPropCode("activate_sound");
-		const String &sound = activateSound.pyExpr;
-		if (sound) {
-			Music::play("button_click " + sound, this->getFileName(), activateSound.numLine);
+		if (activateSound.pyExpr) {
+			Music::play("button_click " + activateSound.pyExpr,
+						this->getFileName(), activateSound.numLine);
+		}else if (activateSound.styleName) {
+			const String sound = PyUtils::exec(this->getFileName(), this->getNumLine(),
+								  "style." + activateSound.styleName + ".activete_sound",
+								  true);
+			if (sound != "None") {
+				Music::play("button_click '''" + sound + "'''",
+							this->getFileName(), this->getNumLine());
+			}
 		}
 
 		const NodeProp action = this->node->getPropCode("action");
-		const String &actionExpr = action.pyExpr;
-		if (actionExpr) {
-			PyUtils::exec(this->getFileName(), action.numLine, "exec_funcs(" + actionExpr + ")");
+		if (action.pyExpr) {
+			PyUtils::exec(this->getFileName(), action.numLine,
+						  "exec_funcs(" + action.pyExpr + ")");
+		}else if (action.styleName) {
+			PyUtils::exec(this->getFileName(), this->getNumLine(),
+						  "exec_funcs(style." + action.styleName + "." + action.propName + ")");
 		}
 	};
 	auto onRightClick = [this](DisplayObject*) {
 		const NodeProp alternate = this->node->getPropCode("alternate");
-		const String &alternateExpr = alternate.pyExpr;
-		if (alternateExpr) {
-			PyUtils::exec(this->getFileName(), alternate.numLine, "exec_funcs(" + alternateExpr + ")");
+		if (alternate.pyExpr) {
+			PyUtils::exec(this->getFileName(), alternate.numLine,
+						  "exec_funcs(" + alternate.pyExpr + ")");
+		}else if (alternate.styleName) {
+			PyUtils::exec(this->getFileName(), this->getNumLine(),
+						  "exec_funcs(style." + alternate.styleName + ".alternate)");
 		}
 	};
 	btnRect.init(this, onLeftClick, onRightClick);
@@ -43,23 +57,34 @@ void ScreenTextButton::calculateProps() {
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {
 			const NodeProp hoverSound = node->getPropCode("hover_sound");
-			const String &sound = hoverSound.pyExpr;
-			if (sound) {
-				Music::play("button_hover " + sound, getFileName(), hoverSound.numLine);
+			if (hoverSound.pyExpr) {
+				Music::play("button_hover " + hoverSound.pyExpr, getFileName(), hoverSound.numLine);
+			}else if (hoverSound.styleName) {
+				const String sound = PyUtils::exec(this->getFileName(), this->getNumLine(),
+									  "style." + hoverSound.styleName + ".hover_sound",
+									  true);
+				if (sound != "None") {
+					Music::play("button_hover '''" + sound + "'''",
+								this->getFileName(), this->getNumLine());
+				}
 			}
 
 			const NodeProp hovered = node->getPropCode("hovered");
-			const String &hoveredExpr = hovered.pyExpr;
-			if (hoveredExpr) {
-				PyUtils::exec(getFileName(), hovered.numLine, "exec_funcs(" + hoveredExpr + ")");
+			if (hovered.pyExpr) {
+				PyUtils::exec(getFileName(), hovered.numLine, "exec_funcs(" + hovered.pyExpr + ")");
+			}else if (hovered.styleName) {
+				PyUtils::exec(this->getFileName(), this->getNumLine(),
+							  "exec_funcs(style." + hovered.styleName + ".hovered)");
 			}
 		}
 	}else {
 		if (prevMouseOver) {
 			const NodeProp unhovered = node->getPropCode("unhovered");
-			const String &unhoveredExpr = unhovered.pyExpr;
-			if (unhoveredExpr) {
-				PyUtils::exec(getFileName(), unhovered.numLine, "exec_funcs(" + unhoveredExpr + ")");
+			if (unhovered.pyExpr) {
+				PyUtils::exec(getFileName(), unhovered.numLine, "exec_funcs(" + unhovered.pyExpr + ")");
+			}else if (unhovered.styleName) {
+				PyUtils::exec(this->getFileName(), this->getNumLine(),
+							  "exec_funcs(style." + unhovered.styleName + ".unhovered)");
 			}
 		}
 	}

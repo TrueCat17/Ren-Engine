@@ -193,7 +193,6 @@ void ScreenChild::calculateProps() {
 	}
 
 
-
 	updateTexture();
 
 
