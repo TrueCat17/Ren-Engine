@@ -24,7 +24,7 @@ std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
 std::mutex PyUtils::pyExecMutex;
 
 PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine) {
-	PyCode pyCode(code, fileName, numLine);
+	std::tuple<const String&, const String&, int> pyCode(code, fileName, numLine);
 
 	auto i = compiledObjects.find(pyCode);
 	if (i != compiledObjects.end()) {
@@ -41,7 +41,8 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 	PyObject *t = Py_CompileString(tmp.c_str(), fileName.c_str(), Py_file_input);
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
-	compiledObjects[pyCode] = co;
+	std::tuple<const String, const String, int> constPyCode(code, fileName, numLine);
+	compiledObjects[constPyCode] = co;
 	return co;
 }
 

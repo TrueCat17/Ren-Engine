@@ -297,6 +297,7 @@ void Game::save() {
 		GUI::update();
 
 		std::lock_guard<std::mutex> g(GV::renderMutex);
+		std::lock_guard<std::mutex> g2(GV::toRenderMutex);
 
 		GV::toRender.clear();
 		if (GV::screens) {

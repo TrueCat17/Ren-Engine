@@ -192,35 +192,76 @@ bool needToRender = false;
 void renderThread() {
 	while (!GV::exit) {
 		if (!needToRender) {
-			Utils::sleep(5, false);
+			Utils::sleep(1, false);
 		}else {
-			std::lock_guard<std::mutex> g(GV::renderMutex);
+			int startTime = Utils::getTimer();
+			std::lock_guard<std::mutex> trg(GV::toRenderMutex);
 
-			needToRender = false;
+			/* Рендер идёт в отдельном потоке, а обновление объектов - в основном
+			 * Но при обновлении иногда используется рендер, поэтому
+			 * чтобы не ждать окончания рендера, он разбит на части,
+			 * и нужно ждать лишь завершения текущей части
+			 */
 
-			SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
-			SDL_RenderClear(GV::mainRenderer);
+			const size_t COUNT_IN_PART = 25;
+			size_t len;
 
-			for (const RenderStruct &rs : GV::toRender) {
-				if (!GV::inGame || GV::exit) break;
+			//Part 1
+			{
+				std::lock_guard<std::mutex> g(GV::renderMutex);
+				needToRender = false;
 
-				if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
-					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
+				SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
+				SDL_RenderClear(GV::mainRenderer);
+
+				len = GV::toRender.size() / COUNT_IN_PART + 1;
+			}
+
+			//Parts 1..L
+			for (size_t i = 0; i < len; ++i) {
+				if (!GV::inGame || GV::exit) {
+					break;
 				}
 
-				if (SDL_RenderCopyEx(GV::mainRenderer, rs.texture.get(),
-									 rs.srcRectIsNull ? nullptr : &rs.srcRect,
-									 rs.dstRectIsNull ? nullptr : &rs.dstRect,
-									 rs.angle,
-									 rs.centerIsNull ? nullptr : &rs.center,
-									 SDL_FLIP_NONE))
+				std::lock_guard<std::mutex> g(GV::renderMutex);
+				if (!GV::inGame || GV::exit) {
+					break;
+				}
+
+				for (size_t j = i * COUNT_IN_PART;
+					 j < (i + 1) * COUNT_IN_PART && j < GV::toRender.size();
+					 ++j)
 				{
-					Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+					const RenderStruct &rs = GV::toRender.at(j);
+
+					if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
+						Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
+					}
+
+					if (SDL_RenderCopyEx(GV::mainRenderer, rs.texture.get(),
+										 rs.srcRectIsNull ? nullptr : &rs.srcRect,
+										 rs.dstRectIsNull ? nullptr : &rs.dstRect,
+										 rs.angle,
+										 rs.centerIsNull ? nullptr : &rs.center,
+										 SDL_FLIP_NONE))
+					{
+						Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+					}
 				}
 			}
 
-			GV::toRender.clear();
-			SDL_RenderPresent(GV::mainRenderer);
+			//Part L+1
+			{
+				std::lock_guard<std::mutex> g(GV::renderMutex);
+				SDL_RenderPresent(GV::mainRenderer);
+				if (!needToRender) {
+					GV::toRender.clear();
+				}
+			}
+
+			int spent = Utils::getTimer() - startTime;
+			int toSleep = (Game::getFrameTime() - spent) / 2;
+			Utils::sleep(toSleep);
 		}
 	}
 }
@@ -353,7 +394,7 @@ void loop() {
 		GUI::update();
 
 		{
-			std::lock_guard<std::mutex> g(GV::renderMutex);
+			std::lock_guard<std::mutex> g(GV::toRenderMutex);
 			GV::toRender.clear();
 			Group *screens = GV::screens;
 			if (screens) {

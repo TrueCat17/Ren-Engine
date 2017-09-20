@@ -55,6 +55,7 @@ public:
 	static std::mutex updateMutex;
 	static std::mutex renderMutex;
 
+	static std::mutex toRenderMutex;
 	static std::vector<RenderStruct> toRender;
 
 	static Node *mainExecNode;
