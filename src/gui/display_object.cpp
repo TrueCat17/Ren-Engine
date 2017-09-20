@@ -80,7 +80,7 @@ void DisplayObject::draw() const {
 
 	if (texture) {
 		SDL_Rect t = {globalX, globalY, rect.w, rect.h};
-		SDL_Point center = { int(xAnchor), int(yAnchor) };
+		SDL_Point center = { xAnchor, yAnchor };
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
 
 		pushToRender(texture, intAlpha, &crop, &t, globalRotate, &center);

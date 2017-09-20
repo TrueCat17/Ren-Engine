@@ -37,6 +37,7 @@ public:
 	static std::mutex pyExecMutex;
 
 	static PyCodeObject* getCompileObject(const String &code, const String &fileName, size_t numLine);
+	static bool isConstExpr(const String &code);
 	static String exec(const String &fileName, size_t numLine, const String &code, bool retRes = false);
 	static void errorProcessing(const String &code);
 

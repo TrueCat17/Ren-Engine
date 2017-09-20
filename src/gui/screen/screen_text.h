@@ -21,8 +21,8 @@ private:
 	int color = 0;
 	int prevColor = 0;
 
-	double prevXSize = 0;
-	double prevYSize = 0;
+	int prevWidth = 0;
+	int prevHeight = 0;
 
 protected:
 	Text *tf;

@@ -110,11 +110,18 @@ void Screen::updateScreenProps() {
 	needUpdateChildren = false;
 	xSize = GV::width;
 	ySize = GV::height;
+	xSizeIsDouble = ySizeIsDouble = false;
 	calculateProps();
 	needUpdateChildren = true;
 
-	_isModal = propValues.at(ScreenProp::MODAL) == "True";
-	_zOrder = propValues.at(ScreenProp::ZORDER).toDouble();
+	if (propWasChanged[ScreenProp::MODAL]) {
+		propWasChanged[ScreenProp::MODAL] = false;
+		_isModal = propValues.at(ScreenProp::MODAL) == "True";
+	}
+	if (propWasChanged[ScreenProp::ZORDER]) {
+		propWasChanged[ScreenProp::ZORDER] = false;
+		_zOrder = propValues.at(ScreenProp::ZORDER).toDouble();
+	}
 }
 
 
@@ -125,4 +132,6 @@ Screen::Screen(Node *node):
 {
 	setProp(ScreenProp::MODAL, node->getPropCode("modal"));
 	setProp(ScreenProp::ZORDER, node->getPropCode("zorder"));
+
+	preparationToUpdateCalcProps();
 }

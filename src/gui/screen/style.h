@@ -12,9 +12,7 @@ private:
 	std::map<String, std::pair<bool, String>> props;
 
 public:
-	static void disableAll();
 	static void destroyAll();
-
 	static String getProp(const String &styleName, const String &propName);
 };
 

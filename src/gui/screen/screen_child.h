@@ -69,40 +69,49 @@ private:
 protected:
 	static std::vector<ScreenChild*> screenObjects;
 
+	static std::vector<String> propNames;
+
 
 	const Screen *screen = nullptr;
 	ScreenChild *screenParent;
 
 	Node *node;
 
-	//pyExprs -> calculate propValue
-	std::vector<String> propCodes;
+	//props -> calculate propValue
+	std::vector<NodeProp> props;
 	std::vector<String> propValues;
-	std::vector<size_t> propNumLines;
+	std::vector<ScreenProp> propIndeces;
+	std::vector<char> propWasChanged;
+	String codeForCalcProps;
 
-	//styleProps -> propValue
-	std::vector<NodeProp> propInStyle;//propName - path in style-Object
 
-
+	bool needUpdateChildren = true;
 	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
 
 	bool xAnchorIsDouble = false;
 	bool yAnchorIsDouble = false;
+	double preXAnchor = 0;
+	double preYAnchor = 0;
 
 	double xPos = 0;
 	double yPos = 0;
 	bool xPosIsDouble = false;
 	bool yPosIsDouble = false;
 
+	bool usingXAlign = false;
+	bool usingYAlign = false;
+
 	double xSize = 0.5;
 	double ySize = 0.5;
 	bool xSizeIsDouble = false;
 	bool ySizeIsDouble = false;
 
+	bool xSizeIsTextureWidth = false;
+	bool ySizeIsTextureHeight = false;
 
-	bool needUpdateChildren = true;
 
 public:
+	static void setPropNames();
 	static void disableAll();
 	static const std::vector<ScreenChild*> getScreenObjects() { return screenObjects; }
 
@@ -114,6 +123,7 @@ public:
 
 	void clearProps();
 	void setProp(const ScreenProp prop, const NodeProp &nodeProp);
+	void preparationToUpdateCalcProps();
 
 	const String& getType() const { return node->command; }
 

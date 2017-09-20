@@ -18,6 +18,9 @@ ScreenKey::ScreenKey(Node *node):
 	setProp(ScreenProp::KEY, NodeProp::initPyExpr(keyStr, node->getNumLine()));
 	setProp(ScreenProp::FIRST_DELAY, node->getPropCode("first_delay"));
 	setProp(ScreenProp::DELAY, node->getPropCode("delay"));
+
+	preparationToUpdateCalcProps();
+
 	calculateProps();
 }
 ScreenKey::~ScreenKey() {
@@ -66,8 +69,15 @@ void ScreenKey::calculateProps() {
 	if (!isModal() || toNotReact) return;
 
 	ScreenChild::calculateProps();
-	firstKeyDelay = propValues.at(ScreenProp::FIRST_DELAY).toDouble() * 1000;
-	keyDelay = propValues.at(ScreenProp::DELAY).toDouble() * 1000;
+
+	if (propWasChanged[ScreenProp::FIRST_DELAY]) {
+		propWasChanged[ScreenProp::FIRST_DELAY] = false;
+		firstKeyDelay = propValues.at(ScreenProp::FIRST_DELAY).toDouble() * 1000;
+	}
+	if (propWasChanged[ScreenProp::DELAY]) {
+		propWasChanged[ScreenProp::DELAY] = false;
+		keyDelay = propValues.at(ScreenProp::DELAY).toDouble() * 1000;
+	}
 
 	SDL_Scancode key = getKey();
 

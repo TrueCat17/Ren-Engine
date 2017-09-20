@@ -8,16 +8,6 @@
 
 
 std::map<String, Style*> Style::styles;
-
-void Style::disableAll() {
-	for (auto i : styles) {
-		Style *style = i.second;
-		for (auto &j : style->props) {
-			auto &pair = j.second;
-			pair.first = false;
-		}
-	}
-}
 void Style::destroyAll() {
 	for (auto i : styles) {
 		Style *style = i.second;

@@ -17,7 +17,7 @@ ScreenTextButton::ScreenTextButton(Node* node):
 								  "style." + activateSound.styleName + ".activete_sound",
 								  true);
 			if (sound != "None") {
-				Music::play("button_click '''" + sound + "'''",
+				Music::play("button_click '" + sound + "'",
 							this->getFileName(), this->getNumLine());
 			}
 		}
@@ -46,13 +46,19 @@ ScreenTextButton::ScreenTextButton(Node* node):
 	setProp(ScreenProp::GROUND, node->getPropCode("ground"));
 	setProp(ScreenProp::HOVER, node->getPropCode("hover"));
 	setProp(ScreenProp::MOUSE, node->getPropCode("mouse"));
+
+	preparationToUpdateCalcProps();
 }
 
 void ScreenTextButton::calculateProps() {
 	ScreenText::calculateProps();
 
-	const String &mouse = propValues.at(ScreenProp::MOUSE);
-	btnRect.buttonMode = mouse == "True";
+	if (propWasChanged[ScreenProp::MOUSE]) {
+		propWasChanged[ScreenProp::MOUSE] = false;
+
+		const String &mouse = propValues.at(ScreenProp::MOUSE);
+		btnRect.buttonMode = mouse == "True";
+	}
 
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {
@@ -64,7 +70,7 @@ void ScreenTextButton::calculateProps() {
 									  "style." + hoverSound.styleName + ".hover_sound",
 									  true);
 				if (sound != "None") {
-					Music::play("button_hover '''" + sound + "'''",
+					Music::play("button_hover '" + sound + "'",
 								this->getFileName(), this->getNumLine());
 				}
 			}
@@ -98,24 +104,44 @@ void ScreenTextButton::calculateProps() {
 	}
 }
 void ScreenTextButton::updateTexture() {
-	const String &newGround = propValues.at(ScreenProp::GROUND);
-	const String &newHover = propValues.at(ScreenProp::HOVER);
+	if (propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER] || prevMouseOver != btnRect.mouseOvered) {
+		propWasChanged[ScreenProp::GROUND] = false;
+		propWasChanged[ScreenProp::HOVER] = false;
 
-	if (newHover) {
-		hover = newHover;
-	}else
-	if (ground != newGround) {
-		hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor('" + newGround + "', im.matrix.contrast(1.5))", true);
+		const String &newGround = propValues.at(ScreenProp::GROUND);
+		const String &newHover = propValues.at(ScreenProp::HOVER);
+
+		if (newHover) {
+			hover = newHover;
+		}else
+			if (ground != newGround) {
+				hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor('" + newGround + "', im.matrix.contrast(1.5))", true);
+			}
+		ground = newGround;
+
+		const String &path = !btnRect.mouseOvered ? ground : hover;
+		texture = Utils::getTexture(path);
+
+		if (xSizeIsTextureWidth)  xSize = Utils::getTextureWidth(texture);
+		if (ySizeIsTextureHeight) ySize = Utils::getTextureHeight(texture);
+		ScreenText::updateSize();
 	}
-	ground = newGround;
-
-	const String &path = !btnRect.mouseOvered ? ground : hover;
-	texture = Utils::getTexture(path);
 }
 
 void ScreenTextButton::updateSize() {
-	if (xSize <= 0) xSize = Utils::getTextureWidth(texture);
-	if (ySize <= 0) ySize = Utils::getTextureHeight(texture);
+	if (xSize <= 0) {
+		xSizeIsTextureWidth = true;
+		xSize = Utils::getTextureWidth(texture);
+	}else {
+		xSizeIsTextureWidth = false;
+	}
+
+	if (ySize <= 0) {
+		ySizeIsTextureHeight = true;
+		ySize = Utils::getTextureHeight(texture);
+	}else {
+		ySizeIsTextureHeight = false;
+	}
 
 	ScreenText::updateSize();
 }

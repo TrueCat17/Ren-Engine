@@ -13,8 +13,6 @@
 
 void GUI::update() {
 	if (GV::screens) {
-		Style::disableAll();
-
 		Screen::updateLists();
 		Screen::updateScreens();
 

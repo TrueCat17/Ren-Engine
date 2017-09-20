@@ -72,6 +72,7 @@ PyUtils::PyUtils() {
 
 	pythonGlobal["show_screen"] = py::make_function(Screen::addToShow);
 	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHide);
+	pythonGlobal["has_screen"] = py::make_function(Screen::hasScreen);
 
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
 	pythonGlobal["_load"] = py::make_function(Game::load);
@@ -159,6 +160,21 @@ void PyUtils::errorProcessing(const String &code) {
 	Logger::log(out);
 }
 
+bool PyUtils::isConstExpr(const String &code) {
+	static const String True = "True", False = "False", None = "None";
+	if (code.isNumber() || code.isSimpleString() ||
+		code == True || code == False || code == None)
+	{
+		return true;
+	}
+
+	for (char c : code) {
+		if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+			return false;
+		}
+	}
+	return true;
+}
 
 String PyUtils::exec(const String &fileName, size_t numLine, const String &code, bool retRes) {
 	if (!code) return "";

@@ -40,8 +40,8 @@ public:
 	int rotate = 0;
 
 	//center for rotation
-	double xAnchor = 0;
-	double yAnchor = 0;
+	int xAnchor = 0;
+	int yAnchor = 0;
 
 
 	DisplayObject();

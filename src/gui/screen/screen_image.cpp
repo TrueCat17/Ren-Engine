@@ -8,18 +8,38 @@ ScreenImage::ScreenImage(Node *node):
 	ScreenContainer(node, this)
 {
 	setProp(ScreenProp::IMAGE_PATH, NodeProp::initPyExpr(node->getFirstParam(), getNumLine()));
+
+	preparationToUpdateCalcProps();
 }
 
 void ScreenImage::calculateProps() {
 	ScreenContainer::calculateProps();
 }
 void ScreenImage::updateTexture() {
-	texture = Utils::getTexture(propValues.at(ScreenProp::IMAGE_PATH));
+	if (propWasChanged[ScreenProp::IMAGE_PATH]) {
+		propWasChanged[ScreenProp::IMAGE_PATH] = false;
+
+		texture = Utils::getTexture(propValues.at(ScreenProp::IMAGE_PATH));
+
+		if (xSizeIsTextureWidth) xSize = Utils::getTextureWidth(texture);
+		if (ySizeIsTextureHeight) ySize = Utils::getTextureHeight(texture);
+	}
 }
 
 void ScreenImage::updateSize() {
-	if (xSize <= 0) xSize = Utils::getTextureWidth(texture);
-	if (ySize <= 0) ySize = Utils::getTextureHeight(texture);
+	if (xSize <= 0) {
+		xSizeIsTextureWidth = true;
+		xSize = Utils::getTextureWidth(texture);
+	}else {
+		xSizeIsTextureWidth = false;
+	}
+
+	if (ySize <= 0) {
+		ySizeIsTextureHeight = true;
+		ySize = Utils::getTextureHeight(texture);
+	}else {
+		ySizeIsTextureHeight = false;
+	}
 
 	ScreenContainer::updateSize();
 }

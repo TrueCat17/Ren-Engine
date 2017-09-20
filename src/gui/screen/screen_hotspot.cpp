@@ -1,7 +1,5 @@
 #include "screen_hotspot.h"
 
-#include <iostream>
-
 #include "screen_imagemap.h"
 
 #include "gv.h"
@@ -26,7 +24,7 @@ ScreenHotspot::ScreenHotspot(Node *node):
 								  "style." + activateSound.styleName + ".activete_sound",
 								  true);
 			if (sound != "None") {
-				Music::play("button_click '''" + sound + "'''",
+				Music::play("button_click '" + sound + "'",
 							this->getFileName(), this->getNumLine());
 			}
 		}
@@ -56,6 +54,8 @@ ScreenHotspot::ScreenHotspot(Node *node):
 	needUpdateFields = false;
 	setProp(ScreenProp::RECT, NodeProp::initPyExpr("' '.join(map(str, " + rectStr + "))", node->getNumLine()));
 	setProp(ScreenProp::MOUSE, node->getPropCode("mouse"));
+
+	preparationToUpdateCalcProps();
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
@@ -93,8 +93,12 @@ void ScreenHotspot::calculateProps() {
 		return;
 	}
 
-	const String &mouse = propValues.at(ScreenProp::MOUSE);
-	btnRect.buttonMode = mouse == "True";
+	if (propWasChanged[ScreenProp::MOUSE]) {
+		propWasChanged[ScreenProp::MOUSE] = false;
+
+		const String &mouse = propValues.at(ScreenProp::MOUSE);
+		btnRect.buttonMode = mouse == "True";
+	}
 
 	TexturePtr ground = parent->texture;
 	scaleX = 1;
@@ -124,7 +128,7 @@ void ScreenHotspot::calculateProps() {
 									  "style." + hoverSound.styleName + ".hover_sound",
 									  true);
 				if (sound != "None") {
-					Music::play("button_hover '''" + sound + "'''",
+					Music::play("button_hover '" + sound + "'",
 								this->getFileName(), this->getNumLine());
 				}
 			}

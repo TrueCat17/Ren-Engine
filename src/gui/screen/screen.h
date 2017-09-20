@@ -39,6 +39,7 @@ public:
 
 	static void addToShow(const std::string &name) { toShowList.push_back(name); }
 	static void addToHide(const std::string &name) { toHideList.push_back(name); }
+	static bool hasScreen(const std::string &name) { return getMain(name); }
 
 
 	Screen(Node *node);

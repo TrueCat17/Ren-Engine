@@ -8,23 +8,30 @@ ScreenImagemap::ScreenImagemap(Node *node):
 {
 	setProp(ScreenProp::GROUND, node->getPropCode("ground"));
 	setProp(ScreenProp::HOVER, node->getPropCode("hover"));
+
+	preparationToUpdateCalcProps();
 }
 
 void ScreenImagemap::calculateProps() {
 	ScreenContainer::calculateProps();
 }
 void ScreenImagemap::updateTexture() {
-	const String &newGroundPath = propValues.at(ScreenProp::GROUND);
-	const String &newHoverPath = propValues.at(ScreenProp::HOVER);
+	if (propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER]) {
+		propWasChanged[ScreenProp::GROUND] = false;
+		propWasChanged[ScreenProp::HOVER] = false;
 
-	if (newHoverPath) {
-		hoverPath = newHoverPath;
-	}else
-	if (groundPath != newGroundPath) {
-		hoverPath = PyUtils::exec("CPP_EMBED: screen_imagemap.cpp", __LINE__, "im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
+		const String &newGroundPath = propValues.at(ScreenProp::GROUND);
+		const String &newHoverPath = propValues.at(ScreenProp::HOVER);
+
+		if (newHoverPath) {
+			hoverPath = newHoverPath;
+		}else
+			if (groundPath != newGroundPath) {
+				hoverPath = PyUtils::exec("CPP_EMBED: screen_imagemap.cpp", __LINE__, "im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
+			}
+		groundPath = newGroundPath;
+
+		texture = Utils::getTexture(groundPath);
+		hover = Utils::getTexture(hoverPath);
 	}
-	groundPath = newGroundPath;
-
-	texture = Utils::getTexture(groundPath);
-	hover = Utils::getTexture(hoverPath);
 }
