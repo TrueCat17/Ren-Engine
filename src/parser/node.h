@@ -54,6 +54,8 @@ public:
 	static size_t stackDepth;
 	static std::vector<std::pair<String, String>> stack;
 
+	static const String mainLabel;
+
 	static void destroyAll();
 
 
@@ -70,8 +72,6 @@ public:
 
 	Node *prevNode;//for blocks <elif> and <else>
 	bool condIsTrue = false;
-
-	String mainLabel;//for type == main
 
 	std::vector<Node*> children;
 

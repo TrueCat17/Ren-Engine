@@ -57,8 +57,8 @@ PyUtils::PyUtils() {
 	pythonGlobal["need_save"] = false;
 	pythonGlobal["screenshotting"] = false;
 
+	pythonGlobal["get_mods"] = py::make_function(Parser::getMods);
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
-	pythonGlobal["_get_mods"] = py::make_function(Parser::getMods);
 
 	pythonGlobal["_register_channel"] = py::make_function(Music::registerChannel);
 	pythonGlobal["_has_channel"] = py::make_function(Music::hasChannel);

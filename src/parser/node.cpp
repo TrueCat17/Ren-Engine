@@ -23,6 +23,8 @@ bool Node::loading = false;
 size_t Node::stackDepth = 0;
 std::vector<std::pair<String, String>> Node::stack;
 
+const String Node::mainLabel = "start";
+
 class StackRecorder {
 private:
 	bool init;
@@ -141,7 +143,6 @@ void Node::execute() {
 			}
 
 
-			mainLabel = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "mods_last_key", true);
 			try {
 				jump(mainLabel, false);
 			}catch (ExitException) {}

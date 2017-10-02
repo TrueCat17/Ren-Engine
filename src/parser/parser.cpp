@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include <boost/filesystem.hpp>
+
 #include "logger.h"
 
 #include "parser/syntax_checker.h"
@@ -10,45 +12,29 @@
 #include "utils/utils.h"
 
 
-const std::string Parser::getMods() {
-	std::string res;
+py::dict Parser::getMods() {
+	py::dict res;
 
-	std::vector<String> files = Utils::getFileNames(Utils::ROOT + "mods/");
+	namespace fs = boost::filesystem;
 
-	for (const String &fileName : files) {
-		if (!fileName.endsWith(".rpy")) continue;
+	static const String modsPath = Utils::ROOT + "mods/";
+	for (fs::directory_iterator it(modsPath), end; it != end; ++it) {
+		fs::path path(it->path());
+		if (fs::is_directory(path)) {
+			const String dirName = path.c_str() + modsPath.size();
 
-		String s;
-		std::ifstream is(fileName);
-		while (!is.eof()) {
-			std::getline(is, s);
+			path.append("name");
+			if (fs::exists(path)) {
+				std::ifstream nameFile(path.c_str());
 
-			if (s.startsWith("$ mods[", false) || s.startsWith("mods[", false)) {
-				std::vector<String> tmp1 = s.split("'");
-				std::vector<String> tmp2 = s.split("\"");
-				std::vector<String> &tmp = tmp1.size() == 5 ? tmp1 : tmp2;
+				String modName;
+				std::getline(nameFile, modName);
 
-				if (tmp.size() != 5) {
-					Utils::outMsg(
-						"Файл <" + fileName + ">,\n"
-						"Строка <" + s + ">:\n"
-						"Неверное количество двойных кавычек (ожидалось 4)"
-					);
-				}else {
-					String label = tmp[1];
-					String name = tmp[3];
-
-					if (res.size()) {
-						res += ", ";
-					}
-					res += '"' + name + "\":\"" + label + '"';
-				}
-				break;
+				res[py::str(modName.c_str())] = py::str(dirName.c_str());
 			}
 		}
 	}
-
-	return "{" + res + "}";
+	return res;
 }
 
 Parser::Parser(const String &dir) {

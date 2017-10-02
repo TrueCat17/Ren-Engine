@@ -4,6 +4,9 @@
 #include <vector>
 #include <map>
 
+#include <boost/python.hpp>
+namespace py = boost::python;
+
 #include "utils/string.h"
 
 class Node;
@@ -26,7 +29,7 @@ private:
 	Node* getNode(size_t start, size_t end, int superParent, bool isText);
 	Node* getMainNode();
 public:
-	static const std::string getMods();
+	static py::dict getMods();
 
 	Parser(const String &dir);
 	Node* parse();
