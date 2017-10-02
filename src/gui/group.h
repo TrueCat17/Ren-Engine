@@ -1,8 +1,6 @@
 #ifndef GROUP_H
 #define GROUP_H
 
-#include <vector>
-
 #include "display_object.h"
 
 class Group: public DisplayObject {

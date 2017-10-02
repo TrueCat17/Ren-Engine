@@ -3,8 +3,6 @@
 
 #include <memory>
 
-#include <SDL2/SDL.h>
-
 #include "utils/utils.h"
 
 class Image {

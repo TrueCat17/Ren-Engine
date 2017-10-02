@@ -250,16 +250,16 @@ std::vector<String> Utils::getArgs(String args) {
 }
 
 
-size_t Utils::getTextureWidth(const TexturePtr &texture) {
-	const SurfacePtr &surface = textureSurfaces[texture];
+size_t Utils::getTextureWidth(const TexturePtr texture) {
+	const SurfacePtr surface = textureSurfaces[texture];
 	if (surface) {
 		return surface->w;
 	}
 	Utils::outMsg("Utils::getTextureWidth", "surface == nullptr");
 	return 0;
 }
-size_t Utils::getTextureHeight(const TexturePtr &texture) {
-	const SurfacePtr &surface = textureSurfaces[texture];
+size_t Utils::getTextureHeight(const TexturePtr texture) {
+	const SurfacePtr surface = textureSurfaces[texture];
 	if (surface) {
 		return surface->h;
 	}
@@ -268,7 +268,7 @@ size_t Utils::getTextureHeight(const TexturePtr &texture) {
 }
 
 
-void Utils::trimTexturesCache(const SurfacePtr &last) {
+void Utils::trimTexturesCache(const SurfacePtr last) {
 	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
 	 * пока кэш не уменьшится до нужных размеров
 	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
@@ -292,8 +292,8 @@ void Utils::trimTexturesCache(const SurfacePtr &last) {
 		}
 		if (i == textures.size()) break;
 
-		const TexturePtr &texture = textures[i].second;
-		const SurfacePtr &surface = textureSurfaces[texture];
+		const TexturePtr texture = textures[i].second;
+		const SurfacePtr surface = textureSurfaces[texture];
 		cacheSize -= surface->w * surface->h * 4;
 
 		textureSurfaces.erase(textureSurfaces.find(texture));
@@ -306,7 +306,7 @@ TexturePtr Utils::getTexture(const String &path) {
 
 	for (size_t i = textures.size() - 1; i != size_t(-1); --i) {
 		if (textures[i].first == path) {
-			if (i < textures.size() - 10) {
+			if (i < textures.size() - 30) {
 				std::pair<String, TexturePtr> t = textures[i];
 
 				textures.erase(textures.begin() + i, textures.begin() + i + 1);
@@ -342,9 +342,7 @@ TexturePtr Utils::getTexture(const String &path) {
 	return nullptr;
 }
 
-void Utils::trimSurfacesCache(const SurfacePtr &last) {
-	std::lock_guard<std::mutex> g(surfaceMutex);
-
+void Utils::trimSurfacesCache(const SurfacePtr last) {
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
 	auto usedSomeTexture = [&](SurfacePtr s) -> bool {
@@ -380,7 +378,7 @@ SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
 
 	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
 		if (surfaces[i].first == path) {
-			if (i < surfaces.size() - 10) {
+			if (i < surfaces.size() - 15) {
 				std::pair<String, SurfacePtr> t = surfaces[i];
 
 				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
@@ -394,27 +392,20 @@ SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
 	return nullptr;
 }
 
-void Utils::setSurface(const String &path, const SurfacePtr &surface) {
+void Utils::setSurface(const String &path, const SurfacePtr surface) {
 	if (!surface) return;
 
-	{
-		std::lock_guard<std::mutex> g(surfaceMutex);
-
-		for (std::pair<String, SurfacePtr> &p : surfaces) {
-			const String &pPath = p.first;
-			if (pPath == path) {
-				p.second = surface;
-				return;
-			}
+	std::lock_guard<std::mutex> g(surfaceMutex);
+	for (std::pair<String, SurfacePtr> &p : surfaces) {
+		const String &pPath = p.first;
+		if (pPath == path) {
+			p.second = surface;
+			return;
 		}
 	}
 
-	{
-		trimSurfacesCache(surface);
-
-		std::lock_guard<std::mutex> g(surfaceMutex);
-		surfaces.push_back(std::make_pair(path, surface));
-	}
+	trimSurfacesCache(surface);
+	surfaces.push_back(std::make_pair(path, surface));
 }
 
 SurfacePtr Utils::getSurface(const String &path) {
@@ -469,10 +460,10 @@ SurfacePtr Utils::getSurface(const String &path) {
 			}
 		}
 
-		trimSurfacesCache(surface);
 
 		{
 			std::lock_guard<std::mutex> g2(surfaceMutex);
+			trimSurfacesCache(surface);
 			surfaces.push_back(std::make_pair(path, surface));
 		}
 
@@ -483,7 +474,7 @@ SurfacePtr Utils::getSurface(const String &path) {
 	return nullptr;
 }
 
-Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
+Uint32 Utils::getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {
 		Utils::outMsg("Utils::getPixel", "surface == nullptr");
 		return 0;
@@ -517,8 +508,8 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 		return 0;       /* shouldn't happen, but avoids warnings */
 	}
 }
-Uint32 Utils::getPixel(const TexturePtr &texture, const SDL_Rect &draw, const SDL_Rect &crop) {
-	const SurfacePtr &surface = textureSurfaces[texture];
+Uint32 Utils::getPixel(const TexturePtr texture, const SDL_Rect &draw, const SDL_Rect &crop) {
+	const SurfacePtr surface = textureSurfaces[texture];
 	return getPixel(surface, draw, crop);
 }
 

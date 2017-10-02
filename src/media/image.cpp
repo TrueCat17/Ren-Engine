@@ -1,6 +1,5 @@
 #include "image.h"
 
-#include <iostream>
 #include <thread>
 #include <mutex>
 
@@ -9,7 +8,12 @@
 
 
 void Image::loadImage(const std::string &desc) {
-	std::thread(getImage, desc).detach();
+	auto f = [](const std::string desc) {
+		static std::mutex m;
+		std::lock_guard<std::mutex> g(m);
+		getImage(desc);
+	};
+	std::thread(f, desc).detach();
 }
 
 
@@ -29,18 +33,18 @@ SurfacePtr Image::getImage(String desc) {
 		{
 			std::lock_guard<std::mutex> g(vecMutex);
 			in = Utils::in(desc, processingImages);
+			if (!in) {
+				res = Utils::getThereIsSurfaceOrNull(desc);
+				if (res) {
+					return res;
+				}else {
+					processingImages.push_back(desc);
+				}
+			}
 		}
 		if (in) {
 			Utils::sleep(10);
 		}
-	}
-
-	res = Utils::getThereIsSurfaceOrNull(desc);
-	if (res) return res;
-
-	{
-		std::lock_guard<std::mutex> g(vecMutex);
-		processingImages.push_back(desc);
 	}
 
 
@@ -53,7 +57,7 @@ SurfacePtr Image::getImage(String desc) {
 			std::lock_guard<std::mutex> g(vecMutex);
 
 			for (size_t i = 0; i < processingImages.size(); ++i) {
-				if (processingImages[i] == desc) {
+				if (processingImages.at(i) == desc) {
 					processingImages.erase(processingImages.begin() + i, processingImages.begin() + i + 1);
 					return;
 				}

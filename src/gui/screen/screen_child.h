@@ -1,8 +1,6 @@
 #ifndef SCREENCHILD_H
 #define SCREENCHILD_H
 
-#include <functional>
-
 #include "../group.h"
 
 #include "parser/node.h"

@@ -21,12 +21,12 @@ void ScreenChild::setPropNames() {
 	}
 }
 
-ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent) {
+ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent):
+	screenParent(screenParent),
+	node(node)
+{
 	screenObjects.push_back(this);
 
-	this->node = node;
-
-	this->screenParent = screenParent;
 	_isFakeContainer = screenParent && screenParent != this;
 
 	const String &type = getType();
