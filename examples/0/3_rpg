@@ -25,7 +25,7 @@ $ set_location("location_name", "place_name")
 $ hide_location()
 
 Регистрация локации:
-register_location("location_name", "path_to_images", "no_pictures")
+register_location("location_name", "path_to_images", is_room, width, height)
 Где location_name - имя локации,
     path_to_images - путь к каталогу с картинками (png) локаций (относительно каталога мода),
     	Имена этих картинок:
@@ -34,8 +34,10 @@ register_location("location_name", "path_to_images", "no_pictures")
     			Может отсутствовать.
     		free.png - изображение, где доступные для передвижения места закрашены цветом #000000FF (полностью чёрный и непрозрачный).
     			Может отсутствовать, тогда персонаж может ходить где угодно.
-    no_pictures - строка, обозначающая отсутствие картинок:
-    	Должна содержать букву 'o', если нет over.png, и 'f', если нет free.png.
+    is_room - является ли данная локация помещением (True) или улицей (False)
+    	Влияет на масштабирование локации
+    width - ширина картинки main.png локации, целое число
+   	height - высота картинки main.png локации, целое число
 
 Регистрация места в локации:
 $ register_place("location_name", "place_name", x, y)
