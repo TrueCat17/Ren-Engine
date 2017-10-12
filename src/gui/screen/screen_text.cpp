@@ -30,27 +30,27 @@ void ScreenText::calculateProps() {
 
 	if (propWasChanged[ScreenProp::TEXT]) {
 		propWasChanged[ScreenProp::TEXT] = false;
-		text = propValues.at(ScreenProp::TEXT);
+		text = propValues[ScreenProp::TEXT];
 	}
 
 	if (text) {
 		if (propWasChanged[ScreenProp::FONT]) {
 			propWasChanged[ScreenProp::FONT] = false;
-			font = propValues.at(ScreenProp::FONT);
+			font = propValues[ScreenProp::FONT];
 		}
 		if (propWasChanged[ScreenProp::TEXT_ALIGN]) {
 			propWasChanged[ScreenProp::TEXT_ALIGN] = false;
-			textHAlign = propValues.at(ScreenProp::TEXT_ALIGN);
+			textHAlign = propValues[ScreenProp::TEXT_ALIGN];
 		}
 		if (propWasChanged[ScreenProp::TEXT_VALIGN]) {
 			propWasChanged[ScreenProp::TEXT_VALIGN] = false;
-			textVAlign = propValues.at(ScreenProp::TEXT_VALIGN);
+			textVAlign = propValues[ScreenProp::TEXT_VALIGN];
 		}
 
 		if (propWasChanged[ScreenProp::COLOR]) {
 			propWasChanged[ScreenProp::COLOR] = false;
 
-			const String &colorStr = propValues.at(ScreenProp::COLOR);
+			const String &colorStr = propValues[ScreenProp::COLOR];
 			color = 0xFFFFFF;
 			if (colorStr) {
 				if (colorStr[0] == '#') {
@@ -64,7 +64,7 @@ void ScreenText::calculateProps() {
 		if (propWasChanged[ScreenProp::TEXT_SIZE]) {
 			propWasChanged[ScreenProp::TEXT_SIZE] = false;
 
-			size = propValues.at(ScreenProp::TEXT_SIZE).toInt();
+			size = propValues[ScreenProp::TEXT_SIZE].toInt();
 			if (!size) size = 20;
 		}
 	}

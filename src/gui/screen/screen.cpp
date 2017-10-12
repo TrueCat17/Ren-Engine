@@ -116,11 +116,11 @@ void Screen::updateScreenProps() {
 
 	if (propWasChanged[ScreenProp::MODAL]) {
 		propWasChanged[ScreenProp::MODAL] = false;
-		_isModal = propValues.at(ScreenProp::MODAL) == "True";
+		_isModal = propValues[ScreenProp::MODAL] == "True";
 	}
 	if (propWasChanged[ScreenProp::ZORDER]) {
 		propWasChanged[ScreenProp::ZORDER] = false;
-		_zOrder = propValues.at(ScreenProp::ZORDER).toDouble();
+		_zOrder = propValues[ScreenProp::ZORDER].toDouble();
 	}
 }
 

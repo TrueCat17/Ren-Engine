@@ -13,6 +13,7 @@ String::String(int i, int base) {
 }
 String::String(double d) {
 	std::stringstream ss;
+	ss.precision(10);
 	ss << d;
 	ss >> *this;
 }
@@ -156,7 +157,7 @@ bool String::isSimpleString() const {
 	if (f != b) return false;
 
 	for (size_t i = 1; i < size() - 1; ++i) {
-		char c = at(i);
+		char c = (*this)[i];
 		if (c == f || c == '\\') return false;
 	}
 	return true;
@@ -167,7 +168,7 @@ bool String::startsWith(const String &str, bool withSpaces) const {
 
 	size_t k = 0;
 	if (!withSpaces) {
-		while (k < size() && (at(k) == ' ' || at(k) == '\t')) {
+		while (k < size() && ((*this)[k] == ' ' || (*this)[k] == '\t')) {
 			++k;
 		}
 		if (k == size()) {
@@ -176,8 +177,7 @@ bool String::startsWith(const String &str, bool withSpaces) const {
 	}
 
 	for (size_t i = 0; i < str.size(); ++i) {
-		char c = at(i + k);
-		if (c != str.at(i)) {
+		if ((*this)[i + k] != str[i]) {
 			return false;
 		}
 	}
@@ -187,7 +187,7 @@ bool String::endsWith(const String &str) const {
 	if (size() < str.size()) return false;
 
 	for (size_t i = 0; i < str.size(); ++i) {
-		if (at(size() - i - 1) != str.at(str.size() - i - 1)) {
+		if ((*this)[size() - i - 1] != str[str.size() - i - 1]) {
 			return false;
 		}
 	}

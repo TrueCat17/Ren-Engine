@@ -19,7 +19,7 @@ void ScreenImage::updateTexture() {
 	if (propWasChanged[ScreenProp::IMAGE_PATH]) {
 		propWasChanged[ScreenProp::IMAGE_PATH] = false;
 
-		texture = Utils::getTexture(propValues.at(ScreenProp::IMAGE_PATH));
+		texture = Utils::getTexture(propValues[ScreenProp::IMAGE_PATH]);
 
 		if (xSizeIsTextureWidth) xSize = Utils::getTextureWidth(texture);
 		if (ySizeIsTextureHeight) ySize = Utils::getTextureHeight(texture);

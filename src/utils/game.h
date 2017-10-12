@@ -10,10 +10,10 @@
 
 class Game {
 private:
-	static size_t maxFps;
+	static int maxFps;
 
-	static size_t fps;
-	static size_t frameTime;
+	static int fps;
+	static int frameTime;
 
 	static void _startMod(const String &dir, const String &loadPath = "");
 
@@ -46,11 +46,11 @@ public:
 
 	static void updateKeyboard();
 
-	static void setMaxFps(size_t fps);
+	static void setMaxFps(int fps);
 
-	static size_t getFrameTime();
-	static size_t getFps();
-	static void setFps(size_t fps);
+	static int getFrameTime();
+	static int getFps();
+	static void setFps(int fps);
 };
 
 #endif // GAME_H

@@ -29,6 +29,21 @@ struct RenderStruct {
 
 	double angle;
 	SDL_Point center;
+
+	bool operator==(const RenderStruct &o) const {
+		return  texture == o.texture &&
+				alpha == o.alpha &&
+				srcRectIsNull == o.srcRectIsNull &&
+				dstRectIsNull == o.dstRectIsNull &&
+				centerIsNull == o.centerIsNull &&
+				srcRect.x == o.srcRect.x && srcRect.y == o.srcRect.y && srcRect.w == o.srcRect.w && srcRect.h == o.srcRect.h &&
+				dstRect.x == o.dstRect.x && dstRect.y == o.dstRect.y && dstRect.w == o.dstRect.w && dstRect.h == o.dstRect.h &&
+				angle == o.angle &&
+				center.x == o.center.x && center.y == o.center.y;
+	}
+	bool operator!=(const RenderStruct &o) const {
+		return !(*this == o);
+	}
 };
 
 

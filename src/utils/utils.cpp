@@ -41,22 +41,21 @@ double* Utils::coss = new double[360];
 std::chrono::system_clock::time_point Utils::startTime = std::chrono::system_clock::now();
 
 
-std::vector<String> Utils::getFileNames(const String &path) {
+std::vector<String> Utils::getFileNames(const std::string &path) {
 	std::vector<String> res;
 
 	namespace fs = boost::filesystem;
 
-	if (!fs::exists(path.c_str())) {
+	if (!fs::exists(path)) {
 		outMsg("Директории <" + path + "> не существует");
-		static const String mainMenu = "../resources/mods/main_menu/";
+		static const std::string mainMenu = "../resources/mods/main_menu/";
 		if (path != mainMenu) {
 			return getFileNames(mainMenu);
 		}
 		return res;
 	}
 
-	fs::path dir(path.c_str());
-	for (fs::recursive_directory_iterator it(dir), end; it != end; ++it) {
+	for (fs::recursive_directory_iterator it(path), end; it != end; ++it) {
 		fs::path filePath(it->path());
 		if (fs::is_regular_file(filePath)) {
 			res.push_back(filePath.string());
@@ -425,6 +424,11 @@ SurfacePtr Utils::getSurface(const String &path) {
 	size_t end = fullPath.find('?');
 	if (end != size_t(-1)) {
 		fullPath.erase(fullPath.begin() + end, fullPath.end());
+	}
+	for (size_t i = 0; i < fullPath.size(); ++i) {
+		if (fullPath[i] == '\\') {
+			fullPath[i] = '/';
+		}
 	}
 
 	SurfacePtr surface(IMG_Load(fullPath.c_str()), SDL_FreeSurface);

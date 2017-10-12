@@ -110,7 +110,12 @@ void Music::init() {
 }
 
 void Music::clear() {
-	needToClear = true;
+	if (startUpdateTime) {//updated, => SDL_OpenAudio is OK, => clearing in Music::init::loop
+		needToClear = true;
+	}else {//error on SDL_OpenAudio, => clearing now (Music::init::loop not started)
+		std::lock_guard<std::mutex> g(globalMutex);
+		realClear();
+	}
 }
 
 void Music::realClear() {
@@ -208,6 +213,11 @@ void Music::play(const std::string &desc,
 
 	String channelName = Utils::clear(args[0]);
 	String url = Utils::ROOT + PyUtils::exec(fileName, numLine, args[1], true);
+	for (size_t i = 0; i < url.size(); ++i) {
+		if (url[i] == '\\') {
+			url[i] = '/';
+		}
+	}
 
 	const String place = "Файл <" + fileName + ">\n"
 						 "Строка " + String(numLine) + ": <" + desc + ">";

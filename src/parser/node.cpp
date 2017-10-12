@@ -64,7 +64,7 @@ void Node::execute() {
 
 	size_t curStackDepth = Node::stackDepth;
 	if (!initing && curStackDepth < Node::stack.size()) {
-		const std::pair<String, String> &cur = Node::stack.at(curStackDepth);
+		const std::pair<String, String> &cur = Node::stack[curStackDepth];
 		if (cur.second != command) {
 			GV::inGame = false;
 			Utils::outMsg(cur.second, command);
@@ -79,7 +79,7 @@ void Node::execute() {
 	String nextCommand;
 	size_t nextStackDepth = curStackDepth + 1;
 	if (!initing && nextStackDepth < Node::stack.size()) {
-		const std::pair<String, String> &next = Node::stack.at(nextStackDepth);
+		const std::pair<String, String> &next = Node::stack[nextStackDepth];
 		nextNum = next.first.toDouble();
 		nextCommand = next.second;
 

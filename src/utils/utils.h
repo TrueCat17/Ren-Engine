@@ -56,7 +56,7 @@ public:
 	static double getSin(int angle) { return sins[((angle % 360) + 360) % 360]; }
 	static double getCos(int angle) { return coss[((angle % 360) + 360) % 360]; }
 
-	static std::vector<String> getFileNames(const String &path);
+	static std::vector<String> getFileNames(const std::string &path);
 
 	static std::chrono::system_clock::time_point startTime;
 	static int getTimer();

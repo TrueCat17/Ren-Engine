@@ -66,8 +66,12 @@ BtnRect::~BtnRect() {
 }
 
 void BtnRect::checkMouseCursor() {
-	int mouseX, mouseY;
-	Mouse::getPos(mouseX, mouseY);
+	Mouse::setMouseDown(false);
+
+	Mouse::setLocal(-1, -1);
+
+	int mouseX = Mouse::getX();
+	int mouseY = Mouse::getY();
 
 	for (BtnRect *btnRect : btnRects) {
 		btnRect->mouseOvered = false;
@@ -95,6 +99,8 @@ void BtnRect::checkMouseCursor() {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
 			if (!objInTop(owner, mouseX, mouseY)) continue;
 
+			Mouse::setLocal(rotX, rotY);
+
 			btnRect->mouseOvered = true;
 			if (btnRect->buttonMode) {
 				Mouse::setButtonMode();
@@ -108,8 +114,12 @@ void BtnRect::checkMouseCursor() {
 }
 
 bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
-	int mouseX, mouseY;
-	Mouse::getPos(mouseX, mouseY);
+	if (left && !withKeyboard) {
+		Mouse::setMouseDown(true);
+	}
+
+	int mouseX = Mouse::getX();
+	int mouseY = Mouse::getY();
 
 	for (int i = btnRects.size() - 1; i >= 0; --i) {
 		BtnRect *btnRect = btnRects[i];

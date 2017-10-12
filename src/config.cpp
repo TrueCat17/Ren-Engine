@@ -26,7 +26,7 @@ String Config::get(const String &name) {
 	Utils::outMsg("Config::get", "Попытка получить значение несуществующего параметра <" + name + ">");
 	return "";
 }
-#include <iostream>
+
 void Config::set(const String &name, const String &value, const String &comment) {
 	bool assigned = false;
 	for (size_t i = 0; i < params.size(); ++i) {

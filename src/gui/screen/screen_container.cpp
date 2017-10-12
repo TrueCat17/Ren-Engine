@@ -50,7 +50,7 @@ void ScreenContainer::calculateProps() {
 		if (propWasChanged[ScreenProp::SPACING]) {
 			propWasChanged[ScreenProp::SPACING] = false;
 
-			const String &indentStr = propValues.at(ScreenProp::SPACING);
+			const String &indentStr = propValues[ScreenProp::SPACING];
 			indent = indentStr.toInt();
 		}
 	}

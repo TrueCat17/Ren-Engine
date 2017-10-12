@@ -57,7 +57,7 @@ SurfacePtr Image::getImage(String desc) {
 			std::lock_guard<std::mutex> g(vecMutex);
 
 			for (size_t i = 0; i < processingImages.size(); ++i) {
-				if (processingImages.at(i) == desc) {
+				if (processingImages[i] == desc) {
 					processingImages.erase(processingImages.begin() + i, processingImages.begin() + i + 1);
 					return;
 				}

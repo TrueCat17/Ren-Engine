@@ -14,6 +14,11 @@ SDL_Cursor *Mouse::btnModeCursor = nullptr;
 int Mouse::x = 0;
 int Mouse::y = 0;
 
+int Mouse::localX = -1;
+int Mouse::localY = -1;
+
+bool Mouse::mouseDown = false;
+
 
 void Mouse::init() {
 	const String usualPath = Config::get("mouse_usual");
@@ -38,7 +43,7 @@ void Mouse::init() {
 		btnModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
 	}
 
-	SDL_SetCursor(usualModeCursor);
+	setUsualMode();
 }
 void Mouse::update() {
 	SDL_GetMouseState(&x, &y);
@@ -49,9 +54,4 @@ void Mouse::setUsualMode() {
 }
 void Mouse::setButtonMode() {
 	SDL_SetCursor(btnModeCursor);
-}
-
-void Mouse::getPos(int &x, int &y) {
-	x = Mouse::x;
-	y = Mouse::y;
 }

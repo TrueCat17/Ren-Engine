@@ -17,15 +17,16 @@ py::dict Parser::getMods() {
 
 	namespace fs = boost::filesystem;
 
-	static const String modsPath = Utils::ROOT + "mods/";
+	static const std::string modsPath = Utils::ROOT + "mods/";
 	for (fs::directory_iterator it(modsPath), end; it != end; ++it) {
 		fs::path path(it->path());
+		const std::string pathStr = path.string();
 		if (fs::is_directory(path)) {
-			const String dirName = path.c_str() + modsPath.size();
+			const String dirName = pathStr.c_str() + modsPath.size();
 
 			path.append("name");
 			if (fs::exists(path)) {
-				std::ifstream nameFile(path.c_str());
+				std::ifstream nameFile(path.string());
 
 				String modName;
 				std::getline(nameFile, modName);
@@ -146,7 +147,7 @@ Node* Parser::getMainNode() {
 	size_t end = code.size();
 	String prevHeadWord = "None";
 	while (start < end) {
-		const String &headLine = code.at(start);
+		const String &headLine = code[start];
 		if (!headLine) {
 			++start;
 			continue;
@@ -214,7 +215,7 @@ void Parser::initScreenNode(Node *node) {
 		node->setFirstParam(args[0]);
 	}
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
-		const String &name = args.at(i);
+		const String &name = args[i];
 		bool t;
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
 			String str = node->command + ' ' + node->params;
@@ -232,7 +233,7 @@ void Parser::initScreenNode(Node *node) {
 						  node->getPlace());
 			break;
 		}
-		const String &value = args.at(i + 1);
+		const String &value = args[i + 1];
 		node->initProp(name, value, node->getNumLine());
 	}
 }
@@ -394,7 +395,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 }
 
 size_t Parser::getNextStart(size_t start) const {
-	const String &line = code.at(start);
+	const String &line = code[start];
 	if (!line) return start + 1;
 
 	size_t countStartIndent = line.find_first_not_of(' ');
@@ -402,7 +403,7 @@ size_t Parser::getNextStart(size_t start) const {
 	size_t i = start + 1;
 	size_t last = start;
 	for (; i < code.size(); ++i) {
-		const String &line = code.at(i);
+		const String &line = code[i];
 		if (!line) continue;
 
 		size_t countIndent = line.find_first_not_of(' ');

@@ -56,7 +56,7 @@ void ScreenTextButton::calculateProps() {
 	if (propWasChanged[ScreenProp::MOUSE]) {
 		propWasChanged[ScreenProp::MOUSE] = false;
 
-		const String &mouse = propValues.at(ScreenProp::MOUSE);
+		const String &mouse = propValues[ScreenProp::MOUSE];
 		btnRect.buttonMode = mouse == "True";
 	}
 
@@ -108,14 +108,14 @@ void ScreenTextButton::updateTexture() {
 		propWasChanged[ScreenProp::GROUND] = false;
 		propWasChanged[ScreenProp::HOVER] = false;
 
-		const String &newGround = propValues.at(ScreenProp::GROUND);
-		const String &newHover = propValues.at(ScreenProp::HOVER);
+		const String &newGround = propValues[ScreenProp::GROUND];
+		const String &newHover = propValues[ScreenProp::HOVER];
 
 		if (newHover) {
 			hover = newHover;
 		}else
 			if (ground != newGround) {
-				hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor('" + newGround + "', im.matrix.contrast(1.5))", true);
+				hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor(r'" + newGround + "', im.matrix.contrast(1.5))", true);
 			}
 		ground = newGround;
 

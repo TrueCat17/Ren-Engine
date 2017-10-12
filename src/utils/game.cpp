@@ -19,10 +19,10 @@
 #include "parser/parser.h"
 
 
-size_t Game::maxFps = 60;
+int Game::maxFps = 60;
 
-size_t Game::fps = 60;
-size_t Game::frameTime = 16;
+int Game::fps = 60;
+int Game::frameTime = 16;
 
 bool Game::modeStarting = false;
 
@@ -32,13 +32,13 @@ void Game::startMod(const std::string &dir) {
 }
 
 void Game::load(const std::string &table, const std::string &name) {
-	static const String saves = Utils::ROOT + "saves/";
-	const String tablePath = saves + table + '/';
-	const String fullPath = saves + table + '/' + name + '/';
+	static const std::string saves = Utils::ROOT + "saves/";
+	const std::string tablePath = saves + table + '/';
+	const std::string fullPath = saves + table + '/' + name + '/';
 
-	auto outError = [=](const String &dir) {
-		Utils::outMsg(String() + "Ошибка при попытке открыть сохранение <" + table + "_" + name + ">\n"
-								 "Отсутствует директория <" + dir + ">");
+	auto outError = [=](const std::string &dir) {
+		Utils::outMsg(std::string() + "Ошибка при попытке открыть сохранение <" + table + "_" + name + ">\n"
+									  "Отсутствует директория <" + dir + ">");
 	};
 
 	namespace fs = boost::filesystem;
@@ -57,7 +57,7 @@ void Game::load(const std::string &table, const std::string &name) {
 	}
 
 
-	auto fileExists = [](String path) -> bool {
+	auto fileExists = [](const std::string &path) -> bool {
 		if (!boost::filesystem::exists(path)) return false;
 		if (boost::filesystem::is_directory(path)) return false;
 		if (!boost::filesystem::file_size(path)) return false;
@@ -117,10 +117,10 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 			continue;
 		}
 
-		const String &name = tmpVec.at(0);
-		const String &mixer = tmpVec.at(1);
-		const String &loop = tmpVec.at(2);
-		double volume = tmpVec.at(3).toDouble();
+		const String &name = tmpVec[0];
+		const String &mixer = tmpVec[1];
+		const String &loop = tmpVec[2];
+		double volume = tmpVec[3].toDouble();
 
 		if (!Music::hasChannel(name)) {
 			Music::registerChannel(name, mixer, loop == "True", loadFile, 0);
@@ -149,11 +149,11 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 			continue;
 		}
 
-		int numLine = tmpVec.at(0).toInt();
-		const String &channel = tmpVec.at(1);
-		int fadeIn = tmpVec.at(2).toInt();
-		int fadeOut = tmpVec.at(3).toInt();
-		int64_t pos = tmpVec.at(4).toDouble();
+		int numLine = tmpVec[0].toInt();
+		const String &channel = tmpVec[1];
+		int fadeIn = tmpVec[2].toInt();
+		int fadeOut = tmpVec[3].toInt();
+		int64_t pos = tmpVec[4].toDouble();
 
 		Music::play(channel + " '" + url + "'", fileName, numLine);
 		Music *music = nullptr;
@@ -193,8 +193,8 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 			continue;
 		}
 
-		const String &name = tmpVec.at(0);
-		double volume = tmpVec.at(1).toDouble();
+		const String &name = tmpVec[0];
+		double volume = tmpVec[1].toDouble();
 
 		Music::setMixerVolume(volume, name, loadFile, 0);
 	}
@@ -204,12 +204,12 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 }
 
 void Game::save() {
-	const String table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
-	const String name  = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_name",  true);
+	const std::string table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
+	const std::string name  = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_name",  true);
 
-	static const String saves = Utils::ROOT + "saves/";
-	const String tablePath = saves + table + '/';
-	const String fullPath = tablePath + name + '/';
+	static const std::string saves = Utils::ROOT + "saves/";
+	const std::string tablePath = saves + table + '/';
+	const std::string fullPath = tablePath + name + '/';
 
 
 	{//check directory to save
@@ -259,7 +259,7 @@ void Game::save() {
 		const std::vector<Channel*> &channels = Music::getChannels();
 		infoFile << channels.size() << '\n';
 		for (size_t i = 0; i < channels.size(); ++i) {
-			const Channel *channel = channels.at(i);
+			const Channel *channel = channels[i];
 			infoFile << channel->name << ' '
 					 << channel->mixer << ' '
 					 << (channel->loop ? "True" : "False") << ' '
@@ -271,7 +271,7 @@ void Game::save() {
 		const std::vector<Music*> &musics = Music::getMusics();
 		infoFile << musics.size() << '\n';
 		for (size_t i = 0; i < musics.size(); ++i) {
-			const Music *music = musics.at(i);
+			const Music *music = musics[i];
 			infoFile << music->getUrl() << '\n'
 					 << music->getFileName() << '\n'
 					 << music->getNumLine() << ' '
@@ -526,17 +526,17 @@ void Game::updateKeyboard() {
 }
 
 
-void Game::setMaxFps(size_t fps) {
+void Game::setMaxFps(int fps) {
 	maxFps = Utils::inBounds(fps, 1, 60);
 }
 
-size_t Game::getFrameTime() {
+int Game::getFrameTime() {
 	return frameTime;
 }
-size_t Game::getFps() {
+int Game::getFps() {
 	return fps;
 }
-void Game::setFps(size_t fps) {
+void Game::setFps(int fps) {
 	fps = Utils::inBounds(fps, 1, maxFps);
 
 	Game::fps = fps;

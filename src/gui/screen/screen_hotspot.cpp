@@ -84,7 +84,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 void ScreenHotspot::calculateProps() {
 	ScreenChild::calculateProps();
 
-	const String &rectStr = propValues.at(ScreenProp::RECT);
+	const String &rectStr = propValues[ScreenProp::RECT];
 	std::vector<String> rectVec = rectStr.split(' ');
 	if (rectVec.size() != 4) {
 		enable = false;
@@ -96,7 +96,7 @@ void ScreenHotspot::calculateProps() {
 	if (propWasChanged[ScreenProp::MOUSE]) {
 		propWasChanged[ScreenProp::MOUSE] = false;
 
-		const String &mouse = propValues.at(ScreenProp::MOUSE);
+		const String &mouse = propValues[ScreenProp::MOUSE];
 		btnRect.buttonMode = mouse == "True";
 	}
 

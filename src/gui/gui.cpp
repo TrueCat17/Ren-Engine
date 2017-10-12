@@ -26,10 +26,10 @@ void GUI::update() {
 					scr->calculateProps();
 //					int b = Utils::getTimer();
 					scr->updateSize();
-//					int c = Utils::getTimer();
 					scr->updatePos();
 					scr->updateGlobalPos();
 					scr->updateGlobalAlpha();
+//					int c = Utils::getTimer();
 
 //					std::cout << (b-a) << '-' << (c-b) << '\n';
 				}catch (ContinueException) {

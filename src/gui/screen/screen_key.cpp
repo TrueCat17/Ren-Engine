@@ -72,17 +72,17 @@ void ScreenKey::calculateProps() {
 
 	if (propWasChanged[ScreenProp::FIRST_DELAY]) {
 		propWasChanged[ScreenProp::FIRST_DELAY] = false;
-		firstKeyDelay = propValues.at(ScreenProp::FIRST_DELAY).toDouble() * 1000;
+		firstKeyDelay = propValues[ScreenProp::FIRST_DELAY].toDouble() * 1000;
 	}
 	if (propWasChanged[ScreenProp::DELAY]) {
 		propWasChanged[ScreenProp::DELAY] = false;
-		keyDelay = propValues.at(ScreenProp::DELAY).toDouble() * 1000;
+		keyDelay = propValues[ScreenProp::DELAY].toDouble() * 1000;
 	}
 
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		const String &keyName = propValues.at(ScreenProp::KEY);
+		const String &keyName = propValues[ScreenProp::KEY];
 		Utils::outMsg("SDL_GetScancodeFromName",
 					  "KeyName <" + keyName + ">\n" +
 					  SDL_GetError() + '\n' +
@@ -116,7 +116,7 @@ void ScreenKey::calculateProps() {
 }
 
 SDL_Scancode ScreenKey::getKey() const {
-	const String &keyName = propValues.at(ScreenProp::KEY);
+	const String &keyName = propValues[ScreenProp::KEY];
 	if (!keyName) return SDL_SCANCODE_UNKNOWN;
 
 	int start = 0;

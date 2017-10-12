@@ -26,8 +26,6 @@
 #include "utils/mouse.h"
 
 
-SDL_DisplayMode displayMode;
-
 
 //before windowSize-changes
 int startWindowWidth = 0;
@@ -137,6 +135,7 @@ bool init() {
 		return true;
 	}
 
+	SDL_DisplayMode displayMode;
 	if (SDL_GetDesktopDisplayMode(0, &displayMode)) {
 		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
 		return true;
@@ -174,12 +173,25 @@ bool init() {
 	}
 
 
-	flags = 0;
 	if (Config::get("software_renderer") == "True") {
 		flags = SDL_RENDERER_SOFTWARE;
+	}else {
+		flags = SDL_RENDERER_ACCELERATED;
 	}
-
-	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, flags);
+	int renderDriver = -1;
+	int countRenderDrivers = SDL_GetNumRenderDrivers();
+	for (int i = 0; i < countRenderDrivers; ++i) {
+		SDL_RendererInfo info;
+		SDL_GetRenderDriverInfo(i, &info);
+		if (String(info.name) == "opengl") {
+			renderDriver = i;
+			break;
+		}
+	}
+	if (renderDriver == -1) {
+		Utils::outMsg("init", "OpenGL driver not found");
+	}
+	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
 	if (!GV::mainRenderer) {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 		return true;
@@ -189,13 +201,30 @@ bool init() {
 }
 
 bool needToRender = false;
+bool needToRedraw = false;
 void renderThread() {
+	std::vector<RenderStruct> prevToRender;
+	auto changedToRender = [&](const std::vector<RenderStruct> &toRender) -> bool {
+		if (prevToRender.size() != toRender.size()) return true;
+		for (size_t i = 0; i < toRender.size(); ++i) {
+			if (prevToRender[i] != toRender[i]) return true;
+		}
+		return false;
+	};
+
 	while (!GV::exit) {
 		if (!needToRender) {
 			Utils::sleep(1, false);
 		}else {
-			int startTime = Utils::getTimer();
-			std::lock_guard<std::mutex> trg(GV::toRenderMutex);
+			std::vector<RenderStruct> toRender;
+			{
+				std::lock_guard<std::mutex> trg(GV::toRenderMutex);
+				GV::toRender.swap(toRender);
+			}
+			if (!needToRedraw && !changedToRender(toRender)) {
+				needToRender = false;
+				continue;
+			}
 
 			/* Рендер идёт в отдельном потоке, а обновление объектов - в основном
 			 * Но при обновлении иногда используется рендер, поэтому
@@ -204,17 +233,14 @@ void renderThread() {
 			 */
 
 			const size_t COUNT_IN_PART = 25;
-			size_t len;
+			size_t len = toRender.size() / COUNT_IN_PART + 1;
 
-			//Part 1
+			//Part 0
 			{
 				std::lock_guard<std::mutex> g(GV::renderMutex);
-				needToRender = false;
 
 				SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
 				SDL_RenderClear(GV::mainRenderer);
-
-				len = GV::toRender.size() / COUNT_IN_PART + 1;
 			}
 
 			//Parts 1..L
@@ -229,10 +255,10 @@ void renderThread() {
 				}
 
 				for (size_t j = i * COUNT_IN_PART;
-					 j < (i + 1) * COUNT_IN_PART && j < GV::toRender.size();
+					 j < (i + 1) * COUNT_IN_PART && j < toRender.size();
 					 ++j)
 				{
-					const RenderStruct &rs = GV::toRender.at(j);
+					const RenderStruct &rs = toRender[j];
 
 					if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
 						Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
@@ -254,14 +280,11 @@ void renderThread() {
 			{
 				std::lock_guard<std::mutex> g(GV::renderMutex);
 				SDL_RenderPresent(GV::mainRenderer);
-				if (!needToRender) {
-					GV::toRender.clear();
-				}
 			}
 
-			int spent = Utils::getTimer() - startTime;
-			int toSleep = (Game::getFrameTime() - spent) / 2;
-			Utils::sleep(toSleep);
+			needToRender = false;
+			needToRedraw = false;
+			prevToRender.swap(toRender);
 		}
 	}
 }
@@ -299,6 +322,9 @@ void loop() {
 				return;
 			}
 
+			if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
+				needToRedraw = true;
+			}else
 			if (event.window.event == SDL_WINDOWEVENT_ENTER) {
 				mouseOut = false;
 			}else
@@ -396,9 +422,8 @@ void loop() {
 		{
 			std::lock_guard<std::mutex> g(GV::toRenderMutex);
 			GV::toRender.clear();
-			Group *screens = GV::screens;
-			if (screens) {
-				screens->draw();
+			if (GV::screens) {
+				GV::screens->draw();
 			}
 			needToRender = true;
 		}
@@ -453,13 +478,22 @@ void destroy() {
 
 
 int main() {
-	setlocale(LC_ALL, "en_EN.utf8");
+	if (!setlocale(LC_ALL, "C.UTF-8")) {
+		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
+	}
 
 	int initStartTime = Utils::getTimer();
 	if (init()) {
 		return 0;
 	}
-	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime, true);
+	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime);
+
+	SDL_RendererInfo info;
+	SDL_GetRendererInfo(GV::mainRenderer, &info);
+	String driverInfo = String("Driver: ") + info.name + ", "
+						"maxTextureWidth = " + info.max_texture_width + ", "
+						"maxTextureHeight = " + info.max_texture_height + "\n\n";
+	Logger::log(driverInfo);
 
 	Game::startMod("main_menu");
 //	Game::startMod("snow");

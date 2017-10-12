@@ -80,7 +80,9 @@ protected:
 	std::vector<String> propValues;
 	std::vector<ScreenProp> propIndeces;
 	std::vector<char> propWasChanged;
+
 	String codeForCalcProps;
+	PyCodeObject *co = nullptr;
 
 
 	bool needUpdateChildren = true;

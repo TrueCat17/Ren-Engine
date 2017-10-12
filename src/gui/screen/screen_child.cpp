@@ -94,7 +94,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 	propIndeces.clear();
 
 	for (size_t i = 0; i < COUNT_PROPS; ++i) {
-		const NodeProp &nodeProp = props.at(i);
+		const NodeProp &nodeProp = props[i];
 		const String &propExpr = nodeProp.pyExpr;
 
 		if (propExpr) {
@@ -107,7 +107,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 				empty = false;
 				propIndeces.push_back(ScreenProp(i));
 
-				const String &propName = propNames.at(i);
+				const String &propName = propNames[i];
 				codeForCalcProps += "    '" + propName + "': " + propExpr + ",\n";
 			}
 		}else if (nodeProp.styleName) {
@@ -119,6 +119,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 		codeForCalcProps.erase(codeForCalcProps.size() - 2);
 		codeForCalcProps += "\n"
 							"}\n";
+		co = PyUtils::getCompileObject(codeForCalcProps, "EMBED_CPP: ScreenChild::calculateProps", 1, true);
 	}else {
 		codeForCalcProps.clear();
 	}
@@ -155,14 +156,18 @@ void ScreenChild::calculateProps() {
 	if (isFakeContainer()) return;
 
 	if (codeForCalcProps) {
-		{
+		bool calculated = false;
+		if (co) {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-			GV::pyUtils->pythonGlobal["calc_object"] = py::object();//... = None
+			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
+				PyUtils::errorProcessing(codeForCalcProps);
+			}else {
+				calculated = true;
+			}
 		}
-		PyUtils::exec("EMBED_CPP: ScreenChild.cpp", __LINE__, codeForCalcProps);
 
 		bool ok = false;
-		{
+		if (calculated) {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 
 			const char *errorDesc = "Ошибка при извлечении calc_object";
@@ -173,11 +178,11 @@ void ScreenChild::calculateProps() {
 				if (!obj.is_none()) {
 					errorDesc = "Ошибка при извлечении свойств из calc_object";
 					for (ScreenProp i : propIndeces) {
-						const String &propName = propNames.at(i);
+						const String &propName = propNames[i];
 						py::object res = obj[propName.c_str()];
 
-						const String t = String(py::extract<const std::string>(py::str(res)));
-						propWasChanged[i] = propWasChanged[i] || propValues.at(i) != t;
+						String t = String(py::extract<const std::string>(py::str(res)));
+						propWasChanged[i] = propWasChanged[i] || propValues[i] != t;
 						propValues[i] = t;
 					}
 					ok = true;
@@ -191,11 +196,11 @@ void ScreenChild::calculateProps() {
 		//some error (except)
 		if (!ok) {
 			for (ScreenProp i : propIndeces) {
-				const NodeProp &nodeProp = props.at(i);
+				const NodeProp &nodeProp = props[i];
 				const String &propExpr = nodeProp.pyExpr;
 
 				const String t = PyUtils::exec(getFileName(), nodeProp.numLine, propExpr, true);
-				propWasChanged[i] = propWasChanged[i] || propValues.at(i) != t;
+				propWasChanged[i] = propWasChanged[i] || propValues[i] != t;
 				propValues[i] = t;
 			}
 		}
@@ -215,7 +220,7 @@ void ScreenChild::calculateProps() {
 		if (propWasChanged[ScreenProp::X_ALIGN]) {
 			propWasChanged[ScreenProp::X_ALIGN] = false;
 
-			const String &xAlignStr = propValues.at(ScreenProp::X_ALIGN);
+			const String &xAlignStr = propValues[ScreenProp::X_ALIGN];
 			if (xAlignStr.isNumber()) {
 				preXAnchor = xPos = xAlignStr.toDouble();
 				xAnchorIsDouble = xPosIsDouble = preXAnchor > 0 && preXAnchor <= 1 && xAlignStr.contains('.');
@@ -228,7 +233,7 @@ void ScreenChild::calculateProps() {
 		if (propWasChanged[ScreenProp::X_ANCHOR]) {
 			propWasChanged[ScreenProp::X_ANCHOR] = false;
 
-			const String &xAnchorStr = propValues.at(ScreenProp::X_ANCHOR);
+			const String &xAnchorStr = propValues[ScreenProp::X_ANCHOR];
 			preXAnchor = xAnchorStr.toDouble();
 			xAnchorIsDouble = preXAnchor > 0 && preXAnchor <= 1 && xAnchorStr.contains('.');
 			if (xAnchorStr != None && !xAnchorStr.isNumber()) {
@@ -241,7 +246,7 @@ void ScreenChild::calculateProps() {
 			if (propWasChanged[ScreenProp::X_POS]) {
 				propWasChanged[ScreenProp::X_POS] = false;
 
-				const String &xPosStr = propValues.at(ScreenProp::X_POS);
+				const String &xPosStr = propValues[ScreenProp::X_POS];
 				xPos = xPosStr.toDouble();
 				xPosIsDouble = xPos > 0 && xPos <= 1 && xPosStr.contains('.');
 				if (xPosStr != None && !xPosStr.isNumber()) {
@@ -257,7 +262,7 @@ void ScreenChild::calculateProps() {
 		if (propWasChanged[ScreenProp::Y_ALIGN]) {
 			propWasChanged[ScreenProp::Y_ALIGN] = false;
 
-			const String &yAlignStr = propValues.at(ScreenProp::Y_ALIGN);
+			const String &yAlignStr = propValues[ScreenProp::Y_ALIGN];
 			if (yAlignStr.isNumber()) {
 				preYAnchor = yPos = yAlignStr.toDouble();
 				yAnchorIsDouble = yPosIsDouble = preYAnchor > 0 && preYAnchor <= 1 && yAlignStr.contains('.');
@@ -270,7 +275,7 @@ void ScreenChild::calculateProps() {
 		if (propWasChanged[ScreenProp::Y_ANCHOR]) {
 			propWasChanged[ScreenProp::Y_ANCHOR] = false;
 
-			const String &yAnchorStr = propValues.at(ScreenProp::Y_ANCHOR);
+			const String &yAnchorStr = propValues[ScreenProp::Y_ANCHOR];
 			preYAnchor = yAnchorStr.toDouble();
 			yAnchorIsDouble = preYAnchor > 0 && preYAnchor <= 1 && yAnchorStr.contains('.');
 			if (yAnchorStr != None && !yAnchorStr.isNumber()) {
@@ -283,7 +288,7 @@ void ScreenChild::calculateProps() {
 			if (propWasChanged[ScreenProp::Y_POS]) {
 				propWasChanged[ScreenProp::Y_POS] = false;
 
-				const String &yPosStr = propValues.at(ScreenProp::Y_POS);
+				const String &yPosStr = propValues[ScreenProp::Y_POS];
 				yPos = yPosStr.toDouble();
 				yPosIsDouble = yPos > 0 && yPos <= 1 && yPosStr.contains('.');
 				if (yPosStr != None && !yPosStr.isNumber()) {
@@ -299,7 +304,7 @@ void ScreenChild::calculateProps() {
 		propWasChanged[ScreenProp::X_SIZE] = false;
 		xSizeChanged = true;
 
-		const String &xSizeStr = propValues.at(ScreenProp::X_SIZE);
+		const String &xSizeStr = propValues[ScreenProp::X_SIZE];
 		xSize = xSizeStr.toDouble();
 		xSizeIsDouble = xSize > 0 && xSize <= 1 && xSizeStr.contains('.');
 		if (xSizeStr != None && !xSizeStr.isNumber()) {
@@ -313,7 +318,7 @@ void ScreenChild::calculateProps() {
 		propWasChanged[ScreenProp::Y_SIZE] = false;
 		ySizeChanged = true;
 
-		const String &ySizeStr = propValues.at(ScreenProp::Y_SIZE);
+		const String &ySizeStr = propValues[ScreenProp::Y_SIZE];
 		ySize = ySizeStr.toDouble();
 		ySizeIsDouble = ySize > 0 && ySize <= 1 && ySizeStr.contains('.');
 		if (ySizeStr != None && !ySizeStr.isNumber()) {
@@ -328,7 +333,7 @@ void ScreenChild::calculateProps() {
 	) {
 		propWasChanged[ScreenProp::CROP] = false;
 
-		String cropStr = propValues.at(ScreenProp::CROP);
+		String cropStr = propValues[ScreenProp::CROP];
 		if (cropStr && cropStr != None) {
 			char start = cropStr.front();
 			char end = cropStr.back();
@@ -374,7 +379,7 @@ void ScreenChild::calculateProps() {
 	if (propWasChanged[ScreenProp::ROTATE]) {
 		propWasChanged[ScreenProp::ROTATE] = false;
 
-		const String &rotateStr = propValues.at(ScreenProp::ROTATE);
+		const String &rotateStr = propValues[ScreenProp::ROTATE];
 		rotate = rotateStr.toDouble();
 		if (rotateStr != None && !rotateStr.isNumber()) {
 			Utils::outMsg("ScreenChild::updateProps",
@@ -385,7 +390,7 @@ void ScreenChild::calculateProps() {
 	if (propWasChanged[ScreenProp::ALPHA]) {
 		propWasChanged[ScreenProp::ALPHA] = false;
 
-		const String &alphaStr = propValues.at(ScreenProp::ALPHA);
+		const String &alphaStr = propValues[ScreenProp::ALPHA];
 		alpha = alphaStr.toDouble();
 		if (alphaStr != None && !alphaStr.isNumber()) {
 			Utils::outMsg("ScreenChild::updateProps",

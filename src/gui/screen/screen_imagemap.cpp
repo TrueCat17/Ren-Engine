@@ -20,14 +20,14 @@ void ScreenImagemap::updateTexture() {
 		propWasChanged[ScreenProp::GROUND] = false;
 		propWasChanged[ScreenProp::HOVER] = false;
 
-		const String &newGroundPath = propValues.at(ScreenProp::GROUND);
-		const String &newHoverPath = propValues.at(ScreenProp::HOVER);
+		const String &newGroundPath = propValues[ScreenProp::GROUND];
+		const String &newHoverPath = propValues[ScreenProp::HOVER];
 
 		if (newHoverPath) {
 			hoverPath = newHoverPath;
 		}else
 			if (groundPath != newGroundPath) {
-				hoverPath = PyUtils::exec("CPP_EMBED: screen_imagemap.cpp", __LINE__, "im.MatrixColor('" + groundPath + "', im.matrix.contrast(1.5))", true);
+				hoverPath = PyUtils::exec("CPP_EMBED: screen_imagemap.cpp", __LINE__, "im.MatrixColor(r'" + groundPath + "', im.matrix.contrast(1.5))", true);
 			}
 		groundPath = newGroundPath;
 

@@ -23,7 +23,7 @@
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
 std::mutex PyUtils::pyExecMutex;
 
-PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine) {
+PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine, bool lock) {
 	std::tuple<const String&, const String&, int> pyCode(code, fileName, numLine);
 
 	auto i = compiledObjects.find(pyCode);
@@ -38,7 +38,11 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 	}
 
 	const String tmp = indent + code;
+
+	if (lock) GV::pyUtils->pyExecMutex.lock();
 	PyObject *t = Py_CompileString(tmp.c_str(), fileName.c_str(), Py_file_input);
+	if (lock) GV::pyUtils->pyExecMutex.unlock();
+
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
 	std::tuple<const String, const String, int> constPyCode(code, fileName, numLine);
@@ -99,12 +103,20 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_pixel"] = py::make_function(Game::getPixel);
 
 	pythonGlobal["get_mouse"] = py::make_function(PyUtils::getMouse);
+	pythonGlobal["get_local_mouse"] = py::make_function(PyUtils::getLocalMouse);
+	pythonGlobal["get_mouse_down"] = py::make_function(Mouse::getMouseDown);
 }
 
 py::list PyUtils::getMouse() {
 	py::list res;
 	res.append(Mouse::getX());
 	res.append(Mouse::getY());
+	return res;
+}
+py::list PyUtils::getLocalMouse() {
+	py::list res;
+	res.append(Mouse::getLocalX());
+	res.append(Mouse::getLocalY());
 	return res;
 }
 
@@ -233,7 +245,7 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 				py::object resObj = GV::pyUtils->pythonGlobal["res"];
 				const std::string resStr = py::extract<const std::string>(resObj);
 				res = resStr;
-				if (isConst && constExprs.size() < 100000) {
+				if (isConst) {
 					constExprs[code] = res;
 				}
 			}
