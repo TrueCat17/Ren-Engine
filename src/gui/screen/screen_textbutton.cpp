@@ -56,8 +56,9 @@ void ScreenTextButton::calculateProps() {
 	if (propWasChanged[ScreenProp::MOUSE]) {
 		propWasChanged[ScreenProp::MOUSE] = false;
 
-		const String &mouse = propValues[ScreenProp::MOUSE];
-		btnRect.buttonMode = mouse == "True";
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
+		py::object &mouseObj = propValues[ScreenProp::MOUSE];
+		btnRect.buttonMode = py::extract<bool>(mouseObj);
 	}
 
 	if (btnRect.mouseOvered) {
@@ -108,8 +109,8 @@ void ScreenTextButton::updateTexture() {
 		propWasChanged[ScreenProp::GROUND] = false;
 		propWasChanged[ScreenProp::HOVER] = false;
 
-		const String &newGround = propValues[ScreenProp::GROUND];
-		const String &newHover = propValues[ScreenProp::HOVER];
+		const String newGround = PyUtils::getStr(propValues[ScreenProp::GROUND]);
+		const String newHover = PyUtils::getStr(propValues[ScreenProp::HOVER]);
 
 		if (newHover) {
 			hover = newHover;

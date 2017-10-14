@@ -47,6 +47,10 @@ private:
 	static double* sins;
 	static double* coss;
 
+
+	static void trimSurfacesCache(const SurfacePtr last);
+	static void trimTexturesCache(const SurfacePtr last);
+
 public:
 	static String ROOT;
 	static String FONTS;
@@ -82,13 +86,12 @@ public:
 	static size_t getTextureWidth(const TexturePtr texture);
 	static size_t getTextureHeight(const TexturePtr texture);
 
-	static void trimSurfacesCache(const SurfacePtr last);
 	static SurfacePtr getThereIsSurfaceOrNull(const String &path);
 	static SurfacePtr getSurface(const String &path);
 	static void setSurface(const String &path, const SurfacePtr surface);
 
-	static void trimTexturesCache(const SurfacePtr last);
 	static TexturePtr getTexture(const String &path);
+	static void DestroyTexture(SDL_Texture *texture);
 
 	static Uint32 getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop);
 	static Uint32 getPixel(const TexturePtr texture, const SDL_Rect &draw, const SDL_Rect &crop);

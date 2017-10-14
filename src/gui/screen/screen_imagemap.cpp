@@ -20,8 +20,8 @@ void ScreenImagemap::updateTexture() {
 		propWasChanged[ScreenProp::GROUND] = false;
 		propWasChanged[ScreenProp::HOVER] = false;
 
-		const String &newGroundPath = propValues[ScreenProp::GROUND];
-		const String &newHoverPath = propValues[ScreenProp::HOVER];
+		const String newGroundPath = PyUtils::getStr(propValues[ScreenProp::GROUND]);
+		const String newHoverPath = PyUtils::getStr(propValues[ScreenProp::HOVER]);
 
 		if (newHoverPath) {
 			hoverPath = newHoverPath;

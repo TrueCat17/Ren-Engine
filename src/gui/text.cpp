@@ -200,8 +200,8 @@ void Text::addText() {
 		SDL_Texture *texture = SDL_CreateTexture(GV::mainRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, lineRect.w, lineRect.h);
 
 		if (texture) {
-			SDL_SetRenderTarget(GV::mainRenderer, texture);
 			SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
+			SDL_SetRenderTarget(GV::mainRenderer, texture);
 			SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 0);
 			SDL_RenderClear(GV::mainRenderer);
 			//Важно! SDL_RenderPresent не нужен!
@@ -213,7 +213,7 @@ void Text::addText() {
 		}
 		GV::renderMutex.unlock();
 
-		TexturePtr texturePtr(texture, SDL_DestroyTexture);
+		TexturePtr texturePtr(texture, Utils::DestroyTexture);
 		lineTextures.push_back(texturePtr);
 
 		if (!texture) {
@@ -388,11 +388,10 @@ void Text::addChars(String c, int color) {
 		Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
 	}
 
-	SDL_Texture *textureText;
-	{
-		std::lock_guard<std::mutex> g(GV::renderMutex);
-		textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
-	}
+
+	std::lock_guard<std::mutex> g(GV::renderMutex);
+
+	SDL_Texture *textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
 	SDL_FreeSurface(surfaceText);
 
 	if (!textureText) {
@@ -402,8 +401,6 @@ void Text::addChars(String c, int color) {
 
 	TexturePtr texture = lineTextures.size() ? lineTextures.back() : nullptr;
 	if (texture) {
-		std::lock_guard<std::mutex> g(GV::renderMutex);
-
 		SDL_SetRenderTarget(GV::mainRenderer, texture.get());
 		if (SDL_RenderCopy(GV::mainRenderer, textureText, nullptr, &rect)) {
 			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
@@ -500,7 +497,7 @@ void Text::draw() const {
 
 		SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-		pushToRender(texture, intAlpha, nullptr, &t, globalRotate, &center);
+		pushToRender(texture, globalRotate, intAlpha, nullptr, &t, &center);
 	}
 }
 

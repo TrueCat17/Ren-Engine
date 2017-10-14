@@ -88,6 +88,8 @@ void changeWindowSize(bool maximized) {
 			}
 
 			if (x + w != startW || y + h != startH) {
+				std::lock_guard<std::mutex> g1(GV::toRenderMutex);
+				std::lock_guard<std::mutex> g2(GV::renderMutex);
 				SDL_SetWindowSize(GV::mainWindow, x + w, y + h);
 			}
 
@@ -203,8 +205,10 @@ bool init() {
 bool needToRender = false;
 bool needToRedraw = false;
 void renderThread() {
+	std::vector<RenderStruct> toRender;
 	std::vector<RenderStruct> prevToRender;
-	auto changedToRender = [&](const std::vector<RenderStruct> &toRender) -> bool {
+
+	auto changedToRender = [&]() -> bool {
 		if (prevToRender.size() != toRender.size()) return true;
 		for (size_t i = 0; i < toRender.size(); ++i) {
 			if (prevToRender[i] != toRender[i]) return true;
@@ -216,12 +220,12 @@ void renderThread() {
 		if (!needToRender) {
 			Utils::sleep(1, false);
 		}else {
-			std::vector<RenderStruct> toRender;
 			{
 				std::lock_guard<std::mutex> trg(GV::toRenderMutex);
+				toRender.clear();
 				GV::toRender.swap(toRender);
 			}
-			if (!needToRedraw && !changedToRender(toRender)) {
+			if (!needToRedraw && !changedToRender()) {
 				needToRender = false;
 				continue;
 			}
@@ -232,7 +236,7 @@ void renderThread() {
 			 * и нужно ждать лишь завершения текущей части
 			 */
 
-			const size_t COUNT_IN_PART = 25;
+			const size_t COUNT_IN_PART = 50;
 			size_t len = toRender.size() / COUNT_IN_PART + 1;
 
 			//Part 0
@@ -249,6 +253,7 @@ void renderThread() {
 					break;
 				}
 
+				std::this_thread::sleep_for(std::chrono::microseconds(10));
 				std::lock_guard<std::mutex> g(GV::renderMutex);
 				if (!GV::inGame || GV::exit) {
 					break;

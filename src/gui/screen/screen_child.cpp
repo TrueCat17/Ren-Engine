@@ -17,7 +17,7 @@ std::vector<String> ScreenChild::propNames;
 void ScreenChild::setPropNames() {
 	propNames.clear();
 	for (size_t i = 0; i < COUNT_PROPS; ++i) {
-		propNames.push_back(String(i));
+		propNames.push_back("p_" + String(i));
 	}
 }
 
@@ -84,15 +84,13 @@ void ScreenChild::setProp(const ScreenProp prop, const NodeProp &nodeProp) {
 	props[prop] = nodeProp;
 }
 void ScreenChild::preparationToUpdateCalcProps() {
-	codeForCalcProps = "calc_object = {\n";
-
 	for (char &v : propWasChanged) {
 		v = true;
 	}
 
-	bool empty = true;
 	propIndeces.clear();
 
+	codeForCalcProps.clear();
 	for (size_t i = 0; i < COUNT_PROPS; ++i) {
 		const NodeProp &nodeProp = props[i];
 		const String &propExpr = nodeProp.pyExpr;
@@ -102,26 +100,22 @@ void ScreenChild::preparationToUpdateCalcProps() {
 			if (i == ScreenProp::Y_ALIGN) usingYAlign = true;
 
 			if (PyUtils::isConstExpr(propExpr)) {
-				propValues[i] = PyUtils::exec(getFileName(), nodeProp.numLine, propExpr, true);
+				propValues[i] = PyUtils::execRetObj(getFileName(), nodeProp.numLine, propExpr, true);
 			}else {
-				empty = false;
 				propIndeces.push_back(ScreenProp(i));
 
 				const String &propName = propNames[i];
-				codeForCalcProps += "    '" + propName + "': " + propExpr + ",\n";
+				codeForCalcProps += propName + " = " + propExpr + "\n";
 			}
 		}else if (nodeProp.styleName) {
 			propValues[i] = Style::getProp(nodeProp.styleName, nodeProp.propName);
 		}
 	}
 
-	if (!empty) {
-		codeForCalcProps.erase(codeForCalcProps.size() - 2);
-		codeForCalcProps += "\n"
-							"}\n";
-		co = PyUtils::getCompileObject(codeForCalcProps, "EMBED_CPP: ScreenChild::calculateProps", 1, true);
+	if (codeForCalcProps) {
+		co = PyUtils::getCompileObject(codeForCalcProps, getFileName(), getNumLine(), true);
 	}else {
-		codeForCalcProps.clear();
+		co = nullptr;
 	}
 }
 
@@ -157,9 +151,10 @@ void ScreenChild::calculateProps() {
 
 	if (codeForCalcProps) {
 		bool calculated = false;
+		py::dict dict;
 		if (co) {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
+			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), dict.ptr())) {
 				PyUtils::errorProcessing(codeForCalcProps);
 			}else {
 				calculated = true;
@@ -169,26 +164,17 @@ void ScreenChild::calculateProps() {
 		bool ok = false;
 		if (calculated) {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-
-			const char *errorDesc = "Ошибка при извлечении calc_object";
 			try {
-				py::object obj = GV::pyUtils->pythonGlobal["calc_object"];
+				for (ScreenProp i : propIndeces) {
+					const String &propName = propNames[i];
+					py::object res = dict[propName.c_str()];
 
-				//ok (try)
-				if (!obj.is_none()) {
-					errorDesc = "Ошибка при извлечении свойств из calc_object";
-					for (ScreenProp i : propIndeces) {
-						const String &propName = propNames[i];
-						py::object res = obj[propName.c_str()];
-
-						String t = String(py::extract<const std::string>(py::str(res)));
-						propWasChanged[i] = propWasChanged[i] || propValues[i] != t;
-						propValues[i] = t;
-					}
-					ok = true;
+					propWasChanged[i] = propWasChanged[i] || propValues[i] != res;
+					propValues[i] = res;
 				}
+				ok = true;
 			}catch (py::error_already_set) {
-				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", errorDesc);
+				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", "Ошибка при извлечении свойств из calc_object");
 				PyUtils::errorProcessing("EMBED_CPP: ScreenChild::calculateProps\n" + codeForCalcProps);
 			}
 		}
@@ -199,9 +185,9 @@ void ScreenChild::calculateProps() {
 				const NodeProp &nodeProp = props[i];
 				const String &propExpr = nodeProp.pyExpr;
 
-				const String t = PyUtils::exec(getFileName(), nodeProp.numLine, propExpr, true);
-				propWasChanged[i] = propWasChanged[i] || propValues[i] != t;
-				propValues[i] = t;
+				py::object res = PyUtils::execRetObj(getFileName(), nodeProp.numLine, propExpr, true);
+				propWasChanged[i] = propWasChanged[i] || propValues[i] != res;
+				propValues[i] = res;
 			}
 		}
 	}
@@ -213,32 +199,37 @@ void ScreenChild::calculateProps() {
 
 	if (!needUpdateFields) return;
 
-
-	static const String None = "None";
-
 	if (usingXAlign) {
 		if (propWasChanged[ScreenProp::X_ALIGN]) {
 			propWasChanged[ScreenProp::X_ALIGN] = false;
 
-			const String &xAlignStr = propValues[ScreenProp::X_ALIGN];
-			if (xAlignStr.isNumber()) {
-				preXAnchor = xPos = xAlignStr.toDouble();
-				xAnchorIsDouble = xPosIsDouble = preXAnchor > 0 && preXAnchor <= 1 && xAlignStr.contains('.');
-			}else if (xAlignStr != None) {
-				Utils::outMsg("ScreenChild::updateProps",
-							  "xalign is not a number (" + xAlignStr + ")\n" + node->getPlace());
+			py::object &xAlignObj = propValues[ScreenProp::X_ALIGN];
+			bool isInt = PyUtils::isInt(xAlignObj);
+			bool isFloat = !isInt && PyUtils::isFloat(xAlignObj);
+			if (isInt || isFloat) {
+				preXAnchor = xPos = PyUtils::getDouble(xAlignObj, isFloat);
+				xAnchorIsDouble = xPosIsDouble = isFloat && preXAnchor > 0 && preXAnchor <= 1;
+			}else {
+				preXAnchor = xPos = 0;
+				Utils::outMsg("ScreenChild::calculateProps",
+							  "xalign is not a number (" + PyUtils::getStr(xAlignObj) + ")\n" + node->getPlace());
 			}
 		}
 	}else {
 		if (propWasChanged[ScreenProp::X_ANCHOR]) {
 			propWasChanged[ScreenProp::X_ANCHOR] = false;
 
-			const String &xAnchorStr = propValues[ScreenProp::X_ANCHOR];
-			preXAnchor = xAnchorStr.toDouble();
-			xAnchorIsDouble = preXAnchor > 0 && preXAnchor <= 1 && xAnchorStr.contains('.');
-			if (xAnchorStr != None && !xAnchorStr.isNumber()) {
-				Utils::outMsg("ScreenChild::updateProps",
-							  "xanchor is not a number (" + xAnchorStr + ")\n" + node->getPlace());
+			py::object &xAnchorObj = propValues[ScreenProp::X_ANCHOR];
+			bool isInt = PyUtils::isInt(xAnchorObj);
+			bool isFloat = !isInt && PyUtils::isFloat(xAnchorObj);
+
+			if (isInt || isFloat) {
+				preXAnchor = PyUtils::getDouble(xAnchorObj, isFloat);
+				xAnchorIsDouble = isFloat && preXAnchor > 0 && preXAnchor <= 1;
+			}else {
+				preXAnchor = 0;
+				Utils::outMsg("ScreenChild::calculateProps",
+							  "xanchor is not a number (" + PyUtils::getStr(xAnchorObj) + ")\n" + node->getPlace());
 			}
 		}
 
@@ -246,12 +237,17 @@ void ScreenChild::calculateProps() {
 			if (propWasChanged[ScreenProp::X_POS]) {
 				propWasChanged[ScreenProp::X_POS] = false;
 
-				const String &xPosStr = propValues[ScreenProp::X_POS];
-				xPos = xPosStr.toDouble();
-				xPosIsDouble = xPos > 0 && xPos <= 1 && xPosStr.contains('.');
-				if (xPosStr != None && !xPosStr.isNumber()) {
-					Utils::outMsg("ScreenChild::updateProps",
-								  "xpos is not a number (" + xPosStr + ")\n" + node->getPlace());
+				py::object &xPosObj = propValues[ScreenProp::X_POS];
+				bool isInt = PyUtils::isInt(xPosObj);
+				bool isFloat = !isInt && PyUtils::isFloat(xPosObj);
+
+				if (isInt || isFloat) {
+					xPos = PyUtils::getDouble(xPosObj, isFloat);
+					xPosIsDouble = isFloat && xPos > 0 && xPos <= 1;
+				}else {
+					xPos = 0;
+					Utils::outMsg("ScreenChild::calculateProps",
+								  "xpos is not a number (" + PyUtils::getStr(xPosObj) + ")\n" + node->getPlace());
 				}
 			}
 		}
@@ -262,25 +258,34 @@ void ScreenChild::calculateProps() {
 		if (propWasChanged[ScreenProp::Y_ALIGN]) {
 			propWasChanged[ScreenProp::Y_ALIGN] = false;
 
-			const String &yAlignStr = propValues[ScreenProp::Y_ALIGN];
-			if (yAlignStr.isNumber()) {
-				preYAnchor = yPos = yAlignStr.toDouble();
-				yAnchorIsDouble = yPosIsDouble = preYAnchor > 0 && preYAnchor <= 1 && yAlignStr.contains('.');
-			}else if (yAlignStr && yAlignStr != None) {
-				Utils::outMsg("ScreenChild::updateProps",
-							  "yalign is not a number (" + yAlignStr + ")\n" + node->getPlace());
+			py::object &yAlignObj = propValues[ScreenProp::Y_ALIGN];
+			bool isInt = PyUtils::isInt(yAlignObj);
+			bool isFloat = !isInt && PyUtils::isFloat(yAlignObj);
+
+			if (isInt || isFloat) {
+				preYAnchor = yPos = PyUtils::getDouble(yAlignObj, isFloat);
+				yAnchorIsDouble = yPosIsDouble = isFloat && preYAnchor > 0 && preYAnchor <= 1;
+			}else {
+				preYAnchor = yPos = 0;
+				Utils::outMsg("ScreenChild::calculateProps",
+							  "yalign is not a number (" + PyUtils::getStr(yAlignObj) + ")\n" + node->getPlace());
 			}
 		}
 	}else {
 		if (propWasChanged[ScreenProp::Y_ANCHOR]) {
 			propWasChanged[ScreenProp::Y_ANCHOR] = false;
 
-			const String &yAnchorStr = propValues[ScreenProp::Y_ANCHOR];
-			preYAnchor = yAnchorStr.toDouble();
-			yAnchorIsDouble = preYAnchor > 0 && preYAnchor <= 1 && yAnchorStr.contains('.');
-			if (yAnchorStr != None && !yAnchorStr.isNumber()) {
-				Utils::outMsg("ScreenChild::updateProps",
-							  "yanchor is not a number (" + yAnchorStr + ")\n" + node->getPlace());
+			py::object &yAnchorObj = propValues[ScreenProp::Y_ANCHOR];
+			bool isInt = PyUtils::isInt(yAnchorObj);
+			bool isFloat = !isInt && PyUtils::isFloat(yAnchorObj);
+
+			if (isInt || isFloat) {
+				preYAnchor = PyUtils::getDouble(yAnchorObj, isFloat);
+				yAnchorIsDouble = isFloat && preYAnchor > 0 && preYAnchor <= 1;
+			}else {
+				preYAnchor = 0;
+				Utils::outMsg("ScreenChild::calculateProps",
+							  "yanchor is not a number (" + PyUtils::getStr(yAnchorObj) + ")\n" + node->getPlace());
 			}
 		}
 
@@ -288,12 +293,17 @@ void ScreenChild::calculateProps() {
 			if (propWasChanged[ScreenProp::Y_POS]) {
 				propWasChanged[ScreenProp::Y_POS] = false;
 
-				const String &yPosStr = propValues[ScreenProp::Y_POS];
-				yPos = yPosStr.toDouble();
-				yPosIsDouble = yPos > 0 && yPos <= 1 && yPosStr.contains('.');
-				if (yPosStr != None && !yPosStr.isNumber()) {
-					Utils::outMsg("ScreenChild::updateProps",
-								  "ypos is not a number (" + yPosStr + ")\n" + node->getPlace());
+				py::object &yPosObj = propValues[ScreenProp::Y_POS];
+				bool isInt = PyUtils::isInt(yPosObj);
+				bool isFloat = !isInt && PyUtils::isFloat(yPosObj);
+
+				if (isInt || isFloat) {
+					yPos = PyUtils::getDouble(yPosObj, isFloat);
+					yPosIsDouble = isFloat && yPos > 0 && yPos <= 1;
+				}else {
+					yPos = 0;
+					Utils::outMsg("ScreenChild::calculateProps",
+								  "ypos is not a number (" + PyUtils::getStr(yPosObj) + ")\n" + node->getPlace());
 				}
 			}
 		}
@@ -304,12 +314,18 @@ void ScreenChild::calculateProps() {
 		propWasChanged[ScreenProp::X_SIZE] = false;
 		xSizeChanged = true;
 
-		const String &xSizeStr = propValues[ScreenProp::X_SIZE];
-		xSize = xSizeStr.toDouble();
-		xSizeIsDouble = xSize > 0 && xSize <= 1 && xSizeStr.contains('.');
-		if (xSizeStr != None && !xSizeStr.isNumber()) {
-			Utils::outMsg("ScreenChild::updateProps",
-						  "xsize is not a number (" + xSizeStr + ")\n" + node->getPlace());
+		py::object &xSizeObj = propValues[ScreenProp::X_SIZE];
+		bool isInt = PyUtils::isInt(xSizeObj);
+		bool isFloat = !isInt && PyUtils::isFloat(xSizeObj);
+
+		if (isInt || isFloat) {
+			xSize = PyUtils::getDouble(xSizeObj, isFloat);
+			xSizeIsDouble = isFloat && xSize > 0 && xSize <= 1;
+		}else {
+			xSize = 0;
+			xSizeIsDouble = false;
+			Utils::outMsg("ScreenChild::calculateProps",
+						  "xsize is not a number (" + PyUtils::getStr(xSizeObj) + ")\n" + node->getPlace());
 		}
 	}
 
@@ -318,12 +334,18 @@ void ScreenChild::calculateProps() {
 		propWasChanged[ScreenProp::Y_SIZE] = false;
 		ySizeChanged = true;
 
-		const String &ySizeStr = propValues[ScreenProp::Y_SIZE];
-		ySize = ySizeStr.toDouble();
-		ySizeIsDouble = ySize > 0 && ySize <= 1 && ySizeStr.contains('.');
-		if (ySizeStr != None && !ySizeStr.isNumber()) {
-			Utils::outMsg("ScreenChild::updateProps",
-						  "ysize is not a number (" + ySizeStr + ")\n" + node->getPlace());
+		py::object &ySizeObj = propValues[ScreenProp::Y_SIZE];
+		bool isInt = PyUtils::isInt(ySizeObj);
+		bool isFloat = !isInt && PyUtils::isFloat(ySizeObj);
+
+		if (isInt || isFloat) {
+			ySize = PyUtils::getDouble(ySizeObj, isFloat);
+			ySizeIsDouble = isFloat && ySize > 0 && ySize <= 1;
+		}else {
+			ySize = 0;
+			ySizeIsDouble = false;
+			Utils::outMsg("ScreenChild::calculateProps",
+						  "ysize is not a number (" + PyUtils::getStr(ySizeObj) + ")\n" + node->getPlace());
 		}
 	}
 
@@ -333,68 +355,74 @@ void ScreenChild::calculateProps() {
 	) {
 		propWasChanged[ScreenProp::CROP] = false;
 
-		String cropStr = propValues[ScreenProp::CROP];
-		if (cropStr && cropStr != None) {
-			char start = cropStr.front();
-			char end = cropStr.back();
-			if ((start == '(' && end == ')') ||
-				(start == '[' && end == ']'))
-			{
-				int textureWidth = Utils::getTextureWidth(texture);
-				int textureHeight = Utils::getTextureHeight(texture);
+		py::object &cropObj = propValues[ScreenProp::CROP];
 
-				if (cropStr == "(0.0, 0.0, 1.0, 1.0)") {
-					crop = {0, 0, textureWidth, textureHeight};
-				}else {
-					cropStr = cropStr.substr(1, cropStr.size() - 2);
-					std::vector<String> cropVec = cropStr.split(", ");
-					if (cropVec.size() == 4) {
-						double x = cropVec[0].toDouble();
-						double y = cropVec[1].toDouble();
-						double w = cropVec[2].toDouble();
-						double h = cropVec[3].toDouble();
+		if ((PyUtils::isTuple(cropObj) || PyUtils::isList(cropObj)) && py::len(cropObj) == 4) {
+			int textureWidth = Utils::getTextureWidth(texture);
+			int textureHeight = Utils::getTextureHeight(texture);
 
-						if ((x > 0 && x < 1) || cropVec[0] == "1.0") x *= textureWidth;
-						if ((y > 0 && y < 1) || cropVec[1] == "1.0") y *= textureHeight;
-						if ((w > 0 && w < 1) || cropVec[2] == "1.0") w *= textureWidth;
-						if ((h > 0 && h < 1) || cropVec[3] == "1.0") h *= textureHeight;
-
-						crop = {int(x), int(y), int(w), int(h)};
-					}else {
-						Utils::outMsg("ScreenChild::updateProps", String() +
-									  "В свойстве crop ожидался список из 4-х значений, получено " + cropVec.size() + "\n" +
-									  "crop: <" + start + cropStr + end + ">\n" +
-									  node->getPlace());
-					}
+			bool isInt[4];
+			bool isFloat[4];
+			for (size_t i = 0; i < 4; ++i) {
+				isInt[i] = PyUtils::isInt(cropObj[i]);
+				isFloat[i] = !isInt[i] && PyUtils::isFloat(cropObj[i]);
+				if (!isInt[i] && !isFloat[i]) {
+					Utils::outMsg("ScreenChild::calculateProps", String() +
+								  "В свойстве crop ожидался список из 4-х значений типа int или float\n"
+								  "crop: <" + PyUtils::getStr(cropObj) + ">\n" +
+								  node->getPlace());
+					cropObj[i] = double(i >= 2);//0.0 for 0,1; 1.0 for 2,3; crop -> {0.0, 0.0, 1.0, 1.0}
 				}
-			}else {
-				Utils::outMsg("ScreenChild::updateProps", String() +
-							  "В свойстве crop ожидался список из 4-х значений\n"
-							  "crop: <" + cropStr + ">\n" +
-							  node->getPlace());
 			}
+
+			double x = PyUtils::getDouble(cropObj[0], isFloat[0]);
+			double y = PyUtils::getDouble(cropObj[1], isFloat[1]);
+			double w = PyUtils::getDouble(cropObj[2], isFloat[2]);
+			double h = PyUtils::getDouble(cropObj[3], isFloat[3]);
+
+			if (isFloat[0] && x > 0 && x <= 1) x *= textureWidth;
+			if (isFloat[1] && y > 0 && y <= 1) y *= textureHeight;
+			if (isFloat[2] && w > 0 && w <= 1) w *= textureWidth;
+			if (isFloat[3] && h > 0 && h <= 1) h *= textureHeight;
+
+			crop = {int(x), int(y), int(w), int(h)};
+		}else {
+			Utils::outMsg("ScreenChild::calculateProps", String() +
+						  "В свойстве crop ожидался список из 4-х значений типа int или float\n"
+						  "crop: <" + PyUtils::getStr(cropObj) + ">\n" +
+						  node->getPlace());
 		}
 	}
 
 	if (propWasChanged[ScreenProp::ROTATE]) {
 		propWasChanged[ScreenProp::ROTATE] = false;
 
-		const String &rotateStr = propValues[ScreenProp::ROTATE];
-		rotate = rotateStr.toDouble();
-		if (rotateStr != None && !rotateStr.isNumber()) {
-			Utils::outMsg("ScreenChild::updateProps",
-						  "rotate is not a number (" + rotateStr + ")\n" + node->getPlace());
+		py::object &rotateObj = propValues[ScreenProp::ROTATE];
+		bool isInt = PyUtils::isInt(rotateObj);
+		bool isFloat = !isInt && PyUtils::isFloat(rotateObj);
+
+		if (isInt || isFloat) {
+			rotate = PyUtils::getDouble(rotateObj, isFloat);
+		}else {
+			rotate = 0;
+			Utils::outMsg("ScreenChild::calculateProps",
+						  "rotate is not a number (" + PyUtils::getStr(rotateObj) + ")\n" + node->getPlace());
 		}
 	}
 
 	if (propWasChanged[ScreenProp::ALPHA]) {
 		propWasChanged[ScreenProp::ALPHA] = false;
 
-		const String &alphaStr = propValues[ScreenProp::ALPHA];
-		alpha = alphaStr.toDouble();
-		if (alphaStr != None && !alphaStr.isNumber()) {
-			Utils::outMsg("ScreenChild::updateProps",
-						  "alpha is not a number (" + alphaStr + ")\n" + node->getPlace());
+		py::object &alphaObj = propValues[ScreenProp::ALPHA];
+		bool isInt = PyUtils::isInt(alphaObj);
+		bool isFloat = !isInt && PyUtils::isFloat(alphaObj);
+
+		if (isInt || isFloat) {
+			alpha = PyUtils::getDouble(alphaObj, isFloat);
+		}else {
+			alpha = 0;
+			Utils::outMsg("ScreenChild::calculateProps",
+						  "alpha is not a number (" + PyUtils::getStr(alphaObj) + ")\n" + node->getPlace());
 		}
 	}
 }

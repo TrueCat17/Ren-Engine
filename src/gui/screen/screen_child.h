@@ -77,7 +77,7 @@ protected:
 
 	//props -> calculate propValue
 	std::vector<NodeProp> props;
-	std::vector<String> propValues;
+	std::vector<py::object> propValues;
 	std::vector<ScreenProp> propIndeces;
 	std::vector<char> propWasChanged;
 
@@ -101,8 +101,8 @@ protected:
 	bool usingXAlign = false;
 	bool usingYAlign = false;
 
-	double xSize = 0.5;
-	double ySize = 0.5;
+	double xSize = 0;
+	double ySize = 0;
 	bool xSizeIsDouble = false;
 	bool ySizeIsDouble = false;
 

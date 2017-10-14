@@ -9,11 +9,11 @@ class Style {
 private:
 	static std::map<String, Style*> styles;
 
-	std::map<String, std::pair<bool, String>> props;
+	std::map<String, py::object> props;
 
 public:
 	static void destroyAll();
-	static String getProp(const String &styleName, const String &propName);
+	static py::object getProp(const String &styleName, const String &propName);
 };
 
 #endif // STYLE_H

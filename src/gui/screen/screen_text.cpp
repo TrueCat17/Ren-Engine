@@ -30,27 +30,27 @@ void ScreenText::calculateProps() {
 
 	if (propWasChanged[ScreenProp::TEXT]) {
 		propWasChanged[ScreenProp::TEXT] = false;
-		text = propValues[ScreenProp::TEXT];
+		text = PyUtils::getStr(propValues[ScreenProp::TEXT]);
 	}
 
 	if (text) {
 		if (propWasChanged[ScreenProp::FONT]) {
 			propWasChanged[ScreenProp::FONT] = false;
-			font = propValues[ScreenProp::FONT];
+			font = PyUtils::getStr(propValues[ScreenProp::FONT]);
 		}
 		if (propWasChanged[ScreenProp::TEXT_ALIGN]) {
 			propWasChanged[ScreenProp::TEXT_ALIGN] = false;
-			textHAlign = propValues[ScreenProp::TEXT_ALIGN];
+			textHAlign = PyUtils::getStr(propValues[ScreenProp::TEXT_ALIGN]);
 		}
 		if (propWasChanged[ScreenProp::TEXT_VALIGN]) {
 			propWasChanged[ScreenProp::TEXT_VALIGN] = false;
-			textVAlign = propValues[ScreenProp::TEXT_VALIGN];
+			textVAlign = PyUtils::getStr(propValues[ScreenProp::TEXT_VALIGN]);
 		}
 
 		if (propWasChanged[ScreenProp::COLOR]) {
 			propWasChanged[ScreenProp::COLOR] = false;
 
-			const String &colorStr = propValues[ScreenProp::COLOR];
+			const String &colorStr = PyUtils::getStr(propValues[ScreenProp::COLOR]);
 			color = 0xFFFFFF;
 			if (colorStr) {
 				if (colorStr[0] == '#') {
@@ -64,8 +64,18 @@ void ScreenText::calculateProps() {
 		if (propWasChanged[ScreenProp::TEXT_SIZE]) {
 			propWasChanged[ScreenProp::TEXT_SIZE] = false;
 
-			size = propValues[ScreenProp::TEXT_SIZE].toInt();
-			if (!size) size = 20;
+			py::object &sizeObj = propValues[ScreenProp::TEXT_SIZE];
+			bool isInt = PyUtils::isInt(sizeObj);
+			bool isFloat = !isInt && PyUtils::isFloat(sizeObj);
+
+			if (isInt || isFloat) {
+				size = PyUtils::getDouble(sizeObj, isFloat);
+				if (!size) size = 20;
+			}else {
+				size = 20;
+				Utils::outMsg("ScreenText::calculateProps",
+							  "text_size is not a number (" + PyUtils::getStr(sizeObj) + ")");
+			}
 		}
 	}
 }

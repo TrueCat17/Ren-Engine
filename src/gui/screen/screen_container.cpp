@@ -30,6 +30,8 @@
 #include "screen_python.h"
 
 
+#include "media/py_utils.h"
+
 
 ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent):
 	ScreenChild(node, screenParent)
@@ -50,8 +52,17 @@ void ScreenContainer::calculateProps() {
 		if (propWasChanged[ScreenProp::SPACING]) {
 			propWasChanged[ScreenProp::SPACING] = false;
 
-			const String &indentStr = propValues[ScreenProp::SPACING];
-			indent = indentStr.toInt();
+			py::object &indentObj = propValues[ScreenProp::SPACING];
+			bool isInt = PyUtils::isInt(indentObj);
+			bool isFloat = !isInt && PyUtils::isFloat(indentObj);
+
+			if (isInt || isFloat) {
+				indent = PyUtils::getDouble(indentObj, isFloat);
+			}else {
+				indent = 0;
+				Utils::outMsg("ScreenContainer::calculateProps",
+							  "indent is not a number (" + PyUtils::getStr(indentObj) + ")\n" + node->getPlace());
+			}
 		}
 	}
 }
@@ -261,6 +272,7 @@ void ScreenContainer::addChildrenFromNode() {
 			}
 
 			static const std::vector<String> props = String(
+				"pass, "
 				"has, spacing, "
 				"xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
 				"align, anchor, pos, size, crop, rotate, alpha, "

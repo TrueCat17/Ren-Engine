@@ -11,8 +11,8 @@ public:
 	String(char c) { char a[2] = {c, 0}; *this = a; }
 	String(const char *s): std::string(s) {}
 	String(const std::string &str): std::string(str) {}
-	String(double d);
 	String(int i, int base = 10);
+	String(double d);
 	String(size_t i): String(double(i)) {}
 
 	template<typename T>
@@ -23,7 +23,14 @@ public:
 	template<typename T>
 	String& operator+=(const T& t) {
 		const String tStr = String(t);
-		*(dynamic_cast<std::string*>(this)) += tStr.c_str();
+		*(static_cast<std::string*>(this)) += tStr;
+
+		return *this;
+	}
+	template<typename T>
+	String& operator=(const T& t) {
+		const String tStr = String(t);
+		*(static_cast<std::string*>(this)) = tStr;
 
 		return *this;
 	}

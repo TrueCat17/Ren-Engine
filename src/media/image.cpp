@@ -415,7 +415,7 @@ SurfacePtr Image::getImage(String desc) {
 		if (!renderer) {
 			error = "Image::getImage, Rotozoom, SDL_CreateSoftwareRenderer";
 		}else {
-			TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
+			TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), Utils::DestroyTexture);
 			if (!texture) {
 				error = "Image::getImage, Rotozoom, SDL_CreateTextureFromSurface";
 			}else {

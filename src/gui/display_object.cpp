@@ -83,7 +83,7 @@ void DisplayObject::draw() const {
 		SDL_Point center = { xAnchor, yAnchor };
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
 
-		pushToRender(texture, intAlpha, &crop, &t, globalRotate, &center);
+		pushToRender(texture, globalRotate, intAlpha, &crop, &t, &center);
 	}
 }
 
@@ -111,19 +111,17 @@ void DisplayObject::destroyAll() {
 	}
 }
 
-void DisplayObject::pushToRender(
-	const TexturePtr &texture, Uint8 alpha,
-	const SDL_Rect *srcRect, const SDL_Rect *dstRect,
-	double angle, const SDL_Point *center)
+void DisplayObject::pushToRender(const TexturePtr &texture, float angle, Uint8 alpha,
+	const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center)
 {
 	static const SDL_Rect emptyRect = {0, 0, 0, 0};
 	static const SDL_Point emptyPoint = {0, 0};
 
 	GV::toRender.push_back({
-		texture, alpha,
+		texture, angle, alpha,
 		srcRect == nullptr, dstRect == nullptr, center == nullptr,
 
 		SDL_Rect(srcRect ? *srcRect : emptyRect), SDL_Rect(dstRect ? *dstRect : emptyRect),
-		angle, SDL_Point(center ? *center : emptyPoint)
+		SDL_Point(center ? *center : emptyPoint)
 	});
 }

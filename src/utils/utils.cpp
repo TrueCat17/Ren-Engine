@@ -303,6 +303,9 @@ void Utils::trimTexturesCache(const SurfacePtr last) {
 TexturePtr Utils::getTexture(const String &path) {
 	if (!path) return nullptr;
 
+	static std::mutex m;
+	std::lock_guard<std::mutex> g(m);
+
 	for (size_t i = textures.size() - 1; i != size_t(-1); --i) {
 		if (textures[i].first == path) {
 			if (i < textures.size() - 30) {
@@ -322,7 +325,7 @@ TexturePtr Utils::getTexture(const String &path) {
 		TexturePtr texture;
 		{
 			std::lock_guard<std::mutex> g(GV::renderMutex);
-			texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
+			texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), Utils::DestroyTexture);
 		}
 
 		if (texture) {
@@ -339,6 +342,10 @@ TexturePtr Utils::getTexture(const String &path) {
 	}
 
 	return nullptr;
+}
+void Utils::DestroyTexture(SDL_Texture *texture) {
+	std::lock_guard<std::mutex> g(GV::renderMutex);
+	SDL_DestroyTexture(texture);
 }
 
 void Utils::trimSurfacesCache(const SurfacePtr last) {
@@ -556,10 +563,8 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 		size_t sizeDefaultDeclAt = py::len(defaultDeclAt);
 
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
-			py::str params = py::str(defaultDeclAt[i]);
-
 			Node *node = new Node("some assign default_decl_at", 0);
-			node->params = std::string(py::extract<std::string>(params));
+			node->params = py::extract<const std::string>(py::str(defaultDeclAt[i]));
 			declAt->children.push_back(node);
 		}
 	}

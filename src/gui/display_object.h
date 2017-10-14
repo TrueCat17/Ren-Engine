@@ -26,9 +26,8 @@ public:
 	static std::vector<DisplayObject*> objects;
 	static void destroyAll();
 
-	static void pushToRender(const TexturePtr &texture, Uint8 alpha,
-							 const SDL_Rect *srcRect, const SDL_Rect *dstRect,
-							 double angle, const SDL_Point *center);
+	static void pushToRender(const TexturePtr &texture, float angle, Uint8 alpha,
+							 const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center);
 
 	bool enable = true;
 

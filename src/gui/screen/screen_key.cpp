@@ -72,17 +72,39 @@ void ScreenKey::calculateProps() {
 
 	if (propWasChanged[ScreenProp::FIRST_DELAY]) {
 		propWasChanged[ScreenProp::FIRST_DELAY] = false;
-		firstKeyDelay = propValues[ScreenProp::FIRST_DELAY].toDouble() * 1000;
+
+		py::object firstKeyDelayObj = propValues[ScreenProp::FIRST_DELAY];
+		bool isInt = PyUtils::isInt(firstKeyDelayObj);
+		bool isFloat = !isInt && PyUtils::isFloat(firstKeyDelayObj);
+
+		if (isInt || isFloat) {
+			firstKeyDelay = PyUtils::getDouble(firstKeyDelayObj, isFloat) * 1000;
+		}else {
+			firstKeyDelay = 500;
+			Utils::outMsg("ScreenKey::calculateProps",
+						  "first_delay is not a number (" + PyUtils::getStr(firstKeyDelayObj) + ")");
+		}
 	}
 	if (propWasChanged[ScreenProp::DELAY]) {
 		propWasChanged[ScreenProp::DELAY] = false;
-		keyDelay = propValues[ScreenProp::DELAY].toDouble() * 1000;
+
+		py::object keyDelayObj = propValues[ScreenProp::DELAY];
+		bool isInt = PyUtils::isInt(keyDelayObj);
+		bool isFloat = !isInt && PyUtils::isFloat(keyDelayObj);
+
+		if (isInt || isFloat) {
+			keyDelay = PyUtils::getDouble(keyDelayObj, isFloat) * 1000;
+		}else {
+			keyDelay = 10;
+			Utils::outMsg("ScreenKey::calculateProps",
+						  "delay is not a number (" + PyUtils::getStr(keyDelayObj) + ")");
+		}
 	}
 
 	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
-		const String &keyName = propValues[ScreenProp::KEY];
+		const String keyName = PyUtils::getStr(propValues[ScreenProp::KEY]);
 		Utils::outMsg("SDL_GetScancodeFromName",
 					  "KeyName <" + keyName + ">\n" +
 					  SDL_GetError() + '\n' +
@@ -116,7 +138,7 @@ void ScreenKey::calculateProps() {
 }
 
 SDL_Scancode ScreenKey::getKey() const {
-	const String &keyName = propValues[ScreenProp::KEY];
+	const String keyName = PyUtils::getStr(propValues[ScreenProp::KEY]);
 	if (!keyName) return SDL_SCANCODE_UNKNOWN;
 
 	int start = 0;

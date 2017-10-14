@@ -1,6 +1,7 @@
 #include "screen_hotspot.h"
 
 #include "screen_imagemap.h"
+#include "style.h"
 
 #include "gv.h"
 
@@ -20,9 +21,7 @@ ScreenHotspot::ScreenHotspot(Node *node):
 			Music::play("button_click " + activateSound.pyExpr,
 						this->getFileName(), activateSound.numLine);
 		}else if (activateSound.styleName) {
-			const String sound = PyUtils::exec(this->getFileName(), this->getNumLine(),
-								  "style." + activateSound.styleName + ".activete_sound",
-								  true);
+			const std::string sound = PyUtils::getStr(Style::getProp(activateSound.styleName, "activate_sound"));
 			if (sound != "None") {
 				Music::play("button_click '" + sound + "'",
 							this->getFileName(), this->getNumLine());
@@ -52,7 +51,7 @@ ScreenHotspot::ScreenHotspot(Node *node):
 
 	clearProps();
 	needUpdateFields = false;
-	setProp(ScreenProp::RECT, NodeProp::initPyExpr("' '.join(map(str, " + rectStr + "))", node->getNumLine()));
+	setProp(ScreenProp::RECT, NodeProp::initPyExpr(rectStr, node->getNumLine()));
 	setProp(ScreenProp::MOUSE, node->getPropCode("mouse"));
 
 	preparationToUpdateCalcProps();
@@ -84,20 +83,30 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 void ScreenHotspot::calculateProps() {
 	ScreenChild::calculateProps();
 
-	const String &rectStr = propValues[ScreenProp::RECT];
-	std::vector<String> rectVec = rectStr.split(' ');
-	if (rectVec.size() != 4) {
+	py::object &rectObj = propValues[ScreenProp::RECT];
+	bool ok = true;
+	if ((PyUtils::isTuple(rectObj) || PyUtils::isList(rectObj)) && py::len(rectObj) == 4) {
+		for (size_t i = 0; i < 4; ++i) {
+			if (!PyUtils::isInt(rectObj[i]) && !PyUtils::isFloat(rectObj[i])) {
+				ok = false;
+				break;
+			}
+		}
+	}
+	if (!ok) {
 		enable = false;
-		Utils::outMsg("ScreenHotspot::updateProps",
-					  String() + "Ожидалось 4 параметра (x, y, width, height), получено " + rectVec.size());
+		Utils::outMsg("ScreenHotspot::updateProps", String() +
+					  "Ожидалось 4 параметра (x, y, width, height), получено \n" +
+					  PyUtils::getStr(rectObj));
 		return;
 	}
 
 	if (propWasChanged[ScreenProp::MOUSE]) {
 		propWasChanged[ScreenProp::MOUSE] = false;
 
-		const String &mouse = propValues[ScreenProp::MOUSE];
-		btnRect.buttonMode = mouse == "True";
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
+		py::object &mouseObj = propValues[ScreenProp::MOUSE];
+		btnRect.buttonMode = py::extract<bool>(mouseObj);
 	}
 
 	TexturePtr ground = parent->texture;
@@ -110,12 +119,12 @@ void ScreenHotspot::calculateProps() {
 		scaleY = double(parentHeight) / Utils::getTextureHeight(ground);
 	}
 
-	int x = rectVec[0].toInt() * scaleX;
-	int y = rectVec[1].toInt() * scaleY;
+	int x = PyUtils::getDouble(rectObj[0], PyUtils::isFloat(rectObj[0])) * scaleX;
+	int y = PyUtils::getDouble(rectObj[1], PyUtils::isFloat(rectObj[1])) * scaleY;
 	setPos(x, y);
 
-	int w = rectVec[2].toInt() * scaleX;
-	int h = rectVec[3].toInt() * scaleY;
+	int w = PyUtils::getDouble(rectObj[2], PyUtils::isFloat(rectObj[2])) * scaleX;
+	int h = PyUtils::getDouble(rectObj[3], PyUtils::isFloat(rectObj[3])) * scaleY;
 	setSize(w, h);
 
 	if (btnRect.mouseOvered) {
@@ -124,12 +133,9 @@ void ScreenHotspot::calculateProps() {
 			if (hoverSound.pyExpr) {
 				Music::play("button_hover " + hoverSound.pyExpr, getFileName(), hoverSound.numLine);
 			}else if (hoverSound.styleName) {
-				const String sound = PyUtils::exec(this->getFileName(), this->getNumLine(),
-									  "style." + hoverSound.styleName + ".hover_sound",
-									  true);
+				const std::string sound = PyUtils::getStr(Style::getProp(hoverSound.styleName, "hover_sound"));
 				if (sound != "None") {
-					Music::play("button_hover '" + sound + "'",
-								this->getFileName(), this->getNumLine());
+					Music::play("button_hover '" + sound + "'", getFileName(), getNumLine());
 				}
 			}
 
@@ -137,14 +143,14 @@ void ScreenHotspot::calculateProps() {
 			if (hovered.pyExpr) {
 				PyUtils::exec(getFileName(), hovered.numLine, "exec_funcs(" + hovered.pyExpr + ")");
 			}else if (hovered.styleName) {
-				PyUtils::exec(this->getFileName(), this->getNumLine(),
+				PyUtils::exec(getFileName(), getNumLine(),
 							  "exec_funcs(style." + hovered.styleName + ".hovered)");
 			}
 		}
 
 		ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
 		if (!imagemap) {
-			Utils::outMsg("ScreenHotspot::update", "Тип родителя должен быть ScreenImagemap");
+			Utils::outMsg("ScreenHotspot::calculateProps", "Тип родителя должен быть ScreenImagemap");
 			return;
 		}
 		texture = imagemap->hover;
@@ -154,7 +160,7 @@ void ScreenHotspot::calculateProps() {
 			if (unhovered.pyExpr) {
 				PyUtils::exec(getFileName(), unhovered.numLine, "exec_funcs(" + unhovered.pyExpr + ")");
 			}else if (unhovered.styleName) {
-				PyUtils::exec(this->getFileName(), this->getNumLine(),
+				PyUtils::exec(getFileName(), getNumLine(),
 							  "exec_funcs(style." + unhovered.styleName + ".unhovered)");
 			}
 		}
@@ -180,5 +186,5 @@ void ScreenHotspot::draw() const {
 	Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(texture, intAlpha, &from, &to, globalRotate, &center);
+	pushToRender(texture, globalRotate, intAlpha, &from, &to, &center);
 }

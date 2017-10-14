@@ -116,11 +116,24 @@ void Screen::updateScreenProps() {
 
 	if (propWasChanged[ScreenProp::MODAL]) {
 		propWasChanged[ScreenProp::MODAL] = false;
-		_isModal = propValues[ScreenProp::MODAL] == "True";
+
+		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
+		_isModal = py::extract<bool>(propValues[ScreenProp::MODAL]);
 	}
 	if (propWasChanged[ScreenProp::ZORDER]) {
 		propWasChanged[ScreenProp::ZORDER] = false;
-		_zOrder = propValues[ScreenProp::ZORDER].toDouble();
+
+		py::object &zOrderObj = propValues[ScreenProp::ZORDER];
+		bool isInt = PyUtils::isInt(zOrderObj);
+		bool isFloat = !isInt && PyUtils::isFloat(zOrderObj);
+
+		if (isInt || isFloat) {
+			_zOrder = PyUtils::getDouble(zOrderObj, isFloat);
+		}else {
+			_zOrder = 0;
+			Utils::outMsg("Screen::updateScreenProps",
+						  "zorder is not a number (" + PyUtils::getStr(zOrderObj) + ")\n" + node->getPlace());
+		}
 	}
 }
 

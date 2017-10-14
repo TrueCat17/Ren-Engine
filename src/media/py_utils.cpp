@@ -21,7 +21,13 @@
 
 
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
+
+const String PyUtils::True = "True";
+const String PyUtils::False = "False";
+const String PyUtils::None = "None";
+
 std::mutex PyUtils::pyExecMutex;
+
 
 PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine, bool lock) {
 	std::tuple<const String&, const String&, int> pyCode(code, fileName, numLine);
@@ -144,7 +150,7 @@ void PyUtils::errorProcessing(const String &code) {
 	std::string excValue = "None";
 	if (pvalue) {
 		py::handle<> hvalue(py::allow_null(pvalue));
-		excValue = py::extract<std::string>(py::str(hvalue));
+		excValue = py::extract<const std::string>(py::str(hvalue));
 	}
 
 	std::string traceback = "None";
@@ -155,7 +161,7 @@ void PyUtils::errorProcessing(const String &code) {
 
 			String code = "traceback_str = get_traceback(traceback)";
 			py::exec(code.c_str(), GV::pyUtils->pythonGlobal);
-			traceback = py::extract<std::string>(GV::pyUtils->pythonGlobal["traceback_str"]);
+			traceback = py::extract<const std::string>(GV::pyUtils->pythonGlobal["traceback_str"]);
 		} catch (py::error_already_set) {
 			traceback = "Error on get traceback\n";
 		}
@@ -174,7 +180,6 @@ void PyUtils::errorProcessing(const String &code) {
 }
 
 bool PyUtils::isConstExpr(const String &code) {
-	static const String True = "True", False = "False", None = "None";
 	if (code.isNumber() || code.isSimpleString() ||
 		code == True || code == False || code == None)
 	{
@@ -198,7 +203,6 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 	if (code.isSimpleString()) {
 		return code.substr(1, code.size() - 2);
 	}
-	static const String True = "True", False = "False", None = "None";
 	if (code == True || code == False || code == None) {
 		return code;
 	}
@@ -245,6 +249,70 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 				py::object resObj = GV::pyUtils->pythonGlobal["res"];
 				const std::string resStr = py::extract<const std::string>(resObj);
 				res = resStr;
+				if (isConst) {
+					constExprs[code] = res;
+				}
+			}
+		}else {
+			std::cout << "Python Compile Error:\n";
+			throw py::error_already_set();
+		}
+	}catch (py::error_already_set) {
+		errorProcessing(code);
+	}catch (std::exception &e) {
+		std::cout << "std::exception: " << e.what() << '\n';
+		std::cout << "on python code:\n" << code << '\n';
+	}catch (...) {
+		std::cout << "Python Unknown Error\n";
+		std::cout << "Code:\n" << code << '\n';
+	}
+
+	return res;
+}
+
+py::object PyUtils::execRetObj(const String &fileName, size_t numLine, const String &code, bool retRes) {
+	py::object res;
+	if (!code) return res;
+
+	static std::map<String, py::object> constExprs;
+	bool isConst = true;
+	if (retRes) {
+		if (!code.isNumber() && !code.isSimpleString() && code != True && code != False && code != None) {
+			for (char c : code) {
+				if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+					isConst = false;
+					break;
+				}
+			}
+		}
+		if (isConst) {
+			auto i = constExprs.find(code);
+			if (i != constExprs.end()) {
+				return i->second;
+			}
+		}
+	}else {
+		isConst = false;
+	}
+
+
+	std::lock_guard<std::mutex> g(pyExecMutex);
+
+	try {
+		PyCodeObject *co;
+		if (!retRes) {
+			co = getCompileObject(code, fileName, numLine);
+		}else {
+			co = getCompileObject("res = " + code, fileName, numLine);
+		}
+
+		if (co) {
+			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
+				throw py::error_already_set();
+			}
+
+			if (retRes) {
+				res = GV::pyUtils->pythonGlobal["res"];
 				if (isConst) {
 					constExprs[code] = res;
 				}
