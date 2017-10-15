@@ -7,6 +7,7 @@ HEADERS += \
 	config.h \
 	gv.h \
 	logger.h \
+	renderer.h \
 	\
 	gui/gui.h \
 	gui/display_object.h \
@@ -54,6 +55,7 @@ SOURCES += \
 	config.cpp \
 	gv.cpp \
 	logger.cpp \
+	renderer.cpp \
 	\
 	gui/gui.cpp \
 	gui/display_object.cpp \
@@ -96,7 +98,7 @@ SOURCES += \
 	utils/string.cpp \
 	utils/utils.cpp
 
-LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf \
+LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lGL \
 		-lavformat -lavcodec -lavutil -lswresample \
 		-pthread \
 		-lboost_system -lboost_filesystem \

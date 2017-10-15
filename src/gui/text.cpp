@@ -1,6 +1,6 @@
 #include "text.h"
 
-#include "gv.h"
+#include "renderer.h"
 
 #include "group.h"
 
@@ -196,7 +196,7 @@ void Text::addText() {
 	}
 
 	if (charOutNum == 0) {
-		GV::renderMutex.lock();
+		Renderer::renderMutex.lock();
 		SDL_Texture *texture = SDL_CreateTexture(GV::mainRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, lineRect.w, lineRect.h);
 
 		if (texture) {
@@ -211,7 +211,7 @@ void Text::addText() {
 		}else {
 			Utils::outMsg("SDL_CreateTexture", SDL_GetError());
 		}
-		GV::renderMutex.unlock();
+		Renderer::renderMutex.unlock();
 
 		TexturePtr texturePtr(texture, Utils::DestroyTexture);
 		lineTextures.push_back(texturePtr);
@@ -389,7 +389,7 @@ void Text::addChars(String c, int color) {
 	}
 
 
-	std::lock_guard<std::mutex> g(GV::renderMutex);
+	std::lock_guard<std::mutex> g(Renderer::renderMutex);
 
 	SDL_Texture *textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
 	SDL_FreeSurface(surfaceText);

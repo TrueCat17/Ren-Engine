@@ -8,6 +8,7 @@
 #include "config.h"
 #include "gv.h"
 #include "logger.h"
+#include "renderer.h"
 
 #include "gui/gui.h"
 #include "gui/screen/screen.h"
@@ -296,17 +297,17 @@ void Game::save() {
 
 		GUI::update();
 
-		std::lock_guard<std::mutex> g(GV::renderMutex);
-		std::lock_guard<std::mutex> g2(GV::toRenderMutex);
+		std::lock_guard<std::mutex> g(Renderer::renderMutex);
+		std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
 
-		GV::toRender.clear();
+		Renderer::toRender.clear();
 		if (GV::screens) {
 			GV::screens->draw();
 		}
 
 		SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
 		SDL_RenderClear(GV::mainRenderer);
-		for (const RenderStruct &rs : GV::toRender) {
+		for (const RenderStruct &rs : Renderer::toRender) {
 			if (!GV::inGame || GV::exit) break;
 
 			if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
@@ -324,7 +325,7 @@ void Game::save() {
 			}
 		}
 		//Важно! SDL_RenderPresent не нужен!
-		GV::toRender.clear();
+		Renderer::toRender.clear();
 
 
 		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");

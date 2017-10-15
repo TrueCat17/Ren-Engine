@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "gv.h"
+#include "renderer.h"
 
 #include "group.h"
 
@@ -117,7 +117,7 @@ void DisplayObject::pushToRender(const TexturePtr &texture, float angle, Uint8 a
 	static const SDL_Rect emptyRect = {0, 0, 0, 0};
 	static const SDL_Point emptyPoint = {0, 0};
 
-	GV::toRender.push_back({
+	Renderer::toRender.push_back({
 		texture, angle, alpha,
 		srcRect == nullptr, dstRect == nullptr, center == nullptr,
 

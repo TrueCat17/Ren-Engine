@@ -61,16 +61,13 @@ public:
 
 	static SDL_Window *mainWindow;
 	static SDL_Renderer *mainRenderer;
+	static bool isOpenGL;
 
 	static const Uint8 *keyBoardState;
 
 	static Group *screens;
 
 	static std::mutex updateMutex;
-	static std::mutex renderMutex;
-
-	static std::mutex toRenderMutex;
-	static std::vector<RenderStruct> toRender;
 
 	static Node *mainExecNode;
 };

@@ -14,15 +14,12 @@ PyUtils *GV::pyUtils = nullptr;
 
 SDL_Window *GV::mainWindow;
 SDL_Renderer *GV::mainRenderer;
+bool GV::isOpenGL = false;
 
 const Uint8 *GV::keyBoardState = nullptr;
 
 Group *GV::screens = nullptr;
 
 std::mutex GV::updateMutex;
-std::mutex GV::renderMutex;
-
-std::mutex GV::toRenderMutex;
-std::vector<RenderStruct> GV::toRender;
 
 Node *GV::mainExecNode = nullptr;

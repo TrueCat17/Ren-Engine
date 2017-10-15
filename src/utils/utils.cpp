@@ -10,6 +10,7 @@
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
+#include "renderer.h"
 
 #include "gui/display_object.h"
 
@@ -324,7 +325,7 @@ TexturePtr Utils::getTexture(const String &path) {
 	if (surface) {
 		TexturePtr texture;
 		{
-			std::lock_guard<std::mutex> g(GV::renderMutex);
+			std::lock_guard<std::mutex> g(Renderer::renderMutex);
 			texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), Utils::DestroyTexture);
 		}
 
@@ -344,7 +345,7 @@ TexturePtr Utils::getTexture(const String &path) {
 	return nullptr;
 }
 void Utils::DestroyTexture(SDL_Texture *texture) {
-	std::lock_guard<std::mutex> g(GV::renderMutex);
+	std::lock_guard<std::mutex> g(Renderer::renderMutex);
 	SDL_DestroyTexture(texture);
 }
 

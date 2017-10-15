@@ -10,6 +10,7 @@
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
+#include "renderer.h"
 
 #include "gui/gui.h"
 #include "gui/display_object.h"
@@ -88,8 +89,8 @@ void changeWindowSize(bool maximized) {
 			}
 
 			if (x + w != startW || y + h != startH) {
-				std::lock_guard<std::mutex> g1(GV::toRenderMutex);
-				std::lock_guard<std::mutex> g2(GV::renderMutex);
+				std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+				std::lock_guard<std::mutex> g2(Renderer::renderMutex);
 				SDL_SetWindowSize(GV::mainWindow, x + w, y + h);
 			}
 
@@ -175,23 +176,25 @@ bool init() {
 	}
 
 
+	int renderDriver = -1;
 	if (Config::get("software_renderer") == "True") {
 		flags = SDL_RENDERER_SOFTWARE;
 	}else {
 		flags = SDL_RENDERER_ACCELERATED;
-	}
-	int renderDriver = -1;
-	int countRenderDrivers = SDL_GetNumRenderDrivers();
-	for (int i = 0; i < countRenderDrivers; ++i) {
-		SDL_RendererInfo info;
-		SDL_GetRenderDriverInfo(i, &info);
-		if (String(info.name) == "opengl") {
-			renderDriver = i;
-			break;
+
+		int countRenderDrivers = SDL_GetNumRenderDrivers();
+		for (int i = 0; i < countRenderDrivers; ++i) {
+			SDL_RendererInfo info;
+			SDL_GetRenderDriverInfo(i, &info);
+			if (String(info.name) == "opengl") {
+				renderDriver = i;
+				GV::isOpenGL = true;
+				break;
+			}
 		}
-	}
-	if (renderDriver == -1) {
-		Utils::outMsg("init", "OpenGL driver not found");
+		if (renderDriver == -1) {
+			Utils::outMsg("init", "OpenGL driver not found");
+		}
 	}
 	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
 	if (!GV::mainRenderer) {
@@ -202,100 +205,9 @@ bool init() {
 	return false;
 }
 
-bool needToRender = false;
-bool needToRedraw = false;
-void renderThread() {
-	std::vector<RenderStruct> toRender;
-	std::vector<RenderStruct> prevToRender;
-
-	auto changedToRender = [&]() -> bool {
-		if (prevToRender.size() != toRender.size()) return true;
-		for (size_t i = 0; i < toRender.size(); ++i) {
-			if (prevToRender[i] != toRender[i]) return true;
-		}
-		return false;
-	};
-
-	while (!GV::exit) {
-		if (!needToRender) {
-			Utils::sleep(1, false);
-		}else {
-			{
-				std::lock_guard<std::mutex> trg(GV::toRenderMutex);
-				toRender.clear();
-				GV::toRender.swap(toRender);
-			}
-			if (!needToRedraw && !changedToRender()) {
-				needToRender = false;
-				continue;
-			}
-
-			/* Рендер идёт в отдельном потоке, а обновление объектов - в основном
-			 * Но при обновлении иногда используется рендер, поэтому
-			 * чтобы не ждать окончания рендера, он разбит на части,
-			 * и нужно ждать лишь завершения текущей части
-			 */
-
-			const size_t COUNT_IN_PART = 50;
-			size_t len = toRender.size() / COUNT_IN_PART + 1;
-
-			//Part 0
-			{
-				std::lock_guard<std::mutex> g(GV::renderMutex);
-
-				SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
-				SDL_RenderClear(GV::mainRenderer);
-			}
-
-			//Parts 1..L
-			for (size_t i = 0; i < len; ++i) {
-				if (!GV::inGame || GV::exit) {
-					break;
-				}
-
-				std::this_thread::sleep_for(std::chrono::microseconds(10));
-				std::lock_guard<std::mutex> g(GV::renderMutex);
-				if (!GV::inGame || GV::exit) {
-					break;
-				}
-
-				for (size_t j = i * COUNT_IN_PART;
-					 j < (i + 1) * COUNT_IN_PART && j < toRender.size();
-					 ++j)
-				{
-					const RenderStruct &rs = toRender[j];
-
-					if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
-						Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
-					}
-
-					if (SDL_RenderCopyEx(GV::mainRenderer, rs.texture.get(),
-										 rs.srcRectIsNull ? nullptr : &rs.srcRect,
-										 rs.dstRectIsNull ? nullptr : &rs.dstRect,
-										 rs.angle,
-										 rs.centerIsNull ? nullptr : &rs.center,
-										 SDL_FLIP_NONE))
-					{
-						Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
-					}
-				}
-			}
-
-			//Part L+1
-			{
-				std::lock_guard<std::mutex> g(GV::renderMutex);
-				SDL_RenderPresent(GV::mainRenderer);
-			}
-
-			needToRender = false;
-			needToRedraw = false;
-			prevToRender.swap(toRender);
-		}
-	}
-}
 
 void loop() {
-	std::thread(renderThread).detach();
+	std::thread(Renderer::renderThreadFunc).detach();
 
 	bool maximazed = false;
 	bool mouseOut = false;
@@ -328,7 +240,7 @@ void loop() {
 			}
 
 			if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-				needToRedraw = true;
+				Renderer::needToRedraw = true;
 			}else
 			if (event.window.event == SDL_WINDOWEVENT_ENTER) {
 				mouseOut = false;
@@ -425,12 +337,15 @@ void loop() {
 		GUI::update();
 
 		{
-			std::lock_guard<std::mutex> g(GV::toRenderMutex);
-			GV::toRender.clear();
+			while (Renderer::needToRender) {
+				Utils::sleep(1);
+			}
+			std::lock_guard<std::mutex> g(Renderer::toRenderMutex);
+			Renderer::toRender.clear();
 			if (GV::screens) {
 				GV::screens->draw();
 			}
-			needToRender = true;
+			Renderer::needToRender = true;
 		}
 
 		Config::save();
