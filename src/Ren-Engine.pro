@@ -14,6 +14,8 @@ HEADERS += \
 	gui/group.h \
 	gui/text.h \
 	\
+	gui/screen/screen_prop.h \
+	\
 	gui/screen/screen_break.h \
 	gui/screen/screen_child.h \
 	gui/screen/screen_container.h \
@@ -61,6 +63,8 @@ SOURCES += \
 	gui/display_object.cpp \
 	gui/group.cpp \
 	gui/text.cpp \
+	\
+	gui/screen/screen_prop.cpp \
 	\
 	gui/screen/screen_break.cpp \
 	gui/screen/screen_child.cpp \

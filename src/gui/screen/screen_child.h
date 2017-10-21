@@ -3,60 +3,11 @@
 
 #include "../group.h"
 
+#include  "screen_prop.h"
+
 #include "parser/node.h"
 
-
 class Screen;
-
-
-enum ScreenProp {
-	//common
-	X_POS,
-	Y_POS,
-	X_ANCHOR,
-	Y_ANCHOR,
-	X_ALIGN,
-	Y_ALIGN,
-	X_SIZE,
-	Y_SIZE,
-	CROP,
-	ROTATE,
-	ALPHA,
-
-	//image, buttons, imagemap
-	IMAGE_PATH,
-	GROUND,
-	HOVER,
-
-	//hotspot
-	RECT,
-
-	//buttons
-	MOUSE,
-
-	//screen, vbox, hbox
-	SPACING,
-	MODAL,
-	ZORDER,
-
-	//key
-	KEY,
-	DELAY,
-	FIRST_DELAY,
-
-	//text
-	TEXT,
-	FONT,
-	TEXT_SIZE,
-	TEXT_ALIGN,
-	TEXT_VALIGN,
-	COLOR,
-
-
-	//not use, most be ALWAYS last
-	LAST_POINT
-};
-const size_t COUNT_PROPS = ScreenProp::LAST_POINT;
 
 
 class ScreenChild: public Group {
@@ -66,8 +17,6 @@ private:
 
 protected:
 	static std::vector<ScreenChild*> screenObjects;
-
-	static std::vector<String> propNames;
 
 
 	const Screen *screen = nullptr;
@@ -111,7 +60,6 @@ protected:
 
 
 public:
-	static void setPropNames();
 	static void disableAll();
 	static const std::vector<ScreenChild*> getScreenObjects() { return screenObjects; }
 

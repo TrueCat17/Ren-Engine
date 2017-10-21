@@ -115,9 +115,9 @@ void ScreenTextButton::updateTexture() {
 		if (newHover) {
 			hover = newHover;
 		}else
-			if (ground != newGround) {
-				hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor(r'" + newGround + "', im.matrix.contrast(1.5))", true);
-			}
+		if (ground != newGround) {
+			hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor(r'" + newGround + "', im.matrix.contrast(1.5))", true);
+		}
 		ground = newGround;
 
 		const String &path = !btnRect.mouseOvered ? ground : hover;

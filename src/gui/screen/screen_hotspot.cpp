@@ -51,7 +51,7 @@ ScreenHotspot::ScreenHotspot(Node *node):
 
 	clearProps();
 	needUpdateFields = false;
-	setProp(ScreenProp::RECT, NodeProp::initPyExpr(rectStr, node->getNumLine()));
+	setProp(ScreenProp::RECTANGLE, NodeProp::initPyExpr(rectStr, node->getNumLine()));
 	setProp(ScreenProp::MOUSE, node->getPropCode("mouse"));
 
 	preparationToUpdateCalcProps();
@@ -60,31 +60,35 @@ ScreenHotspot::ScreenHotspot(Node *node):
 bool ScreenHotspot::checkAlpha(int x, int y) const {
 	if (!parent) return false;
 
-	x = (getGlobalX() + x) / scaleX;
-	y = (getGlobalY() + y) / scaleY;
+	x = (getX() + x) / scaleX;
+	y = (getY() + y) / scaleY;
 
 	if (x < getX() || x >= getX() + getWidth() || y < getY() || y >= getY() + getHeight()) return false;
 
 
-	TexturePtr ground = parent->texture;
-	Uint32 groundPixel = Utils::getPixel(ground, parent->getDrawRect(), parent->getCropRect());
-
 	ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
 	if (!imagemap) {
 		Utils::outMsg("ScreenHotspot::checkAlpha", "Тип родителя должен быть ScreenImagemap");
-		return true;
+		return false;
 	}
-	TexturePtr hover = imagemap->hover;
-	Uint32 hoverPixel = Utils::getPixel(hover, parent->getDrawRect(), parent->getCropRect());
 
-	return groundPixel != hoverPixel;
+	SDL_Rect rect = {x, y, parent->getDrawRect().w, parent->getDrawRect().h};
+
+	TexturePtr hover = imagemap->hover;
+	Uint32 hoverPixel = Utils::getPixel(hover, rect, parent->getCropRect());
+
+	Uint8 alpha = hoverPixel & 0xFF;
+	return alpha > 0;
 }
 
 void ScreenHotspot::calculateProps() {
 	ScreenChild::calculateProps();
 
-	py::object &rectObj = propValues[ScreenProp::RECT];
+	py::object &rectObj = propValues[ScreenProp::RECTANGLE];
 	bool ok = true;
+	if (rectObj.is_none()) {
+		ok = false;
+	}else
 	if ((PyUtils::isTuple(rectObj) || PyUtils::isList(rectObj)) && py::len(rectObj) == 4) {
 		for (size_t i = 0; i < 4; ++i) {
 			if (!PyUtils::isInt(rectObj[i]) && !PyUtils::isFloat(rectObj[i])) {
@@ -97,7 +101,8 @@ void ScreenHotspot::calculateProps() {
 		enable = false;
 		Utils::outMsg("ScreenHotspot::updateProps", String() +
 					  "Ожидалось 4 параметра (x, y, width, height), получено \n" +
-					  PyUtils::getStr(rectObj));
+					  PyUtils::getStr(rectObj) + '\n' +
+					  node->getPlace());
 		return;
 	}
 

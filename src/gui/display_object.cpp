@@ -68,7 +68,7 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 	if (texture && (x >= 0 && y >= 0 && x < rect.w && y < rect.h)) {
 		SDL_Rect rect = {x, y, this->rect.w, this->rect.h};
 		Uint32 color = Utils::getPixel(texture, rect, crop);
-		Uint32 alpha = color & 0xFF;
+		Uint8 alpha = color & 0xFF;
 
 		return alpha > 0;
 	}

@@ -13,14 +13,6 @@
 
 std::vector<ScreenChild*> ScreenChild::screenObjects;
 
-std::vector<String> ScreenChild::propNames;
-void ScreenChild::setPropNames() {
-	propNames.clear();
-	for (size_t i = 0; i < COUNT_PROPS; ++i) {
-		propNames.push_back("p_" + String(i));
-	}
-}
-
 ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent):
 	screenParent(screenParent),
 	node(node)
@@ -104,7 +96,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 			}else {
 				propIndeces.push_back(ScreenProp(i));
 
-				const String &propName = propNames[i];
+				const String propName = screenPropNames[i];
 				codeForCalcProps += propName + " = " + propExpr + "\n";
 			}
 		}else if (nodeProp.styleName) {
@@ -166,8 +158,8 @@ void ScreenChild::calculateProps() {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 			try {
 				for (ScreenProp i : propIndeces) {
-					const String &propName = propNames[i];
-					py::object res = dict[propName.c_str()];
+					const char *propName = screenPropNames[i];
+					py::object res = dict[propName];
 
 					propWasChanged[i] = propWasChanged[i] || propValues[i] != res;
 					propValues[i] = res;

@@ -114,7 +114,6 @@ bool init() {
 	Utils::init();
 	Logger::init();
 	Config::init();
-	ScreenChild::setPropNames();
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());

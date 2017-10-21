@@ -31,7 +31,7 @@ public:
 	static py::object execRetObj(const String &fileName, size_t numLine, const String &code, bool retRes = false);
 	static void errorProcessing(const String &code);
 
-	static bool isInt(const py::object &obj) { return PyInt_CheckExact(obj.ptr()); }
+	static bool isInt(const py::object &obj) { return PyInt_CheckExact(obj.ptr()) || PyLong_CheckExact(obj.ptr()); }
 	static bool isFloat(const py::object &obj) { return PyFloat_CheckExact(obj.ptr()); }
 	static bool isTuple(const py::object &obj) { return PyTuple_CheckExact(obj.ptr()); }
 	static bool isList(const py::object &obj) { return PyList_CheckExact(obj.ptr()); }
@@ -40,10 +40,9 @@ public:
 		return py::extract<const std::string>(py::str(obj));
 	}
 	static double getDouble(const py::object &obj, bool isFloat) {
-		if (isFloat) {
-			return PyFloat_AsDouble(obj.ptr());
-		}
-		return PyInt_AsLong(obj.ptr());
+		if (isFloat)                     return PyFloat_AsDouble(obj.ptr());
+		if (PyInt_CheckExact(obj.ptr())) return PyInt_AsLong(obj.ptr());
+		return PyLong_AsDouble(obj.ptr());
 	}
 
 
