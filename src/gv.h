@@ -15,41 +15,13 @@ class Node;
 class PyUtils;
 
 
-typedef std::shared_ptr<SDL_Texture> TexturePtr;
-struct RenderStruct {
-	TexturePtr texture;
-	float angle;
-	Uint8 alpha;
-
-	bool srcRectIsNull;
-	bool dstRectIsNull;
-	bool centerIsNull;
-
-	SDL_Rect srcRect;
-	SDL_Rect dstRect;
-	SDL_Point center;
-
-	bool operator==(const RenderStruct &o) const {
-		return  texture == o.texture &&
-				angle == o.angle &&
-				alpha == o.alpha &&
-				srcRectIsNull == o.srcRectIsNull &&
-				dstRectIsNull == o.dstRectIsNull &&
-				centerIsNull == o.centerIsNull &&
-				srcRect.x == o.srcRect.x && srcRect.y == o.srcRect.y && srcRect.w == o.srcRect.w && srcRect.h == o.srcRect.h &&
-				dstRect.x == o.dstRect.x && dstRect.y == o.dstRect.y && dstRect.w == o.dstRect.w && dstRect.h == o.dstRect.h &&
-				center.x == o.center.x && center.y == o.center.y;
-	}
-	bool operator!=(const RenderStruct &o) const {
-		return !(*this == o);
-	}
-};
-
-
 class GV {
 public:
+	static SDL_DisplayMode displayMode;
+
 	static int width;
 	static int height;
+	static bool fullscreen;
 
 	static size_t numFor;
 	static size_t numScreenFor;

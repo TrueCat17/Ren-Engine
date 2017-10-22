@@ -97,11 +97,14 @@ PyUtils::PyUtils() {
 	pythonGlobal["_sin"] = py::make_function(Utils::getSin);
 	pythonGlobal["_cos"] = py::make_function(Utils::getCos);
 
-	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
 	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
+	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
 
 	pythonGlobal["get_stage_width"] = py::make_function(Game::getStageWidth);
 	pythonGlobal["get_stage_height"] = py::make_function(Game::getStageHeight);
+
+	pythonGlobal["set_stage_size"] = py::make_function(Game::setStageSize);
+	pythonGlobal["set_fullscreen"] = py::make_function(Game::setFullscreen);
 
 	pythonGlobal["load_image"] = py::make_function(Image::loadImage);
 	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);

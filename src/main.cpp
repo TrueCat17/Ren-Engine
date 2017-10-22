@@ -33,6 +33,8 @@ int startWindowWidth = 0;
 int startWindowHeight = 0;
 
 void changeWindowSize(bool maximized) {
+	if (GV::fullscreen) return;
+
 	int startW, startH;
 	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
 
@@ -137,8 +139,7 @@ bool init() {
 		return true;
 	}
 
-	SDL_DisplayMode displayMode;
-	if (SDL_GetDesktopDisplayMode(0, &displayMode)) {
+	if (SDL_GetDesktopDisplayMode(0, &GV::displayMode)) {
 		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
 		return true;
 	}
@@ -147,23 +148,35 @@ bool init() {
 	Music::init();
 	SyntaxChecker::init();
 
-	int x = Config::get("window_x").toInt();
-	int y = Config::get("window_y").toInt();
-	GV::width = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
-	GV::height = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
 
 	size_t fps = Config::get("max_fps").toInt();
 	Game::setMaxFps(fps);
 
-	String windowTitle = Config::get("window_title");
+
+	GV::fullscreen = Config::get("window_fullscreen") == "True";
+
+	int x = Config::get("window_x").toInt();
+	int y = Config::get("window_y").toInt();
 
 	int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+	if (GV::fullscreen) {
+		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		GV::width = GV::displayMode.w;
+		GV::height = GV::displayMode.h;
+	}else {
+		GV::width = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
+		GV::height = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
+	}
+
+	String windowTitle = Config::get("window_title");
 	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
 	if (!GV::mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;
 	}
-	changeWindowSize(false);
+	if (!GV::fullscreen) {
+		changeWindowSize(false);
+	}
 
 	String iconPath = Config::get("window_icon");
 	SDL_Surface *icon = nullptr;

@@ -51,6 +51,9 @@ public:
 	static int getFrameTime();
 	static int getFps();
 	static void setFps(int fps);
+
+	static void setStageSize(int width, int height);
+	static void setFullscreen(bool value);
 };
 
 #endif // GAME_H

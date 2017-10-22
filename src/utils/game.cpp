@@ -543,3 +543,30 @@ void Game::setFps(int fps) {
 	Game::fps = fps;
 	frameTime = 1000 / fps;
 }
+
+extern void changeWindowSize(bool maximized);//main.cpp
+void Game::setStageSize(int width, int height) {
+	SDL_SetWindowSize(GV::mainWindow, width, height);
+
+	bool t = GV::fullscreen;
+	GV::fullscreen = false;
+	changeWindowSize(false);
+	GV::fullscreen = t;
+}
+void Game::setFullscreen(bool value) {
+	if (value) {
+		GV::width = GV::displayMode.w;
+		GV::height = GV::displayMode.h;
+		SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+
+		GV::fullscreen = true;
+		Config::set("window_fullscreen", "True");
+	}else {
+		GV::width = Config::get("window_width").toInt();
+		GV::height = Config::get("window_height").toInt();
+		SDL_SetWindowFullscreen(GV::mainWindow, 0);
+
+		GV::fullscreen = false;
+		Config::set("window_fullscreen", "False");
+	}
+}

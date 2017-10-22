@@ -69,11 +69,12 @@ void Config::setDefault() {
 	set("window_y", "70");
 	set("window_width", "800");
 	set("window_height", "600");
+	set("window_fullscreen", "False");
 
 	set("mouse_usual", "None");
 	set("mouse_btn", "None");
 
-	set("scale_quality", "1");
+	set("scale_quality", "0");
 	set("software_renderer", "False");
 	set("max_fps", "30");
 

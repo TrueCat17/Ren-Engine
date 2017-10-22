@@ -1,8 +1,10 @@
 #include "gv.h"
 
+SDL_DisplayMode GV::displayMode;
 
 int GV::width;
 int GV::height;
+bool GV::fullscreen;
 
 size_t GV::numFor = 0;
 size_t GV::numScreenFor = 0;
