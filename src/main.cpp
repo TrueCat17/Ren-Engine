@@ -179,12 +179,11 @@ bool init() {
 	}
 
 	String iconPath = Config::get("window_icon");
-	SDL_Surface *icon = nullptr;
 	if (iconPath && iconPath != "None") {
-		icon = Utils::getSurface(Utils::ROOT + iconPath).get();
-	}
-	if (icon) {
-		SDL_SetWindowIcon(GV::mainWindow, icon);
+		SurfacePtr icon = Utils::getSurface(iconPath);
+		if (icon) {
+			SDL_SetWindowIcon(GV::mainWindow, icon.get());
+		}
 	}
 
 

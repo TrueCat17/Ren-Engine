@@ -106,6 +106,7 @@ LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lGL \
 		-lavformat -lavcodec -lavutil -lswresample \
 		-pthread \
 		-lboost_system -lboost_filesystem \
-		-lboost_python -lpython2.7
+		-lboost_python -lpython2.7 \
+		-ljemalloc
 
 INCLUDEPATH += /usr/include/python2.7/

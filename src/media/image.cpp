@@ -48,12 +48,12 @@ SurfacePtr Image::getImage(String desc) {
 	}
 
 
-	struct D {
+	struct Deleter {
 		const String &desc;
 
-		D(const String& desc): desc(desc) {}
+		Deleter(const String& desc): desc(desc) {}
 
-		~D() {
+		~Deleter() {
 			std::lock_guard<std::mutex> g(vecMutex);
 
 			for (size_t i = 0; i < processingImages.size(); ++i) {
@@ -63,8 +63,7 @@ SurfacePtr Image::getImage(String desc) {
 				}
 			}
 		}
-	};
-	D d(desc);
+	} deleter(desc);
 
 
 	const std::vector<String> args = Utils::getArgs(desc);

@@ -24,7 +24,7 @@ void Mouse::init() {
 	const String usualPath = Config::get("mouse_usual");
 	SurfacePtr usual = nullptr;
 	if (usualPath && usualPath != "None") {
-		usual = Utils::getSurface(Utils::ROOT + usualPath);
+		usual = Utils::getSurface(usualPath);
 	}
 	if (usual) {
 		usualModeCursor = SDL_CreateColorCursor(usual.get(), 0, 0);
@@ -35,7 +35,7 @@ void Mouse::init() {
 	const String btnPath = Config::get("mouse_btn");
 	SurfacePtr btn = nullptr;
 	if (btnPath && btnPath != "None") {
-		btn = Utils::getSurface(Utils::ROOT + btnPath);
+		btn = Utils::getSurface(btnPath);
 	}
 	if (btn) {
 		btnModeCursor = SDL_CreateColorCursor(btn.get(), 0, 0);
