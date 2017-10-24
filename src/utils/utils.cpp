@@ -99,6 +99,9 @@ void Utils::sleep(int ms, bool checkInGame) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 	}
 }
+void Utils::sleepMicroSeconds(int ms) {
+	std::this_thread::sleep_for(std::chrono::microseconds(ms));
+}
 
 void Utils::outMsg(std::string msg, const std::string& err) {
 	static std::map<std::string, bool> errors;
@@ -251,20 +254,18 @@ std::vector<String> Utils::getArgs(String args) {
 
 
 size_t Utils::getTextureWidth(const TexturePtr texture) {
-	const SurfacePtr surface = textureSurfaces[texture];
-	if (surface) {
-		return surface->w;
+	int res = 0;
+	if (SDL_QueryTexture(texture.get(), nullptr, nullptr, &res, nullptr)) {
+		Utils::outMsg("Utils::getTextureWidth, SDL_QueryTexture", SDL_GetError());
 	}
-	Utils::outMsg("Utils::getTextureWidth", "surface == nullptr");
-	return 0;
+	return res;
 }
 size_t Utils::getTextureHeight(const TexturePtr texture) {
-	const SurfacePtr surface = textureSurfaces[texture];
-	if (surface) {
-		return surface->h;
+	int res = 0;
+	if (SDL_QueryTexture(texture.get(), nullptr, nullptr, nullptr, &res)) {
+		Utils::outMsg("Utils::getTextureHeight, SDL_QueryTexture", SDL_GetError());
 	}
-	Utils::outMsg("Utils::getTextureHeight", "surface == nullptr");
-	return 0;
+	return res;
 }
 
 

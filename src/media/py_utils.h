@@ -26,9 +26,9 @@ public:
 
 
 	static PyCodeObject* getCompileObject(const String &code, const String &fileName, size_t numLine, bool lock = false);
-	static bool isConstExpr(const String &code);
+	static bool isConstExpr(const String &code, bool checkSimple = true);
 	static String exec(const String &fileName, size_t numLine, const String &code, bool retRes = false);
-	static py::object execRetObj(const String &fileName, size_t numLine, const String &code, bool retRes = false);
+	static py::object execRetObj(const String &fileName, size_t numLine, const String &code);
 	static void errorProcessing(const String &code);
 
 	static bool isInt(const py::object &obj) { return PyInt_CheckExact(obj.ptr()) || PyLong_CheckExact(obj.ptr()); }

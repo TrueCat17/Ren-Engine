@@ -92,7 +92,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 			if (i == ScreenProp::Y_ALIGN) usingYAlign = true;
 
 			if (PyUtils::isConstExpr(propExpr)) {
-				propValues[i] = PyUtils::execRetObj(getFileName(), nodeProp.numLine, propExpr, true);
+				propValues[i] = PyUtils::execRetObj(getFileName(), nodeProp.numLine, propExpr);
 			}else {
 				propIndeces.push_back(ScreenProp(i));
 
@@ -106,6 +106,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 
 	if (codeForCalcProps) {
 		co = PyUtils::getCompileObject(codeForCalcProps, getFileName(), getNumLine(), true);
+		PyErr_Clear();
 	}else {
 		co = nullptr;
 	}
@@ -177,7 +178,7 @@ void ScreenChild::calculateProps() {
 				const NodeProp &nodeProp = props[i];
 				const String &propExpr = nodeProp.pyExpr;
 
-				py::object res = PyUtils::execRetObj(getFileName(), nodeProp.numLine, propExpr, true);
+				py::object res = PyUtils::execRetObj(getFileName(), nodeProp.numLine, propExpr);
 				propWasChanged[i] = propWasChanged[i] || propValues[i] != res;
 				propValues[i] = res;
 			}
@@ -349,7 +350,7 @@ void ScreenChild::calculateProps() {
 
 		py::object &cropObj = propValues[ScreenProp::CROP];
 
-		if ((PyUtils::isTuple(cropObj) || PyUtils::isList(cropObj)) && py::len(cropObj) == 4) {
+		if ((PyUtils::isTuple(cropObj) || PyUtils::isList(cropObj)) && Py_SIZE(cropObj.ptr()) == 4) {
 			int textureWidth = Utils::getTextureWidth(texture);
 			int textureHeight = Utils::getTextureHeight(texture);
 

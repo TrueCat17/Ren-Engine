@@ -183,7 +183,7 @@ void Renderer::renderThreadFunc() {
 					break;
 				}
 
-				std::this_thread::sleep_for(std::chrono::microseconds(10));
+				Utils::sleepMicroSeconds(10);
 				std::lock_guard<std::mutex> g(Renderer::renderMutex);
 				if (!GV::inGame || GV::exit) {
 					break;

@@ -258,7 +258,7 @@ void Node::execute() {
 		size_t startText = 0;
 		String nick;
 
-		if (params[0] != '"') {//"имя" указано?
+		if (params[0] != '"' && params[0] != '\'') {//"имя" указано?
 			i = params.find(' ');
 			nick = params.substr(0, i);
 
@@ -287,10 +287,12 @@ void Node::execute() {
 
 	if (command == "$") {
 		PyUtils::exec(getFileName(), getNumLine(), params);
+		Utils::sleepMicroSeconds(50);
 	}else
 
 	if (command == "python" || command == "init python") {
 		PyUtils::exec(getFileName(), getNumLine() + 1, params);
+		Utils::sleepMicroSeconds(50);
 	}else
 
 	if (command == "pause") {

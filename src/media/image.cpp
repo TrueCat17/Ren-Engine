@@ -272,11 +272,11 @@ SurfacePtr Image::getImage(String desc) {
 					Uint8 oldR, oldG, oldB, oldA;
 					SDL_GetRGBA(imgPixel, imgPixelFormat, &oldR, &oldG, &oldB, &oldA);
 
-					Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + matrix[19] * 255, 0.0, 255.0);
+					Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + matrix[19] * 255, 0, 255);
 					if (newA) {
-						Uint8 newR = Utils::inBounds(matrix[0] * oldR + matrix[1] * oldG + matrix[2] * oldB + matrix[3] * oldA + matrix[4] * 255, 0.0, 255.0);
-						Uint8 newG = Utils::inBounds(matrix[5] * oldR + matrix[6] * oldG + matrix[7] * oldB + matrix[8] * oldA + matrix[9] * 255, 0.0, 255.0);
-						Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + matrix[14] * 255, 0.0, 255.0);
+						Uint8 newR = Utils::inBounds(matrix[0] * oldR + matrix[1] * oldG + matrix[2] * oldB + matrix[3] * oldA + matrix[4] * 255, 0, 255);
+						Uint8 newG = Utils::inBounds(matrix[5] * oldR + matrix[6] * oldG + matrix[7] * oldB + matrix[8] * oldA + matrix[9] * 255, 0, 255);
+						Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + matrix[14] * 255, 0, 255);
 						Uint32 resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
 						*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
 					}
@@ -343,17 +343,14 @@ SurfacePtr Image::getImage(String desc) {
 					Uint8 oldR, oldG, oldB, oldA;
 					SDL_GetRGBA(imgPixel, imgPixelFormat, &oldR, &oldG, &oldB, &oldA);
 
-					Uint32 resPixel;
-					Uint8 newA = oldA * colors[3] / 255;
+					Uint8 newA = Utils::inBounds(oldA * colors[3] / 255, 0, 255);
 					if (newA) {
-						Uint8 newR = oldR * colors[0] / 255;
-						Uint8 newG = oldG * colors[1] / 255;
-						Uint8 newB = oldB * colors[2] / 255;
-						resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
-					}else {
-						resPixel = 0;
+						Uint8 newR = Utils::inBounds(oldR * colors[0] / 255, 0, 255);
+						Uint8 newG = Utils::inBounds(oldG * colors[1] / 255, 0, 255);
+						Uint8 newB = Utils::inBounds(oldB * colors[2] / 255, 0, 255);
+						Uint32 resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
+						*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
 					}
-					*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
 				}
 			}
 
@@ -415,7 +412,7 @@ SurfacePtr Image::getImage(String desc) {
 		if (!renderer) {
 			error = "Image::getImage, Rotozoom, SDL_CreateSoftwareRenderer";
 		}else {
-			TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), Utils::DestroyTexture);
+			TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
 			if (!texture) {
 				error = "Image::getImage, Rotozoom, SDL_CreateTextureFromSurface";
 			}else {

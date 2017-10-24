@@ -182,16 +182,30 @@ void PyUtils::errorProcessing(const String &code) {
 	Logger::log(out);
 }
 
-bool PyUtils::isConstExpr(const String &code) {
-	if (code.isNumber() || code.isSimpleString() ||
-		code == True || code == False || code == None)
-	{
-		return true;
+bool PyUtils::isConstExpr(const String &code, bool checkSimple) {
+	if (checkSimple) {
+		if (code == True || code == False || code == None) {
+			return true;
+		}
 	}
 
+	bool q1 = false;
+	bool q2 = false;
+	char prev = 0;
 	for (char c : code) {
-		if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-			return false;
+		if (c == '\'' && !q2 && prev != '\\') q1 = !q1;
+		if (c == '"'  && !q1 && prev != '\\') q2 = !q2;
+
+		if (!q1 && !q2) {
+			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+				return false;
+			}
+		}
+
+		if (prev == '\\' && c == '\\') {
+			prev = 0;
+		}else {
+			prev = c;
 		}
 	}
 	return true;
@@ -212,24 +226,13 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 
 
 	static std::map<String, String> constExprs;
-	bool isConst = true;
-	if (retRes) {
-		for (char c : code) {
-			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-				isConst = false;
-				break;
-			}
+	bool isConst = retRes && isConstExpr(code, false);
+	if (isConst) {
+		auto i = constExprs.find(code);
+		if (i != constExprs.end()) {
+			return i->second;
 		}
-		if (isConst) {
-			auto i = constExprs.find(code);
-			if (i != constExprs.end()) {
-				return i->second;
-			}
-		}
-	}else {
-		isConst = false;
 	}
-
 
 	String res = "empty";
 
@@ -273,29 +276,18 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 	return res;
 }
 
-py::object PyUtils::execRetObj(const String &fileName, size_t numLine, const String &code, bool retRes) {
+py::object PyUtils::execRetObj(const String &fileName, size_t numLine, const String &code) {
 	py::object res;
 	if (!code) return res;
 
 	static std::map<String, py::object> constExprs;
-	bool isConst = true;
-	if (retRes) {
-		if (!code.isNumber() && !code.isSimpleString() && code != True && code != False && code != None) {
-			for (char c : code) {
-				if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-					isConst = false;
-					break;
-				}
-			}
+
+	bool isConst = isConstExpr(code);
+	if (isConst) {
+		auto i = constExprs.find(code);
+		if (i != constExprs.end()) {
+			return i->second;
 		}
-		if (isConst) {
-			auto i = constExprs.find(code);
-			if (i != constExprs.end()) {
-				return i->second;
-			}
-		}
-	}else {
-		isConst = false;
 	}
 
 
@@ -303,22 +295,16 @@ py::object PyUtils::execRetObj(const String &fileName, size_t numLine, const Str
 
 	try {
 		PyCodeObject *co;
-		if (!retRes) {
-			co = getCompileObject(code, fileName, numLine);
-		}else {
-			co = getCompileObject("res = " + code, fileName, numLine);
-		}
+		co = getCompileObject("res = " + code, fileName, numLine);
 
 		if (co) {
 			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
 				throw py::error_already_set();
 			}
 
-			if (retRes) {
-				res = GV::pyUtils->pythonGlobal["res"];
-				if (isConst) {
-					constExprs[code] = res;
-				}
+			res = GV::pyUtils->pythonGlobal["res"];
+			if (isConst) {
+				constExprs[code] = res;
 			}
 		}else {
 			std::cout << "Python Compile Error:\n";

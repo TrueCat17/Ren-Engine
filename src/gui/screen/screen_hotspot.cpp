@@ -89,7 +89,7 @@ void ScreenHotspot::calculateProps() {
 	if (rectObj.is_none()) {
 		ok = false;
 	}else
-	if ((PyUtils::isTuple(rectObj) || PyUtils::isList(rectObj)) && py::len(rectObj) == 4) {
+	if ((PyUtils::isTuple(rectObj) || PyUtils::isList(rectObj)) && Py_SIZE(rectObj.ptr()) == 4) {
 		for (size_t i = 0; i < 4; ++i) {
 			if (!PyUtils::isInt(rectObj[i]) && !PyUtils::isFloat(rectObj[i])) {
 				ok = false;

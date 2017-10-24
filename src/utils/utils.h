@@ -65,6 +65,7 @@ public:
 	static std::chrono::system_clock::time_point startTime;
 	static int getTimer();
 	static void sleep(int ms, bool checkInGame = true);
+	static void sleepMicroSeconds(int ms);
 
 	template<typename T, typename MIN, typename MAX>
 	static T inBounds(T value, MIN min, MAX max) { return (value < T(min)) ? min : (value > T(max)) ? max : value; }
