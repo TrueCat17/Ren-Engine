@@ -237,6 +237,7 @@ SurfacePtr Image::getImage(String desc) {
 			matrix[i] = matrixVec[i].toDouble();
 		}
 
+
 		Uint8 *imgPixels = (Uint8*)img->pixels;
 		SDL_PixelFormat *imgPixelFormat = img->format;
 		Uint32 rMask = imgPixelFormat->Rmask;
@@ -246,51 +247,63 @@ SurfacePtr Image::getImage(String desc) {
 
 		const int w = img->w;
 		const int h = img->h;
-		const int imgPitch = img->pitch;
-		const int imgBpp = img->format->BytesPerPixel;
 
 		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
 				  SDL_FreeSurface);
 
-		SDL_PixelFormat *resPixelFormat = res->format;
-		const int resPitch = res->pitch;
-		const int resBpp = res->format->BytesPerPixel;
-		Uint8 *resPixels = (Uint8*)res->pixels;
+		static const std::vector<double> identity = {
+			1, 0, 0, 0, 0,
+			0, 1, 0, 0, 0,
+			0, 0, 1, 0, 0,
+			0, 0, 0, 1, 0
+		};
+		if (matrix == identity) {
+			SDL_Rect rect = {0, 0, w, h};
+			SDL_BlitScaled(img.get(), &rect, res.get(), &rect);
+		}else {
+			const int imgPitch = img->pitch;
+			const int imgBpp = img->format->BytesPerPixel;
+
+			SDL_PixelFormat *resPixelFormat = res->format;
+			const int resPitch = res->pitch;
+			const int resBpp = res->format->BytesPerPixel;
+			Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-		const size_t countThreads = std::min(8, h);
-		size_t countFinished = 0;
-		std::mutex guard;
+			const size_t countThreads = std::min(8, h);
+			size_t countFinished = 0;
+			std::mutex guard;
 
-		auto f = [&](int num) {
-			int yStart = h * (double(num) / countThreads);
-			int yEnd = h * (double(num + 1) / countThreads);
-			for (int y = yStart; y < yEnd; ++y) {
-				for (int x = 0; x < w; ++x) {
-					Uint32 imgPixel = *(Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
-					Uint8 oldR, oldG, oldB, oldA;
-					SDL_GetRGBA(imgPixel, imgPixelFormat, &oldR, &oldG, &oldB, &oldA);
+			auto f = [&](int num) {
+				int yStart = h * (double(num) / countThreads);
+				int yEnd = h * (double(num + 1) / countThreads);
+				for (int y = yStart; y < yEnd; ++y) {
+					for (int x = 0; x < w; ++x) {
+						Uint32 imgPixel = *(Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
+						Uint8 oldR, oldG, oldB, oldA;
+						SDL_GetRGBA(imgPixel, imgPixelFormat, &oldR, &oldG, &oldB, &oldA);
 
-					Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + matrix[19] * 255, 0, 255);
-					if (newA) {
-						Uint8 newR = Utils::inBounds(matrix[0] * oldR + matrix[1] * oldG + matrix[2] * oldB + matrix[3] * oldA + matrix[4] * 255, 0, 255);
-						Uint8 newG = Utils::inBounds(matrix[5] * oldR + matrix[6] * oldG + matrix[7] * oldB + matrix[8] * oldA + matrix[9] * 255, 0, 255);
-						Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + matrix[14] * 255, 0, 255);
-						Uint32 resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
-						*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
+						Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + matrix[19] * 255, 0, 255);
+						if (newA) {
+							Uint8 newR = Utils::inBounds(matrix[0] * oldR + matrix[1] * oldG + matrix[2] * oldB + matrix[3] * oldA + matrix[4] * 255, 0, 255);
+							Uint8 newG = Utils::inBounds(matrix[5] * oldR + matrix[6] * oldG + matrix[7] * oldB + matrix[8] * oldA + matrix[9] * 255, 0, 255);
+							Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + matrix[14] * 255, 0, 255);
+							Uint32 resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
+							*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
+						}
 					}
 				}
+
+				std::lock_guard<std::mutex> g(guard);
+				++countFinished;
+			};
+
+			for (size_t i = 0; i < countThreads; ++i) {
+				std::thread(f, i).detach();
 			}
-
-			std::lock_guard<std::mutex> g(guard);
-			++countFinished;
-		};
-
-		for (size_t i = 0; i < countThreads; ++i) {
-			std::thread(f, i).detach();
-		}
-		while (countFinished != countThreads) {
-			Utils::sleep(1);
+			while (countFinished != countThreads) {
+				Utils::sleep(1);
+			}
 		}
 	}else
 
@@ -317,51 +330,58 @@ SurfacePtr Image::getImage(String desc) {
 
 		const int w = img->w;
 		const int h = img->h;
-		const int imgPitch = img->pitch;
-		const int imgBpp = img->format->BytesPerPixel;
 
 		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
 				  SDL_FreeSurface);
 
-		SDL_PixelFormat *resPixelFormat = res->format;
-		const int resPitch = res->pitch;
-		const int resBpp = res->format->BytesPerPixel;
-		Uint8 *resPixels = (Uint8*)res->pixels;
+		static const std::vector<double> constValues = {255, 255, 255, 255};
+		if (colors == constValues) {
+			SDL_Rect rect = {0, 0, w, h};
+			SDL_BlitScaled(img.get(), &rect, res.get(), &rect);
+		}else {
+			const int imgPitch = img->pitch;
+			const int imgBpp = img->format->BytesPerPixel;
+
+			SDL_PixelFormat *resPixelFormat = res->format;
+			const int resPitch = res->pitch;
+			const int resBpp = res->format->BytesPerPixel;
+			Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-		const size_t countThreads = std::min(8, h);
-		size_t countFinished = 0;
-		std::mutex guard;
+			const size_t countThreads = std::min(8, h);
+			size_t countFinished = 0;
+			std::mutex guard;
 
-		auto f = [&](int num) {
-			int yStart = h * (double(num) / countThreads);
-			int yEnd = h * (double(num + 1) / countThreads);
-			for (int y = yStart; y < yEnd; ++y) {
-				for (int x = 0; x < w; ++x) {
-					Uint32 imgPixel = *(Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
-					Uint8 oldR, oldG, oldB, oldA;
-					SDL_GetRGBA(imgPixel, imgPixelFormat, &oldR, &oldG, &oldB, &oldA);
+			auto f = [&](int num) {
+				int yStart = h * (double(num) / countThreads);
+				int yEnd = h * (double(num + 1) / countThreads);
+				for (int y = yStart; y < yEnd; ++y) {
+					for (int x = 0; x < w; ++x) {
+						Uint32 imgPixel = *(Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
+						Uint8 oldR, oldG, oldB, oldA;
+						SDL_GetRGBA(imgPixel, imgPixelFormat, &oldR, &oldG, &oldB, &oldA);
 
-					Uint8 newA = Utils::inBounds(oldA * colors[3] / 255, 0, 255);
-					if (newA) {
-						Uint8 newR = Utils::inBounds(oldR * colors[0] / 255, 0, 255);
-						Uint8 newG = Utils::inBounds(oldG * colors[1] / 255, 0, 255);
-						Uint8 newB = Utils::inBounds(oldB * colors[2] / 255, 0, 255);
-						Uint32 resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
-						*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
+						Uint8 newA = Utils::inBounds(oldA * colors[3] / 255, 0, 255);
+						if (newA) {
+							Uint8 newR = Utils::inBounds(oldR * colors[0] / 255, 0, 255);
+							Uint8 newG = Utils::inBounds(oldG * colors[1] / 255, 0, 255);
+							Uint8 newB = Utils::inBounds(oldB * colors[2] / 255, 0, 255);
+							Uint32 resPixel = SDL_MapRGBA(resPixelFormat, newR, newG, newB, newA);
+							*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
+						}
 					}
 				}
+
+				std::lock_guard<std::mutex> g(guard);
+				++countFinished;
+			};
+
+			for (size_t i = 0; i < countThreads; ++i) {
+				std::thread(f, i).detach();
 			}
-
-			std::lock_guard<std::mutex> g(guard);
-			++countFinished;
-		};
-
-		for (size_t i = 0; i < countThreads; ++i) {
-			std::thread(f, i).detach();
-		}
-		while (countFinished != countThreads) {
-			Utils::sleep(1);
+			while (countFinished != countThreads) {
+				Utils::sleep(1);
+			}
 		}
 	}else 
 		
