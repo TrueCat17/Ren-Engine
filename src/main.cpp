@@ -33,8 +33,6 @@ int startWindowWidth = 0;
 int startWindowHeight = 0;
 
 void changeWindowSize(bool maximized) {
-	if (GV::fullscreen) return;
-
 	int startW, startH;
 	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
 
@@ -301,6 +299,7 @@ void loop() {
 			}else
 			if (event.type == SDL_MOUSEBUTTONUP) {
 				mouseWasUp = true;
+				Mouse::setMouseDown(false);
 			}else
 
 			if (event.type == SDL_KEYDOWN) {

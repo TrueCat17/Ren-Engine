@@ -66,8 +66,6 @@ BtnRect::~BtnRect() {
 }
 
 void BtnRect::checkMouseCursor() {
-	Mouse::setMouseDown(false);
-
 	Mouse::setLocal(-1, -1);
 
 	int mouseX = Mouse::getX();

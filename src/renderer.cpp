@@ -159,6 +159,7 @@ void Renderer::renderThreadFunc() {
 			if (!needToRedraw && !changedToRender()) {
 				continue;
 			}
+			needToRedraw = false;
 
 			/* Рендер идёт в отдельном потоке, а обновление объектов - в основном
 			 * Но при обновлении иногда используется рендер, поэтому
@@ -224,7 +225,6 @@ void Renderer::renderThreadFunc() {
 				SDL_RenderPresent(GV::mainRenderer);
 			}
 
-			needToRedraw = false;
 			prevToRender.swap(toRender);
 		}
 	}

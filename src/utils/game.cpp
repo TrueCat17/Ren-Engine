@@ -546,27 +546,57 @@ void Game::setFps(int fps) {
 
 extern void changeWindowSize(bool maximized);//main.cpp
 void Game::setStageSize(int width, int height) {
-	SDL_SetWindowSize(GV::mainWindow, width, height);
+	setFullscreen(false);
 
-	bool t = GV::fullscreen;
-	GV::fullscreen = false;
+	{
+		std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+		std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+		SDL_RestoreWindow(GV::mainWindow);
+		SDL_SetWindowSize(GV::mainWindow, width, height);
+	}
+
+	int leftBorderSize, captionHeight;
+	SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+	int x = Config::get("window_x").toInt();
+	int y = Config::get("window_y").toInt();
+	SDL_SetWindowPosition(GV::mainWindow, x + leftBorderSize, y + captionHeight);
+
 	changeWindowSize(false);
-	GV::fullscreen = t;
+
+	Renderer::needToRedraw = true;
 }
 void Game::setFullscreen(bool value) {
 	if (value) {
-		GV::width = GV::displayMode.w;
-		GV::height = GV::displayMode.h;
-		SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-
 		GV::fullscreen = true;
 		Config::set("window_fullscreen", "True");
-	}else {
-		GV::width = Config::get("window_width").toInt();
-		GV::height = Config::get("window_height").toInt();
-		SDL_SetWindowFullscreen(GV::mainWindow, 0);
 
+		GV::width = GV::displayMode.w;
+		GV::height = GV::displayMode.h;
+
+		{
+			std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+			std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+			SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
+	}else {
 		GV::fullscreen = false;
 		Config::set("window_fullscreen", "False");
+
+		int leftBorderSize, captionHeight;
+		SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+		int x = Config::get("window_x").toInt();
+		int y = Config::get("window_y").toInt();
+		SDL_SetWindowPosition(GV::mainWindow, x + leftBorderSize, y + captionHeight);
+
+		GV::width = Config::get("window_width").toInt();
+		GV::height = Config::get("window_height").toInt();
+
+		{
+			std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+			std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+			SDL_SetWindowFullscreen(GV::mainWindow, 0);
+			SDL_SetWindowSize(GV::mainWindow, GV::width, GV::height);
+		}
 	}
+	Renderer::needToRedraw = true;
 }

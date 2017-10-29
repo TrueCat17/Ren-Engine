@@ -16,13 +16,11 @@ void Image::loadImage(const std::string &desc) {
 	std::thread(f, desc).detach();
 }
 
-
 SurfacePtr Image::getImage(String desc) {
 	desc = Utils::clear(desc);
 
 	SurfacePtr res = Utils::getThereIsSurfaceOrNull(desc);
 	if (res) return res;
-
 
 
 	static std::mutex vecMutex;
@@ -88,28 +86,35 @@ SurfacePtr Image::getImage(String desc) {
 		if (!img) return nullptr;
 
 		SDL_Rect imgRect = { 0, 0, img->w, img->h };
-
 		SDL_Rect resRect = { 0, 0, Utils::clear(args[2]).toInt(), Utils::clear(args[3]).toInt() };
-		res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
-									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
-				  SDL_FreeSurface);
 
-		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
+		if (imgRect.w == resRect.w && imgRect.h == resRect.h) {
+			res = img;
+		}else {
+			res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
+										   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
+					  SDL_FreeSurface);
+			SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
+		}
 	}else
 
 	if (command == "FactorScale") {
 		SurfacePtr img = getImage(args[1]);
 		if (!img) return nullptr;
 
-		SDL_Rect imgRect = { 0, 0, img->w, img->h };
 		double k = Utils::clear(args[2]).toDouble();
-		SDL_Rect resRect = { 0, 0, int(img->w * k), int(img->h * k) };
 
-		res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
-									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
-				  SDL_FreeSurface);
+		if (k == 1) {
+			res = img;
+		}else {
+			SDL_Rect imgRect = { 0, 0, img->w, img->h };
+			SDL_Rect resRect = { 0, 0, int(img->w * k), int(img->h * k) };
 
-		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
+			res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
+										   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
+					  SDL_FreeSurface);
+			SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
+		}
 	}else
 
 	if (command == "Crop") {
@@ -122,11 +127,16 @@ SurfacePtr Image::getImage(String desc) {
 		SDL_Rect imgRect = { rectVec[0].toInt(), rectVec[1].toInt(), rectVec[2].toInt(), rectVec[3].toInt() };
 		SDL_Rect resRect = { 0, 0, imgRect.w, imgRect.h };
 
-		res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
-									   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
-				  SDL_FreeSurface);
-
-		SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
+		if (!imgRect.x && !imgRect.y &&
+			imgRect.w == img->w && imgRect.h == img->h)
+		{
+			res = img;
+		}else {
+			res.reset(SDL_CreateRGBSurface(img->flags, resRect.w, resRect.h, 32,
+										   img->format->Rmask, img->format->Gmask, img->format->Bmask, img->format->Amask),
+					  SDL_FreeSurface);
+			SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
+		}
 	}else
 
 	if (command == "Composite") {
@@ -163,57 +173,61 @@ SurfacePtr Image::getImage(String desc) {
 		bool horizontal = Utils::clear(args[2]) == "True";
 		bool vertical = Utils::clear(args[3]) == "True";
 
-		Uint8 *imgPixels = (Uint8*)img->pixels;
-		SDL_PixelFormat *imgPixelFormat = img->format;
-		Uint32 rMask = imgPixelFormat->Rmask;
-		Uint32 gMask = imgPixelFormat->Gmask;
-		Uint32 bMask = imgPixelFormat->Bmask;
-		Uint32 aMask = imgPixelFormat->Amask;
+		if (!horizontal && !vertical) {
+			res = img;
+		}else {
+			Uint8 *imgPixels = (Uint8*)img->pixels;
+			SDL_PixelFormat *imgPixelFormat = img->format;
+			Uint32 rMask = imgPixelFormat->Rmask;
+			Uint32 gMask = imgPixelFormat->Gmask;
+			Uint32 bMask = imgPixelFormat->Bmask;
+			Uint32 aMask = imgPixelFormat->Amask;
 
-		const int w = img->w;
-		const int h = img->h;
-		const int imgPitch = img->pitch;
-		const int imgBpp = img->format->BytesPerPixel;
+			const int w = img->w;
+			const int h = img->h;
+			const int imgPitch = img->pitch;
+			const int imgBpp = img->format->BytesPerPixel;
 
-		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
-				  SDL_FreeSurface);
+			res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
+					  SDL_FreeSurface);
 
-		SDL_PixelFormat *resPixelFormat = res->format;
-		const int resPitch = res->pitch;
-		const int resBpp = res->format->BytesPerPixel;
-		Uint8 *resPixels = (Uint8*)res->pixels;
+			SDL_PixelFormat *resPixelFormat = res->format;
+			const int resPitch = res->pitch;
+			const int resBpp = res->format->BytesPerPixel;
+			Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-		size_t countThreads = std::min(8, h);
-		size_t countFinished = 0;
-		std::mutex guard;
+			size_t countThreads = std::min(8, h);
+			size_t countFinished = 0;
+			std::mutex guard;
 
-		auto f = [&](int num) {
-			int yStart = h * (double(num) / countThreads);
-			int yEnd = h * (double(num + 1) / countThreads);
-			for (int y = yStart; y < yEnd; ++y) {
-				for (int x = 0; x < w; ++x) {
-					int _y = vertical ? h - y - 1 : y;
-					int _x = horizontal ? w - x - 1 : x;
+			auto f = [&](int num) {
+				int yStart = h * (double(num) / countThreads);
+				int yEnd = h * (double(num + 1) / countThreads);
+				for (int y = yStart; y < yEnd; ++y) {
+					for (int x = 0; x < w; ++x) {
+						int _y = vertical ? h - y - 1 : y;
+						int _x = horizontal ? w - x - 1 : x;
 
-					Uint32 imgPixel = *(Uint32*)(imgPixels + _y * imgPitch + _x * imgBpp);
-					Uint8 r, g, b, a;
-					SDL_GetRGBA(imgPixel, imgPixelFormat, &r, &g, &b, &a);
+						Uint32 imgPixel = *(Uint32*)(imgPixels + _y * imgPitch + _x * imgBpp);
+						Uint8 r, g, b, a;
+						SDL_GetRGBA(imgPixel, imgPixelFormat, &r, &g, &b, &a);
 
-					Uint32 resPixel = SDL_MapRGBA(resPixelFormat, r, g, b, a);
-					*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
+						Uint32 resPixel = SDL_MapRGBA(resPixelFormat, r, g, b, a);
+						*(Uint32*)(resPixels + y * resPitch + x * resBpp) = resPixel;
+					}
 				}
+
+				std::lock_guard<std::mutex> g(guard);
+				++countFinished;
+			};
+
+			for (size_t i = 0; i < countThreads; ++i) {
+				std::thread(f, i).detach();
 			}
-
-			std::lock_guard<std::mutex> g(guard);
-			++countFinished;
-		};
-
-		for (size_t i = 0; i < countThreads; ++i) {
-			std::thread(f, i).detach();
-		}
-		while (countFinished != countThreads) {
-			Utils::sleep(1);
+			while (countFinished != countThreads) {
+				Utils::sleep(1);
+			}
 		}
 	}else
 
@@ -238,19 +252,6 @@ SurfacePtr Image::getImage(String desc) {
 		}
 
 
-		Uint8 *imgPixels = (Uint8*)img->pixels;
-		SDL_PixelFormat *imgPixelFormat = img->format;
-		Uint32 rMask = imgPixelFormat->Rmask;
-		Uint32 gMask = imgPixelFormat->Gmask;
-		Uint32 bMask = imgPixelFormat->Bmask;
-		Uint32 aMask = imgPixelFormat->Amask;
-
-		const int w = img->w;
-		const int h = img->h;
-
-		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
-				  SDL_FreeSurface);
-
 		static const std::vector<double> identity = {
 			1, 0, 0, 0, 0,
 			0, 1, 0, 0, 0,
@@ -258,11 +259,22 @@ SurfacePtr Image::getImage(String desc) {
 			0, 0, 0, 1, 0
 		};
 		if (matrix == identity) {
-			SDL_Rect rect = {0, 0, w, h};
-			SDL_BlitScaled(img.get(), &rect, res.get(), &rect);
+			res = img;
 		}else {
+			Uint8 *imgPixels = (Uint8*)img->pixels;
+			SDL_PixelFormat *imgPixelFormat = img->format;
+			Uint32 rMask = imgPixelFormat->Rmask;
+			Uint32 gMask = imgPixelFormat->Gmask;
+			Uint32 bMask = imgPixelFormat->Bmask;
+			Uint32 aMask = imgPixelFormat->Amask;
+
+			const int w = img->w;
+			const int h = img->h;
 			const int imgPitch = img->pitch;
 			const int imgBpp = img->format->BytesPerPixel;
+
+			res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
+					  SDL_FreeSurface);
 
 			SDL_PixelFormat *resPixelFormat = res->format;
 			const int resPitch = res->pitch;
@@ -321,26 +333,25 @@ SurfacePtr Image::getImage(String desc) {
 			colors[i] = colorsVec[i].toDouble();
 		}
 
-		Uint8 *imgPixels = (Uint8*)img->pixels;
-		SDL_PixelFormat *imgPixelFormat = img->format;
-		Uint32 rMask = imgPixelFormat->Rmask;
-		Uint32 gMask = imgPixelFormat->Gmask;
-		Uint32 bMask = imgPixelFormat->Bmask;
-		Uint32 aMask = imgPixelFormat->Amask;
-
-		const int w = img->w;
-		const int h = img->h;
-
-		res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
-				  SDL_FreeSurface);
 
 		static const std::vector<double> constValues = {255, 255, 255, 255};
 		if (colors == constValues) {
-			SDL_Rect rect = {0, 0, w, h};
-			SDL_BlitScaled(img.get(), &rect, res.get(), &rect);
+			res = img;
 		}else {
+			Uint8 *imgPixels = (Uint8*)img->pixels;
+			SDL_PixelFormat *imgPixelFormat = img->format;
+			Uint32 rMask = imgPixelFormat->Rmask;
+			Uint32 gMask = imgPixelFormat->Gmask;
+			Uint32 bMask = imgPixelFormat->Bmask;
+			Uint32 aMask = imgPixelFormat->Amask;
+
+			const int w = img->w;
+			const int h = img->h;
 			const int imgPitch = img->pitch;
 			const int imgBpp = img->format->BytesPerPixel;
+
+			res.reset(SDL_CreateRGBSurface(img->flags, w, h, 32, rMask, gMask, bMask, aMask),
+					  SDL_FreeSurface);
 
 			SDL_PixelFormat *resPixelFormat = res->format;
 			const int resPitch = res->pitch;
@@ -396,55 +407,60 @@ SurfacePtr Image::getImage(String desc) {
 			Utils::outMsg("Image::getImage, Rotozoom", "zoom не должен быть равен 0");
 			zoom = 1;
 		}
-		SDL_RendererFlip flip = SDL_FLIP_NONE;
-		if (zoom < 0) {
-			zoom = -zoom;
-			flip = SDL_RendererFlip(SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL);
-		}
 
-		SDL_PixelFormat *imgPixelFormat = img->format;
-		Uint32 rMask = imgPixelFormat->Rmask;
-		Uint32 gMask = imgPixelFormat->Gmask;
-		Uint32 bMask = imgPixelFormat->Bmask;
-		Uint32 aMask = imgPixelFormat->Amask;
-
-		int w = std::max(img->w * zoom, 1.0);
-		int h = std::max(img->h * zoom, 1.0);
-
-		double radians = angle * M_PI / 180;
-		double sinA = std::abs(std::sin(radians));
-		double cosA = std::abs(std::cos(radians));
-		int resW = w * cosA + h * sinA;
-		int resH = w * sinA + h * cosA;
-
-		SDL_Rect srcRect = {0, 0, img->w, img->h};
-		SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
-
-		res.reset(SDL_CreateRGBSurface(img->flags, resW, resH, 32, rMask, gMask, bMask, aMask),
-				  SDL_FreeSurface);
-
-
-		String error;
-
-		SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
-
-		if (!renderer) {
-			error = "Image::getImage, Rotozoom, SDL_CreateSoftwareRenderer";
+		if (zoom == 1 && angle == 0) {
+			res = img;
 		}else {
-			TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
-			if (!texture) {
-				error = "Image::getImage, Rotozoom, SDL_CreateTextureFromSurface";
-			}else {
-				if (SDL_RenderCopyEx(renderer, texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
-					error = "Image::getImage, Rotozoom, SDL_RenderCopyEx";
-				}
+			SDL_RendererFlip flip = SDL_FLIP_NONE;
+			if (zoom < 0) {
+				zoom = -zoom;
+				flip = SDL_RendererFlip(SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL);
 			}
 
-			SDL_DestroyRenderer(renderer);
-		}
-		if (error) {
-			Utils::outMsg(error, SDL_GetError());
-			res = nullptr;
+			SDL_PixelFormat *imgPixelFormat = img->format;
+			Uint32 rMask = imgPixelFormat->Rmask;
+			Uint32 gMask = imgPixelFormat->Gmask;
+			Uint32 bMask = imgPixelFormat->Bmask;
+			Uint32 aMask = imgPixelFormat->Amask;
+
+			int w = std::max(img->w * zoom, 1.0);
+			int h = std::max(img->h * zoom, 1.0);
+
+			double radians = angle * M_PI / 180;
+			double sinA = std::abs(std::sin(radians));
+			double cosA = std::abs(std::cos(radians));
+			int resW = w * cosA + h * sinA;
+			int resH = w * sinA + h * cosA;
+
+			SDL_Rect srcRect = {0, 0, img->w, img->h};
+			SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
+
+			res.reset(SDL_CreateRGBSurface(img->flags, resW, resH, 32, rMask, gMask, bMask, aMask),
+					  SDL_FreeSurface);
+
+
+			String error;
+
+			SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
+
+			if (!renderer) {
+				error = "Image::getImage, Rotozoom, SDL_CreateSoftwareRenderer";
+			}else {
+				TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
+				if (!texture) {
+					error = "Image::getImage, Rotozoom, SDL_CreateTextureFromSurface";
+				}else {
+					if (SDL_RenderCopyEx(renderer, texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
+						error = "Image::getImage, Rotozoom, SDL_RenderCopyEx";
+					}
+				}
+
+				SDL_DestroyRenderer(renderer);
+			}
+			if (error) {
+				Utils::outMsg(error, SDL_GetError());
+				res = nullptr;
+			}
 		}
 	}
 

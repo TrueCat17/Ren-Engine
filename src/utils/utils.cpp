@@ -30,7 +30,7 @@ std::map<String, TTF_Font*> Utils::fonts;
 std::map<String, String> Utils::images;
 std::map<String, Node*> Utils::declAts;
 
-std::vector<std::pair<String, TexturePtr>> Utils::textures;
+std::vector<std::pair<SurfacePtr, TexturePtr>> Utils::textures;
 std::map<TexturePtr, SurfacePtr> Utils::textureSurfaces;
 
 std::mutex Utils::surfaceMutex;
@@ -280,9 +280,8 @@ void Utils::trimTexturesCache(const SurfacePtr last) {
 	const size_t MAX_SIZE = Config::get("max_size_textures_cache").toInt() * (1 << 20);//в МБ
 
 	size_t cacheSize = last->w * last->h * 4;
-	for (const std::pair<String, TexturePtr> &p : textures) {
-		const TexturePtr &texture = p.second;
-		const SurfacePtr &surface = textureSurfaces[texture];
+	for (const std::pair<SurfacePtr, TexturePtr> &p : textures) {
+		const SurfacePtr &surface = p.first;
 		cacheSize += surface->w * surface->h * 4;
 	}
 
@@ -293,8 +292,10 @@ void Utils::trimTexturesCache(const SurfacePtr last) {
 		}
 		if (i == textures.size()) break;
 
-		const TexturePtr texture = textures[i].second;
-		const SurfacePtr surface = textureSurfaces[texture];
+		std::pair<SurfacePtr, TexturePtr> &p = textures[i];
+		const SurfacePtr &surface = p.first;
+		const TexturePtr &texture = p.second;
+
 		cacheSize -= surface->w * surface->h * 4;
 
 		textureSurfaces.erase(textureSurfaces.find(texture));
@@ -304,14 +305,17 @@ void Utils::trimTexturesCache(const SurfacePtr last) {
 
 TexturePtr Utils::getTexture(const String &path) {
 	if (!path) return nullptr;
+	SurfacePtr surface = Image::getImage(path);
+	if (!surface) return nullptr;
 
 	static std::mutex m;
 	std::lock_guard<std::mutex> g(m);
 
+	const int N = 20;
 	for (size_t i = textures.size() - 1; i != size_t(-1); --i) {
-		if (textures[i].first == path) {
-			if (i < textures.size() - 30) {
-				std::pair<String, TexturePtr> t = textures[i];
+		if (textures[i].first == surface) {
+			if (textures.size() > N && i < textures.size() - N) {
+				std::pair<SurfacePtr, TexturePtr> t = textures[i];
 
 				textures.erase(textures.begin() + i, textures.begin() + i + 1);
 				textures.push_back(t);
@@ -322,27 +326,21 @@ TexturePtr Utils::getTexture(const String &path) {
 		}
 	}
 
-	SurfacePtr surface = Image::getImage(path);
-	if (surface) {
-		TexturePtr texture;
-		{
-			std::lock_guard<std::mutex> g(Renderer::renderMutex);
-			texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), Utils::DestroyTexture);
-		}
-
-		if (texture) {
-			textureSurfaces[texture] = surface;
-
-			trimTexturesCache(surface);
-			textures.push_back(std::make_pair(path, texture));
-			return texture;
-		}
-
-		outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
-	}else {
-		outMsg("Utils::getTexture", "Не удалось обработать <" + path + ">");
+	TexturePtr texture;
+	{
+		std::lock_guard<std::mutex> g(Renderer::renderMutex);
+		texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), Utils::DestroyTexture);
 	}
 
+	if (texture) {
+		textureSurfaces[texture] = surface;
+
+		trimTexturesCache(surface);
+		textures.push_back(std::make_pair(surface, texture));
+		return texture;
+	}
+
+	outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
 	return nullptr;
 }
 void Utils::DestroyTexture(SDL_Texture *texture) {
@@ -354,8 +352,8 @@ void Utils::trimSurfacesCache(const SurfacePtr last) {
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
 	auto usedSomeTexture = [&](SurfacePtr s) -> bool {
-		for (const std::pair<TexturePtr, SurfacePtr> &i : textureSurfaces) {
-			if (i.second == s) {
+		for (const std::pair<SurfacePtr, TexturePtr> &i : textures) {
+			if (i.first == s) {
 				return true;
 			}
 		}
@@ -363,30 +361,48 @@ void Utils::trimSurfacesCache(const SurfacePtr last) {
 	};
 
 	size_t cacheSize = last->w * last->h * 4;
+
+	std::map<SurfacePtr, size_t> countSurfaces;
 	for (const std::pair<String, SurfacePtr> &p : surfaces) {
 		const SurfacePtr &surface = p.second;
-		cacheSize += surface->w * surface->h * 4;
+		if (countSurfaces.find(surface) == countSurfaces.end()) {
+			cacheSize += surface->w * surface->h * 4;
+		}
+		countSurfaces[surface] += 1;
 	}
 
+	std::vector<SurfacePtr> toDelete;
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		SurfacePtr surface = nullptr;
+		SurfacePtr surface;
 		while (i < surfaces.size() && usedSomeTexture(surface = surfaces[i].second)) {
 			++i;
 		}
 		if (i == surfaces.size()) break;
 
-		cacheSize -= surface->w * surface->h * 4;
+		if (!(countSurfaces[surface] -= 1)) {
+			cacheSize -= surface->w * surface->h * 4;
+			toDelete.push_back(surface);
+		}
+		i += 1;
+	}
 
-		surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
+	for (const SurfacePtr &s : toDelete) {
+		for (i = 0; i < surfaces.size(); ++i) {
+			if (surfaces[i].second == s) {
+				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
+				--i;
+			}
+		}
 	}
 }
 SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
 	std::lock_guard<std::mutex> g(surfaceMutex);
 
+	const size_t N = 15;
 	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
 		if (surfaces[i].first == path) {
-			if (i < surfaces.size() - 15) {
+			if (surfaces.size() > N && i < surfaces.size() - N) {
 				std::pair<String, SurfacePtr> t = surfaces[i];
 
 				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
@@ -398,22 +414,6 @@ SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
 		}
 	}
 	return nullptr;
-}
-
-void Utils::setSurface(const String &path, const SurfacePtr surface) {
-	if (!surface) return;
-
-	std::lock_guard<std::mutex> g(surfaceMutex);
-	for (std::pair<String, SurfacePtr> &p : surfaces) {
-		const String &pPath = p.first;
-		if (pPath == path) {
-			p.second = surface;
-			return;
-		}
-	}
-
-	trimSurfacesCache(surface);
-	surfaces.push_back(std::make_pair(path, surface));
 }
 
 SurfacePtr Utils::getSurface(const String &path) {
@@ -485,6 +485,22 @@ SurfacePtr Utils::getSurface(const String &path) {
 
 	outMsg("IMG_Load", IMG_GetError());
 	return nullptr;
+}
+
+void Utils::setSurface(const String &path, const SurfacePtr surface) {
+	if (!surface) return;
+
+	std::lock_guard<std::mutex> g(surfaceMutex);
+	for (std::pair<String, SurfacePtr> &p : surfaces) {
+		const String &pPath = p.first;
+		if (pPath == path) {
+			p.second = surface;
+			return;
+		}
+	}
+
+	trimSurfacesCache(surface);
+	surfaces.push_back(std::make_pair(path, surface));
 }
 
 Uint32 Utils::getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop) {
@@ -561,9 +577,13 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 	if (declAt->children.empty()) {
 		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 
-		py::list defaultDeclAt = py::list(GV::pyUtils->pythonGlobal["default_decl_at"]);
-		size_t sizeDefaultDeclAt = py::len(defaultDeclAt);
+		py::dict globals = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
+		if (!globals.has_key("default_decl_at")) return true;
 
+		py::object defaultDeclAt = globals["default_decl_at"];
+		if (!PyUtils::isTuple(defaultDeclAt) && !PyUtils::isList(defaultDeclAt)) return true;
+
+		size_t sizeDefaultDeclAt = Py_SIZE(defaultDeclAt.ptr());
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
 			Node *node = new Node("some assign default_decl_at", 0);
 			node->params = py::extract<const std::string>(py::str(defaultDeclAt[i]));

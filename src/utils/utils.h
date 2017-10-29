@@ -38,7 +38,7 @@ private:
 	static std::map<String, String> images;
 	static std::map<String, Node*> declAts;
 
-	static std::vector<std::pair<String, TexturePtr>> textures;
+	static std::vector<std::pair<SurfacePtr, TexturePtr>> textures;
 	static std::map<TexturePtr, SurfacePtr> textureSurfaces;
 
 	static std::mutex surfaceMutex;
