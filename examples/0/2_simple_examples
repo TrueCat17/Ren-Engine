@@ -283,7 +283,7 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 
 Вывод сообщений/ошибок в окне (не в консоли):
 	out_msg("from", "error_description")
-Вернёт словарь (dict) модов в виде { имя_мода : директория_мода }:
+Получить словарь (dict) модов в виде { имя_мода : директория_мода }:
 	get_mods()
 
 Запуск мода mod_name:
@@ -295,11 +295,32 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	get_stage_width()
 Высота:
 	get_stage_height()
+Установить размер окна в 1366x768:
+	set_stage_size(1366, 768)
 
-Ширина текстуры:
+Развернуть окно на весь экран:
+	set_fullscreen(True)
+Вернуть окну нормальные размеры:
+	set_fullscreen(False)
+
+Загрузить изображение (и обработать im-функциями, если есть) (асинхронно, т. е. в отдельном потоке):
+	load_image("image_path")
+Ширина изображения:
 	get_texture_width("image_path")
 Высота:
 	get_texture_height("image_path")
+Получить пиксель в точке (x, y) изображения "image_path" (число в формате RGBA, т. е. 0xRRGGBBAA):
+	get_pixel("image_path", x, y)
+
+Получить координаты мыши:
+	get_mouse()
+Получить координаты мыши относительно кнопки, на которую наведена мышь:
+	get_local_mouse()
+Узнать, нажата ли левая кнопка мыши:
+	get_mouse_down()
+
+Получить параметр "param" из файла ../resources/params.conf как тип some_type (str, float, int или bool):
+	get_from_hard_config("param", some_type)
 
 Получить максимальное значение фпс (FPS, Frame Per Second, количество кадров в секунду):
 	get_fps()
@@ -310,11 +331,26 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	get_image_code("image name")
 Получить "список действий" изображения, зарегистрированного командой image (то, что после знака "=" + команды после ":", см. след. главу):
 	get_image("image name")
+Узнать, было ли зарегистрировано изображение командой image:
+	image_was_registered("image name")
 
 Показать скрин с именем screen_name:
 	show_screen("screen_name")
 Скрыть:
 	hide_screen("screen_name")
+Узнать, отображается ли:
+	has_screen("screen_name")
+
+Узнать, существует ли метка (label) some_label:
+	has_label("some_label")
+
+Запустить мод, находящийся в папке some_dir:
+	start_mod("start_mod")
+Загрузить мод из сохранения save_table, save_num (например: 1, 3 или auto, 5):
+	load("save_table", "save_num")
+Сохранить текущую игру в сохранение save_table, save_num (сохранение произойдёт не прямо сейчас, а после текущего кадра):
+	sl_save(save_table, save_num)
+
 
 Также много интересного можно найти в resources/mods/common/renpy_api.rpy.
 
