@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include <iostream>
 #include <thread>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -294,8 +295,8 @@ void Game::save() {
 
 	{//save screenshot
 		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = True");
-
 		GUI::update();
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
 
 		std::lock_guard<std::mutex> g(Renderer::renderMutex);
 		std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
@@ -307,6 +308,11 @@ void Game::save() {
 
 		SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
 		SDL_RenderClear(GV::mainRenderer);
+
+		if (GV::isOpenGL) {
+			glEnable(GL_BLEND);
+			glGetError();
+		}
 		for (const RenderStruct &rs : Renderer::toRender) {
 			if (!GV::inGame || GV::exit) break;
 
@@ -324,25 +330,23 @@ void Game::save() {
 				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
 			}
 		}
-		//Важно! SDL_RenderPresent не нужен!
-		Renderer::toRender.clear();
-
-
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
+		if (GV::isOpenGL) {
+			glDisable(GL_BLEND);
+			glGetError();
+		}
 
 
 		SDL_Surface* info = SDL_GetWindowSurface(GV::mainWindow);
 		if (info) {
-			auto &format = info->format;
-			Uint8 bpp = format->BytesPerPixel;
+			const SDL_PixelFormat *format = info->format;
 
-			Uint8 *pixels = new Uint8[info->w * info->h * bpp];
+			Uint8 *pixels = new Uint8[info->h * info->pitch];
 
-			if (SDL_RenderReadPixels(GV::mainRenderer, &info->clip_rect, format->format, pixels, info->w * bpp)) {
+			if (SDL_RenderReadPixels(GV::mainRenderer, &info->clip_rect, format->format, pixels, info->pitch)) {
 				Utils::outMsg("SDL_RenderReadPixels", SDL_GetError());
 			}else {
 				SDL_Surface *screenshot = SDL_CreateRGBSurfaceFrom(pixels, info->w, info->h,
-																   bpp * 8, info->w * bpp,
+																   format->BitsPerPixel, info->pitch,
 																   format->Rmask, format->Gmask, format->Bmask, format->Amask);
 
 				SDL_Rect from = info->clip_rect;
@@ -350,9 +354,9 @@ void Game::save() {
 
 				SDL_Surface *save = SDL_CreateRGBSurface(screenshot->flags, to.w, to.h, 32,
 														 screenshot->format->Rmask, screenshot->format->Gmask,screenshot->format->Bmask, screenshot->format->Amask);
-				{
-					SDL_BlitScaled(screenshot, &from, save, &to);
-				}
+				SDL_BlitScaled(screenshot, &from, save, &to);
+				SDL_FreeSurface(screenshot);
+				screenshot = nullptr;
 
 				if (save) {
 					const String screenshotPath = fullPath + "screenshot.png";

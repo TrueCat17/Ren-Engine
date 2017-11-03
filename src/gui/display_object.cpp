@@ -114,14 +114,16 @@ void DisplayObject::destroyAll() {
 void DisplayObject::pushToRender(const TexturePtr &texture, float angle, Uint8 alpha,
 	const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center)
 {
-	static const SDL_Rect emptyRect = {0, 0, 0, 0};
-	static const SDL_Point emptyPoint = {0, 0};
+	if (texture && alpha) {
+		static const SDL_Rect emptyRect = {0, 0, 0, 0};
+		static const SDL_Point emptyPoint = {0, 0};
 
-	Renderer::toRender.push_back({
-		texture, angle, alpha,
-		srcRect == nullptr, dstRect == nullptr, center == nullptr,
+		Renderer::toRender.push_back({
+			texture, angle, alpha,
+			srcRect == nullptr, dstRect == nullptr, center == nullptr,
 
-		SDL_Rect(srcRect ? *srcRect : emptyRect), SDL_Rect(dstRect ? *dstRect : emptyRect),
-		SDL_Point(center ? *center : emptyPoint)
-	});
+			srcRect ? *srcRect : emptyRect, dstRect ? *dstRect : emptyRect,
+			center ? *center : emptyPoint
+		});
+	}
 }
