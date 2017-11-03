@@ -54,10 +54,12 @@ public:
 	static void renderThreadFunc();
 
 private:
+	static GLuint getTextureId(SDL_Texture *texture);
+	static void checkErrors(const char *from, const char *funcName);
+
 	static void renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 								 int angle, const SDL_Point *center,
 								 const SDL_Rect *src, const SDL_Rect *dst);
-	static GLuint getTextureId(SDL_Texture *texture);
 };
 
 #endif // RENDERER_H

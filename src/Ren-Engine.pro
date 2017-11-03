@@ -102,11 +102,24 @@ SOURCES += \
 	utils/string.cpp \
 	utils/utils.cpp
 
-LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lGL \
-		-lavformat -lavcodec -lavutil -lswresample \
+
+win32 {
+LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32 \
 		-pthread \
+		-lavformat-57 -lavcodec-57 -lavutil-55 -lswresample-2 \
+		-lpython27 -lmsvcr90 \
+		$$PWD/boost_system_1_62.a $$PWD/boost_filesystem_1_62.a \
+		-llibboost_python-mgw53-mt-1_62
+
+INCLUDEPATH += $$PWD/include/ $$PWD/include/python27/
+
+}else {
+LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lGL \
+		-pthread \
+		-lavformat -lavcodec -lavutil -lswresample \
 		-lboost_system -lboost_filesystem \
 		-lboost_python -lpython2.7 \
 		-ljemalloc
 
 INCLUDEPATH += /usr/include/python2.7/
+}

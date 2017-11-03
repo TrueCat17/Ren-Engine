@@ -197,7 +197,6 @@ bool init() {
 			SDL_GetRenderDriverInfo(i, &info);
 			if (String(info.name) == "opengl") {
 				renderDriver = i;
-				GV::isOpenGL = true;
 				break;
 			}
 		}
@@ -205,10 +204,31 @@ bool init() {
 			Utils::outMsg("init", "OpenGL driver not found");
 		}
 	}
+
 	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
 	if (!GV::mainRenderer) {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-		return true;
+
+		if (flags == SDL_RENDERER_ACCELERATED) {
+			GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
+			if (!GV::mainRenderer) {
+				Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+				return true;
+			}
+		}
+	}
+	SDL_RendererInfo info;
+	SDL_GetRendererInfo(GV::mainRenderer, &info);
+	if (String(info.name) == "opengl") {
+		size_t countErrors = 0;
+		const size_t maxCountErrors = 10;
+
+		while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
+		if (countErrors == maxCountErrors) {
+			Utils::outMsg("init", "Using OpenGL failed");
+		}else {
+			GV::isOpenGL = true;
+		}
 	}
 
 	return false;
@@ -408,11 +428,27 @@ void destroy() {
 
 
 int main() {
+	int initStartTime = Utils::getTimer();
+
+#ifdef __WIN32__
+	std::string strPath;
+	char *charsPath = SDL_GetBasePath();
+	if (charsPath) {
+		strPath = charsPath;
+		SDL_free(charsPath);
+		charsPath = nullptr;
+	}
+	strPath += "..\\py_libs";
+
+	char *path = new char[strPath.size() + 1];
+	memcpy(path, strPath.c_str(), strPath.size() + 1);
+	Py_SetPythonHome(path);
+#else
 	if (!setlocale(LC_ALL, "C.UTF-8")) {
 		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
 	}
+#endif
 
-	int initStartTime = Utils::getTimer();
 	if (init()) {
 		return 0;
 	}

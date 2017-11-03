@@ -1,5 +1,6 @@
 #include "renderer.h"
 
+#include <iostream>
 #include <thread>
 
 #include "utils/utils.h"
@@ -76,14 +77,37 @@ GLuint Renderer::getTextureId(SDL_Texture *texture) {
 	return data->texture;
 }
 
+void Renderer::checkErrors(const char *from, const char *funcName) {
+	size_t countErrors = 0;
+	const size_t maxCountErrors = 10;
+
+	GLuint error;
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		if (++countErrors == maxCountErrors) {
+			GV::isOpenGL = false;
+			Utils::outMsg("Renderer::" + String(from) + ", " + funcName, "Using OpenGL failed");
+			break;
+		}
+
+		const char *str = "Unknown";
+			 if (error == GL_INVALID_ENUM)      str = "GL_INVALID_ENUM";
+		else if (error == GL_INVALID_VALUE)     str = "GL_INVALID_VALUE";
+		else if (error == GL_INVALID_OPERATION) str = "GL_INVALID_OPERATION";
+		else if (error == GL_STACK_OVERFLOW)    str = "GL_STACK_OVERFLOW";
+		else if (error == GL_STACK_UNDERFLOW)   str = "GL_STACK_UNDERFLOW";
+		else if (error == GL_OUT_OF_MEMORY)     str = "GL_OUT_OF_MEMORY";
+
+		Utils::outMsg("Renderer::" + String(from) + ", " + funcName, str);
+	}
+}
+
 void Renderer::renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 								int angle, const SDL_Point *center,
 								const SDL_Rect *src, const SDL_Rect *dst)
 {
 	if (!alpha || !dst->w || !dst->h) return;
 
-	int textureWidth;
-	int textureHeight;
+	int textureWidth, textureHeight;
 	SDL_QueryTexture(texture, nullptr, nullptr, &textureWidth, &textureHeight);
 
 	SDL_Rect realSrc;
@@ -95,22 +119,24 @@ void Renderer::renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 	}
 
 	GLuint textureId = getTextureId(texture);
-	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textureId);
+	checkErrors("renderWithOpenGL", "glBindTexture");
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glColor4f(1, 1, 1, float(alpha) / 255);
+	glColor4f(1, 1, 1, alpha / 255.0);
+	checkErrors("renderWithOpenGL", "glColor4f");
 
 	if (angle) {
 		int dX = dst->x + (center ? center->x : 0);
 		int dY = dst->y + (center ? center->y : 0);
 
 		glPushMatrix();
+		checkErrors("renderWithOpenGL", "glPushMatrix");
 		glTranslated(dX, dY, 0);
+		checkErrors("renderWithOpenGL", "glTranslated");
 		glRotated(angle, 0, 0, 1);
+		checkErrors("renderWithOpenGL", "glRotated");
 		glTranslated(-dX, -dY, 0);
+		checkErrors("renderWithOpenGL", "glTranslated");
 	}
 
 	float w = textureWidth;
@@ -127,11 +153,14 @@ void Renderer::renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 	glTexCoord2f(maxX, maxY); glVertex2f(dst->x + dst->w, dst->y + dst->h);
 	glTexCoord2f(maxX, minY); glVertex2f(dst->x + dst->w, dst->y);
 	glEnd();
+	checkErrors("renderWithOpenGL", "glBegin(GL_QUADS)/glTexCoord2f/glVertex2f/glEnd");
 
 	if (angle) {
 		glPopMatrix();
+		checkErrors("renderWithOpenGL", "glPopMatrix");
 	}
 }
+
 
 void Renderer::renderThreadFunc() {
 	std::vector<RenderStruct> toRender;
@@ -170,6 +199,10 @@ void Renderer::renderThreadFunc() {
 			const size_t COUNT_IN_PART = 50;
 			size_t len = toRender.size() / COUNT_IN_PART + 1;
 
+			if (GV::isOpenGL) {
+				checkErrors("renderThreadFunc", "None");
+			}
+
 			//Part 0
 			{
 				std::lock_guard<std::mutex> g(Renderer::renderMutex);
@@ -188,6 +221,16 @@ void Renderer::renderThreadFunc() {
 				std::lock_guard<std::mutex> g(Renderer::renderMutex);
 				if (!GV::inGame || GV::exit) {
 					break;
+				}
+
+				if (GV::isOpenGL) {
+					glEnable(GL_TEXTURE_2D);
+					checkErrors("renderThreadFunc", "glEnable(GL_TEXTURE_2D)");
+
+					glEnable(GL_BLEND);
+					checkErrors("renderThreadFunc", "glEnable(GL_BLEND)");
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					checkErrors("renderThreadFunc", "glBlendFunc");
 				}
 
 				for (size_t j = i * COUNT_IN_PART;
@@ -216,6 +259,13 @@ void Renderer::renderThreadFunc() {
 							Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
 						}
 					}
+				}
+
+				if (GV::isOpenGL) {
+					glDisable(GL_TEXTURE_2D);
+					checkErrors("renderThreadFunc", "glDisables(GL_TEXTURE_2D)");
+					glDisable(GL_BLEND);
+					checkErrors("renderThreadFunc", "glDisable(GL_BLEND)");
 				}
 			}
 

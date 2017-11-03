@@ -344,8 +344,10 @@ TexturePtr Utils::getTexture(const String &path) {
 	return nullptr;
 }
 void Utils::DestroyTexture(SDL_Texture *texture) {
-	std::lock_guard<std::mutex> g(Renderer::renderMutex);
-	SDL_DestroyTexture(texture);
+	if (texture) {
+		std::lock_guard<std::mutex> g(Renderer::renderMutex);
+		SDL_DestroyTexture(texture);
+	}
 }
 
 void Utils::trimSurfacesCache(const SurfacePtr last) {
