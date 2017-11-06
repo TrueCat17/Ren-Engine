@@ -51,9 +51,14 @@ public:
 	static std::vector<RenderStruct> toRender;
 
 
-	static void renderThreadFunc();
+	static bool init();
 
 private:
+	static SDL_GLContext glContext;
+	static void renderThreadFunc();
+
+	static void setContext();
+
 	static GLuint getTextureId(SDL_Texture *texture);
 	static void checkErrors(const char *from, const char *funcName);
 

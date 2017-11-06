@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 
+#include "config.h"
 #include "utils/utils.h"
 
 
@@ -14,6 +15,14 @@ std::mutex Renderer::renderMutex;
 std::mutex Renderer::toRenderMutex;
 std::vector<RenderStruct> Renderer::toRender;
 
+SDL_GLContext Renderer::glContext;
+
+
+void Renderer::setContext() {
+	if (SDL_GL_MakeCurrent(GV::mainWindow, glContext)) {
+		Utils::outMsg("Renderer::setContext, SDL_GL_MakeCurrent", SDL_GetError());
+	}
+}
 
 GLuint Renderer::getTextureId(SDL_Texture *texture) {
 	if (!texture) return 0;
@@ -118,6 +127,8 @@ void Renderer::renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 		realSrc = {0, 0, textureWidth, textureHeight};
 	}
 
+	SDL_GL_MakeCurrent(GV::mainWindow, glContext);
+
 	GLuint textureId = getTextureId(texture);
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	checkErrors("renderWithOpenGL", "glBindTexture");
@@ -162,7 +173,64 @@ void Renderer::renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 }
 
 
+bool Renderer::init() {
+	int renderDriver = -1;
+
+	int flags;
+	if (Config::get("software_renderer") == "True") {
+		flags = SDL_RENDERER_SOFTWARE;
+	}else {
+		flags = SDL_RENDERER_ACCELERATED;
+
+		int countRenderDrivers = SDL_GetNumRenderDrivers();
+		for (int i = 0; i < countRenderDrivers; ++i) {
+			SDL_RendererInfo info;
+			SDL_GetRenderDriverInfo(i, &info);
+			if (String(info.name) == "opengl") {
+				renderDriver = i;
+				break;
+			}
+		}
+		if (renderDriver == -1) {
+			Utils::outMsg("Renderer::init", "OpenGL driver not found");
+		}
+	}
+
+	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
+	if (!GV::mainRenderer) {
+		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+
+		if (flags == SDL_RENDERER_ACCELERATED) {
+			GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
+			if (!GV::mainRenderer) {
+				Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+				return true;
+			}
+		}
+	}
+
+	SDL_RendererInfo info;
+	SDL_GetRendererInfo(GV::mainRenderer, &info);
+	if (String(info.name) == "opengl") {
+		size_t countErrors = 0;
+		const size_t maxCountErrors = 10;
+
+		while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
+		if (countErrors == maxCountErrors) {
+			Utils::outMsg("Renderer::init", "Using OpenGL failed");
+		}else {
+			GV::isOpenGL = true;
+			glContext = SDL_GL_GetCurrentContext();
+		}
+	}
+
+	std::thread(renderThreadFunc).detach();
+	return false;
+}
+
 void Renderer::renderThreadFunc() {
+	bool fastOpenGL = Config::get("fast_opengl") == "True";
+
 	std::vector<RenderStruct> toRender;
 	std::vector<RenderStruct> prevToRender;
 
@@ -199,13 +267,15 @@ void Renderer::renderThreadFunc() {
 			const size_t COUNT_IN_PART = 50;
 			size_t len = toRender.size() / COUNT_IN_PART + 1;
 
-			if (GV::isOpenGL) {
-				checkErrors("renderThreadFunc", "None");
-			}
 
 			//Part 0
 			{
 				std::lock_guard<std::mutex> g(Renderer::renderMutex);
+
+				if (fastOpenGL && GV::isOpenGL) {
+					setContext();
+					checkErrors("renderThreadFunc", "Start");
+				}
 
 				SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
 				SDL_RenderClear(GV::mainRenderer);
@@ -223,7 +293,9 @@ void Renderer::renderThreadFunc() {
 					break;
 				}
 
-				if (GV::isOpenGL) {
+				if (fastOpenGL && GV::isOpenGL) {
+					setContext();
+
 					glEnable(GL_TEXTURE_2D);
 					checkErrors("renderThreadFunc", "glEnable(GL_TEXTURE_2D)");
 
@@ -239,7 +311,7 @@ void Renderer::renderThreadFunc() {
 				{
 					const RenderStruct &rs = toRender[j];
 
-					if (GV::isOpenGL) {
+					if (fastOpenGL && GV::isOpenGL) {
 						renderWithOpenGL(rs.texture.get(), rs.alpha,
 										 rs.angle, rs.centerIsNull ? nullptr : &rs.center,
 										 rs.srcRectIsNull ? nullptr : &rs.srcRect,
@@ -261,7 +333,9 @@ void Renderer::renderThreadFunc() {
 					}
 				}
 
-				if (GV::isOpenGL) {
+				if (fastOpenGL && GV::isOpenGL) {
+					setContext();
+
 					glDisable(GL_TEXTURE_2D);
 					checkErrors("renderThreadFunc", "glDisables(GL_TEXTURE_2D)");
 					glDisable(GL_BLEND);
@@ -272,6 +346,9 @@ void Renderer::renderThreadFunc() {
 			//Part L+1
 			{
 				std::lock_guard<std::mutex> g(Renderer::renderMutex);
+				if (fastOpenGL && GV::isOpenGL) {
+					setContext();
+				}
 				SDL_RenderPresent(GV::mainRenderer);
 			}
 

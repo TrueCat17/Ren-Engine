@@ -33,6 +33,9 @@ int startWindowWidth = 0;
 int startWindowHeight = 0;
 
 void changeWindowSize(bool maximized) {
+	static std::mutex m;
+	std::lock_guard<std::mutex> g(m);
+
 	int startW, startH;
 	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
 
@@ -42,66 +45,78 @@ void changeWindowSize(bool maximized) {
 		int w = startW;
 		int h = startH;
 
+		double k = Config::get("window_w_div_h").toDouble();
+		if (!k) {
+			k = 1.777;
+			Utils::outMsg("changeWindowSize",
+						  "Invalid <window_w_div_h> in <../resources/params.conf>:\n"
+						  "<" + Config::get("window_w_div_h") + ">");
+		}
 
 		if (maximized) {//Можно только уменьшать, увеличивать нельзя
-			if (double(w) / h > 16.0 / 9) {
-				w = h * 16 / 9;
+			if (double(w) / h > k) {
+				w = h * k;
 			}else {
-				h = w * 9 / 16;
+				h = w / k;
 			}
 		}else {
 			SDL_Rect usableBounds;
 			SDL_GetDisplayUsableBounds(0, &usableBounds);
 
-			int wTop, wLeft, wBottom, wRight;
-			SDL_GetWindowBordersSize(GV::mainWindow, &wTop, &wLeft, &wBottom, &wRight);
+			if (!GV::fullscreen) {
+				int wTop, wLeft, wBottom, wRight;
+				SDL_GetWindowBordersSize(GV::mainWindow, &wTop, &wLeft, &wBottom, &wRight);
 
-			usableBounds.w -= wLeft + wRight;
-			usableBounds.h -= wTop + wBottom;
-
-			if (abs(dX) >= abs(dY)) {
-				h = w * 9 / 16;
-			}else {
-				w = h * 16 / 9;
+				usableBounds.w -= wLeft + wRight;
+				usableBounds.h -= wTop + wBottom;
 			}
 
-			if (w < 640 || h < 360) {
-				w = 640;
-				h = 360;
+			if (abs(dX) >= abs(dY)) {
+				h = w / k;
+			}else {
+				w = h * k;
+			}
+
+			const int MIN_W = 640;
+			if (w < MIN_W || h < MIN_W / k) {
+				w = MIN_W;
+				h = MIN_W / k;
 			}
 			if (w > usableBounds.w) {
 				w = usableBounds.w;
-				h = w * 9 / 16;
+				h = w / k;
 			}
 			if (h > usableBounds.h) {
 				h = usableBounds.h;
-				w = h * 16 / 9;
+				w = h * k;
 			}
 		}
 
+
+		int x = 0;
+		int y = 0;
+		if (maximized || GV::fullscreen) {
+			x = (startW - w) / 2;
+			y = (startH - h) / 2;
+		}
+
+		std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+		std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+
 		if (GV::screens) {
-			int x, y;
-			if (maximized) {
-				x = (startW - w) / 2;
-				y = (startH - h) / 2;
-			}else {
-				x = y = 0;
-			}
-
-			if (x + w != startW || y + h != startH) {
-				std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-				std::lock_guard<std::mutex> g2(Renderer::renderMutex);
-				SDL_SetWindowSize(GV::mainWindow, x + w, y + h);
-			}
-
 			GV::screens->setPos(x, y);
 			GV::screens->updateGlobalPos();
 		}
 
 		GV::width = w;
 		GV::height = h;
-		Config::set("window_width", w);
-		Config::set("window_height", h);
+		if (!GV::fullscreen) {
+			Config::set("window_width", w);
+			Config::set("window_height", h);
+		}
+		SDL_SetWindowSize(GV::mainWindow, w, h);
+
+		Renderer::needToRedraw = true;
 	}
 
 	startWindowWidth = 0;
@@ -155,15 +170,16 @@ bool init() {
 
 	int x = Config::get("window_x").toInt();
 	int y = Config::get("window_y").toInt();
+	int w, h;
 
 	int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
 	if (GV::fullscreen) {
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-		GV::width = GV::displayMode.w;
-		GV::height = GV::displayMode.h;
+		GV::width = w = GV::displayMode.w;
+		GV::height = h = GV::displayMode.h;
 	}else {
-		GV::width = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
-		GV::height = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
+		GV::width = w = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
+		GV::height = h = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
 	}
 
 	String windowTitle = Config::get("window_title");
@@ -174,6 +190,10 @@ bool init() {
 	}
 	if (!GV::fullscreen) {
 		changeWindowSize(false);
+
+		if (GV::width != w || GV::height != h) {
+			SDL_SetWindowSize(GV::mainWindow, GV::width, GV::height);
+		}
 	}
 
 	String iconPath = Config::get("window_icon");
@@ -185,50 +205,8 @@ bool init() {
 	}
 
 
-	int renderDriver = -1;
-	if (Config::get("software_renderer") == "True") {
-		flags = SDL_RENDERER_SOFTWARE;
-	}else {
-		flags = SDL_RENDERER_ACCELERATED;
-
-		int countRenderDrivers = SDL_GetNumRenderDrivers();
-		for (int i = 0; i < countRenderDrivers; ++i) {
-			SDL_RendererInfo info;
-			SDL_GetRenderDriverInfo(i, &info);
-			if (String(info.name) == "opengl") {
-				renderDriver = i;
-				break;
-			}
-		}
-		if (renderDriver == -1) {
-			Utils::outMsg("init", "OpenGL driver not found");
-		}
-	}
-
-	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
-	if (!GV::mainRenderer) {
-		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-
-		if (flags == SDL_RENDERER_ACCELERATED) {
-			GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
-			if (!GV::mainRenderer) {
-				Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-				return true;
-			}
-		}
-	}
-	SDL_RendererInfo info;
-	SDL_GetRendererInfo(GV::mainRenderer, &info);
-	if (String(info.name) == "opengl") {
-		size_t countErrors = 0;
-		const size_t maxCountErrors = 10;
-
-		while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
-		if (countErrors == maxCountErrors) {
-			Utils::outMsg("init", "Using OpenGL failed");
-		}else {
-			GV::isOpenGL = true;
-		}
+	if (Renderer::init()) {
+		return true;
 	}
 
 	return false;
@@ -236,8 +214,6 @@ bool init() {
 
 
 void loop() {
-	std::thread(Renderer::renderThreadFunc).detach();
-
 	bool maximazed = false;
 	bool mouseOut = false;
 	bool mouseOutPrevDown = false;

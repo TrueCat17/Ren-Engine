@@ -69,6 +69,7 @@ void Config::setDefault() {
 	set("window_y", "70");
 	set("window_width", "800");
 	set("window_height", "600");
+	set("window_w_div_h", "1.777");
 	set("window_fullscreen", "False");
 
 	set("mouse_usual", "None");
@@ -76,6 +77,7 @@ void Config::setDefault() {
 
 	set("scale_quality", "0");
 	set("software_renderer", "False");
+	set("fast_opengl", "True");
 	set("max_fps", "30");
 
 	set("max_size_textures_cache", "50");
