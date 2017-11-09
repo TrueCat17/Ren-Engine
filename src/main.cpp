@@ -61,9 +61,19 @@ void changeWindowSize(bool maximized) {
 			}
 		}else {
 			SDL_Rect usableBounds;
-			SDL_GetDisplayUsableBounds(0, &usableBounds);
 
-			if (!GV::fullscreen) {
+			if (GV::fullscreen) {
+				SDL_DisplayMode displayMode;
+				SDL_GetWindowDisplayMode(GV::mainWindow, &displayMode);
+				usableBounds = {0, 0, displayMode.w, displayMode.h};
+			}else {
+				int index = SDL_GetWindowDisplayIndex(GV::mainWindow);
+				if (index == -1) {
+					Utils::outMsg("changeWindowSize, SDL_GetWindowDisplayIndex", SDL_GetError());
+					index = 0;
+				}
+				SDL_GetDisplayUsableBounds(index, &usableBounds);
+
 				int wTop, wLeft, wBottom, wRight;
 				SDL_GetWindowBordersSize(GV::mainWindow, &wTop, &wLeft, &wBottom, &wRight);
 

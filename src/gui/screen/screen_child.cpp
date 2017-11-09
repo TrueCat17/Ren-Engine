@@ -342,7 +342,7 @@ void ScreenChild::calculateProps() {
 		}
 	}
 
-	if (canCrop() && texture &&
+	if (canCrop() && surface &&
 		(xSizeChanged || ySizeChanged || textureChanged ||
 		 propWasChanged[ScreenProp::CROP])
 	) {
@@ -351,8 +351,8 @@ void ScreenChild::calculateProps() {
 		py::object &cropObj = propValues[ScreenProp::CROP];
 
 		if ((PyUtils::isTuple(cropObj) || PyUtils::isList(cropObj)) && Py_SIZE(cropObj.ptr()) == 4) {
-			int textureWidth = Utils::getTextureWidth(texture);
-			int textureHeight = Utils::getTextureHeight(texture);
+			int textureWidth = surface->w;
+			int textureHeight = surface->h;
 
 			bool isInt[4];
 			bool isFloat[4];

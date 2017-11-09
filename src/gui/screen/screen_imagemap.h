@@ -10,7 +10,7 @@ private:
 	String hoverPath;
 
 public:
-	TexturePtr hover = nullptr;
+	SurfacePtr hover = nullptr;
 
 	ScreenImagemap(Node *node);
 

@@ -39,7 +39,6 @@ private:
 	static std::map<String, Node*> declAts;
 
 	static std::vector<std::pair<SurfacePtr, TexturePtr>> textures;
-	static std::map<TexturePtr, SurfacePtr> textureSurfaces;
 
 	static std::mutex surfaceMutex;
 	static std::vector<std::pair<String, SurfacePtr>> surfaces;
@@ -84,18 +83,13 @@ public:
 	static String clear(String s);
 	static std::vector<String> getArgs(String args);
 
-	static size_t getTextureWidth(const TexturePtr texture);
-	static size_t getTextureHeight(const TexturePtr texture);
-
 	static SurfacePtr getThereIsSurfaceOrNull(const String &path);
 	static SurfacePtr getSurface(const String &path);
 	static void setSurface(const String &path, const SurfacePtr surface);
 
-	static TexturePtr getTexture(const String &path);
-	static void DestroyTexture(SDL_Texture *texture);
-
 	static Uint32 getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop);
-	static Uint32 getPixel(const TexturePtr texture, const SDL_Rect &draw, const SDL_Rect &crop);
+
+	static TexturePtr getTexture(const SurfacePtr &surface);
 
 	static bool registerImage(const String &desc, Node *declAt);
 	static bool imageWasRegistered(const std::string &name);

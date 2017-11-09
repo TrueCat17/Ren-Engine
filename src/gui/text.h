@@ -60,7 +60,7 @@ private:
 	void popStyle();
 	void resetStyle();
 
-	std::vector<TexturePtr> lineTextures;
+	std::vector<SurfacePtr> lineSurfaces;
 
 	std::vector<String> lines;
 	size_t numLine = 0;

@@ -1,6 +1,7 @@
 #include "screen_image.h"
 
 #include "media/py_utils.h"
+#include "media/image.h"
 #include "parser/node.h"
 
 
@@ -19,24 +20,24 @@ void ScreenImage::updateTexture() {
 	if (propWasChanged[ScreenProp::IMAGE_PATH]) {
 		propWasChanged[ScreenProp::IMAGE_PATH] = false;
 
-		texture = Utils::getTexture(PyUtils::getStr(propValues[ScreenProp::IMAGE_PATH]));
+		surface = Image::getImage(PyUtils::getStr(propValues[ScreenProp::IMAGE_PATH]));
 
-		if (xSizeIsTextureWidth) xSize = Utils::getTextureWidth(texture);
-		if (ySizeIsTextureHeight) ySize = Utils::getTextureHeight(texture);
+		if (xSizeIsTextureWidth) xSize = surface->w;
+		if (ySizeIsTextureHeight) ySize = surface->h;
 	}
 }
 
 void ScreenImage::updateSize() {
 	if (xSize <= 0) {
 		xSizeIsTextureWidth = true;
-		xSize = Utils::getTextureWidth(texture);
+		xSize = surface->w;
 	}else {
 		xSizeIsTextureWidth = false;
 	}
 
 	if (ySize <= 0) {
 		ySizeIsTextureHeight = true;
-		ySize = Utils::getTextureHeight(texture);
+		ySize = surface->h;
 	}else {
 		ySizeIsTextureHeight = false;
 	}

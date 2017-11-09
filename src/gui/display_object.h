@@ -26,12 +26,12 @@ public:
 	static std::vector<DisplayObject*> objects;
 	static void destroyAll();
 
-	static void pushToRender(const TexturePtr &texture, float angle, Uint8 alpha,
+	static void pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha,
 							 const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center);
 
 	bool enable = true;
 
-	TexturePtr texture = nullptr;
+	SurfacePtr surface = nullptr;
 
 	Group *parent = nullptr;
 

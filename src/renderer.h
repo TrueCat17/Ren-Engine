@@ -10,9 +10,11 @@
 #include "gv.h"
 
 
+typedef std::shared_ptr<SDL_Surface> SurfacePtr;
 typedef std::shared_ptr<SDL_Texture> TexturePtr;
+
 struct RenderStruct {
-	TexturePtr texture;
+	SurfacePtr surface;
 	float angle;
 	Uint8 alpha;
 
@@ -25,7 +27,7 @@ struct RenderStruct {
 	SDL_Point center;
 
 	bool operator==(const RenderStruct &o) const {
-		return  texture == o.texture &&
+		return  surface == o.surface &&
 				angle == o.angle &&
 				alpha == o.alpha &&
 				srcRectIsNull == o.srcRectIsNull &&
@@ -50,14 +52,15 @@ public:
 	static std::mutex toRenderMutex;
 	static std::vector<RenderStruct> toRender;
 
-
 	static bool init();
+	static SurfacePtr getScreenshot();
 
 private:
-	static SDL_GLContext glContext;
-	static void renderThreadFunc();
+	static bool screenshotting;
+	static SurfacePtr screenshot;
+	static void readPixels();
 
-	static void setContext();
+	static void loop();
 
 	static GLuint getTextureId(SDL_Texture *texture);
 	static void checkErrors(const char *from, const char *funcName);

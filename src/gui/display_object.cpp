@@ -65,9 +65,9 @@ void DisplayObject::setSize(int w, int h) {
 }
 
 bool DisplayObject::checkAlpha(int x, int y) const {
-	if (texture && (x >= 0 && y >= 0 && x < rect.w && y < rect.h)) {
+	if (surface && (x >= 0 && y >= 0 && x < rect.w && y < rect.h)) {
 		SDL_Rect rect = {x, y, this->rect.w, this->rect.h};
-		Uint32 color = Utils::getPixel(texture, rect, crop);
+		Uint32 color = Utils::getPixel(surface, rect, crop);
 		Uint8 alpha = color & 0xFF;
 
 		return alpha > 0;
@@ -78,12 +78,12 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 void DisplayObject::draw() const {
 	if (!enable || globalAlpha <= 0) return;
 
-	if (texture) {
+	if (surface) {
 		SDL_Rect t = {globalX, globalY, rect.w, rect.h};
 		SDL_Point center = { xAnchor, yAnchor };
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
 
-		pushToRender(texture, globalRotate, intAlpha, &crop, &t, &center);
+		pushToRender(surface, globalRotate, intAlpha, &crop, &t, &center);
 	}
 }
 
@@ -111,15 +111,15 @@ void DisplayObject::destroyAll() {
 	}
 }
 
-void DisplayObject::pushToRender(const TexturePtr &texture, float angle, Uint8 alpha,
+void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha,
 	const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center)
 {
-	if (texture && alpha) {
+	if (surface && alpha) {
 		static const SDL_Rect emptyRect = {0, 0, 0, 0};
 		static const SDL_Point emptyPoint = {0, 0};
 
 		Renderer::toRender.push_back({
-			texture, angle, alpha,
+			surface, angle, alpha,
 			srcRect == nullptr, dstRect == nullptr, center == nullptr,
 
 			srcRect ? *srcRect : emptyRect, dstRect ? *dstRect : emptyRect,

@@ -31,7 +31,6 @@ std::map<String, String> Utils::images;
 std::map<String, Node*> Utils::declAts;
 
 std::vector<std::pair<SurfacePtr, TexturePtr>> Utils::textures;
-std::map<TexturePtr, SurfacePtr> Utils::textureSurfaces;
 
 std::mutex Utils::surfaceMutex;
 std::vector<std::pair<String, SurfacePtr>> Utils::surfaces;
@@ -253,22 +252,6 @@ std::vector<String> Utils::getArgs(String args) {
 }
 
 
-size_t Utils::getTextureWidth(const TexturePtr texture) {
-	int res = 0;
-	if (SDL_QueryTexture(texture.get(), nullptr, nullptr, &res, nullptr)) {
-		Utils::outMsg("Utils::getTextureWidth, SDL_QueryTexture", SDL_GetError());
-	}
-	return res;
-}
-size_t Utils::getTextureHeight(const TexturePtr texture) {
-	int res = 0;
-	if (SDL_QueryTexture(texture.get(), nullptr, nullptr, nullptr, &res)) {
-		Utils::outMsg("Utils::getTextureHeight, SDL_QueryTexture", SDL_GetError());
-	}
-	return res;
-}
-
-
 void Utils::trimTexturesCache(const SurfacePtr last) {
 	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
 	 * пока кэш не уменьшится до нужных размеров
@@ -287,29 +270,22 @@ void Utils::trimTexturesCache(const SurfacePtr last) {
 
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		while (i < textures.size() && textures[i].second.use_count() > 2) {//2: key in textureSurfaces + value in textures
+		while (i < textures.size() && textures[i].second.use_count() > 1) {//1 - value in textures
 			++i;
 		}
 		if (i == textures.size()) break;
 
-		std::pair<SurfacePtr, TexturePtr> &p = textures[i];
+		const std::pair<SurfacePtr, TexturePtr> &p = textures[i];
 		const SurfacePtr &surface = p.first;
-		const TexturePtr &texture = p.second;
 
 		cacheSize -= surface->w * surface->h * 4;
 
-		textureSurfaces.erase(textureSurfaces.find(texture));
 		textures.erase(textures.begin() + i, textures.begin() + i + 1);
 	}
 }
 
-TexturePtr Utils::getTexture(const String &path) {
-	if (!path) return nullptr;
-	SurfacePtr surface = Image::getImage(path);
+TexturePtr Utils::getTexture(const SurfacePtr &surface) {
 	if (!surface) return nullptr;
-
-	static std::mutex m;
-	std::lock_guard<std::mutex> g(m);
 
 	const int N = 20;
 	for (size_t i = textures.size() - 1; i != size_t(-1); --i) {
@@ -328,13 +304,10 @@ TexturePtr Utils::getTexture(const String &path) {
 
 	TexturePtr texture;
 	{
-		std::lock_guard<std::mutex> g(Renderer::renderMutex);
-		texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), Utils::DestroyTexture);
+		texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
 	}
 
 	if (texture) {
-		textureSurfaces[texture] = surface;
-
 		trimTexturesCache(surface);
 		textures.push_back(std::make_pair(surface, texture));
 		return texture;
@@ -343,24 +316,9 @@ TexturePtr Utils::getTexture(const String &path) {
 	outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
 	return nullptr;
 }
-void Utils::DestroyTexture(SDL_Texture *texture) {
-	if (texture) {
-		std::lock_guard<std::mutex> g(Renderer::renderMutex);
-		SDL_DestroyTexture(texture);
-	}
-}
 
 void Utils::trimSurfacesCache(const SurfacePtr last) {
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
-
-	auto usedSomeTexture = [&](SurfacePtr s) -> bool {
-		for (const std::pair<SurfacePtr, TexturePtr> &i : textures) {
-			if (i.first == s) {
-				return true;
-			}
-		}
-		return false;
-	};
 
 	size_t cacheSize = last->w * last->h * 4;
 
@@ -376,11 +334,13 @@ void Utils::trimSurfacesCache(const SurfacePtr last) {
 	std::vector<SurfacePtr> toDelete;
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		SurfacePtr surface;
-		while (i < surfaces.size() && usedSomeTexture(surface = surfaces[i].second)) {
+		while (i < surfaces.size() && surfaces[i].second.use_count() > 1) {
 			++i;
 		}
 		if (i == surfaces.size()) break;
+
+		const std::pair<String, SurfacePtr> &p = surfaces[i];
+		const SurfacePtr &surface = p.second;
 
 		if (!(countSurfaces[surface] -= 1)) {
 			cacheSize -= surface->w * surface->h * 4;
@@ -538,10 +498,6 @@ Uint32 Utils::getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL
 	default:
 		return 0;       /* shouldn't happen, but avoids warnings */
 	}
-}
-Uint32 Utils::getPixel(const TexturePtr texture, const SDL_Rect &draw, const SDL_Rect &crop) {
-	const SurfacePtr surface = textureSurfaces[texture];
-	return getPixel(surface, draw, crop);
 }
 
 bool Utils::registerImage(const String &desc, Node *declAt) {

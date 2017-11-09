@@ -74,7 +74,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 
 	SDL_Rect rect = {x, y, parent->getDrawRect().w, parent->getDrawRect().h};
 
-	TexturePtr hover = imagemap->hover;
+	SurfacePtr hover = imagemap->hover;
 	Uint32 hoverPixel = Utils::getPixel(hover, rect, parent->getCropRect());
 
 	Uint8 alpha = hoverPixel & 0xFF;
@@ -114,14 +114,14 @@ void ScreenHotspot::calculateProps() {
 		btnRect.buttonMode = py::extract<bool>(mouseObj);
 	}
 
-	TexturePtr ground = parent->texture;
+	SurfacePtr ground = parent->surface;
 	scaleX = 1;
 	scaleY = 1;
 	int parentWidth = parent->getWidth();
 	int parentHeight = parent->getHeight();
 	if (ground && parentWidth && parentHeight) {
-		scaleX = double(parentWidth) / Utils::getTextureWidth(ground);
-		scaleY = double(parentHeight) / Utils::getTextureHeight(ground);
+		scaleX = double(parentWidth) / ground->w;
+		scaleY = double(parentHeight) / ground->h;
 	}
 
 	int x = PyUtils::getDouble(rectObj[0], PyUtils::isFloat(rectObj[0])) * scaleX;
@@ -158,7 +158,7 @@ void ScreenHotspot::calculateProps() {
 			Utils::outMsg("ScreenHotspot::calculateProps", "Тип родителя должен быть ScreenImagemap");
 			return;
 		}
-		texture = imagemap->hover;
+		surface = imagemap->hover;
 	}else {
 		if (prevMouseOver) {
 			const NodeProp unhovered = node->getPropCode("unhovered");
@@ -170,7 +170,7 @@ void ScreenHotspot::calculateProps() {
 			}
 		}
 
-		texture = nullptr;
+		surface = nullptr;
 	}
 	prevMouseOver = btnRect.mouseOvered;
 
@@ -183,7 +183,7 @@ void ScreenHotspot::calculateProps() {
 }
 
 void ScreenHotspot::draw() const {
-	if (!enable || !texture) return;
+	if (!enable || !surface) return;
 
 	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
 	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
@@ -191,5 +191,5 @@ void ScreenHotspot::draw() const {
 	Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(texture, globalRotate, intAlpha, &from, &to, &center);
+	pushToRender(surface, globalRotate, intAlpha, &from, &to, &center);
 }

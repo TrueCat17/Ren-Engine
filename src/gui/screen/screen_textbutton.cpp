@@ -1,6 +1,7 @@
 #include "screen_textbutton.h"
 
 #include "media/music.h"
+#include "media/image.h"
 #include "media/py_utils.h"
 
 
@@ -121,10 +122,10 @@ void ScreenTextButton::updateTexture() {
 		ground = newGround;
 
 		const String &path = !btnRect.mouseOvered ? ground : hover;
-		texture = Utils::getTexture(path);
+		surface = Image::getImage(path);
 
-		if (xSizeIsTextureWidth)  xSize = Utils::getTextureWidth(texture);
-		if (ySizeIsTextureHeight) ySize = Utils::getTextureHeight(texture);
+		if (xSizeIsTextureWidth)  xSize = surface->w;
+		if (ySizeIsTextureHeight) ySize = surface->h;
 		ScreenText::updateSize();
 	}
 }
@@ -132,14 +133,14 @@ void ScreenTextButton::updateTexture() {
 void ScreenTextButton::updateSize() {
 	if (xSize <= 0) {
 		xSizeIsTextureWidth = true;
-		xSize = Utils::getTextureWidth(texture);
+		xSize = surface->w;
 	}else {
 		xSizeIsTextureWidth = false;
 	}
 
 	if (ySize <= 0) {
 		ySizeIsTextureHeight = true;
-		ySize = Utils::getTextureHeight(texture);
+		ySize = surface->h;
 	}else {
 		ySizeIsTextureHeight = false;
 	}

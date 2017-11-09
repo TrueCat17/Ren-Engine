@@ -298,79 +298,24 @@ void Game::save() {
 		GUI::update();
 		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
 
-		std::lock_guard<std::mutex> g(Renderer::renderMutex);
-		std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
-
-		Renderer::toRender.clear();
-		if (GV::screens) {
-			GV::screens->draw();
+		Utils::sleep(20);
+		while (Renderer::needToRender) {
+			Utils::sleep(1);
 		}
+		{
+			std::lock_guard<std::mutex> g(Renderer::renderMutex);
+			std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
 
-		SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
-		SDL_RenderClear(GV::mainRenderer);
-
-		if (GV::isOpenGL) {
-			glEnable(GL_BLEND);
-			glGetError();
-		}
-		for (const RenderStruct &rs : Renderer::toRender) {
-			if (!GV::inGame || GV::exit) break;
-
-			if (SDL_SetTextureAlphaMod(rs.texture.get(), rs.alpha)) {
-				Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
-			}
-
-			if (SDL_RenderCopyEx(GV::mainRenderer, rs.texture.get(),
-								 rs.srcRectIsNull ? nullptr : &rs.srcRect,
-								 rs.dstRectIsNull ? nullptr : &rs.dstRect,
-								 rs.angle,
-								 rs.centerIsNull ? nullptr : &rs.center,
-								 SDL_FLIP_NONE))
-			{
-				Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+			Renderer::toRender.clear();
+			if (GV::screens) {
+				GV::screens->draw();
 			}
 		}
-		if (GV::isOpenGL) {
-			glDisable(GL_BLEND);
-			glGetError();
-		}
 
-
-		SDL_Surface* info = SDL_GetWindowSurface(GV::mainWindow);
-		if (info) {
-			const SDL_PixelFormat *format = info->format;
-
-			Uint8 *pixels = new Uint8[info->h * info->pitch];
-
-			if (SDL_RenderReadPixels(GV::mainRenderer, &info->clip_rect, format->format, pixels, info->pitch)) {
-				Utils::outMsg("SDL_RenderReadPixels", SDL_GetError());
-			}else {
-				SDL_Surface *screenshot = SDL_CreateRGBSurfaceFrom(pixels, info->w, info->h,
-																   format->BitsPerPixel, info->pitch,
-																   format->Rmask, format->Gmask, format->Bmask, format->Amask);
-
-				SDL_Rect from = info->clip_rect;
-				SDL_Rect to = {0, 0, 640, 360};
-
-				SDL_Surface *save = SDL_CreateRGBSurface(screenshot->flags, to.w, to.h, 32,
-														 screenshot->format->Rmask, screenshot->format->Gmask,screenshot->format->Bmask, screenshot->format->Amask);
-				SDL_BlitScaled(screenshot, &from, save, &to);
-				SDL_FreeSurface(screenshot);
-				screenshot = nullptr;
-
-				if (save) {
-					const String screenshotPath = fullPath + "screenshot.png";
-					IMG_SavePNG(save, screenshotPath.c_str());
-					SDL_FreeSurface(save);
-				}else {
-					Utils::outMsg("SDL_CreateRGBSurfaceFrom", SDL_GetError());
-				}
-			}
-			delete[] pixels;
-
-			SDL_FreeSurface(info);
-		}else {
-			Utils::outMsg("SDL_GetWindowSurface", SDL_GetError());
+		const SurfacePtr screenshot = Renderer::getScreenshot();
+		if (screenshot) {
+			const String screenshotPath = fullPath + "screenshot.png";
+			IMG_SavePNG(screenshot.get(), screenshotPath.c_str());
 		}
 	}
 
@@ -571,9 +516,6 @@ void Game::setFullscreen(bool value) {
 	if (value) {
 		GV::fullscreen = true;
 		Config::set("window_fullscreen", "True");
-
-		GV::width = GV::displayMode.w;
-		GV::height = GV::displayMode.h;
 
 		{
 			std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);

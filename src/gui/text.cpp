@@ -177,7 +177,7 @@ void Text::setText(const String &text, int color) {
 	isBold = isItalic = isUnderline = isStrike = 0;
 	rect.h = maxHeight > 0 ? maxHeight : textHeight;
 
-	lineTextures.clear();
+	lineSurfaces.clear();
 	rects = tmpRects;
 	for (numLine = 0; numLine < lines.size(); ++numLine) {
 		addText();
@@ -190,33 +190,17 @@ void Text::addText() {
 	SDL_Rect lineRect = rects[numLine];
 
 	if (!lineRect.w) {
-		lineTextures.push_back(nullptr);
+		lineSurfaces.push_back(nullptr);
 		charOutNum = 0;
 		return;
 	}
 
 	if (charOutNum == 0) {
-		Renderer::renderMutex.lock();
-		SDL_Texture *texture = SDL_CreateTexture(GV::mainRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, lineRect.w, lineRect.h);
+		SurfacePtr surfacePtr(SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA8888),
+							  SDL_FreeSurface);
+		lineSurfaces.push_back(surfacePtr);
 
-		if (texture) {
-			SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
-			SDL_SetRenderTarget(GV::mainRenderer, texture);
-			SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 0);
-			SDL_RenderClear(GV::mainRenderer);
-			//Важно! SDL_RenderPresent не нужен!
-			SDL_SetRenderTarget(GV::mainRenderer, nullptr);
-
-			SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-		}else {
-			Utils::outMsg("SDL_CreateTexture", SDL_GetError());
-		}
-		Renderer::renderMutex.unlock();
-
-		TexturePtr texturePtr(texture, Utils::DestroyTexture);
-		lineTextures.push_back(texturePtr);
-
-		if (!texture) {
+		if (!surfacePtr) {
 			charOutNum = 1e9;
 			return;
 		}
@@ -367,7 +351,6 @@ void Text::addChars(String c, int color) {
 	SDL_Rect rect = {charX, 0, strWidth, charHeight};
 
 	charX += strWidth;
-//	charX -= bool(isBold || isItalic || isStrike || isUnderline) * c.size() * 1.5;
 
 	SDL_Color sdlColor;
 	sdlColor.r = color >> 16;
@@ -380,34 +363,22 @@ void Text::addChars(String c, int color) {
 		Utils::outMsg("TTF_RenderUTF8_Blended", TTF_GetError());
 		return;
 	}
-	SDL_Surface *rgbaSurface = SDL_ConvertSurfaceFormat(surfaceText, SDL_PIXELFORMAT_RGBA8888, 0);
-	if (rgbaSurface) {
-		SDL_FreeSurface(surfaceText);
-		surfaceText = rgbaSurface;
-	}else {
-		Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
-	}
 
-
-	std::lock_guard<std::mutex> g(Renderer::renderMutex);
-
-	SDL_Texture *textureText = SDL_CreateTextureFromSurface(GV::mainRenderer, surfaceText);
-	SDL_FreeSurface(surfaceText);
-
-	if (!textureText) {
-		Utils::outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
-		return;
-	}
-
-	TexturePtr texture = lineTextures.size() ? lineTextures.back() : nullptr;
-	if (texture) {
-		SDL_SetRenderTarget(GV::mainRenderer, texture.get());
-		if (SDL_RenderCopy(GV::mainRenderer, textureText, nullptr, &rect)) {
-			Utils::outMsg("SDL_RenderCopy", SDL_GetError());
+	if (surfaceText->format->format != SDL_PIXELFORMAT_RGBA8888) {
+		SDL_Surface *rgbaSurface = SDL_ConvertSurfaceFormat(surfaceText, SDL_PIXELFORMAT_RGBA8888, 0);
+		if (rgbaSurface) {
+			SDL_FreeSurface(surfaceText);
+			surfaceText = rgbaSurface;
+		}else {
+			Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
 		}
-		SDL_SetRenderTarget(GV::mainRenderer, nullptr);
 	}
-	SDL_DestroyTexture(textureText);
+
+	SurfacePtr surface = lineSurfaces.size() ? lineSurfaces.back() : nullptr;
+	if (surface) {
+		SDL_BlitSurface(surfaceText, nullptr, surface.get(), &rect);
+	}
+	SDL_FreeSurface(surfaceText);
 }
 
 void Text::setAlign(String hAlign, String vAlign) {
@@ -485,9 +456,9 @@ bool Text::checkAlpha(int x, int y) const {
 void Text::draw() const {
 	if (!enable || globalAlpha <= 0) return;
 
-	for (size_t i = 0; i < lineTextures.size(); ++i) {
-		TexturePtr texture = lineTextures[i];
-		if (!texture) continue;
+	for (size_t i = 0; i < lineSurfaces.size(); ++i) {
+		SurfacePtr surface = lineSurfaces[i];
+		if (!surface) continue;
 
 		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
 
@@ -497,7 +468,7 @@ void Text::draw() const {
 
 		SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-		pushToRender(texture, globalRotate, intAlpha, nullptr, &t, &center);
+		pushToRender(surface, globalRotate, intAlpha, nullptr, &t, &center);
 	}
 }
 

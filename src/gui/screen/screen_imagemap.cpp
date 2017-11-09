@@ -1,6 +1,7 @@
 #include "screen_imagemap.h"
 
 #include "media/py_utils.h"
+#include "media/image.h"
 #include "parser/node.h"
 
 ScreenImagemap::ScreenImagemap(Node *node):
@@ -31,7 +32,7 @@ void ScreenImagemap::updateTexture() {
 			}
 		groundPath = newGroundPath;
 
-		texture = Utils::getTexture(groundPath);
-		hover = Utils::getTexture(hoverPath);
+		surface = Image::getImage(groundPath);
+		hover = Image::getImage(hoverPath);
 	}
 }
