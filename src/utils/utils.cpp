@@ -322,19 +322,22 @@ void Utils::trimSurfacesCache(const SurfacePtr last) {
 
 	size_t cacheSize = last->w * last->h * 4;
 
-	std::map<SurfacePtr, size_t> countSurfaces;
+	std::map<SDL_Surface*, long> countSurfaces;
 	for (const std::pair<String, SurfacePtr> &p : surfaces) {
 		const SurfacePtr &surface = p.second;
-		if (countSurfaces.find(surface) == countSurfaces.end()) {
+		if (countSurfaces.find(surface.get()) == countSurfaces.end()) {
 			cacheSize += surface->w * surface->h * 4;
 		}
-		countSurfaces[surface] += 1;
+		countSurfaces[surface.get()] += 1;
 	}
+	std::map<SDL_Surface*, long> countSurfacesStart = countSurfaces;
 
 	std::vector<SurfacePtr> toDelete;
 	size_t i = 0;
 	while (cacheSize > MAX_SIZE) {
-		while (i < surfaces.size() && surfaces[i].second.use_count() > 1) {
+		while (i < surfaces.size() &&
+			   surfaces[i].second.use_count() > countSurfacesStart[surfaces[i].second.get()]
+		) {
 			++i;
 		}
 		if (i == surfaces.size()) break;
@@ -342,11 +345,11 @@ void Utils::trimSurfacesCache(const SurfacePtr last) {
 		const std::pair<String, SurfacePtr> &p = surfaces[i];
 		const SurfacePtr &surface = p.second;
 
-		if (!(countSurfaces[surface] -= 1)) {
+		if (!(countSurfaces[surface.get()] -= 1)) {
 			cacheSize -= surface->w * surface->h * 4;
 			toDelete.push_back(surface);
 		}
-		i += 1;
+		++i;
 	}
 
 	for (const SurfacePtr &s : toDelete) {
