@@ -101,6 +101,7 @@ void changeWindowSize(bool maximized) {
 				w = h * k;
 			}
 		}
+		if (w == startW && w == GV::width && h == startH && h == GV::height) return;
 
 
 		int x = 0;
@@ -124,7 +125,7 @@ void changeWindowSize(bool maximized) {
 			Config::set("window_width", w);
 			Config::set("window_height", h);
 		}
-		SDL_SetWindowSize(GV::mainWindow, w, h);
+		SDL_SetWindowSize(GV::mainWindow, w + x, h + y);
 
 		Renderer::needToRedraw = true;
 	}

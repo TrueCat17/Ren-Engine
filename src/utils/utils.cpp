@@ -302,10 +302,7 @@ TexturePtr Utils::getTexture(const SurfacePtr &surface) {
 		}
 	}
 
-	TexturePtr texture;
-	{
-		texture.reset(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
-	}
+	TexturePtr texture(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
 
 	if (texture) {
 		trimTexturesCache(surface);

@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "config.h"
+#include "gui/group.h"
 #include "utils/utils.h"
 
 
@@ -178,6 +179,9 @@ bool Renderer::init() {
 			flags = SDL_RENDERER_SOFTWARE;
 		}else {
 			flags = SDL_RENDERER_ACCELERATED;
+			if (Config::get("opengl_vsync") == "True") {
+				flags |= SDL_RENDERER_PRESENTVSYNC;
+			}
 
 			int countRenderDrivers = SDL_GetNumRenderDrivers();
 			for (int i = 0; i < countRenderDrivers; ++i) {
@@ -344,8 +348,13 @@ void Renderer::loop() {
 					checkErrors("loop", "Start");
 				}
 
-				SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255);
-				SDL_RenderClear(GV::mainRenderer);
+				if (SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255)) {
+					Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
+				}
+				if (SDL_RenderClear(GV::mainRenderer)) {
+					Utils::outMsg("SDL_RenderClear", SDL_GetError());
+				}
+
 			}
 
 			//Parts 1..L
@@ -410,6 +419,30 @@ void Renderer::loop() {
 			//Part L+1
 			{
 				std::lock_guard<std::mutex> g(Renderer::renderMutex);
+
+				if (GV::screens) {
+					int w = GV::screens->getX();
+					int h = GV::screens->getY();
+					SDL_Rect empty = {0, 0, GV::width, GV::height};
+					if (!h) {
+						empty.w = w;
+					}else {
+						empty.h = h;
+					}
+
+					if (empty.w && empty.h) {
+						if (fastOpenGL && GV::isOpenGL) {
+							glColor4f(0, 0, 0, 1);
+							checkErrors("loop", "glColor4f");
+							glRecti(0, 0, empty.w, empty.h);
+							checkErrors("loop", "glRecti");
+						}else {
+							if (SDL_RenderFillRect(GV::mainRenderer, &empty)) {
+								Utils::outMsg("SDL_RenderFillRect", SDL_GetError());
+							}
+						}
+					}
+				}
 
 				if (screenshotting) {
 					readPixels();

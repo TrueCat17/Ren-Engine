@@ -493,7 +493,6 @@ void Game::setFps(int fps) {
 	frameTime = 1000 / fps;
 }
 
-extern void changeWindowSize(bool maximized);//main.cpp
 void Game::setStageSize(int width, int height) {
 	bool fullscreen = GV::fullscreen;
 	{
@@ -508,9 +507,19 @@ void Game::setStageSize(int width, int height) {
 		}
 
 		SDL_RestoreWindow(GV::mainWindow);
+		SDL_Event event;
+		event.type = SDL_WINDOWEVENT;
+		event.window.event = SDL_WINDOWEVENT_RESTORED;
+		if (SDL_PushEvent(&event) < 0) {
+			Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
+		}
+
 		SDL_SetWindowSize(GV::mainWindow, width, height);
+		event.window.event = SDL_WINDOWEVENT_RESIZED;
+		if (SDL_PushEvent(&event) < 0) {
+			Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
+		}
 	}
-	changeWindowSize(false);
 }
 void Game::setFullscreen(bool value) {
 	if (value) {
