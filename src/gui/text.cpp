@@ -97,6 +97,7 @@ void Text::setText(const String &text, int color) {
 	if (text && !font) {
 		setFont("", 20, true);
 	}
+	if (!font) return;
 
 	size_t countLinesAtStart = 0;
 

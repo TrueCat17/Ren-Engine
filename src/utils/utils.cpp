@@ -66,7 +66,9 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 }
 
 void Utils::init() {
-	ROOT = "../resources/";
+	char *charsPath = SDL_GetBasePath();
+	ROOT = String(charsPath) + "../resources/";
+	SDL_free(charsPath);
 	FONTS = ROOT + "fonts/";
 
 	for (size_t i = 0; i < 360; ++i) {

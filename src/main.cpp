@@ -33,9 +33,6 @@ int startWindowWidth = 0;
 int startWindowHeight = 0;
 
 void changeWindowSize(bool maximized) {
-	static std::mutex m;
-	std::lock_guard<std::mutex> g(m);
-
 	int startW, startH;
 	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
 
@@ -440,6 +437,9 @@ int main() {
 		return 0;
 	}
 	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime);
+
+	const char *platform = SDL_GetPlatform();
+	Logger::log(String("OS: ") + platform);
 
 	SDL_RendererInfo info;
 	SDL_GetRendererInfo(GV::mainRenderer, &info);
