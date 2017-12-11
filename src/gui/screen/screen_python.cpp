@@ -4,7 +4,7 @@
 #include "parser/node.h"
 
 ScreenPython::ScreenPython(Node *node, bool isBlock):
-	ScreenChild(node, nullptr),
+	ScreenChild(node, nullptr, nullptr),
 	isBlock(isBlock)
 { }
 

@@ -1,5 +1,5 @@
 #include "screen_null.h"
 
-ScreenNull::ScreenNull(Node *node): ScreenContainer(node, this) {
-
-}
+ScreenNull::ScreenNull(Node *node, Screen *screen):
+	ScreenContainer(node, this, screen)
+{ }

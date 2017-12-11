@@ -25,7 +25,7 @@ public:
 	bool isHBox() const { return hasHBox; }
 	bool isVBox() const { return hasVBox; }
 
-	ScreenContainer(Node* node, ScreenChild *screenParent);
+	ScreenContainer(Node* node, ScreenChild *screenParent, Screen *screen);
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
 

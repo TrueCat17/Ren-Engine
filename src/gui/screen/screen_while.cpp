@@ -4,8 +4,8 @@
 #include "parser/node.h"
 
 
-ScreenWhile::ScreenWhile(Node *node, ScreenChild *screenParent):
-	ScreenContainer(node, screenParent),
+ScreenWhile::ScreenWhile(Node *node, ScreenChild *screenParent, Screen *screen):
+	ScreenContainer(node, screenParent, screen),
 	condition(node->params)
 {
 	needUpdateChildren = false;

@@ -33,8 +33,8 @@
 #include "media/py_utils.h"
 
 
-ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent):
-	ScreenChild(node, screenParent)
+ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent, Screen *screen):
+	ScreenChild(node, screenParent, screen)
 {
 	setProp(ScreenProp::SPACING, node->getPropCode("spacing"));
 
@@ -191,66 +191,66 @@ void ScreenContainer::addChildrenFromNode() {
 			const String &scrName = childNode->params;
 			Node *scrNode = Screen::getDeclared(scrName);
 
-			child = new Screen(scrNode);
+			child = new Screen(scrNode, screen);
 		}else
 
 		if (childCommand == "key") {
-			child = new ScreenKey(childNode);
+			child = new ScreenKey(childNode, screen);
 		}else
 
 		if (childCommand == "vbox") {
-			child = new ScreenVBox(childNode);
+			child = new ScreenVBox(childNode, screen);
 		}else
 
 		if (childCommand == "hbox") {
-			child = new ScreenHBox(childNode);
+			child = new ScreenHBox(childNode, screen);
 		}else
 
 		if (childCommand == "null") {
-			child = new ScreenNull(childNode);
+			child = new ScreenNull(childNode, screen);
 		}else
 
 		if (childCommand == "imagemap") {
-			child = new ScreenImagemap(childNode);
+			child = new ScreenImagemap(childNode, screen);
 		}else
 
 		if (childCommand == "hotspot") {
-			child = new ScreenHotspot(childNode);
+			child = new ScreenHotspot(childNode, screen);
 		}else
 
 		if (childCommand == "image") {
-			child = new ScreenImage(childNode);
+			child = new ScreenImage(childNode, screen);
 		}else
 
 		if (childCommand == "text") {
-			child = new ScreenText(childNode);
+			child = new ScreenText(childNode, screen);
 		}else
 
 		if (childCommand == "button" || childCommand == "textbutton") {//button is textbutton with empty text
-			child = new ScreenTextButton(childNode);
+			child = new ScreenTextButton(childNode, screen);
 		}else
 
 		if (childCommand == "if") {
-			child = new ScreenIf(childNode, screenParent);
+			child = new ScreenIf(childNode, screenParent, screen);
 			prev = dynamic_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "elif") {
-			child = new ScreenElif(childNode, screenParent, prev);
+			child = new ScreenElif(childNode, screenParent, screen, prev);
 			prev = dynamic_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "else") {
-			child = new ScreenElse(childNode, screenParent, prev);
+			child = new ScreenElse(childNode, screenParent, screen, prev);
 		}else
 
 		if (childCommand == "for") {
-			child = new ScreenFor(childNode, screenParent);
+			child = new ScreenFor(childNode, screenParent, screen);
 			prev = dynamic_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "while") {
-			child = new ScreenWhile(childNode, screenParent);
+			child = new ScreenWhile(childNode, screenParent, screen);
 			prev = dynamic_cast<ScreenContainer*>(child);
 		}else
 

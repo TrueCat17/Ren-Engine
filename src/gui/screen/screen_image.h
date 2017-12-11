@@ -6,7 +6,7 @@
 
 class ScreenImage: public ScreenContainer {
 public:
-	ScreenImage(Node *node);
+	ScreenImage(Node *node, Screen *screen);
 
 	virtual void calculateProps();
 	virtual void updateTexture();

@@ -28,7 +28,7 @@ protected:
 	Text *tf;
 
 public:
-	ScreenText(Node *node);
+	ScreenText(Node *node, Screen *screen);
 	virtual void calculateProps();
 	virtual void updateSize();
 

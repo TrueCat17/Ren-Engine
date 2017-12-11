@@ -28,7 +28,7 @@ public:
 	static void setFirstDownState(SDL_Scancode key);
 	static void setUpState(SDL_Scancode key);
 
-	ScreenKey(Node *node);
+	ScreenKey(Node *node, Screen *screen);
 	~ScreenKey();
 
 	virtual void calculateProps();

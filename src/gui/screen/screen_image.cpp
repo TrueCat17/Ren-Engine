@@ -5,8 +5,8 @@
 #include "parser/node.h"
 
 
-ScreenImage::ScreenImage(Node *node):
-	ScreenContainer(node, this)
+ScreenImage::ScreenImage(Node *node, Screen *screen):
+	ScreenContainer(node, this, screen)
 {
 	setProp(ScreenProp::IMAGE_PATH, NodeProp::initPyExpr(node->getFirstParam(), getNumLine()));
 

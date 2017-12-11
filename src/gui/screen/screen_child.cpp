@@ -13,7 +13,8 @@
 
 std::vector<ScreenChild*> ScreenChild::screenObjects;
 
-ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent):
+ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent, Screen *screen):
+	screen(screen),
 	screenParent(screenParent),
 	node(node)
 {
@@ -118,14 +119,6 @@ void ScreenChild::calculateProps() {
 		for (ScreenChild *screenChild : screenChildren) {
 			screenChild->calculateProps();
 		}
-	}
-
-	if (!screen) {
-		const DisplayObject *t = this;
-		while (t && !dynamic_cast<const Screen*>(t)) {
-			t = t->parent;
-		}
-		screen = dynamic_cast<const Screen*>(t);
 	}
 
 	bool inHBox = false;
@@ -463,7 +456,6 @@ void ScreenChild::updatePos() {
 		}
 	}
 }
-
 
 bool ScreenChild::isModal() const {
 	bool screenIsModal = screen ? screen->screenIsModal() : false;

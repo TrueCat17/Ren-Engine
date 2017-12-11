@@ -5,7 +5,7 @@
 
 class ScreenHBox: public ScreenContainer {
 public:
-	ScreenHBox(Node* node);
+	ScreenHBox(Node* node, Screen *screen);
 };
 
 #endif // SCREENHBOX_H

@@ -5,7 +5,7 @@
 
 class ScreenElse: public ScreenContainer {
 public:
-	ScreenElse(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer);
+	ScreenElse(Node *node, ScreenChild *screenParent, Screen *screen, ScreenContainer *prevContainer);
 	virtual void calculateProps();
 };
 

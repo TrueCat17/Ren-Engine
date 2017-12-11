@@ -7,8 +7,8 @@
 
 std::vector<ScreenKey*> ScreenKey::screenKeys;
 
-ScreenKey::ScreenKey(Node *node):
-	ScreenChild(node, nullptr),
+ScreenKey::ScreenKey(Node *node, Screen *screen):
+	ScreenChild(node, nullptr, screen),
 	keyStr(node->getFirstParam())
 {
 	screenKeys.push_back(this);
@@ -43,7 +43,7 @@ void ScreenKey::setToNotReact(SDL_Scancode key) {
 void ScreenKey::setFirstDownState(SDL_Scancode key) {
 	for (ScreenKey *sk : screenKeys) {
 		SDL_Scancode skKey = sk->getKey();
-		if (skKey == key) {
+		if (skKey == key && sk->isModal()) {
 			sk->lastDown = 0;
 			sk->inFirstDown = true;
 			sk->wasFirstDelay = false;
@@ -64,9 +64,8 @@ void ScreenKey::setUpState(SDL_Scancode key) {
 	}
 }
 
-
 void ScreenKey::calculateProps() {
-	if (!isModal() || toNotReact) return;
+	if (toNotReact || !isModal()) return;
 
 	ScreenChild::calculateProps();
 
@@ -139,7 +138,6 @@ void ScreenKey::calculateProps() {
 
 SDL_Scancode ScreenKey::getKey() const {
 	const String keyName = PyUtils::getStr(propValues[ScreenProp::KEY]);
-	if (!keyName) return SDL_SCANCODE_UNKNOWN;
 
 	int start = 0;
 	if (keyName.startsWith("K_", false)) {

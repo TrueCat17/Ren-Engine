@@ -5,7 +5,7 @@
 
 class ScreenNull: public ScreenContainer {
 public:
-	ScreenNull(Node* node);
+	ScreenNull(Node* node, Screen *screen);
 };
 
 #endif // SCREENNULL_H

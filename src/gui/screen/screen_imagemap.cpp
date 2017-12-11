@@ -4,8 +4,8 @@
 #include "media/image.h"
 #include "parser/node.h"
 
-ScreenImagemap::ScreenImagemap(Node *node):
-	ScreenContainer(node, this)
+ScreenImagemap::ScreenImagemap(Node *node, Screen *screen):
+	ScreenContainer(node, this, screen)
 {
 	setProp(ScreenProp::GROUND, node->getPropCode("ground"));
 	setProp(ScreenProp::HOVER, node->getPropCode("hover"));
@@ -13,9 +13,6 @@ ScreenImagemap::ScreenImagemap(Node *node):
 	preparationToUpdateCalcProps();
 }
 
-void ScreenImagemap::calculateProps() {
-	ScreenContainer::calculateProps();
-}
 void ScreenImagemap::updateTexture() {
 	if (propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER]) {
 		propWasChanged[ScreenProp::GROUND] = false;

@@ -16,7 +16,7 @@ private:
 	String propName;
 
 public:
-	ScreenFor(Node *node, ScreenChild *screenParent);
+	ScreenFor(Node *node, ScreenChild *screenParent, Screen *screen);
 	virtual ~ScreenFor();
 	virtual void calculateProps();
 };

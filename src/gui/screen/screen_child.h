@@ -18,8 +18,7 @@ private:
 protected:
 	static std::vector<ScreenChild*> screenObjects;
 
-
-	const Screen *screen = nullptr;
+	Screen *screen;
 	ScreenChild *screenParent;
 
 	Node *node;
@@ -66,7 +65,7 @@ public:
 	std::vector<ScreenChild*> screenChildren;
 	ScreenChild *propsUpdater = nullptr;
 
-	ScreenChild(Node *node, ScreenChild *screenParent);
+	ScreenChild(Node *node, ScreenChild *screenParent, Screen *screen);
 	virtual ~ScreenChild();
 
 	void clearProps();
@@ -80,6 +79,7 @@ public:
 	virtual void updateSize();
 	virtual void updatePos();
 
+	Screen* getScreen() const { return screen; }
 	bool isModal() const;
 	bool isFakeContainer() const { return _isFakeContainer; }
 	bool canCrop() const { return _canCrop; }

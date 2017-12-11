@@ -4,7 +4,9 @@
 #include "media/py_utils.h"
 #include "parser/node.h"
 
-ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent): ScreenContainer(node, screenParent) {
+ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent, Screen *screen):
+	ScreenContainer(node, screenParent, screen)
+{
 	needUpdateChildren = false;
 
 	String params = node->params;

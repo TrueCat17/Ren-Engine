@@ -58,7 +58,7 @@ void Screen::show(const String &name) {
 		return;
 	}
 
-	scr = new Screen(node);
+	scr = new Screen(node, nullptr);
 	GV::screens->addChild(scr);
 
 	scr->calculateProps();
@@ -107,10 +107,10 @@ void Screen::updateScreens() {
 	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
 void Screen::updateScreenProps() {
-	needUpdateChildren = false;
 	xSize = GV::width;
 	ySize = GV::height;
 	xSizeIsDouble = ySizeIsDouble = false;
+	needUpdateChildren = false;
 	calculateProps();
 	needUpdateChildren = true;
 
@@ -139,10 +139,12 @@ void Screen::updateScreenProps() {
 
 
 
-Screen::Screen(Node *node):
-	ScreenContainer(node, this),
+Screen::Screen(Node *node, Screen *screen):
+	ScreenContainer(node, this, screen ? screen : this),
 	name(node->name)
 {
+	screen = this;
+
 	setProp(ScreenProp::MODAL, node->getPropCode("modal"));
 	setProp(ScreenProp::ZORDER, node->getPropCode("zorder"));
 

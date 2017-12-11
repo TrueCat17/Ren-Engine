@@ -76,7 +76,7 @@ public:
 	std::vector<Node*> children;
 
 
-	Node(String fileName, size_t numLine):
+	Node(const String &fileName, size_t numLine):
 		fileName(fileName),
 		numLine(numLine),
 		childNum(0)

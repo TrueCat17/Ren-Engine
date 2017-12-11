@@ -16,7 +16,7 @@ private:
 public:
 	BtnRect btnRect;
 
-	ScreenTextButton(Node *node);
+	ScreenTextButton(Node *node, Screen *screen);
 	virtual void calculateProps();
 	virtual void updateTexture();
 	virtual void updateSize();

@@ -12,9 +12,8 @@ private:
 public:
 	SurfacePtr hover = nullptr;
 
-	ScreenImagemap(Node *node);
+	ScreenImagemap(Node *node, Screen *screen);
 
-	virtual void calculateProps();
 	virtual void updateTexture();
 };
 

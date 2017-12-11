@@ -5,7 +5,7 @@
 
 class ScreenVBox: public ScreenContainer {
 public:
-	ScreenVBox(Node *node);
+	ScreenVBox(Node *node, Screen *screen);
 };
 
 #endif // SCREENVBOX_H

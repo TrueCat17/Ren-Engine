@@ -10,7 +10,7 @@ private:
 	String condition;
 
 public:
-	ScreenWhile(Node *node, ScreenChild *screenParent);
+	ScreenWhile(Node *node, ScreenChild *screenParent, Screen *screen);
 	virtual void calculateProps();
 };
 

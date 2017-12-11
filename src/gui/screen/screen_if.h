@@ -9,7 +9,7 @@ class ScreenIf: public ScreenContainer {
 private:
 	String condition;
 public:
-	ScreenIf(Node* node, ScreenChild *screenParent);
+	ScreenIf(Node* node, ScreenChild *screenParent, Screen *screen);
 	virtual void calculateProps();
 };
 

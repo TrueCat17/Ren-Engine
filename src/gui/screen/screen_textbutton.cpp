@@ -5,8 +5,8 @@
 #include "media/py_utils.h"
 
 
-ScreenTextButton::ScreenTextButton(Node* node):
-	ScreenText(node)
+ScreenTextButton::ScreenTextButton(Node* node, Screen *screen):
+	ScreenText(node, screen)
 {
 	auto onLeftClick = [this](DisplayObject*) {
 		const NodeProp activateSound = this->node->getPropCode("activate_sound");
@@ -98,11 +98,13 @@ void ScreenTextButton::calculateProps() {
 	}
 	prevMouseOver = btnRect.mouseOvered;
 
-	if (btnRect.mouseLeftDown && isModal()) {
-		btnRect.onLeftClick();
-	}
-	if (btnRect.mouseRightDown && isModal()) {
-		btnRect.onRightClick();
+	if (isModal()) {
+		if (btnRect.mouseLeftDown) {
+			btnRect.onLeftClick();
+		}
+		if (btnRect.mouseRightDown) {
+			btnRect.onRightClick();
+		}
 	}
 }
 void ScreenTextButton::updateTexture() {

@@ -7,8 +7,8 @@
 #include "media/py_utils.h"
 #include "parser/node.h"
 
-ScreenText::ScreenText(Node *node):
-	ScreenChild(node, this),
+ScreenText::ScreenText(Node *node, Screen *screen):
+	ScreenChild(node, this, screen),
 	textExec(node->getFirstParam())
 {
 	tf = new Text();

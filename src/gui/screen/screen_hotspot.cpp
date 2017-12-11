@@ -11,8 +11,8 @@
 #include "parser/node.h"
 
 
-ScreenHotspot::ScreenHotspot(Node *node):
-	ScreenChild(node, this),
+ScreenHotspot::ScreenHotspot(Node *node, Screen *screen):
+	ScreenChild(node, this, screen),
 	rectStr(node->getFirstParam())
 {
 	auto onLeftClick = [this](DisplayObject*) {
@@ -174,11 +174,13 @@ void ScreenHotspot::calculateProps() {
 	}
 	prevMouseOver = btnRect.mouseOvered;
 
-	if (btnRect.mouseLeftDown && isModal()) {
-		btnRect.onLeftClick();
-	}
-	if (btnRect.mouseRightDown && isModal()) {
-		btnRect.onRightClick();
+	if (isModal()) {
+		if (btnRect.mouseLeftDown) {
+			btnRect.onLeftClick();
+		}
+		if (btnRect.mouseRightDown) {
+			btnRect.onRightClick();
+		}
 	}
 }
 

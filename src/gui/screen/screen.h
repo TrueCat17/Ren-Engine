@@ -42,7 +42,7 @@ public:
 	static bool hasScreen(const std::string &name) { return getMain(name); }
 
 
-	Screen(Node *node);
+	Screen(Node *node, Screen *screen);
 
 	const String& getName() const { return name; }
 	double zOrder() const { return _zOrder; }

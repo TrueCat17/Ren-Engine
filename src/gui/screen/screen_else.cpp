@@ -1,7 +1,7 @@
 #include "screen_else.h"
 
-ScreenElse::ScreenElse(Node *node, ScreenChild *screenParent, ScreenContainer *prevContainer):
-	ScreenContainer(node, screenParent)
+ScreenElse::ScreenElse(Node *node, ScreenChild *screenParent, Screen *screen, ScreenContainer *prevContainer):
+	ScreenContainer(node, screenParent, screen)
 {
 	this->prevContainer = prevContainer;
 }

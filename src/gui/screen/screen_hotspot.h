@@ -17,7 +17,7 @@ private:
 public:
 	BtnRect btnRect;
 
-	ScreenHotspot(Node *node);
+	ScreenHotspot(Node *node, Screen *screen);
 
 	virtual bool checkAlpha(int x, int y) const;
 
