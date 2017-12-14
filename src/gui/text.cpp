@@ -234,7 +234,11 @@ void Text::addText() {
 			else if (type.startsWith("color")) {
 				if (k == 1) {
 					int sepIndex = type.find('=');
-					int newColor = String(type.substr(sepIndex + 1)).toInt(16);
+					String colorStr = type.substr(sepIndex + 1);
+					if (colorStr && colorStr[0] == '#') {
+						colorStr.erase(0, 1);
+					}
+					int newColor = colorStr.toInt(16);
 
 					curColor = newColor;
 				}else {
