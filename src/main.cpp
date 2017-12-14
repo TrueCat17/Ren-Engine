@@ -17,6 +17,7 @@
 #include "gui/screen/screen_child.h"
 #include "gui/screen/screen_key.h"
 
+#include "media/image.h"
 #include "media/music.h"
 #include "media/py_utils.h"
 
@@ -166,8 +167,6 @@ bool init() {
 	}
 
 	Mouse::init();
-	Music::init();
-	SyntaxChecker::init();
 
 
 	size_t fps = Config::get("max_fps").toInt();
@@ -216,6 +215,9 @@ bool init() {
 	if (Renderer::init()) {
 		return true;
 	}
+	Image::init();
+	Music::init();
+	SyntaxChecker::init();
 
 	return false;
 }
