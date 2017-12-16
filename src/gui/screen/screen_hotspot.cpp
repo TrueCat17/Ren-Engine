@@ -77,7 +77,7 @@ bool ScreenHotspot::checkAlpha(int x, int y) const {
 	SurfacePtr hover = imagemap->hover;
 	Uint32 hoverPixel = Utils::getPixel(hover, rect, parent->getCropRect());
 
-	Uint8 alpha = hoverPixel & 0xFF;
+	Uint8 alpha = (hoverPixel & hover->format->Amask) >> hover->format->Ashift;
 	return alpha > 0;
 }
 

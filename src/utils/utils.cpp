@@ -406,43 +406,18 @@ SurfacePtr Utils::getSurface(const String &path) {
 
 	SurfacePtr surface(IMG_Load(fullPath.c_str()), SDL_FreeSurface);
 	if (surface) {
-		/*
-		 * Вот это вот - это костыль
-		 *
-		 * Текстура от результата от SDL_ConvertSurfaceFormat почему-то не хочет менять прозрачность
-		 * Поэтому для непрозрачных картинок (все jpg, например) используется SDL_CreateRGBSurface и SDL_BlitSurface
-		 *
-		 * Ну а SDL_BlitSurface почему-то искажает _полупрозрачные_ пиксели (например, красные -> чёрные)
-		 * Поэтому для поверхностей с прозрачностью используется SDL_ConvertSurfaceFormat
-		 *
-		 * Как сделать нормально - я не знаю
-		 */
-		if (surface->format->Amask) {
-			SurfacePtr newSurface(SDL_ConvertSurfaceFormat(surface.get(), SDL_PIXELFORMAT_RGBA8888, 0), SDL_FreeSurface);
+		if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
+			SurfacePtr newSurface(SDL_ConvertSurfaceFormat(surface.get(), SDL_PIXELFORMAT_RGBA32, 0), SDL_FreeSurface);
 			if (newSurface) {
 				surface = newSurface;
 			}else{
 				Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
 			}
-		}else {
-			SDL_Rect imgRect = { 0, 0, surface->w, surface->h };
-			SurfacePtr newSurface(SDL_CreateRGBSurface(0, imgRect.w, imgRect.h, 32,
-													   0xFF << 24, 0xFF << 16, 0xFF << 8, 0xFF),
-								  SDL_FreeSurface);
-			if (newSurface) {
-				SDL_BlitSurface(surface.get(), &imgRect, newSurface.get(), &imgRect);
-				surface = newSurface;
-			}else{
-				Utils::outMsg("SDL_CreateRGBSurface", SDL_GetError());
-			}
 		}
 
-
-		{
-			std::lock_guard<std::mutex> g2(surfaceMutex);
-			trimSurfacesCache(surface);
-			surfaces.push_back(std::make_pair(path, surface));
-		}
+		std::lock_guard<std::mutex> g2(surfaceMutex);
+		trimSurfacesCache(surface);
+		surfaces.push_back(std::make_pair(path, surface));
 
 		return surface;
 	}

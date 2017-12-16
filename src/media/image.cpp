@@ -515,15 +515,15 @@ static void maskCycles(std::mutex &guard,
 	for (int y = yStart; y < yEnd; ++y) {
 		for (int x = 0; x < w; ++x) {
 			const Uint32 maskPixel = *(const Uint32*)(maskPixels + y * imgPitch + x * imgBpp);
-			Uint8 channel = getChannel(maskPixel, img->format);
+			const Uint8 channel = getChannel(maskPixel, img->format);
 
-			if (cmp(channel, value)) {
+			if (channel && cmp(channel, value)) {
 				const Uint32 imgPixel = *(const Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
 				Uint8 r, g, b, a;
 				SDL_GetRGBA(imgPixel, img->format, &r, &g, &b, &a);
 
 				if (a) {
-					const Uint32 resPixel = SDL_MapRGBA(img->format, r, g, b, a);
+					const Uint32 resPixel = SDL_MapRGBA(img->format, r, g, b, channel);
 					*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = resPixel;
 				}
 			}

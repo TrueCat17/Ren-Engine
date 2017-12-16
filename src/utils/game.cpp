@@ -449,7 +449,10 @@ Uint32 Game::getPixel(const std::string &image, int x, int y) {
 	if (surface) {
 		SDL_Rect draw = {x, y, surface->w, surface->h};
 		SDL_Rect crop = {0, 0, surface->w, surface->h};
-		return Utils::getPixel(surface, draw, crop);
+		Uint32 pixel = Utils::getPixel(surface, draw, crop);
+		Uint8 r, g, b, a;
+		SDL_GetRGBA(pixel, surface->format, &r, &g, &b, &a);
+		return (r << 24) + (g << 16) + (b << 8) + a;
 	}
 	Utils::outMsg("Game::getPixel", "surface == nullptr");
 	return 0;
