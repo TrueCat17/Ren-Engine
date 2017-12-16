@@ -19,11 +19,11 @@ void Image::init() {
 	functions["Mask"] = mask;
 }
 
-
 void Image::loadImage(const std::string &desc) {
 	std::thread(getImage, desc).detach();
 }
 
+#include <iostream>
 SurfacePtr Image::getImage(String desc) {
 	desc = Utils::clear(desc);
 
@@ -494,14 +494,24 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 }
 
 
-template<typename T1, typename T2>
+
+
+static inline Uint8 getRed  (Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Rmask) >> format->Rshift; }
+static inline Uint8 getGreen(Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Gmask) >> format->Gshift; }
+static inline Uint8 getBlue (Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Bmask) >> format->Bshift; }
+static inline Uint8 getAlpha(Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Amask) >> format->Ashift; }
+
+static inline Uint32 get1(Uint32 a, Uint32) { return a; }
+static inline Uint32 get2(Uint32, Uint32 a) { return a; }
+
+template<typename GetChannel, typename CmpFunc, typename GetPixel, typename GetAlpha>
 static void maskCycles(std::mutex &guard,
 					   const int value,
 					   const int num,
 					   const size_t countThreads, size_t &countFinished,
 					   SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
-					   T1 getChannel,
-					   T2 cmp)
+					   GetChannel getChannel, CmpFunc cmp,
+					   GetPixel getPixel, GetAlpha getAlphaFunc)
 {
 	const Uint8 *imgPixels = (const Uint8*)img->pixels;
 
@@ -517,13 +527,15 @@ static void maskCycles(std::mutex &guard,
 			const Uint32 maskPixel = *(const Uint32*)(maskPixels + y * imgPitch + x * imgBpp);
 			const Uint8 channel = getChannel(maskPixel, img->format);
 
-			if (channel && cmp(channel, value)) {
+			if (cmp(channel, value)) {
 				const Uint32 imgPixel = *(const Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
-				Uint8 r, g, b, a;
-				SDL_GetRGBA(imgPixel, img->format, &r, &g, &b, &a);
+				const Uint8 r = getRed(imgPixel, img->format);
+				const Uint8 g = getGreen(imgPixel, img->format);
+				const Uint8 b = getBlue(imgPixel, img->format);
+				const Uint8 a = getAlphaFunc(getPixel(imgPixel, maskPixel), img->format);
 
 				if (a) {
-					const Uint32 resPixel = SDL_MapRGBA(img->format, r, g, b, channel);
+					const Uint32 resPixel = SDL_MapRGBA(img->format, r, g, b, a);
 					*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = resPixel;
 				}
 			}
@@ -533,41 +545,79 @@ static void maskCycles(std::mutex &guard,
 	std::lock_guard<std::mutex> g(guard);
 	++countFinished;
 }
-template<typename GetColor>
+template<typename GetChannel, typename GetPixel, typename GetAlpha>
 static void maskChooseCmp(std::mutex &guard,
 						  const int value, const String &cmp,
 						  const int num,
 						  const size_t countThreads, size_t &countFinished,
 						  SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
-						  GetColor getColor)
+						  GetChannel getChannel,
+						  GetPixel getPixel, GetAlpha getAlphaFunc)
 {
 	if (cmp == "l") {
 		maskCycles(guard, value, num, countThreads, countFinished,
-			  img, maskPixels, resPixels, getColor, std::less<int>());
+				   img, maskPixels, resPixels, getChannel, std::less<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "g") {
 		maskCycles(guard, value, num, countThreads, countFinished,
-			  img, maskPixels, resPixels, getColor, std::greater<int>());
+				   img, maskPixels, resPixels, getChannel, std::greater<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "e") {
 		maskCycles(guard, value, num, countThreads, countFinished,
-			  img, maskPixels, resPixels, getColor, std::equal_to<int>());
+				   img, maskPixels, resPixels, getChannel, std::equal_to<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "ne") {
 		maskCycles(guard, value, num, countThreads, countFinished,
-			  img, maskPixels, resPixels, getColor, std::not_equal_to<int>());
+				   img, maskPixels, resPixels, getChannel, std::not_equal_to<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "le") {
 		maskCycles(guard, value, num, countThreads, countFinished,
-			  img, maskPixels, resPixels, getColor, std::less_equal<int>());
+				   img, maskPixels, resPixels, getChannel, std::less_equal<int>(), getPixel, getAlphaFunc);
 	}else {//ge
 		maskCycles(guard, value, num, countThreads, countFinished,
-			  img, maskPixels, resPixels, getColor, std::greater_equal<int>());
+				   img, maskPixels, resPixels, getChannel, std::greater_equal<int>(), getPixel, getAlphaFunc);
+	}
+}
+template<typename GetChannel>
+static void maskChooseAlpha(std::mutex &guard,
+							const char alphaChannel, bool alphaFromImage,
+							const int value, const String &cmp,
+							const int num,
+							const size_t countThreads, size_t &countFinished,
+							SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
+							GetChannel getChannel)
+{
+	if (alphaChannel == 'r') {
+		if (alphaFromImage) {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getRed);
+		}else {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getRed);
+		}
+	}else
+	if (alphaChannel == 'g') {
+		if (alphaFromImage) {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getGreen);
+		}else {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getGreen);
+		}
+	}else
+	if (alphaChannel == 'b') {
+		if (alphaFromImage) {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getBlue);
+		}else {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getBlue);
+		}
+	}else {//a
+		if (alphaFromImage) {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getAlpha);
+		}else {
+			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getAlpha);
+		}
 	}
 }
 
 SurfacePtr Image::mask(const std::vector<String> &args) {
-	if (args.size() != 6) {
+	if (args.size() != 8) {
 		Utils::outMsg("Image::mask", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
@@ -606,6 +656,20 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 		return nullptr;
 	}
 
+	const String alphaStr = Utils::clear(args[6]);
+	if (alphaStr != "r" && alphaStr != "g" && alphaStr != "b" && alphaStr != "a") {
+		Utils::outMsg("Image::mask", "Некорректный канал <" + alphaStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
+	const char alphaChannel = alphaStr[0];
+
+	const String alphaImage = Utils::clear(args[7]);
+	if (alphaImage != "1" && alphaImage != "2") {
+		Utils::outMsg("Image::mask", "Некорректный номер изображения <" + alphaStr + ">, ожидалось 1 (основа) или 2 (маска):\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
+
+
 	const Uint8 *maskPixels = (Uint8*)mask->pixels;
 
 	SurfacePtr res(SDL_CreateRGBSurfaceWithFormat(img->flags, img->w, img->h, 32, img->format->format),
@@ -618,22 +682,17 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 
 
 	for (size_t i = 0; i < countThreads; ++i) {
-		auto getRed   = [](Uint32 pixel, const SDL_PixelFormat *format) -> Uint8 { return (pixel & format->Rmask) >> format->Rshift; };
-		auto getGreen = [](Uint32 pixel, const SDL_PixelFormat *format) -> Uint8 { return (pixel & format->Gmask) >> format->Gshift; };
-		auto getBlue  = [](Uint32 pixel, const SDL_PixelFormat *format) -> Uint8 { return (pixel & format->Bmask) >> format->Bshift; };
-		auto getAlpha = [](Uint32 pixel, const SDL_PixelFormat *format) -> Uint8 { return (pixel & format->Amask) >> format->Ashift; };
-
 		auto chooseChannel = [&](const int num) {
 			if (channel == 'r') {
-				maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getRed);
+				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getRed);
 			}else
 			if (channel == 'g') {
-				maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getGreen);
+				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getGreen);
 			}else
 			if (channel == 'b') {
-				maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getBlue);
+				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getBlue);
 			}else {//a
-				maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getAlpha);
+				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getAlpha);
 			}
 		};
 		std::thread(chooseChannel, i).detach();

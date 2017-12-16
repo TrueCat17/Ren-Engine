@@ -407,11 +407,14 @@ SurfacePtr Utils::getSurface(const String &path) {
 	SurfacePtr surface(IMG_Load(fullPath.c_str()), SDL_FreeSurface);
 	if (surface) {
 		if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
-			SurfacePtr newSurface(SDL_ConvertSurfaceFormat(surface.get(), SDL_PIXELFORMAT_RGBA32, 0), SDL_FreeSurface);
+			SurfacePtr newSurface(SDL_CreateRGBSurfaceWithFormat(0, surface->w, surface->h, 32, SDL_PIXELFORMAT_RGBA32),
+								  SDL_FreeSurface);
 			if (newSurface) {
+				SDL_Rect rect = { 0, 0, surface->w, surface->h };
+				SDL_BlitSurface(surface.get(), &rect, newSurface.get(), &rect);
 				surface = newSurface;
 			}else{
-				Utils::outMsg("SDL_ConvertSurfaceFormat", SDL_GetError());
+				Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
 			}
 		}
 
