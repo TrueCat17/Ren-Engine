@@ -19,6 +19,7 @@ private:
 	static SurfacePtr matrixColor(const std::vector<String> &args);
 	static SurfacePtr reColor(const std::vector<String> &args);
 	static SurfacePtr rotozoom(const std::vector<String> &args);
+	static SurfacePtr mask(const std::vector<String> &args);
 
 public:
 	static void init();
