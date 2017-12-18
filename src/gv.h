@@ -39,6 +39,7 @@ public:
 
 	static Group *screens;
 
+	static int frameStartTime;
 	static std::mutex updateMutex;
 
 	static Node *mainExecNode;

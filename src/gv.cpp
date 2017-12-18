@@ -22,6 +22,7 @@ const Uint8 *GV::keyBoardState = nullptr;
 
 Group *GV::screens = nullptr;
 
+int GV::frameStartTime = 0;
 std::mutex GV::updateMutex;
 
 Node *GV::mainExecNode = nullptr;

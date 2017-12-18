@@ -111,7 +111,7 @@ void ScreenKey::calculateProps() {
 	}else
 
 	if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
-		int dTime = Utils::getTimer() - lastDown;
+		int dTime = GV::frameStartTime - lastDown;
 		int delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
 		if (dTime >= delay) {
@@ -119,7 +119,7 @@ void ScreenKey::calculateProps() {
 				wasFirstDelay = true;
 			}
 			inFirstDown = false;
-			lastDown = Utils::getTimer();
+			lastDown = GV::frameStartTime;
 
 			String action = node->getPropCode("action").pyExpr;
 			if (action) {

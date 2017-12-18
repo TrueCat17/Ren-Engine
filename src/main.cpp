@@ -243,6 +243,8 @@ void loop() {
 
 		bool mouseOutDown = false;
 
+		bool updateKeyboard = false;
+
 
 		Mouse::update();
 		BtnRect::checkMouseCursor();
@@ -310,7 +312,7 @@ void loop() {
 
 			if (event.type == SDL_KEYDOWN) {
 				if (!event.key.repeat) {
-					Game::updateKeyboard();
+					updateKeyboard = true;
 
 					SDL_Scancode key = event.key.keysym.scancode;
 
@@ -327,15 +329,18 @@ void loop() {
 			}else
 
 			if (event.type == SDL_KEYUP) {
-				SDL_Scancode key = event.key.keysym.scancode;
+				updateKeyboard = true;
 
-				Game::updateKeyboard();
+				SDL_Scancode key = event.key.keysym.scancode;
 				ScreenKey::setUpState(key);
 			}
 		}
 
 		if (mouseOut) {
 			mouseOutDown = SDL_GetGlobalMouseState(nullptr, nullptr);
+		}
+		if (updateKeyboard) {
+			Game::updateKeyboard();
 		}
 
 		if (resizeWithoutMouseDown || !(mouseWasDown || mouseWasUp)) {
@@ -350,6 +355,7 @@ void loop() {
 		}
 		mouseOutPrevDown = mouseOutDown;
 
+		GV::frameStartTime = Utils::getTimer();
 		GUI::update();
 
 		{
