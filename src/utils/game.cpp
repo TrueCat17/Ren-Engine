@@ -433,7 +433,7 @@ int Game::getTextureWidth(const std::string &image) {
 		return surface->w;
 	}
 	Utils::outMsg("Game::getTextureWidth", "surface == nullptr");
-	return -1;
+	return 0;
 }
 int Game::getTextureHeight(const std::string &image) {
 	SurfacePtr surface = Image::getImage(image);
@@ -441,7 +441,7 @@ int Game::getTextureHeight(const std::string &image) {
 		return surface->h;
 	}
 	Utils::outMsg("Game::getTextureHeight", "surface == nullptr");
-	return -1;
+	return 0;
 }
 
 Uint32 Game::getPixel(const std::string &image, int x, int y) {

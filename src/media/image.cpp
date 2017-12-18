@@ -23,7 +23,6 @@ void Image::loadImage(const std::string &desc) {
 	std::thread(getImage, desc).detach();
 }
 
-#include <iostream>
 SurfacePtr Image::getImage(String desc) {
 	desc = Utils::clear(desc);
 
@@ -112,6 +111,10 @@ SurfacePtr Image::scale(const std::vector<String> &args) {
 
 	const SDL_Rect imgRect = { 0, 0, img->w, img->h };
 	SDL_Rect resRect = { 0, 0, Utils::clear(args[2]).toInt(), Utils::clear(args[3]).toInt() };
+	if (resRect.w <= 0 || resRect.h <= 0) {
+		Utils::outMsg("Image::scale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
 
 	if (imgRect.w == resRect.w && imgRect.h == resRect.h) {
 		return img;
@@ -139,7 +142,7 @@ SurfacePtr Image::factorScale(const std::vector<String> &args) {
 	}
 
 	const SDL_Rect imgRect = { 0, 0, img->w, img->h };
-	SDL_Rect resRect = { 0, 0, int(img->w * k), int(img->h * k) };
+	SDL_Rect resRect = { 0, 0, std::max(int(img->w * k), 1), std::max(int(img->h * k), 1) };
 
 	SurfacePtr res(SDL_CreateRGBSurfaceWithFormat(img->flags, resRect.w, resRect.h, 32, img->format->format),
 				   SDL_FreeSurface);
@@ -161,6 +164,10 @@ SurfacePtr Image::crop(const std::vector<String> &args) {
 
 	const SDL_Rect imgRect = { rectVec[0].toInt(), rectVec[1].toInt(), rectVec[2].toInt(), rectVec[3].toInt() };
 	SDL_Rect resRect = { 0, 0, imgRect.w, imgRect.h };
+	if (resRect.w <= 0 || resRect.h <= 0) {
+		Utils::outMsg("Image::crop", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
 
 	if (!imgRect.x && !imgRect.y && imgRect.w == img->w && imgRect.h == img->h) {
 		return img;
@@ -203,6 +210,10 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 
 		const SDL_Rect fromRect = { 0, 0, img->w, img->h };
 		SDL_Rect toRect = { posVec[0].toInt(), posVec[1].toInt(), img->w, img->h };
+		if (toRect.w <= 0 || toRect.h <= 0) {
+			Utils::outMsg("Image::composite", "Некорректные размеры:\n<" + posStr + ">");
+			continue;
+		}
 
 		SDL_BlitScaled(img.get(), &fromRect, res.get(), &toRect);
 	}
