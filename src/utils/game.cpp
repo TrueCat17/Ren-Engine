@@ -137,11 +137,6 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 		String url, fileName;
 
 		std::getline(is, url);
-		if (url.startsWith(Utils::ROOT)) {
-			url.erase(0, Utils::ROOT.size());
-		}
-
-
 		std::getline(is, fileName);
 
 		std::getline(is, tmp);
@@ -276,8 +271,18 @@ void Game::save() {
 		infoFile << musics.size() << '\n';
 		for (size_t i = 0; i < musics.size(); ++i) {
 			const Music *music = musics[i];
-			infoFile << music->getUrl() << '\n'
-					 << music->getFileName() << '\n'
+
+			String musicUrl = music->getUrl();
+			if (musicUrl.startsWith(Utils::ROOT)) {
+				musicUrl.erase(0, Utils::ROOT.size());
+			}
+			String musicFileName = music->getFileName();
+			if (musicFileName.startsWith(Utils::ROOT)) {
+				musicFileName.erase(0, Utils::ROOT.size());
+			}
+
+			infoFile << musicUrl << '\n'
+					 << musicFileName << '\n'
 					 << music->getNumLine() << ' '
 					 << music->getChannel()->name << ' '
 					 << music->getFadeIn() << ' '

@@ -143,8 +143,6 @@ Screen::Screen(Node *node, Screen *screen):
 	ScreenContainer(node, this, screen ? screen : this),
 	name(node->name)
 {
-	screen = this;
-
 	setProp(ScreenProp::MODAL, node->getPropCode("modal"));
 	setProp(ScreenProp::ZORDER, node->getPropCode("zorder"));
 
