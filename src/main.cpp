@@ -412,7 +412,14 @@ void destroy() {
 	GV::inGame = false;
 
 	int toSleep = Game::getFrameTime() * 2;
-	Utils::sleep(toSleep, false);
+
+	SDL_Event event;
+	while (toSleep) {
+		while (SDL_PollEvent(&event)) {}
+
+		Utils::sleep(1, false);
+		--toSleep;
+	}
 
 	SDL_CloseAudio();
 	SDL_Quit();

@@ -68,7 +68,7 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 	if (surface && (x >= 0 && y >= 0 && x < rect.w && y < rect.h)) {
 		SDL_Rect rect = {x, y, this->rect.w, this->rect.h};
 		Uint32 color = Utils::getPixel(surface, rect, crop);
-		Uint8 alpha = (color & surface->format->Amask) >> surface->format->Ashift;
+		Uint8 alpha = color & 255;
 
 		return alpha > 0;
 	}

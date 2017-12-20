@@ -457,4 +457,6 @@ void Renderer::loop() {
 			prevTextures.swap(textures);
 		}
 	}
+
+	SDL_DestroyRenderer(GV::mainRenderer);
 }

@@ -441,16 +441,16 @@ void Node::execute() {
 	}else
 
 	if (command == "while") {
-		bool inCicle = nextNum != NO;
+		bool inCycle = nextNum != NO;
 
 		condIsTrue = true;
 		const String cond = "bool(" + params + ")";
 
-		while (GV::inGame && (inCicle || PyUtils::exec(getFileName(), getNumLine(), cond, true) == "True")) {
+		while (GV::inGame && (inCycle || PyUtils::exec(getFileName(), getNumLine(), cond, true) == "True")) {
 			if (!GV::inGame) return;
 
 			try {
-				size_t i = inCicle ? nextNum : 0;
+				size_t i = inCycle ? nextNum : 0;
 				for (; i < children.size(); ++i) {
 					Node* node = children[i];
 					node->execute();
@@ -460,13 +460,13 @@ void Node::execute() {
 				condIsTrue = false;
 				break;
 			}
-			inCicle = false;
+			inCycle = false;
 		}
 	}else
 
 	if (command == "for") {
 		condIsTrue = true;
-		bool inCicle = nextNum != NO;
+		bool inCycle = nextNum != NO;
 
 		static const String in = " in ";
 		size_t inPos = params.find(in);
@@ -492,11 +492,11 @@ void Node::execute() {
 			if (!GV::inGame) break;
 
 			try {
-				if (!inCicle) {
+				if (!inCycle) {
 					PyUtils::exec(getFileName(), getNumLine(), onStep);
 				}
 
-				size_t i = inCicle ? nextNum : 0;
+				size_t i = inCycle ? nextNum : 0;
 				for (; i < children.size(); ++i) {
 					Node* node = children[i];
 					node->execute();
@@ -508,7 +508,7 @@ void Node::execute() {
 			}catch (StopException) {
 				break;
 			}
-			inCicle = false;
+			inCycle = false;
 		}
 
 		PyUtils::exec(getFileName(), getNumLine(), "del " + iterName);
