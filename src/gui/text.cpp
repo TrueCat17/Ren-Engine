@@ -125,7 +125,16 @@ void Text::setText(const String &text, int color) {
 
 		if (wordWrap && maxW > INDENT && lineRect.w > maxW) {//Включён перенос строк по словам (и он возможен) и он нужен
 			int n = line.size() - 1;
-			while (n && (line[n] != ' ' || getLineWidth(line.substr(0, n - 1), true) >= maxW - INDENT)) {
+			while (n > 0) {
+				size_t indexOpen = line.find_last_of('{', n);
+				size_t indexClose = line.find_last_of('}', n);
+				if (indexOpen != size_t(-1)) {
+					if (indexClose < indexOpen) {
+						n = indexOpen - 1;
+					}
+				}
+				if (line[n] == ' ' && getLineWidth(line.substr(0, n), true) < maxW - INDENT) break;
+
 				--n;
 			}
 			if (!n && //Если перенести по пробелу нельзя и
