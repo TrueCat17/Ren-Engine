@@ -193,9 +193,9 @@ void Node::execute() {
 				return;
 			}
 
-			String argsStr = "'" + args[0] + "'";
+			String argsStr = "'''" + args[0] + "'''";
 			for (size_t i = 1; i < args.size(); ++i) {
-				argsStr += ", '" + args[i] + "'";
+				argsStr += ", '''" + args[i] + "'''";
 			}
 
 			{
@@ -219,9 +219,9 @@ void Node::execute() {
 				return;
 			}
 
-			String argsStr = "'" + args[0] + "'";
+			String argsStr = "'''" + args[0] + "'''";
 			for (size_t i = 1; i < args.size(); ++i) {
-				argsStr += ", '" + args[i] + "'";
+				argsStr += ", '''" + args[i] + "'''";
 			}
 
 			PyUtils::exec(getFileName(), getNumLine(), "hide_sprite([" + argsStr + "])");
@@ -233,9 +233,9 @@ void Node::execute() {
 
 		String argsStr;
 		if (args.size()) {
-			argsStr = "'" + args[0] + "'";
+			argsStr = "'''" + args[0] + "'''";
 			for (size_t i = 1; i < args.size(); ++i) {
-				argsStr += ", '" + args[i] + "'";
+				argsStr += ", '''" + args[i] + "'''";
 			}
 		}
 
@@ -740,7 +740,7 @@ void Node::initProp(const String &name, const String &value, size_t numLine) {
 }
 
 NodeProp Node::getPropCode(const String &name, const String &commonName, const String &indexStr) const {
-	static std::vector<String> exceptions = String("if elif for while else").split(' ');
+	static const std::vector<String> exceptions = String("if elif for while else").split(' ');
 	if (Utils::in(command, exceptions)) {
 		return NodeProp::initPyExpr("None", 0);
 	}

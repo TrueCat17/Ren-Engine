@@ -211,7 +211,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 		const SDL_Rect fromRect = { 0, 0, img->w, img->h };
 		SDL_Rect toRect = { posVec[0].toInt(), posVec[1].toInt(), img->w, img->h };
 		if (toRect.w <= 0 || toRect.h <= 0) {
-			Utils::outMsg("Image::composite", "Некорректные размеры:\n<" + posStr + ">");
+			Utils::outMsg("Image::composite", "Некорректные размеры:\n<" + imgStr + ">");
 			continue;
 		}
 

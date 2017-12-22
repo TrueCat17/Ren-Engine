@@ -37,6 +37,10 @@ public:
 	static bool isList(const py::object &obj) { return PyList_CheckExact(obj.ptr()); }
 	static const std::string getStr(const py::object &obj) {
 		std::lock_guard<std::mutex> g(pyExecMutex);
+		if (PyString_CheckExact(obj.ptr())) {
+			const char *chars = PyString_AS_STRING(obj.ptr());
+			return std::string(chars);
+		}
 		return py::extract<const std::string>(py::str(obj));
 	}
 	static double getDouble(const py::object &obj, bool isFloat) {

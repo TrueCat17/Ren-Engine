@@ -15,8 +15,8 @@ ScreenTextButton::ScreenTextButton(Node* node, Screen *screen):
 						this->getFileName(), activateSound.numLine);
 		}else if (activateSound.styleName) {
 			const String sound = PyUtils::exec(this->getFileName(), this->getNumLine(),
-								  "style." + activateSound.styleName + ".activete_sound",
-								  true);
+											   "style." + activateSound.styleName + ".activete_sound",
+											   true);
 			if (sound != "None") {
 				Music::play("button_click '" + sound + "'",
 							this->getFileName(), this->getNumLine());
@@ -29,7 +29,7 @@ ScreenTextButton::ScreenTextButton(Node* node, Screen *screen):
 						  "exec_funcs(" + action.pyExpr + ")");
 		}else if (action.styleName) {
 			PyUtils::exec(this->getFileName(), this->getNumLine(),
-						  "exec_funcs(style." + action.styleName + "." + action.propName + ")");
+						  "exec_funcs(style." + action.styleName + ".action)");
 		}
 	};
 	auto onRightClick = [this](DisplayObject*) {
@@ -69,8 +69,8 @@ void ScreenTextButton::calculateProps() {
 				Music::play("button_hover " + hoverSound.pyExpr, getFileName(), hoverSound.numLine);
 			}else if (hoverSound.styleName) {
 				const String sound = PyUtils::exec(this->getFileName(), this->getNumLine(),
-									  "style." + hoverSound.styleName + ".hover_sound",
-									  true);
+												   "style." + hoverSound.styleName + ".hover_sound",
+												   true);
 				if (sound != "None") {
 					Music::play("button_hover '" + sound + "'",
 								this->getFileName(), this->getNumLine());
@@ -126,8 +126,8 @@ void ScreenTextButton::updateTexture() {
 		const String &path = !btnRect.mouseOvered ? ground : hover;
 		surface = Image::getImage(path);
 
-		if (xSizeIsTextureWidth)  xSize = surface->w;
-		if (ySizeIsTextureHeight) ySize = surface->h;
+		if (xSizeIsTextureWidth)  xSize = surface ? surface->w : 0;
+		if (ySizeIsTextureHeight) ySize = surface ? surface->h : 0;
 		ScreenText::updateSize();
 	}
 }
@@ -135,14 +135,14 @@ void ScreenTextButton::updateTexture() {
 void ScreenTextButton::updateSize() {
 	if (xSize <= 0) {
 		xSizeIsTextureWidth = true;
-		xSize = surface->w;
+		xSize = surface ? surface->w : 0;
 	}else {
 		xSizeIsTextureWidth = false;
 	}
 
 	if (ySize <= 0) {
 		ySizeIsTextureHeight = true;
-		ySize = surface->h;
+		ySize = surface ? surface->h : 0;
 	}else {
 		ySizeIsTextureHeight = false;
 	}

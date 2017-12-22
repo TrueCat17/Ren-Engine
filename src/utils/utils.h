@@ -90,6 +90,7 @@ public:
 	static Uint32 getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop);
 
 	static TexturePtr getTexture(const SurfacePtr &surface);
+	static void clearTextures() { textures.clear(); }
 
 	static bool registerImage(const String &desc, Node *declAt);
 	static bool imageWasRegistered(const std::string &name);

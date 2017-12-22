@@ -91,6 +91,7 @@ void Renderer::checkErrors(const char *from, const char *funcName) {
 		if (++countErrors == maxCountErrors) {
 			GV::isOpenGL = false;
 			Utils::outMsg("Renderer::" + String(from) + ", " + funcName, "Using OpenGL failed");
+			Utils::clearTextures();
 			break;
 		}
 
