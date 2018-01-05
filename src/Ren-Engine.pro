@@ -1,7 +1,7 @@
 TEMPLATE = app
 CONFIG += console c++11
 CONFIG -= app_bundle
-CONFIG -= qt
+CONFIG -= qt debug_and_release debug_and_release_target
 
 HEADERS += \
 	config.h \

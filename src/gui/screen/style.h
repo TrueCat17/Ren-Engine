@@ -3,6 +3,8 @@
 
 #include <map>
 
+#include <boost/python.hpp>
+
 #include "utils/utils.h"
 
 class Style {

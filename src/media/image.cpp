@@ -5,8 +5,32 @@
 
 #include <SDL2/SDL_image.h>
 
+#include "gv.h"
+
 
 std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> Image::functions;
+
+std::deque<String> Image::toLoadImages;
+std::mutex Image::toLoadMutex;
+
+size_t Image::countThreads;
+std::deque<std::pair<size_t, std::function<void(size_t)>>> Image::partsToProcessing;
+std::mutex Image::processingMutex;
+
+
+static inline Uint8 getRed  (Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Rmask) >> format->Rshift; }
+static inline Uint8 getGreen(Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Gmask) >> format->Gshift; }
+static inline Uint8 getBlue (Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Bmask) >> format->Bshift; }
+static inline Uint8 getAlpha(Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Amask) >> format->Ashift; }
+
+static inline Uint32 getPixelColor(const Uint8 r, const Uint8 g, const Uint8 b, const Uint8 a, const SDL_PixelFormat *format) {
+	return  (r << format->Rshift) |
+			(g << format->Gshift) |
+			(b << format->Bshift) |
+			(a << format->Ashift);
+}
+
+
 void Image::init() {
 	functions["Scale"] = scale;
 	functions["FactorScale"] = factorScale;
@@ -17,11 +41,63 @@ void Image::init() {
 	functions["ReColor"] = reColor;
 	functions["Rotozoom"] = rotozoom;
 	functions["Mask"] = mask;
+
+	std::thread(preloadThread).detach();
+
+	countThreads = Utils::inBounds(size_t(SDL_GetCPUCount()) * 2, 2, 16);
+	for (size_t i = 0; i < countThreads; ++i) {
+		std::thread(processingThread).detach();
+	}
+}
+
+void Image::processingThread() {
+	bool empty;
+	std::pair<size_t, std::function<void(size_t)>> p;
+
+	while (!GV::exit) {
+		{
+			std::lock_guard<std::mutex> g(processingMutex);
+			empty = partsToProcessing.empty();
+			if (!empty) {
+				p = partsToProcessing.front();
+				partsToProcessing.pop_front();
+			}
+		}
+
+		if (empty) {
+			Utils::sleep(1, false);
+		}else {
+			p.second(p.first);
+		}
+	}
 }
 
 void Image::loadImage(const std::string &desc) {
-	std::thread(getImage, desc).detach();
+	SurfacePtr image = Utils::getThereIsSurfaceOrNull(desc);
+	if (image) return;
+
+	std::lock_guard<std::mutex> g(toLoadMutex);
+
+	if (!Utils::in(desc, toLoadImages)) {
+		toLoadImages.push_back(desc);
+	}
 }
+void Image::preloadThread() {
+	while (!GV::exit) {
+		if (toLoadImages.empty()) {
+			Utils::sleep(5, false);
+		}else {
+			String desc;
+			{
+				std::lock_guard<std::mutex> g(toLoadMutex);
+				desc = toLoadImages.front();
+				toLoadImages.pop_front();
+			}
+			getImage(desc);
+		}
+	}
+}
+
 
 SurfacePtr Image::getImage(String desc) {
 	desc = Utils::clear(desc);
@@ -85,7 +161,7 @@ SurfacePtr Image::getImage(String desc) {
 	}
 
 
-	const String command = args[0];
+	const String &command = args[0];
 
 	auto it = functions.find(command);
 	if (it == functions.end()) {
@@ -247,12 +323,12 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
-
-	size_t countThreads = std::min(8, h);
+	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
-	auto f = [&](const int num) {
+
+	auto f = [&](const size_t num) {
 		const int yStart = h * (double(num) / countThreads);
 		const int yEnd = h * (double(num + 1) / countThreads);
 		for (int y = yStart; y < yEnd; ++y) {
@@ -261,11 +337,7 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 				const int _x = horizontal ? w - x - 1 : x;
 
 				const Uint32 imgPixel = *(const Uint32*)(imgPixels + _y * imgPitch + _x * imgBpp);
-				Uint8 r, g, b, a;
-				SDL_GetRGBA(imgPixel, img->format, &r, &g, &b, &a);
-
-				const Uint32 resPixel = SDL_MapRGBA(img->format, r, g, b, a);
-				*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = resPixel;
+				*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = imgPixel;
 			}
 		}
 
@@ -273,8 +345,11 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 		++countFinished;
 	};
 
-	for (size_t i = 0; i < countThreads; ++i) {
-		std::thread(f, i).detach();
+	{
+		std::lock_guard<std::mutex> g(processingMutex);
+		for (size_t i = 0; i < countThreads; ++i) {
+			partsToProcessing.push_back(std::make_pair(i, f));
+		}
 	}
 	while (countFinished != countThreads) {
 		Utils::sleep(1);
@@ -331,25 +406,29 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-	const size_t countThreads = std::min(8, h);
+	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
-	auto f = [&](const int num) {
+	auto f = [&](const size_t num) {
 		const int yStart = h * (double(num) / countThreads);
 		const int yEnd = h * (double(num + 1) / countThreads);
 		for (int y = yStart; y < yEnd; ++y) {
 			for (int x = 0; x < w; ++x) {
 				const Uint32 imgPixel = *(const Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
-				Uint8 oldR, oldG, oldB, oldA;
-				SDL_GetRGBA(imgPixel, img->format, &oldR, &oldG, &oldB, &oldA);
+
+				const Uint8 oldR = getRed(imgPixel, img->format);
+				const Uint8 oldG = getGreen(imgPixel, img->format);
+				const Uint8 oldB = getBlue(imgPixel, img->format);
+				const Uint8 oldA = getAlpha(imgPixel, img->format);
 
 				const Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + matrix[19] * 255, 0, 255);
 				if (newA) {
 					const Uint8 newR = Utils::inBounds(matrix[0] * oldR + matrix[1] * oldG + matrix[2] * oldB + matrix[3] * oldA + matrix[4] * 255, 0, 255);
 					const Uint8 newG = Utils::inBounds(matrix[5] * oldR + matrix[6] * oldG + matrix[7] * oldB + matrix[8] * oldA + matrix[9] * 255, 0, 255);
 					const Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + matrix[14] * 255, 0, 255);
-					const Uint32 resPixel = SDL_MapRGBA(img->format, newR, newG, newB, newA);
+
+					const Uint32 resPixel = getPixelColor(newR, newG, newB, newA, img->format);
 					*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = resPixel;
 				}
 			}
@@ -359,8 +438,11 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 		++countFinished;
 	};
 
-	for (size_t i = 0; i < countThreads; ++i) {
-		std::thread(f, i).detach();
+	{
+		std::lock_guard<std::mutex> g(processingMutex);
+		for (size_t i = 0; i < countThreads; ++i) {
+			partsToProcessing.push_back(std::make_pair(i, f));
+		}
 	}
 	while (countFinished != countThreads) {
 		Utils::sleep(1);
@@ -407,25 +489,30 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-	const size_t countThreads = std::min(8, h);
+	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
-	auto f = [&](const int num) {
+	auto f = [&](const size_t num) {
 		const int yStart = h * (double(num) / countThreads);
 		const int yEnd = h * (double(num + 1) / countThreads);
 		for (int y = yStart; y < yEnd; ++y) {
 			for (int x = 0; x < w; ++x) {
 				const Uint32 imgPixel = *(const Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
-				Uint8 oldR, oldG, oldB, oldA;
-				SDL_GetRGBA(imgPixel, img->format, &oldR, &oldG, &oldB, &oldA);
 
+				const Uint8 oldA = getAlpha(imgPixel, img->format);
 				const Uint8 newA = Utils::inBounds(oldA * a / 255, 0, 255);
+
 				if (newA) {
+					const Uint8 oldR = getRed(imgPixel, img->format);
+					const Uint8 oldG = getGreen(imgPixel, img->format);
+					const Uint8 oldB = getBlue(imgPixel, img->format);
+
 					const Uint8 newR = Utils::inBounds(oldR * r / 255, 0, 255);
 					const Uint8 newG = Utils::inBounds(oldG * g / 255, 0, 255);
 					const Uint8 newB = Utils::inBounds(oldB * b / 255, 0, 255);
-					const Uint32 resPixel = SDL_MapRGBA(img->format, newR, newG, newB, newA);
+
+					const Uint32 resPixel = getPixelColor(newR, newG, newB, newA, img->format);
 					*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = resPixel;
 				}
 			}
@@ -435,8 +522,11 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 		++countFinished;
 	};
 
-	for (size_t i = 0; i < countThreads; ++i) {
-		std::thread(f, i).detach();
+	{
+		std::lock_guard<std::mutex> g(processingMutex);
+		for (size_t i = 0; i < countThreads; ++i) {
+			partsToProcessing.push_back(std::make_pair(i, f));
+		}
 	}
 	while (countFinished != countThreads) {
 		Utils::sleep(1);
@@ -473,8 +563,10 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 	const int w = std::max(int(img->w * zoom), 1);
 	const int h = std::max(int(img->h * zoom), 1);
 
-	const double absSin = std::abs(Utils::getSin(angle));
-	const double absCos = std::abs(Utils::getCos(angle));
+	auto abs = [](double d) { return d < 0 ? -d : d; };
+
+	const double absSin = abs(Utils::getSin(angle));
+	const double absCos = abs(Utils::getCos(angle));
 	const int resW = w * absCos + h * absSin;
 	const int resH = w * absSin + h * absCos;
 
@@ -483,22 +575,22 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 
 	SurfacePtr res(SDL_CreateRGBSurfaceWithFormat(img->flags, resW, resH, 32, img->format->format), SDL_FreeSurface);
 
-	SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
+	std::shared_ptr<SDL_Renderer> renderer(SDL_CreateSoftwareRenderer(res.get()), SDL_DestroyRenderer);
+
 	if (!renderer) {
 		Utils::outMsg("Image::rotozoom, SDL_CreateSoftwareRenderer", SDL_GetError());
 		return nullptr;
 	}else {
-		TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
+		TexturePtr texture(SDL_CreateTextureFromSurface(renderer.get(), img.get()), SDL_DestroyTexture);
 		if (!texture) {
 			Utils::outMsg("Image::rotozoom, SDL_CreateTextureFromSurface", SDL_GetError());
 			return nullptr;
 		}else {
-			if (SDL_RenderCopyEx(renderer, texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
+			if (SDL_RenderCopyEx(renderer.get(), texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
 				Utils::outMsg("Image::rotozoom, SDL_RenderCopyEx", SDL_GetError());
 				return nullptr;
 			}
 		}
-		SDL_DestroyRenderer(renderer);
 	}
 
 	return res;
@@ -507,18 +599,13 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 
 
 
-static inline Uint8 getRed  (Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Rmask) >> format->Rshift; }
-static inline Uint8 getGreen(Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Gmask) >> format->Gshift; }
-static inline Uint8 getBlue (Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Bmask) >> format->Bshift; }
-static inline Uint8 getAlpha(Uint32 pixel, const SDL_PixelFormat *format) { return (pixel & format->Amask) >> format->Ashift; }
-
 static inline Uint32 get1(Uint32 a, Uint32) { return a; }
 static inline Uint32 get2(Uint32, Uint32 a) { return a; }
 
 template<typename GetChannel, typename CmpFunc, typename GetPixel, typename GetAlpha>
 static void maskCycles(std::mutex &guard,
 					   const int value,
-					   const int num,
+					   const size_t num,
 					   const size_t countThreads, size_t &countFinished,
 					   SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 					   GetChannel getChannel, CmpFunc cmp,
@@ -540,13 +627,14 @@ static void maskCycles(std::mutex &guard,
 
 			if (cmp(channel, value)) {
 				const Uint32 imgPixel = *(const Uint32*)(imgPixels + y * imgPitch + x * imgBpp);
-				const Uint8 r = getRed(imgPixel, img->format);
-				const Uint8 g = getGreen(imgPixel, img->format);
-				const Uint8 b = getBlue(imgPixel, img->format);
 				const Uint8 a = getAlphaFunc(getPixel(imgPixel, maskPixel), img->format);
 
 				if (a) {
-					const Uint32 resPixel = SDL_MapRGBA(img->format, r, g, b, a);
+					const Uint8 r = getRed(imgPixel, img->format);
+					const Uint8 g = getGreen(imgPixel, img->format);
+					const Uint8 b = getBlue(imgPixel, img->format);
+
+					const Uint32 resPixel = getPixelColor(r, g, b, a, img->format);
 					*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = resPixel;
 				}
 			}
@@ -559,7 +647,7 @@ static void maskCycles(std::mutex &guard,
 template<typename GetChannel, typename GetPixel, typename GetAlpha>
 static void maskChooseCmp(std::mutex &guard,
 						  const int value, const String &cmp,
-						  const int num,
+						  const size_t num,
 						  const size_t countThreads, size_t &countFinished,
 						  SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 						  GetChannel getChannel,
@@ -593,7 +681,7 @@ template<typename GetChannel>
 static void maskChooseAlpha(std::mutex &guard,
 							const char alphaChannel, bool alphaFromImage,
 							const int value, const String &cmp,
-							const int num,
+							const size_t num,
 							const size_t countThreads, size_t &countFinished,
 							SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 							GetChannel getChannel)
@@ -687,26 +775,30 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 				   SDL_FreeSurface);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
-	const size_t countThreads = std::min(8, img->h);
+	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(img->h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
 
-	for (size_t i = 0; i < countThreads; ++i) {
-		auto chooseChannel = [&](const int num) {
-			if (channel == 'r') {
-				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getRed);
-			}else
-			if (channel == 'g') {
-				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getGreen);
-			}else
-			if (channel == 'b') {
-				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getBlue);
-			}else {//a
-				maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getAlpha);
-			}
-		};
-		std::thread(chooseChannel, i).detach();
+	auto chooseChannel = [&](const size_t num) {
+		if (channel == 'r') {
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getRed);
+		}else
+		if (channel == 'g') {
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getGreen);
+		}else
+		if (channel == 'b') {
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getBlue);
+		}else {//a
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getAlpha);
+		}
+	};
+
+	{
+		std::lock_guard<std::mutex> g(processingMutex);
+		for (size_t i = 0; i < countThreads; ++i) {
+			partsToProcessing.push_back(std::make_pair(i, chooseChannel));
+		}
 	}
 	while (countFinished != countThreads) {
 		Utils::sleep(1);

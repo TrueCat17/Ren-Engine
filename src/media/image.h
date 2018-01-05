@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <map>
+#include <deque>
 #include <functional>
 
 #include "utils/utils.h"
@@ -10,6 +11,16 @@
 class Image {
 private:
 	static std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> functions;
+
+	static std::deque<String> toLoadImages;
+	static std::mutex toLoadMutex;
+	static void preloadThread();
+
+	static size_t countThreads;
+	static const size_t partsOnThreads = 4;
+	static std::deque<std::pair<size_t, std::function<void(size_t)>>> partsToProcessing;
+	static std::mutex processingMutex;
+	static void processingThread();
 
 	static SurfacePtr scale(const std::vector<String> &args);
 	static SurfacePtr factorScale(const std::vector<String> &args);

@@ -16,6 +16,7 @@ private:
 	static std::map<PyCode, PyCodeObject*> compiledObjects;
 	static py::list getMouse();
 	static py::list getLocalMouse();
+	static py::str getRootDirectory();
 
 public:
 	static const String True;

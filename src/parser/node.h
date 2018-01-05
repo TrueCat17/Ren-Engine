@@ -4,10 +4,14 @@
 #include <vector>
 #include <map>
 
-#include <boost/python.hpp>
-
 #include "utils/string.h"
 
+
+namespace boost {
+	namespace python {
+		class list;
+	}
+}
 namespace py = boost::python;
 
 

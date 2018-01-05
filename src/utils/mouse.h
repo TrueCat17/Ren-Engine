@@ -3,8 +3,15 @@
 
 #include <SDL2/SDL_mouse.h>
 
+#include <memory>
+typedef std::shared_ptr<SDL_Surface> SurfacePtr;
+
+
 class Mouse {
 private:
+	static SurfacePtr usual;
+	static SurfacePtr btn;
+
 	static SDL_Cursor *usualModeCursor;
 	static SDL_Cursor *btnModeCursor;
 

@@ -61,7 +61,6 @@ private:
 	static void readPixels();
 
 	static void loop();
-
 	static GLuint getTextureId(SDL_Texture *texture);
 	static void checkErrors(const char *from, const char *funcName);
 

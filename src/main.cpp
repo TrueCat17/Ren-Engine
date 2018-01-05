@@ -30,10 +30,10 @@
 
 
 //before windowSize-changes
-int startWindowWidth = 0;
-int startWindowHeight = 0;
+static int startWindowWidth = 0;
+static int startWindowHeight = 0;
 
-void changeWindowSize(bool maximized) {
+static void changeWindowSize(bool maximized) {
 	int startW, startH;
 	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
 

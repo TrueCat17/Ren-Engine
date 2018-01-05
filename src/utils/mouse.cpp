@@ -7,6 +7,8 @@
 
 #include "utils/utils.h"
 
+SurfacePtr Mouse::usual;
+SurfacePtr Mouse::btn;
 
 SDL_Cursor *Mouse::usualModeCursor = nullptr;
 SDL_Cursor *Mouse::btnModeCursor = nullptr;
@@ -22,7 +24,6 @@ bool Mouse::mouseDown = false;
 
 void Mouse::init() {
 	const String usualPath = Config::get("mouse_usual");
-	SurfacePtr usual = nullptr;
 	if (usualPath && usualPath != "None") {
 		usual = Utils::getSurface(usualPath);
 	}
@@ -33,7 +34,6 @@ void Mouse::init() {
 	}
 
 	const String btnPath = Config::get("mouse_btn");
-	SurfacePtr btn = nullptr;
 	if (btnPath && btnPath != "None") {
 		btn = Utils::getSurface(btnPath);
 	}

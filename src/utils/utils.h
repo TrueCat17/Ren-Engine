@@ -8,8 +8,6 @@
 #include <chrono>
 #include <mutex>
 
-#include <boost/python.hpp>
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -29,6 +27,11 @@ class ExitException {};
 
 class Node;
 
+namespace boost {
+	namespace python {
+		class list;
+	}
+}
 namespace py = boost::python;
 
 class Utils {
@@ -47,8 +50,8 @@ private:
 	static double* coss;
 
 
-	static void trimSurfacesCache(const SurfacePtr last);
-	static void trimTexturesCache(const SurfacePtr last);
+	static void trimSurfacesCache(const SurfacePtr &last);
+	static void trimTexturesCache(const SurfacePtr &last);
 
 public:
 	static String ROOT;
@@ -69,8 +72,13 @@ public:
 	template<typename T, typename MIN, typename MAX>
 	static T inBounds(T value, MIN min, MAX max) { return (value < T(min)) ? min : (value > T(max)) ? max : value; }
 
-	template<typename T>
-	static bool in(const T &value, const std::vector<T> &vec) { return std::find(vec.begin(), vec.end(), value) != vec.end(); }
+	template<typename T, typename C>
+	static bool in(const T &value, const C &container) {
+		for (const T &t : container) {
+			if (t == value) return true;
+		}
+		return false;
+	}
 
 	static bool isFirstByte(char c);
 	static void outMsg(std::string msg, const std::string &err = "");
@@ -78,14 +86,14 @@ public:
 	static TTF_Font* getFont(const String &path, int size);
 	static void destroyAllFonts();
 
-	static size_t getStartArg(const String& args, size_t end);
-	static size_t getEndArg(const String& args, size_t start);
+	static size_t getStartArg(const String &args, size_t end);
+	static size_t getEndArg(const String &args, size_t start);
 	static String clear(String s);
 	static std::vector<String> getArgs(String args);
 
 	static SurfacePtr getThereIsSurfaceOrNull(const String &path);
 	static SurfacePtr getSurface(const String &path);
-	static void setSurface(const String &path, const SurfacePtr surface);
+	static void setSurface(const String &path, const SurfacePtr &surface);
 
 	static Uint32 getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop);
 

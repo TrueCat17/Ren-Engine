@@ -1,6 +1,8 @@
 #ifndef SCREENCHILD_H
 #define SCREENCHILD_H
 
+#include <boost/python.hpp>
+
 #include "../group.h"
 
 #include  "screen_prop.h"

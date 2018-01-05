@@ -271,14 +271,14 @@ void Renderer::readPixels() {
 	SDL_Rect from = info->clip_rect;
 	SDL_Rect to = {0, 0, 640, 360};
 
-	SDL_Surface *nativeScreenshot = SDL_CreateRGBSurfaceFrom(pixels, info->w, info->h,
-													   format->BitsPerPixel, info->pitch,
-													   format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	SDL_Surface *nativeScreenshot =
+			SDL_CreateRGBSurfaceWithFormatFrom(pixels, info->w, info->h,
+											   format->BitsPerPixel, info->pitch, format->format);
 	if (!nativeScreenshot) {
 		Utils::outMsg("SDL_CreateRGBSurfaceFrom", SDL_GetError());
 		return;
 	}
-	SDL_Surface *resScreenshot = SDL_CreateRGBSurfaceWithFormat(0, to.w, to.h, 32, SDL_PIXELFORMAT_RGBA8888);
+	SDL_Surface *resScreenshot = SDL_CreateRGBSurfaceWithFormat(0, to.w, to.h, 32, SDL_PIXELFORMAT_RGBA32);
 	if (!resScreenshot) {
 		Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
 		return;
@@ -294,11 +294,11 @@ void Renderer::readPixels() {
 void Renderer::loop() {
 	bool fastOpenGL = Config::get("fast_opengl") == "True";
 
-	std::vector<RenderStruct> toRender;
-	std::vector<RenderStruct> prevToRender;
+	static std::vector<RenderStruct> toRender;
+	static std::vector<RenderStruct> prevToRender;
 
-	std::vector<TexturePtr> textures;
-	std::vector<TexturePtr> prevTextures;
+	static std::vector<TexturePtr> textures;
+	static std::vector<TexturePtr> prevTextures;
 
 
 	auto changedToRender = [&]() -> bool {

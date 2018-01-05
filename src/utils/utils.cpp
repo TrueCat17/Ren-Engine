@@ -2,17 +2,15 @@
 
 #include <iostream>
 #include <thread>
-#include <time.h>
 
 #include <boost/filesystem.hpp>
+#include <boost/python.hpp>
 #include <Python.h>
 
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
 #include "renderer.h"
-
-#include "gui/display_object.h"
 
 #include "media/image.h"
 #include "media/py_utils.h"
@@ -67,8 +65,11 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 
 void Utils::init() {
 	char *charsPath = SDL_GetBasePath();
-	ROOT = String(charsPath) + "../resources/";
+	String basePath = charsPath ? charsPath : "";
 	SDL_free(charsPath);
+	basePath.replaceAll('\\', '/');
+
+	ROOT = basePath + "../resources/";
 	FONTS = ROOT + "fonts/";
 
 	for (size_t i = 0; i < 360; ++i) {
@@ -104,7 +105,7 @@ void Utils::sleepMicroSeconds(int ms) {
 	std::this_thread::sleep_for(std::chrono::microseconds(ms));
 }
 
-void Utils::outMsg(std::string msg, const std::string& err) {
+void Utils::outMsg(std::string msg, const std::string &err) {
 	static std::map<std::string, bool> errors;
 
 	if (err.size()) {
@@ -148,7 +149,7 @@ void Utils::destroyAllFonts() {
 }
 
 
-size_t Utils::getStartArg(const String& args, size_t end) {
+size_t Utils::getStartArg(const String &args, size_t end) {
 	size_t res = end + 1;
 	while (res < args.size() && args[res] == ' ') {
 		++res;
@@ -158,7 +159,7 @@ size_t Utils::getStartArg(const String& args, size_t end) {
 	}
 	return res;
 }
-size_t Utils::getEndArg(const String& args, size_t start) {
+size_t Utils::getEndArg(const String &args, size_t start) {
 	bool wasSpace = false;
 	int b1 = 0;//open (
 	int b2 = 0;//open [
@@ -254,7 +255,7 @@ std::vector<String> Utils::getArgs(String args) {
 }
 
 
-void Utils::trimTexturesCache(const SurfacePtr last) {
+void Utils::trimTexturesCache(const SurfacePtr &last) {
 	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
 	 * пока кэш не уменьшится до нужных размеров
 	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
@@ -268,6 +269,18 @@ void Utils::trimTexturesCache(const SurfacePtr last) {
 	for (const std::pair<SurfacePtr, TexturePtr> &p : textures) {
 		const SurfacePtr &surface = p.first;
 		cacheSize += surface->w * surface->h * 4;
+	}
+
+	if (cacheSize > MAX_SIZE) {
+		for (size_t i = 0; i < textures.size(); ++i) {
+			const SurfacePtr &surface = textures[i].first;
+			if (surface.use_count() == 1) {
+				cacheSize -= surface->w * surface->h * 4;
+
+				textures.erase(textures.begin() + i, textures.begin() + i + 1);
+				--i;
+			}
+		}
 	}
 
 	size_t i = 0;
@@ -316,7 +329,7 @@ TexturePtr Utils::getTexture(const SurfacePtr &surface) {
 	return nullptr;
 }
 
-void Utils::trimSurfacesCache(const SurfacePtr last) {
+void Utils::trimSurfacesCache(const SurfacePtr &last) {
 	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
 
 	size_t cacheSize = last->w * last->h * 4;
@@ -429,7 +442,7 @@ SurfacePtr Utils::getSurface(const String &path) {
 	return nullptr;
 }
 
-void Utils::setSurface(const String &path, const SurfacePtr surface) {
+void Utils::setSurface(const String &path, const SurfacePtr &surface) {
 	if (!surface) return;
 
 	std::lock_guard<std::mutex> g(surfaceMutex);

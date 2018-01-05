@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include <boost/filesystem.hpp>
+#include <boost/python.hpp>
 
 #include "gv.h"
 #include "config.h"
