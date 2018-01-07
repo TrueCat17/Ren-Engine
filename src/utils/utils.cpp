@@ -149,9 +149,9 @@ void Utils::destroyAllFonts() {
 }
 
 
-size_t Utils::getStartArg(const String &args, size_t end) {
+size_t Utils::getStartArg(const String &args, size_t end, const char separator) {
 	size_t res = end + 1;
-	while (res < args.size() && args[res] == ' ') {
+	while (res < args.size() && args[res] == separator) {
 		++res;
 	}
 	if (res >= args.size()) {
@@ -159,8 +159,8 @@ size_t Utils::getStartArg(const String &args, size_t end) {
 	}
 	return res;
 }
-size_t Utils::getEndArg(const String &args, size_t start) {
-	bool wasSpace = false;
+size_t Utils::getEndArg(const String &args, size_t start, const char separator) {
+	bool wasSeparator = false;
 	int b1 = 0;//open (
 	int b2 = 0;//open [
 	bool q1 = false;//open '
@@ -168,10 +168,10 @@ size_t Utils::getEndArg(const String &args, size_t start) {
 
 	size_t i = start;
 	for (; i < args.size(); ++i) {
-		char c = args[i];
-		wasSpace = wasSpace || (c == ' ');
+		const char c = args[i];
+		wasSeparator = wasSeparator || (c == separator);
 
-		if (wasSpace && !b1 && !b2 && !q1 && !q2) break;
+		if (wasSeparator && !b1 && !b2 && !q1 && !q2) break;
 
 		if (c == '\'' && !q2) {
 			q1 = !q1;
@@ -228,7 +228,7 @@ String Utils::clear(String s) {
 	return s;
 }
 
-std::vector<String> Utils::getArgs(String args) {
+std::vector<String> Utils::getArgs(String args, const char separator) {
 	size_t start = args.find_first_not_of(' ');
 	size_t end = args.find_last_not_of(' ') + 1;
 
@@ -242,14 +242,14 @@ std::vector<String> Utils::getArgs(String args) {
 
 	start = 0;
 	while (start != size_t(-1)) {
-		end = Utils::getEndArg(args, start);
+		end = Utils::getEndArg(args, start, separator);
 
 		String t = args.substr(start, end - start);
 		if (t) {
 			res.push_back(t);
 		}
 
-		start = Utils::getStartArg(args, end);
+		start = Utils::getStartArg(args, end, separator);
 	}
 	return res;
 }

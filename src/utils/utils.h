@@ -86,10 +86,10 @@ public:
 	static TTF_Font* getFont(const String &path, int size);
 	static void destroyAllFonts();
 
-	static size_t getStartArg(const String &args, size_t end);
-	static size_t getEndArg(const String &args, size_t start);
+	static size_t getStartArg(const String &args, size_t end, const char separator = ' ');
+	static size_t getEndArg(const String &args, size_t start, const char separator = ' ');
 	static String clear(String s);
-	static std::vector<String> getArgs(String args);
+	static std::vector<String> getArgs(String args, const char separator = ' ');
 
 	static SurfacePtr getThereIsSurfaceOrNull(const String &path);
 	static SurfacePtr getSurface(const String &path);

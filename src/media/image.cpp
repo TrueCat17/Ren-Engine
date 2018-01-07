@@ -147,7 +147,7 @@ SurfacePtr Image::getImage(String desc) {
 	} deleter(desc);
 
 
-	const std::vector<String> args = Utils::getArgs(desc);
+	const std::vector<String> args = Utils::getArgs(desc, '|');
 
 	if (args.empty()) {
 		Utils::outMsg("Image::getImage", "Список аргументов пуст");
