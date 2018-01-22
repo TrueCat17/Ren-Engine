@@ -102,6 +102,9 @@ SOURCES += \
 	utils/string.cpp \
 	utils/utils.cpp
 
+CONFIG(release) {
+	QMAKE_LFLAGS += -s
+}
 
 win32 {
 LIBS += -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32 \

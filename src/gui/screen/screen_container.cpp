@@ -84,7 +84,7 @@ void ScreenContainer::updateSize() {
 			child->setX(width);
 
 			int w = child->getWidth();
-			if (w) {
+			if (w > 0) {
 				width += w + indent;
 			}
 		}
@@ -115,7 +115,7 @@ void ScreenContainer::updateSize() {
 			child->setY(height);
 
 			int h = child->getHeight();
-			if (h) {
+			if (h > 0) {
 				height += h + indent;
 			}
 		}
