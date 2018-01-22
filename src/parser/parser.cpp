@@ -197,9 +197,9 @@ Node* Parser::getMainNode() {
 }
 
 void Parser::initScreenNode(Node *node) {
-	static const String compsWithFirstParamStr = "key, text, textbutton, imagebutton, image, hotspot";
-	static const std::vector<String> compsWithFirstParam = String(compsWithFirstParamStr).split(", ");
-	static const std::vector<String> compsMbWithParams = String(compsWithFirstParamStr + ", button, null, window, vbox, hbox").split(", ");
+	static const String compsWithFirstParamStr = "key, text, textbutton, image, hotspot";
+	static const std::vector<String> compsWithFirstParam = compsWithFirstParamStr.split(", ");
+	static const std::vector<String> compsMbWithParams = (compsWithFirstParamStr + ", button, null, window, vbox, hbox").split(", ");
 
 	bool initOnlyChildren = !Utils::in(node->command, compsMbWithParams);
 	for (Node *childNode : node->children) {
@@ -210,7 +210,7 @@ void Parser::initScreenNode(Node *node) {
 	if (initOnlyChildren) return;
 
 	bool firstIsProp = Utils::in(node->command, compsWithFirstParam);
-	std::vector<String> args = Utils::getArgs(node->params);
+	const std::vector<String> args = Utils::getArgs(node->params);
 	if (firstIsProp) {
 		node->setFirstParam(args[0]);
 	}
@@ -218,7 +218,7 @@ void Parser::initScreenNode(Node *node) {
 		const String &name = args[i];
 		bool t;
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
-			String str = node->command + ' ' + node->params;
+			const String str = node->command + ' ' + node->params;
 			Utils::outMsg("Parser::initScreenNode",
 						  "Неверный синтаксис в строке <" + str + ">\n"
 						  "Параметр <" + name + "> не является свойством объекта типа <" + node->command + ">\n\n" +
@@ -253,6 +253,13 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	}
 
 	bool block = start != end - 1;
+	if (!block && headLine.back() == ':') {
+		Utils::outMsg("Parser::getNode",
+					  "Только объявление блока заканчивается двоеточием\n"
+					  "Строка <" + headLine + ">\n\n" +
+					  res->getPlace());
+		headLine.erase(headLine.size() - 1);
+	}
 
 	size_t endType = headLine.find_first_of(' ');
 	if (endType == size_t(-1)) {

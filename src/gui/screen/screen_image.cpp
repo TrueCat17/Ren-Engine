@@ -21,21 +21,22 @@ void ScreenImage::updateTexture() {
 		propWasChanged[ScreenProp::IMAGE_PATH] = false;
 
 		surface = Image::getImage(PyUtils::getStr(propValues[ScreenProp::IMAGE_PATH]));
-
-		if (xSizeIsTextureWidth) xSize = surface->w;
-		if (ySizeIsTextureHeight) ySize = surface->h;
+		if (surface) {
+			if (xSizeIsTextureWidth) xSize = surface->w;
+			if (ySizeIsTextureHeight) ySize = surface->h;
+		}
 	}
 }
 
 void ScreenImage::updateSize() {
-	if (xSize <= 0) {
+	if (xSize <= 0 && surface) {
 		xSizeIsTextureWidth = true;
 		xSize = surface->w;
 	}else {
 		xSizeIsTextureWidth = false;
 	}
 
-	if (ySize <= 0) {
+	if (ySize <= 0 && surface) {
 		ySizeIsTextureHeight = true;
 		ySize = surface->h;
 	}else {
