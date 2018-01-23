@@ -87,9 +87,9 @@ void Config::setDefault() {
 }
 
 void Config::load() {
-	std::ifstream is(Utils::ROOT + "params.conf");
+	std::ifstream is("params.conf");
 	if (!is.is_open()) {
-		Utils::outMsg("Config::load", "Не удалось загрузить файл <" + Utils::ROOT + "params.conf>'\n"
+		Utils::outMsg("Config::load", "Не удалось загрузить файл <params.conf>'\n"
 									  "Используются настройки по-умолчанию");
 		return;
 	}
@@ -177,7 +177,7 @@ void Config::save() {
 		}
 	}
 
-	std::ofstream os(Utils::ROOT + "params.conf");
+	std::ofstream os("params.conf");
 
 	for (size_t i = 0; i < params.size(); ++i) {
 		const Param &param = params[i];

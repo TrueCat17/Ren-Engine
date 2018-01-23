@@ -17,7 +17,7 @@ py::dict Parser::getMods() {
 
 	namespace fs = boost::filesystem;
 
-	static const std::string modsPath = Utils::ROOT + "mods/";
+	static const std::string modsPath = "mods/";
 	for (fs::directory_iterator it(modsPath), end; it != end; ++it) {
 		fs::path path(it->path());
 		const std::string pathStr = path.string();
@@ -44,9 +44,9 @@ Parser::Parser(const String &dir) {
 	int searchStartTime = Utils::getTimer();
 	std::vector<String> files = Utils::getFileNames(dir + "/");
 
-	std::vector<String> commonFiles = Utils::getFileNames(Utils::ROOT + "mods/common/");
+	std::vector<String> commonFiles = Utils::getFileNames("mods/common/");
 	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
-	std::vector<String> engineFiles = Utils::getFileNames(Utils::ROOT + "mods/engine/");
+	std::vector<String> engineFiles = Utils::getFileNames("mods/engine/");
 	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
 	Logger::logEvent("Searching files (" + String(files.size()) + ")", Utils::getTimer() - searchStartTime);
 

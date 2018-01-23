@@ -34,7 +34,7 @@ void Game::startMod(const std::string &dir) {
 }
 
 void Game::load(const std::string &table, const std::string &name) {
-	static const std::string saves = Utils::ROOT + "saves/";
+	static const std::string saves = "saves/";
 	const std::string tablePath = saves + table + '/';
 	const std::string fullPath = saves + table + '/' + name + '/';
 
@@ -204,7 +204,7 @@ void Game::save() {
 	const std::string table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
 	const std::string name  = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_name",  true);
 
-	static const std::string saves = Utils::ROOT + "saves/";
+	static const std::string saves = "saves/";
 	const std::string tablePath = saves + table + '/';
 	const std::string fullPath = tablePath + name + '/';
 
@@ -273,13 +273,7 @@ void Game::save() {
 			const Music *music = musics[i];
 
 			String musicUrl = music->getUrl();
-			if (musicUrl.startsWith(Utils::ROOT)) {
-				musicUrl.erase(0, Utils::ROOT.size());
-			}
 			String musicFileName = music->getFileName();
-			if (musicFileName.startsWith(Utils::ROOT)) {
-				musicFileName.erase(0, Utils::ROOT.size());
-			}
 
 			infoFile << musicUrl << '\n'
 					 << musicFileName << '\n'
@@ -381,7 +375,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 		Logger::logEvent("Clearing", Utils::getTimer() - clearStartTime);
 	}
 
-	Parser p(Utils::ROOT + "mods/" + dir);
+	Parser p("mods/" + dir);
 	GV::mainExecNode = p.parse();
 
 	GV::inGame = true;

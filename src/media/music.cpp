@@ -212,7 +212,7 @@ void Music::play(const std::string &desc,
 	}
 
 	String channelName = Utils::clear(args[0]);
-	String url = Utils::ROOT + PyUtils::exec(fileName, numLine, args[1], true);
+	String url = PyUtils::exec(fileName, numLine, args[1], true);
 	for (size_t i = 0; i < url.size(); ++i) {
 		if (url[i] == '\\') {
 			url[i] = '/';

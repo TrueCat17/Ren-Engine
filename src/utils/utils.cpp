@@ -20,7 +20,6 @@
 #include "game.h"
 
 
-String Utils::ROOT;
 String Utils::FONTS;
 
 std::map<String, TTF_Font*> Utils::fonts;
@@ -64,13 +63,7 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 }
 
 void Utils::init() {
-	char *charsPath = SDL_GetBasePath();
-	String basePath = charsPath ? charsPath : "";
-	SDL_free(charsPath);
-	basePath.replaceAll('\\', '/');
-
-	ROOT = basePath + "../resources/";
-	FONTS = ROOT + "fonts/";
+	FONTS = "fonts/";
 
 	for (size_t i = 0; i < 360; ++i) {
 		sins[i] = std::sin(i * M_PI / 180);
@@ -406,18 +399,18 @@ SurfacePtr Utils::getSurface(const String &path) {
 	if (t) return t;
 
 
-	String fullPath = Utils::ROOT + path;
-	size_t end = fullPath.find('?');
+	String realPath = path;
+	size_t end = realPath.find('?');
 	if (end != size_t(-1)) {
-		fullPath.erase(fullPath.begin() + end, fullPath.end());
+		realPath.erase(realPath.begin() + end, realPath.end());
 	}
-	for (size_t i = 0; i < fullPath.size(); ++i) {
-		if (fullPath[i] == '\\') {
-			fullPath[i] = '/';
+	for (size_t i = 0; i < realPath.size(); ++i) {
+		if (realPath[i] == '\\') {
+			realPath[i] = '/';
 		}
 	}
 
-	SurfacePtr surface(IMG_Load(fullPath.c_str()), SDL_FreeSurface);
+	SurfacePtr surface(IMG_Load(realPath.c_str()), SDL_FreeSurface);
 	if (surface) {
 		if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
 			SurfacePtr newSurface(SDL_CreateRGBSurfaceWithFormat(0, surface->w, surface->h, 32, SDL_PIXELFORMAT_RGBA32),

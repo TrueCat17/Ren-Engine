@@ -114,8 +114,6 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_mouse"] = py::make_function(PyUtils::getMouse);
 	pythonGlobal["get_local_mouse"] = py::make_function(PyUtils::getLocalMouse);
 	pythonGlobal["get_mouse_down"] = py::make_function(Mouse::getMouseDown);
-
-	pythonGlobal["get_root_directory"] = py::make_function(PyUtils::getRootDirectory);
 }
 PyUtils::~PyUtils() {
 	Py_Finalize();
@@ -133,10 +131,6 @@ py::list PyUtils::getLocalMouse() {
 	res.append(Mouse::getLocalY());
 	return res;
 }
-py::str PyUtils::getRootDirectory() {
-	return py::str(Utils::ROOT.c_str());
-}
-
 
 
 void PyUtils::errorProcessing(const String &code) {

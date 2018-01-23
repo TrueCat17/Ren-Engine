@@ -54,7 +54,6 @@ private:
 	static void trimTexturesCache(const SurfacePtr &last);
 
 public:
-	static String ROOT;
 	static String FONTS;
 
 	static void init();

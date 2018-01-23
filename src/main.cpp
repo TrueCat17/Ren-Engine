@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 
+#include <boost/filesystem.hpp>
+
 #include <SDL2/SDL.h>
 #undef main //on Windows: int main(int argc, char **argv), but need: int main()
 
@@ -133,6 +135,27 @@ static void changeWindowSize(bool maximized) {
 }
 
 
+String setDir(int argc, char **argv) {
+	String root;
+
+	if (argc > 1) {
+		root = argv[1];
+		root.replaceAll('\\', '/');
+	}else {
+		char *charsPath = SDL_GetBasePath();
+		String basePath = charsPath ? charsPath : "";
+		SDL_free(charsPath);
+		basePath.replaceAll('\\', '/');
+
+		root = basePath + "../resources/";
+	}
+
+	boost::system::error_code ec;
+	boost::filesystem::current_path(root.c_str(), ec);
+
+	if (ec.value())	return ec.message();
+	return "";
+}
 
 bool init() {
 	Utils::init();
@@ -426,7 +449,7 @@ void destroy() {
 }
 
 
-int main() {
+int main(int argc, char **argv) {
 	int initStartTime = Utils::getTimer();
 
 #ifdef __WIN32__
@@ -447,6 +470,11 @@ int main() {
 		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
 	}
 #endif
+
+	if (const String errMsg = setDir(argc, argv)) {
+		Utils::outMsg("setDir", errMsg);
+		return 0;
+	}
 
 	if (init()) {
 		return 0;

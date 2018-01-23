@@ -3,13 +3,12 @@
 #include <ctime>
 
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 std::ofstream Logger::out;
 
 void Logger::init() {
-	out.open(Utils::ROOT + "log.txt");
+	out.open("log.txt");
 
 	time_t seconds = std::time(nullptr);
 	tm *timeInfo = std::localtime(&seconds);
