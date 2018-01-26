@@ -1,8 +1,9 @@
 #ifndef SCREEN_PROP_H
 #define SCREEN_PROP_H
 
-#include <stddef.h>
+#include <vector>
 
+#include "utils/string.h"
 
 enum ScreenProp {
 	//common
@@ -53,7 +54,6 @@ enum ScreenProp {
 };
 constexpr size_t COUNT_PROPS = ScreenProp::LAST_POINT;
 
-extern const char* screenPropNames[COUNT_PROPS + 1];
-
+extern std::vector<String> screenPropNames;
 
 #endif // SCREEN_PROP_H

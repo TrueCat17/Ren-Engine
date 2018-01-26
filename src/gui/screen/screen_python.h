@@ -4,9 +4,6 @@
 #include "screen_child.h"
 
 class ScreenPython: public ScreenChild {
-private:
-	bool isBlock;
-
 public:
 	ScreenPython(Node *node, bool isBlock);
 	virtual void calculateProps();

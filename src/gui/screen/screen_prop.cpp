@@ -1,7 +1,7 @@
 #include "screen_prop.h"
 
 
-const char* screenPropNames[COUNT_PROPS + 1] = {
+std::vector<String> screenPropNames = {
 	"xpos",
 	"ypos",
 	"xanchor",
@@ -41,3 +41,4 @@ const char* screenPropNames[COUNT_PROPS + 1] = {
 	//not use, must be ALWAYS last
 	"LAST"
 };
+

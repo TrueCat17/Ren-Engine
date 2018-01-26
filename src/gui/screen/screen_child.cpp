@@ -97,7 +97,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 			}else {
 				propIndeces.push_back(ScreenProp(i));
 
-				const String propName = screenPropNames[i];
+				const String &propName = screenPropNames[i];
 				codeForCalcProps += propName + " = " + propExpr + "\n";
 			}
 		}else if (nodeProp.styleName) {
@@ -152,8 +152,8 @@ void ScreenChild::calculateProps() {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 			try {
 				for (ScreenProp i : propIndeces) {
-					const char *propName = screenPropNames[i];
-					py::object res = dict[propName];
+					const String &propName = screenPropNames[i];
+					py::object res = dict[propName.c_str()];
 
 					propWasChanged[i] = propWasChanged[i] || propValues[i] != res;
 					propValues[i] = res;

@@ -53,6 +53,7 @@ private:
 
 	String firstParam;
 	std::map<String, NodeProp> props;
+	bool alwaysNonePropCode = false;
 public:
 	static bool loading;
 	static size_t stackDepth;
@@ -92,6 +93,7 @@ public:
 	std::vector<String> getImageChildren() const;
 
 	void initProp(const String &name, const String &value, size_t numLine);
+	void updateAlwaysNonePropCode();
 	NodeProp getPropCode(const String &name, const String &commonName = "", const String &indexStr = "") const;
 
 	const String& getFirstParam() const { return firstParam; }

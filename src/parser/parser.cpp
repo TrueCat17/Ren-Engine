@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include <fstream>
+#include <set>
 
 #include <boost/filesystem.hpp>
 
@@ -70,7 +71,7 @@ Parser::Parser(const String &dir) {
 
 			s.replaceAll('\t', "    ");
 
-			if (s.startsWith("FILENAME")) {
+			if (s.startsWith("FILENAME", false)) {
 				Utils::outMsg("Parser::Parser", "Строка не может начинаться с FILENAME (файл <" + fileName + ">");
 				s = "";
 			}
@@ -117,8 +118,9 @@ Parser::Parser(const String &dir) {
 			if (s) {
 				char last = s.back();
 
-				static const String ops = "(,+-*/=[{";
-				toPrevLine = ops.find(last) != size_t(-1);
+				static const String opsStr = "(,+-*/=[{";
+				static const std::set<char> ops(opsStr.begin(), opsStr.end());
+				toPrevLine = ops.count(last);
 			}
 		}
 	}
@@ -157,10 +159,10 @@ Node* Parser::getMainNode() {
 		if (i == size_t(-1)) {
 			i = headLine.size();
 		}
-		String headWord = headLine.substr(0, i);
-		if (headWord.endsWith(":")) {
-			headWord.erase(i - 1);
+		if (i && headLine[i - 1] == ':') {
+			--i;
 		}
+		const String headWord = headLine.substr(0, i);
 
 		if (headWord == "FILENAME") {
 			fileName = headLine.substr(headWord.size() + 1);
@@ -197,23 +199,35 @@ Node* Parser::getMainNode() {
 }
 
 void Parser::initScreenNode(Node *node) {
-	static const String compsWithFirstParamStr = "key, text, textbutton, image, hotspot";
-	static const std::vector<String> compsWithFirstParam = compsWithFirstParamStr.split(", ");
-	static const std::vector<String> compsMbWithParams = (compsWithFirstParamStr + ", button, null, window, vbox, hbox").split(", ");
+	static const std::set<String> comps({
+		"screen", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
+	});
+	static const std::set<String> compsWithFirstParam({"hotspot", "image", "key", "text", "textbutton"});
 
-	bool initOnlyChildren = !Utils::in(node->command, compsMbWithParams);
+	const bool isProp = !comps.count(node->command);
+	if (isProp) return;
+
 	for (Node *childNode : node->children) {
 		if (childNode && childNode->children.empty()) {
 			node->initProp(childNode->command, childNode->params, childNode->getNumLine());
 		}
 	}
-	if (initOnlyChildren) return;
 
-	bool firstIsProp = Utils::in(node->command, compsWithFirstParam);
 	const std::vector<String> args = Utils::getArgs(node->params);
+
+	const bool firstIsProp = compsWithFirstParam.count(node->command);
 	if (firstIsProp) {
+		if (args.empty()) {
+			Utils::outMsg("Parser::initScreenNode",
+						  "Неверный синтаксис\n"
+						  "Объект <" + node->command + "> не имеет основного параметра\n\n" +
+						  node->getPlace());
+			return;
+		}
+
 		node->setFirstParam(args[0]);
 	}
+
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
 		const String &name = args[i];
 		bool t;
@@ -231,7 +245,7 @@ void Parser::initScreenNode(Node *node) {
 						  "У параметра <" + name + "> пропущено значение в строке\n" +
 						  "<" + node->params + ">\n\n" +
 						  node->getPlace());
-			break;
+			continue;
 		}
 		const String &value = args[i + 1];
 		node->initProp(name, value, node->getNumLine());
@@ -242,9 +256,8 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	Node *res = new Node(fileName, start - startFile);
 
 	String headLine = code[start];
-	headLine.erase(0, headLine.find_first_not_of(' '));
 	headLine.erase(headLine.find_last_not_of(' ') + 1);
-
+	headLine.erase(0, headLine.find_first_not_of(' '));
 
 	if (isText) {
 		res->command = "text";
@@ -277,6 +290,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		res->params = headLine.substr(startParams, endParams - startParams + 1);
 		if (superParent & SuperParent::SCREEN) {
 			initScreenNode(res);
+			res->updateAlwaysNonePropCode();
 		}
 		return res;
 	}
@@ -292,12 +306,13 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	if (type == "label" || type == "screen") {
 		res->name = headLine.substr(startParams, endParams - startParams);
 	}else
-	if (headLine.startsWith("init")) {
-		if (headLine.endsWith(" python") || headLine.endsWith(" python:")) {
+	if (headLine.startsWith("init", false)) {
+		if (headLine.endsWith(" python:")) {
 			res->command = type = "init python";
 		}
-		std::vector<String> words = headLine.split(' ');
-		if (words.size() >= 2 && words[1] != "python") {
+		const std::vector<String> words = headLine.split(' ');
+
+		if (words.size() >= 2 && words[1] != "python:") {
 			res->priority = words[1].toDouble();
 		}else {
 			res->priority = 0;
@@ -317,11 +332,9 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		for (i = start + 1; i < end; ++i) {
 			String line = code[i];
 			if (line.size() > startIndent) {
-				line = line.substr(startIndent);
-			}else {
-				line = "";
+				res->params += line.substr(startIndent);
 			}
-			res->params += line + '\n';
+			res->params += '\n';
 		}
 
 		return res;
@@ -343,17 +356,14 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			code[childStart] = headLine;
 		}
 
-		String headWord;
-		if (headLine[startLine] != '\'' && headLine[startLine] != '"') {
-			size_t i = headLine.find(' ', startLine);
-			if (i == size_t(-1)) {
-				i = headLine.size();
-			}
-			headWord = headLine.substr(startLine, i - startLine);
+		size_t i = headLine.find(' ', startLine);
+		if (i == size_t(-1)) {
+			i = headLine.size();
 		}
-		if (headWord.endsWith(":")){
-			headWord.erase(headWord.size() - 1);
+		if (i && headLine[i - 1] == ':') {
+			--i;
 		}
+		const String headWord = headLine.substr(startLine, i - startLine);
 
 		bool isText;
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
@@ -397,29 +407,28 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 	if (superParent & SuperParent::SCREEN) {
 		initScreenNode(res);
+		res->updateAlwaysNonePropCode();
 	}
 	return res;
 }
 
 size_t Parser::getNextStart(size_t start) const {
-	const String &line = code[start];
-	if (!line) return start + 1;
+	if (!code[start]) return start + 1;
 
-	size_t countStartIndent = line.find_first_not_of(' ');
+	const size_t countStartIndent = code[start].find_first_not_of(' ');
 
-	size_t i = start + 1;
 	size_t last = start;
-	for (; i < code.size(); ++i) {
+	for (size_t i = start + 1; i < code.size(); ++i) {
 		const String &line = code[i];
-		if (!line) continue;
+		if (line) {
+			const size_t countIndent = line.find_first_not_of(' ');
+			if (countIndent <= countStartIndent) {
+				return (i - last != 1) ? last + 1 : i;
+			}
 
-		size_t countIndent = line.find_first_not_of(' ');
-		if (countIndent <= countStartIndent) {
-			return (i - last != 1) ? last + 1 : i;
+			last = i;
 		}
-
-		last = i;
 	}
 
-	return (i - last != 1) ? last + 1 : i;
+	return (code.size() - last != 1) ? last + 1 : code.size();
 }

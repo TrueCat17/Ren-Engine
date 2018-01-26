@@ -421,6 +421,7 @@ SurfacePtr Utils::getSurface(const String &path) {
 				surface = newSurface;
 			}else{
 				Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
+				return nullptr;
 			}
 		}
 

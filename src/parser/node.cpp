@@ -1,6 +1,7 @@
 ﻿#include "node.h"
 
 #include <thread>
+#include <set>
 #include <algorithm>
 
 #include <boost/filesystem.hpp>
@@ -740,9 +741,13 @@ void Node::initProp(const String &name, const String &value, size_t numLine) {
 	props[name] = NodeProp::initPyExpr(value, numLine);
 }
 
+void Node::updateAlwaysNonePropCode() {
+	static const std::set<String> exceptions({"if", "elif", "else", "for", "while"});
+	alwaysNonePropCode = exceptions.count(command);
+}
+
 NodeProp Node::getPropCode(const String &name, const String &commonName, const String &indexStr) const {
-	static const std::vector<String> exceptions = String("if elif for while else").split(' ');
-	if (Utils::in(command, exceptions)) {
+	if (alwaysNonePropCode) {
 		return NodeProp::initPyExpr("None", 0);
 	}
 

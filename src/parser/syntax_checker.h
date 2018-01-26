@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include <map>
+#include <set>
 
 #include <utils/string.h>
 
@@ -16,11 +17,10 @@ struct SuperParent {
 };
 
 struct SyntaxPart {
-	String name;
 	std::vector<String> prevs;
 	int superParent;
 
-	bool check(const String &prevChild, const int superParent) const {
+	inline bool check(const String &prevChild, const int superParent) const {
 		return (this->superParent & superParent)
 				&&
 			   (prevs.empty() || std::find(prevs.begin(), prevs.end(), prevChild) != prevs.end());
@@ -30,8 +30,9 @@ struct SyntaxPart {
 
 class SyntaxChecker {
 private:
-	static std::map<String, std::vector<SyntaxPart>> mapSyntax;
-	static void addBlockChildren(const String &parents, const String &childs, const bool clear = false);
+	static std::map<String, std::map<String, SyntaxPart>> mapSyntax;
+
+	static void addBlockChildren(const String &parents, const String &childs);
 	static void setSuperParents(const String &nodesStr, const int superParent);
 
 public:
