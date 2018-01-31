@@ -65,7 +65,7 @@ void Image::init() {
 
 	std::thread(preloadThread).detach();
 
-	countThreads = Utils::inBounds(size_t(SDL_GetCPUCount()) * 2, 2, 16);
+	countThreads = Utils::inBounds(size_t(SDL_GetCPUCount()), 2, 16);
 	for (size_t i = 0; i < countThreads; ++i) {
 		std::thread(processingThread).detach();
 	}
@@ -370,14 +370,14 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
-	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(h));
+	const size_t countParts = std::min(Image::countThreads * partsOnThreads, size_t(h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
 
 	auto f = [&](const size_t num) {
-		const int yStart = h * (double(num) / countThreads);
-		const int yEnd = h * (double(num + 1) / countThreads);
+		const int yStart = h * (double(num) / countParts);
+		const int yEnd = h * (double(num + 1) / countParts);
 
 		for (int y = yStart; y < yEnd; ++y) {
 			for (int x = 0; x < w; ++x) {
@@ -393,14 +393,14 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 		++countFinished;
 	};
 
-	if (countThreads != 1) {
+	if (countParts != 1) {
 		{
 			std::lock_guard<std::mutex> g(processingMutex);
-			for (size_t i = 0; i < countThreads; ++i) {
+			for (size_t i = 0; i < countParts; ++i) {
 				partsToProcessing.push_back(std::make_pair(i, f));
 			}
 		}
-		while (countFinished != countThreads) {
+		while (countFinished != countParts) {
 			Utils::sleep(1);
 		}
 	}else {
@@ -458,7 +458,7 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(h));
+	const size_t countParts = std::min(Image::countThreads * partsOnThreads, size_t(h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
@@ -468,29 +468,31 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 		const double extraB = matrix[14] * 255;
 		const double extraA = matrix[19] * 255;
 
-		const int yStart = h * (double(num) / countThreads);
-		const int yEnd = h * (double(num + 1) / countThreads);
+		const int yStart = h * (double(num) / countParts);
+		const int yEnd = h * (double(num + 1) / countParts);
 
 		const Uint8 *src = imgPixels + yStart * imgPitch;
 		Uint8 *dst = resPixels + yStart * imgPitch;
 
 		for (int y = yStart; y < yEnd; ++y) {
 			for (int x = 0; x < w; ++x) {
-				const Uint8 oldR = src[Rshift / 8];
-				const Uint8 oldG = src[Gshift / 8];
-				const Uint8 oldB = src[Bshift / 8];
-				const Uint8 oldA = src[Ashift / 8];
+				if (*(const Uint32*)(src) || extraA) {
+					const Uint8 oldR = src[Rshift / 8];
+					const Uint8 oldG = src[Gshift / 8];
+					const Uint8 oldB = src[Bshift / 8];
+					const Uint8 oldA = src[Ashift / 8];
 
-				const Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255);
-				if (newA) {
-					const Uint8 newR = Utils::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255);
-					const Uint8 newG = Utils::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255);
-					const Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255);
+					const Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255);
+					if (newA) {
+						const Uint8 newR = Utils::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255);
+						const Uint8 newG = Utils::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255);
+						const Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255);
 
-					dst[Rshift / 8] = newR;
-					dst[Gshift / 8] = newG;
-					dst[Bshift / 8] = newB;
-					dst[Ashift / 8] = newA;
+						dst[Rshift / 8] = newR;
+						dst[Gshift / 8] = newG;
+						dst[Bshift / 8] = newB;
+						dst[Ashift / 8] = newA;
+					}
 				}
 
 				src += 4;
@@ -502,14 +504,14 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 		++countFinished;
 	};
 
-	if (countThreads != 1) {
+	if (countParts != 1) {
 		{
 			std::lock_guard<std::mutex> g(processingMutex);
-			for (size_t i = 0; i < countThreads; ++i) {
+			for (size_t i = 0; i < countParts; ++i) {
 				partsToProcessing.push_back(std::make_pair(i, f));
 			}
 		}
-		while (countFinished != countThreads) {
+		while (countFinished != countParts) {
 			Utils::sleep(1);
 		}
 	}else {
@@ -535,10 +537,10 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 		return img;
 	}
 
-	const int r = colorsVec[0].toDouble();
-	const int g = colorsVec[1].toDouble();
-	const int b = colorsVec[2].toDouble();
-	const int a = colorsVec[3].toDouble();
+	const Uint16 r = Uint16(colorsVec[0].toDouble());
+	const Uint16 g = Uint16(colorsVec[1].toDouble());
+	const Uint16 b = Uint16(colorsVec[2].toDouble());
+	const Uint16 a = Uint16(colorsVec[3].toDouble());
 
 	if (r == 256 && g == 256 && b == 256 && a == 256) {
 		return img;
@@ -557,13 +559,13 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
 
-	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(h));
+	const size_t countParts = std::min(Image::countThreads * partsOnThreads, size_t(h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
 	auto f = [&](const size_t num) {
-		const int yStart = h * (double(num) / countThreads);
-		const int yEnd = h * (double(num + 1) / countThreads);
+		const int yStart = h * (double(num) / countParts);
+		const int yEnd = h * (double(num + 1) / countParts);
 
 		const Uint8 *src = imgPixels + yStart * imgPitch;
 		Uint8 *dst = resPixels + yStart * imgPitch;
@@ -580,21 +582,20 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 				src += 4;
 				dst += 4;
 			}
-
 		}
 
 		std::lock_guard<std::mutex> g(guard);
 		++countFinished;
 	};
 
-	if (countThreads != 1) {
+	if (countParts != 1) {
 		{
 			std::lock_guard<std::mutex> g(processingMutex);
-			for (size_t i = 0; i < countThreads; ++i) {
+			for (size_t i = 0; i < countParts; ++i) {
 				partsToProcessing.push_back(std::make_pair(i, f));
 			}
 		}
-		while (countFinished != countThreads) {
+		while (countFinished != countParts) {
 			Utils::sleep(1);
 		}
 	}else {
@@ -675,7 +676,7 @@ template<typename GetChannel, typename CmpFunc, typename GetPixel, typename GetA
 static void maskCycles(std::mutex &guard,
 					   const int value,
 					   const size_t num,
-					   const size_t countThreads, size_t &countFinished,
+					   const size_t countParts, size_t &countFinished,
 					   SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 					   GetChannel getChannel, CmpFunc cmp,
 					   GetPixel getPixel, GetAlpha getAlphaFunc)
@@ -687,8 +688,9 @@ static void maskCycles(std::mutex &guard,
 	const int imgPitch = img->pitch;
 	const int imgBpp = 4;
 
-	const int yStart = h * (double(num) / countThreads);
-	const int yEnd = h * (double(num + 1) / countThreads);
+	const int yStart = h * (double(num) / countParts);
+	const int yEnd = h * (double(num + 1) / countParts);
+
 	for (int y = yStart; y < yEnd; ++y) {
 		for (int x = 0; x < w; ++x) {
 			const Uint32 maskPixel = *(const Uint32*)(maskPixels + y * imgPitch + x * imgBpp);
@@ -717,32 +719,32 @@ template<typename GetChannel, typename GetPixel, typename GetAlpha>
 static void maskChooseCmp(std::mutex &guard,
 						  const int value, const String &cmp,
 						  const size_t num,
-						  const size_t countThreads, size_t &countFinished,
+						  const size_t countParts, size_t &countFinished,
 						  SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 						  GetChannel getChannel,
 						  GetPixel getPixel, GetAlpha getAlphaFunc)
 {
 	if (cmp == "l") {
-		maskCycles(guard, value, num, countThreads, countFinished,
+		maskCycles(guard, value, num, countParts, countFinished,
 				   img, maskPixels, resPixels, getChannel, std::less<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "g") {
-		maskCycles(guard, value, num, countThreads, countFinished,
+		maskCycles(guard, value, num, countParts, countFinished,
 				   img, maskPixels, resPixels, getChannel, std::greater<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "e") {
-		maskCycles(guard, value, num, countThreads, countFinished,
+		maskCycles(guard, value, num, countParts, countFinished,
 				   img, maskPixels, resPixels, getChannel, std::equal_to<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "ne") {
-		maskCycles(guard, value, num, countThreads, countFinished,
+		maskCycles(guard, value, num, countParts, countFinished,
 				   img, maskPixels, resPixels, getChannel, std::not_equal_to<int>(), getPixel, getAlphaFunc);
 	}else
 	if (cmp == "le") {
-		maskCycles(guard, value, num, countThreads, countFinished,
+		maskCycles(guard, value, num, countParts, countFinished,
 				   img, maskPixels, resPixels, getChannel, std::less_equal<int>(), getPixel, getAlphaFunc);
 	}else {//ge
-		maskCycles(guard, value, num, countThreads, countFinished,
+		maskCycles(guard, value, num, countParts, countFinished,
 				   img, maskPixels, resPixels, getChannel, std::greater_equal<int>(), getPixel, getAlphaFunc);
 	}
 }
@@ -751,35 +753,35 @@ static void maskChooseAlpha(std::mutex &guard,
 							const char alphaChannel, bool alphaFromImage,
 							const int value, const String &cmp,
 							const size_t num,
-							const size_t countThreads, size_t &countFinished,
+							const size_t countParts, size_t &countFinished,
 							SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 							GetChannel getChannel)
 {
 	if (alphaChannel == 'r') {
 		if (alphaFromImage) {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getRed);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get1, getRed);
 		}else {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getRed);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get2, getRed);
 		}
 	}else
 	if (alphaChannel == 'g') {
 		if (alphaFromImage) {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getGreen);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get1, getGreen);
 		}else {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getGreen);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get2, getGreen);
 		}
 	}else
 	if (alphaChannel == 'b') {
 		if (alphaFromImage) {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getBlue);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get1, getBlue);
 		}else {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getBlue);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get2, getBlue);
 		}
 	}else {//a
 		if (alphaFromImage) {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get1, getAlpha);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get1, getAlpha);
 		}else {
-			maskChooseCmp(guard, value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getChannel, get2, getAlpha);
+			maskChooseCmp(guard, value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getChannel, get2, getAlpha);
 		}
 	}
 }
@@ -844,33 +846,33 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 				   SDL_FreeSurface);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
-	const size_t countThreads = std::min(Image::countThreads * partsOnThreads, size_t(img->h));
+	const size_t countParts = std::min(Image::countThreads * partsOnThreads, size_t(img->h));
 	size_t countFinished = 0;
 	std::mutex guard;
 
 
 	auto chooseChannel = [&](const size_t num) {
 		if (channel == 'r') {
-			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getRed);
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getRed);
 		}else
 		if (channel == 'g') {
-			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getGreen);
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getGreen);
 		}else
 		if (channel == 'b') {
-			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getBlue);
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getBlue);
 		}else {//a
-			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countThreads, countFinished, img, maskPixels, resPixels, getAlpha);
+			maskChooseAlpha(guard, alphaChannel, alphaImage == "1", value, cmp, num, countParts, countFinished, img, maskPixels, resPixels, getAlpha);
 		}
 	};
 
-	if (countThreads != 1) {
+	if (countParts != 1) {
 		{
 			std::lock_guard<std::mutex> g(processingMutex);
-			for (size_t i = 0; i < countThreads; ++i) {
+			for (size_t i = 0; i < countParts; ++i) {
 				partsToProcessing.push_back(std::make_pair(i, chooseChannel));
 			}
 		}
-		while (countFinished != countThreads) {
+		while (countFinished != countParts) {
 			Utils::sleep(1);
 		}
 	}else {

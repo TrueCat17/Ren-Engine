@@ -45,6 +45,7 @@ void Mouse::init() {
 
 	setUsualMode();
 }
+
 void Mouse::update() {
 	SDL_GetMouseState(&x, &y);
 }
