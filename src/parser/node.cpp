@@ -377,8 +377,14 @@ void Node::execute() {
 
 	if (command == "with") {
 		inWithBlock = true;
-		for (Node *child : children) {
-			child->execute();
+		if (children.size()) {
+			for (Node *child : children) {
+				child->execute();
+			}
+		}else {
+			const String &effectName = params;
+			const String code = "screen.set_effect(" + effectName + ")";
+			PyUtils::exec(getFileName(), getNumLine(), code);
 		}
 		inWithBlock = false;
 	}else
