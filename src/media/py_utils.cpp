@@ -90,6 +90,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);
 
 	pythonGlobal["_has_label"] = py::make_function(Game::hasLabel);
+	pythonGlobal["_jump_next"] = py::make_function(Node::jumpNext);
 
 	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
 	pythonGlobal["get_args"] = py::make_function(Game::getArgs);

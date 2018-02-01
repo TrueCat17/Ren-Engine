@@ -25,8 +25,6 @@ bool Node::loading = false;
 size_t Node::stackDepth = 0;
 std::vector<std::pair<String, String>> Node::stack;
 
-const String Node::mainLabel = "start";
-
 class StackRecorder {
 private:
 	bool init;
@@ -47,7 +45,7 @@ public:
 		}
 	}
 	~StackRecorder() {
-		if (!init) {
+		if (!init && Node::stack.size()) {
 			Node::stack.pop_back();
 			--Node::stackDepth;
 		}
@@ -56,6 +54,10 @@ public:
 
 
 std::vector<Node*> Node::nodes;
+
+String Node::jumpNextLabel;
+bool Node::jumpNextIsCall;
+
 
 void Node::execute() {
 	static bool initing = false;
@@ -67,12 +69,20 @@ void Node::execute() {
 	size_t curStackDepth = Node::stackDepth;
 	if (!initing && curStackDepth < Node::stack.size()) {
 		const std::pair<String, String> &cur = Node::stack[curStackDepth];
-		if (cur.second != command) {
-			GV::inGame = false;
-			Utils::outMsg(cur.second, command);
-			Utils::outMsg("Node::execute",
-						  "Для загрузки сохранения необходима версия мода, в которой это сохранение было сделано");
-			return;
+
+		const bool wasJump = cur.second == "jump" || cur.second == "call";
+		const bool nowPython = command == "$" || command == "python";
+
+		if (!(wasJump && nowPython)) {
+			if (cur.second != command) {
+				GV::inGame = false;
+				Utils::outMsg(cur.second, command + " " + params);
+				Utils::outMsg("Node::execute",
+							  "Для загрузки сохранения необходима версия мода, в которой это сохранение было сделано");
+				Node::stack.clear();
+				Node::stackDepth = 0;
+				return;
+			}
 		}
 	}
 
@@ -90,6 +100,8 @@ void Node::execute() {
 			Utils::outMsg("next", next.first + " " + next.second);
 			Utils::outMsg("Node::execute",
 						  "Для загрузки сохранения необходима версия мода, в которой это сохранение было сделано");
+			Node::stack.clear();
+			Node::stackDepth = 0;
 			return;
 		}
 	}
@@ -101,16 +113,11 @@ void Node::execute() {
 
 
 	if (command == "main") {
-		for (size_t i = 0; i < children.size(); ++i) {
-			Node *node = children[i];
+		std::vector<Node*> initBlocks;
+		for (Node *node : children) {
 			if (node->command == "screen") {
 				Screen::declare(node);
 			}
-		}
-
-		std::vector<Node*> initBlocks;
-		for (size_t i = 0; i < children.size(); ++i) {
-			Node *node = children[i];
 			if (node->command == "init" || node->command == "init python") {
 				initBlocks.push_back(node);
 			}
@@ -146,7 +153,7 @@ void Node::execute() {
 
 
 			try {
-				jump(mainLabel, false);
+				jump("start", false);
 			}catch (ExitException) {}
 
 		}catch (ContinueException) {
@@ -195,9 +202,9 @@ void Node::execute() {
 				return;
 			}
 
-			String argsStr = "'''" + args[0] + "'''";
-			for (size_t i = 1; i < args.size(); ++i) {
-				argsStr += ", '''" + args[i] + "'''";
+			String argsStr;
+			for (size_t i = 0; i < args.size(); ++i) {
+				argsStr += "'''" + args[i] + "''', ";
 			}
 
 			{
@@ -221,9 +228,9 @@ void Node::execute() {
 				return;
 			}
 
-			String argsStr = "'''" + args[0] + "'''";
-			for (size_t i = 1; i < args.size(); ++i) {
-				argsStr += ", '''" + args[i] + "'''";
+			String argsStr;
+			for (size_t i = 0; i < args.size(); ++i) {
+				argsStr += "'''" + args[i] + "''', ";
 			}
 
 			PyUtils::exec(getFileName(), getNumLine(), "hide_sprite([" + argsStr + "])");
@@ -235,9 +242,8 @@ void Node::execute() {
 
 		String argsStr;
 		if (args.size()) {
-			argsStr = "'''" + args[0] + "'''";
-			for (size_t i = 1; i < args.size(); ++i) {
-				argsStr += ", '''" + args[i] + "'''";
+			for (size_t i = 0; i < args.size(); ++i) {
+				argsStr += "'''" + args[i] + "''', ";
 			}
 		}
 
@@ -277,24 +283,29 @@ void Node::execute() {
 		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 		try {
 			py::dict global = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
-			if (global.has_key("renpy")) {
-				py::object renpy = global["renpy"];
-				py::object say = renpy.attr("say");
-				say(nick.c_str(), text.c_str());
-			}
+			py::object renpy = global["renpy"];
+			py::object say = renpy.attr("say");
+			say(nick.c_str(), text.c_str());
 		}catch (py::error_already_set) {
 			PyUtils::errorProcessing("renpy.say(" + nick + ", '" + text + "')");
 		}
 	}else
 
-	if (command == "$") {
-		PyUtils::exec(getFileName(), getNumLine(), params);
-		Utils::sleepMicroSeconds(50);
-	}else
+	if (command == "$" || command == "python" || command == "init python") {
+		if (nextNum == NO) {
+			const size_t numLine = getNumLine() + (command != "$");
 
-	if (command == "python" || command == "init python") {
-		PyUtils::exec(getFileName(), getNumLine() + 1, params);
-		Utils::sleepMicroSeconds(50);
+			PyUtils::exec(getFileName(), numLine, params);
+			Utils::sleepMicroSeconds(50);
+		}else {
+			const std::pair<String, String> &cur = Node::stack[curStackDepth];
+			const String &action = cur.second;
+
+			const std::pair<String, String> &next = Node::stack[nextStackDepth];
+			const String &label = next.first;
+
+			jump(label, action == "call");
+		}
 	}else
 
 	if (command == "pause") {
@@ -341,14 +352,11 @@ void Node::execute() {
 			bool screenThereIs = Screen::getMain("choose_menu");
 
 			if (!screenThereIs) {
-				String variants = children[0]->params;
-				if (children.size() == 1) {
-					variants += ", ";
-				}else {
-					for (size_t i = 1; i < children.size(); ++i) {
-						variants += ", " + children[i]->params;
-					}
+				String variants;
+				for (size_t i = 0; i < children.size(); ++i) {
+					variants += children[i]->params + ", ";
 				}
+
 				PyUtils::exec(getFileName(), getNumLine(), "choose_menu_variants = (" + variants + ")");
 				PyUtils::exec(getFileName(), getNumLine(), "renpy.call_screen('choose_menu', 'choose_menu_result')");
 			}
@@ -477,7 +485,7 @@ void Node::execute() {
 		bool inCycle = nextNum != NO;
 
 		static const String in = " in ";
-		size_t inPos = params.find(in);
+		const size_t inPos = params.find(in);
 		const String beforeIn = params.substr(0, params.find_last_not_of(' ', inPos) + 1);
 		const String afterIn = params.substr(params.find_first_not_of(' ', inPos + in.size()));
 
@@ -491,11 +499,11 @@ void Node::execute() {
 		const String &propName = beforeIn;
 		const String iterName = "iter_" + String(GV::numFor++);
 
-		String init = iterName + " = iter(" + afterIn + ")";
+		const String init = iterName + " = iter(" + afterIn + ")";
 		PyUtils::exec(getFileName(), getNumLine(), init);
 
 
-		String onStep = propName + " = " + iterName + ".next()";
+		const String onStep = propName + " = " + iterName + ".next()";
 		while (true) {
 			if (!GV::inGame) break;
 
@@ -550,12 +558,22 @@ void Node::execute() {
 			Utils::sleep(Game::getFrameTime());
 		}
 	}
+
+	if (jumpNextLabel) {
+		const String label = jumpNextLabel;
+		jumpNextLabel = "";
+
+		//for save/load
+		std::pair<String, String> &last = Node::stack.back();
+		last.second = jumpNextIsCall ? "call" : "jump";
+
+		jump(label, jumpNextIsCall);
+	}
 }
 
 
 void Node::jump(const String &label, bool isCall) {
-	for (size_t i = 0; i < GV::mainExecNode->children.size(); ++i) {
-		Node *node = GV::mainExecNode->children[i];
+	for (Node *node : GV::mainExecNode->children) {
 		if (node->command == "label" && node->name == label) {
 			try {
 				node->execute();
@@ -571,6 +589,10 @@ void Node::jump(const String &label, bool isCall) {
 				  "Метка <" + label + "> не найдена\n");
 }
 
+void Node::jumpNext(const std::string &label, bool isCall) {
+	jumpNextLabel = label;
+	jumpNextIsCall = isCall;
+}
 
 
 py::list Node::getPyList() const {

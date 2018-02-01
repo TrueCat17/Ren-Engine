@@ -42,6 +42,9 @@ class Node {
 private:
 	static std::vector<Node*> nodes;
 
+	static String jumpNextLabel;
+	static bool jumpNextIsCall;
+
 	static int preloadImages(const Node *parent, int start, int count);
 	static void preloadImageAt(const std::vector<String> &children);
 
@@ -59,9 +62,9 @@ public:
 	static size_t stackDepth;
 	static std::vector<std::pair<String, String>> stack;
 
-	static const String mainLabel;
-
 	static void destroyAll();
+
+	static void jumpNext(const std::string &label, bool isCall);
 
 
 	size_t childNum;
