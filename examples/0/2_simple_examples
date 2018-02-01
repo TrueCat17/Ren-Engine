@@ -346,7 +346,16 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	has_screen("screen_name")
 
 Узнать, существует ли метка (label) some_label:
-	has_label("some_label")
+	renpy.has_label("some_label")
+Прыгнуть (jump) на метку some_label:
+	renpy.jump("some_label")
+Вызвать (call) метку some_label:
+	renpy.call("some_label")
+Последние 2 функции действуют не сразу, а после окончания работы всего питон-кода, в котором они находятся, пример:
+	python:
+		print 123
+		renpy.jump("some_label") # отмечает, что после этого блока будет выполнен jump на some_label
+		print 234 # выхода из питон-блока после renpy.[jump/call] нет, поэтому эта строка тоже отработает
 
 Запустить мод, находящийся в папке some_dir:
 	start_mod("start_mod")
