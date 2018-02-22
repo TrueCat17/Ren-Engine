@@ -2,9 +2,10 @@
 #include <thread>
 
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
 
 #include <SDL2/SDL.h>
-#undef main //on Windows: int main(int argc, char **argv), but need: int main()
+#undef main //for cancel declare spec. start-func on Windows
 
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -142,16 +143,26 @@ String setDir(int argc, char **argv) {
 		root = argv[1];
 		root.replaceAll('\\', '/');
 	}else {
-		char *charsPath = SDL_GetBasePath();
-		String basePath = charsPath ? charsPath : "";
-		SDL_free(charsPath);
-		basePath.replaceAll('\\', '/');
+		String basePath;
 
+		char *charsPathUTF8 = SDL_GetBasePath();
+		if (charsPathUTF8) {
+			basePath = charsPathUTF8;
+			SDL_free(charsPathUTF8);
+		}else {
+			Utils::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
+		}
+
+		basePath.replaceAll('\\', '/');
 		root = basePath + "../resources/";
 	}
 
+	boost::filesystem::detail::utf8_codecvt_facet utf8;
+	boost::filesystem::path path;
+	path.assign(root, utf8);
+
 	boost::system::error_code ec;
-	boost::filesystem::current_path(root.c_str(), ec);
+	boost::filesystem::current_path(path, ec);
 
 	if (ec.value())	return ec.message();
 	return "";
@@ -453,17 +464,12 @@ int main(int argc, char **argv) {
 	int initStartTime = Utils::getTimer();
 
 #ifdef __WIN32__
-	std::string strPath;
-	char *charsPath = SDL_GetBasePath();
-	if (charsPath) {
-		strPath = charsPath;
-		SDL_free(charsPath);
-		charsPath = nullptr;
+	const char *constPath = "py_libs";
+	const size_t len = SDL_strlen(constPath) + 1;
+	char *path = new char[len];
+	for (size_t i = 0; i < len; ++i) {
+		path[i] = constPath[i];
 	}
-	strPath += "..\\py_libs";
-
-	char *path = new char[strPath.size() + 1];
-	memcpy(path, strPath.c_str(), strPath.size() + 1);
 	Py_SetPythonHome(path);
 #else
 	if (!setlocale(LC_ALL, "C.UTF-8")) {
