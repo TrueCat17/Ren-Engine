@@ -206,7 +206,7 @@ void Text::addText() {
 	}
 
 	if (charOutNum == 0) {
-		SurfacePtr surfacePtr(SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA8888),
+		SurfacePtr surfacePtr(SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA32),
 							  SDL_FreeSurface);
 		lineSurfaces.push_back(surfacePtr);
 
@@ -378,8 +378,8 @@ void Text::addChars(String c, int color) {
 		return;
 	}
 
-	if (surfaceText->format->format != SDL_PIXELFORMAT_RGBA8888) {
-		SDL_Surface *rgbaSurface = SDL_ConvertSurfaceFormat(surfaceText, SDL_PIXELFORMAT_RGBA8888, 0);
+	if (surfaceText->format->format != SDL_PIXELFORMAT_RGBA32) {
+		SDL_Surface *rgbaSurface = SDL_ConvertSurfaceFormat(surfaceText, SDL_PIXELFORMAT_RGBA32, 0);
 		if (rgbaSurface) {
 			SDL_FreeSurface(surfaceText);
 			surfaceText = rgbaSurface;

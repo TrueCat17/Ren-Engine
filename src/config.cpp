@@ -78,6 +78,7 @@ void Config::setDefault() {
 	set("scale_quality", "0");
 	set("software_renderer", "False");
 	set("fast_opengl", "True");
+	set("check_fast_opengl_errors", "False");
 	set("opengl_vsync", "False");
 	set("max_fps", "30");
 

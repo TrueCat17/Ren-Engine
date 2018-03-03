@@ -38,44 +38,27 @@ void Game::load(const std::string &table, const std::string &name) {
 	const std::string tablePath = saves + table + '/';
 	const std::string fullPath = saves + table + '/' + name + '/';
 
-	auto outError = [=](const std::string &dir) {
+	namespace fs = boost::filesystem;
+
+	auto outError = [&](const std::string &dir) {
 		Utils::outMsg(std::string() + "Ошибка при попытке открыть сохранение <" + table + "_" + name + ">\n"
 									  "Отсутствует директория <" + dir + ">");
 	};
-
-	namespace fs = boost::filesystem;
-	if (!fs::exists(saves)) {
-		outError(saves);
-		return;
+	for (const std::string &path : {saves, tablePath, fullPath}) {
+		if (!fs::exists(path)) {
+			outError(path);
+			return;
+		}
 	}
-	if (!fs::exists(tablePath)) {
-		outError(tablePath);
-		return;
-	}
-
-	if (!fs::exists(fullPath)) {
-		outError(fullPath);
-		return;
-	}
-
 
 	auto fileExists = [](const std::string &path) -> bool {
-		if (!boost::filesystem::exists(path)) return false;
-		if (boost::filesystem::is_directory(path)) return false;
-		if (!boost::filesystem::file_size(path)) return false;
-		return true;
+		return fs::exists(path) && !fs::is_directory(path) && fs::file_size(path);
 	};
-	if (!fileExists(fullPath + "stack")) {
-		Utils::outMsg("Файл <" + fullPath + "stack" + "> не существует или пуст");
-		return;
-	}
-	if (!fileExists(fullPath + "info")) {
-		Utils::outMsg("Файл <" + fullPath + "info" + "> не существует или пуст");
-		return;
-	}
-	if (!fileExists(fullPath + "py_globals")) {
-		Utils::outMsg("Файл <" + fullPath + "py_globals" + "> не существует или пуст");
-		return;
+	for (const char *fileName : {"stack", "info", "py_globals"}) {
+		if (!fileExists(fullPath + fileName)) {
+			Utils::outMsg("Файл <" + fullPath + fileName + "> не существует или пуст");
+			return;
+		}
 	}
 
 	String modName;
@@ -211,14 +194,11 @@ void Game::save() {
 
 	{//check directory to save
 		namespace fs = boost::filesystem;
-		if (!fs::exists(saves)) {
-			fs::create_directory(saves);
-		}
-		if (!fs::exists(tablePath))  {
-			fs::create_directory(tablePath);
-		}
-		if (!fs::exists(fullPath)) {
-			fs::create_directory(fullPath);
+
+		for (const std::string &path : {saves, tablePath, fullPath}) {
+			if (!fs::exists(path)) {
+				fs::create_directory(path);
+			}
 		}
 	}
 
@@ -295,11 +275,11 @@ void Game::save() {
 
 
 	{//save screenshot
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = True");
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_screenshotting = True");
 		GUI::update();
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshotting = False");
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_screenshotting = False");
 
-		Utils::sleep(20);
+		Utils::sleep(Game::frameTime * 1.5);
 		while (Renderer::needToRender) {
 			Utils::sleep(1);
 		}
@@ -313,7 +293,9 @@ void Game::save() {
 			}
 		}
 
-		const SurfacePtr screenshot = Renderer::getScreenshot();
+		size_t width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt();
+		size_t height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt();
+		const SurfacePtr screenshot = Renderer::getScreenshot(width, height);
 		if (screenshot) {
 			const String screenshotPath = fullPath + "screenshot.png";
 			IMG_SavePNG(screenshot.get(), screenshotPath.c_str());
@@ -402,6 +384,52 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 		GV::mainExecNode->loadPath = loadPath;
 	}
 	GV::mainExecNode->execute();
+}
+
+
+void Game::makeScreenshot() {
+	static const std::string path = "screenshots/";
+
+	namespace fs = boost::filesystem;
+	if (!fs::exists(path)) {
+		fs::create_directory(path);
+	}
+
+	size_t width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt();
+	size_t height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt();
+
+	Utils::sleep(Game::frameTime * 1.5);
+	while (Renderer::needToRender) {
+		Utils::sleep(1);
+	}
+	{
+		std::lock_guard<std::mutex> g(Renderer::renderMutex);
+		std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
+
+		Renderer::toRender.clear();
+		if (GV::screens) {
+			GV::screens->draw();
+		}
+	}
+
+	const SurfacePtr screenshot = Renderer::getScreenshot(width, height);
+	if (screenshot) {
+		bool exists = true;
+		int num = 1;
+		String screenshotPath;
+		while (exists) {
+			String numStr(num);
+			while (numStr.size() < 4) {
+				numStr = '0' + numStr;
+			}
+
+			screenshotPath = path + "screenshot" + numStr + ".png";
+			exists = fs::exists(screenshotPath.c_str());
+
+			++num;
+		}
+		IMG_SavePNG(screenshot.get(), screenshotPath.c_str());
+	}
 }
 
 void Game::exitFromGame() {

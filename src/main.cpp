@@ -173,6 +173,8 @@ bool init() {
 	Logger::init();
 	Config::init();
 
+	GV::checkOpenGlErrors = Config::get("check_fast_opengl_errors") == "True";
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
@@ -430,6 +432,10 @@ void loop() {
 		if (PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save", true) == "True") {
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save = False");
 			Game::save();
+		}
+		if (PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_screenshot", true) == "True") {
+			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_screenshot = False");
+			Game::makeScreenshot();
 		}
 
 		GV::updateMutex.unlock();

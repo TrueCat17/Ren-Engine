@@ -65,7 +65,10 @@ PyUtils::PyUtils() {
 
 
 	pythonGlobal["need_save"] = false;
-	pythonGlobal["screenshotting"] = false;
+	pythonGlobal["save_screenshotting"] = false;
+	pythonGlobal["need_screenshot"] = false;
+	pythonGlobal["screenshot_width"] = 640;
+	pythonGlobal["screenshot_height"] = 360;
 
 	pythonGlobal["get_mods"] = py::make_function(Parser::getMods);
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);

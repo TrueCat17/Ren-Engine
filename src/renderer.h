@@ -53,15 +53,17 @@ public:
 	static std::vector<RenderStruct> toRender;
 
 	static bool init();
-	static SurfacePtr getScreenshot();
+	static SurfacePtr getScreenshot(size_t width, size_t height);
 
 private:
 	static bool screenshotting;
+	static size_t screenshotWidth;
+	static size_t screenshotHeight;
 	static SurfacePtr screenshot;
 	static void readPixels();
 
 	static void loop();
-	static GLuint getTextureId(SDL_Texture *texture);
+	static GLuint queryTexture(SDL_Texture *texture, int &width, int &height);
 	static void checkErrors(const char *from, const char *funcName);
 
 	static void renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,

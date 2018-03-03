@@ -30,6 +30,8 @@ public:
 	static void exitFromGame();
 
 
+	static void makeScreenshot();
+
 	static bool hasLabel(const std::string &label);
 
 	static int getStageWidth();

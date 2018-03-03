@@ -553,8 +553,8 @@ void Node::execute() {
 	}
 
 	if (!initing && !inWithBlock) {
-		static const String code = "pause_end > time.time() or not can_exec_next_command()";
-		while (GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, code, true) == "True") {
+		static const String code = "can_exec_next_command()";
+		while (GV::inGame && PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, code, true) == "False") {
 			Utils::sleep(Game::getFrameTime());
 		}
 	}
