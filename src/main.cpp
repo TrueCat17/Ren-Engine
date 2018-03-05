@@ -158,14 +158,13 @@ String setDir(int argc, char **argv) {
 	}
 
 	boost::filesystem::detail::utf8_codecvt_facet utf8;
-	boost::filesystem::path path;
-	path.assign(root, utf8);
+	boost::filesystem::path path(root, utf8);
 
 	boost::system::error_code ec;
 	boost::filesystem::current_path(path, ec);
 
-	if (ec.value())	return ec.message();
-	return "";
+	if (!ec.value()) return "";
+	return "Set current_path to <" + root + "> failed";
 }
 
 bool init() {
