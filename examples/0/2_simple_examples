@@ -364,6 +364,11 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 Сохранить текущую игру в сохранение save_table, save_num (сохранение произойдёт не прямо сейчас, а после текущего кадра):
 	sl_save(save_table, save_num)
 
+Сделать скриншот (по-умолчанию вызывается при нажатии на P в диалог-боксе):
+	make_screenshot(width = None, height = None)
+Если width == None, то присваивается ширина экрана, а у height - высота
+Скриншоты сохраняются в resources/screenshots/ под именем screenshotNNNN.png
+
 
 Также много интересного можно найти в resources/mods/common/renpy_api.rpy.
 
