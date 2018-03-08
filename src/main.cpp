@@ -136,25 +136,18 @@ static void changeWindowSize(bool maximized) {
 }
 
 
-String setDir(int argc, char **argv) {
-	String root;
-
-	if (argc > 1) {
-		root = argv[1];
-		root.replaceAll('\\', '/');
-	}else {
-		String basePath;
-
+String setDir(String root) {
+	if (!root) {
 		char *charsPathUTF8 = SDL_GetBasePath();
 		if (charsPathUTF8) {
-			basePath = charsPathUTF8;
+			root = charsPathUTF8;
 			SDL_free(charsPathUTF8);
 		}else {
 			Utils::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
 		}
 
-		basePath.replaceAll('\\', '/');
-		root = basePath + "../resources/";
+		root.replaceAll('\\', '/');
+		root += "../resources/";
 	}
 
 	boost::filesystem::detail::utf8_codecvt_facet utf8;
@@ -482,7 +475,26 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	if (const String errMsg = setDir(argc, argv)) {
+	String arg;
+	if (argc == 2) {
+		arg = argv[1];
+	}else if (argc > 2) {
+		Utils::outMsg("main", "Expected max 1 arg, get: " + String(argc - 1));
+		return 0;
+	}
+
+	for (const char *i : {"--help", "-help", "-h", "h", "/?", "?"}) {
+		if (arg == i) {
+			std::cout << "Ren-Engine is fast analog of Ren'Py\n"
+						 "Using:\n"
+						 "  Ren-Engine [resources_dir=../resources/]\n"
+						 "See https://github.com/TrueCat17/Ren-Engine\n"
+						 "and https://github.com/TrueCat17/Ren-Engine/tree/master/examples\n";
+			return 0;
+		}
+	}
+
+	if (const String errMsg = setDir(arg)) {
 		Utils::outMsg("setDir", errMsg);
 		return 0;
 	}
