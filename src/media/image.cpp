@@ -881,3 +881,22 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 
 	return res;
 }
+
+void Image::save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height) {
+	SurfacePtr img = getImage(imageStr);
+	if (!img) return;
+
+	const String widthStr = Utils::clear(width);
+	const String heightStr = Utils::clear(height);
+
+	const int w = Utils::inBounds(widthStr == "None"  ? img->w : widthStr.toInt() , 1, 2400);
+	const int h = Utils::inBounds(heightStr == "None" ? img->h : heightStr.toInt(), 1, 1350);
+
+	SurfacePtr saveImg(SDL_CreateRGBSurfaceWithFormat(img->flags, w, h, 32, img->format->format),
+					   SDL_FreeSurface);
+	const SDL_Rect from = {0, 0, img->w, img->h};
+	SDL_Rect to = {0, 0, w, h};
+	SDL_BlitScaled(img.get(), &from, saveImg.get(), &to);
+
+	IMG_SavePNG(saveImg.get(), path.c_str());
+}

@@ -34,6 +34,7 @@ private:
 
 public:
 	static void init();
+	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
 
 	static void loadImage(const std::string &desc);
 	static SurfacePtr getImage(String desc);

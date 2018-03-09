@@ -110,6 +110,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["set_stage_size"] = py::make_function(Game::setStageSize);
 	pythonGlobal["set_fullscreen"] = py::make_function(Game::setFullscreen);
 
+	pythonGlobal["save_image"] = py::make_function(Image::save);
 	pythonGlobal["load_image"] = py::make_function(Image::loadImage);
 	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);
 	pythonGlobal["get_texture_height"] = py::make_function(Game::getTextureHeight);
