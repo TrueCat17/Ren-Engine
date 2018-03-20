@@ -190,8 +190,13 @@ void ScreenContainer::addChildrenFromNode() {
 		if (childCommand == "use") {
 			const String &scrName = childNode->params;
 			Node *scrNode = Screen::getDeclared(scrName);
-
-			child = new Screen(scrNode, screen);
+			if (!scrNode) {
+				Utils::outMsg("Screen::show",
+							  "Скрин с именем <" + scrName + "> не существует\n" +
+							  childNode->getPlace());
+			}else {
+				child = new Screen(scrNode, screen);
+			}
 		}else
 
 		if (childCommand == "key") {
@@ -282,7 +287,9 @@ void ScreenContainer::addChildrenFromNode() {
 			).split(", ");
 
 			if (!Utils::in(childNode->command, props)) {
-				Utils::outMsg("ScreenContainer::addChildrenFromNode", "Неизвестный тип потомка <" + childNode->command + ">");
+				Utils::outMsg("ScreenContainer::addChildrenFromNode",
+							  "Неизвестный тип потомка <" + childNode->command + ">\n" +
+							  childNode->getPlace());
 			}
 		}
 
