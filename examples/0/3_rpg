@@ -41,17 +41,19 @@ register_location("location_name", "path_to_images", is_room, width, height)
    	height - высота картинки main.png локации, целое число
 
 Регистрация места в локации:
-$ register_place("location_name", "place_name", x, y)
+$ register_place("location_name", "place_name", x, y, width, height)
 Где location_name - имя локации,
     place_name - имя места,
-    x и y - координаты (числа, без кавычек) места в локации (в пикселях).
+    x, y - координаты (числа) места в локации (отступ в пикселях от левого верхнего угла main.png),
+    width, height - ширина и высота (числа) места (в пикселях).
 
 Регистрация выхода из локации:
-$ register_exit("location_name", "to_location_name", "to_place_name", x, y)
+$ register_exit("location_name", "to_location_name", "to_place_name", x, y, width, height)
 Где location_name - имя локации, в которой располагается выход,
     to_location_name - имя локации, в которую будет произведён переход,
     to_place_name - имя места, в которое будет произведён переход,
-    x и y - координаты (числа, без кавычек) места в локации (в пикселях).
+    x, y - координаты (числа) места в локации (отступ в пикселях от левого верхнего угла main.png),
+    width, height - ширина и высота (числа) выхода (в пикселях).
 
 
 В любом месте сценария:
