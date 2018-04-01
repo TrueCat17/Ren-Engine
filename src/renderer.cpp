@@ -5,8 +5,11 @@
 
 #include "config.h"
 #include "gui/group.h"
+#include "media/image.h"
 #include "utils/utils.h"
 
+int Renderer::maxTextureWidth = 0;
+int Renderer::maxTextureHeight = 0;
 
 bool Renderer::needToRender = false;
 bool Renderer::needToRedraw = false;
@@ -21,13 +24,24 @@ size_t Renderer::screenshotWidth = 1;
 size_t Renderer::screenshotHeight = 1;
 SurfacePtr Renderer::screenshot;
 
+bool Renderer::scaled = true;
+SDL_Texture *Renderer::tmpTexture = nullptr;
+SurfacePtr Renderer::toScaleSurface;
+SurfacePtr Renderer::scaledSurface;
+int Renderer::scaleWidth = 0;
+int Renderer::scaleHeight = 0;
+
 
 GLuint Renderer::queryTexture(SDL_Texture *texture, int &width, int &height) {
-	if (!texture) return 0;
+	if (!texture) {
+		width = height = 0;
+		return 0;
+	}
 
 	//copy-paste from SDL sources
 
 	struct SDL_SW_YUVTexture;
+
 	struct GL_FBOList;
 
 	struct Texture {
@@ -83,6 +97,7 @@ GLuint Renderer::queryTexture(SDL_Texture *texture, int &width, int &height) {
 
 	width = t->w;
 	height = t->h;
+
 	return data->texture;
 }
 
@@ -246,6 +261,8 @@ bool Renderer::init() {
 				GV::isOpenGL = true;
 			}
 		}
+		maxTextureWidth = info.max_texture_width;
+		maxTextureHeight = info.max_texture_height;
 
 		inited = true;
 		loop();
@@ -259,6 +276,66 @@ bool Renderer::init() {
 
 	return error;
 }
+
+
+SurfacePtr Renderer::getScaled(const SurfacePtr &src, int width, int height) {
+	while (toScaleSurface) {
+		Utils::sleep(1);
+	}
+
+	scaledSurface.reset();
+
+	toScaleSurface = src;
+	scaleWidth = width;
+	scaleHeight = height;
+
+	scaled = false;
+	while (!scaled) {
+		Utils::sleep(1);
+	}
+	toScaleSurface.reset();
+
+	return scaledSurface;
+}
+void Renderer::scale() {
+	int w = scaleWidth;
+	int h = scaleHeight;
+
+	int textureWidth, textureHeight;
+	Renderer::queryTexture(tmpTexture, textureWidth, textureHeight);
+	if (w > textureWidth || h > textureHeight) {
+		SDL_DestroyTexture(tmpTexture);
+
+		textureWidth  = std::min(((w / 256 + 1) * 256), maxTextureWidth);
+		textureHeight = std::min(((h / 256 + 1) * 256), maxTextureHeight);
+
+		tmpTexture = SDL_CreateTexture(GV::mainRenderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, textureWidth, textureHeight);
+	}
+
+	SDL_Rect dstRect = {0, 0, w, h};
+	TexturePtr toRender = Utils::getTexture(toScaleSurface);
+
+	SDL_SetRenderTarget(GV::mainRenderer, tmpTexture);
+	SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 0);
+	SDL_RenderFillRect(GV::mainRenderer, &dstRect);
+	SDL_RenderCopy(GV::mainRenderer, toRender.get(), nullptr, &dstRect);
+
+	SurfacePtr res = Image::getNewNotClear(w, h);
+	if (GV::isOpenGL && Config::get("fast_opengl") == "True") {
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+		glPixelStorei(GL_PACK_ROW_LENGTH, w);
+		glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, res->pixels);
+		checkErrors("scale", "glReadPixels");
+	}else {
+		SDL_RenderReadPixels(GV::mainRenderer, &dstRect, SDL_PIXELFORMAT_RGBA32, res->pixels, res->pitch);
+	}
+
+	SDL_SetRenderTarget(GV::mainRenderer, nullptr);
+
+	scaledSurface = res;
+	scaled = true;
+}
+
 
 SurfacePtr Renderer::getScreenshot(size_t width, size_t height) {
 	screenshot.reset();
@@ -333,7 +410,11 @@ void Renderer::loop() {
 
 	while (!GV::exit) {
 		if (!needToRender) {
-			Utils::sleep(1, false);
+			if (!scaled) {
+				scale();
+			}else {
+				Utils::sleep(1, false);
+			}
 		}else {
 			{
 				std::lock_guard<std::mutex> trg(Renderer::toRenderMutex);

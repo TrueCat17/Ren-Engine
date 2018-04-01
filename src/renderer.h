@@ -44,6 +44,9 @@ struct RenderStruct {
 
 class Renderer {
 public:
+	static int maxTextureWidth;
+	static int maxTextureHeight;
+
 	static bool needToRender;
 	static bool needToRedraw;
 
@@ -54,13 +57,23 @@ public:
 
 	static bool init();
 	static SurfacePtr getScreenshot(size_t width, size_t height);
+	static SurfacePtr getScaled(const SurfacePtr &src, int width, int height);
 
 private:
+	static SDL_Texture *tmpTexture;
+
 	static bool screenshotting;
 	static size_t screenshotWidth;
 	static size_t screenshotHeight;
 	static SurfacePtr screenshot;
 	static void readPixels();
+
+	static bool scaled;
+	static SurfacePtr toScaleSurface;
+	static SurfacePtr scaledSurface;
+	static int scaleWidth;
+	static int scaleHeight;
+	static void scale();
 
 	static void loop();
 	static GLuint queryTexture(SDL_Texture *texture, int &width, int &height);

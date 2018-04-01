@@ -8,6 +8,30 @@
 
 #include "utils/utils.h"
 
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+static const Uint32 Rmask = 0xFF000000;
+static const Uint32 Gmask = 0x00FF0000;
+static const Uint32 Bmask = 0x0000FF00;
+static const Uint32 Amask = 0x000000FF;
+
+static const Uint8 Rshift = 24;
+static const Uint8 Gshift = 16;
+static const Uint8 Bshift = 8;
+static const Uint8 Ashift = 0;
+#else
+static const Uint32 Rmask = 0x000000FF;
+static const Uint32 Gmask = 0x0000FF00;
+static const Uint32 Bmask = 0x00FF0000;
+static const Uint32 Amask = 0xFF000000;
+
+static const Uint8 Rshift = 0;
+static const Uint8 Gshift = 8;
+static const Uint8 Bshift = 16;
+static const Uint8 Ashift = 24;
+#endif
+
+
 class Image {
 private:
 	static std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> functions;
@@ -16,14 +40,9 @@ private:
 	static std::mutex toLoadMutex;
 	static void preloadThread();
 
-	static size_t countThreads;
-	static const size_t partsOnThreads = 4;
-	static std::deque<std::pair<size_t, std::function<void(size_t)>>> partsToProcessing;
-	static std::mutex processingMutex;
-	static void processingThread();
-
 	static SurfacePtr scale(const std::vector<String> &args);
 	static SurfacePtr factorScale(const std::vector<String> &args);
+	static SurfacePtr rendererScale(const std::vector<String> &args);
 	static SurfacePtr crop(const std::vector<String> &args);
 	static SurfacePtr composite(const std::vector<String> &args);
 	static SurfacePtr flip(const std::vector<String> &args);
@@ -35,6 +54,8 @@ private:
 public:
 	static void init();
 	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
+
+	static SurfacePtr getNewNotClear(int w, int h);
 
 	static void loadImage(const std::string &desc);
 	static SurfacePtr getImage(String desc);

@@ -102,7 +102,10 @@ SOURCES += \
 	utils/string.cpp \
 	utils/utils.cpp
 
-CONFIG(release) {
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_LFLAGS += -fopenmp
+
+CONFIG(release, debug|release) {
 	QMAKE_LFLAGS += -s
 }
 

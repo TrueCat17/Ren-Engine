@@ -13,6 +13,10 @@ typedef std::tuple<const String, const String, int> PyCode;
 
 class PyUtils {
 private:
+	py::object mainModule;
+
+	static py::object formatTraceback;
+
 	static std::map<PyCode, PyCodeObject*> compiledObjects;
 	static py::list getMouse();
 	static py::list getLocalMouse();
@@ -50,7 +54,6 @@ public:
 	}
 
 
-	py::object mainModule;
 	py::object pythonGlobal;
 
 	PyUtils();

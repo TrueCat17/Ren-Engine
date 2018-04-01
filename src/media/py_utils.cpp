@@ -20,6 +20,7 @@
 #include "utils/mouse.h"
 
 
+py::object PyUtils::formatTraceback;
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
 
 const String PyUtils::True = "True";
@@ -121,6 +122,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_mouse_down"] = py::make_function(Mouse::getMouseDown);
 }
 PyUtils::~PyUtils() {
+	formatTraceback = py::object();
 	Py_Finalize();
 }
 
@@ -143,35 +145,30 @@ void PyUtils::errorProcessing(const String &code) {
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
 
-	std::string excType = "NoneType";
-	if (ptype) {
-		py::handle<> htype(ptype);
-		excType = py::extract<std::string>(py::str(htype));
-	}
-	if (excType == "<type 'exceptions.StopIteration'>") {
+	if (ptype == PyExc_StopIteration) {
+		Py_DecRef(ptype);
 		Py_DecRef(pvalue);
 		Py_DecRef(ptraceback);
 		throw StopException();
 	}
 
-	std::string excValue = "None";
-	if (pvalue) {
-		py::handle<> hvalue(py::allow_null(pvalue));
-		excValue = py::extract<const std::string>(py::str(hvalue));
-	}
+	py::handle<> htype(ptype);
+	const std::string excType = py::extract<const std::string>(py::str(htype));
 
-	std::string traceback = "None";
-	if (ptraceback) {
-		try {
-			py::handle<> htraceback(py::allow_null(ptraceback));
-			GV::pyUtils->pythonGlobal["traceback"] = htraceback;
+	py::handle<> hvalue(py::allow_null(pvalue));
+	const std::string excValue = py::extract<const std::string>(py::str(hvalue));
 
-			String code = "traceback_str = get_traceback(traceback)";
-			py::exec(code.c_str(), GV::pyUtils->pythonGlobal);
-			traceback = py::extract<const std::string>(GV::pyUtils->pythonGlobal["traceback_str"]);
-		} catch (py::error_already_set) {
-			traceback = "Error on get traceback\n";
+	std::string traceback;
+	py::handle<> htraceback(py::allow_null(ptraceback));
+	try {
+		if (formatTraceback.is_none()) {
+			formatTraceback = py::import("traceback").attr("format_tb");
 		}
+
+		py::str tracebackPyStr = py::str().join(formatTraceback(htraceback));
+		traceback = PyString_AsString(tracebackPyStr.ptr());
+	} catch (py::error_already_set) {
+		traceback = "Error on get traceback\n";
 	}
 
 	String out = "Python Error (" + excType + "):\n"

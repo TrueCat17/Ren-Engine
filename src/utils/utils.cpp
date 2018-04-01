@@ -411,33 +411,50 @@ SurfacePtr Utils::getSurface(const String &path) {
 	}
 
 	SurfacePtr surface(IMG_Load(realPath.c_str()), SDL_FreeSurface);
-	if (surface) {
-		if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
-			SurfacePtr newSurface(SDL_CreateRGBSurfaceWithFormat(0, surface->w, surface->h, 32, SDL_PIXELFORMAT_RGBA32),
-								  SDL_FreeSurface);
-			if (newSurface) {
-				SDL_Rect rect = { 0, 0, surface->w, surface->h };
-				SDL_BlitSurface(surface.get(), &rect, newSurface.get(), &rect);
-				surface = newSurface;
-			}else{
-				Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
-				return nullptr;
-			}
-		}
-
-		std::lock_guard<std::mutex> g2(surfaceMutex);
-		trimSurfacesCache(surface);
-		surfaces.push_back(std::make_pair(path, surface));
-
-		return surface;
+	if (!surface) {
+		outMsg("IMG_Load", IMG_GetError());
+		return nullptr;
 	}
 
-	outMsg("IMG_Load", IMG_GetError());
-	return nullptr;
+	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
+
+	if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
+		SurfacePtr newSurface = Image::getNewNotClear(surface->w, surface->h);
+
+		const SDL_Palette *palette = surface->format->palette;
+		if (palette) {
+			for (int y = 0; y < surface->h; ++y) {
+				const Uint8 *oldPixels = (const Uint8 *)surface->pixels + y * surface->pitch;
+				Uint8 *newPixels = (Uint8 *)newSurface->pixels + y * newSurface->pitch;
+
+				for (int x = 0; x < surface->w; ++x) {
+					const SDL_Color &color = palette->colors[*oldPixels];
+
+					newPixels[Rshift / 8] = color.r;
+					newPixels[Gshift / 8] = color.g;
+					newPixels[Bshift / 8] = color.b;
+					newPixels[Ashift / 8] = color.a;
+
+					++oldPixels;
+					newPixels += 4;
+				}
+			}
+		}else {
+			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
+		}
+		surface = newSurface;
+	}
+
+	std::lock_guard<std::mutex> g2(surfaceMutex);
+	trimSurfacesCache(surface);
+	surfaces.push_back(std::make_pair(path, surface));
+
+	return surface;
 }
 
 void Utils::setSurface(const String &path, const SurfacePtr &surface) {
 	if (!surface) return;
+	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
 
 	std::lock_guard<std::mutex> g(surfaceMutex);
 	for (std::pair<String, SurfacePtr> &p : surfaces) {
@@ -467,11 +484,12 @@ Uint32 Utils::getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL
 		return 0;
 	}
 
-	const int bpp = 4;
-	Uint32 *pixel = (Uint32*)((Uint8*)(surface->pixels) + y * surface->pitch + x * bpp);
+	const Uint8 *pixel = ((const Uint8 *)surface->pixels + y * surface->pitch + x * 4);
+	const Uint8 r = pixel[Rshift / 8];
+	const Uint8 g = pixel[Gshift / 8];
+	const Uint8 b = pixel[Bshift / 8];
+	const Uint8 a = pixel[Ashift / 8];
 
-	Uint8 r, g, b, a;
-	SDL_GetRGBA(*pixel, surface->format, &r, &g, &b, &a);
 	return (r << 24) + (g << 16) + (b << 8) + a;
 }
 
@@ -519,7 +537,22 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 		size_t sizeDefaultDeclAt = Py_SIZE(defaultDeclAt.ptr());
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
 			Node *node = new Node("some assign default_decl_at", 0);
-			node->params = py::extract<const std::string>(py::str(defaultDeclAt[i]));
+
+			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt.ptr(), i);
+			if (PyString_CheckExact(elem)) {
+				node->params = PyString_AS_STRING(elem);
+			}else {
+				try {
+					PyObject *str = PyObject_Str(elem);
+					if (str) {
+						node->params = PyString_AS_STRING(str);
+					}
+					Py_DecRef(str);
+				}catch (py::error_already_set) {
+					PyUtils::errorProcessing("str(elem)");
+				}
+			}
+
 			declAt->children.push_back(node);
 		}
 	}
