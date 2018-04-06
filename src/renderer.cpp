@@ -1,6 +1,5 @@
 #include "renderer.h"
 
-#include <iostream>
 #include <thread>
 
 #include "config.h"

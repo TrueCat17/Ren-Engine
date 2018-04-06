@@ -1,8 +1,5 @@
 #include "screen_container.h"
 
-#include <algorithm>
-
-
 #include "screen.h"
 
 #include "screen_text.h"

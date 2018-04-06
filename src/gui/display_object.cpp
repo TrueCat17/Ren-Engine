@@ -1,10 +1,7 @@
 #include "display_object.h"
 
-#include <algorithm>
-
-#include "renderer.h"
-
 #include "group.h"
+#include "renderer.h"
 
 
 std::vector<DisplayObject*> DisplayObject::objects;
@@ -88,9 +85,11 @@ void DisplayObject::draw() const {
 }
 
 DisplayObject::~DisplayObject() {
-	auto i = std::find(objects.begin(), objects.end(), this);
-	if (i != objects.end()) {
-		objects.erase(i);
+	for (size_t i = 0; i < objects.size(); ++i) {
+		if (objects[i] == this) {
+			objects.erase(objects.begin() + i);
+			break;
+		}
 	}
 
 	removeFromParent();

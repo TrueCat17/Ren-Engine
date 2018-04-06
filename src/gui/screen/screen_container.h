@@ -5,10 +5,10 @@
 
 class ScreenContainer: public ScreenChild {
 private:
-	size_t indent = 0;
+	Uint16 indent = 0;
 
 protected:
-	size_t countInitChildren = 0;
+	Uint16 countInitChildren = 0;
 
 	bool hasVBox = false;
 	bool hasHBox = false;

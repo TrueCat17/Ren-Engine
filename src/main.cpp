@@ -16,7 +16,6 @@
 #include "renderer.h"
 
 #include "gui/gui.h"
-#include "gui/display_object.h"
 #include "gui/screen/screen_child.h"
 #include "gui/screen/screen_key.h"
 
@@ -456,7 +455,6 @@ void destroy() {
 	SDL_CloseAudio();
 	SDL_Quit();
 }
-
 
 int main(int argc, char **argv) {
 	int initStartTime = Utils::getTimer();

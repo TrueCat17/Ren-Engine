@@ -10,6 +10,10 @@
 #include "gv.h"
 
 
+//from <memory>:
+#  include <ext/concurrence.h>
+#  include <bits/unique_ptr.h>
+#  include <bits/shared_ptr.h>
 typedef std::shared_ptr<SDL_Surface> SurfacePtr;
 typedef std::shared_ptr<SDL_Texture> TexturePtr;
 

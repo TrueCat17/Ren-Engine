@@ -7,11 +7,12 @@
 
 class ScreenKey: public ScreenChild {
 private:
+	static bool notReactOnSpace;
+	static bool notReactOnEnter;
 	static std::vector<ScreenKey*> screenKeys;
 
 	int lastDown = 0;
 	bool prevIsDown = false;
-	bool toNotReact = false;
 
 	bool inFirstDown = false;
 	bool wasFirstDelay = false;
@@ -19,14 +20,13 @@ private:
 	int keyDelay = 10;
 	int firstKeyDelay = 500;
 
-	String keyStr;
-
-	SDL_Scancode getKey() const;
+	String keyExpr;
+	SDL_Scancode key;
 
 public:
-	static void setToNotReact(SDL_Scancode key);
-	static void setFirstDownState(SDL_Scancode key);
-	static void setUpState(SDL_Scancode key);
+	static void setToNotReact(const SDL_Scancode key);
+	static void setFirstDownState(const SDL_Scancode key);
+	static void setUpState(const SDL_Scancode key);
 
 	ScreenKey(Node *node, Screen *screen);
 	~ScreenKey();

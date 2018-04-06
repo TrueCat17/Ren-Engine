@@ -1,10 +1,8 @@
 #ifndef SYNTAXCHECKER_H
 #define SYNTAXCHECKER_H
 
-#include <algorithm>
 #include <vector>
 #include <map>
-#include <set>
 
 #include <utils/string.h>
 
@@ -21,9 +19,14 @@ struct SyntaxPart {
 	int superParent;
 
 	inline bool check(const String &prevChild, const int superParent) const {
-		return (this->superParent & superParent)
-				&&
-			   (prevs.empty() || std::find(prevs.begin(), prevs.end(), prevChild) != prevs.end());
+		if (!(this->superParent & superParent)) return false;
+
+		if (prevs.empty()) return true;
+
+		for (const String &prev : prevs) {
+			if (prev == prevChild) return true;
+		}
+		return false;
 	}
 };
 

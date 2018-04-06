@@ -4,8 +4,6 @@
 #include <mutex>
 #include <algorithm>
 
-#include <omp.h>
-
 #include <SDL2/SDL_image.h>
 
 #include "gv.h"

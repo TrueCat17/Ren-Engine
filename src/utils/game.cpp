@@ -1,6 +1,5 @@
 #include "game.h"
 
-#include <iostream>
 #include <thread>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -17,6 +16,7 @@
 
 #include "media/image.h"
 #include "media/music.h"
+#include "media/py_utils.h"
 
 #include "parser/parser.h"
 

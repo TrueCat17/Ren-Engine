@@ -1,6 +1,7 @@
 #include "utils.h"
 
 #include <iostream>
+#include <chrono>
 #include <thread>
 
 #include <boost/filesystem.hpp>
@@ -10,7 +11,6 @@
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
-#include "renderer.h"
 
 #include "media/image.h"
 #include "media/py_utils.h"
@@ -34,8 +34,6 @@ std::vector<std::pair<String, SurfacePtr>> Utils::surfaces;
 
 double* Utils::sins = new double[360];
 double* Utils::coss = new double[360];
-
-std::chrono::system_clock::time_point Utils::startTime = std::chrono::system_clock::now();
 
 
 std::vector<String> Utils::getFileNames(const std::string &path) {
@@ -77,6 +75,8 @@ bool Utils::isFirstByte(char c) {
 }
 
 int Utils::getTimer() {
+	static auto startTime = std::chrono::system_clock::now();
+
 	auto now = std::chrono::system_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
 	return duration.count();
@@ -469,7 +469,7 @@ void Utils::setSurface(const String &path, const SurfacePtr &surface) {
 	surfaces.push_back(std::make_pair(path, surface));
 }
 
-Uint32 Utils::getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop) {
+Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {
 		Utils::outMsg("Utils::getPixel", "surface == nullptr");
 		return 0;

@@ -1,11 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-
-#include <memory>
 #include <vector>
 #include <map>
-#include <chrono>
 #include <mutex>
 
 #include <SDL2/SDL.h>
@@ -14,7 +11,10 @@
 
 #include "utils/string.h"
 
-
+//from <memory>:
+#  include <ext/concurrence.h>
+#  include <bits/unique_ptr.h>
+#  include <bits/shared_ptr.h>
 typedef std::shared_ptr<SDL_Surface> SurfacePtr;
 typedef std::shared_ptr<SDL_Texture> TexturePtr;
 
@@ -63,7 +63,6 @@ public:
 
 	static std::vector<String> getFileNames(const std::string &path);
 
-	static std::chrono::system_clock::time_point startTime;
 	static int getTimer();
 	static void sleep(int ms, bool checkInGame = true);
 	static void sleepMicroSeconds(int ms);
@@ -94,7 +93,7 @@ public:
 	static SurfacePtr getSurface(const String &path);
 	static void setSurface(const String &path, const SurfacePtr &surface);
 
-	static Uint32 getPixel(const SurfacePtr surface, const SDL_Rect &draw, const SDL_Rect &crop);
+	static Uint32 getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop);
 
 	static TexturePtr getTexture(const SurfacePtr &surface);
 	static void clearTextures() { textures.clear(); }

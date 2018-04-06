@@ -1,7 +1,10 @@
 #include "gui.h"
 
-#include <iostream>
+#define printTime 0
 
+#if printTime
+#include <iostream>
+#endif
 
 #include "gv.h"
 
@@ -21,17 +24,22 @@ void GUI::update() {
 			Screen *scr = dynamic_cast<Screen*>(child);
 			if (scr) {
 				try {
-//					std::cout << "update <" << scr->getName() << ">:\n";
-//					int a = Utils::getTimer();
+#if printTime
+					std::cout << "update <" << scr->getName() << ">:\n";
+					const int a = Utils::getTimer();
+#endif
 					scr->calculateProps();
-//					int b = Utils::getTimer();
+#if printTime
+					const int b = Utils::getTimer();
+#endif
 					scr->updateSize();
 					scr->updatePos();
 					scr->updateGlobalPos();
 					scr->updateGlobalAlpha();
-//					int c = Utils::getTimer();
-
-//					std::cout << (b-a) << '-' << (c-b) << '\n';
+#if printTime
+					const int c = Utils::getTimer();
+					std::cout << (b-a) << '-' << (c-b) << '\n';
+#endif
 				}catch (ContinueException) {
 					Utils::outMsg("GUI::update", "continue вне цикла");
 				}catch (BreakException) {

@@ -1,7 +1,6 @@
 #ifndef DISPLAY_OBJECT_H
 #define DISPLAY_OBJECT_H
 
-#include <memory>
 #include <vector>
 
 #include <SDL2/SDL.h>
@@ -31,16 +30,15 @@ public:
 
 	bool enable = true;
 
-	SurfacePtr surface = nullptr;
-
-	Group *parent = nullptr;
-
-
 	int rotate = 0;
 
 	//center for rotation
 	int xAnchor = 0;
 	int yAnchor = 0;
+
+	SurfacePtr surface = nullptr;
+
+	Group *parent = nullptr;
 
 
 	DisplayObject();

@@ -20,6 +20,34 @@ private:
 protected:
 	static std::vector<ScreenChild*> screenObjects;
 
+	bool needUpdateChildren = true;
+	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
+
+	bool xAnchorIsDouble = false;
+	bool yAnchorIsDouble = false;
+
+	bool xPosIsDouble = false;
+	bool yPosIsDouble = false;
+
+	bool usingXAlign = false;
+	bool usingYAlign = false;
+
+	bool xSizeIsDouble = false;
+	bool ySizeIsDouble = false;
+
+	bool xSizeIsTextureWidth = false;
+	bool ySizeIsTextureHeight = false;
+
+	double xPos = 0;
+	double yPos = 0;
+	double preXAnchor = 0;
+	double preYAnchor = 0;
+	double xSize = 0;
+	double ySize = 0;
+
+	String codeForCalcProps;
+	PyCodeObject *co = nullptr;
+
 	Screen *screen;
 	ScreenChild *screenParent;
 
@@ -30,35 +58,6 @@ protected:
 	std::vector<py::object> propValues;
 	std::vector<ScreenProp> propIndeces;
 	std::vector<char> propWasChanged;
-
-	String codeForCalcProps;
-	PyCodeObject *co = nullptr;
-
-
-	bool needUpdateChildren = true;
-	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
-
-	bool xAnchorIsDouble = false;
-	bool yAnchorIsDouble = false;
-	double preXAnchor = 0;
-	double preYAnchor = 0;
-
-	double xPos = 0;
-	double yPos = 0;
-	bool xPosIsDouble = false;
-	bool yPosIsDouble = false;
-
-	bool usingXAlign = false;
-	bool usingYAlign = false;
-
-	double xSize = 0;
-	double ySize = 0;
-	bool xSizeIsDouble = false;
-	bool ySizeIsDouble = false;
-
-	bool xSizeIsTextureWidth = false;
-	bool ySizeIsTextureHeight = false;
-
 
 public:
 	static void disableAll();

@@ -125,7 +125,7 @@ Parser::Parser(const String &dir) {
 		}
 	}
 
-	String event = "Reading (" + String(countLines) + " lines from " + String(countFiles) + " files)";
+	const String event = "Reading (" + String(countLines) + " lines from " + String(countFiles) + " files)";
 	Logger::logEvent(event, Utils::getTimer() - readStartTime);
 }
 

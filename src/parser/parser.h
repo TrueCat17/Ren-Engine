@@ -2,7 +2,6 @@
 #define PARSER_H
 
 #include <vector>
-#include <map>
 
 #include <boost/python.hpp>
 namespace py = boost::python;

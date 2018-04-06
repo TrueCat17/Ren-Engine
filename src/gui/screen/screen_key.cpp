@@ -4,18 +4,19 @@
 #include "media/py_utils.h"
 #include "parser/node.h"
 
-
+bool ScreenKey::notReactOnSpace = false;
+bool ScreenKey::notReactOnEnter = false;
 std::vector<ScreenKey*> ScreenKey::screenKeys;
 
 ScreenKey::ScreenKey(Node *node, Screen *screen):
 	ScreenChild(node, nullptr, screen),
-	keyStr(node->getFirstParam())
+	keyExpr(node->getFirstParam())
 {
 	screenKeys.push_back(this);
 
 	needUpdateFields = false;
 	clearProps();
-	setProp(ScreenProp::KEY, NodeProp::initPyExpr(keyStr, node->getNumLine()));
+	setProp(ScreenProp::KEY, NodeProp::initPyExpr(keyExpr, node->getNumLine()));
 	setProp(ScreenProp::FIRST_DELAY, node->getPropCode("first_delay"));
 	setProp(ScreenProp::DELAY, node->getPropCode("delay"));
 
@@ -24,57 +25,82 @@ ScreenKey::ScreenKey(Node *node, Screen *screen):
 	calculateProps();
 }
 ScreenKey::~ScreenKey() {
+	const bool isModal = this->isModal();
 	for (size_t i = 0; i < screenKeys.size(); ++i) {
+		ScreenKey *sk = screenKeys[i];
+
 		if (screenKeys[i] == this) {
 			screenKeys.erase(screenKeys.begin() + i);
-			break;
+			--i;
+		}else
+		if (isModal && prevIsDown && sk->key == key && !sk->isModal()) {
+			sk->lastDown = Utils::getTimer();
+			sk->inFirstDown = true;
+			sk->wasFirstDelay = false;
 		}
 	}
 }
 
-void ScreenKey::setToNotReact(SDL_Scancode key) {
-	for (ScreenKey *sk : screenKeys) {
-		SDL_Scancode skKey = sk->getKey();
-		if (skKey == key) {
-			sk->toNotReact = true;
-		}
+void ScreenKey::setToNotReact(const SDL_Scancode key) {
+	if (key == SDL_SCANCODE_SPACE) {
+		notReactOnSpace = true;
+	}else
+	if (key == SDL_SCANCODE_RETURN) {
+		notReactOnEnter = true;
 	}
 }
-void ScreenKey::setFirstDownState(SDL_Scancode key) {
+void ScreenKey::setFirstDownState(const SDL_Scancode key) {
 	for (ScreenKey *sk : screenKeys) {
-		SDL_Scancode skKey = sk->getKey();
-		if (skKey == key && sk->isModal()) {
+		if (sk->key == key && sk->isModal()) {
 			sk->lastDown = 0;
 			sk->inFirstDown = true;
 			sk->wasFirstDelay = false;
 		}
 	}
 }
-void ScreenKey::setUpState(SDL_Scancode key) {
+void ScreenKey::setUpState(const SDL_Scancode key) {
+	if (key == SDL_SCANCODE_SPACE) {
+		notReactOnSpace = false;
+	}else
+	if (key == SDL_SCANCODE_RETURN) {
+		notReactOnEnter = false;
+	}
+
 	for (ScreenKey *sk : screenKeys) {
-		SDL_Scancode skKey = sk->getKey();
-		if (skKey == key) {
+		if (sk->key == key) {
 			sk->lastDown = 0;
 			sk->prevIsDown = false;
-			if (sk->toNotReact) {
-				sk->inFirstDown = false;
-			}
-			sk->toNotReact = false;
+			sk->inFirstDown = false;
 		}
 	}
 }
 
 void ScreenKey::calculateProps() {
-	if (toNotReact || !isModal()) return;
+	if (!isModal()) return;
 
+	if (!enable) {
+		prevIsDown = false;
+	}
 	ScreenChild::calculateProps();
 
+	if (propWasChanged[ScreenProp::KEY]) {
+		propWasChanged[ScreenProp::KEY] = false;
+
+		const String keyName = PyUtils::getStr(propValues[ScreenProp::KEY]);
+		const int start = keyName.startsWith("K_", false) ? 2 : 0;
+		key = SDL_GetScancodeFromName(keyName.c_str() + start);
+
+		lastDown = 0;
+		prevIsDown = false;
+		inFirstDown = false;
+		wasFirstDelay = false;
+	}
 	if (propWasChanged[ScreenProp::FIRST_DELAY]) {
 		propWasChanged[ScreenProp::FIRST_DELAY] = false;
 
-		py::object firstKeyDelayObj = propValues[ScreenProp::FIRST_DELAY];
-		bool isInt = PyUtils::isInt(firstKeyDelayObj);
-		bool isFloat = !isInt && PyUtils::isFloat(firstKeyDelayObj);
+		const py::object &firstKeyDelayObj = propValues[ScreenProp::FIRST_DELAY];
+		const bool isInt = PyUtils::isInt(firstKeyDelayObj);
+		const bool isFloat = !isInt && PyUtils::isFloat(firstKeyDelayObj);
 
 		if (isInt || isFloat) {
 			firstKeyDelay = PyUtils::getDouble(firstKeyDelayObj, isFloat) * 1000;
@@ -87,9 +113,9 @@ void ScreenKey::calculateProps() {
 	if (propWasChanged[ScreenProp::DELAY]) {
 		propWasChanged[ScreenProp::DELAY] = false;
 
-		py::object keyDelayObj = propValues[ScreenProp::DELAY];
-		bool isInt = PyUtils::isInt(keyDelayObj);
-		bool isFloat = !isInt && PyUtils::isFloat(keyDelayObj);
+		const py::object &keyDelayObj = propValues[ScreenProp::DELAY];
+		const bool isInt = PyUtils::isInt(keyDelayObj);
+		const bool isFloat = !isInt && PyUtils::isFloat(keyDelayObj);
 
 		if (isInt || isFloat) {
 			keyDelay = PyUtils::getDouble(keyDelayObj, isFloat) * 1000;
@@ -100,7 +126,6 @@ void ScreenKey::calculateProps() {
 		}
 	}
 
-	SDL_Scancode key = getKey();
 
 	if (key == SDL_SCANCODE_UNKNOWN) {
 		const String keyName = PyUtils::getStr(propValues[ScreenProp::KEY]);
@@ -108,42 +133,32 @@ void ScreenKey::calculateProps() {
 					  "KeyName <" + keyName + ">\n" +
 					  SDL_GetError() + '\n' +
 					  node->getPlace());
-	}else
+	}else {
+		if ((key == SDL_SCANCODE_SPACE && notReactOnSpace) || (key == SDL_SCANCODE_RETURN && notReactOnEnter)) return;
 
-	if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
-		int dTime = GV::frameStartTime - lastDown;
-		int delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
+		if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
+			const int dTime = GV::frameStartTime - lastDown;
+			const int delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
-		if (dTime >= delay) {
-			if (!inFirstDown) {
-				wasFirstDelay = true;
+			if (dTime >= delay) {
+				if (!inFirstDown) {
+					wasFirstDelay = true;
+				}
+				inFirstDown = false;
+				lastDown = GV::frameStartTime;
+
+				const String action = node->getPropCode("action").pyExpr;
+				if (action) {
+					PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
+				}
 			}
-			inFirstDown = false;
-			lastDown = GV::frameStartTime;
-
-			String action = node->getPropCode("action").pyExpr;
-			if (action) {
-				PyUtils::exec(getFileName(), getNumLine(), "exec_funcs(" + action + ")");
-			}
+			prevIsDown = true;
 		}
-		prevIsDown = true;
+
+		else {
+			lastDown = 0;
+			prevIsDown = false;
+			inFirstDown = false;
+		}
 	}
-
-	else {
-		prevIsDown = false;
-		inFirstDown = false;
-		lastDown = 0;
-	}
-}
-
-SDL_Scancode ScreenKey::getKey() const {
-	const String keyName = PyUtils::getStr(propValues[ScreenProp::KEY]);
-
-	int start = 0;
-	if (keyName.startsWith("K_", false)) {
-		start = 2;
-	}
-
-	SDL_Scancode res = SDL_GetScancodeFromName(keyName.c_str() + start);
-	return res;
 }

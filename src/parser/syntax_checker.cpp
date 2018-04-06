@@ -1,5 +1,7 @@
 #include "syntax_checker.h"
 
+#include <set>
+
 std::map<String, std::map<String, SyntaxPart>> SyntaxChecker::mapSyntax;
 
 void SyntaxChecker::addBlockChildren(const String &parents, const String &childs) {

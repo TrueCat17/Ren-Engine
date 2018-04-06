@@ -2,7 +2,6 @@
 
 #include <thread>
 #include <set>
-#include <algorithm>
 
 #include <boost/filesystem.hpp>
 #include <boost/python.hpp>
@@ -792,7 +791,7 @@ NodeProp Node::getPropCode(const String &name, const String &commonName, const S
 	}
 
 	i = props.find("style");
-	String styleName = i == props.end() ? command : i->second.pyExpr;
+	const String &styleName = i == props.end() ? command : i->second.pyExpr;
 	return NodeProp::initStyleProp(styleName, name);
 }
 String Node::getPlace() const {

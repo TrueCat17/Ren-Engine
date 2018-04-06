@@ -1,7 +1,6 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include <memory>
 #include <map>
 #include <deque>
 #include <functional>

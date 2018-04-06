@@ -1,18 +1,14 @@
 #ifndef GV_H
 #define GV_H
 
-#include <memory>
 #include <mutex>
-#include <vector>
 
 #include <SDL2/SDL.h>
 
 
 class Group;
-class ScreenChild;
-
-class Node;
 class PyUtils;
+class Node;
 
 
 class GV {

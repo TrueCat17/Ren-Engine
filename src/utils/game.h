@@ -1,11 +1,17 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <string>
-
 #include <SDL2/SDL_stdinc.h> //Uint32
 
-#include "media/py_utils.h"
+#include "utils/string.h"
+
+namespace boost { namespace python {
+namespace api
+{
+  class object;
+}
+using api::object;
+}} // namespace boost::python
 
 
 class Game {
@@ -44,7 +50,7 @@ public:
 
 	static std::string getFromConfig(const std::string &param);
 
-	static py::object getArgs(const std::string &str);
+	static boost::python::object getArgs(const std::string &str);
 
 	static void updateKeyboard();
 
