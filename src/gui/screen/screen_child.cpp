@@ -115,11 +115,6 @@ void ScreenChild::preparationToUpdateCalcProps() {
 
 void ScreenChild::calculateProps() {
 	enable = true;
-	if (needUpdateChildren) {
-		for (ScreenChild *screenChild : screenChildren) {
-			screenChild->calculateProps();
-		}
-	}
 
 	bool inHBox = false;
 	bool inVBox = false;
@@ -132,8 +127,6 @@ void ScreenChild::calculateProps() {
 		}
 	}
 
-
-	if (isFakeContainer()) return;
 
 	if (codeForCalcProps) {
 		bool calculated = false;
@@ -177,6 +170,15 @@ void ScreenChild::calculateProps() {
 			}
 		}
 	}
+
+
+	if (needUpdateChildren) {
+		for (ScreenChild *screenChild : screenChildren) {
+			screenChild->calculateProps();
+		}
+	}
+	if (isFakeContainer()) return;
+
 
 	bool textureChanged = propWasChanged[ScreenProp::IMAGE_PATH] ||
 						  propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER];
