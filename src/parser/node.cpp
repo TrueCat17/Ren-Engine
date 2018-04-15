@@ -129,12 +129,15 @@ void Node::execute() {
 		try {
 			int initingStartTime = Utils::getTimer();
 			initing = true;
-			for (Node *i : initBlocks) {
-				i->execute();
+			size_t i = 0;
+			for (; i < initBlocks.size(); ++i) {
+				initBlocks[i]->execute();
+				if (Game::modeStarting) break;
 			}
 			initing = false;
-			Logger::logEvent("Mod Initing (" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
+			Logger::logEvent("Mod Initing (" + String(i) + "/" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
 
+			if (Game::modeStarting) return;
 
 			std::vector<String> startScreensVec;
 			if (loadPath) {
@@ -154,9 +157,15 @@ void Node::execute() {
 			}
 
 
-			try {
-				jump("start", false);
-			}catch (ExitException) {}
+			if (Game::hasLabel("start")) {
+				try {
+					jump("start", false);
+				}catch (ExitException) {}
+			}else {
+				while (!Game::modeStarting && !GV::exit) {
+					Utils::sleep(Game::getFrameTime());
+				}
+			}
 
 		}catch (ContinueException) {
 			Utils::outMsg("Node::execute", "continue вне цикла");

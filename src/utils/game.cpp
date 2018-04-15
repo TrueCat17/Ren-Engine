@@ -311,9 +311,6 @@ void Game::save() {
 void Game::_startMod(const String &dir, const String &loadPath) {
 	static std::mutex modMutex;
 
-
-	Logger::log("Start mod <" + dir + ">");
-
 	int waitingStartTime = Utils::getTimer();
 
 	modeStarting = true;
@@ -323,6 +320,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 
 	{
 		std::lock_guard<std::mutex> g2(GV::updateMutex);
+		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
 		int clearStartTime = Utils::getTimer();
