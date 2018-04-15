@@ -70,7 +70,6 @@ void ScreenKey::setUpState(const SDL_Scancode key) {
 		if (sk->key == key) {
 			sk->lastDown = 0;
 			sk->prevIsDown = false;
-			sk->inFirstDown = false;
 		}
 	}
 }
