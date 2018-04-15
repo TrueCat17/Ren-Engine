@@ -21,6 +21,9 @@ private:
 	static int localX;
 	static int localY;
 
+	static bool canHided;
+	static int lastAction;
+
 	static bool mouseDown;
 
 public:
@@ -39,6 +42,11 @@ public:
 
 	static bool getMouseDown() { return mouseDown; }
 	static void setMouseDown(bool v) { mouseDown = v; }
+
+	static void setLastAction();
+	static void checkCursorVisible();
+
+	static void setCanHide(bool value) { canHided = value; }
 };
 
 #endif // MOUSE_H

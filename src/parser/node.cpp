@@ -18,6 +18,7 @@
 #include "media/py_utils.h"
 
 #include "utils/game.h"
+#include "utils/mouse.h"
 
 
 bool Node::loading = false;
@@ -112,6 +113,8 @@ void Node::execute() {
 
 
 	if (command == "main") {
+		Mouse::setCanHide(true);
+
 		std::vector<Node*> initBlocks;
 		for (Node *node : children) {
 			if (node->command == "screen") {

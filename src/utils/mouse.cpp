@@ -19,6 +19,9 @@ int Mouse::y = 0;
 int Mouse::localX = -1;
 int Mouse::localY = -1;
 
+bool Mouse::canHided = true;
+int Mouse::lastAction = Utils::getTimer();
+
 bool Mouse::mouseDown = false;
 
 
@@ -55,4 +58,21 @@ void Mouse::setUsualMode() {
 }
 void Mouse::setButtonMode() {
 	SDL_SetCursor(btnModeCursor);
+}
+
+
+void Mouse::setLastAction() {
+	lastAction = Utils::getTimer();
+}
+void Mouse::checkCursorVisible() {
+	if (!canHided) {
+		SDL_ShowCursor(true);
+	}else {
+		const double timeToHide = Config::get("mouse_hide_time").toDouble();
+
+		if (timeToHide > 0) {
+			const double time = (Utils::getTimer() - lastAction) / 1000.0;
+			SDL_ShowCursor(time < timeToHide);
+		}
+	}
 }

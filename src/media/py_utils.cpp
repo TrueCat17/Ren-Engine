@@ -120,6 +120,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["get_mouse"] = py::make_function(PyUtils::getMouse);
 	pythonGlobal["get_local_mouse"] = py::make_function(PyUtils::getLocalMouse);
 	pythonGlobal["get_mouse_down"] = py::make_function(Mouse::getMouseDown);
+	pythonGlobal["set_can_mouse_hide"] = py::make_function(Mouse::setCanHide);
 }
 PyUtils::~PyUtils() {
 	formatTraceback = py::object();

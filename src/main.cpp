@@ -282,6 +282,9 @@ void loop() {
 				GV::exit = true;
 				return;
 			}
+			if ((event.type & (SDL_MOUSEMOTION | SDL_MOUSEBUTTONDOWN | SDL_MOUSEBUTTONUP | SDL_MOUSEWHEEL)) == event.type) {
+				Mouse::setLastAction();
+			}
 
 			if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
 				Renderer::needToRedraw = true;
@@ -362,6 +365,7 @@ void loop() {
 				ScreenKey::setUpState(key);
 			}
 		}
+		Mouse::checkCursorVisible();
 
 		if (mouseOut) {
 			mouseOutDown = SDL_GetGlobalMouseState(nullptr, nullptr);

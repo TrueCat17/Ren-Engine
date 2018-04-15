@@ -74,6 +74,7 @@ void Config::setDefault() {
 
 	set("mouse_usual", "None");
 	set("mouse_btn", "None");
+	set("mouse_hide_time", "0");
 
 	set("scale_quality", "0");
 	set("software_renderer", "False");
