@@ -2,6 +2,7 @@
 
 #include "gv.h"
 #include "media/py_utils.h"
+#include "utils/utils.h"
 
 std::vector<Node*> Screen::declared;
 

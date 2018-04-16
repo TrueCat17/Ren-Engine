@@ -9,6 +9,11 @@
 #include "gv.h"
 #include "renderer.h"
 
+#include "utils/algo.h"
+#include "utils/image_caches.h"
+#include "utils/math.h"
+#include "utils/utils.h"
+
 
 std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> Image::functions;
 
@@ -51,12 +56,12 @@ SurfacePtr Image::getNewNotClear(int w, int h) {
 
 
 void Image::loadImage(const std::string &desc) {
-	SurfacePtr image = Utils::getThereIsSurfaceOrNull(desc);
+	SurfacePtr image = ImageCaches::getThereIsSurfaceOrNull(desc);
 	if (image) return;
 
 	std::lock_guard<std::mutex> g(toLoadMutex);
 
-	if (!Utils::in(desc, toLoadImages)) {
+	if (!Algo::in(desc, toLoadImages)) {
 		toLoadImages.push_back(desc);
 	}
 }
@@ -78,9 +83,9 @@ void Image::preloadThread() {
 
 
 SurfacePtr Image::getImage(String desc) {
-	desc = Utils::clear(desc);
+	desc = Algo::clear(desc);
 
-	SurfacePtr res = Utils::getThereIsSurfaceOrNull(desc);
+	SurfacePtr res = ImageCaches::getThereIsSurfaceOrNull(desc);
 	if (res) return res;
 
 
@@ -91,9 +96,9 @@ SurfacePtr Image::getImage(String desc) {
 	while (in) {
 		{
 			std::lock_guard<std::mutex> g(vecMutex);
-			in = Utils::in(desc, processingImages);
+			in = Algo::in(desc, processingImages);
 			if (!in) {
-				res = Utils::getThereIsSurfaceOrNull(desc);
+				res = ImageCaches::getThereIsSurfaceOrNull(desc);
 				if (res) {
 					return res;
 				}else {
@@ -125,16 +130,16 @@ SurfacePtr Image::getImage(String desc) {
 	} deleter(desc);
 
 
-	const std::vector<String> args = Utils::getArgs(desc, '|');
+	const std::vector<String> args = Algo::getArgs(desc, '|');
 
 	if (args.empty()) {
 		Utils::outMsg("Image::getImage", "Список аргументов пуст");
 		return nullptr;
 	}
 	if (args.size() == 1) {
-		const String imagePath = Utils::clear(args[0]);
+		const String imagePath = Algo::clear(args[0]);
 
-		res = Utils::getSurface(imagePath);
+		res = ImageCaches::getSurface(imagePath);
 		return res;
 	}
 
@@ -149,7 +154,7 @@ SurfacePtr Image::getImage(String desc) {
 		res = func(args);
 	}
 
-	Utils::setSurface(desc, res);
+	ImageCaches::setSurface(desc, res);
 	return res;
 }
 
@@ -163,8 +168,8 @@ SurfacePtr Image::scale(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const int w = Utils::clear(args[2]).toInt();
-	const int h = Utils::clear(args[3]).toInt();
+	const int w = Algo::clear(args[2]).toInt();
+	const int h = Algo::clear(args[3]).toInt();
 	if (w <= 0 || h <= 0) {
 		Utils::outMsg("Image::scale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
@@ -192,7 +197,7 @@ SurfacePtr Image::factorScale(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const double k = Utils::clear(args[2]).toDouble();
+	const double k = Algo::clear(args[2]).toDouble();
 	if (k <= 0) {
 		Utils::outMsg("Image::factorScale", "Коэффициент масштабирования должен быть > 0:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
@@ -219,8 +224,8 @@ SurfacePtr Image::rendererScale(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const int w = Utils::clear(args[2]).toInt();
-	const int h = Utils::clear(args[3]).toInt();
+	const int w = Algo::clear(args[2]).toInt();
+	const int h = Algo::clear(args[3]).toInt();
 	if (w <= 0 || h <= 0) {
 		Utils::outMsg("Image::rendererScale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
@@ -245,7 +250,7 @@ SurfacePtr Image::crop(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const String rectStr = Utils::clear(args[2]);
+	const String rectStr = Algo::clear(args[2]);
 	const std::vector<String> rectVec = rectStr.split(' ');
 
 	const int x = rectVec[0].toInt();
@@ -281,7 +286,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 		return nullptr;
 	}
 
-	const String sizeStr = Utils::clear(args[1]);
+	const String sizeStr = Algo::clear(args[1]);
 	const std::vector<String> sizeVec = sizeStr.split(' ');
 	if (sizeVec.size() != 2) {
 		Utils::outMsg("Image::composite", "Некорректные размеры <" + sizeStr + ">");
@@ -290,7 +295,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 
 	std::map<String, size_t> images;
 	for (size_t i = 2; i < args.size(); i += 2) {
-		const String image = Utils::clear(args[i + 1]);
+		const String image = Algo::clear(args[i + 1]);
 
 		if (!images.count(image)) {
 			images[image] = i;
@@ -307,7 +312,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 
 		for (const P &p : imagesPairs) {
 			const String &desc = p.first;
-			if (!Utils::in(desc, toLoadImages) && !Utils::getThereIsSurfaceOrNull(desc)) {
+			if (!Algo::in(desc, toLoadImages) && !ImageCaches::getThereIsSurfaceOrNull(desc)) {
 				toLoadImages.push_back(desc);
 			}
 		}
@@ -322,7 +327,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 	const int resPitch = res->pitch;
 
 
-	const String firstImgStr = args.size() > 2 ? Utils::clear(args[3]) : "";
+	const String firstImgStr = args.size() > 2 ? Algo::clear(args[3]) : "";
 	SurfacePtr firstImg = firstImgStr ? getImage(firstImgStr) : nullptr;
 	if (!firstImg) {
 		if (args.size() > 2) {
@@ -330,7 +335,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 		}
 		::memset(resPixels, 0, resH * resPitch);
 	}else {
-		const String firstPosStr = Utils::clear(args[2]);
+		const String firstPosStr = Algo::clear(args[2]);
 		const std::vector<String> firstPosVec = firstPosStr.split(' ');
 
 		const int xOn = firstPosVec[0].toInt();
@@ -366,10 +371,10 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 
 
 	for (size_t i = 4; i < args.size(); i += 2) {
-		const String posStr = Utils::clear(args[i]);
+		const String posStr = Algo::clear(args[i]);
 		const std::vector<String> posVec = posStr.split(' ');
 
-		const String imgStr = Utils::clear(args[i + 1]);
+		const String imgStr = Algo::clear(args[i + 1]);
 		SurfacePtr img = getImage(imgStr);
 		if (!img) {
 			Utils::outMsg("Image::composite", "Не удалось получить изображение <" + imgStr + ">");
@@ -462,8 +467,8 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const bool horizontal = Utils::clear(args[2]) == "True";
-	const bool vertical = Utils::clear(args[3]) == "True";
+	const bool horizontal = Algo::clear(args[2]) == "True";
+	const bool vertical = Algo::clear(args[3]) == "True";
 	if (!horizontal && !vertical) {
 		return img;
 	}
@@ -502,7 +507,7 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const String matrixStr = Utils::clear(args[2]);
+	const String matrixStr = Algo::clear(args[2]);
 	const std::vector<String> matrixVec = matrixStr.split(' ');
 	if (matrixVec.size() != 25) {
 		Utils::outMsg("Image::matrixColor",
@@ -557,11 +562,11 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 				const Uint8 oldB = src[Bshift / 8];
 				const Uint8 oldA = src[Ashift / 8];
 
-				const Uint8 newA = Utils::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255);
+				const Uint8 newA = Math::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255);
 				if (newA) {
-					const Uint8 newR = Utils::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255);
-					const Uint8 newG = Utils::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255);
-					const Uint8 newB = Utils::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255);
+					const Uint8 newR = Math::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255);
+					const Uint8 newG = Math::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255);
+					const Uint8 newB = Math::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255);
 
 					dst[Rshift / 8] = newR;
 					dst[Gshift / 8] = newG;
@@ -602,7 +607,7 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const String colorsStr = Utils::clear(args[2]);
+	const String colorsStr = Algo::clear(args[2]);
 	const std::vector<String> colorsVec = colorsStr.split(' ');
 	if (colorsVec.size() != 4) {
 		Utils::outMsg("Image::reColor", "Неверное количество цветов:\n<" + colorsStr + ">");
@@ -673,8 +678,8 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 	SurfacePtr img = getImage(args[1]);
 	if (!img) return nullptr;
 
-	const int angle = -Utils::clear(args[2]).toDouble();
-	double zoom = Utils::clear(args[3]).toDouble();
+	const int angle = -Algo::clear(args[2]).toDouble();
+	double zoom = Algo::clear(args[3]).toDouble();
 	if (!zoom) {
 		Utils::outMsg("Image::rotozoom", "zoom не должен быть равен 0");
 		zoom = 1;
@@ -694,8 +699,8 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 
 	auto abs = [](double d) { return d < 0 ? -d : d; };
 
-	const double absSin = abs(Utils::getSin(angle));
-	const double absCos = abs(Utils::getCos(angle));
+	const double absSin = abs(Math::getSin(angle));
+	const double absCos = abs(Math::getCos(angle));
 	const int resW = w * absCos + h * absSin;
 	const int resH = w * absSin + h * absCos;
 
@@ -868,35 +873,35 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 		return nullptr;
 	}
 
-	const String channelStr = Utils::clear(args[3]);
+	const String channelStr = Algo::clear(args[3]);
 	if (channelStr != "r" && channelStr != "g" && channelStr != "b" && channelStr != "a") {
 		Utils::outMsg("Image::mask", "Некорректный канал <" + channelStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	const char channel = channelStr[0];
 
-	const String valueStr = Utils::clear(args[4]);
+	const String valueStr = Algo::clear(args[4]);
 	if (!valueStr.isNumber()) {
 		Utils::outMsg("Image::mask", "Значение <" + valueStr + "> должно являться числом:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	const int value = valueStr.toDouble();
 
-	const String cmp = Utils::clear(args[5]);
+	const String cmp = Algo::clear(args[5]);
 	static const std::vector<String> cmps = {"l", "g", "e", "ne", "le", "ge"};
-	if (!Utils::in(cmp, cmps)) {
+	if (!Algo::in(cmp, cmps)) {
 		Utils::outMsg("Image::mask", "Некорректная функция сравнения <" + cmp + ">, ожидалось l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	const String alphaStr = Utils::clear(args[6]);
+	const String alphaStr = Algo::clear(args[6]);
 	if (alphaStr != "r" && alphaStr != "g" && alphaStr != "b" && alphaStr != "a") {
 		Utils::outMsg("Image::mask", "Некорректный канал <" + alphaStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	const char alphaChannel = alphaStr[0];
 
-	const String alphaImage = Utils::clear(args[7]);
+	const String alphaImage = Algo::clear(args[7]);
 	if (alphaImage != "1" && alphaImage != "2") {
 		Utils::outMsg("Image::mask", "Некорректный номер изображения <" + alphaStr + ">, ожидалось 1 (основа) или 2 (маска):\n<" + String::join(args, ", ") + ">");
 		return nullptr;
@@ -928,11 +933,11 @@ void Image::save(const std::string &imageStr, const std::string &path, const std
 	SurfacePtr img = getImage(imageStr);
 	if (!img) return;
 
-	const String widthStr = Utils::clear(width);
-	const String heightStr = Utils::clear(height);
+	const String widthStr = Algo::clear(width);
+	const String heightStr = Algo::clear(height);
 
-	const int w = Utils::inBounds(widthStr == "None"  ? img->w : widthStr.toInt() , 1, 2400);
-	const int h = Utils::inBounds(heightStr == "None" ? img->h : heightStr.toInt(), 1, 1350);
+	const int w = Math::inBounds(widthStr == "None"  ? img->w : widthStr.toInt() , 1, 2400);
+	const int h = Math::inBounds(heightStr == "None" ? img->h : heightStr.toInt(), 1, 1350);
 
 	const SDL_Rect from = {0, 0, img->w, img->h};
 	SDL_Rect to = {0, 0, w, h};

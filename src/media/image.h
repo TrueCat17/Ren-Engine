@@ -1,12 +1,16 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include <vector>
 #include <map>
 #include <deque>
 #include <functional>
+#include <mutex>
 
-#include "utils/utils.h"
+#include <SDL2/SDL_endian.h>
 
+#include "utils/image_typedefs.h"
+#include "utils/string.h"
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 static const Uint32 Rmask = 0xFF000000;

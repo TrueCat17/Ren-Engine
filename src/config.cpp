@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include "utils/algo.h"
 #include "utils/utils.h"
 
 
@@ -160,7 +161,7 @@ void Config::save() {
 		size_t res = 0;
 
 		for (size_t i = 0; i < s.size(); ++i) {
-			if (Utils::isFirstByte(s[i])) {
+			if (Algo::isFirstByte(s[i])) {
 				++res;
 			}
 		}

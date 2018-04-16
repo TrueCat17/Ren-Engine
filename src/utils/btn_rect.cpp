@@ -1,9 +1,8 @@
 #include "btn_rect.h"
 
-#include <iostream>
-
 #include "gui/group.h"
 
+#include "utils/math.h"
 #include "utils/mouse.h"
 
 
@@ -18,8 +17,8 @@ bool BtnRect::objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 			int x = mouseX - child->getGlobalX() - child->xAnchor;
 			int y = mouseY - child->getGlobalY() - child->yAnchor;
 
-			double sinA = Utils::getSin(-child->getGlobalRotate());
-			double cosA = Utils::getCos(-child->getGlobalRotate());
+			double sinA = Math::getSin(-child->getGlobalRotate());
+			double cosA = Math::getCos(-child->getGlobalRotate());
 
 			int rotX = x * cosA - y * sinA + child->xAnchor;
 			int rotY = x * sinA + y * cosA + child->yAnchor;
@@ -85,8 +84,8 @@ void BtnRect::checkMouseCursor() {
 		int x = mouseX - owner->getGlobalX() - owner->xAnchor;
 		int y = mouseY - owner->getGlobalY() - owner->yAnchor;
 
-		double sinA = Utils::getSin(-owner->getGlobalRotate());
-		double cosA = Utils::getCos(-owner->getGlobalRotate());
+		double sinA = Math::getSin(-owner->getGlobalRotate());
+		double cosA = Math::getCos(-owner->getGlobalRotate());
 
 		int rotX = x * cosA - y * sinA + owner->xAnchor;
 		int rotY = x * sinA + y * cosA + owner->yAnchor;
@@ -128,8 +127,8 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 		int x = mouseX - owner->getGlobalX() - owner->xAnchor;
 		int y = mouseY - owner->getGlobalY() - owner->yAnchor;
 
-		double sinA = Utils::getSin(-owner->getGlobalRotate());
-		double cosA = Utils::getCos(-owner->getGlobalRotate());
+		double sinA = Math::getSin(-owner->getGlobalRotate());
+		double cosA = Math::getCos(-owner->getGlobalRotate());
 
 		int rotX = x * cosA - y * sinA + owner->xAnchor;
 		int rotY = x * sinA + y * cosA + owner->yAnchor;

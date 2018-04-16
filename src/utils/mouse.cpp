@@ -4,7 +4,7 @@
 #include <SDL2/SDL_image.h>
 
 #include "config.h"
-
+#include "utils/image_caches.h"
 #include "utils/utils.h"
 
 SurfacePtr Mouse::usual;
@@ -28,7 +28,7 @@ bool Mouse::mouseDown = false;
 void Mouse::init() {
 	const String usualPath = Config::get("mouse_usual");
 	if (usualPath && usualPath != "None") {
-		usual = Utils::getSurface(usualPath);
+		usual = ImageCaches::getSurface(usualPath);
 	}
 	if (usual) {
 		usualModeCursor = SDL_CreateColorCursor(usual.get(), 0, 0);
@@ -38,7 +38,7 @@ void Mouse::init() {
 
 	const String btnPath = Config::get("mouse_btn");
 	if (btnPath && btnPath != "None") {
-		btn = Utils::getSurface(btnPath);
+		btn = ImageCaches::getSurface(btnPath);
 	}
 	if (btn) {
 		btnModeCursor = SDL_CreateColorCursor(btn.get(), 0, 0);
@@ -65,14 +65,14 @@ void Mouse::setLastAction() {
 	lastAction = Utils::getTimer();
 }
 void Mouse::checkCursorVisible() {
-	if (!canHided) {
-		SDL_ShowCursor(true);
-	}else {
+	bool show = true;
+	if (canHided) {
 		const double timeToHide = Config::get("mouse_hide_time").toDouble();
 
 		if (timeToHide > 0) {
 			const double time = (Utils::getTimer() - lastAction) / 1000.0;
-			SDL_ShowCursor(time < timeToHide);
+			show = time < timeToHide;
 		}
 	}
+	SDL_ShowCursor(show);
 }

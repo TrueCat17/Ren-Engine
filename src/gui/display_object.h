@@ -5,7 +5,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "utils/utils.h"
+#include "utils/image_typedefs.h"
 
 class Group;
 

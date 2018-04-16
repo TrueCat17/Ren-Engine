@@ -5,6 +5,9 @@
 #include "config.h"
 #include "gui/group.h"
 #include "media/image.h"
+
+#include "utils/math.h"
+#include "utils/image_caches.h"
 #include "utils/utils.h"
 
 int Renderer::maxTextureWidth = 0;
@@ -109,7 +112,7 @@ void Renderer::checkErrors(const char *from, const char *funcName) {
 		if (++countErrors == maxCountErrors) {
 			GV::isOpenGL = false;
 			Utils::outMsg("Renderer::" + String(from) + ", " + funcName, "Using OpenGL failed");
-			Utils::clearTextures();
+			ImageCaches::clearTextures();
 			break;
 		}
 
@@ -312,7 +315,7 @@ void Renderer::scale() {
 	}
 
 	SDL_Rect dstRect = {0, 0, w, h};
-	TexturePtr toRender = Utils::getTexture(toScaleSurface);
+	TexturePtr toRender = ImageCaches::getTexture(toScaleSurface);
 
 	SDL_SetRenderTarget(GV::mainRenderer, tmpTexture);
 	SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 0);
@@ -340,8 +343,8 @@ SurfacePtr Renderer::getScreenshot(size_t width, size_t height) {
 	screenshot.reset();
 
 	screenshotting = true;
-	screenshotWidth = Utils::inBounds(width, 320, 2400);
-	screenshotHeight = Utils::inBounds(height, 180, 1350);
+	screenshotWidth = Math::inBounds(width, 320, 2400);
+	screenshotHeight = Math::inBounds(height, 180, 1350);
 	needToRender = needToRedraw = true;
 
 	while (screenshotting) {
@@ -439,7 +442,7 @@ void Renderer::loop() {
 					if (it != cache.end()) {
 						textures.push_back(it->second);
 					}else {
-						const TexturePtr texture = Utils::getTexture(rs.surface);
+						const TexturePtr texture = ImageCaches::getTexture(rs.surface);
 						textures.push_back(texture);
 						cache[rs.surface] = texture;
 					}

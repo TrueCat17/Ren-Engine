@@ -1,7 +1,6 @@
 #include "gui.h"
 
 #define printTime 0
-
 #if printTime
 #include <iostream>
 #endif
@@ -12,6 +11,8 @@
 #include "gui/screen/screen.h"
 
 #include "gui/screen/style.h"
+
+#include "utils/utils.h"
 
 
 void GUI::update() {

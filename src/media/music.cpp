@@ -4,6 +4,9 @@
 
 #include "gv.h"
 #include "media/py_utils.h"
+
+#include "utils/algo.h"
+#include "utils/math.h"
 #include "utils/utils.h"
 
 
@@ -176,7 +179,7 @@ void Music::setVolume(double volume, const std::string &channelName,
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
 		if (channel->name == channelName) {
-			channel->volume = Utils::inBounds(volume, 0, 1);
+			channel->volume = Math::inBounds(volume, 0, 1);
 			return;
 		}
 	}
@@ -191,7 +194,7 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 						 "Строка " + String(numLine);
 
 	if (mixerVolumes.find(mixer) != mixerVolumes.end()) {
-		mixerVolumes[mixer] = Utils::inBounds(volume, 0, 1);
+		mixerVolumes[mixer] = Math::inBounds(volume, 0, 1);
 	}else {
 		Utils::outMsg("Music::setMixerVolume",
 					  "Микшер с именем <" + mixer + "> сейчас не используется никаким каналом\n\n" + place);
@@ -202,7 +205,7 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 void Music::play(const std::string &desc,
 				 const std::string &fileName, int numLine)
 {
-	std::vector<String> args = Utils::getArgs(desc);
+	std::vector<String> args = Algo::getArgs(desc);
 	if (args.size() != 2 && args.size() != 4) {
 		Utils::outMsg("Music::play",
 					  "Команда play ожидает 2 или 4 параметра:\n"
@@ -211,7 +214,7 @@ void Music::play(const std::string &desc,
 		return;
 	}
 
-	String channelName = Utils::clear(args[0]);
+	String channelName = Algo::clear(args[0]);
 	String url = PyUtils::exec(fileName, numLine, args[1], true);
 	for (size_t i = 0; i < url.size(); ++i) {
 		if (url[i] == '\\') {
@@ -273,7 +276,7 @@ void Music::stop(const std::string &desc,
 	const String place = "Файл <" + fileName + ">\n"
 						 "Строка " + String(numLine) + ": <" + desc + ">";
 
-	std::vector<String> args = Utils::getArgs(desc);
+	std::vector<String> args = Algo::getArgs(desc);
 	if (args.size() != 1 && args.size() != 3) {
 		Utils::outMsg("Music::stop",
 					  "Команда stop ожидает 1 или 3 параметра:\n"
@@ -281,7 +284,7 @@ void Music::stop(const std::string &desc,
 		return;
 	}
 
-	String channelName = Utils::clear(args[0]);
+	String channelName = Algo::clear(args[0]);
 
 	int fadeOut = 0;
 	if (args.size() > 1) {

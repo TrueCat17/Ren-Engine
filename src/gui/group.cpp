@@ -1,9 +1,7 @@
 #include "group.h"
 
+#include "utils/utils.h"
 
-Group::Group() {
-
-}
 
 void Group::updateGlobalPos() {
 	DisplayObject::updateGlobalPos();

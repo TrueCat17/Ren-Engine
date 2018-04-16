@@ -3,6 +3,9 @@
 #include "group.h"
 #include "renderer.h"
 
+#include "utils/math.h"
+#include "utils/utils.h"
+
 
 std::vector<DisplayObject*> DisplayObject::objects;
 
@@ -34,8 +37,8 @@ void DisplayObject::updateGlobalPos() {
 	x = rect.x + xAnchor - parentXAnchor;
 	y = rect.y + yAnchor - parentYAnchor;
 
-	double sinA = Utils::getSin(parentGlobalRotate);
-	double cosA = Utils::getCos(parentGlobalRotate);
+	double sinA = Math::getSin(parentGlobalRotate);
+	double cosA = Math::getCos(parentGlobalRotate);
 
 	int rotX = x * cosA - y * sinA;
 	int rotY = x * sinA + y * cosA;
@@ -78,7 +81,7 @@ void DisplayObject::draw() const {
 	if (surface) {
 		SDL_Rect t = {globalX, globalY, rect.w, rect.h};
 		SDL_Point center = { xAnchor, yAnchor };
-		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
+		Uint8 intAlpha = Math::inBounds(int(globalAlpha * 255), 0, 255);
 
 		pushToRender(surface, globalRotate, intAlpha, &crop, &t, &center);
 	}

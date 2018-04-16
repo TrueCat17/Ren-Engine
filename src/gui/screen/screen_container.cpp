@@ -29,6 +29,9 @@
 
 #include "media/py_utils.h"
 
+#include "utils/algo.h"
+#include "utils/utils.h"
+
 
 ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent, Screen *screen):
 	ScreenChild(node, screenParent, screen)
@@ -283,7 +286,7 @@ void ScreenContainer::addChildrenFromNode() {
 				"color, font, text_size, text_align, text_valign"
 			).split(", ");
 
-			if (!Utils::in(childNode->command, props)) {
+			if (!Algo::in(childNode->command, props)) {
 				Utils::outMsg("ScreenContainer::addChildrenFromNode",
 							  "Неизвестный тип потомка <" + childNode->command + ">\n" +
 							  childNode->getPlace());

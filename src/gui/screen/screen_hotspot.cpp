@@ -10,6 +10,9 @@
 
 #include "parser/node.h"
 
+#include "utils/math.h"
+#include "utils/utils.h"
+
 
 ScreenHotspot::ScreenHotspot(Node *node, Screen *screen):
 	ScreenChild(node, this, screen),
@@ -190,7 +193,7 @@ void ScreenHotspot::draw() const {
 	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
 	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
 
-	Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
+	Uint8 intAlpha = Math::inBounds(int(globalAlpha * 255), 0, 255);
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
 	pushToRender(surface, globalRotate, intAlpha, &from, &to, &center);

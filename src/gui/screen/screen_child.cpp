@@ -9,6 +9,7 @@
 
 #include "parser/node.h"
 #include "media/py_utils.h"
+#include "utils/utils.h"
 
 
 std::vector<ScreenChild*> ScreenChild::screenObjects;

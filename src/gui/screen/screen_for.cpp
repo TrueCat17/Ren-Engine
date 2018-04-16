@@ -3,6 +3,7 @@
 #include "gv.h"
 #include "media/py_utils.h"
 #include "parser/node.h"
+#include "utils/utils.h"
 
 ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent, Screen *screen):
 	ScreenContainer(node, screenParent, screen)

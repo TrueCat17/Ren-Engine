@@ -5,17 +5,18 @@
 
 #include <boost/python.hpp>
 
-#include "utils/utils.h"
+#include "utils/string.h"
+
 
 class Style {
 private:
 	static std::map<String, Style*> styles;
 
-	std::map<String, py::object> props;
+	std::map<String, boost::python::object> props;
 
 public:
 	static void destroyAll();
-	static py::object getProp(const String &styleName, const String &propName);
+	static boost::python::object getProp(const String &styleName, const String &propName);
 };
 
 #endif // STYLE_H

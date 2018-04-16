@@ -17,8 +17,10 @@
 #include "media/music.h"
 #include "media/py_utils.h"
 
+#include "utils/algo.h"
 #include "utils/game.h"
 #include "utils/mouse.h"
+#include "utils/utils.h"
 
 
 bool Node::loading = false;
@@ -205,7 +207,7 @@ void Node::execute() {
 			const String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToShow(screenName);
 		}else {
-			const std::vector<String> args = Utils::getArgs(params);
+			const std::vector<String> args = Algo::getArgs(params);
 			if (args.empty()) {
 				Utils::outMsg("Node::execute",
 							  "Строка <show " + params + "> некорректна\n" +
@@ -231,7 +233,7 @@ void Node::execute() {
 			const String screenName = params.substr(params.find("screen ") + String("screen ").size());
 			Screen::addToHide(screenName);
 		}else {
-			const std::vector<String> args = Utils::getArgs(params);
+			const std::vector<String> args = Algo::getArgs(params);
 			if (args.empty()) {
 				Utils::outMsg("Node::execute",
 							  "Строка <hide " + params + "> некорректна\n" +
@@ -249,7 +251,7 @@ void Node::execute() {
 	}else
 
 	if (command == "scene") {
-		const std::vector<String> args = Utils::getArgs(params);
+		const std::vector<String> args = Algo::getArgs(params);
 
 		String argsStr;
 		if (args.size()) {
@@ -610,7 +612,7 @@ py::list Node::getPyList() const {
 	py::list res;
 
 	static const std::vector<String> highLevelCommands = {"image", "scene", "show", "hide"};
-	bool isHighLevelCommands = Utils::in(command, highLevelCommands);
+	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
 
 	if (!isHighLevelCommands) {
 		if (command) {
@@ -625,7 +627,7 @@ py::list Node::getPyList() const {
 		py::list childPyList = child->getPyList();
 
 		static const std::vector<String> blockCommandsInImage = {"contains", "block", "parallel"};
-		bool childIsBlock = Utils::in(child->command, blockCommandsInImage);
+		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
 
 		static const py::str space = " ";
 
@@ -642,7 +644,7 @@ std::vector<String> Node::getImageChildren() const {
 	std::vector<String> res;
 
 	static const std::vector<String> highLevelCommands = {"image", "scene", "show", "hide"};
-	bool isHighLevelCommands = Utils::in(command, highLevelCommands);
+	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
 
 	if (!isHighLevelCommands) {
 		if (command) {
@@ -655,11 +657,11 @@ std::vector<String> Node::getImageChildren() const {
 
 	for (const Node* child : children) {
 		static const std::vector<String> blockCommandsInImage = {"contains", "block", "parallel"};
-		bool childIsBlock = Utils::in(child->command, blockCommandsInImage);
+		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
 
 		if (!childIsBlock) {
 			if (child->command || child->params) {
-				const String str = Utils::clear(child->command + " " + child->params);
+				const String str = Algo::clear(child->command + " " + child->params);
 				res.push_back(str);
 			}
 		}else {
@@ -714,8 +716,8 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 
 			--count;
 
-			std::vector<String> args = Utils::getArgs(childParams);
-			while (args.size() > 2 && Utils::in(args[args.size() - 2], words)) {
+			std::vector<String> args = Algo::getArgs(childParams);
+			while (args.size() > 2 && Algo::in(args[args.size() - 2], words)) {
 				args.erase(args.end() - 2, args.end());
 			}
 			if (args.empty()) continue;

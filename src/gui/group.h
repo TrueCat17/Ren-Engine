@@ -7,7 +7,7 @@ class Group: public DisplayObject {
 public:
 	std::vector<DisplayObject*> children;
 
-	Group();
+	Group() {}
 	virtual ~Group();
 
 	virtual void updateGlobalPos();

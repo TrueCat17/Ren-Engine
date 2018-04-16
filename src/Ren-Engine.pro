@@ -46,8 +46,12 @@ HEADERS += \
 	parser/parser.h \
 	parser/syntax_checker.h \
 	\
+	utils/algo.h \
 	utils/btn_rect.h \
 	utils/game.h \
+	utils/image_caches.h \
+	utils/image_typedefs.h \
+	utils/math.h \
 	utils/mouse.h \
 	utils/string.h \
 	utils/utils.h
@@ -96,8 +100,11 @@ SOURCES += \
 	parser/parser.cpp \
 	parser/syntax_checker.cpp \
 	\
+	utils/algo.cpp \
 	utils/btn_rect.cpp \
 	utils/game.cpp \
+	utils/math.cpp \
+	utils/image_caches.cpp \
 	utils/mouse.cpp \
 	utils/string.cpp \
 	utils/utils.cpp

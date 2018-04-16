@@ -6,6 +6,7 @@
 
 #include "media/py_utils.h"
 #include "parser/node.h"
+#include "utils/utils.h"
 
 ScreenText::ScreenText(Node *node, Screen *screen):
 	ScreenChild(node, this, screen),

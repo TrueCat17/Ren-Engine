@@ -8,14 +8,7 @@
 #include <SDL2/SDL_opengl.h>
 
 #include "gv.h"
-
-
-//from <memory>:
-#  include <ext/concurrence.h>
-#  include <bits/unique_ptr.h>
-#  include <bits/shared_ptr.h>
-typedef std::shared_ptr<SDL_Surface> SurfacePtr;
-typedef std::shared_ptr<SDL_Texture> TexturePtr;
+#include "utils/image_typedefs.h"
 
 struct RenderStruct {
 	SurfacePtr surface;

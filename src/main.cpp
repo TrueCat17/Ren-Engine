@@ -27,7 +27,10 @@
 
 #include "utils/btn_rect.h"
 #include "utils/game.h"
+#include "utils/image_caches.h"
+#include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/utils.h"
 
 
 
@@ -160,7 +163,7 @@ String setDir(String root) {
 }
 
 bool init() {
-	Utils::init();
+	Math::init();
 	Logger::init();
 	Config::init();
 
@@ -212,8 +215,8 @@ bool init() {
 		GV::width = w = GV::displayMode.w;
 		GV::height = h = GV::displayMode.h;
 	}else {
-		GV::width = w = Utils::inBounds(Config::get("window_width").toInt(), 640, 2400);
-		GV::height = h = Utils::inBounds(Config::get("window_height").toInt(), 360, 1350);
+		GV::width = w = Math::inBounds(Config::get("window_width").toInt(), 640, 2400);
+		GV::height = h = Math::inBounds(Config::get("window_height").toInt(), 360, 1350);
 	}
 
 	String windowTitle = Config::get("window_title");
@@ -232,7 +235,7 @@ bool init() {
 
 	String iconPath = Config::get("window_icon");
 	if (iconPath && iconPath != "None") {
-		SurfacePtr icon = Utils::getSurface(iconPath);
+		SurfacePtr icon = ImageCaches::getSurface(iconPath);
 		if (icon) {
 			SDL_SetWindowIcon(GV::mainWindow, icon.get());
 		}

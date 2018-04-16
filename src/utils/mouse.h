@@ -3,8 +3,7 @@
 
 #include <SDL2/SDL_mouse.h>
 
-#include <memory>
-typedef std::shared_ptr<SDL_Surface> SurfacePtr;
+#include "utils/image_typedefs.h"
 
 
 class Mouse {

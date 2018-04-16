@@ -17,7 +17,9 @@
 #include "parser/parser.h"
 
 #include "utils/game.h"
+#include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/utils.h"
 
 
 py::object PyUtils::formatTraceback;
@@ -99,8 +101,8 @@ PyUtils::PyUtils() {
 	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
 	pythonGlobal["get_args"] = py::make_function(Game::getArgs);
 
-	pythonGlobal["_sin"] = py::make_function(Utils::getSin);
-	pythonGlobal["_cos"] = py::make_function(Utils::getCos);
+	pythonGlobal["_sin"] = py::make_function(Math::getSin);
+	pythonGlobal["_cos"] = py::make_function(Math::getCos);
 
 	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
 	pythonGlobal["set_fps"] = py::make_function(Game::setFps);

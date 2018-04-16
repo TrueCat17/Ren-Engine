@@ -17,23 +17,13 @@
 
 #include "parser/node.h"
 
-#include "game.h"
+#include "utils/game.h"
 
-
-String Utils::FONTS;
 
 std::map<String, TTF_Font*> Utils::fonts;
 
 std::map<String, String> Utils::images;
 std::map<String, Node*> Utils::declAts;
-
-std::vector<std::pair<SurfacePtr, TexturePtr>> Utils::textures;
-
-std::mutex Utils::surfaceMutex;
-std::vector<std::pair<String, SurfacePtr>> Utils::surfaces;
-
-double* Utils::sins = new double[360];
-double* Utils::coss = new double[360];
 
 
 std::vector<String> Utils::getFileNames(const std::string &path) {
@@ -58,20 +48,6 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 	}
 
 	return res;
-}
-
-void Utils::init() {
-	FONTS = "fonts/";
-
-	for (size_t i = 0; i < 360; ++i) {
-		sins[i] = std::sin(i * M_PI / 180);
-		coss[i] = std::cos(i * M_PI / 180);
-	}
-}
-
-bool Utils::isFirstByte(char c) {
-	//2-й и последующие байты в 2-чном представлении в UTF-8 начинаются с 10 (0b10xxxxxx)
-	return !(c & 0b10000000) || c & 0b01000000;
 }
 
 int Utils::getTimer() {
@@ -119,14 +95,15 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 }
 
 
-TTF_Font* Utils::getFont(const String &path, int size) {
-	const String t = path + "/" + size;
+TTF_Font* Utils::getFont(const String &name, int size) {
+	const String t = name + "|" + size;
 
 	auto it = fonts.find(t);
 	if (it != fonts.end()) {
 		return it->second;
 	}
 
+	const String path = "fonts/" + name + ".ttf";
 	TTF_Font *res = TTF_OpenFont(path.c_str(), size);
 	if (res) {
 		fonts[t] = res;
@@ -141,333 +118,6 @@ void Utils::destroyAllFonts() {
 	fonts.clear();
 }
 
-
-size_t Utils::getStartArg(const String &args, size_t end, const char separator) {
-	size_t res = end + 1;
-	while (res < args.size() && args[res] == separator) {
-		++res;
-	}
-	if (res >= args.size()) {
-		return -1;
-	}
-	return res;
-}
-size_t Utils::getEndArg(const String &args, size_t start, const char separator) {
-	bool wasSeparator = false;
-	int b1 = 0;//open (
-	int b2 = 0;//open [
-	bool q1 = false;//open '
-	bool q2 = false;//open "
-
-	size_t i = start;
-	for (; i < args.size(); ++i) {
-		const char c = args[i];
-		wasSeparator = wasSeparator || (c == separator);
-
-		if (wasSeparator && !b1 && !b2 && !q1 && !q2) break;
-
-		if (c == '\'' && !q2) {
-			q1 = !q1;
-		}else
-
-		if (c == '"' && !q1) {
-			q2 = !q2;
-		}else
-
-		if (!q1 && !q2) {
-			if (c == '(') ++b1;
-			else if (c == ')') --b1;
-			else if (c == '[') ++b2;
-			else if (c == ']') --b2;
-		}
-	}
-	if (i == args.size() && (b1 || b2 || q1 || q2)) {
-		String error = "Не закрыта " +
-							((b1 || b2)
-							 ? (String(b1 ? "круглая" : "квадратная")) + " скобка"
-							 : (String(q1 ? "одинарная" : "двойная") + " кавычка")
-						);
-		Utils::outMsg("Utils::getEndArg", error);
-	}
-	return i;
-}
-
-String Utils::clear(String s) {
-	size_t start = s.find_first_not_of(' ');
-	size_t end = s.find_last_not_of(' ') + 1;
-
-	if (start == size_t(-1)) start = 0;
-	if (!end) end = s.size();
-	if (start || end != s.size()) {
-		s = s.substr(start, end - start);
-	}
-
-	size_t n = 0;
-	while (n < s.size() && s[n] == '(') {
-		if (s[s.size() - n - 1] == ')') {
-			++n;
-		}else{
-			Utils::outMsg("Utils::clear", "Путаница в скобках:\n<" + s + ">");
-			return nullptr;
-		}
-	}
-
-	if (n) {
-		start = n;
-		end = s.size() - n;
-		s = s.substr(start, end - start);
-	}
-
-	return s;
-}
-
-std::vector<String> Utils::getArgs(String args, const char separator) {
-	size_t start = args.find_first_not_of(' ');
-	size_t end = args.find_last_not_of(' ') + 1;
-
-	if (start == size_t(-1)) start = 0;
-	if (!end) end = args.size();
-	if (start || end != args.size()) {
-		args = args.substr(start, end - start);
-	}
-
-	std::vector<String> res;
-
-	start = 0;
-	while (start != size_t(-1)) {
-		end = Utils::getEndArg(args, start, separator);
-
-		String t = args.substr(start, end - start);
-		if (t) {
-			res.push_back(t);
-		}
-
-		start = Utils::getStartArg(args, end, separator);
-	}
-	return res;
-}
-
-
-void Utils::trimTexturesCache(const SurfacePtr &last) {
-	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
-	 * пока кэш не уменьшится до нужных размеров
-	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
-	 * Может оказаться так, что все текстуры нужны, тогда никакая из них не удаляется и кэш превышает желаемый размер
-	 * После всего этого новая текстура добавляется в конец кэша
-	 */
-
-	const size_t MAX_SIZE = Config::get("max_size_textures_cache").toInt() * (1 << 20);//в МБ
-
-	size_t cacheSize = last->w * last->h * 4;
-	for (const std::pair<SurfacePtr, TexturePtr> &p : textures) {
-		const SurfacePtr &surface = p.first;
-		cacheSize += surface->w * surface->h * 4;
-	}
-
-	if (cacheSize > MAX_SIZE) {
-		for (size_t i = 0; i < textures.size(); ++i) {
-			const SurfacePtr &surface = textures[i].first;
-			if (surface.use_count() == 1) {
-				cacheSize -= surface->w * surface->h * 4;
-
-				textures.erase(textures.begin() + i, textures.begin() + i + 1);
-				--i;
-			}
-		}
-	}
-
-	size_t i = 0;
-	while (cacheSize > MAX_SIZE) {
-		while (i < textures.size() && textures[i].second.use_count() > 1) {//1 - value in textures
-			++i;
-		}
-		if (i == textures.size()) break;
-
-		const std::pair<SurfacePtr, TexturePtr> &p = textures[i];
-		const SurfacePtr &surface = p.first;
-
-		cacheSize -= surface->w * surface->h * 4;
-
-		textures.erase(textures.begin() + i, textures.begin() + i + 1);
-	}
-}
-
-TexturePtr Utils::getTexture(const SurfacePtr &surface) {
-	if (!surface) return nullptr;
-
-	const int N = 20;
-	for (size_t i = textures.size() - 1; i != size_t(-1); --i) {
-		if (textures[i].first == surface) {
-			if (textures.size() > N && i < textures.size() - N) {
-				std::pair<SurfacePtr, TexturePtr> t = textures[i];
-
-				textures.erase(textures.begin() + i, textures.begin() + i + 1);
-				textures.push_back(t);
-
-				i = textures.size() - 1;
-			}
-			return textures[i].second;
-		}
-	}
-
-	TexturePtr texture(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
-
-	if (texture) {
-		trimTexturesCache(surface);
-		textures.push_back(std::make_pair(surface, texture));
-		return texture;
-	}
-
-	outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
-	return nullptr;
-}
-
-void Utils::trimSurfacesCache(const SurfacePtr &last) {
-	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
-
-	size_t cacheSize = last->w * last->h * 4;
-
-	std::map<SDL_Surface*, long> countSurfaces;
-	for (const std::pair<String, SurfacePtr> &p : surfaces) {
-		const SurfacePtr &surface = p.second;
-		if (countSurfaces.find(surface.get()) == countSurfaces.end()) {
-			cacheSize += surface->w * surface->h * 4;
-		}
-		countSurfaces[surface.get()] += 1;
-	}
-	std::map<SDL_Surface*, long> countSurfacesStart = countSurfaces;
-
-	std::vector<SurfacePtr> toDelete;
-	size_t i = 0;
-	while (cacheSize > MAX_SIZE) {
-		while (i < surfaces.size() &&
-			   surfaces[i].second.use_count() > countSurfacesStart[surfaces[i].second.get()]
-		) {
-			++i;
-		}
-		if (i == surfaces.size()) break;
-
-		const std::pair<String, SurfacePtr> &p = surfaces[i];
-		const SurfacePtr &surface = p.second;
-
-		if (!(countSurfaces[surface.get()] -= 1)) {
-			cacheSize -= surface->w * surface->h * 4;
-			toDelete.push_back(surface);
-		}
-		++i;
-	}
-
-	for (const SurfacePtr &s : toDelete) {
-		for (i = 0; i < surfaces.size(); ++i) {
-			if (surfaces[i].second == s) {
-				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
-				--i;
-			}
-		}
-	}
-}
-SurfacePtr Utils::getThereIsSurfaceOrNull(const String &path) {
-	std::lock_guard<std::mutex> g(surfaceMutex);
-
-	const size_t N = 15;
-	for (size_t i = surfaces.size() - 1; i != size_t(-1); --i) {
-		if (surfaces[i].first == path) {
-			if (surfaces.size() > N && i < surfaces.size() - N) {
-				std::pair<String, SurfacePtr> t = surfaces[i];
-
-				surfaces.erase(surfaces.begin() + i, surfaces.begin() + i + 1);
-				surfaces.push_back(t);
-
-				i = surfaces.size() - 1;
-			}
-			return surfaces[i].second;
-		}
-	}
-	return nullptr;
-}
-
-SurfacePtr Utils::getSurface(const String &path) {
-	if (!path) return nullptr;
-
-	SurfacePtr t = getThereIsSurfaceOrNull(path);
-	if (t) return t;
-
-	static std::mutex mutex;
-	std::lock_guard<std::mutex> g(mutex);
-
-	t = getThereIsSurfaceOrNull(path);
-	if (t) return t;
-
-
-	String realPath = path;
-	size_t end = realPath.find('?');
-	if (end != size_t(-1)) {
-		realPath.erase(realPath.begin() + end, realPath.end());
-	}
-	for (size_t i = 0; i < realPath.size(); ++i) {
-		if (realPath[i] == '\\') {
-			realPath[i] = '/';
-		}
-	}
-
-	SurfacePtr surface(IMG_Load(realPath.c_str()), SDL_FreeSurface);
-	if (!surface) {
-		outMsg("IMG_Load", IMG_GetError());
-		return nullptr;
-	}
-
-	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
-
-	if (surface->format->format != SDL_PIXELFORMAT_RGBA32) {
-		SurfacePtr newSurface = Image::getNewNotClear(surface->w, surface->h);
-
-		const SDL_Palette *palette = surface->format->palette;
-		if (palette) {
-			for (int y = 0; y < surface->h; ++y) {
-				const Uint8 *oldPixels = (const Uint8 *)surface->pixels + y * surface->pitch;
-				Uint8 *newPixels = (Uint8 *)newSurface->pixels + y * newSurface->pitch;
-
-				for (int x = 0; x < surface->w; ++x) {
-					const SDL_Color &color = palette->colors[*oldPixels];
-
-					newPixels[Rshift / 8] = color.r;
-					newPixels[Gshift / 8] = color.g;
-					newPixels[Bshift / 8] = color.b;
-					newPixels[Ashift / 8] = color.a;
-
-					++oldPixels;
-					newPixels += 4;
-				}
-			}
-		}else {
-			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
-		}
-		surface = newSurface;
-	}
-
-	std::lock_guard<std::mutex> g2(surfaceMutex);
-	trimSurfacesCache(surface);
-	surfaces.push_back(std::make_pair(path, surface));
-
-	return surface;
-}
-
-void Utils::setSurface(const String &path, const SurfacePtr &surface) {
-	if (!surface) return;
-	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
-
-	std::lock_guard<std::mutex> g(surfaceMutex);
-	for (std::pair<String, SurfacePtr> &p : surfaces) {
-		const String &pPath = p.first;
-		if (pPath == path) {
-			p.second = surface;
-			return;
-		}
-	}
-
-	trimSurfacesCache(surface);
-	surfaces.push_back(std::make_pair(path, surface));
-}
 
 Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {

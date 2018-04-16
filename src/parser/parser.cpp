@@ -10,6 +10,7 @@
 #include "parser/syntax_checker.h"
 #include "parser/node.h"
 
+#include "utils/algo.h"
 #include "utils/utils.h"
 
 
@@ -213,7 +214,7 @@ void Parser::initScreenNode(Node *node) {
 		}
 	}
 
-	const std::vector<String> args = Utils::getArgs(node->params);
+	const std::vector<String> args = Algo::getArgs(node->params);
 
 	const bool firstIsProp = compsWithFirstParam.count(node->command);
 	if (firstIsProp) {

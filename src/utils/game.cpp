@@ -3,6 +3,7 @@
 #include <thread>
 #include <fstream>
 #include <boost/filesystem.hpp>
+#include <SDL2/SDL_image.h>
 
 
 #include "config.h"
@@ -19,6 +20,10 @@
 #include "media/py_utils.h"
 
 #include "parser/parser.h"
+
+#include "utils/algo.h"
+#include "utils/math.h"
+#include "utils/utils.h"
 
 
 int Game::maxFps = 60;
@@ -224,7 +229,7 @@ void Game::save() {
 			const Screen* s = dynamic_cast<const Screen*>(d);
 
 			static const std::vector<String> noSaveScreens = {"pause", "load", "save"};
-			if (s && !Utils::in(s->getName(), noSaveScreens)) {
+			if (s && !Algo::in(s->getName(), noSaveScreens)) {
 				mainScreens.push_back(s);
 			}
 		}
@@ -326,6 +331,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 		int clearStartTime = Utils::getTimer();
 		Music::clear();
 
+		Utils::clearImages();
 		Node::destroyAll();
 
 		int x, y;
@@ -486,7 +492,7 @@ std::string Game::getFromConfig(const std::string &param) {
 	return Config::get(param);
 }
 py::object Game::getArgs(const std::string &str) {
-	std::vector<String> vec = Utils::getArgs(str);
+	std::vector<String> vec = Algo::getArgs(str);
 
 	py::list res;
 	for (const std::string& s : vec) {
@@ -505,7 +511,7 @@ void Game::updateKeyboard() {
 
 
 void Game::setMaxFps(int fps) {
-	maxFps = Utils::inBounds(fps, 1, 60);
+	maxFps = Math::inBounds(fps, 1, 60);
 }
 
 int Game::getFrameTime() {
@@ -515,7 +521,7 @@ int Game::getFps() {
 	return fps;
 }
 void Game::setFps(int fps) {
-	fps = Utils::inBounds(fps, 1, maxFps);
+	fps = Math::inBounds(fps, 1, maxFps);
 
 	Game::fps = fps;
 	frameTime = 1000 / fps;

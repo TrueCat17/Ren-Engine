@@ -1,8 +1,10 @@
 #include "text.h"
 
+#include "group.h"
 #include "renderer.h"
 
-#include "group.h"
+#include "utils/math.h"
+#include "utils/utils.h"
 
 
 const char *Text::defaultFontName = "Arial";
@@ -25,13 +27,13 @@ void Text::setFont(String fontName, int textSize, bool setAsOriginal) {
 		originalTextSize = textSize;
 	}
 
-	font = Utils::getFont(Utils::FONTS + fontName + ".ttf", textSize);
+	font = Utils::getFont(fontName, textSize);
 	if (!font && fontName != defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
 		Utils::outMsg("Text::setFont", "Загружается шрифт <" + String(defaultFontName) + ">");
 
 		fontName = defaultFontName;
-		font = Utils::getFont(Utils::FONTS + fontName + ".ttf", textSize);
+		font = Utils::getFont(fontName, textSize);
 	}
 	if (!font && fontName == defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
@@ -443,8 +445,8 @@ void Text::setAlign(String hAlign, String vAlign) {
 	setSize(w, h);
 
 
-	double sinA = Utils::getSin(getGlobalRotate());
-	double cosA = Utils::getCos(getGlobalRotate());
+	double sinA = Math::getSin(getGlobalRotate());
+	double cosA = Math::getCos(getGlobalRotate());
 
 	for (size_t i = 0; i < rects.size(); ++i) {
 		int x = rects[i].x;
@@ -474,7 +476,7 @@ void Text::draw() const {
 		SurfacePtr surface = lineSurfaces[i];
 		if (!surface) continue;
 
-		Uint8 intAlpha = Utils::inBounds(int(globalAlpha * 255), 0, 255);
+		Uint8 intAlpha = Math::inBounds(int(globalAlpha * 255), 0, 255);
 
 		SDL_Rect t = rects[i];
 		t.x += globalX;

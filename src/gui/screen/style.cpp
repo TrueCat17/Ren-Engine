@@ -3,9 +3,10 @@
 #include <vector>
 
 #include "gv.h"
-
 #include "media/py_utils.h"
+#include "utils/utils.h"
 
+namespace py = boost::python;
 
 std::map<String, Style*> Style::styles;
 void Style::destroyAll() {
@@ -17,7 +18,7 @@ void Style::destroyAll() {
 }
 
 
-boost::python::api::object Style::getProp(const String &styleName, const String &propName) {
+py::object Style::getProp(const String &styleName, const String &propName) {
 	try {
 		py::object pyStyles;
 		py::object pyStyle;
