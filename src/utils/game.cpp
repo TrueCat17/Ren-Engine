@@ -302,8 +302,8 @@ void Game::save() {
 		size_t height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt();
 		const SurfacePtr screenshot = Renderer::getScreenshot(width, height);
 		if (screenshot) {
-			const String screenshotPath = fullPath + "screenshot.png";
-			IMG_SavePNG(screenshot.get(), screenshotPath.c_str());
+			const String screenshotPath = fullPath + "screenshot.jpg";
+			IMG_SaveJPG(screenshot.get(), screenshotPath.c_str(), 85);
 		}
 	}
 
