@@ -76,6 +76,7 @@ void Utils::sleepMicroSeconds(int ms) {
 
 void Utils::outMsg(std::string msg, const std::string &err) {
 	static std::map<std::string, bool> errors;
+	static bool notShow = false;
 
 	if (err.size()) {
 		msg += " Error:\n" + err;
@@ -88,8 +89,30 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 		std::lock_guard<std::mutex> g(msgGuard);
 
 		Logger::log(msg + "\n\n");
-		if (SDL_ShowSimpleMessageBox(err.size() ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING, "Message", msg.c_str(), GV::mainWindow)) {
+		if (notShow) return;
+
+		static const SDL_MessageBoxButtonData buttons[] = {
+			SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Ok",
+			0, 1, "Close All"
+		};
+
+		static SDL_MessageBoxData data;
+		data.flags = err.size() ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING;
+		data.window = GV::mainWindow;
+		data.title = "Message";
+		data.message = msg.c_str();
+		data.numbuttons = 2;
+		data.buttons = buttons;
+		data.colorScheme = nullptr;
+
+		int res = 0;
+		if (SDL_ShowMessageBox(&data, &res)) {
 			std::cout << msg << '\n';
+			std::cout << SDL_GetError() << '\n';
+		}
+
+		if (res == 1) {
+			notShow = true;
 		}
 	}
 }
