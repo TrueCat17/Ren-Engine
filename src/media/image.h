@@ -13,21 +13,11 @@
 #include "utils/string.h"
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-static const Uint32 Rmask = 0xFF000000;
-static const Uint32 Gmask = 0x00FF0000;
-static const Uint32 Bmask = 0x0000FF00;
-static const Uint32 Amask = 0x000000FF;
-
 static const Uint8 Rshift = 24;
 static const Uint8 Gshift = 16;
 static const Uint8 Bshift = 8;
 static const Uint8 Ashift = 0;
 #else
-static const Uint32 Rmask = 0x000000FF;
-static const Uint32 Gmask = 0x0000FF00;
-static const Uint32 Bmask = 0x00FF0000;
-static const Uint32 Amask = 0xFF000000;
-
 static const Uint8 Rshift = 0;
 static const Uint8 Gshift = 8;
 static const Uint8 Bshift = 16;

@@ -473,25 +473,39 @@ SurfacePtr Image::flip(const std::vector<String> &args) {
 		return img;
 	}
 
-	const Uint8 *imgPixels = (const Uint8*)img->pixels;
-
 	const int w = img->w;
 	const int h = img->h;
-	const int imgPitch = img->pitch;
-	const int imgBpp = 4;
 
 	SurfacePtr res = getNewNotClear(w, h);
 
-	Uint8 *resPixels = (Uint8*)res->pixels;
+	const Uint32 *imgPixels = (const Uint32*)img->pixels;
+	Uint32 *resPixels = (Uint32*)res->pixels;
 
-	//without extra threads
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x) {
-			const int _y = vertical ? h - y - 1 : y;
-			const int _x = horizontal ? w - 1 : 0;
+	auto processLine = [&](int y) {
+		const int fromX = horizontal ? w - 1 : 0;
+		const int fromY = vertical ? h - y - 1 : y;
+		const Uint32 *imgPixel = imgPixels + fromY * w + fromX;
 
-			const Uint32 imgPixel = *(const Uint32*)(imgPixels + _y * imgPitch + _x * imgBpp);
-			*(Uint32*)(resPixels + y * imgPitch + x * imgBpp) = imgPixel;
+		Uint32 *resPixel = resPixels + y * w;
+
+		if (horizontal) {
+			const Uint32 *endResPixel = resPixel + w;
+			while (resPixel != endResPixel) {
+				*resPixel++ = *imgPixel--;
+			}
+		}else {
+			::memcpy(resPixel, imgPixel, w * 4);
+		}
+	};
+
+	if (smallImage(w, h)) {
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
+		}
+	}else {
+#pragma omp parallel for
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
 		}
 	}
 
@@ -555,7 +569,8 @@ SurfacePtr Image::matrixColor(const std::vector<String> &args) {
 		const Uint8 *src = imgPixels + y * imgPitch;
 		Uint8 *dst = resPixels + y * imgPitch;
 
-		for (int x = 0; x < w; ++x) {
+		const Uint8 *dstEnd = dst + imgPitch;
+		while (dst != dstEnd) {
 			if (*(const Uint32*)(src) || extraA) {
 				const Uint8 oldR = src[Rshift / 8];
 				const Uint8 oldG = src[Gshift / 8];
@@ -640,7 +655,8 @@ SurfacePtr Image::reColor(const std::vector<String> &args) {
 		const Uint8 *src = imgPixels + y * imgPitch;
 		Uint8 *dst = resPixels + y * imgPitch;
 
-		for (int x = 0; x < w; ++x) {
+		const Uint8 *dstEnd = dst + imgPitch;
+		while (dst != dstEnd) {
 			if (src[Ashift / 8]) {
 				dst[Rshift / 8] = src[Rshift / 8] * r / 256;
 				dst[Gshift / 8] = src[Gshift / 8] * g / 256;
@@ -733,17 +749,17 @@ SurfacePtr Image::rotozoom(const std::vector<String> &args) {
 
 
 
-static inline Uint8 getRed  (Uint32 pixel) { return (pixel & Rmask) >> Rshift; }
-static inline Uint8 getGreen(Uint32 pixel) { return (pixel & Gmask) >> Gshift; }
-static inline Uint8 getBlue (Uint32 pixel) { return (pixel & Bmask) >> Bshift; }
-static inline Uint8 getAlpha(Uint32 pixel) { return (pixel & Amask) >> Ashift; }
+static inline Uint8 getRed  (const Uint8 *pixel) { return pixel[Rshift / 8]; }
+static inline Uint8 getGreen(const Uint8 *pixel) { return pixel[Gshift / 8]; }
+static inline Uint8 getBlue (const Uint8 *pixel) { return pixel[Bshift / 8]; }
+static inline Uint8 getAlpha(const Uint8 *pixel) { return pixel[Ashift / 8]; }
 
-static inline Uint32 get1(Uint32 a, Uint32) { return a; }
-static inline Uint32 get2(Uint32, Uint32 a) { return a; }
+static inline const Uint8* get1(const Uint8 *a, const Uint8 *) { return a; }
+static inline const Uint8* get2(const Uint8 *, const Uint8 *a) { return a; }
 
 template<typename GetChannel, typename CmpFunc, typename GetPixel, typename GetAlpha>
 static void maskCycles(const int value,
-					   SurfacePtr img, const Uint32 *maskPixels, Uint8 *resPixels,
+					   SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 					   GetChannel getChannel, CmpFunc cmp,
 					   GetPixel getPixel, GetAlpha getAlphaFunc)
 {
@@ -754,17 +770,16 @@ static void maskCycles(const int value,
 	const int pitch = img->pitch;
 
 	auto processLine = [&](int y) {
-		const Uint32 *mask = maskPixels + y * w;
+		const Uint8 *mask = maskPixels + y * pitch;
 		const Uint8 *src  = imgPixels  + y * pitch;
 		Uint8 *dst        = resPixels  + y * pitch;
 
-		for (int x = 0; x < w; ++x) {
-			const Uint32 maskPixel = *mask;
-			const Uint8 channel = getChannel(maskPixel);
+		const Uint8 *dstEnd = dst + pitch;
+		while (dst != dstEnd) {
+			const Uint8 channel = getChannel(mask);
 
 			if (cmp(channel, value)) {
-				const Uint32 imgPixel = *(const Uint32*)src;
-				const Uint8 a = getAlphaFunc(getPixel(imgPixel, maskPixel));
+				const Uint8 a = getAlphaFunc(getPixel(src, mask));
 
 				if (a) {
 					dst[Rshift / 8] = src[Rshift / 8];
@@ -778,7 +793,7 @@ static void maskCycles(const int value,
 				*(Uint32*)dst = 0;
 			}
 
-			++mask;
+			mask += 4;
 			src += 4;
 			dst += 4;
 		}
@@ -797,7 +812,7 @@ static void maskCycles(const int value,
 }
 template<typename GetChannel, typename GetPixel, typename GetAlpha>
 static void maskChooseCmp(const int value, const String &cmp,
-						  SurfacePtr img, const Uint32 *maskPixels, Uint8 *resPixels,
+						  SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 						  GetChannel getChannel,
 						  GetPixel getPixel, GetAlpha getAlphaFunc)
 {
@@ -822,7 +837,7 @@ static void maskChooseCmp(const int value, const String &cmp,
 template<typename GetChannel>
 static void maskChooseAlpha(const char alphaChannel, bool alphaFromImage,
 							const int value, const String &cmp,
-							SurfacePtr img, const Uint32 *maskPixels, Uint8 *resPixels,
+							SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
 							GetChannel getChannel)
 {
 	if (alphaChannel == 'r') {
@@ -908,7 +923,7 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 	}
 
 
-	const Uint32 *maskPixels = (Uint32*)mask->pixels;
+	const Uint8 *maskPixels = (Uint8*)mask->pixels;
 
 	SurfacePtr res = getNewNotClear(img->w, img->h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
