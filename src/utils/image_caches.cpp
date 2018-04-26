@@ -9,6 +9,8 @@
 #include "config.h"
 #include "gv.h"
 
+#include "gui/screen/screen_child.h"
+
 #include "media/image.h"
 
 #include "utils/utils.h"
@@ -144,13 +146,35 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 	std::vector<SDL_Surface*> toDelete;
 	std::vector<KV> candidatesToDelete;
 
+	const std::vector<ScreenChild*> &screenObjects = ScreenChild::getScreenObjects();
+	std::map<SDL_Surface*, std::vector<ScreenChild*>> objs;
+
+	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
+		KV kv(it);
+		const SurfacePtr &surface = kv.surface();
+		paths[surface.get()].push_back(kv.path());
+	}
+
 	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
 		KV kv(it);
 		const SurfacePtr &surface = kv.surface();
 
-		if (surface.use_count() > countSurfaces[surface.get()]) continue;
+		if (textures.find(surface) != textures.end()) continue;
 
-		paths[surface.get()].push_back(kv.path());
+		bool enabled = false;
+		std::vector<ScreenChild*> &vec = objs[surface.get()];
+		for (ScreenChild *obj : screenObjects) {
+			if (obj->surface == surface) {
+				if (obj->enable) {
+					enabled = true;
+					break;
+				}
+				vec.push_back(obj);
+			}
+		}
+		if (enabled) continue;
+		if (size_t(surface.use_count()) > objs.size() + paths[surface.get()].size()) continue;
+
 		candidatesToDelete.push_back(kv);
 	}
 	std::sort(candidatesToDelete.begin(), candidatesToDelete.end(),
@@ -168,6 +192,11 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 	}
 
 	for (SDL_Surface *surface : toDelete) {
+		std::vector<ScreenChild*> &vec = objs[surface];
+		for (ScreenChild *obj : vec) {
+			obj->surface.reset();
+		}
+
 		for (const String &path : paths[surface]) {
 			surfaces.erase(path);
 		}

@@ -14,7 +14,9 @@ ScreenImagemap::ScreenImagemap(Node *node, Screen *screen):
 }
 
 void ScreenImagemap::updateTexture() {
-	if (propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER]) {
+	if (!surface || !hover ||
+		propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER])
+	{
 		propWasChanged[ScreenProp::GROUND] = false;
 		propWasChanged[ScreenProp::HOVER] = false;
 

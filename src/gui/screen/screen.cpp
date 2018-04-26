@@ -6,6 +6,8 @@
 
 std::vector<Node*> Screen::declared;
 
+std::mutex Screen::screenMutex;
+
 std::vector<String> Screen::toShowList;
 std::vector<String> Screen::toHideList;
 
@@ -31,18 +33,19 @@ Screen* Screen::getMain(const String &name) {
 
 
 void Screen::updateLists() {
-	static std::mutex m;
-	std::lock_guard<std::mutex> g(m);
+	std::vector<String> toHideCopy, toShowCopy;
+	{
+		std::lock_guard<std::mutex> g(screenMutex);
+		toHideList.swap(toHideCopy);
+		toShowList.swap(toShowCopy);
+	}
 
-	for (const String &name : toHideList) {
+	for (const String &name : toHideCopy) {
 		hide(name);
 	}
-	toHideList.clear();
-
-	for (const String &name : toShowList) {
+	for (const String &name : toShowCopy) {
 		show(name);
 	}
-	toShowList.clear();
 }
 
 
@@ -75,6 +78,41 @@ void Screen::hide(const String &name) {
 		}
 	}
 	Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не отображается, поэтому его нельзя скрыть");
+}
+
+
+void Screen::addToShow(const std::string &name) {
+	std::lock_guard<std::mutex> g(screenMutex);
+
+	for (size_t i = 0; i < toHideList.size(); ++i) {
+		if (toHideList[i] == name) {
+			toHideList.erase(toHideList.cbegin() + i);
+			return;
+		}
+	}
+
+	toShowList.push_back(name);
+}
+void Screen::addToHide(const std::string &name) {
+	std::lock_guard<std::mutex> g(screenMutex);
+
+	for (size_t i = 0; i < toShowList.size(); ++i) {
+		if (toShowList[i] == name) {
+			toShowList.erase(toShowList.cbegin() + i);
+			return;
+		}
+	}
+
+	toHideList.push_back(name);
+}
+bool Screen::hasScreen(const std::string &name) {
+	std::lock_guard<std::mutex> g(screenMutex);
+
+	for (const String &screenName : toShowList) {
+		if (screenName == name) return true;
+	}
+
+	return getMain(name);
 }
 
 

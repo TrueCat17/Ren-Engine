@@ -22,6 +22,7 @@ public:
 	static size_t numFor;
 	static size_t numScreenFor;
 
+	static int numUpdate;
 	static bool inGame;
 	static bool exit;
 

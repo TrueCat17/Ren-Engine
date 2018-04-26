@@ -61,7 +61,7 @@ protected:
 
 public:
 	static void disableAll();
-	static const std::vector<ScreenChild*> getScreenObjects() { return screenObjects; }
+	static const std::vector<ScreenChild*>& getScreenObjects() { return screenObjects; }
 
 	std::vector<ScreenChild*> screenChildren;
 	ScreenChild *propsUpdater = nullptr;

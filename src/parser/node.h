@@ -67,16 +67,14 @@ public:
 	static void jumpNext(const std::string &label, bool isCall);
 
 
-	size_t childNum;
-
-	String command;
+	int childNum;//index in parent Node
 	int priority;
 
-	//for main
-	String loadPath;
-
+	String command;
 	String params;//text to out, command to execute, condition to check...
-	String name;//for label
+
+	String loadPath;//for main, path to save
+	String name;//for label, screen, main (mod name)
 
 	Node *prevNode;//for blocks <elif> and <else>
 	bool condIsTrue = false;

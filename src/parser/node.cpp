@@ -1,6 +1,5 @@
 ﻿#include "node.h"
 
-#include <thread>
 #include <set>
 
 #include <boost/filesystem.hpp>
@@ -144,7 +143,7 @@ void Node::execute() {
 			std::vector<String> startScreensVec;
 			if (loadPath) {
 				PyUtils::exec("CPP_EMBED: node.cpp", __LINE__,
-							  "load_global_vars('" + loadPath + "py_globals" + "')");
+							  "load_global_vars('" + loadPath + "py_globals')");
 
 				startScreensVec = Game::loadInfo(loadPath);
 			}else {

@@ -108,7 +108,8 @@ void ScreenTextButton::calculateProps() {
 	}
 }
 void ScreenTextButton::updateTexture() {
-	if (propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER] || prevMouseOver != btnRect.mouseOvered) {
+	if (!surface || !hover ||
+		propWasChanged[ScreenProp::GROUND] || propWasChanged[ScreenProp::HOVER] || prevMouseOver != btnRect.mouseOvered) {
 		propWasChanged[ScreenProp::GROUND] = false;
 		propWasChanged[ScreenProp::HOVER] = false;
 

@@ -78,9 +78,11 @@ void ScreenKey::setUpState(const SDL_Scancode key) {
 void ScreenKey::calculateProps() {
 	if (!isModal()) return;
 
-	if (!enable) {
+	if (lastUpdate != GV::numUpdate - 1) {
 		prevIsDown = false;
+		inFirstDown = false;
 	}
+	lastUpdate = GV::numUpdate;
 	ScreenChild::calculateProps();
 
 	if (propWasChanged[ScreenProp::KEY]) {

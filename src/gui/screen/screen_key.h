@@ -12,6 +12,7 @@ private:
 	static std::vector<ScreenKey*> screenKeys;
 
 	int lastDown = 0;
+	int lastUpdate = -1;
 	bool prevIsDown = false;
 
 	bool inFirstDown = false;

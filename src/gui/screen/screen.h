@@ -2,6 +2,7 @@
 #define SCREEN_H
 
 #include <vector>
+#include <mutex>
 
 #include "gui/screen/screen_container.h"
 
@@ -13,6 +14,7 @@ private:
 
 	static bool _hasModal;
 
+	static std::mutex screenMutex;
 	static std::vector<String> toShowList;
 	static std::vector<String> toHideList;
 	static void show(const String &name);
@@ -37,9 +39,9 @@ public:
 	static void updateScreens();
 	static bool hasModal() { return _hasModal; }
 
-	static void addToShow(const std::string &name) { toShowList.push_back(name); }
-	static void addToHide(const std::string &name) { toHideList.push_back(name); }
-	static bool hasScreen(const std::string &name) { return getMain(name); }
+	static void addToShow(const std::string &name);
+	static void addToHide(const std::string &name);
+	static bool hasScreen(const std::string &name);
 
 
 	Screen(Node *node, Screen *screen);

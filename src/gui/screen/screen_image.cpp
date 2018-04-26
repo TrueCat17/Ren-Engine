@@ -17,7 +17,7 @@ void ScreenImage::calculateProps() {
 	ScreenContainer::calculateProps();
 }
 void ScreenImage::updateTexture() {
-	if (propWasChanged[ScreenProp::IMAGE_PATH]) {
+	if (!surface || propWasChanged[ScreenProp::IMAGE_PATH]) {
 		propWasChanged[ScreenProp::IMAGE_PATH] = false;
 
 		surface = Image::getImage(PyUtils::getStr(propValues[ScreenProp::IMAGE_PATH]));

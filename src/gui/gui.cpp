@@ -16,6 +16,8 @@
 
 
 void GUI::update() {
+	++GV::numUpdate;
+
 	if (GV::screens) {
 		Screen::updateLists();
 		Screen::updateScreens();
