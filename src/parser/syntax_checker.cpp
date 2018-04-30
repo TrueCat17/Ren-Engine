@@ -61,7 +61,7 @@ void SyntaxChecker::init() {
 	addBlockChildren("menu", "menuItem");
 	mapSyntax["menuItem"] = mapSyntax["label"];
 
-	addBlockChildren("if, elif, else, for, while", screenElems + "pass, pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with, continue, break");
+	addBlockChildren("if, elif, else, for, while", screenElems + "imagemap, hotspot, " + "pass, pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with, continue, break");
 	addBlockChildren("for, while", "continue, break");
 
 	addBlockChildren("screen, vbox, hbox", "spacing");
@@ -76,7 +76,7 @@ void SyntaxChecker::init() {
 
 	addBlockChildren("hotspot, button, textbutton", buttonProps);
 	addBlockChildren("imagemap, button, textbutton", "ground, hover");
-	addBlockChildren("imagemap", "hotspot" + simpleProps);
+	addBlockChildren("imagemap", "hotspot, for, while" + conditions + simpleProps);
 
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
 	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem, pause", SuperParent::LABEL);

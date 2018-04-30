@@ -20,16 +20,17 @@ void Style::destroyAll() {
 
 py::object Style::getProp(const String &styleName, const String &propName) {
 	try {
-		py::object pyStyles;
-		py::object pyStyle;
-
 		std::map<String, Style*>::const_iterator stylesIt = styles.find(styleName);
+		if (stylesIt != styles.end()) {
+			Style *style = stylesIt->second;
+			std::map<String, py::object>::const_iterator styleIt = style->props.find(propName);
+			if (styleIt != style->props.end()) return styleIt->second;
+		}
+
+		std::lock_guard<std::mutex> g(GV::pyUtils->pyExecMutex);
+		py::object pyStyles = GV::pyUtils->pythonGlobal["style"];
+		py::object pyStyle = pyStyles[styleName.c_str()];
 		if (stylesIt == styles.end()) {
-			{
-				std::lock_guard<std::mutex> g(GV::pyUtils->pyExecMutex);
-				pyStyles = GV::pyUtils->pythonGlobal["style"];
-				pyStyle = pyStyles[styleName.c_str()];
-			}
 			if (pyStyle.is_none()) {
 				Utils::outMsg("Style::getProp", "Стиль <" + styleName + "> не существует");
 				return py::object();
@@ -42,7 +43,6 @@ py::object Style::getProp(const String &styleName, const String &propName) {
 
 		std::map<String, py::object>::const_iterator styleIt = style->props.find(propName);
 		if (styleIt == style->props.end()) {
-			std::lock_guard<std::mutex> g(GV::pyUtils->pyExecMutex);
 			if (pyStyle.is_none()) {
 				if (pyStyles.is_none()) {
 					pyStyles = GV::pyUtils->pythonGlobal["style"];

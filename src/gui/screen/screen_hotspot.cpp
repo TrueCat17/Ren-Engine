@@ -61,24 +61,20 @@ ScreenHotspot::ScreenHotspot(Node *node, Screen *screen):
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
-	if (!parent) return false;
-
-	x = (getX() + x) / scaleX;
-	y = (getY() + y) / scaleY;
-
-	if (x < getX() || x >= getX() + getWidth() || y < getY() || y >= getY() + getHeight()) return false;
-
-
-	ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
-	if (!imagemap) {
+	const ScreenImagemap *imageMap = dynamic_cast<ScreenImagemap*>(parent);
+	if (!imageMap) {
 		Utils::outMsg("ScreenHotspot::checkAlpha", "Тип родителя должен быть ScreenImagemap");
 		return false;
 	}
 
-	SDL_Rect rect = {x, y, parent->getDrawRect().w, parent->getDrawRect().h};
+	x = getX() + x;
+	y = getY() + y;
+	if (x < getX() || x >= getX() + getWidth() || y < getY() || y >= getY() + getHeight()) return false;
 
-	SurfacePtr hover = imagemap->hover;
-	Uint32 hoverPixel = Utils::getPixel(hover, rect, parent->getCropRect());
+	SDL_Rect rect = {x, y, imageMap->getDrawRect().w, imageMap->getDrawRect().h};
+
+	SurfacePtr hover = imageMap->hover;
+	Uint32 hoverPixel = Utils::getPixel(hover, rect, imageMap->getCropRect());
 
 	Uint8 alpha = hoverPixel & 255;
 	return alpha > 0;
@@ -117,11 +113,17 @@ void ScreenHotspot::calculateProps() {
 		btnRect.buttonMode = py::extract<bool>(mouseObj);
 	}
 
-	SurfacePtr ground = parent->surface;
+	const ScreenImagemap* imageMap = dynamic_cast<ScreenImagemap*>(parent);
+	if (!imageMap) {
+		Utils::outMsg("ScreenHotspot::calculateProps", "Тип родителя должен быть ScreenImagemap");
+		return;
+	}
+
+	SurfacePtr ground = imageMap->surface;
 	scaleX = 1;
 	scaleY = 1;
-	int parentWidth = parent->getWidth();
-	int parentHeight = parent->getHeight();
+	int parentWidth = imageMap->getWidth();
+	int parentHeight = imageMap->getHeight();
 	if (ground && parentWidth && parentHeight) {
 		scaleX = double(parentWidth) / ground->w;
 		scaleY = double(parentHeight) / ground->h;
@@ -156,12 +158,7 @@ void ScreenHotspot::calculateProps() {
 			}
 		}
 
-		ScreenImagemap *imagemap = dynamic_cast<ScreenImagemap*>(parent);
-		if (!imagemap) {
-			Utils::outMsg("ScreenHotspot::calculateProps", "Тип родителя должен быть ScreenImagemap");
-			return;
-		}
-		surface = imagemap->hover;
+		surface = imageMap->hover;
 	}else {
 		if (prevMouseOver) {
 			const NodeProp unhovered = node->getPropCode("unhovered");
