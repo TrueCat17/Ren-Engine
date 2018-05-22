@@ -114,6 +114,12 @@ im.RendererScale(image, width, height):
 	Используется для того, чтобы получить именно то изображение,
 	  которое получится при отрисовке image с указанием размера (width, height) в ScreenLang. 
 
+im.MotionBlur(image, cx = 0.5, cy = 0.5, dist = 5):
+	Эффект Motion-blur,
+	image - изображение для размытия,
+	cx, cy - координаты центра размытия (целые числа - пиксели, дробные - относительно соответствующей стороны),
+	dist - расстояние (сила, мощность) размытия.
+
 im.Save(image, path, width = None, height = None) для сохранения image в путь path под размерами width x height.
 	Если width или height являются None, то используется размер соответствующей стороны image.
 
