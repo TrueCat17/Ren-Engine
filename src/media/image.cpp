@@ -37,6 +37,7 @@ void Image::init() {
 	functions["ReColor"] = reColor;
 	functions["Rotozoom"] = rotozoom;
 	functions["Mask"] = mask;
+	functions["MotionBlur"] = motionBlur;
 
 	std::thread(preloadThread).detach();
 }
@@ -943,6 +944,102 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 
 	return res;
 }
+
+
+SurfacePtr Image::motionBlur(const std::vector<String> &args) {
+	if (args.size() != 5) {
+		Utils::outMsg("Image::blur", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
+
+	SurfacePtr img = getImage(args[1]);
+	if (!img) return nullptr;
+
+	const int w = img->w;
+	const int h = img->h;
+	const Uint8 *pixels = (const Uint8*)img->pixels;
+	const size_t pitch = img->pitch;
+
+	const String &strCX = args[2];
+	const String &strCY = args[3];
+	const int cX = Math::inBounds(strCX.toDouble() * (strCX.find('.') == size_t(-1) ? 1 : w), 0, w - 1);
+	const int cY = Math::inBounds(strCY.toDouble() * (strCY.find('.') == size_t(-1) ? 1 : h), 0, h - 1);
+
+	int dist = args[4].toInt();
+	if (dist <= 0 || dist > 255) {
+		Utils::outMsg("Image::blur", "Расстояние размывания должно быть от 1 до 255:\n<" + String::join(args, ", ") + ">");
+		dist = Math::inBounds(dist, 5, 255);
+	}
+	if (dist == 1) {
+		return img;
+	}
+
+	const int maxDX = std::max(cX, w - 1 - cX);
+	const int maxDY = std::max(cY, h - 1 - cY);
+	const float maxDist = std::sqrt(maxDX * maxDX + maxDY * maxDY);
+	const float distK = std::sqrt(dist / maxDist) / 2;
+
+
+	SurfacePtr res = getNewNotClear(w, h);
+	Uint8 *resPixels = (Uint8*)res->pixels;
+
+	auto processLine = [&](int y) {
+		Uint8 *resPixel = resPixels + y * pitch;
+
+		for (int x = 0; x < w; ++x) {
+			Uint16 r, g, b, a;
+			r = g = b = a = 0;
+
+			const float dX = (cX - x) * distK;
+			const float dY = (cY - y) * distK;
+			const int d = std::sqrt(dX * dX + dY * dY);
+
+			if (d) {
+				const float dx = dX / d;
+				const float dy = dY / d;
+
+				float ix = x;
+				float iy = y;
+				for (int i = 0; i < d; ++i) {
+					const Uint8 *pixel = pixels + size_t(iy) * pitch + size_t(ix) * 4;
+					ix += dx;
+					iy += dy;
+
+					r += pixel[Rshift / 8];
+					g += pixel[Gshift / 8];
+					b += pixel[Bshift / 8];
+					a += pixel[Ashift / 8];
+				}
+
+				if (a) {
+					resPixel[Rshift / 8] = r / d;
+					resPixel[Gshift / 8] = g / d;
+					resPixel[Bshift / 8] = b / d;
+					resPixel[Ashift / 8] = a / d;
+				}else {
+					*(Uint32*)resPixel = 0;
+				}
+			}else {
+				*(Uint32*)resPixel = *(Uint32*)(pixels + y * pitch + x * 4);
+			}
+			resPixel += 4;
+		}
+	};
+
+	if (smallImage(w, h)) {
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
+		}
+	}else {
+#pragma omp parallel for
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
+		}
+	}
+
+	return res;
+}
+
 
 void Image::save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height) {
 	SurfacePtr img = getImage(imageStr);

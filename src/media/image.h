@@ -43,6 +43,7 @@ private:
 	static SurfacePtr reColor(const std::vector<String> &args);
 	static SurfacePtr rotozoom(const std::vector<String> &args);
 	static SurfacePtr mask(const std::vector<String> &args);
+	static SurfacePtr motionBlur(const std::vector<String> &args);
 
 public:
 	static void init();
