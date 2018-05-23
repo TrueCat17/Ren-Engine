@@ -114,6 +114,13 @@ im.RendererScale(image, width, height):
 	Используется для того, чтобы получить именно то изображение,
 	  которое получится при отрисовке image с указанием размера (width, height) в ScreenLang. 
 
+im.BlurH(image, dist = 5):
+	Горизонтальное равномерное размывание изображения image с "радиусом" размывания dist.
+im.BlurV(image, dist = 5):
+	Вертикальное равномерное размывание изображения image с "радиусом" размывания dist.
+im.Blur(image, dist_h = 5, dist_v = 5):
+	BlurH + BlurV.
+
 im.MotionBlur(image, cx = 0.5, cy = 0.5, dist = 5):
 	Эффект Motion-blur,
 	image - изображение для размытия,
