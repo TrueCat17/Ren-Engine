@@ -37,6 +37,9 @@ void Image::init() {
 	functions["ReColor"] = reColor;
 	functions["Rotozoom"] = rotozoom;
 	functions["Mask"] = mask;
+
+	functions["BlurH"] = blurH;
+	functions["BlurV"] = blurV;
 	functions["MotionBlur"] = motionBlur;
 
 	std::thread(preloadThread).detach();
@@ -946,9 +949,155 @@ SurfacePtr Image::mask(const std::vector<String> &args) {
 }
 
 
+SurfacePtr Image::blurH(const std::vector<String> &args) {
+	if (args.size() != 3) {
+		Utils::outMsg("Image::blurH", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
+
+	SurfacePtr img = getImage(args[1]);
+	if (!img) return nullptr;
+
+	const int w = img->w;
+	const int h = img->h;
+	const int pitch = img->pitch;
+	const Uint8 *pixels = (const Uint8 *)img->pixels;
+
+
+	const int dist = std::min(args[2].toInt(), w);
+	if (dist < 0) {
+		Utils::outMsg("Image::blurH", "Расстояние размытия меньше 0:\n<" + String::join(args, ", ") + ">");
+		return img;
+	}
+	if (!dist) {
+		return img;
+	}
+
+	SurfacePtr res = getNewNotClear(w, h);
+	Uint8 *resPixels = (Uint8 *)res->pixels;
+
+	auto processLine = [&](int y) {
+		const Uint8 *src = pixels + y * pitch;
+		Uint8 *dst = resPixels + y * pitch;
+
+		for (int x = 0; x < w; ++x) {
+			Uint32 r, g, b, a;
+			r = g = b = a = 0;
+
+			const int xStart = std::max(0, x - dist);
+			const int xEnd = std::min(x + dist + 1, w);
+
+			const Uint8 *pixel = src + xStart * 4;
+			const Uint8 *endPixel = src + xEnd * 4;
+			while (pixel != endPixel) {
+				r += pixel[Rshift / 8];
+				g += pixel[Gshift / 8];
+				b += pixel[Bshift / 8];
+				a += pixel[Ashift / 8];
+
+				pixel += 4;
+			}
+
+			const Uint32 count = xEnd - xStart;
+			dst[Rshift / 8] = r / count;
+			dst[Gshift / 8] = g / count;
+			dst[Bshift / 8] = b / count;
+			dst[Ashift / 8] = a / count;
+
+			dst += 4;
+		}
+	};
+
+	if (smallImage(w, h)) {
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
+		}
+	}else {
+#pragma omp parallel for
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
+		}
+	}
+
+	return res;
+}
+SurfacePtr Image::blurV(const std::vector<String> &args) {
+	if (args.size() != 3) {
+		Utils::outMsg("Image::blurV", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
+
+	SurfacePtr img = getImage(args[1]);
+	if (!img) return nullptr;
+
+	const int w = img->w;
+	const int h = img->h;
+	const int pitch = img->pitch;
+	const Uint8 *pixels = (const Uint8 *)img->pixels;
+
+
+	const int dist = std::min(args[2].toInt(), w);
+	if (dist < 0) {
+		Utils::outMsg("Image::blurV", "Расстояние размытия меньше 0:\n<" + String::join(args, ", ") + ">");
+		return img;
+	}
+	if (!dist) {
+		return img;
+	}
+
+	SurfacePtr res = getNewNotClear(w, h);
+	Uint8 *resPixels = (Uint8 *)res->pixels;
+
+	auto processLine = [&](int x) {
+		const Uint8 *src = pixels + x * 4;
+		Uint8 *dst = resPixels + x * 4;
+
+		for (int y = 0; y < h; ++y) {
+			Uint32 r, g, b, a;
+			r = g = b = a = 0;
+
+			const int yStart = std::max(0, y - dist);
+			const int yEnd = std::min(y + dist + 1, h);
+
+			const Uint8 *pixel = src + yStart * pitch;
+			const Uint8 *endPixel = src + yEnd * pitch;
+			while (pixel != endPixel) {
+				r += pixel[Rshift / 8];
+				g += pixel[Gshift / 8];
+				b += pixel[Bshift / 8];
+				a += pixel[Ashift / 8];
+
+				pixel += pitch;
+			}
+
+			const Uint32 count = yEnd - yStart;
+			dst[Rshift / 8] = r / count;
+			dst[Gshift / 8] = g / count;
+			dst[Bshift / 8] = b / count;
+			dst[Ashift / 8] = a / count;
+
+			dst += pitch;
+		}
+	};
+
+	if (smallImage(w, h)) {
+		for (int x = 0; x < w; ++x) {
+			processLine(x);
+		}
+	}else {
+#pragma omp parallel for
+		for (int x = 0; x < w; ++x) {
+			processLine(x);
+		}
+	}
+
+	return res;
+}
+
+
 SurfacePtr Image::motionBlur(const std::vector<String> &args) {
 	if (args.size() != 5) {
-		Utils::outMsg("Image::blur", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("Image::motionBlur", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -967,7 +1116,7 @@ SurfacePtr Image::motionBlur(const std::vector<String> &args) {
 
 	int dist = args[4].toInt();
 	if (dist <= 0 || dist > 255) {
-		Utils::outMsg("Image::blur", "Расстояние размывания должно быть от 1 до 255:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("Image::motionBlur", "Расстояние размывания должно быть от 1 до 255:\n<" + String::join(args, ", ") + ">");
 		dist = Math::inBounds(dist, 5, 255);
 	}
 	if (dist == 1) {

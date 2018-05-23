@@ -176,9 +176,9 @@ bool init() {
 
 	String scaleQuality = Config::get("scale_quality");
 	if (scaleQuality != "0" && scaleQuality != "1" && scaleQuality != "2") {
-		scaleQuality = "0";
 		Utils::outMsg("Config::get",
 					  "Значением параметра scale_quality ожидалось 0, 1 или 2, получено: <" + scaleQuality + ">");
+		scaleQuality = "0";
 	}
 	if (scaleQuality != "0") {
 		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
@@ -199,7 +199,7 @@ bool init() {
 	Mouse::init();
 
 
-	size_t fps = Config::get("max_fps").toInt();
+	const size_t fps = Config::get("max_fps").toInt();
 	Game::setMaxFps(fps);
 
 
@@ -219,7 +219,7 @@ bool init() {
 		GV::height = h = Math::inBounds(Config::get("window_height").toInt(), 360, 1350);
 	}
 
-	String windowTitle = Config::get("window_title");
+	const String windowTitle = Config::get("window_title");
 	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
 	if (!GV::mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
@@ -233,7 +233,7 @@ bool init() {
 		}
 	}
 
-	String iconPath = Config::get("window_icon");
+	const String iconPath = Config::get("window_icon");
 	if (iconPath && iconPath != "None") {
 		SurfacePtr icon = ImageCaches::getSurface(iconPath);
 		if (icon) {
@@ -438,8 +438,8 @@ void loop() {
 
 		GV::updateMutex.unlock();
 
-		int spent = Utils::getTimer() - startTime;
-		int timeToSleep = Game::getFrameTime() - spent;
+		const int spent = Utils::getTimer() - startTime;
+		const int timeToSleep = Game::getFrameTime() - spent;
 //		std::cout << spent << ' ' << timeToSleep << '\n';
 		Utils::sleep(timeToSleep);
 	}
@@ -520,7 +520,6 @@ int main(int argc, char **argv) {
 	Logger::log(driverInfo);
 
 	Game::startMod("main_menu");
-//	Game::startMod("snow");
 
 	loop();
 	destroy();
