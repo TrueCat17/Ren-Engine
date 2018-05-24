@@ -301,6 +301,8 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	get_stage_width()
 Высота:
 	get_stage_height()
+Ширина и высота окна:
+	get_stage_size()
 Установить размер окна в 1366x768:
 	set_stage_size(1366, 768)
 
@@ -315,6 +317,8 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	get_texture_width("image_path")
 Высота:
 	get_texture_height("image_path")
+Ширина и высота:
+	get_texture_size("image_path")
 Получить пиксель в точке (x, y) изображения "image_path" (число в формате RGBA, т. е. 0xRRGGBBAA):
 	get_pixel("image_path", x, y)
 
@@ -341,11 +345,11 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	image_was_registered("image name")
 
 Показать скрин с именем screen_name:
-	show_screen("screen_name")
+	show_screen("screen_name") или renpy.show_screen
 Скрыть:
-	hide_screen("screen_name")
+	hide_screen("screen_name") или renpy.hide_screen
 Узнать, отображается ли:
-	has_screen("screen_name")
+	has_screen("screen_name")  или renpy.has_screen
 
 Узнать, существует ли метка (label) some_label:
 	renpy.has_label("some_label")
@@ -375,6 +379,11 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	set_can_mouse_hide(False) # False - не скрывать, по-умолчанию - True
 Можно использовать в главном меню, например.
 Время устанавливается в resources/params.conf.
+
+Разрешить/Запретить авто-сохранение:
+	set_can_autosave(False) # False - отключить автосохранение, по-умолчанию - True
+Можно использовать в главном меню, как и предыдущую функцию.
+Время по-умолчанию устанавливается в mods/engine/config.rpy, пользователь может изменять это в настройках.
 
 
 Также много интересного можно найти в resources/mods/common/renpy_api.rpy.
