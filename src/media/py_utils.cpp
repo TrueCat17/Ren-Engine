@@ -93,8 +93,8 @@ PyUtils::PyUtils() {
 
 	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
 	pythonGlobal["get_mod_start_time"] = py::make_function(Game::getModStartTime);
-	pythonGlobal["get_can_auto_save"] = py::make_function(Game::getCanAutoSave);
-	pythonGlobal["set_can_auto_save"] = py::make_function(Game::setCanAutoSave);
+	pythonGlobal["get_can_autosave"] = py::make_function(Game::getCanAutoSave);
+	pythonGlobal["set_can_autosave"] = py::make_function(Game::setCanAutoSave);
 	pythonGlobal["_load"] = py::make_function(Game::load);
 	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);
 
