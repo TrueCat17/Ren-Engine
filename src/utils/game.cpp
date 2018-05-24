@@ -4,6 +4,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <SDL2/SDL_image.h>
+#include <time.h>
 
 
 #include "config.h"
@@ -31,12 +32,26 @@ int Game::maxFps = 60;
 int Game::fps = 60;
 int Game::frameTime = 16;
 
-bool Game::modeStarting = false;
+int Game::modStartTime = 0;
+bool Game::canAutoSave = true;
+
+bool Game::modStarting = false;
 
 
 void Game::startMod(const std::string &dir) {
 	std::thread([=] { Game::_startMod(dir); }).detach();
 }
+int Game::getModStartTime() {
+	return modStartTime;
+}
+
+bool Game::getCanAutoSave() {
+	return canAutoSave;
+}
+void Game::setCanAutoSave(bool v) {
+	canAutoSave = v;
+}
+
 
 void Game::load(const std::string &table, const std::string &name) {
 	static const std::string saves = "saves/";
@@ -316,7 +331,7 @@ void Game::save() {
 void Game::_startMod(const String &dir, const String &loadPath) {
 	int waitingStartTime = Utils::getTimer();
 
-	modeStarting = true;
+	modStarting = true;
 	GV::inGame = false;
 
 	static std::mutex modMutex;
@@ -324,6 +339,9 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 
 	{
 		std::lock_guard<std::mutex> g2(GV::updateMutex);
+
+		Game::modStartTime = std::time(nullptr);
+		Game::canAutoSave = true;
 
 		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
@@ -365,7 +383,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 	GV::mainExecNode = p.parse();
 
 	GV::inGame = true;
-	modeStarting = false;
+	modStarting = false;
 
 
 	if (loadPath) {

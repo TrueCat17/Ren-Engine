@@ -133,12 +133,12 @@ void Node::execute() {
 			size_t i = 0;
 			for (; i < initBlocks.size(); ++i) {
 				initBlocks[i]->execute();
-				if (Game::modeStarting) break;
+				if (Game::modStarting) break;
 			}
 			initing = false;
 			Logger::logEvent("Mod Initing (" + String(i) + "/" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
 
-			if (Game::modeStarting) return;
+			if (Game::modStarting) return;
 
 			std::vector<String> startScreensVec;
 			if (loadPath) {
@@ -163,7 +163,7 @@ void Node::execute() {
 					jump("start", false);
 				}catch (ExitException) {}
 			}else {
-				while (!Game::modeStarting && !GV::exit) {
+				while (!Game::modStarting && !GV::exit) {
 					Utils::sleep(Game::getFrameTime());
 				}
 			}
@@ -176,7 +176,7 @@ void Node::execute() {
 			Utils::outMsg("Node::execute", "Неожидаемое исключение StopException (конец итератора)");
 		}
 
-		if (!Game::modeStarting && !GV::exit) {
+		if (!Game::modStarting && !GV::exit) {
 			Game::startMod("main_menu");
 		}
 	}else

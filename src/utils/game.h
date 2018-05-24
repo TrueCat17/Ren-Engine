@@ -21,13 +21,20 @@ private:
 	static int fps;
 	static int frameTime;
 
+	static int modStartTime;
+	static bool canAutoSave;
+
 	static void _startMod(const String &dir, const String &loadPath = "");
 
 public:
-	static bool modeStarting;
+	static bool modStarting;
 
 
 	static void startMod(const std::string &dir);
+	static int getModStartTime();
+
+	static bool getCanAutoSave();
+	static void setCanAutoSave(bool v);
 
 	static void load(const std::string &table, const std::string &name);
 	static const std::vector<String> loadInfo(const String &loadPath);

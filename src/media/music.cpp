@@ -43,7 +43,9 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 	}
 }
 void Music::init() {
+#if !FF_API_NEXT
 	av_register_all();
+#endif
 	av_log_set_level(AV_LOG_ERROR);
 
 	auto loop = [&] {

@@ -407,6 +407,7 @@ void loop() {
 		Config::save();
 
 		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
+		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('sl_check_autosave') and sl_check_autosave()");
 
 #if 0
 		auto screenObjects = ScreenChild::getScreenObjects();
