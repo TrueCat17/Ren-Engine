@@ -986,10 +986,19 @@ SurfacePtr Image::blurH(const std::vector<String> &args) {
 
 			const int xStart = std::max(0, x - dist);
 			const int xEnd = std::min(x + dist + 1, w);
+			const Uint32 count = xEnd - xStart;
 
 			const Uint8 *pixel = src + xStart * 4;
-			const Uint8 *endPixel = src + xEnd * 4;
+			const Uint8 *endPixel = src + (xEnd - (count % 8)) * 4;
 			while (pixel != endPixel) {
+				r += (pixel[Rshift / 8] + pixel[Rshift / 8 + 4]) + (pixel[Rshift / 8 + 8] + pixel[Rshift / 8 + 12]) + (pixel[Rshift / 8 + 16] + pixel[Rshift / 8 + 20]) + (pixel[Rshift / 8 + 24] + pixel[Rshift / 8 + 28]);
+				g += (pixel[Gshift / 8] + pixel[Gshift / 8 + 4]) + (pixel[Gshift / 8 + 8] + pixel[Gshift / 8 + 12]) + (pixel[Gshift / 8 + 16] + pixel[Gshift / 8 + 20]) + (pixel[Gshift / 8 + 24] + pixel[Gshift / 8 + 28]);
+				b += (pixel[Bshift / 8] + pixel[Bshift / 8 + 4]) + (pixel[Bshift / 8 + 8] + pixel[Bshift / 8 + 12]) + (pixel[Bshift / 8 + 16] + pixel[Bshift / 8 + 20]) + (pixel[Bshift / 8 + 24] + pixel[Bshift / 8 + 28]);
+				a += (pixel[Ashift / 8] + pixel[Ashift / 8 + 4]) + (pixel[Ashift / 8 + 8] + pixel[Ashift / 8 + 12]) + (pixel[Ashift / 8 + 16] + pixel[Ashift / 8 + 20]) + (pixel[Ashift / 8 + 24] + pixel[Ashift / 8 + 28]);
+
+				pixel += 32;
+			}
+			for (size_t i = 0; i < count % 8; ++i) {
 				r += pixel[Rshift / 8];
 				g += pixel[Gshift / 8];
 				b += pixel[Bshift / 8];
@@ -998,12 +1007,14 @@ SurfacePtr Image::blurH(const std::vector<String> &args) {
 				pixel += 4;
 			}
 
-			const Uint32 count = xEnd - xStart;
-			dst[Rshift / 8] = r / count;
-			dst[Gshift / 8] = g / count;
-			dst[Bshift / 8] = b / count;
-			dst[Ashift / 8] = a / count;
-
+			if (a) {
+				dst[Rshift / 8] = r / count;
+				dst[Gshift / 8] = g / count;
+				dst[Bshift / 8] = b / count;
+				dst[Ashift / 8] = a / count;
+			}else {
+				*(Uint32*)dst = 0;
+			}
 			dst += 4;
 		}
 	};
@@ -1045,49 +1056,56 @@ SurfacePtr Image::blurV(const std::vector<String> &args) {
 		return img;
 	}
 
+
 	SurfacePtr res = getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8 *)res->pixels;
 
-	auto processLine = [&](int x) {
-		const Uint8 *src = pixels + x * 4;
-		Uint8 *dst = resPixels + x * 4;
+	auto processLine = [&](int y) {
+		Uint32 buffer[4096 * 4];
+		Uint32* const bufferLine = w < 4096 ? buffer : new Uint32[pitch];
+		std::fill_n(bufferLine, pitch, 0);
 
-		for (int y = 0; y < h; ++y) {
-			Uint32 r, g, b, a;
-			r = g = b = a = 0;
+		const int yStart = std::max(0, y - dist);
+		const int yEnd = std::min(y + dist + 1, h);
 
-			const int yStart = std::max(0, y - dist);
-			const int yEnd = std::min(y + dist + 1, h);
+		for (int iy = yStart; iy < yEnd; ++iy) {
+			const Uint8 *src = pixels + iy * pitch;
+			const Uint8 *srcEnd = src + pitch;
+			Uint32 *dst = bufferLine;
 
-			const Uint8 *pixel = src + yStart * pitch;
-			const Uint8 *endPixel = src + yEnd * pitch;
-			while (pixel != endPixel) {
-				r += pixel[Rshift / 8];
-				g += pixel[Gshift / 8];
-				b += pixel[Bshift / 8];
-				a += pixel[Ashift / 8];
-
-				pixel += pitch;
+			while (src != srcEnd) {
+				*dst++ += *src++;
+				*dst++ += *src++;
+				*dst++ += *src++;
+				*dst++ += *src++;
 			}
+		}
 
-			const Uint32 count = yEnd - yStart;
-			dst[Rshift / 8] = r / count;
-			dst[Gshift / 8] = g / count;
-			dst[Bshift / 8] = b / count;
-			dst[Ashift / 8] = a / count;
+		const Uint32 *src = bufferLine;
+		const Uint32 *srcEnd = bufferLine + pitch;
+		Uint8 *dst = resPixels + y * pitch;
 
-			dst += pitch;
+		const Uint32 count = yEnd - yStart;
+		while (src != srcEnd) {
+			*dst++ = *src++ / count;
+			*dst++ = *src++ / count;
+			*dst++ = *src++ / count;
+			*dst++ = *src++ / count;
+		}
+
+		if (buffer != bufferLine) {
+			delete[] bufferLine;
 		}
 	};
 
 	if (smallImage(w, h)) {
-		for (int x = 0; x < w; ++x) {
-			processLine(x);
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
 		}
 	}else {
 #pragma omp parallel for
-		for (int x = 0; x < w; ++x) {
-			processLine(x);
+		for (int y = 0; y < h; ++y) {
+			processLine(y);
 		}
 	}
 
