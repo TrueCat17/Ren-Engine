@@ -1056,56 +1056,123 @@ SurfacePtr Image::blurV(const std::vector<String> &args) {
 		return img;
 	}
 
+	const int rotateW = h;
+	const int rotateH = w;
+	const int rotatePitch = rotateW * 4;
 
-	SurfacePtr res = getNewNotClear(w, h);
-	Uint8 *resPixels = (Uint8 *)res->pixels;
+	std::unique_ptr<Uint8[]> rotateTo(new Uint8[w * h * 4]);
+
+	std::unique_ptr<Uint8[]> rotateFrom(new Uint8[w * h * 4]);
+	auto lineToRotate = [&](int y) {
+		const Uint8 *src = pixels + y * pitch;
+		const Uint8 *srcEnd = src + pitch;
+
+		const int rotateX = y;
+		Uint8 *dst = rotateFrom.get() + rotateX * 4;
+
+		while (src != srcEnd) {
+			dst[Rshift / 8] = src[Rshift / 8];
+			dst[Gshift / 8] = src[Gshift / 8];
+			dst[Bshift / 8] = src[Bshift / 8];
+			dst[Ashift / 8] = src[Ashift / 8];
+
+			src += 4;
+			dst += rotatePitch;
+		}
+	};
+	if (smallImage(w, h)) {
+		for (int y = 0; y < rotateH; ++y) {
+			lineToRotate(y);
+		}
+	}else {
+#pragma omp parallel for
+		for (int y = 0; y < rotateH; ++y) {
+			lineToRotate(y);
+		}
+	}
 
 	auto processLine = [&](int y) {
-		Uint32 buffer[4096 * 4];
-		Uint32* const bufferLine = w < 4096 ? buffer : new Uint32[pitch];
-		std::fill_n(bufferLine, pitch, 0);
+		const Uint8 *src = rotateFrom.get() + y * rotatePitch;
+		Uint8 *dst = rotateTo.get() + y * rotatePitch;
 
-		const int yStart = std::max(0, y - dist);
-		const int yEnd = std::min(y + dist + 1, h);
+		for (int x = 0; x < rotateW; ++x) {
+			Uint32 r, g, b, a;
+			r = g = b = a = 0;
 
-		for (int iy = yStart; iy < yEnd; ++iy) {
-			const Uint8 *src = pixels + iy * pitch;
-			const Uint8 *srcEnd = src + pitch;
-			Uint32 *dst = bufferLine;
+			const int xStart = std::max(0, x - dist);
+			const int xEnd = std::min(x + dist + 1, rotateH);
+			const Uint32 count = xEnd - xStart;
 
-			while (src != srcEnd) {
-				*dst++ += *src++;
-				*dst++ += *src++;
-				*dst++ += *src++;
-				*dst++ += *src++;
+			const Uint8 *pixel = src + xStart * 4;
+			const Uint8 *endPixel = src + (xEnd - (count % 8)) * 4;
+			while (pixel != endPixel) {
+				r += (pixel[Rshift / 8] + pixel[Rshift / 8 + 4]) + (pixel[Rshift / 8 + 8] + pixel[Rshift / 8 + 12]) + (pixel[Rshift / 8 + 16] + pixel[Rshift / 8 + 20]) + (pixel[Rshift / 8 + 24] + pixel[Rshift / 8 + 28]);
+				g += (pixel[Gshift / 8] + pixel[Gshift / 8 + 4]) + (pixel[Gshift / 8 + 8] + pixel[Gshift / 8 + 12]) + (pixel[Gshift / 8 + 16] + pixel[Gshift / 8 + 20]) + (pixel[Gshift / 8 + 24] + pixel[Gshift / 8 + 28]);
+				b += (pixel[Bshift / 8] + pixel[Bshift / 8 + 4]) + (pixel[Bshift / 8 + 8] + pixel[Bshift / 8 + 12]) + (pixel[Bshift / 8 + 16] + pixel[Bshift / 8 + 20]) + (pixel[Bshift / 8 + 24] + pixel[Bshift / 8 + 28]);
+				a += (pixel[Ashift / 8] + pixel[Ashift / 8 + 4]) + (pixel[Ashift / 8 + 8] + pixel[Ashift / 8 + 12]) + (pixel[Ashift / 8 + 16] + pixel[Ashift / 8 + 20]) + (pixel[Ashift / 8 + 24] + pixel[Ashift / 8 + 28]);
+
+				pixel += 32;
 			}
-		}
+			for (size_t i = 0; i < count % 8; ++i) {
+				r += pixel[Rshift / 8];
+				g += pixel[Gshift / 8];
+				b += pixel[Bshift / 8];
+				a += pixel[Ashift / 8];
 
-		const Uint32 *src = bufferLine;
-		const Uint32 *srcEnd = bufferLine + pitch;
-		Uint8 *dst = resPixels + y * pitch;
+				pixel += 4;
+			}
 
-		const Uint32 count = yEnd - yStart;
-		while (src != srcEnd) {
-			*dst++ = *src++ / count;
-			*dst++ = *src++ / count;
-			*dst++ = *src++ / count;
-			*dst++ = *src++ / count;
-		}
-
-		if (buffer != bufferLine) {
-			delete[] bufferLine;
+			if (a) {
+				dst[Rshift / 8] = r / count;
+				dst[Gshift / 8] = g / count;
+				dst[Bshift / 8] = b / count;
+				dst[Ashift / 8] = a / count;
+			}else {
+				*(Uint32*)dst = 0;
+			}
+			dst += 4;
 		}
 	};
 
 	if (smallImage(w, h)) {
-		for (int y = 0; y < h; ++y) {
+		for (int y = 0; y < rotateH; ++y) {
 			processLine(y);
 		}
 	}else {
 #pragma omp parallel for
-		for (int y = 0; y < h; ++y) {
+		for (int y = 0; y < rotateH; ++y) {
 			processLine(y);
+		}
+	}
+
+	SurfacePtr res = getNewNotClear(w, h);
+	Uint8 *resPixels = (Uint8 *)res->pixels;
+
+	auto rotateToLine = [&](int rotateY) {
+		const Uint8 *src = rotateTo.get() + rotateY * rotatePitch;
+		const Uint8 *srcEnd = src + rotatePitch;
+
+		const int x = rotateY;
+		Uint8 *dst = resPixels + x * 4;
+
+		while (src != srcEnd) {
+			dst[Rshift / 8] = src[Rshift / 8];
+			dst[Gshift / 8] = src[Gshift / 8];
+			dst[Bshift / 8] = src[Bshift / 8];
+			dst[Ashift / 8] = src[Ashift / 8];
+
+			src += 4;
+			dst += pitch;
+		}
+	};
+	if (smallImage(w, h)) {
+		for (int rotateY = 0; rotateY < rotateH; ++rotateY) {
+			rotateToLine(rotateY);
+		}
+	}else {
+#pragma omp parallel for
+		for (int rotateY = 0; rotateY < rotateH; ++rotateY) {
+			rotateToLine(rotateY);
 		}
 	}
 
