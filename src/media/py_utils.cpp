@@ -158,32 +158,36 @@ void PyUtils::errorProcessing(const String &code) {
 		throw StopException();
 	}
 
-	py::handle<> htype(ptype);
-	const std::string excType = py::extract<const std::string>(py::str(htype));
+	static const std::string stdStrNone = "None";
+
+	py::handle<> htype(py::allow_null(ptype));
+	const std::string excType = ptype ? py::extract<const std::string>(py::str(htype)) : stdStrNone;
 
 	py::handle<> hvalue(py::allow_null(pvalue));
-	const std::string excValue = py::extract<const std::string>(py::str(hvalue));
+	const std::string excValue = pvalue ? py::extract<const std::string>(py::str(hvalue)) : stdStrNone;
 
 	std::string traceback;
 	py::handle<> htraceback(py::allow_null(ptraceback));
-	try {
-		if (formatTraceback.is_none()) {
-			formatTraceback = py::import("traceback").attr("format_tb");
-		}
+	if (ptype != PyExc_SyntaxError) {
+		try {
+			if (formatTraceback.is_none()) {
+				formatTraceback = py::import("traceback").attr("format_tb");
+			}
 
-		py::str tracebackPyStr = py::str().join(formatTraceback(htraceback));
-		traceback = PyString_AsString(tracebackPyStr.ptr());
-	} catch (py::error_already_set) {
-		traceback = "Error on get traceback\n";
+			py::str tracebackPyStr = py::str().join(formatTraceback(htraceback));
+			traceback = PyString_AsString(tracebackPyStr.ptr());
+		}catch (py::error_already_set) {
+			traceback = "Error on get traceback\n";
+		}
 	}
 
-	String out = "Python Error (" + excType + "):\n"
-				 "\t" + excValue + "\n"
+	const String out = "Python Error (" + excType + "):\n"
+					   "\t" + excValue + "\n" +
 
-				 "Traceback:\n" + traceback + "\n"
+					   (!traceback.empty() ? "Traceback:\n" + traceback + "\n" : "") +
 
-				 "Code:\n" +
-				 code + "\n\n";
+					   "Code:\n" +
+					   code + "\n\n";
 
 	std::cout << out;
 	Logger::log(out);
