@@ -49,6 +49,10 @@ private:
 	static SurfacePtr motionBlur(const std::vector<String> &args);
 
 public:
+	static inline bool smallImage(int w, int h) {
+		return h < 32 && w * h < 64 * 32;
+	}
+
 	static void init();
 	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
 

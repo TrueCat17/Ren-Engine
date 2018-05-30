@@ -20,11 +20,6 @@ std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> Image::f
 std::deque<String> Image::toLoadImages;
 std::mutex Image::toLoadMutex;
 
-static inline
-bool smallImage(int w, int h) {
-	return h < 32 && w * h < 64 * 32;
-}
-
 
 void Image::init() {
 	functions["Scale"] = scale;
@@ -803,7 +798,7 @@ static void maskCycles(const int value,
 		}
 	};
 
-	if (smallImage(w, h)) {
+	if (Image::smallImage(w, h)) {
 		for (int y = 0; y < h; ++y) {
 			processLine(y);
 		}
