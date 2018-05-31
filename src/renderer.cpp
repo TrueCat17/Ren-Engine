@@ -411,6 +411,10 @@ void Renderer::loop() {
 	};
 
 	while (!GV::exit) {
+		while (GV::minimized && !GV::exit) {
+			Utils::sleep(1, false);
+		}
+
 		if (!needToRender) {
 			if (!scaled) {
 				scale();

@@ -23,6 +23,7 @@ public:
 	static size_t numScreenFor;
 
 	static int numUpdate;
+	static bool minimized;
 	static bool inGame;
 	static bool exit;
 

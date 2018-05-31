@@ -10,6 +10,7 @@ size_t GV::numFor = 0;
 size_t GV::numScreenFor = 0;
 
 int GV::numUpdate = 0;
+bool GV::minimized = false;
 bool GV::inGame = false;
 bool GV::exit = false;
 

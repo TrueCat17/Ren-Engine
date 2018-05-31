@@ -546,6 +546,8 @@ void Game::setFps(int fps) {
 }
 
 void Game::setStageSize(int width, int height) {
+	if (GV::minimized) return;
+
 	bool fullscreen = GV::fullscreen;
 	{
 		std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
@@ -574,6 +576,8 @@ void Game::setStageSize(int width, int height) {
 	}
 }
 void Game::setFullscreen(bool value) {
+	if (GV::minimized) return;
+
 	if (value) {
 		GV::fullscreen = true;
 		Config::set("window_fullscreen", "True");

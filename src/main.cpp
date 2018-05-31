@@ -320,10 +320,14 @@ void loop() {
 			}else
 			if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
 				maximazed = false;
+				GV::minimized = false;
+			}else
+			if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+				GV::minimized = true;
 			}else
 
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-				if (!startWindowWidth && !startWindowHeight) {
+				if (!GV::minimized && !startWindowWidth && !startWindowHeight) {
 					resizeWithoutMouseDown = true;
 				}
 			}else
@@ -368,6 +372,10 @@ void loop() {
 				ScreenKey::setUpState(key);
 			}
 		}
+		if (GV::minimized) {
+			resizeWithoutMouseDown = false;
+		}
+
 		Mouse::checkCursorVisible();
 
 		if (mouseOut) {
@@ -392,7 +400,7 @@ void loop() {
 		GV::frameStartTime = Utils::getTimer();
 		GUI::update();
 
-		{
+		if (!GV::minimized) {
 			while (Renderer::needToRender) {
 				Utils::sleep(1);
 			}
@@ -402,12 +410,12 @@ void loop() {
 				GV::screens->draw();
 			}
 			Renderer::needToRender = true;
+
+			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('sl_check_autosave') and sl_check_autosave()");
 		}
+		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
 
 		Config::save();
-
-		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
-		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('sl_check_autosave') and sl_check_autosave()");
 
 #if 0
 		auto screenObjects = ScreenChild::getScreenObjects();
