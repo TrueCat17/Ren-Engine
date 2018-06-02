@@ -213,7 +213,7 @@ SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const String &path) {
 	return nullptr;
 }
 
-#include <iostream>
+
 SurfacePtr ImageCaches::getSurface(const String &path) {
 	if (!path) return nullptr;
 

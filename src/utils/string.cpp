@@ -7,42 +7,45 @@
 
 
 String::String(int i, int base) {
-	std::stringstream ss;
-	ss << std::setbase(base) << i;
-	ss >> *this;
+	if (base == 10) {
+		*this = std::to_string(i);
+	}else {
+		std::stringstream ss;
+		ss << std::setbase(base) << i;
+		ss >> *this;
+	}
 }
-String::String(double d) {
-	std::stringstream ss;
-	ss.precision(10);
-	ss << d;
-	ss >> *this;
+String::String(size_t i, int base) {
+	if (base == 10) {
+		*this = std::to_string(i);
+	}else {
+		std::stringstream ss;
+		ss << std::setbase(base) << i;
+		ss >> *this;
+	}
 }
 
 std::vector<String> String::split(const String &separator) const {
 	std::vector<String> res;
 
-	int prev = -separator.size();
-	int n;
+	size_t prev = -separator.size();
+	size_t n;
 
-	int start;
-	int end;
-	String t;
+	size_t start;
+	size_t end;
 
-	while ((n = find(separator, prev + separator.size())) != -1) {
+	while ((n = find(separator, prev + separator.size())) != size_t(-1)) {
 		start = prev + separator.size();
 		end = n;
 
-		t = substr(start, end - start);
-		res.push_back(t);
+		res.push_back(substr(start, end - start));
 
 		prev = n;
 	}
 
 	start = prev + separator.size();
 	end = n;
-
-	t = substr(start, end - start);
-	res.push_back(t);
+	res.push_back(substr(start, end - start));
 
 	return res;
 }
@@ -74,79 +77,48 @@ int String::toInt(int base) const {
 }
 double String::toDouble() const {
 	if (empty()) return 0;
-
-
-	static std::map<String, double> cache;
-
-	auto i = cache.find(*this);
-	if (i != cache.end()) {
-		return i->second;
-	}
-
-	std::stringstream ss;
-	ss << *this;
-
-	double res;
-	ss >> res;
-
-	if (cache.size() < 100000) {
-		cache[*this] = res;
-	}
-	return res;
+	return std::atof(c_str());
 }
 
 bool String::isNumber() const {
-	if (empty()) return false;
-
 	size_t start = 0;
-	char f = at(start);
-	while (f == ' ' || f == '\t') {
+	char f = (*this)[start];
+	while (start < size() && (f == ' ' || f == '\t')) {
 		++start;
-		f = at(start);
+		f = (*this)[start];
 	}
+	if (start == size()) return false;
 
 	if (f == '-' || f == '+') {
 		++start;
 		if (start == size()) return false;
 	}
 
-	bool res = true;
-
 	bool wasDot = false;
-	int wasE = -1;
+	bool wasE = false;
 	for (size_t i = start; i < size(); ++i) {
-		char c = at(i);
+		const char c = (*this)[i];
 		if (c == '.') {
-			if (wasDot) {
-				res = false;
-				break;
-			}
+			if (wasDot) return false;
 			wasDot = true;
-			continue;
-		}
+		}else
 		if (c == 'e') {
-			if (wasE != -1) {
-				res = false;
-				break;
-			}
-			wasE = i;
-			continue;
-		}
-		if (c == '-' || c == '+') {
-			if (wasE != -1 && wasE == int(i) - 1) {
-				continue;
-			}
-			res = false;
-			break;
-		}
+			if (wasE) return false;
+			wasE = true;
 
+			if (i + 1 == size()) return false;
+			const char n = (*this)[i + 1];
+			if (n == '-' || n == '+') {
+				if (i + 2 == size()) return false;
+				++i;
+			}
+		}else
 		if (c < '0' || c > '9') {
-			res = false;
-			break;
+			return false;
 		}
 	}
 
-	return res;
+	return true;
 }
 bool String::isSimpleString() const {
 	if (size() < 2) return false;
@@ -201,8 +173,8 @@ void String::deleteAll(const String &str) {
 	}
 }
 void String::replaceAll(const String &from, const String &to) {
-	size_t i;
-	while((i = find(from)) != size_t(-1)) {
+	size_t i = -to.size();
+	while((i = find(from, i + to.size())) != size_t(-1)) {
 		erase(i, from.size());
 		insert(i, to);
 	}
@@ -211,6 +183,12 @@ void String::replaceAll(const String &from, const String &to) {
 
 String String::join(const std::vector<String> &strings, const String &separator) {
 	String res;
+
+	size_t size = separator.size() * (strings.size() - 1);
+	for (const String &s : strings) {
+		size += s.size();
+	}
+	res.reserve(size);
 
 	for (size_t i = 0; i < strings.size(); ++i) {
 		res += strings[i];

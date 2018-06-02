@@ -33,7 +33,7 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 
 	if (!fs::exists(path)) {
 		outMsg("Директории <" + path + "> не существует");
-		static const std::string mainMenu = "../resources/mods/main_menu/";
+		static const std::string mainMenu = "mods/main_menu/";
 		if (path != mainMenu) {
 			return getFileNames(mainMenu);
 		}
@@ -209,7 +209,7 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 
 		size_t sizeDefaultDeclAt = Py_SIZE(defaultDeclAt.ptr());
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
-			Node *node = new Node("some assign default_decl_at", 0);
+			Node *node = Node::getNewNode("some assign default_decl_at", 0);
 
 			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt.ptr(), i);
 			if (PyString_CheckExact(elem)) {

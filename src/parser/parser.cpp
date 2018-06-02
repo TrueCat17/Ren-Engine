@@ -99,7 +99,7 @@ Parser::Parser(const String &dir) {
 					bool q1 = false;
 					bool q2 = false;
 					for (size_t i = n; i < s.size(); ++i) {
-						char c = s[i];
+						const char c = s[i];
 						if (c == '\'' && !q2) q1 = !q1;
 						if (c == '"'  && !q1) q2 = !q2;
 
@@ -113,11 +113,12 @@ Parser::Parser(const String &dir) {
 					code.push_back(s);
 				}
 			}else {
-				code.push_back(String());
+				static String empty = "";
+				code.push_back(empty);
 			}
 
 			if (s) {
-				char last = s.back();
+				const char last = s.back();
 
 				static const String opsStr = "(,+-*/=[{";
 				static const std::set<char> ops(opsStr.begin(), opsStr.end());
@@ -139,7 +140,7 @@ Node* Parser::parse() {
 }
 
 Node* Parser::getMainNode() {
-	Node *res = new Node(dir, 0);
+	Node *res = Node::getNewNode(dir, 0);
 	res->command = "main";
 
 	size_t lastSlash = dir.find_last_of('/');
@@ -254,7 +255,7 @@ void Parser::initScreenNode(Node *node) {
 }
 
 Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
-	Node *res = new Node(fileName, start - startFile);
+	Node *res = Node::getNewNode(fileName, start - startFile);
 
 	String headLine = code[start];
 	headLine.erase(headLine.find_last_not_of(' ') + 1);
@@ -331,7 +332,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		}while (startIndent == size_t(-1));
 
 		for (i = start + 1; i < end; ++i) {
-			String line = code[i];
+			const String &line = code[i];
 			if (line.size() > startIndent) {
 				res->params += line.substr(startIndent);
 			}
@@ -424,12 +425,12 @@ size_t Parser::getNextStart(size_t start) const {
 		if (line) {
 			const size_t countIndent = line.find_first_not_of(' ');
 			if (countIndent <= countStartIndent) {
-				return (i - last != 1) ? last + 1 : i;
+				return last + 1;
 			}
 
 			last = i;
 		}
 	}
 
-	return (code.size() - last != 1) ? last + 1 : code.size();
+	return last + 1;
 }

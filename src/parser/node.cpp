@@ -22,6 +22,41 @@
 #include "utils/utils.h"
 
 
+static const size_t NODES_IN_PART = 10000;
+size_t Node::countNodes = 0;
+std::vector<Node*> Node::nodes;
+
+Node::Node(const String &fileName, size_t numLine):
+	fileName(fileName),
+	numLine(numLine),
+	childNum(0)
+{}
+Node::~Node() {}
+
+Node* Node::getNewNode(const String &fileName, size_t numLine) {
+	if ((countNodes % NODES_IN_PART) == 0) {
+		nodes.push_back((Node*)::malloc(NODES_IN_PART * sizeof(Node)));
+	}
+
+	Node *node = nodes.back() + (countNodes++ % NODES_IN_PART);
+	new(node) Node(fileName, numLine);
+	return node;
+}
+void Node::destroyAll() {
+	for (size_t i = 0; i < nodes.size(); ++i) {
+		const size_t size = i == nodes.size() - 1 ? (countNodes % NODES_IN_PART) : NODES_IN_PART;
+
+		Node *array = nodes[i];
+		for (size_t j = 0; j < size; ++j) {
+			array[j].~Node();//destructor
+		}
+		::free(array);
+	}
+	countNodes = 0;
+	nodes.clear();
+}
+
+
 bool Node::loading = false;
 size_t Node::stackDepth = 0;
 std::vector<std::pair<String, String>> Node::stack;
@@ -53,8 +88,6 @@ public:
 	}
 };
 
-
-std::vector<Node*> Node::nodes;
 
 String Node::jumpNextLabel;
 bool Node::jumpNextIsCall;
@@ -294,8 +327,7 @@ void Node::execute() {
 
 		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 		try {
-			py::dict global = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
-			py::object renpy = global["renpy"];
+			py::object renpy = GV::pyUtils->pythonGlobal["renpy"];
 			py::object say = renpy.attr("say");
 			say(nick.c_str(), text.c_str());
 		}catch (py::error_already_set) {
@@ -711,22 +743,17 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 		if ((childCommand == "show" && !childParams.startsWith("screen ")) ||
 			childCommand == "scene")
 		{
-			static const std::vector<String> words = {"at", "with", "behind", "as"};
+			static const std::set<String> words = {"at", "with", "behind", "as"};
 
 			--count;
 
 			std::vector<String> args = Algo::getArgs(childParams);
-			while (args.size() > 2 && Algo::in(args[args.size() - 2], words)) {
+			while (args.size() > 2 && words.count(args[args.size() - 2])) {
 				args.erase(args.end() - 2, args.end());
 			}
 			if (args.empty()) continue;
 
-			String imageName = args[0];
-			for (size_t j = 1; j < args.size(); ++j) {
-				imageName += ' ' + args[j];
-			}
-
-
+			const String imageName = String::join(args, ' ');
 			const String code = Utils::getImageCode(imageName);
 			const String imageCode = PyUtils::exec(parent->getFileName(), parent->getNumLine(), code, true);
 			if (imageCode) {
@@ -811,13 +838,4 @@ String Node::getPlace() const {
 	return "Место объявления объекта <" + command + ">:\n"
 			"  Файл <" + fileName + ">\n" +
 			"  Номер строки: " + String(numLine);
-}
-
-
-void Node::destroyAll() {
-	for (size_t i = 0; i < nodes.size(); ++i) {
-		Node *node = nodes[i];
-		delete node;
-	}
-	nodes.clear();
 }

@@ -530,6 +530,14 @@ int main(int argc, char **argv) {
 
 	Game::startMod("main_menu");
 
+	{//update mouse pos on start
+		int mouseX, mouseY;
+		SDL_GetGlobalMouseState(&mouseX, &mouseY);
+
+		SDL_WarpMouseGlobal(mouseX ^ 1, mouseY);
+		SDL_WarpMouseGlobal(mouseX, mouseY);
+	}
+
 	loop();
 	destroy();
 

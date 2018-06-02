@@ -41,6 +41,10 @@ struct NodeProp {
 class Node {
 private:
 	static std::vector<Node*> nodes;
+	static size_t countNodes;
+	Node(const String &fileName, size_t numLine);
+	~Node();
+
 
 	static String jumpNextLabel;
 	static bool jumpNextIsCall;
@@ -62,9 +66,10 @@ public:
 	static size_t stackDepth;
 	static std::vector<std::pair<String, String>> stack;
 
-	static void destroyAll();
-
 	static void jumpNext(const std::string &label, bool isCall);
+
+	static Node *getNewNode(const String &fileName, size_t numLine);
+	static void destroyAll();
 
 
 	int childNum;//index in parent Node
@@ -81,12 +86,6 @@ public:
 
 	std::vector<Node*> children;
 
-
-	Node(const String &fileName, size_t numLine):
-		fileName(fileName),
-		numLine(numLine),
-		childNum(0)
-	{ nodes.push_back(this); }
 
 	void execute();
 

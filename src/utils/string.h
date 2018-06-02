@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <map>
 
 class String: public std::string {
 public:
@@ -11,8 +10,8 @@ public:
 	String(char c): std::string(1, c) {}
 	String(const char *s): std::string(s) {}
 	String(int i, int base = 10);
-	String(double d);
-	String(size_t i): String(double(i)) {}
+	String(size_t i, int base = 10);
+	String(double d): std::string(std::to_string(d)) {}
 
 	String(const std::string &str): std::string(str) {}
 	String(std::string &&str): std::string(str) {}

@@ -91,8 +91,8 @@ void Music::init() {
 					}
 				}
 			}
-			int spend = Utils::getTimer() - startUpdateTime;
-			Utils::sleep(10 - spend);
+			const int spend = Utils::getTimer() - startUpdateTime;
+			Utils::sleep(10 - spend, false);
 		}
 	};
 
@@ -142,12 +142,12 @@ void Music::realClear() {
 void Music::registerChannel(const std::string &name, const std::string &mixer, bool loop,
 							const std::string &fileName, int numLine)
 {
-	const String place = "Файл <" + fileName + ">\n"
-						 "Строка " + String(numLine);
-
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
 		if (channel->name == name) {
+			const String place = "Файл <" + fileName + ">\n"
+								 "Строка " + String(numLine);
+
 			Utils::outMsg("Music::registerChannel",
 						  "Канал с именем <" + name + "> уже существует\n\n" + place);
 			return;

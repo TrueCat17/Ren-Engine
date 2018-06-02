@@ -548,53 +548,41 @@ void Game::setFps(int fps) {
 void Game::setStageSize(int width, int height) {
 	if (GV::minimized) return;
 
+	std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+	std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+
 	bool fullscreen = GV::fullscreen;
-	{
-		std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-		std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+	if (fullscreen) {
+		GV::fullscreen = false;
+		Config::set("window_fullscreen", "False");
 
-		if (fullscreen) {
-			GV::fullscreen = false;
-			Config::set("window_fullscreen", "False");
+		SDL_SetWindowFullscreen(GV::mainWindow, 0);
+	}
 
-			SDL_SetWindowFullscreen(GV::mainWindow, 0);
-		}
+	SDL_RestoreWindow(GV::mainWindow);
+	SDL_Event eventRestored;
+	eventRestored.type = SDL_WINDOWEVENT;
+	eventRestored.window.event = SDL_WINDOWEVENT_RESTORED;
+	if (SDL_PushEvent(&eventRestored) < 0) {
+		Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
+	}
 
-		SDL_RestoreWindow(GV::mainWindow);
-		SDL_Event event;
-		event.type = SDL_WINDOWEVENT;
-		event.window.event = SDL_WINDOWEVENT_RESTORED;
-		if (SDL_PushEvent(&event) < 0) {
-			Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
-		}
-
-		SDL_SetWindowSize(GV::mainWindow, width, height);
-		event.window.event = SDL_WINDOWEVENT_RESIZED;
-		if (SDL_PushEvent(&event) < 0) {
-			Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
-		}
+	SDL_SetWindowSize(GV::mainWindow, width, height);
+	SDL_Event eventResized;
+	eventResized.type = SDL_WINDOWEVENT;
+	eventResized.window.event = SDL_WINDOWEVENT_RESIZED;
+	if (SDL_PushEvent(&eventResized) < 0) {
+		Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
 	}
 }
 void Game::setFullscreen(bool value) {
 	if (GV::minimized) return;
 
-	if (value) {
-		GV::fullscreen = true;
-		Config::set("window_fullscreen", "True");
+	GV::fullscreen = value;
+	Config::set("window_fullscreen", value ? "True" : "False");
 
-		{
-			std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-			std::lock_guard<std::mutex> g2(Renderer::renderMutex);
-			SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-		}
-	}else {
-		GV::fullscreen = false;
-		Config::set("window_fullscreen", "False");
+	std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
+	std::lock_guard<std::mutex> g2(Renderer::renderMutex);
 
-		{
-			std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-			std::lock_guard<std::mutex> g2(Renderer::renderMutex);
-			SDL_SetWindowFullscreen(GV::mainWindow, 0);
-		}
-	}
+	SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP * value);
 }
