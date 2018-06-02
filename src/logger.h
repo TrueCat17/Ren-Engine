@@ -3,13 +3,10 @@
 
 #include <fstream>
 
-#include "config.h"
 
 class String;
 
-
-class Logger
-{
+class Logger {
 private:
 	static std::ofstream out;
 

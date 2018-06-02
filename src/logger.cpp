@@ -16,6 +16,10 @@ void Logger::init() {
 }
 
 void Logger::log(const String &str) {
+	const size_t size = out.tellp();
+	const size_t maxSize = 100 << 10;//100 kB
+	if (size > maxSize) return;
+
 	out << str << '\n';
 	out.flush();
 }
