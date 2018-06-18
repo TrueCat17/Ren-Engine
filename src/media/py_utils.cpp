@@ -176,7 +176,7 @@ void PyUtils::errorProcessing(const String &code) {
 
 			py::str tracebackPyStr = py::str().join(formatTraceback(htraceback));
 			traceback = PyString_AsString(tracebackPyStr.ptr());
-		}catch (py::error_already_set) {
+		}catch (py::error_already_set&) {
 			traceback = "Error on get traceback\n";
 		}
 	}
@@ -274,7 +274,7 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 			std::cout << "Python Compile Error:\n";
 			throw py::error_already_set();
 		}
-	}catch (py::error_already_set) {
+	}catch (py::error_already_set&) {
 		errorProcessing(code);
 	}catch (std::exception &e) {
 		std::cout << "std::exception: " << e.what() << '\n';
@@ -321,7 +321,7 @@ py::object PyUtils::execRetObj(const String &fileName, size_t numLine, const Str
 			std::cout << "Python Compile Error:\n";
 			throw py::error_already_set();
 		}
-	}catch (py::error_already_set) {
+	}catch (py::error_already_set&) {
 		errorProcessing(code);
 	}catch (std::exception &e) {
 		std::cout << "std::exception: " << e.what() << '\n';

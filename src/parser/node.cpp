@@ -330,7 +330,7 @@ void Node::execute() {
 			py::object renpy = GV::pyUtils->pythonGlobal["renpy"];
 			py::object say = renpy.attr("say");
 			say(nick.c_str(), text.c_str());
-		}catch (py::error_already_set) {
+		}catch (py::error_already_set&) {
 			PyUtils::errorProcessing("renpy.say(" + nick + ", '" + text + "')");
 		}
 	}else

@@ -153,7 +153,7 @@ void ScreenChild::calculateProps() {
 					propValues[i] = res;
 				}
 				ok = true;
-			}catch (py::error_already_set) {
+			}catch (py::error_already_set&) {
 				Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", "Ошибка при извлечении свойств из calc_object");
 				PyUtils::errorProcessing("EMBED_CPP: ScreenChild::calculateProps\n" + codeForCalcProps);
 			}

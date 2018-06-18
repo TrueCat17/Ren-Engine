@@ -46,7 +46,7 @@ ScreenFor::~ScreenFor() {
 			if (global.has_key(iterName.c_str())) {
 				py::api::delitem(global, iterName.c_str());
 			}
-		}catch (py::error_already_set) {
+		}catch (py::error_already_set&) {
 			PyUtils::errorProcessing("del " + iterName);
 		}
 	}
@@ -64,7 +64,7 @@ void ScreenFor::calculateProps() {
 		try {
 			py::object iter = GV::pyUtils->pythonGlobal[iterName.c_str()];
 			nextMethod = iter.attr("next");
-		}catch (py::error_already_set) {
+		}catch (py::error_already_set&) {
 			Utils::outMsg("EMBED_CPP: ScreenChild::calculateProps", "Ошибка при извлечении " + iterName);
 			PyUtils::errorProcessing(iterName);
 			return;
@@ -78,7 +78,7 @@ void ScreenFor::calculateProps() {
 				std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 				try {
 					GV::pyUtils->pythonGlobal[propName.c_str()] = nextMethod();
-				}catch (py::error_already_set) {
+				}catch (py::error_already_set&) {
 					PyUtils::errorProcessing(propName + " = " + iterName + ".next()");
 				}
 			}else {

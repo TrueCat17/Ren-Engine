@@ -221,7 +221,7 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 						node->params = PyString_AS_STRING(str);
 					}
 					Py_DecRef(str);
-				}catch (py::error_already_set) {
+				}catch (py::error_already_set&) {
 					PyUtils::errorProcessing("str(elem)");
 				}
 			}

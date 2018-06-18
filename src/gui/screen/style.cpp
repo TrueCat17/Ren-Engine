@@ -55,7 +55,7 @@ py::object Style::getProp(const String &styleName, const String &propName) {
 		}
 
 		return styleIt->second;
-	}catch (py::error_already_set) {
+	}catch (py::error_already_set&) {
 		const String code = "style." + styleName + "." + propName;
 		PyUtils::errorProcessing("EMBED_CPP: Style::getProp:\n" + code);
 		Utils::outMsg("Style::getProp", "Ошибка при попытке вычислить " + code);
