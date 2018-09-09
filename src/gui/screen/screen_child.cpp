@@ -105,7 +105,7 @@ void ScreenChild::preparationToUpdateCalcProps() {
 				propIndeces.push_back(ScreenProp(i));
 
 				const String &propName = screenPropNames[i];
-				codeForCalcProps += propName + " = " + propExpr + "\n";
+				codeForCalcProps += "_SL_" + propName + " = " + propExpr + "\n";
 			}
 		}else if (nodeProp.styleName) {
 			propValues[i] = Style::getProp(nodeProp.styleName, nodeProp.propName);

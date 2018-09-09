@@ -47,6 +47,7 @@ std::vector<boost::python::object> screenPropObjects;
 void initScreenPropObjects() {
 	screenPropObjects.clear();
 	for (size_t i = 0; i < COUNT_PROPS; ++i) {
-		screenPropObjects.push_back(boost::python::object(screenPropNames[i].c_str()));
+		const String tmp = "_SL_" + screenPropNames[i];
+		screenPropObjects.push_back(boost::python::object(tmp.c_str()));
 	}
 }
