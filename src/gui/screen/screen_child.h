@@ -10,6 +10,7 @@
 #include "parser/node.h"
 
 class Screen;
+class ScreenContainer;
 
 
 class ScreenChild: public Group {
@@ -19,6 +20,9 @@ private:
 
 protected:
 	static std::vector<ScreenChild*> screenObjects;
+
+	bool inVBox = false;
+	bool inHBox = false;
 
 	bool needUpdateChildren = true;
 	bool needUpdateFields = true;//xAnchor, yAnchor, xPos... Next fields:
@@ -49,7 +53,7 @@ protected:
 	PyCodeObject *co = nullptr;
 
 	Screen *screen;
-	ScreenChild *screenParent;
+	ScreenContainer *screenParent;
 
 	Node *node;
 
@@ -66,8 +70,10 @@ public:
 	std::vector<ScreenChild*> screenChildren;
 	ScreenChild *propsUpdater = nullptr;
 
-	ScreenChild(Node *node, ScreenChild *screenParent, Screen *screen);
+	ScreenChild(Node *node, ScreenContainer *screenParent, Screen *screen);
 	virtual ~ScreenChild();
+
+	void setInBox(bool v, bool h) { inVBox = v; inHBox = h; }
 
 	void clearProps();
 	void setProp(const ScreenProp prop, const NodeProp &nodeProp);

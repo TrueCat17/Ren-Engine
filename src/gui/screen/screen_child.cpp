@@ -1,6 +1,7 @@
 #include "screen_child.h"
 
 #include <algorithm>
+#include <set>
 
 #include "gv.h"
 
@@ -14,7 +15,7 @@
 
 std::vector<ScreenChild*> ScreenChild::screenObjects;
 
-ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent, Screen *screen):
+ScreenChild::ScreenChild(Node *node, ScreenContainer *screenParent, Screen *screen):
 	screen(screen),
 	screenParent(screenParent),
 	node(node)
@@ -24,16 +25,21 @@ ScreenChild::ScreenChild(Node *node, ScreenChild *screenParent, Screen *screen):
 	_isFakeContainer = screenParent && screenParent != this;
 
 	const String &type = getType();
-	_canCrop = type == "image" || type == "button" || type == "textbutton" || type == "imagemap";
 
-	bool drawable = type != "if" && type != "elif" && type != "else" &&
-					type != "for" && type != "while" &&
-					type != "continue" && type != "break" &&
-					type != "$" && type != "python" && type != "key";
+	static const std::set<String> cropable = {
+		"image", "button", "textbutton", "imagemap"
+	};
+	static const std::set<String> nodrawable = {
+		"if", "elif", "else",
+		"for", "while",
+		"continue", "break",
+		"$", "python", "key"
+	};
+
+	_canCrop = cropable.find(type) != cropable.end();
 
 	clearProps();
-
-	if (drawable) {
+	if (nodrawable.find(type) == nodrawable.end()) {
 		setProp(ScreenProp::X_ANCHOR, node->getPropCode("xanchor", "anchor", "[0]"));
 		setProp(ScreenProp::Y_ANCHOR, node->getPropCode("yanchor", "anchor", "[1]"));
 		setProp(ScreenProp::X_POS, node->getPropCode("xpos", "pos", "[0]"));
@@ -117,21 +123,9 @@ void ScreenChild::preparationToUpdateCalcProps() {
 void ScreenChild::calculateProps() {
 	enable = true;
 
-	bool inHBox = false;
-	bool inVBox = false;
-	ScreenContainer *p = dynamic_cast<ScreenContainer*>(parent);
-	if (p) {
-		ScreenContainer *pScreenParent = dynamic_cast<ScreenContainer*>(p->screenParent);
-		if (pScreenParent) {
-			inHBox = pScreenParent->isHBox();
-			inVBox = pScreenParent->isVBox();
-		}
-	}
-
-
 	if (codeForCalcProps) {
 		bool calculated = false;
-		py::dict dict;
+		static py::dict dict;
 		if (co) {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), dict.ptr())) {
@@ -146,8 +140,7 @@ void ScreenChild::calculateProps() {
 			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
 			try {
 				for (ScreenProp i : propIndeces) {
-					const String &propName = screenPropNames[i];
-					py::object res = dict[propName.c_str()];
+					const py::object &res = dict[screenPropObjects[i]];
 
 					propWasChanged[i] = propWasChanged[i] || propValues[i] != res;
 					propValues[i] = res;
@@ -426,17 +419,6 @@ void ScreenChild::updateSize() {
 	}
 }
 void ScreenChild::updatePos() {
-	bool inHBox = false;
-	bool inVBox = false;
-	ScreenContainer *p = dynamic_cast<ScreenContainer*>(parent);
-	if (p) {
-		ScreenContainer *pScreenParent = dynamic_cast<ScreenContainer*>(p->screenParent);
-		if (pScreenParent) {
-			inHBox = pScreenParent->isHBox();
-			inVBox = pScreenParent->isVBox();
-		}
-	}
-
 	xAnchor = preXAnchor * (xAnchorIsDouble ? getWidth() : 1);
 	yAnchor = preYAnchor * (yAnchorIsDouble ? getHeight() : 1);
 

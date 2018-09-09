@@ -2,6 +2,7 @@
 #define SCREEN_PROP_H
 
 #include <vector>
+#include <boost/python.hpp>
 
 #include "utils/string.h"
 
@@ -55,5 +56,8 @@ enum ScreenProp {
 constexpr size_t COUNT_PROPS = ScreenProp::LAST_POINT;
 
 extern std::vector<String> screenPropNames;
+
+extern std::vector<boost::python::object> screenPropObjects;
+void initScreenPropObjects();
 
 #endif // SCREEN_PROP_H

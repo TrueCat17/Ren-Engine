@@ -33,7 +33,7 @@
 #include "utils/utils.h"
 
 
-ScreenContainer::ScreenContainer(Node *node, ScreenChild *screenParent, Screen *screen):
+ScreenContainer::ScreenContainer(Node *node, ScreenContainer *screenParent, Screen *screen):
 	ScreenChild(node, screenParent, screen)
 {
 	setProp(ScreenProp::SPACING, node->getPropCode("spacing"));
@@ -74,12 +74,14 @@ void ScreenContainer::updateSize() {
 	int userWidth = getWidth();
 	int userHeight = getHeight();
 
-	int width = 0;
+	using std::max;
+
+	int width;
 	if (hasHBox) {
+		width = 0;
 		for (DisplayObject *child : children) {
-			if (!child->enable) continue;
-			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
-			if (scrChild && scrChild->isFakeContainer()) continue;
+			ScreenChild *scrChild = static_cast<ScreenChild*>(child);
+			if (!scrChild->enable || scrChild->isFakeContainer()) continue;
 
 			child->setX(width);
 
@@ -88,29 +90,26 @@ void ScreenContainer::updateSize() {
 				width += w + indent;
 			}
 		}
-		if (width && children.size()) {
+		if (width) {
 			width -= indent;
 		}
+	}else if (userWidth > 0) {
+		width = userWidth;
 	}else {
-		width = getWidth();
-		if (!width) {
-			for (DisplayObject *child : children) {
-				if (child->enable) {
-					int w = child->getWidth();
-					if (w > width) {
-						width = w;
-					}
-				}
+		width = 0;
+		for (DisplayObject *child : children) {
+			if (child->enable) {
+				width = max(width, child->getWidth());
 			}
 		}
 	}
 
-	int height = 0;
+	int height;
 	if (hasVBox) {
+		height = 0;
 		for (DisplayObject *child : children) {
-			if (!child->enable) continue;
-			ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
-			if (scrChild && scrChild->isFakeContainer()) continue;
+			ScreenChild *scrChild = static_cast<ScreenChild*>(child);
+			if (!scrChild->enable || scrChild->isFakeContainer()) continue;
 
 			child->setY(height);
 
@@ -119,39 +118,31 @@ void ScreenContainer::updateSize() {
 				height += h + indent;
 			}
 		}
-		if (height && children.size()) {
+		if (height) {
 			height -= indent;
 		}
+	}else if (userHeight > 0) {
+		height = userHeight;
 	}else {
-		height = getHeight();
-		if (!height) {
-			for (DisplayObject *child : children) {
-				if (child->enable) {
-					int h = child->getHeight();
-					if (h > height) {
-						height = h;
-					}
-				}
+		height = 0;
+		for (DisplayObject *child : children) {
+			if (child->enable) {
+				height = max(height, child->getHeight());
 			}
 		}
 	}
 
-	if (userWidth <= 0 || userHeight <= 0) {
-		if (userWidth > 0) width = userWidth;
-		if (userHeight > 0) height = userHeight;
-		setSize(width, height);
-	}
+	setSize(width, height);
 }
 
 void ScreenContainer::draw() const {
 	DisplayObject::draw();
 
 	for (DisplayObject *child : children) {
-		if (!child->enable) continue;
-		ScreenChild *scrChild = dynamic_cast<ScreenChild*>(child);
-		if (scrChild && scrChild->isFakeContainer()) continue;
-
-		child->draw();
+		ScreenChild *scrChild = static_cast<ScreenChild*>(child);
+		if (scrChild->enable && !scrChild->isFakeContainer()) {
+			child->draw();
+		}
 	}
 }
 
@@ -237,12 +228,12 @@ void ScreenContainer::addChildrenFromNode() {
 
 		if (childCommand == "if") {
 			child = new ScreenIf(childNode, screenParent, screen);
-			prev = dynamic_cast<ScreenContainer*>(child);
+			prev = static_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "elif") {
 			child = new ScreenElif(childNode, screenParent, screen, prev);
-			prev = dynamic_cast<ScreenContainer*>(child);
+			prev = static_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "else") {
@@ -251,12 +242,12 @@ void ScreenContainer::addChildrenFromNode() {
 
 		if (childCommand == "for") {
 			child = new ScreenFor(childNode, screenParent, screen);
-			prev = dynamic_cast<ScreenContainer*>(child);
+			prev = static_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "while") {
 			child = new ScreenWhile(childNode, screenParent, screen);
-			prev = dynamic_cast<ScreenContainer*>(child);
+			prev = static_cast<ScreenContainer*>(child);
 		}else
 
 		if (childCommand == "break") {
@@ -295,18 +286,17 @@ void ScreenContainer::addChildrenFromNode() {
 
 		if (child) {
 			child->propsUpdater = this;
-
-			Group *parent = screenParent;
+			child->setInBox(screenParent->hasVBox, screenParent->hasHBox);
 
 			int index;
-			if (parent == this) {
+			if (screenParent == this) {
 				index = children.size();
 			}else {
 				ScreenChild *prev = this;
 				while (prev->isFakeContainer() && prev->screenChildren.size()) {
 					prev = prev->screenChildren.back();
 				}
-				index = parent->getChildIndex(prev) + 1;
+				index = screenParent->getChildIndex(prev) + 1;
 			}
 
 			addChildAt(child, index);

@@ -42,3 +42,11 @@ std::vector<String> screenPropNames = {
 	"LAST"
 };
 
+
+std::vector<boost::python::object> screenPropObjects;
+void initScreenPropObjects() {
+	screenPropObjects.clear();
+	for (size_t i = 0; i < COUNT_PROPS; ++i) {
+		screenPropObjects.push_back(boost::python::object(screenPropNames[i].c_str()));
+	}
+}

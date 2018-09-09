@@ -10,6 +10,7 @@
 #include "logger.h"
 
 #include "gui/screen/screen.h"
+#include "gui/screen/screen_prop.h"
 
 #include "image.h"
 #include "music.h"
@@ -62,6 +63,8 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 
 PyUtils::PyUtils() {
 	Py_Initialize();
+
+	initScreenPropObjects();
 
 	mainModule = py::import("__main__");
 	pythonGlobal = mainModule.attr("__dict__");

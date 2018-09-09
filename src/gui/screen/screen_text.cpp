@@ -9,7 +9,7 @@
 #include "utils/utils.h"
 
 ScreenText::ScreenText(Node *node, Screen *screen):
-	ScreenChild(node, this, screen),
+	ScreenChild(node, nullptr, screen),
 	textExec(node->getFirstParam())
 {
 	tf = new Text();

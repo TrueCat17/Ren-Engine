@@ -5,7 +5,7 @@
 #include "utils/utils.h"
 
 
-ScreenWhile::ScreenWhile(Node *node, ScreenChild *screenParent, Screen *screen):
+ScreenWhile::ScreenWhile(Node *node, ScreenContainer *screenParent, Screen *screen):
 	ScreenContainer(node, screenParent, screen),
 	condition(node->params)
 {
@@ -32,10 +32,8 @@ void ScreenWhile::calculateProps() {
 				inited = true;
 			}
 			for (size_t j = 0; j < countInitChildren; ++j) {
-				ScreenChild *child = dynamic_cast<ScreenChild*>(screenChildren[i + j]);
-				if (child) {
-					child->calculateProps();
-				}
+				ScreenChild *child = screenChildren[i + j];
+				child->calculateProps();
 			}
 		}catch (ContinueException) {
 		}catch (BreakException) {

@@ -10,7 +10,7 @@ private:
 	String condition;
 
 public:
-	ScreenElif(Node *node, ScreenChild *screenParent, Screen *screen, ScreenContainer *prevContainer);
+	ScreenElif(Node *node, ScreenContainer *screenParent, Screen *screen, ScreenContainer *prevContainer);
 	virtual void calculateProps();
 };
 

@@ -3,7 +3,7 @@
 #include "media/py_utils.h"
 #include "parser/node.h"
 
-ScreenElif::ScreenElif(Node *node, ScreenChild *screenParent, Screen *screen, ScreenContainer *prevContainer):
+ScreenElif::ScreenElif(Node *node, ScreenContainer *screenParent, Screen *screen, ScreenContainer *prevContainer):
 	ScreenContainer(node, screenParent, screen),
 	condition("bool(" + node->params + ")")
 {

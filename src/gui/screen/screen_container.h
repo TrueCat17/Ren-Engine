@@ -22,10 +22,7 @@ public:
 	bool skipped = false;
 	ScreenContainer *prevContainer = nullptr;
 
-	bool isHBox() const { return hasHBox; }
-	bool isVBox() const { return hasVBox; }
-
-	ScreenContainer(Node* node, ScreenChild *screenParent, Screen *screen);
+	ScreenContainer(Node* node, ScreenContainer *screenParent, Screen *screen);
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
 

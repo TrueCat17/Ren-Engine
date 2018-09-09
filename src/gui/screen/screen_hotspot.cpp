@@ -15,7 +15,7 @@
 
 
 ScreenHotspot::ScreenHotspot(Node *node, Screen *screen):
-	ScreenChild(node, this, screen),
+	ScreenChild(node, nullptr, screen),
 	rectStr(node->getFirstParam())
 {
 	auto onLeftClick = [this](DisplayObject*) {

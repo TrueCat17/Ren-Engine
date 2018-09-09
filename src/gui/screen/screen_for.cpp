@@ -5,7 +5,7 @@
 #include "parser/node.h"
 #include "utils/utils.h"
 
-ScreenFor::ScreenFor(Node *node, ScreenChild *screenParent, Screen *screen):
+ScreenFor::ScreenFor(Node *node, ScreenContainer *screenParent, Screen *screen):
 	ScreenContainer(node, screenParent, screen)
 {
 	needUpdateChildren = false;
@@ -94,10 +94,8 @@ void ScreenFor::calculateProps() {
 				inited = true;
 			}
 			for (size_t j = 0; j < countInitChildren; ++j) {
-				ScreenChild *child = dynamic_cast<ScreenChild*>(screenChildren[i + j]);
-				if (child) {
-					child->calculateProps();
-				}
+				ScreenChild *child = screenChildren[i + j];
+				child->calculateProps();
 			}
 		}catch (ContinueException) {
 		}catch (BreakException) {

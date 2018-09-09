@@ -3,7 +3,7 @@
 #include "media/py_utils.h"
 #include "parser/node.h"
 
-ScreenIf::ScreenIf(Node* node, ScreenChild *screenParent, Screen *screen):
+ScreenIf::ScreenIf(Node* node, ScreenContainer *screenParent, Screen *screen):
 	ScreenContainer(node, screenParent, screen),
 	condition("bool(" + node->params + ")")
 {}

@@ -13,9 +13,6 @@ ScreenImage::ScreenImage(Node *node, Screen *screen):
 	preparationToUpdateCalcProps();
 }
 
-void ScreenImage::calculateProps() {
-	ScreenContainer::calculateProps();
-}
 void ScreenImage::updateTexture() {
 	if (!surface || propWasChanged[ScreenProp::IMAGE_PATH]) {
 		propWasChanged[ScreenProp::IMAGE_PATH] = false;
