@@ -239,7 +239,7 @@ bool Renderer::init() {
 		if (!GV::mainRenderer) {
 			Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 
-			if (flags == SDL_RENDERER_ACCELERATED) {
+			if (flags & SDL_RENDERER_ACCELERATED) {
 				GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
 				if (!GV::mainRenderer) {
 					Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
