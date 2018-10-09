@@ -112,6 +112,17 @@ SOURCES += \
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp
 
+if (false) {
+	QMAKE_CFLAGS += -fprofile-generate
+	QMAKE_CXXFLAGS += -fprofile-generate
+	QMAKE_LFLAGS += -fprofile-generate
+}
+if (false) {
+	QMAKE_CFLAGS += -fprofile-use
+	QMAKE_CXXFLAGS += -fprofile-use
+	QMAKE_LFLAGS += -fprofile-use
+}
+
 CONFIG(release, debug|release) {
 	QMAKE_LFLAGS += -s
 }

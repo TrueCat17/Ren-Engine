@@ -65,6 +65,8 @@ void DisplayObject::setSize(int w, int h) {
 }
 
 bool DisplayObject::checkAlpha(int x, int y) const {
+	if (!alpha || !enable) return false;
+
 	if (surface && (x >= 0 && y >= 0 && x < rect.w && y < rect.h)) {
 		SDL_Rect rect = {x, y, this->rect.w, this->rect.h};
 		Uint32 color = Utils::getPixel(surface, rect, crop);

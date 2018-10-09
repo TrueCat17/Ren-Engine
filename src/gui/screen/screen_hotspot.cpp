@@ -61,6 +61,8 @@ ScreenHotspot::ScreenHotspot(Node *node, Screen *screen):
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
+	if (!alpha || !enable) return false;
+
 	const ScreenImagemap *imageMap = dynamic_cast<ScreenImagemap*>(parent);
 	if (!imageMap) {
 		Utils::outMsg("ScreenHotspot::checkAlpha", "Тип родителя должен быть ScreenImagemap");
