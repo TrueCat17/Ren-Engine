@@ -61,7 +61,7 @@ ScreenHotspot::ScreenHotspot(Node *node, Screen *screen):
 }
 
 bool ScreenHotspot::checkAlpha(int x, int y) const {
-	if (!alpha || !enable) return false;
+	if (!enable || globalAlpha <= 0) return false;
 
 	const ScreenImagemap *imageMap = dynamic_cast<ScreenImagemap*>(parent);
 	if (!imageMap) {

@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include <set>
 #include <thread>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -243,8 +244,8 @@ void Game::save() {
 		for (const DisplayObject *d : GV::screens->children) {
 			const Screen* s = dynamic_cast<const Screen*>(d);
 
-			static const std::vector<String> noSaveScreens = {"pause", "load", "save"};
-			if (s && !Algo::in(s->getName(), noSaveScreens)) {
+			static const std::set<String> noSaveScreens = {"pause", "load", "save"};
+			if (s && !noSaveScreens.count(s->getName())) {
 				mainScreens.push_back(s);
 			}
 		}
@@ -299,7 +300,6 @@ void Game::save() {
 		GUI::update();
 		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_screenshotting = False");
 
-		Utils::sleep(Game::frameTime * 1.5);
 		while (Renderer::needToRender) {
 			Utils::sleep(1);
 		}
@@ -420,11 +420,8 @@ void Game::makeScreenshot() {
 	size_t width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt();
 	size_t height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt();
 
-	Utils::sleep(Game::frameTime * 1.5);
-	while (Renderer::needToRender) {
-		Utils::sleep(1);
-	}
 	{
+		Renderer::needToRender = Renderer::needToRedraw = false;
 		std::lock_guard<std::mutex> g(Renderer::renderMutex);
 		std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
 
@@ -445,7 +442,7 @@ void Game::makeScreenshot() {
 				numStr = '0' + numStr;
 			}
 
-			screenshotPath = path + "screenshot" + numStr + ".png";
+			screenshotPath = path + "screenshot_" + numStr + ".png";
 			exists = fs::exists(screenshotPath.c_str());
 
 			++num;

@@ -103,7 +103,7 @@ void Group::clearChildren() {
 }
 
 bool Group::checkAlpha(int x, int y) const {
-	if (!alpha || !enable) return false;
+	if (!enable || globalAlpha <= 0) return false;
 
 	if (DisplayObject::checkAlpha(x, y)) {
 		return true;

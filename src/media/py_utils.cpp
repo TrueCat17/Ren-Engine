@@ -8,6 +8,7 @@
 
 #include "gv.h"
 #include "logger.h"
+#include "config.h"
 
 #include "gui/screen/screen.h"
 #include "gui/screen/screen_prop.h"
@@ -74,7 +75,7 @@ PyUtils::PyUtils() {
 	pythonGlobal["save_screenshotting"] = false;
 	pythonGlobal["need_screenshot"] = false;
 	pythonGlobal["screenshot_width"] = 640;
-	pythonGlobal["screenshot_height"] = 360;
+	pythonGlobal["screenshot_height"] = 640 / Config::get("window_w_div_h").toDouble();
 
 	pythonGlobal["get_mods"] = py::make_function(Parser::getMods);
 	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);

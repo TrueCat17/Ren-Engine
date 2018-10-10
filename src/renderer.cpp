@@ -391,7 +391,6 @@ void Renderer::readPixels() {
 	screenshot.reset(resScreenshot, SDL_FreeSurface);
 }
 
-
 void Renderer::loop() {
 	bool fastOpenGL = Config::get("fast_opengl") == "True";
 
@@ -411,17 +410,11 @@ void Renderer::loop() {
 	};
 
 	while (!GV::exit) {
-		while (GV::minimized && !GV::exit) {
-			Utils::sleep(1, false);
+		if (!scaled) {
+			scale();
 		}
 
-		if (!needToRender) {
-			if (!scaled) {
-				scale();
-			}else {
-				Utils::sleep(1, false);
-			}
-		}else {
+		if (needToRender && !GV::minimized && !GV::exit) {
 			{
 				std::lock_guard<std::mutex> trg(Renderer::toRenderMutex);
 				toRender.clear();
@@ -440,6 +433,7 @@ void Renderer::loop() {
 			{
 				std::map<SurfacePtr, TexturePtr> cache;
 				textures.clear();
+				textures.reserve(toRender.size());
 
 				for (const RenderStruct &rs : toRender) {
 					auto it = cache.find(rs.surface);
@@ -546,6 +540,8 @@ void Renderer::loop() {
 			prevToRender.swap(toRender);
 			prevTextures.swap(textures);
 		}
+
+		Utils::sleep(1, false);
 	}
 
 	SDL_DestroyRenderer(GV::mainRenderer);

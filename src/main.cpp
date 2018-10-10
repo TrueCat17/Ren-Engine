@@ -281,7 +281,7 @@ void loop() {
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
-			if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+			if (event.window.event == SDL_WINDOWEVENT_CLOSE || event.type == SDL_QUIT) {
 				GV::exit = true;
 				return;
 			}
@@ -458,7 +458,7 @@ void destroy() {
 	GV::exit = true;
 	GV::inGame = false;
 
-	int toSleep = Game::getFrameTime() * 2;
+	int toSleep = Game::getFrameTime() + 3;
 
 	SDL_Event event;
 	while (toSleep) {
