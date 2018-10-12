@@ -392,7 +392,10 @@ void Node::execute() {
 
 		if (choose == NO) {
 			//loaded with screen choose_menu?
-			Screen::updateLists();
+			{
+				std::lock_guard<std::mutex> g(GV::updateMutex);
+				Screen::updateLists();
+			}
 			bool screenThereIs = Screen::getMain("choose_menu");
 
 			if (!screenThereIs) {
