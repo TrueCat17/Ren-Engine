@@ -195,6 +195,8 @@ void PyUtils::errorProcessing(const String &code) {
 
 	std::cout << out;
 	Logger::log(out);
+
+	Utils::outMsg("Python", "See details in resources/log.txt");
 }
 
 bool PyUtils::isConstExpr(const String &code, bool checkSimple) {

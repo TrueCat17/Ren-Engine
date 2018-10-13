@@ -180,8 +180,22 @@ void Node::execute() {
 
 				startScreensVec = Game::loadInfo(loadPath);
 			}else {
-				String startScreens = PyUtils::exec("CPP_EMBED: node.cpp", __LINE__, "start_screens", true);
-				startScreensVec = startScreens.split(' ');
+				std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
+				try {
+					py::object startScreens = GV::pyUtils->pythonGlobal["start_screens"];
+
+					if (PyList_CheckExact(startScreens.ptr())) {
+						size_t len = py::len(startScreens);
+						for (size_t i = 0; i < len; ++i) {
+							const std::string name = py::extract<const std::string>(py::str(startScreens[i]));
+							startScreensVec.push_back(name);
+						}
+					}else {
+						Utils::outMsg("Node::execute", "type(start_screens) is not list");
+					}
+				}catch (py::error_already_set&) {
+					PyUtils::errorProcessing("list(start_screens)");
+				}
 			}
 
 			for (const String &screenName : startScreensVec) {
@@ -331,7 +345,7 @@ void Node::execute() {
 			py::object say = renpy.attr("say");
 			say(nick.c_str(), text.c_str());
 		}catch (py::error_already_set&) {
-			PyUtils::errorProcessing("renpy.say(" + nick + ", '" + text + "')");
+			PyUtils::errorProcessing("renpy.say('" + nick + "', '" + text + "')");
 		}
 	}else
 
