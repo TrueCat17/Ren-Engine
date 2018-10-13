@@ -386,13 +386,19 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 		if (node->command == "with") {
 			size_t i = res->children.size() - 1;
-			while (i != size_t(-1) &&
-			 (res->children[i]->command == "scene" ||
-			  res->children[i]->command == "show" ||
-			  res->children[i]->command == "hide"))
-			{
-				res->children[i]->params += " with " + node->params;
-				--i;
+			while (i != size_t(-1)) {
+				const static std::set<String> canChildWith = {"scene", "show", "hide"};
+
+				Node *child = res->children[i];
+				const String &childCommand = child->command;
+				String &childParams = child->params;
+
+				if (canChildWith.count(childCommand) && !childParams.contains(" with ")) {
+					childParams += " with " + node->params;
+					--i;
+				}else {
+					break;
+				}
 			}
 			++i;
 			node->children.insert(node->children.begin(), res->children.begin() + i, res->children.end());
