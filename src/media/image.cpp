@@ -287,10 +287,29 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 
 	const String sizeStr = Algo::clear(args[1]);
 	const std::vector<String> sizeVec = sizeStr.split(' ');
-	if (sizeVec.size() != 2) {
+
+	const int resW = sizeVec.size() == 2 ? sizeVec[0].toInt() : 0;
+	const int resH = sizeVec.size() == 2 ? sizeVec[1].toInt() : 0;
+	if (sizeVec.size() != 2 || resW <= 0 || resH <= 0) {
 		Utils::outMsg("Image::composite", "Некорректные размеры <" + sizeStr + ">");
 		return nullptr;
 	}
+
+	if (args.size() == 4) {
+		const String posStr = Algo::clear(args[2]);
+		const String imagePath = Algo::clear(args[3]);
+		SurfacePtr image = getImage(imagePath);
+
+		if (!image) {
+			Utils::outMsg("Image::composite", "Не удалось получить изображение <" + imagePath + ">");
+		}else {
+			const String imSizeStr = String(image->w) + ' ' + image->h;
+			if (posStr == "0 0" && imSizeStr == sizeStr) {
+				return image;
+			}
+		}
+	}
+
 
 	std::map<String, size_t> images;
 	for (size_t i = 2; i < args.size(); i += 2) {
@@ -318,10 +337,7 @@ SurfacePtr Image::composite(const std::vector<String> &args) {
 
 	}
 
-	const int resW = sizeVec[0].toInt();
-	const int resH = sizeVec[1].toInt();
 	SurfacePtr res = getNewNotClear(resW, resH);
-
 	Uint8 *resPixels = (Uint8*)res->pixels;
 	const int resPitch = res->pitch;
 

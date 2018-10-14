@@ -33,15 +33,19 @@ Screen* Screen::getMain(const String &name) {
 
 
 void Screen::updateLists() {
-	for (const String &name : toHideList) {
+	std::vector<String> toHideCopy, toShowCopy;
+	{
+		std::lock_guard<std::mutex> g(screenMutex);
+		toHideCopy.swap(toHideList);
+		toShowCopy.swap(toShowList);
+	}
+
+	for (const String &name : toHideCopy) {
 		hide(name);
 	}
-	toHideList.clear();
-
-	for (const String &name : toShowList) {
+	for (const String &name : toShowCopy) {
 		show(name);
 	}
-	toShowList.clear();
 }
 
 
