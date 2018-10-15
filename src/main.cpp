@@ -119,6 +119,7 @@ static void changeWindowSize(bool maximized) {
 
 		if (GV::screens) {
 			GV::screens->setPos(x, y);
+			GV::screens->setSize(w, h);
 			GV::screens->updateGlobalPos();
 		}
 

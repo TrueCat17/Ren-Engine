@@ -188,9 +188,10 @@ void ScreenChild::calculateProps() {
 			py::object &xAlignObj = propValues[ScreenProp::X_ALIGN];
 			bool isInt = PyUtils::isInt(xAlignObj);
 			bool isFloat = !isInt && PyUtils::isFloat(xAlignObj);
+
 			if (isInt || isFloat) {
 				preXAnchor = xPos = PyUtils::getDouble(xAlignObj, isFloat);
-				xAnchorIsDouble = xPosIsDouble = isFloat && preXAnchor > 0 && preXAnchor <= 1;
+				xAnchorIsDouble = xPosIsDouble = isFloat;
 			}else {
 				preXAnchor = xPos = 0;
 				Utils::outMsg("ScreenChild::calculateProps",
@@ -207,7 +208,7 @@ void ScreenChild::calculateProps() {
 
 			if (isInt || isFloat) {
 				preXAnchor = PyUtils::getDouble(xAnchorObj, isFloat);
-				xAnchorIsDouble = isFloat && preXAnchor > 0 && preXAnchor <= 1;
+				xAnchorIsDouble = isFloat;
 			}else {
 				preXAnchor = 0;
 				Utils::outMsg("ScreenChild::calculateProps",
@@ -225,7 +226,7 @@ void ScreenChild::calculateProps() {
 
 				if (isInt || isFloat) {
 					xPos = PyUtils::getDouble(xPosObj, isFloat);
-					xPosIsDouble = isFloat && xPos > 0 && xPos <= 1;
+					xPosIsDouble = isFloat;
 				}else {
 					xPos = 0;
 					Utils::outMsg("ScreenChild::calculateProps",
@@ -246,7 +247,7 @@ void ScreenChild::calculateProps() {
 
 			if (isInt || isFloat) {
 				preYAnchor = yPos = PyUtils::getDouble(yAlignObj, isFloat);
-				yAnchorIsDouble = yPosIsDouble = isFloat && preYAnchor > 0 && preYAnchor <= 1;
+				yAnchorIsDouble = yPosIsDouble = isFloat;
 			}else {
 				preYAnchor = yPos = 0;
 				Utils::outMsg("ScreenChild::calculateProps",
@@ -263,7 +264,7 @@ void ScreenChild::calculateProps() {
 
 			if (isInt || isFloat) {
 				preYAnchor = PyUtils::getDouble(yAnchorObj, isFloat);
-				yAnchorIsDouble = isFloat && preYAnchor > 0 && preYAnchor <= 1;
+				yAnchorIsDouble = isFloat;
 			}else {
 				preYAnchor = 0;
 				Utils::outMsg("ScreenChild::calculateProps",
@@ -281,7 +282,7 @@ void ScreenChild::calculateProps() {
 
 				if (isInt || isFloat) {
 					yPos = PyUtils::getDouble(yPosObj, isFloat);
-					yPosIsDouble = isFloat && yPos > 0 && yPos <= 1;
+					yPosIsDouble = isFloat;
 				}else {
 					yPos = 0;
 					Utils::outMsg("ScreenChild::calculateProps",
@@ -302,7 +303,7 @@ void ScreenChild::calculateProps() {
 
 		if (isInt || isFloat) {
 			xSize = PyUtils::getDouble(xSizeObj, isFloat);
-			xSizeIsDouble = isFloat && xSize > 0 && xSize <= 1;
+			xSizeIsDouble = isFloat;
 		}else {
 			xSize = 0;
 			xSizeIsDouble = false;
@@ -322,7 +323,7 @@ void ScreenChild::calculateProps() {
 
 		if (isInt || isFloat) {
 			ySize = PyUtils::getDouble(ySizeObj, isFloat);
-			ySizeIsDouble = isFloat && ySize > 0 && ySize <= 1;
+			ySizeIsDouble = isFloat;
 		}else {
 			ySize = 0;
 			ySizeIsDouble = false;
@@ -343,17 +344,17 @@ void ScreenChild::calculateProps() {
 			int textureWidth = surface->w;
 			int textureHeight = surface->h;
 
-			bool isInt[4];
 			bool isFloat[4];
 			for (size_t i = 0; i < 4; ++i) {
-				isInt[i] = PyUtils::isInt(cropObj[i]);
-				isFloat[i] = !isInt[i] && PyUtils::isFloat(cropObj[i]);
-				if (!isInt[i] && !isFloat[i]) {
+				bool isInt = PyUtils::isInt(cropObj[i]);
+				isFloat[i] = !isInt && PyUtils::isFloat(cropObj[i]);
+				if (!isInt && !isFloat[i]) {
 					Utils::outMsg("ScreenChild::calculateProps", String() +
 								  "В свойстве crop ожидался список из 4-х значений типа int или float\n"
 								  "crop: <" + PyUtils::getStr(cropObj) + ">\n" +
 								  node->getPlace());
 					cropObj[i] = double(i >= 2);//0.0 for 0,1; 1.0 for 2,3; crop -> {0.0, 0.0, 1.0, 1.0}
+					isFloat[i] = true;
 				}
 			}
 
@@ -362,10 +363,10 @@ void ScreenChild::calculateProps() {
 			double w = PyUtils::getDouble(cropObj[2], isFloat[2]);
 			double h = PyUtils::getDouble(cropObj[3], isFloat[3]);
 
-			if (isFloat[0] && x > 0 && x <= 1) x *= textureWidth;
-			if (isFloat[1] && y > 0 && y <= 1) y *= textureHeight;
-			if (isFloat[2] && w > 0 && w <= 1) w *= textureWidth;
-			if (isFloat[3] && h > 0 && h <= 1) h *= textureHeight;
+			if (isFloat[0]) x *= textureWidth;
+			if (isFloat[1]) y *= textureHeight;
+			if (isFloat[2]) w *= textureWidth;
+			if (isFloat[3]) h *= textureHeight;
 
 			crop = {int(x), int(y), int(w), int(h)};
 		}else {

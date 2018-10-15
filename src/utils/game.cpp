@@ -365,6 +365,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 
 		GV::screens = new Group();
 		GV::screens->setPos(x, y);
+		GV::screens->setSize(GV::width, GV::height);
 		GV::screens->updateGlobalPos();
 
 		GV::numFor = GV::numScreenFor = 0;
