@@ -843,7 +843,7 @@ NodeProp Node::getPropCode(const String &name, const String &commonName, const S
 	if (commonName) {
 		i = props.find(commonName);
 		if (i != props.end()) {
-			return NodeProp::initPyExpr(i->second.pyExpr + indexStr, i->second.numLine);
+			return NodeProp::initPyExpr("(" + i->second.pyExpr + ")" + indexStr, i->second.numLine);
 		}
 	}
 
