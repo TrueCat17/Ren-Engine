@@ -33,6 +33,26 @@
 #include "utils/utils.h"
 
 
+std::string getVersion() {
+	static std::string res;
+	if (res.empty()) {
+		std::string major = "0";
+		std::string minor = "9";
+		std::string micro = "0";
+
+		std::string date = __DATE__;
+
+		std::string months = "JanFebMarAprMayJunJulAugSepOctNovDec";
+		int monthInt = months.find(date.substr(0, 3)) / 3 + 1;
+		std::string month = std::string() + char((monthInt / 10) + '0') + char((monthInt % 10) + '0');
+
+		std::string day = (date[4] == ' ') ? ('0' + date.substr(5, 1)) : date.substr(4, 2);
+		std::string year = date.substr(7, 4);
+
+		res = major + "." + minor + "." + micro + "-" + year + "." + month + "." + day;
+	}
+	return res;
+}
 
 //before windowSize-changes
 static int startWindowWidth = 0;
@@ -138,29 +158,48 @@ static void changeWindowSize(bool maximized) {
 	startWindowHeight = 0;
 }
 
-
-String setDir(String root) {
-	if (!root) {
+String rootDirectory;
+String setDir(String newRoot) {
+	if (!newRoot) {
 		char *charsPathUTF8 = SDL_GetBasePath();
 		if (charsPathUTF8) {
-			root = charsPathUTF8;
+			newRoot = charsPathUTF8;
 			SDL_free(charsPathUTF8);
 		}else {
 			Utils::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
 		}
 
-		root.replaceAll('\\', '/');
-		root += "../resources/";
+		newRoot.replaceAll('\\', '/');
+		newRoot += "../resources/";
 	}
 
+	std::vector<String> parts = newRoot.split('/');
+	for (size_t i = 0; i < parts.size(); ++i) {
+		String &part = parts[i];
+		if (part == ".") {
+			parts.erase(parts.begin() + i, parts.begin() + i + 1);
+			--i;
+		}else
+
+		if (part == ".." && i != 0) {
+			parts.erase(parts.begin() + i - 1, parts.begin() + i + 1);
+			i -= 2;
+		}
+	}
+	if (parts.size() && parts[parts.size() - 1] != "") {
+		parts.push_back("");
+	}
+
+	rootDirectory = newRoot = String::join(parts, '/');
+
 	boost::filesystem::detail::utf8_codecvt_facet utf8;
-	boost::filesystem::path path(root, utf8);
+	boost::filesystem::path path(newRoot, utf8);
 
 	boost::system::error_code ec;
 	boost::filesystem::current_path(path, ec);
 
 	if (!ec.value()) return "";
-	return "Set current_path to <" + root + "> failed";
+	return "Set current_path to <" + newRoot + "> failed";
 }
 
 bool init() {
@@ -501,10 +540,18 @@ int main(int argc, char **argv) {
 	for (const char *i : {"--help", "-help", "-h", "h", "/?", "?"}) {
 		if (arg == i) {
 			std::cout << "Ren-Engine is fast analog of Ren'Py\n"
-						 "Using:\n"
-						 "  Ren-Engine [resources_dir=../resources/]\n"
+						 "Usage:\n"
+						 "  ./Ren-Engine [resources_dir=../resources/]\n"
+						 "  ./Ren-Engine --help    - show this help and exit\n"
+						 "  ./Ren-Engine --version - show version and exit\n"
 						 "See https://github.com/TrueCat17/Ren-Engine\n"
 						 "and https://github.com/TrueCat17/Ren-Engine/tree/master/examples\n";
+			return 0;
+		}
+	}
+	for (const char *i : {"--version", "-version", "-ver", "-v", "v"}) {
+		if (arg == i) {
+			std::cout << "Ren-Engine " << getVersion() << '\n';
 			return 0;
 		}
 	}
@@ -517,17 +564,23 @@ int main(int argc, char **argv) {
 	if (init()) {
 		return 0;
 	}
-	Logger::logEvent("Ren-Engine Initing", Utils::getTimer() - initStartTime);
 
-	const char *platform = SDL_GetPlatform();
-	Logger::log(String("OS: ") + platform);
+	{
+		Logger::logEvent("Ren-Engine (version " + getVersion() + ") Initing", Utils::getTimer() - initStartTime);
 
-	SDL_RendererInfo info;
-	SDL_GetRendererInfo(GV::mainRenderer, &info);
-	String driverInfo = String("Driver: ") + info.name + ", "
-						"maxTextureWidth = " + info.max_texture_width + ", "
-						"maxTextureHeight = " + info.max_texture_height + "\n\n";
-	Logger::log(driverInfo);
+		const char *platform = SDL_GetPlatform();
+		Logger::log(String("OS: ") + platform);
+
+		SDL_RendererInfo info;
+		SDL_GetRendererInfo(GV::mainRenderer, &info);
+		String driverInfo = String("Renderer: ") + info.name + ", "
+							"maxTextureWidth = " + info.max_texture_width + ", "
+							"maxTextureHeight = " + info.max_texture_height + "\n";
+		Logger::log(driverInfo);
+
+		Logger::log("Resource Directory: " + rootDirectory);
+		Logger::log("Application Name:   " + Config::get("window_title") + "\n\n");
+	}
 
 	Game::startMod("main_menu");
 
