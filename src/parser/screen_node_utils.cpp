@@ -126,9 +126,30 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	if (child->isScreenConst || child->isScreenEvent) return;
 
 	String childRes = initCode(child);
+	std::vector<String> code = childRes.split('\n');
 
 	if (child->isScreenProp || child->isScreenEnd) {
-		res += indent + "SL_last[" + index + "] = " + childRes + '\n';
+		res += indent + "SL_last[" + index + "] = ";// + childRes + '\n';
+
+		for (size_t i = 0; i < code.size(); ++i) {
+			if (i) {
+				res += indent;
+			}
+			res += code[i];
+			if (i != code.size() - 1) {
+				res += '\n';
+			}
+		}
+
+		for (Node *grandChild : child->children) {
+			if (grandChild->isScreenEvent) {
+				res += "\n" +
+					   indent + "SL_check_events()";
+				break;
+			}
+		}
+		res += '\n';
+
 		return;
 	}
 
@@ -142,7 +163,6 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 		res += indent + "try:\n";
 	}
 
-	std::vector<String> code = childRes.split('\n');
 	for (const String &line : code) {
 		res += indent + "    " + line + '\n';
 	}
@@ -205,9 +225,7 @@ static String initCycleCode(Node *node) {
 		}
 		initChildCode(child, res, indent, index);
 
-		if (child->screenNum != count - 1) {
-			res += indent + '\n';
-		}
+		res += indent + '\n';
 	}
 
 	res += indent + id + " += " + count + "\n";
@@ -247,17 +265,11 @@ static String initCode(Node *node) {
 			String childRes = initCode(child);
 			res += "    " + childRes + ",\n";
 		}
+
 		if (res.size() != 2) {
 			res += ")";
 		}else {
 			res[1] = ')';
-		}
-
-		for (Node *child : node->children) {
-			if (child->isScreenEvent) {
-				res += "\nSL_check_events()";
-				break;
-			}
 		}
 
 		return res;

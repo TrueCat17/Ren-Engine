@@ -21,6 +21,8 @@ Text::~Text() {
 
 
 void Text::updateSize() {
+	Child::updateSize();
+
 	tf->enable = true;
 
 	int width = int(xsize * (xsizeIsDouble ? GV::width : 1));

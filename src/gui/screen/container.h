@@ -4,7 +4,7 @@
 #include "child.h"
 
 class Container: public Child {
-protected:
+private:
 	void addChildrenFromNode();
 
 public:
@@ -19,6 +19,7 @@ public:
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
 	virtual void updateProps();
+	virtual void updateSize();
 };
 
 #endif // CONTAINER_H

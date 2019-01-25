@@ -25,6 +25,27 @@ Container::Container(Node *node, Container *screenParent, Screen *screen):
 {}
 
 
+void Container::addChildAt(DisplayObject *child, size_t index) {
+	if (child == screenParent) {
+		Utils::outMsg("ScreenContainer::addChild(At)", "Добавление объекта в самого себя");
+		return;
+	}
+
+	Group *parent = screenParent;
+	auto &pChildren = parent->children;
+
+	if (child->parent) {
+		child->parent->removeChild(child);
+	}
+	auto to = std::min(pChildren.begin() + int(index), pChildren.end());
+	pChildren.insert(to, child);
+
+	child->parent = parent;
+	child->updateGlobal();
+}
+
+
+
 void Container::updateProps() {
 	Child::updateProps();
 
@@ -68,6 +89,75 @@ void Container::updateProps() {
 		}
 	}
 }
+
+void Container::updateSize() {
+	Child::updateSize();
+
+	//Установлено через [x/y/]size
+	int userWidth = getWidth();
+	int userHeight = getHeight();
+
+	using std::max;
+
+	int width;
+	if (hasHBox) {
+		width = 0;
+		for (DisplayObject *child : children) {
+			if (!child->enable) continue;
+
+			child->setX(width);
+
+			int w = child->getWidth();
+			if (w > 0) {
+				width += w + spacing;
+			}
+		}
+		if (width) {
+			width -= spacing;
+		}
+	}else if (userWidth > 0) {
+		width = userWidth;
+	}else {
+		width = 0;
+		for (DisplayObject *child : children) {
+			if (child->enable) {
+				width = max(width, child->getWidth());
+			}
+		}
+	}
+
+	int height;
+	if (hasVBox) {
+		height = 0;
+		for (DisplayObject *child : children) {
+			if (!child->enable) continue;
+
+			child->setY(height);
+
+			int h = child->getHeight();
+			if (h > 0) {
+				height += h + spacing;
+			}
+		}
+		if (height) {
+			height -= spacing;
+		}
+	}else if (userHeight > 0) {
+		height = userHeight;
+	}else {
+		height = 0;
+		for (DisplayObject *child : children) {
+			if (child->enable) {
+				height = max(height, child->getHeight());
+			}
+		}
+	}
+
+	setSize(width, height);
+}
+
+
+
 
 void Container::addChildrenFromNode() {
 	for (Node *childNode : node->children) {
@@ -182,23 +272,4 @@ void Container::addChildrenFromNode() {
 			}
 		}
 	}
-}
-
-void Container::addChildAt(DisplayObject *child, size_t index) {
-	if (child == screenParent) {
-		Utils::outMsg("ScreenContainer::addChild(At)", "Добавление объекта в самого себя");
-		return;
-	}
-
-	Group *parent = screenParent;
-	auto &pChildren = parent->children;
-
-	if (child->parent) {
-		child->parent->removeChild(child);
-	}
-	auto to = std::min(pChildren.begin() + int(index), pChildren.end());
-	pChildren.insert(to, child);
-
-	child->parent = parent;
-	child->updateGlobal();
 }
