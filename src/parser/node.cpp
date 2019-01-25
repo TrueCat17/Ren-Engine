@@ -1,9 +1,7 @@
 ﻿#include "node.h"
 
 #include <set>
-
-#include <boost/filesystem.hpp>
-#include <boost/python.hpp>
+#include <filesystem>
 
 #include "gv.h"
 #include "config.h"
@@ -12,7 +10,7 @@
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
-#include "media/image.h"
+#include "media/image_manipulator.h"
 #include "media/music.h"
 #include "media/py_utils.h"
 
@@ -21,15 +19,16 @@
 #include "utils/mouse.h"
 #include "utils/utils.h"
 
+String Node::loadPath;
 
 static const size_t NODES_IN_PART = 10000;
 size_t Node::countNodes = 0;
 std::vector<Node*> Node::nodes;
 
-Node::Node(const String &fileName, size_t numLine):
+Node::Node(const String &fileName, size_t numLine, size_t id):
 	fileName(fileName),
 	numLine(numLine),
-	childNum(0)
+	id(id)
 {}
 Node::~Node() {}
 
@@ -38,8 +37,10 @@ Node* Node::getNewNode(const String &fileName, size_t numLine) {
 		nodes.push_back((Node*)::malloc(NODES_IN_PART * sizeof(Node)));
 	}
 
-	Node *node = nodes.back() + (countNodes++ % NODES_IN_PART);
-	new(node) Node(fileName, numLine);
+	Node *node = nodes.back() + (countNodes % NODES_IN_PART);
+	new(node) Node(fileName, numLine, countNodes);
+	++countNodes;
+
 	return node;
 }
 void Node::destroyAll() {
@@ -141,7 +142,7 @@ void Node::execute() {
 	}
 
 
-	StackRecorder sr(initing, command == "label" ? name : String(childNum), command);
+	StackRecorder sr(initing, command == "label" ? params : String(childNum), command);
 
 
 
@@ -179,22 +180,27 @@ void Node::execute() {
 							  "load_global_vars('" + loadPath + "py_globals')");
 
 				startScreensVec = Game::loadInfo(loadPath);
-			}else {
-				std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-				try {
-					py::object startScreens = GV::pyUtils->pythonGlobal["start_screens"];
+			}else if (0){
+				std::lock_guard g(PyUtils::pyExecMutex);
 
-					if (PyList_CheckExact(startScreens.ptr())) {
-						size_t len = py::len(startScreens);
+				PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
+				if (startScreens) {
+					if (PyList_CheckExact(startScreens)) {
+						size_t len = Py_SIZE(startScreens);
 						for (size_t i = 0; i < len; ++i) {
-							const std::string name = py::extract<const std::string>(py::str(startScreens[i]));
-							startScreensVec.push_back(name);
+							PyObject *elem = PyList_GET_ITEM(startScreens, i);
+							if (PyString_CheckExact(elem)) {
+								String name = PyString_AS_STRING(elem);
+								startScreensVec.push_back(name);
+							}else {
+								Utils::outMsg("Node::execute", "type(start_screens[" + String(i) + "]) is not str");
+							}
 						}
 					}else {
 						Utils::outMsg("Node::execute", "type(start_screens) is not list");
 					}
-				}catch (py::error_already_set&) {
-					PyUtils::errorProcessing("list(start_screens)");
+				}else {
+					Utils::outMsg("Node::execute", "Список start_screens не существует");
 				}
 			}
 
@@ -215,11 +221,11 @@ void Node::execute() {
 				}
 			}
 
-		}catch (ContinueException) {
+		}catch (ContinueException&) {
 			Utils::outMsg("Node::execute", "continue вне цикла");
-		}catch (BreakException) {
+		}catch (BreakException&) {
 			Utils::outMsg("Node::execute", "break вне цикла");
-		}catch (StopException) {
+		}catch (StopException&) {
 			Utils::outMsg("Node::execute", "Неожидаемое исключение StopException (конец итератора)");
 		}
 
@@ -267,8 +273,8 @@ void Node::execute() {
 			}
 
 			{
-				std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-				GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
+				std::lock_guard g(PyUtils::pyExecMutex);
+				PyDict_SetItemString(PyUtils::global, "last_show_at", getPyList());
 			}
 			PyUtils::exec(getFileName(), getNumLine(), "show_sprite([" + argsStr + "], last_show_at)");
 		}
@@ -307,8 +313,8 @@ void Node::execute() {
 		}
 
 		{
-			std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-			GV::pyUtils->pythonGlobal["last_show_at"] = getPyList();
+			std::lock_guard g(PyUtils::pyExecMutex);
+			PyDict_SetItemString(PyUtils::global, "last_show_at", getPyList());
 		}
 
 		PyUtils::exec(getFileName(), getNumLine(), "set_scene([" + argsStr + "], last_show_at)");
@@ -339,14 +345,21 @@ void Node::execute() {
 			nick = "narrator";
 		}
 
-		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-		try {
-			py::object renpy = GV::pyUtils->pythonGlobal["renpy"];
-			py::object say = renpy.attr("say");
-			say(nick.c_str(), text.c_str());
-		}catch (py::error_already_set&) {
+		std::lock_guard g(PyUtils::pyExecMutex);
+
+		PyObject *renpy = PyDict_GetItemString(PyUtils::global, "renpy");
+
+		PyObject *pyNick = PyString_FromString(nick.c_str());
+		PyObject *pyText = PyString_FromString(text.c_str());
+
+		if (!PyObject_CallMethod(renpy, const_cast<char*>("say"),
+								 const_cast<char*>("(OO)"), pyNick, pyText))
+		{
 			PyUtils::errorProcessing("renpy.say('" + nick + "', '" + text + "')");
 		}
+
+		Py_DECREF(pyNick);
+		Py_DECREF(pyText);
 	}else
 
 	if (command == "$" || command == "python" || command == "init python") {
@@ -532,8 +545,8 @@ void Node::execute() {
 					Node* node = children[i];
 					node->execute();
 				}
-			}catch (ContinueException) {
-			}catch (BreakException) {
+			}catch (ContinueException&) {
+			}catch (BreakException&) {
 				condIsTrue = false;
 				break;
 			}
@@ -578,11 +591,11 @@ void Node::execute() {
 					Node* node = children[i];
 					node->execute();
 				}
-			}catch (ContinueException) {
-			}catch (BreakException) {
+			}catch (ContinueException&) {
+			}catch (BreakException&) {
 				condIsTrue = false;
 				break;
-			}catch (StopException) {
+			}catch (StopException&) {
 				break;
 			}
 			inCycle = false;
@@ -635,7 +648,7 @@ void Node::execute() {
 
 void Node::jump(const String &label, bool isCall) {
 	for (Node *node : GV::mainExecNode->children) {
-		if (node->command == "label" && node->name == label) {
+		if (node->command == "label" && node->params == label) {
 			try {
 				node->execute();
 			}catch (ReturnException) {}
@@ -656,33 +669,42 @@ void Node::jumpNext(const std::string &label, bool isCall) {
 }
 
 
-py::list Node::getPyList() const {
-	py::list res;
+PyObject* Node::getPyList() const {
+	PyObject *res = PyList_New(0);
 
-	static const std::vector<String> highLevelCommands = {"image", "scene", "show", "hide"};
-	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
+	static const std::set<String> highLevelCommands = {"image", "scene", "show", "hide"};
+	bool isHighLevelCommands = highLevelCommands.count(command);
 
 	if (!isHighLevelCommands) {
 		if (command) {
-			res.append(py::str(std::string(command)));
+			PyList_Append(res, PyString_FromString(command.c_str()));
 		}
 		if (params) {
-			res.append(py::str(std::string(params)));
+			PyList_Append(res, PyString_FromString(params.c_str()));
 		}
 	}
 
 	for (const Node* child : children) {
-		py::list childPyList = child->getPyList();
+		PyObject *childPyList = child->getPyList();
 
-		static const std::vector<String> blockCommandsInImage = {"contains", "block", "parallel"};
-		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
-
-		static const py::str space = " ";
+		static const std::set<String> blockCommandsInImage = {"contains", "block", "parallel"};
+		bool childIsBlock = blockCommandsInImage.count(child->command);
 
 		if (!childIsBlock) {
-			res.append(space.join(childPyList));
+			std::vector<String> toJoin;
+			size_t len = Py_SIZE(childPyList);
+			for (size_t i = 0; i < len; ++i) {
+				PyObject *elem = PyList_GET_ITEM(childPyList, i);
+				const char *chars = PyString_AS_STRING(elem);
+				toJoin.push_back(String(chars));
+			}
+
+			String joinedStr = String::join(toJoin, ' ');
+			PyObject *joined = PyString_FromString(joinedStr.c_str());
+
+			PyList_Append(res, joined);
 		}else {
-			res.append(childPyList);
+			PyList_Append(res, childPyList);
 		}
 	}
 
@@ -740,7 +762,7 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 
 			for (size_t j = 0; j < GV::mainExecNode->children.size(); ++j) {
 				Node *t = GV::mainExecNode->children[j];
-				if (t->command == "label" && t->name == label) {
+				if (t->command == "label" && t->params == label) {
 					if (childCommand == "jump") {
 						return preloadImages(child, 0, count - 1);
 					}else {
@@ -774,7 +796,7 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 			const String code = Utils::getImageCode(imageName);
 			const String imageCode = PyUtils::exec(parent->getFileName(), parent->getNumLine(), code, true);
 			if (imageCode) {
-				Image::loadImage(imageCode);
+				ImageManipulator::loadImage(imageCode);
 			}
 
 			std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
@@ -786,8 +808,8 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 }
 void Node::preloadImageAt(const std::vector<String> &children) {
 	auto fileExists = [](const String &path) -> bool {
-		if (boost::filesystem::exists(path.c_str())) {
-			return !boost::filesystem::is_directory(path.c_str());
+		if (std::filesystem::exists(path.c_str())) {
+			return !std::filesystem::is_directory(path.c_str());
 		}
 		return false;
 	};
@@ -805,7 +827,7 @@ void Node::preloadImageAt(const std::vector<String> &children) {
 				const String imagePath = PyUtils::exec(place.first, place.second, code, true);
 				if (imagePath) {
 					if (fileExists(imagePath)) {
-						Image::loadImage(imagePath);
+						ImageManipulator::loadImage(imagePath);
 					}
 				}
 
@@ -813,46 +835,25 @@ void Node::preloadImageAt(const std::vector<String> &children) {
 				preloadImageAt(declAt);
 			}else {
 				if (fileExists(image)) {
-					Image::loadImage(image);
+					ImageManipulator::loadImage(image);
 				}
 			}
 		}
 	}
 }
 
-
-void Node::initProp(const String &name, const String &value, size_t numLine) {
-	props[name] = NodeProp::initPyExpr(value, numLine);
-}
-
-void Node::updateAlwaysNonePropCode() {
-	static const std::set<String> exceptions({"if", "elif", "else", "for", "while"});
-	alwaysNonePropCode = exceptions.count(command);
-}
-
-NodeProp Node::getPropCode(const String &name, const String &commonName, const String &indexStr) const {
-	if (alwaysNonePropCode) {
-		return NodeProp::initPyExpr("None", 0);
-	}
-
-	auto i = props.find(name);
-	if (i != props.end()) {
-		return NodeProp::initPyExpr(i->second.pyExpr, i->second.numLine);
-	}
-
-	if (commonName) {
-		i = props.find(commonName);
-		if (i != props.end()) {
-			return NodeProp::initPyExpr("(" + i->second.pyExpr + ")" + indexStr, i->second.numLine);
+Node* Node::getProp(const String &name) {
+	for (Node *child : children) {
+		if (child->command == name) {
+			return child;
 		}
 	}
-
-	i = props.find("style");
-	const String &styleName = i == props.end() ? command : i->second.pyExpr;
-	return NodeProp::initStyleProp(styleName, name);
+	return nullptr;
 }
+
 String Node::getPlace() const {
 	return "Место объявления объекта <" + command + ">:\n"
 			"  Файл <" + fileName + ">\n" +
 			"  Номер строки: " + String(numLine);
 }
+

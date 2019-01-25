@@ -66,14 +66,14 @@ private:
 	int64_t lastFramePts = 0;
 
 	std::string fileName;
-	int numLine;
+	size_t numLine;
 	std::string place;//place = fileName & numLine
 
 	int audioStream = -1;
 
 	uint8_t *tmpBuffer = (uint8_t *)av_malloc(PART_SIZE);
 	uint8_t *buffer = (uint8_t *)av_malloc(PART_SIZE * (MAX_PART_COUNT + 1));
-	Uint8 *audioPos = 0;
+	Uint8 *audioPos = nullptr;
 	Uint32 audioLen = 0;
 
 	AVFormatContext	*formatCtx = nullptr;
@@ -84,7 +84,7 @@ private:
 	AVFrame *frame = av_frame_alloc();
 
 
-	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &fileName, int numLine, const std::string &place);
+	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &fileName, size_t numLine, const std::string &place);
 	~Music();
 
 	bool initCodec();
@@ -109,9 +109,9 @@ public:
 							   const std::string& fileName, int numLine);
 
 	static void play(const std::string &desc,
-					   const std::string& fileName, int numLine);
+					   const std::string& fileName, size_t numLine);
 	static void stop(const std::string &desc,
-					 const std::string& fileName, int numLine);
+					 const std::string& fileName, size_t numLine);
 
 	static const std::vector<Channel*>& getChannels() { return channels; }
 	static const std::vector<Music*>&   getMusics()   { return musics; }

@@ -3,23 +3,13 @@
 #include "utils/utils.h"
 
 
-void Group::updateGlobalPos() {
-	DisplayObject::updateGlobalPos();
+void Group::updateGlobal() {
+	DisplayObject::updateGlobal();
 
 	for (size_t i = 0; i < children.size(); ++i) {
 		DisplayObject *child = children[i];
 		if (child->enable) {
-			child->updateGlobalPos();
-		}
-	}
-}
-void Group::updateGlobalAlpha() {
-	DisplayObject::updateGlobalAlpha();
-
-	for (size_t i = 0; i < children.size(); ++i) {
-		DisplayObject *child = children[i];
-		if (child->enable) {
-			child->updateGlobalAlpha();
+			child->updateGlobal();
 		}
 	}
 }
@@ -33,11 +23,11 @@ size_t Group::getChildIndex(DisplayObject *child) const {
 			return i;
 		}
 	}
-	return -1;
+	return size_t(-1);
 }
 
 void Group::addChild(DisplayObject *child) {
-	addChildAt(child, children.size());
+	Group::addChildAt(child, children.size());
 }
 void Group::addChildAt(DisplayObject *child, size_t index) {
 	if (child == this) {
@@ -45,31 +35,15 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 		return;
 	}
 
-	if (child->parent == this) {
-		if (children[children.size() - 1] != child) {
-			for (size_t i = 0; i < children.size(); ++i) {
-				if (children[i] == child) {
-					children.erase(children.begin() + i);
-					break;
-				}
-			}
-			children.push_back(child);
-		}
-		return;
-	}
-
 	if (child->parent) {
 		child->parent->removeChild(child);
 	}
 
-	child->parent = this;
-	child->updateGlobalPos();
+	auto to = std::min(children.begin() + index, children.end());
+	children.insert(to, child);
 
-	if (children.size() < index) {
-		children.insert(children.begin() + index, child);
-	}else {
-		children.push_back(child);
-	}
+	child->parent = this;
+	child->updateGlobal();
 }
 void Group::removeChild(DisplayObject *child) {
 	if (child->parent != this) {

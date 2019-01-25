@@ -2,10 +2,11 @@
 
 #include <set>
 #include <thread>
+#include <filesystem>
 #include <fstream>
-#include <boost/filesystem.hpp>
-#include <SDL2/SDL_image.h>
 #include <time.h>
+
+#include <SDL2/SDL_image.h>
 
 
 #include "config.h"
@@ -17,11 +18,12 @@
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
-#include "media/image.h"
+#include "media/image_manipulator.h"
 #include "media/music.h"
 #include "media/py_utils.h"
 
 #include "parser/parser.h"
+#include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
 #include "utils/math.h"
@@ -33,7 +35,7 @@ int Game::maxFps = 60;
 int Game::fps = 60;
 int Game::frameTime = 16;
 
-int Game::modStartTime = 0;
+long Game::modStartTime = 0;
 bool Game::canAutoSave = true;
 
 bool Game::modStarting = false;
@@ -59,7 +61,7 @@ void Game::load(const std::string &table, const std::string &name) {
 	const std::string tablePath = saves + table + '/';
 	const std::string fullPath = saves + table + '/' + name + '/';
 
-	namespace fs = boost::filesystem;
+	namespace fs = std::filesystem;
 
 	auto outError = [&](const std::string &dir) {
 		Utils::outMsg(std::string() + "Ошибка при попытке открыть сохранение <" + table + "_" + name + ">\n"
@@ -214,7 +216,7 @@ void Game::save() {
 
 
 	{//check directory to save
-		namespace fs = boost::filesystem;
+		namespace fs = std::filesystem;
 
 		for (const std::string &path : {saves, tablePath, fullPath}) {
 			if (!fs::exists(path)) {
@@ -237,7 +239,7 @@ void Game::save() {
 		std::ofstream infoFile(fullPath + "info");
 
 		//mod-name
-		infoFile << GV::mainExecNode->name << "\n\n";
+		infoFile << GV::mainExecNode->params << "\n\n";
 
 		//screens
 		std::vector<const Screen*> mainScreens;
@@ -366,7 +368,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 		GV::screens = new Group();
 		GV::screens->setPos(x, y);
 		GV::screens->setSize(GV::width, GV::height);
-		GV::screens->updateGlobalPos();
+		GV::screens->updateGlobal();
 
 		GV::numFor = GV::numScreenFor = 0;
 		Node::stackDepth = 0;
@@ -374,8 +376,10 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 
 		Style::destroyAll();
 
-		delete GV::pyUtils;
-		GV::pyUtils = new PyUtils();
+		delete PyUtils::obj;
+		PyUtils::obj = new PyUtils();
+
+		ScreenNodeUtils::clear();
 
 		Logger::logEvent("Clearing", Utils::getTimer() - clearStartTime);
 	}
@@ -404,7 +408,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 		}
 
 
-		GV::mainExecNode->loadPath = loadPath;
+		Node::loadPath = loadPath;
 	}
 	GV::mainExecNode->execute();
 }
@@ -413,7 +417,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 void Game::makeScreenshot() {
 	static const std::string path = "screenshots/";
 
-	namespace fs = boost::filesystem;
+	namespace fs = std::filesystem;
 	if (!fs::exists(path)) {
 		fs::create_directory(path);
 	}
@@ -459,7 +463,7 @@ void Game::exitFromGame() {
 
 bool Game::hasLabel(const std::string &label) {
 	for (Node *node : GV::mainExecNode->children) {
-		if (node->command == "label" && node->name == label) {
+		if (node->command == "label" && node->params == label) {
 			return true;
 		}
 	}
@@ -475,7 +479,7 @@ int Game::getStageHeight() {
 }
 
 int Game::getTextureWidth(const std::string &image) {
-	SurfacePtr surface = Image::getImage(image);
+	SurfacePtr surface = ImageManipulator::getImage(image);
 	if (surface) {
 		return surface->w;
 	}
@@ -483,7 +487,7 @@ int Game::getTextureWidth(const std::string &image) {
 	return 0;
 }
 int Game::getTextureHeight(const std::string &image) {
-	SurfacePtr surface = Image::getImage(image);
+	SurfacePtr surface = ImageManipulator::getImage(image);
 	if (surface) {
 		return surface->h;
 	}
@@ -492,7 +496,7 @@ int Game::getTextureHeight(const std::string &image) {
 }
 
 Uint32 Game::getPixel(const std::string &image, int x, int y) {
-	SurfacePtr surface = Image::getImage(image);
+	SurfacePtr surface = ImageManipulator::getImage(image);
 	if (surface) {
 		SDL_Rect draw = {x, y, surface->w, surface->h};
 		SDL_Rect crop = {0, 0, surface->w, surface->h};
@@ -507,12 +511,13 @@ Uint32 Game::getPixel(const std::string &image, int x, int y) {
 std::string Game::getFromConfig(const std::string &param) {
 	return Config::get(param);
 }
-py::object Game::getArgs(const std::string &str) {
+PyObject* Game::getArgs(const std::string &str) {
 	std::vector<String> vec = Algo::getArgs(str);
 
-	py::list res;
-	for (const std::string& s : vec) {
-		res.append(s);
+	PyObject *res = PyList_New(vec.size());
+	for (const String &s : vec) {
+		PyObject *str = PyString_FromString(s.c_str());
+		PyList_Append(res, str);
 	}
 	return res;
 }

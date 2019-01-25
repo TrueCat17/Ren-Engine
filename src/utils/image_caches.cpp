@@ -9,9 +9,9 @@
 #include "config.h"
 #include "gv.h"
 
-#include "gui/screen/screen_child.h"
+#include "gui/display_object.h"
 
-#include "media/image.h"
+#include "media/image_manipulator.h"
 
 #include "utils/utils.h"
 
@@ -146,8 +146,7 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 	std::vector<SDL_Surface*> toDelete;
 	std::vector<KV> candidatesToDelete;
 
-	const std::vector<ScreenChild*> &screenObjects = ScreenChild::getScreenObjects();
-	std::map<SDL_Surface*, std::vector<ScreenChild*>> objs;
+	std::map<SDL_Surface*, std::vector<DisplayObject*>> objs;
 
 	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
 		KV kv(it);
@@ -162,8 +161,8 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 		if (textures.find(surface) != textures.end()) continue;
 
 		bool enabled = false;
-		std::vector<ScreenChild*> &vec = objs[surface.get()];
-		for (ScreenChild *obj : screenObjects) {
+		std::vector<DisplayObject*> &vec = objs[surface.get()];
+		for (DisplayObject *obj : DisplayObject::objects) {
 			if (obj->surface == surface) {
 				if (obj->enable) {
 					enabled = true;
@@ -192,8 +191,8 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 	}
 
 	for (SDL_Surface *surface : toDelete) {
-		std::vector<ScreenChild*> &vec = objs[surface];
-		for (ScreenChild *obj : vec) {
+		std::vector<DisplayObject*> &vec = objs[surface];
+		for (DisplayObject *obj : vec) {
 			obj->surface.reset();
 		}
 
@@ -253,7 +252,7 @@ SurfacePtr ImageCaches::getSurface(const String &path) {
 
 	Uint32 format = surface->format->format;
 	if (format != SDL_PIXELFORMAT_RGBA32) {
-		SurfacePtr newSurface = Image::getNewNotClear(w, h);
+		SurfacePtr newSurface = ImageManipulator::getNewNotClear(w, h);
 		const int newPitch = newSurface->pitch;
 		Uint8 *newPixels = (Uint8*)newSurface->pixels;
 

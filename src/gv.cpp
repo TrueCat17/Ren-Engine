@@ -14,8 +14,6 @@ bool GV::minimized = false;
 bool GV::inGame = false;
 bool GV::exit = false;
 
-PyUtils *GV::pyUtils = nullptr;
-
 SDL_Window *GV::mainWindow;
 SDL_Renderer *GV::mainRenderer;
 bool GV::isOpenGL = false;

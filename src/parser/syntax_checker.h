@@ -14,33 +14,13 @@ struct SuperParent {
 	static const int SCREEN   = 1 << 3;
 };
 
-struct SyntaxPart {
-	std::vector<String> prevs;
-	int superParent;
-
-	inline bool check(const String &prevChild, const int superParent) const {
-		if (!(this->superParent & superParent)) return false;
-
-		if (prevs.empty()) return true;
-
-		for (const String &prev : prevs) {
-			if (prev == prevChild) return true;
-		}
-		return false;
-	}
-};
-
 
 class SyntaxChecker {
-private:
-	static std::map<String, std::map<String, SyntaxPart>> mapSyntax;
-
-	static void addBlockChildren(const String &parents, const String &childs);
-	static void setSuperParents(const String &nodesStr, const int superParent);
-
 public:
 	static void init();
 	static bool check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &thereIsNot);
+
+	static const std::vector<String>& getScreenProps(const String &type);
 };
 
 #endif // SYNTAXCHECKER_H

@@ -2,9 +2,30 @@
 
 #include <set>
 
-std::map<String, std::map<String, SyntaxPart>> SyntaxChecker::mapSyntax;
+#include "parser/parser.h"
+#include "utils/utils.h"
 
-void SyntaxChecker::addBlockChildren(const String &parents, const String &childs) {
+
+struct SyntaxPart {
+	std::vector<String> prevs;
+	int superParent;
+
+	inline bool check(const String &prevChild, const int superParent) const {
+		if (!(this->superParent & superParent)) return false;
+
+		if (prevs.empty()) return true;
+
+		for (const String &prev : prevs) {
+			if (prev == prevChild) return true;
+		}
+		return false;
+	}
+};
+
+std::map<String, std::map<String, SyntaxPart>> mapSyntax;
+
+
+static void addBlockChildren(const String &parents, const String &childs) {
 	const std::vector<String> parentBlocks = parents.split(", ");
 	const std::vector<String> childBlocks = childs.split(", ");
 
@@ -28,7 +49,7 @@ void SyntaxChecker::addBlockChildren(const String &parents, const String &childs
 		}
 	}
 }
-void SyntaxChecker::setSuperParents(const String &nodesStr, const int superParent) {
+static void setSuperParents(const String &nodesStr, const int superParent) {
 	const std::vector<String> nodes = nodesStr.split(", ");
 
 	for (const String &node : nodes) {
@@ -42,6 +63,45 @@ void SyntaxChecker::setSuperParents(const String &nodesStr, const int superParen
 		}
 	}
 }
+
+
+static std::map<String, std::vector<String>> mapProps;
+const std::vector<String>& SyntaxChecker::getScreenProps(const String &type) {
+	auto it = mapProps.find(type);
+	if (it != mapProps.end()) return it->second;
+
+	auto syntaxIt = mapSyntax.find(type);
+	if (syntaxIt == mapSyntax.end()) {
+		Utils::outMsg("SyntaxChecker::getProps", "Type <" + type + "> not found");
+		static std::vector<String> res;
+		return res;
+	}
+
+	std::map<String, SyntaxPart> children = syntaxIt->second;
+	std::set<String> tmp;
+
+	for (auto &[name, _] : children) {
+		bool isFakeComp, isProp, isEvent;
+		Parser::getIsFakeOrIsProp(name, isFakeComp, isProp, isEvent);
+
+		if (!isProp || isEvent ||
+			name == "has" || name == "use" ||	name == "pass" || name == "style" ||
+			name == "align" || name == "xalign" || name == "yalign"
+		) continue;
+
+		tmp.insert(name);
+	}
+
+	std::vector<String> res;
+	for (const String &name : tmp) {
+		if (!tmp.count('x' + name)) {//not add <name> if there is <xname> (for example pos:xpos)
+			res.push_back(name);
+		}
+	}
+
+	return mapProps[type] = res;
+}
+
 
 void SyntaxChecker::init() {
 	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";

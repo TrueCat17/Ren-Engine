@@ -1,8 +1,6 @@
 #include <iostream>
 #include <thread>
-
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
+#include <filesystem>
 
 #include <SDL2/SDL.h>
 #undef main //for cancel declare spec. start-func on Windows
@@ -16,10 +14,10 @@
 #include "renderer.h"
 
 #include "gui/gui.h"
-#include "gui/screen/screen_child.h"
-#include "gui/screen/screen_key.h"
+#include "gui/screen/child.h"
+#include "gui/screen/key.h"
 
-#include "media/image.h"
+#include "media/image_manipulator.h"
 #include "media/music.h"
 #include "media/py_utils.h"
 
@@ -43,7 +41,7 @@ std::string getVersion() {
 		std::string date = __DATE__;
 
 		std::string months = "JanFebMarAprMayJunJulAugSepOctNovDec";
-		int monthInt = months.find(date.substr(0, 3)) / 3 + 1;
+		size_t monthInt = months.find(date.substr(0, 3)) / 3 + 1;
 		std::string month = std::string() + char((monthInt / 10) + '0') + char((monthInt % 10) + '0');
 
 		std::string day = (date[4] == ' ') ? ('0' + date.substr(5, 1)) : date.substr(4, 2);
@@ -140,7 +138,7 @@ static void changeWindowSize(bool maximized) {
 		if (GV::screens) {
 			GV::screens->setPos(x, y);
 			GV::screens->setSize(w, h);
-			GV::screens->updateGlobalPos();
+			GV::screens->updateGlobal();
 		}
 
 		GV::width = w;
@@ -158,7 +156,7 @@ static void changeWindowSize(bool maximized) {
 	startWindowHeight = 0;
 }
 
-String rootDirectory;
+static String rootDirectory;
 String setDir(String newRoot) {
 	if (!newRoot) {
 		char *charsPathUTF8 = SDL_GetBasePath();
@@ -177,7 +175,7 @@ String setDir(String newRoot) {
 	for (size_t i = 0; i < parts.size(); ++i) {
 		String &part = parts[i];
 		if (part == ".") {
-			parts.erase(parts.begin() + i, parts.begin() + i + 1);
+			parts.erase(parts.begin() + i);
 			--i;
 		}else
 
@@ -192,11 +190,10 @@ String setDir(String newRoot) {
 
 	rootDirectory = newRoot = String::join(parts, '/');
 
-	boost::filesystem::detail::utf8_codecvt_facet utf8;
-	boost::filesystem::path path(newRoot, utf8);
+	std::error_code ec;
 
-	boost::system::error_code ec;
-	boost::filesystem::current_path(path, ec);
+	std::filesystem::path path(newRoot.c_str());
+	std::filesystem::current_path(path, ec);
 
 	if (!ec.value()) return "";
 	return "Set current_path to <" + newRoot + "> failed";
@@ -239,7 +236,7 @@ bool init() {
 	Mouse::init();
 
 
-	const size_t fps = Config::get("max_fps").toInt();
+	const int fps = Config::get("max_fps").toInt();
 	Game::setMaxFps(fps);
 
 
@@ -249,7 +246,7 @@ bool init() {
 	int y = Config::get("window_y").toInt();
 	int w, h;
 
-	int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+	Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
 	if (GV::fullscreen) {
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 		GV::width = w = GV::displayMode.w;
@@ -285,7 +282,7 @@ bool init() {
 	if (Renderer::init()) {
 		return true;
 	}
-	Image::init();
+	ImageManipulator::init();
 	Music::init();
 	SyntaxChecker::init();
 
@@ -395,12 +392,12 @@ void loop() {
 
 					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_SPACE) {
 						if (BtnRect::checkMouseClick(true, true)) {
-							ScreenKey::setToNotReact(key);
+							Key::setToNotReact(key);
 						}else {
-							ScreenKey::setFirstDownState(key);
+							Key::setFirstDownState(key);
 						}
 					}else {
-						ScreenKey::setFirstDownState(key);
+						Key::setFirstDownState(key);
 					}
 				}
 			}else
@@ -409,7 +406,7 @@ void loop() {
 				updateKeyboard = true;
 
 				SDL_Scancode key = event.key.keysym.scancode;
-				ScreenKey::setUpState(key);
+				Key::setUpState(key);
 			}
 		}
 		if (GV::minimized) {
@@ -447,6 +444,7 @@ void loop() {
 			std::lock_guard<std::mutex> g(Renderer::toRenderMutex);
 			Renderer::toRender.clear();
 			if (GV::screens) {
+				GV::screens->enable = true;
 				GV::screens->draw();
 			}
 			Renderer::needToRender = true;

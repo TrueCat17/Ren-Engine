@@ -3,15 +3,9 @@
 
 #include <SDL2/SDL_stdinc.h> //Uint32
 
-#include "utils/string.h"
+#include <Python.h>
 
-namespace boost { namespace python {
-namespace api
-{
-  class object;
-}
-using api::object;
-}} // namespace boost::python
+#include "utils/string.h"
 
 
 class Game {
@@ -21,7 +15,7 @@ private:
 	static int fps;
 	static int frameTime;
 
-	static int modStartTime;
+	static long modStartTime;
 	static bool canAutoSave;
 
 	static void _startMod(const String &dir, const String &loadPath = "");
@@ -57,7 +51,7 @@ public:
 
 	static std::string getFromConfig(const std::string &param);
 
-	static boost::python::object getArgs(const std::string &str);
+	static PyObject* getArgs(const std::string &str);
 
 	static void updateKeyboard();
 

@@ -1,7 +1,10 @@
 #include "screen.h"
 
+#include <algorithm>
+
 #include "gv.h"
 #include "media/py_utils.h"
+#include "parser/screen_node_utils.h"
 #include "utils/utils.h"
 
 std::vector<Node*> Screen::declared;
@@ -13,7 +16,7 @@ std::vector<String> Screen::toHideList;
 
 Node* Screen::getDeclared(const String &name) {
 	for (Node *node : declared) {
-		if (node->name == name) {
+		if (node->params == name) {
 			return node;
 		}
 	}
@@ -52,7 +55,7 @@ void Screen::updateLists() {
 void Screen::show(const String &name) {
 	Screen *scr = getMain(name);
 	if (scr) {
-		scr->parent->addChild(scr);//Наверх в списке потомков своего родителя
+		GV::screens->addChild(scr);//Наверх в списке потомков своего родителя
 		return;
 	}
 
@@ -63,9 +66,8 @@ void Screen::show(const String &name) {
 	}
 
 	scr = new Screen(node, nullptr);
+	scr->updateProps();
 	GV::screens->addChild(scr);
-
-	scr->calculateProps();
 }
 void Screen::hide(const String &name) {
 	if (GV::screens) {
@@ -123,14 +125,14 @@ void Screen::updateScreens() {
 	for (DisplayObject *d : GV::screens->children) {
 		Screen *s = dynamic_cast<Screen*>(d);
 		if (s) {
-			s->updateScreenProps();
+		//	s->updateScreenProps();
 		}
 	}
 
 	_hasModal = false;
 	for (DisplayObject *d : GV::screens->children) {
 		Screen *s = dynamic_cast<Screen*>(d);
-		if (s && s->_isModal) {
+		if (s && s->modal) {
 			_hasModal = true;
 			break;
 		}
@@ -139,51 +141,50 @@ void Screen::updateScreens() {
 	auto zOrderCmp = [](DisplayObject *a, DisplayObject *b) -> bool {
 		Screen *sA = dynamic_cast<Screen*>(a);
 		Screen *sB = dynamic_cast<Screen*>(b);
-		double zA = sA ? sA->zOrder() : 0;
-		double zB = sB ? sB->zOrder() : 0;
+		double zA = sA ? sA->zorder : 0;
+		double zB = sB ? sB->zorder : 0;
 		return zA < zB;
 	};
 	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
-void Screen::updateScreenProps() {
-	xSize = GV::width;
-	ySize = GV::height;
-	xSizeIsDouble = ySizeIsDouble = false;
-	needUpdateChildren = false;
-	calculateProps();
-	needUpdateChildren = true;
 
-	if (propWasChanged[ScreenProp::MODAL]) {
-		propWasChanged[ScreenProp::MODAL] = false;
+void Screen::checkEvents() {
 
-		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
-		_isModal = py::extract<bool>(propValues[ScreenProp::MODAL]);
-	}
-	if (propWasChanged[ScreenProp::ZORDER]) {
-		propWasChanged[ScreenProp::ZORDER] = false;
-
-		py::object &zOrderObj = propValues[ScreenProp::ZORDER];
-		bool isInt = PyUtils::isInt(zOrderObj);
-		bool isFloat = !isInt && PyUtils::isFloat(zOrderObj);
-
-		if (isInt || isFloat) {
-			_zOrder = PyUtils::getDouble(zOrderObj, isFloat);
-		}else {
-			_zOrder = 0;
-			Utils::outMsg("Screen::updateScreenProps",
-						  "zorder is not a number (" + PyUtils::getStr(zOrderObj) + ")\n" + node->getPlace());
-		}
-	}
 }
 
 
-
 Screen::Screen(Node *node, Screen *screen):
-	ScreenContainer(node, this, screen ? screen : this),
-	name(node->name)
+	Container(node, this, screen ? screen : this),
+	name(node->params)
 {
-	setProp(ScreenProp::MODAL, node->getPropCode("modal"));
-	setProp(ScreenProp::ZORDER, node->getPropCode("zorder"));
+	ScreenNodeUtils::init(node);
 
-	preparationToUpdateCalcProps();
+	screenCode = ScreenNodeUtils::getScreenCode(node);
+	co = PyUtils::getCompileObject(screenCode, getFileName(), 0);
+	if (!co) {
+		PyUtils::errorProcessing(screenCode);
+	}
+}
+
+void Screen::updateProps() {
+	if (!co) return;
+
+	std::lock_guard g(PyUtils::pyExecMutex);
+
+	if (!PyEval_EvalCode(co, PyUtils::global, nullptr)) {
+		PyUtils::errorProcessing(screenCode);
+		return;
+	}
+
+	if (props) {
+		Py_DECREF(props);
+	}
+	props = PyDict_GetItemString(PyUtils::global, "SL_last");
+	if (!props) {
+		Utils::outMsg("Screen::updateProps", "SL_last not found");
+		return;
+	}
+	Py_INCREF(props);
+
+	Container::updateProps();
 }

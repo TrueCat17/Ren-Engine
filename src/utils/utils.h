@@ -20,12 +20,8 @@ class ExitException {};
 
 class Node;
 
-namespace boost {
-	namespace python {
-		class list;
-	}
-}
-namespace py = boost::python;
+typedef struct _object PyObject;
+
 
 class Utils {
 private:
@@ -53,7 +49,7 @@ public:
 	static void clearImages() { images.clear(); declAts.clear(); }
 
 	static std::string getImageCode(const std::string &name);
-	static py::list getImageDeclAt(const std::string &name);
+	static PyObject* getImageDeclAt(const std::string &name);
 	static std::vector<String> getVectorImageDeclAt(const std::string &name);
 
 	static std::pair<String, size_t> getImagePlace(const std::string &name);

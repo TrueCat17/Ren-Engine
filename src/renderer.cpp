@@ -4,7 +4,7 @@
 
 #include "config.h"
 #include "gui/group.h"
-#include "media/image.h"
+#include "media/image_manipulator.h"
 
 #include "utils/math.h"
 #include "utils/image_caches.h"
@@ -322,7 +322,7 @@ void Renderer::scale() {
 	SDL_RenderFillRect(GV::mainRenderer, &dstRect);
 	SDL_RenderCopy(GV::mainRenderer, toRender.get(), nullptr, &dstRect);
 
-	SurfacePtr res = Image::getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	if (GV::isOpenGL && Config::get("fast_opengl") == "True") {
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
 		glPixelStorei(GL_PACK_ROW_LENGTH, w);

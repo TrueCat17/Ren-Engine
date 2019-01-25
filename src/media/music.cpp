@@ -23,7 +23,7 @@ std::vector<Music*> Music::musics;
 void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 	std::lock_guard<std::mutex> g(globalMutex);
 
-	SDL_memset(stream, 0, globalLen);
+	SDL_memset(stream, 0, size_t(globalLen));
 
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
@@ -32,7 +32,7 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 			continue;
 		}
 
-		Uint32 len = Uint32(globalLen) > music->audioLen ? music->audioLen : globalLen;
+		Uint32 len = Uint32(globalLen) > music->audioLen ? music->audioLen : Uint32(globalLen);
 
 		int volume = music->getVolume();
 		if (volume > 0) {
@@ -70,7 +70,7 @@ void Music::init() {
 
 						if (music->channel->loop && music->ended) {//ended, not stopped
 							music->ended = false;
-							music->audioPos = 0;
+							music->audioPos = nullptr;
 							music->audioLen = 0;
 							if (av_seek_frame(music->formatCtx, music->audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
 								Utils::outMsg("Music::loop",
@@ -82,7 +82,7 @@ void Music::init() {
 						}
 
 						if (needToDelete) {
-							musics.erase(musics.begin() + i, musics.begin() + i + 1);
+							musics.erase(musics.begin() + i);
 							--i;
 							delete music;
 						}
@@ -205,7 +205,7 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 
 
 void Music::play(const std::string &desc,
-				 const std::string &fileName, int numLine)
+				 const std::string &fileName, size_t numLine)
 {
 	std::vector<String> args = Algo::getArgs(desc);
 	if (args.size() != 2 && args.size() != 4) {
@@ -249,7 +249,7 @@ void Music::play(const std::string &desc,
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
 		if (music->channel->name == channelName) {
-			musics.erase(musics.begin() + i, musics.begin() + i + 1);
+			musics.erase(musics.begin() + i);
 			delete music;
 
 			break;
@@ -273,7 +273,7 @@ void Music::play(const std::string &desc,
 	Utils::outMsg("Music::play", "Канал с именем <" + channelName + "> не найден\n\n" + place);
 }
 void Music::stop(const std::string &desc,
-				 const std::string& fileName, int numLine)
+				 const std::string& fileName, size_t numLine)
 {
 	const String place = "Файл <" + fileName + ">\n"
 						 "Строка " + String(numLine) + ": <" + desc + ">";
@@ -319,7 +319,7 @@ void Music::stop(const std::string &desc,
 
 
 Music::Music(const std::string &url, Channel *channel, int fadeIn,
-			 const std::string &fileName, int numLine, const std::string &place):
+			 const std::string &fileName, size_t numLine, const std::string &place):
 	url(url),
 	channel(channel),
 	startFadeInTime(Utils::getTimer()),
@@ -352,7 +352,7 @@ bool Music::initCodec() {
 
 	for (size_t i = 0; i < formatCtx->nb_streams; ++i) {
 		if (formatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO){
-			audioStream = i;
+			audioStream = int(i);
 			break;
 		}
 	}
@@ -379,7 +379,7 @@ bool Music::initCodec() {
 		return true;
 	}
 
-	uint64_t outChannelLayout = AV_CH_LAYOUT_STEREO;
+	int64_t outChannelLayout = AV_CH_LAYOUT_STEREO;
 	AVSampleFormat outSampleFmt = AV_SAMPLE_FMT_S16;
 	int64_t inChannelLayout = av_get_default_channel_layout(codecCtx->channels);
 
@@ -413,7 +413,7 @@ void Music::setPos(int64_t pos) {
 
 
 Music::~Music() {
-	audioPos = 0;
+	audioPos = nullptr;
 	audioLen = 0;
 
 	av_free(packet);
@@ -478,7 +478,7 @@ void Music::loadNextParts(size_t count) {
 			}
 		}
 
-		int lastLen = countSamples * 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
+		Uint32 lastLen = Uint32(countSamples) * 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
 
 		if (audioPos && audioLen && audioPos != buffer) {
 			uint8_t *old = new uint8_t[audioLen]();

@@ -7,7 +7,6 @@
 
 
 class Group;
-class PyUtils;
 class Node;
 
 
@@ -26,8 +25,6 @@ public:
 	static bool minimized;
 	static bool inGame;
 	static bool exit;
-
-	static PyUtils *pyUtils;
 
 	static SDL_Window *mainWindow;
 	static SDL_Renderer *mainRenderer;

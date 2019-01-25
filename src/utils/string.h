@@ -31,6 +31,12 @@ public:
 		static_cast<std::string&>(*this) = String(t);
 		return *this;
 	}
+	String& operator=(char t[]) {
+		static_cast<std::string&>(*this) = t;
+		return *this;
+	}
+
+	String repeat(size_t count) const;
 
 	operator bool() const { return !empty(); }
 	int toInt(int base = 10) const;

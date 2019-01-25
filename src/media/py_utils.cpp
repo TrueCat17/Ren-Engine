@@ -1,9 +1,7 @@
 #include "py_utils.h"
+#include "py_utils/make_func.h"
 
 #include <iostream>
-
-#include <boost/python.hpp>
-#include <Python.h>
 
 
 #include "gv.h"
@@ -11,9 +9,8 @@
 #include "config.h"
 
 #include "gui/screen/screen.h"
-#include "gui/screen/screen_prop.h"
 
-#include "image.h"
+#include "image_manipulator.h"
 #include "music.h"
 
 #include "parser/parser.h"
@@ -24,17 +21,23 @@
 #include "utils/utils.h"
 
 
-py::object PyUtils::formatTraceback;
+PyUtils* PyUtils::obj = nullptr;
+
+static PyObject *formatTraceback;
+
+std::map<String, PyObject*> PyUtils::constObjects;
 std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
 
 const String PyUtils::True = "True";
 const String PyUtils::False = "False";
 const String PyUtils::None = "None";
 
-std::mutex PyUtils::pyExecMutex;
+PyObject *PyUtils::global = nullptr;
+PyObject *PyUtils::tuple1 = nullptr;
+std::recursive_mutex PyUtils::pyExecMutex;
 
 
-PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine, bool lock) {
+PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine) {
 	std::tuple<const String&, const String&, int> pyCode(code, fileName, numLine);
 
 	auto i = compiledObjects.find(pyCode);
@@ -50,10 +53,11 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 
 	const String tmp = indent + code;
 
-	if (lock) GV::pyUtils->pyExecMutex.lock();
-	PyObject *t = Py_CompileString(tmp.c_str(), fileName.c_str(), Py_file_input);
-	if (lock) GV::pyUtils->pyExecMutex.unlock();
-
+	PyObject *t;
+	{
+		std::lock_guard g(PyUtils::pyExecMutex);
+		t = Py_CompileString(tmp.c_str(), fileName.c_str(), Py_file_input);
+	}
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
 	std::tuple<const String, const String, int> constPyCode(code, fileName, numLine);
@@ -62,136 +66,187 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 }
 
 
+static PyObject* getMouse() {
+	PyObject *res = PyTuple_New(2);
+	PyTuple_SET_ITEM(res, 0, PyInt_FromLong(Mouse::getX()));
+	PyTuple_SET_ITEM(res, 1, PyInt_FromLong(Mouse::getY()));
+	return res;
+}
+static PyObject* getLocalMouse() {
+	PyObject *res = PyTuple_New(2);
+	PyTuple_SET_ITEM(res, 0, PyInt_FromLong(Mouse::getLocalX()));
+	PyTuple_SET_ITEM(res, 1, PyInt_FromLong(Mouse::getLocalY()));
+	return res;
+}
+
+template<typename T>
+static void setGlobalValue(const char *key, T t) {
+	PyObject *res;
+	if constexpr (std::is_same<T, bool>::value) {
+		res = t ? Py_True : Py_False;
+	}
+	if constexpr (std::is_same<T, int>::value) {
+		res = PyInt_FromLong(t);
+		Py_REFCNT(res) = 0;
+	}
+	if constexpr (std::is_same<T, double>::value) {
+		res = PyFloat_FromDouble(t);
+		Py_REFCNT(res) = 0;
+	}
+
+	PyDict_SetItemString(PyUtils::global, key, res);
+}
+
+template<typename T>
+static void setGlobalFunc(const char *key, T t) {
+	PyObject *pyFunc = makePyFunc(t);
+	Py_REFCNT(pyFunc) = 0;
+
+	PyDict_SetItemString(PyUtils::global, key, pyFunc);
+}
+
+static long ftoi(double d) {
+	return long(d);
+}
+
 PyUtils::PyUtils() {
 	Py_Initialize();
 
-	initScreenPropObjects();
+	tuple1 = PyTuple_New(1);
 
-	mainModule = py::import("__main__");
-	pythonGlobal = mainModule.attr("__dict__");
+	PyObject *main = PyImport_AddModule("__main__");
+	global = PyModule_GetDict(main);
 
 
-	pythonGlobal["need_save"] = false;
-	pythonGlobal["save_screenshotting"] = false;
-	pythonGlobal["need_screenshot"] = false;
-	pythonGlobal["screenshot_width"] = 640;
-	pythonGlobal["screenshot_height"] = 640 / Config::get("window_w_div_h").toDouble();
+	setGlobalValue("need_save", false);
+	setGlobalValue("save_screenshotting", false);
+	setGlobalValue("need_screenshot", false);
+	setGlobalValue("screenshot_width", 640);
+	setGlobalValue("screenshot_height", 640 / Config::get("window_w_div_h").toDouble());
 
-	pythonGlobal["get_mods"] = py::make_function(Parser::getMods);
-	pythonGlobal["_out_msg"] = py::make_function(Utils::outMsg);
+	setGlobalFunc("ftoi", ftoi);
 
-	pythonGlobal["_register_channel"] = py::make_function(Music::registerChannel);
-	pythonGlobal["_has_channel"] = py::make_function(Music::hasChannel);
-	pythonGlobal["_set_volume"] = py::make_function(Music::setVolume);
-	pythonGlobal["_set_mixer_volume"] = py::make_function(Music::setMixerVolume);
-	pythonGlobal["_play"] = py::make_function(Music::play);
-	pythonGlobal["_stop"] = py::make_function(Music::stop);
+	setGlobalFunc("get_mods", Parser::getMods);
+	setGlobalFunc("_out_msg", Utils::outMsg);
 
-	pythonGlobal["image_was_registered"] = py::make_function(Utils::imageWasRegistered);
-	pythonGlobal["get_image_code"] = py::make_function(Utils::getImageCode);
-	pythonGlobal["get_image_decl_at"] = py::make_function(Utils::getImageDeclAt);
+	setGlobalFunc("_register_channel", Music::registerChannel);
+	setGlobalFunc("_has_channel", Music::hasChannel);
+	setGlobalFunc("_set_volume", Music::setVolume);
+	setGlobalFunc("_set_mixer_volume", Music::setMixerVolume);
+	setGlobalFunc("_play", Music::play);
+	setGlobalFunc("_stop", Music::stop);
 
-	pythonGlobal["show_screen"] = py::make_function(Screen::addToShow);
-	pythonGlobal["hide_screen"] = py::make_function(Screen::addToHide);
-	pythonGlobal["has_screen"] = py::make_function(Screen::hasScreen);
+	setGlobalFunc("image_was_registered", Utils::imageWasRegistered);
+	setGlobalFunc("get_image_code", Utils::getImageCode);
+	setGlobalFunc("get_image_decl_at", Utils::getImageDeclAt);
 
-	pythonGlobal["start_mod"] = py::make_function(Game::startMod);
-	pythonGlobal["get_mod_start_time"] = py::make_function(Game::getModStartTime);
-	pythonGlobal["get_can_autosave"] = py::make_function(Game::getCanAutoSave);
-	pythonGlobal["set_can_autosave"] = py::make_function(Game::setCanAutoSave);
-	pythonGlobal["_load"] = py::make_function(Game::load);
-	pythonGlobal["exit_from_game"] = py::make_function(Game::exitFromGame);
+	setGlobalFunc("show_screen", Screen::addToShow);
+	setGlobalFunc("hide_screen", Screen::addToHide);
+	setGlobalFunc("has_screen", Screen::hasScreen);
+	setGlobalFunc("SL_check_events", Screen::checkEvents);
 
-	pythonGlobal["_has_label"] = py::make_function(Game::hasLabel);
-	pythonGlobal["_jump_next"] = py::make_function(Node::jumpNext);
+	setGlobalFunc("start_mod", Game::startMod);
+	setGlobalFunc("get_mod_start_time", Game::getModStartTime);
+	setGlobalFunc("get_can_autosave", Game::getCanAutoSave);
+	setGlobalFunc("set_can_autosave", Game::setCanAutoSave);
+	setGlobalFunc("_load", Game::load);
+	setGlobalFunc("exit_from_game", Game::exitFromGame);
 
-	pythonGlobal["_get_from_hard_config"] = py::make_function(Game::getFromConfig);
-	pythonGlobal["get_args"] = py::make_function(Game::getArgs);
+	setGlobalFunc("_has_label", Game::hasLabel);
+	setGlobalFunc("_jump_next", Node::jumpNext);
 
-	pythonGlobal["_sin"] = py::make_function(Math::getSin);
-	pythonGlobal["_cos"] = py::make_function(Math::getCos);
+	setGlobalFunc("_get_from_hard_config", Game::getFromConfig);
+	setGlobalFunc("get_args", Game::getArgs);
 
-	pythonGlobal["get_fps"] = py::make_function(Game::getFps);
-	pythonGlobal["set_fps"] = py::make_function(Game::setFps);
+	setGlobalFunc("_sin", Math::getSin);
+	setGlobalFunc("_cos", Math::getCos);
 
-	pythonGlobal["get_stage_width"] = py::make_function(Game::getStageWidth);
-	pythonGlobal["get_stage_height"] = py::make_function(Game::getStageHeight);
+	setGlobalFunc("get_fps", Game::getFps);
+	setGlobalFunc("set_fps", Game::setFps);
 
-	pythonGlobal["set_stage_size"] = py::make_function(Game::setStageSize);
-	pythonGlobal["set_fullscreen"] = py::make_function(Game::setFullscreen);
+	setGlobalFunc("get_stage_width", Game::getStageWidth);
+	setGlobalFunc("get_stage_height", Game::getStageHeight);
 
-	pythonGlobal["save_image"] = py::make_function(Image::save);
-	pythonGlobal["load_image"] = py::make_function(Image::loadImage);
-	pythonGlobal["get_texture_width"] = py::make_function(Game::getTextureWidth);
-	pythonGlobal["get_texture_height"] = py::make_function(Game::getTextureHeight);
-	pythonGlobal["get_pixel"] = py::make_function(Game::getPixel);
+	setGlobalFunc("set_stage_size", Game::setStageSize);
+	setGlobalFunc("set_fullscreen", Game::setFullscreen);
 
-	pythonGlobal["get_mouse"] = py::make_function(PyUtils::getMouse);
-	pythonGlobal["get_local_mouse"] = py::make_function(PyUtils::getLocalMouse);
-	pythonGlobal["get_mouse_down"] = py::make_function(Mouse::getMouseDown);
-	pythonGlobal["set_can_mouse_hide"] = py::make_function(Mouse::setCanHide);
+	setGlobalFunc("save_image", ImageManipulator::save);
+	setGlobalFunc("load_image", ImageManipulator::loadImage);
+	setGlobalFunc("get_texture_width", Game::getTextureWidth);
+	setGlobalFunc("get_texture_height", Game::getTextureHeight);
+	setGlobalFunc("get_pixel", Game::getPixel);
+
+	setGlobalFunc("get_mouse", getMouse);
+	setGlobalFunc("get_local_mouse", getLocalMouse);
+	setGlobalFunc("get_mouse_down", Mouse::getMouseDown);
+	setGlobalFunc("set_can_mouse_hide", Mouse::setCanHide);
 }
 PyUtils::~PyUtils() {
-	formatTraceback = py::object();
-	Py_Finalize();
-}
+	constObjects.clear();
 
-py::list PyUtils::getMouse() {
-	py::list res;
-	res.append(Mouse::getX());
-	res.append(Mouse::getY());
-	return res;
-}
-py::list PyUtils::getLocalMouse() {
-	py::list res;
-	res.append(Mouse::getLocalX());
-	res.append(Mouse::getLocalY());
-	return res;
+	formatTraceback = nullptr;
+	global = nullptr;
+	PyUtils::obj = nullptr;
+
+	Py_DECREF(tuple1);
+	tuple1 = nullptr;
+
+	Py_Finalize();
 }
 
 
 void PyUtils::errorProcessing(const String &code) {
 	PyObject *ptype, *pvalue, *ptraceback;
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+	if (!ptype) {
+		Utils::outMsg("PyUtils::errorProcessing", "ptype == nullptr");
+		return;
+	}
+
 	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
 
 	if (ptype == PyExc_StopIteration) {
-		Py_DecRef(ptype);
-		Py_DecRef(pvalue);
-		Py_DecRef(ptraceback);
+		Py_DECREF(ptype);
+		Py_DECREF(pvalue);
+		Py_DECREF(ptraceback);
 		throw StopException();
 	}
 
-	static const std::string stdStrNone = "None";
+	PyObject *typeStrObj = PyObject_Str(ptype);
+	const char *typeStr = PyString_AS_STRING(typeStrObj);
 
-	py::handle<> htype(py::allow_null(ptype));
-	const std::string excType = ptype ? py::extract<const std::string>(py::str(htype)) : stdStrNone;
-
-	py::handle<> hvalue(py::allow_null(pvalue));
-	const std::string excValue = pvalue ? py::extract<const std::string>(py::str(hvalue)) : stdStrNone;
+	PyObject *valueStrObj = PyObject_Str(pvalue);
+	const char *valueStr = PyString_AS_STRING(valueStrObj);
 
 	std::string traceback;
-	py::handle<> htraceback(py::allow_null(ptraceback));
-	if (ptype != PyExc_SyntaxError) {
-		try {
-			if (formatTraceback.is_none()) {
-				formatTraceback = py::import("traceback").attr("format_tb");
-			}
+	if (ptraceback) {
+		if (!formatTraceback) {
+			PyObject *tracebackModule = PyImport_AddModule("traceback");
+			PyObject *dict = PyModule_GetDict(tracebackModule);
+			formatTraceback = PyDict_GetItemString(dict, "format_tb");
+			assert(formatTraceback);
+		}
 
-			py::str tracebackPyStr = py::str().join(formatTraceback(htraceback));
-			traceback = PyString_AsString(tracebackPyStr.ptr());
-		}catch (py::error_already_set&) {
-			traceback = "Error on get traceback\n";
+		PyObject *args = PyTuple_New(1);
+		PyTuple_SET_ITEM(args, 0, ptraceback);
+		PyObject *res = PyObject_Call(formatTraceback, args, nullptr);
+		Py_DECREF(args);
+
+		size_t len = Py_SIZE(res);
+		for (size_t i = 0; i < len; ++i) {
+			PyObject *item = PyList_GET_ITEM(res, i);
+			traceback += PyString_AS_STRING(item);
 		}
 	}
 
-	const String out = "Python Error (" + excType + "):\n"
-					   "\t" + excValue + "\n" +
+	const String out = String() +
+		"Python Error (" + typeStr + "):\n"
+		"\t" + valueStr + "\n" +
 
-					   (!traceback.empty() ? "Traceback:\n" + traceback + "\n" : "") +
+		String(!traceback.empty() ? "Traceback:\n" + traceback + "\n" : "") +
 
-					   "Code:\n" +
-					   code + "\n\n";
+		"Code:\n" +
+		code + "\n\n";
 
 	std::cout << out;
 	Logger::log(out);
@@ -206,6 +261,7 @@ bool PyUtils::isConstExpr(const String &code, bool checkSimple) {
 		}
 	}
 
+
 	bool q1 = false;
 	bool q2 = false;
 	char prev = 0;
@@ -215,7 +271,9 @@ bool PyUtils::isConstExpr(const String &code, bool checkSimple) {
 
 		if (!q1 && !q2) {
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-				return false;
+				if (!((c == 'X' || c == 'x') && prev == '0')) {
+					return false;
+				}
 			}
 		}
 
@@ -253,88 +311,69 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 
 	String res = "empty";
 
-	std::lock_guard<std::mutex> g(pyExecMutex);
+	std::lock_guard g(pyExecMutex);
 
-	try {
-		PyCodeObject *co;
-		if (!retRes) {
-			co = getCompileObject(code, fileName, numLine);
-		}else {
-			co = getCompileObject("res = str(" + code + ")", fileName, numLine);
-		}
+	PyCodeObject *co;
+	if (!retRes) {
+		co = getCompileObject(code, fileName, numLine);
+	}else {
+		co = getCompileObject("res = str(" + code + ")", fileName, numLine);
+	}
 
-		if (co) {
-			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
-				throw py::error_already_set();
-			}
+	if (co) {
+		bool ok = PyEval_EvalCode(co, global, nullptr);
 
+		if (ok) {
 			if (retRes) {
-				py::object resObj = GV::pyUtils->pythonGlobal["res"];
-				const std::string resStr = py::extract<const std::string>(resObj);
-				res = resStr;
+				PyObject *resObj = PyDict_GetItemString(global, "res");
+				res = PyString_AS_STRING(resObj);
+
 				if (isConst) {
 					constExprs[code] = res;
 				}
 			}
 		}else {
-			std::cout << "Python Compile Error:\n";
-			throw py::error_already_set();
+			errorProcessing(code);
 		}
-	}catch (py::error_already_set&) {
+	}else {
+		std::cout << "Python Compile Error:\n";
 		errorProcessing(code);
-	}catch (std::exception &e) {
-		std::cout << "std::exception: " << e.what() << '\n';
-		std::cout << "on python code:\n" << code << '\n';
-	}catch (...) {
-		std::cout << "Python Unknown Error\n";
-		std::cout << "Code:\n" << code << '\n';
 	}
 
 	return res;
 }
 
-py::object PyUtils::execRetObj(const String &fileName, size_t numLine, const String &code) {
-	py::object res;
+PyObject* PyUtils::execRetObj(const String &fileName, size_t numLine, const String &code) {
+	PyObject *res = nullptr;
 	if (!code) return res;
-
-	static std::map<String, py::object> constExprs;
 
 	bool isConst = isConstExpr(code);
 	if (isConst) {
-		auto i = constExprs.find(code);
-		if (i != constExprs.end()) {
+		auto i = constObjects.find(code);
+		if (i != constObjects.end()) {
 			return i->second;
 		}
 	}
 
+	std::lock_guard g(pyExecMutex);
 
-	std::lock_guard<std::mutex> g(pyExecMutex);
+	PyCodeObject *co = getCompileObject("res = " + code, fileName, numLine);
+	if (co) {
+		bool ok = PyEval_EvalCode(co, global, nullptr);
 
-	try {
-		PyCodeObject *co;
-		co = getCompileObject("res = " + code, fileName, numLine);
+		if (ok) {
+			res = PyDict_GetItemString(global, "res");
+			Py_INCREF(res);
 
-		if (co) {
-			if (!PyEval_EvalCode(co, GV::pyUtils->pythonGlobal.ptr(), nullptr)) {
-				throw py::error_already_set();
-			}
-
-			res = GV::pyUtils->pythonGlobal["res"];
 			if (isConst) {
-				constExprs[code] = res;
+				constObjects[code] = res;
 			}
 		}else {
-			std::cout << "Python Compile Error:\n";
-			throw py::error_already_set();
+			errorProcessing(code);
 		}
-	}catch (py::error_already_set&) {
+	}else {
+		std::cout << "Python Compile Error:\n";
 		errorProcessing(code);
-	}catch (std::exception &e) {
-		std::cout << "std::exception: " << e.what() << '\n';
-		std::cout << "on python code:\n" << code << '\n';
-	}catch (...) {
-		std::cout << "Python Unknown Error\n";
-		std::cout << "Code:\n" << code << '\n';
 	}
 
 	return res;

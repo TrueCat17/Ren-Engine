@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include <boost/python.hpp>
+#include <Python.h>
 
 #include "utils/string.h"
 
@@ -12,11 +12,13 @@ class Style {
 private:
 	static std::map<String, Style*> styles;
 
-	std::map<String, boost::python::object> props;
+	std::map<String, PyObject*> props;
 
 public:
 	static void destroyAll();
-	static boost::python::object getProp(const String &styleName, const String &propName);
+	static PyObject* getProp(const String &styleName, const String &propName);
+
+	~Style();
 };
 
 #endif // STYLE_H

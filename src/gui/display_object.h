@@ -15,18 +15,20 @@ protected:
 	int globalY = 0;
 	int globalRotate = 0;
 
-	double alpha = 1;
 	double globalAlpha = 1;
 
 	SDL_Rect rect;
-	SDL_Rect crop;
 
 public:
 	static std::vector<DisplayObject*> objects;
+	static void disableAll();
 	static void destroyAll();
 
 	static void pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha,
 							 const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center);
+
+	SDL_Rect crop;
+	double alpha = 1;
 
 	bool enable = true;
 
@@ -52,10 +54,9 @@ public:
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
 	int getGlobalRotate() const { return globalRotate; }
-	virtual void updateGlobalPos();
+	virtual void updateGlobal();
 
 	double getGlobalAlpha() const { return globalAlpha; }
-	virtual void updateGlobalAlpha();
 
 	int getX() const { return rect.x; }
 	int getY() const { return rect.y; }
@@ -63,7 +64,7 @@ public:
 
 	void setX(int value) { rect.x = value; }
 	void setY(int value) { rect.y = value; }
-	void steAlpha(double value) { alpha = value; }
+	void setAlpha(double value) { alpha = value; }
 
 	int getWidth() const { return rect.w; }
 	int getHeight() const { return rect.h; }

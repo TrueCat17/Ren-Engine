@@ -25,6 +25,24 @@ String::String(size_t i, int base) {
 	}
 }
 
+
+String String::repeat(size_t count) const {
+	String res;
+	res.resize(size() * count);
+
+	char *dst = res.data();
+	const char *srcEnd = data() + size();
+
+	while (count--) {
+		const char *src = data();
+		while (src != srcEnd) {
+			*dst++ = *src++;
+		}
+	}
+
+	return res;
+}
+
 std::vector<String> String::split(const String &separator) const {
 	std::vector<String> res;
 

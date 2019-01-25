@@ -19,19 +19,23 @@ DisplayObject::DisplayObject() {
 	objects.push_back(this);
 }
 
-void DisplayObject::updateGlobalPos() {
+void DisplayObject::updateGlobal() {
 	int x, y;
 	int parentXAnchor, parentYAnchor;
-	int parentGlobalX, parentGlobalY, parentGlobalRotate;
+	int parentGlobalX, parentGlobalY;
+	int parentGlobalRotate;
+	double parentGlobalAlpha;
 	if (parent) {
 		parentXAnchor = parent->xAnchor;
 		parentYAnchor = parent->yAnchor;
 		parentGlobalX = parent->getGlobalX();
 		parentGlobalY = parent->getGlobalY();
 		parentGlobalRotate = parent->getGlobalRotate();
+		parentGlobalAlpha = parent->getGlobalAlpha();
 	}else {
 		parentXAnchor = parentYAnchor = 0;
 		parentGlobalX = parentGlobalY = parentGlobalRotate = 0;
+		parentGlobalAlpha = 1;
 	}
 
 	x = rect.x + xAnchor - parentXAnchor;
@@ -46,13 +50,7 @@ void DisplayObject::updateGlobalPos() {
 	globalX = parentGlobalX + parentXAnchor + rotX - xAnchor;
 	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
 	globalRotate = parentGlobalRotate + rotate;
-}
-void DisplayObject::updateGlobalAlpha() {
-	if (parent) {
-		globalAlpha = parent->getGlobalAlpha() * alpha;
-	}else {
-		globalAlpha = alpha;
-	}
+	globalAlpha = parentGlobalAlpha * alpha;
 }
 
 void DisplayObject::setPos(int x, int y) {
@@ -78,15 +76,13 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 }
 
 void DisplayObject::draw() const {
-	if (!enable || globalAlpha <= 0) return;
+	if (!enable || globalAlpha <= 0 || !surface) return;
 
-	if (surface) {
-		SDL_Rect t = {globalX, globalY, rect.w, rect.h};
-		SDL_Point center = { xAnchor, yAnchor };
-		Uint8 intAlpha = Math::inBounds(int(globalAlpha * 255), 0, 255);
+	SDL_Rect t = {globalX, globalY, rect.w, rect.h};
+	SDL_Point center = { xAnchor, yAnchor };
+	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 
-		pushToRender(surface, globalRotate, intAlpha, &crop, &t, &center);
-	}
+	pushToRender(surface, globalRotate, intAlpha, &crop, &t, &center);
 }
 
 DisplayObject::~DisplayObject() {
@@ -103,6 +99,12 @@ DisplayObject::~DisplayObject() {
 void DisplayObject::removeFromParent() {
 	if (parent) {
 		parent->removeChild(this);
+	}
+}
+
+void DisplayObject::disableAll() {
+	for (DisplayObject* obj : objects) {
+		obj->enable = false;
 	}
 }
 

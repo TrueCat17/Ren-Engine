@@ -1,23 +1,56 @@
 #include "parser.h"
 
-#include <fstream>
 #include <set>
-
-#include <boost/filesystem.hpp>
+#include <fstream>
+#include <filesystem>
 
 #include "logger.h"
 
+#include "media/py_utils.h"
+
 #include "parser/syntax_checker.h"
 #include "parser/node.h"
+#include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
 #include "utils/utils.h"
 
 
-py::dict Parser::getMods() {
-	py::dict res;
 
-	namespace fs = boost::filesystem;
+static void checkPythonSyntax(Node *node) {
+	PyCodeObject *co = PyUtils::getCompileObject(node->params.c_str(), node->getFileName(), node->getNumLine());
+	if (!co) {
+		PyUtils::errorProcessing(node->params);
+		node->params = "";
+	}
+}
+
+
+static const std::set<String> eventProps({
+	"action", "alternate", "hovered", "unhovered",
+	"activate_sound", "hover_sound"
+});
+bool Parser::isEvent(const String &type) {
+	return eventProps.count(type);
+}
+
+static const std::set<String> fakeComps({
+	"if", "elif", "else", "for", "while", "continue", "break", "$", "python"
+});
+static const std::set<String> comps({
+	"screen", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
+});
+void Parser::getIsFakeOrIsProp(const String &type, bool &isFake, bool &isProp, bool &isEvent) {
+	isFake = fakeComps.count(type);
+	isProp = !isFake && !comps.count(type);
+	isEvent = isProp && Parser::isEvent(type);
+}
+
+
+PyObject* Parser::getMods() {
+	PyObject *res = PyDict_New();
+
+	namespace fs = std::filesystem;
 
 	static const std::string modsPath = "mods/";
 	for (fs::directory_iterator it(modsPath), end; it != end; ++it) {
@@ -33,7 +66,8 @@ py::dict Parser::getMods() {
 				String modName;
 				std::getline(nameFile, modName);
 
-				res[py::str(modName.c_str())] = py::str(dirName.c_str());
+				PyObject *pyDirName = PyString_FromString(dirName.c_str());
+				PyDict_SetItemString(res, modName.c_str(), pyDirName);
 			}
 		}
 	}
@@ -141,10 +175,11 @@ Node* Parser::parse() {
 
 Node* Parser::getMainNode() {
 	Node *res = Node::getNewNode(dir, 0);
+	res->parent = nullptr;
 	res->command = "main";
 
 	size_t lastSlash = dir.find_last_of('/');
-	res->name = dir.substr(lastSlash + 1);
+	res->params = dir.substr(lastSlash + 1);
 
 
 	size_t start = 0;
@@ -191,6 +226,7 @@ Node* Parser::getMainNode() {
 		if (ok) {
 			const int superParent = headWord == "label" ? SuperParent::LABEL : headWord == "init" ? SuperParent::INIT : SuperParent::SCREEN;
 			Node *node = getNode(start, nextChildStart, superParent, false);
+			node->parent = res;
 			node->childNum = res->children.size();
 			res->children.push_back(node);
 		}
@@ -200,25 +236,36 @@ Node* Parser::getMainNode() {
 	return res;
 }
 
-void Parser::initScreenNode(Node *node) {
-	static const std::set<String> comps({
-		"screen", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
-	});
-	static const std::set<String> compsWithFirstParam({"hotspot", "image", "key", "text", "textbutton"});
+static void initScreenNode(Node *node) {
+	struct D {
+		Node *node;
 
-	const bool isProp = !comps.count(node->command);
-	if (isProp) return;
-
-	for (Node *childNode : node->children) {
-		if (childNode && childNode->children.empty()) {
-			node->initProp(childNode->command, childNode->params, childNode->getNumLine());
+		D(Node *node):
+			node(node)
+		{}
+		~D() {
+			for (size_t i = 0; i < node->children.size(); ++i) {
+				node->children[i]->childNum = i;
+			}
 		}
+	};
+	D d(node);
+
+
+	bool isFakeComp;
+	Parser::getIsFakeOrIsProp(node->command, isFakeComp, node->isScreenProp, node->isScreenEvent);
+	if (isFakeComp || node->isScreenProp) {
+		return;
 	}
 
+
+	static const std::set<String> compsWithFirstParam({"screen", "hotspot", "image", "key", "text", "textbutton"});
 	const std::vector<String> args = Algo::getArgs(node->params);
 
+	std::vector<Node*> toInsert;
+
 	const bool firstIsProp = compsWithFirstParam.count(node->command);
-	if (firstIsProp) {
+	if (firstIsProp && node->command != "screen") {
 		if (args.empty()) {
 			Utils::outMsg("Parser::initScreenNode",
 						  "Неверный синтаксис\n"
@@ -227,7 +274,12 @@ void Parser::initScreenNode(Node *node) {
 			return;
 		}
 
-		node->setFirstParam(args[0]);
+		Node *firstParam = Node::getNewNode(node->getFileName(), node->getNumLine());
+		firstParam->parent = node;
+		firstParam->isScreenProp = true;
+		firstParam->command = (node->command == "hotspot") ? "crop" : "first_param";
+		firstParam->params = args[0];
+		toInsert.push_back(firstParam);
 	}
 
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
@@ -250,8 +302,16 @@ void Parser::initScreenNode(Node *node) {
 			continue;
 		}
 		const String &value = args[i + 1];
-		node->initProp(name, value, node->getNumLine());
+
+		Node *param = Node::getNewNode(node->getFileName(), node->getNumLine());
+		param->parent = node;
+		param->isScreenProp = true;
+		param->command = name;
+		param->params = value;
+		toInsert.push_back(param);
 	}
+
+	node->children.insert(node->children.begin(), toInsert.begin(), toInsert.end());
 }
 
 Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
@@ -290,9 +350,12 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 	if (!block) {
 		res->params = headLine.substr(startParams, endParams - startParams + 1);
+		if (type == "$") {
+			checkPythonSyntax(res);
+		}
+
 		if (superParent & SuperParent::SCREEN) {
 			initScreenNode(res);
-			res->updateAlwaysNonePropCode();
 		}
 		return res;
 	}
@@ -306,7 +369,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	}
 
 	if (type == "label" || type == "screen") {
-		res->name = headLine.substr(startParams, endParams - startParams);
+		res->params = headLine.substr(startParams, endParams - startParams);
 	}else
 	if (headLine.startsWith("init", false)) {
 		if (headLine.endsWith(" python:")) {
@@ -336,9 +399,12 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			if (line.size() > startIndent) {
 				res->params += line.substr(startIndent);
 			}
-			res->params += '\n';
+			if (i != end - 1) {
+				res->params += '\n';
+			}
 		}
 
+		checkPythonSyntax(res);
 		return res;
 	}
 
@@ -380,6 +446,8 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 		size_t nextChildStart = getNextStart(childStart);
 		Node *node = getNode(childStart, nextChildStart, superParent, isText);
+		node->parent = res;
+
 		if (node->command == "elif" || node->command == "else") {
 			node->prevNode = res->children[res->children.size() - 1];
 		}
@@ -415,7 +483,6 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 	if (superParent & SuperParent::SCREEN) {
 		initScreenNode(res);
-		res->updateAlwaysNonePropCode();
 	}
 	return res;
 }

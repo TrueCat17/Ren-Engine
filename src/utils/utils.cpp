@@ -3,16 +3,15 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <filesystem>
 
-#include <boost/filesystem.hpp>
-#include <boost/python.hpp>
 #include <Python.h>
 
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
 
-#include "media/image.h"
+#include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
 #include "parser/node.h"
@@ -29,7 +28,7 @@ std::map<String, Node*> Utils::declAts;
 std::vector<String> Utils::getFileNames(const std::string &path) {
 	std::vector<String> res;
 
-	namespace fs = boost::filesystem;
+	namespace fs = std::filesystem;
 
 	if (!fs::exists(path)) {
 		outMsg("Директории <" + path + "> не существует");
@@ -47,6 +46,7 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 		}
 	}
 
+	std::sort(res.begin(), res.end());
 	return res;
 }
 
@@ -55,7 +55,7 @@ int Utils::getTimer() {
 
 	auto now = std::chrono::system_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
-	return duration.count();
+	return int(duration.count());
 }
 void Utils::sleep(int ms, bool checkInGame) {
 	const int MIN_SLEEP = Game::getFrameTime();
@@ -92,8 +92,8 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 		if (notShow) return;
 
 		static const SDL_MessageBoxButtonData buttons[] = {
-			SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Ok",
-			0, 1, "Close All"
+			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Ok"},
+			{0, 1, "Close All"}
 		};
 
 		static SDL_MessageBoxData data;
@@ -158,10 +158,10 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 	}
 
 	const Uint8 *pixel = ((const Uint8 *)surface->pixels + y * surface->pitch + x * 4);
-	const Uint8 r = pixel[Rshift / 8];
-	const Uint8 g = pixel[Gshift / 8];
-	const Uint8 b = pixel[Bshift / 8];
-	const Uint8 a = pixel[Ashift / 8];
+	const Uint32 r = pixel[Rshift / 8];
+	const Uint32 g = pixel[Gshift / 8];
+	const Uint32 b = pixel[Bshift / 8];
+	const Uint32 a = pixel[Ashift / 8];
 
 	return (r << 24) + (g << 16) + (b << 8) + a;
 }
@@ -199,30 +199,26 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 	declAts[name] = declAt;
 
 	if (declAt->children.empty()) {
-		std::lock_guard<std::mutex> g(PyUtils::pyExecMutex);
+		std::lock_guard g(PyUtils::pyExecMutex);
 
-		py::dict globals = py::extract<py::dict>(GV::pyUtils->pythonGlobal);
-		if (!globals.has_key("default_decl_at")) return true;
+		PyObject *defaultDeclAt = PyDict_GetItemString(PyUtils::global, "default_decl_at");
+		if (!defaultDeclAt) return true;
+		if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) return true;
 
-		py::object defaultDeclAt = globals["default_decl_at"];
-		if (!PyUtils::isTuple(defaultDeclAt) && !PyUtils::isList(defaultDeclAt)) return true;
-
-		size_t sizeDefaultDeclAt = Py_SIZE(defaultDeclAt.ptr());
+		size_t sizeDefaultDeclAt = Py_SIZE(defaultDeclAt);
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
 			Node *node = Node::getNewNode("some assign default_decl_at", 0);
 
-			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt.ptr(), i);
+			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
 			if (PyString_CheckExact(elem)) {
 				node->params = PyString_AS_STRING(elem);
 			}else {
-				try {
-					PyObject *str = PyObject_Str(elem);
-					if (str) {
-						node->params = PyString_AS_STRING(str);
-					}
-					Py_DecRef(str);
-				}catch (py::error_already_set&) {
-					PyUtils::errorProcessing("str(elem)");
+				PyObject *str = PyObject_Str(elem);
+				if (str) {
+					node->params = PyString_AS_STRING(str);
+					Py_DECREF(str);
+				}else {
+					PyUtils::errorProcessing("str(" + String(elem->ob_type->tp_name) + ")");
 				}
 			}
 
@@ -245,16 +241,16 @@ std::string Utils::getImageCode(const std::string &name) {
 
 	return images[name];
 }
-py::list Utils::getImageDeclAt(const std::string &name) {
+PyObject* Utils::getImageDeclAt(const std::string &name) {
 	if (declAts.find(name) == declAts.end()) {
 		Utils::outMsg("Utils::getImageDeclAt", "Изображение <" + name + "> не зарегистрировано");
-		return py::list();
+		return PyList_New(0);
 	}
 
 	const Node *node = declAts[name];
-	if (!node) return py::list();
+	if (node) return node->getPyList();
 
-	return node->getPyList();
+	return PyList_New(0);
 }
 std::vector<String> Utils::getVectorImageDeclAt(const std::string &name) {
 	if (declAts.find(name) == declAts.end()) {

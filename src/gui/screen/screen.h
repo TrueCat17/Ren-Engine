@@ -4,11 +4,11 @@
 #include <vector>
 #include <mutex>
 
-#include "gui/screen/screen_container.h"
+#include "gui/screen/container.h"
 
 #include "utils/string.h"
 
-class Screen: public ScreenContainer {
+class Screen: public Container {
 private:
 	static std::vector<Node*> declared;
 
@@ -20,13 +20,10 @@ private:
 	static void show(const String &name);
 	static void hide(const String &name);
 
-
-	double _zOrder = 0;
-	bool _isModal = false;
+	PyCodeObject *co;
 
 	String name;
-
-	void updateScreenProps();
+	String screenCode;
 
 public:
 	static void declare(Node *node) { declared.push_back(node); }
@@ -39,16 +36,21 @@ public:
 	static void updateScreens();
 	static bool hasModal() { return _hasModal; }
 
+	static void checkEvents();
+
 	static void addToShow(const std::string &name);
 	static void addToHide(const std::string &name);
 	static bool hasScreen(const std::string &name);
 
 
+	double zorder = 0;
+	bool modal = false;
+
 	Screen(Node *node, Screen *screen);
 
+	virtual void updateProps();
+
 	const String& getName() const { return name; }
-	double zOrder() const { return _zOrder; }
-	bool screenIsModal() const { return _isModal; }
 };
 
 #endif // SCREEN_H

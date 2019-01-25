@@ -4,45 +4,16 @@
 #include <vector>
 #include <map>
 
+#include <Python.h>
+
 #include "utils/string.h"
-
-
-namespace boost {
-	namespace python {
-		class list;
-	}
-}
-namespace py = boost::python;
-
-
-struct NodeProp {
-	String pyExpr;
-	size_t numLine;
-
-	String styleName;
-	String propName;
-
-
-	static NodeProp initPyExpr(const String &pyExpr, size_t numLine) {
-		NodeProp res;
-		res.pyExpr = pyExpr;
-		res.numLine = numLine;
-		return res;
-	}
-	static NodeProp initStyleProp(const String &styleName, const String &propName) {
-		NodeProp res;
-		res.styleName = styleName;
-		res.propName = propName;
-		return res;
-	}
-};
 
 
 class Node {
 private:
 	static std::vector<Node*> nodes;
 	static size_t countNodes;
-	Node(const String &fileName, size_t numLine);
+	Node(const String &fileName, size_t numLine, size_t id);
 	~Node();
 
 
@@ -58,11 +29,10 @@ private:
 	String fileName;
 	size_t numLine;
 
-	String firstParam;
-	std::map<String, NodeProp> props;
-	bool alwaysNonePropCode = false;
 public:
+	static String loadPath;
 	static bool loading;
+
 	static size_t stackDepth;
 	static std::vector<std::pair<String, String>> stack;
 
@@ -72,32 +42,36 @@ public:
 	static void destroyAll();
 
 
-	int childNum;//index in parent Node
-	int priority;
 
-	String command;
-	String params;//text to out, command to execute, condition to check...
+	size_t id;//unique id for each Node
+	int priority;//for init-block
 
-	String loadPath;//for main, path to save
-	String name;//for label, screen, main (mod name)
+	Node *parent;
+	size_t childNum;//index in parent Node
 
 	Node *prevNode;//for blocks <elif> and <else>
 	bool condIsTrue = false;
+
+	uint8_t countPropsToCalc;
+
+	bool isScreenProp = false;       //xpos, ypos, pos, ...
+	bool isScreenEvent = false;      //action, alternate, hover_sound...
+	bool isScreenConst = false;      //have only const {children and props}?
+	bool isScreenEnd = false;        //all children (not props) are const
+	size_t screenNum   = size_t(-1); //childNum, but skip screenConst children
+
+	String command;//$, play, image, show, ...
+	String params; //text to out, command to execute, condition to check, name for main/label/screen, ...
 
 	std::vector<Node*> children;
 
 
 	void execute();
 
-	py::list getPyList() const;
+	PyObject* getPyList() const;
 	std::vector<String> getImageChildren() const;
 
-	void initProp(const String &name, const String &value, size_t numLine);
-	void updateAlwaysNonePropCode();
-	NodeProp getPropCode(const String &name, const String &commonName = "", const String &indexStr = "") const;
-
-	const String& getFirstParam() const { return firstParam; }
-	void setFirstParam(const String &value) { firstParam = value; }
+	Node* getProp(const String &name);
 
 	const String& getFileName() const { return fileName; }
 	size_t getNumLine() const { return numLine; }
