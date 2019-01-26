@@ -77,6 +77,11 @@ void Child::updateProps() {
 	}
 
 	if (!props || props == Py_None) return;
+	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
+		Utils::outMsg("Child::updateProps", String("Expected list or tuple, got ") + props->ob_type->tp_name);
+		return;
+	}
+
 
 	enable = true;
 
@@ -104,12 +109,6 @@ void Child::updatePos() {
 		int y = endYPos - yAnchor;
 		setY(y);
 	}
-
-	for (Child *child : screenChildren) {
-		if (child->enable) {
-			child->updatePos();
-		}
-	}
 }
 
 void Child::updateSize() {
@@ -124,12 +123,7 @@ void Child::updateSize() {
 		crop.w = int(hcrop * (wcropIsDouble ? surface->w : 1));
 		crop.h = int(wcrop * (hcropIsDouble ? surface->h : 1));
 	}
-
-	for (Child *child : screenChildren) {
-		if (child->enable) {
-			child->updateSize();
-		}
-	}
 }
 
 void Child::updateTexture(bool) {}
+void Child::checkEvents() {}

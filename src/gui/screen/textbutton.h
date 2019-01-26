@@ -23,6 +23,7 @@ public:
 
 	virtual void updateSize();
 	virtual void updateTexture(bool skipError = false);
+	virtual void checkEvents();
 };
 
 #endif // TEXTBUTTON_H

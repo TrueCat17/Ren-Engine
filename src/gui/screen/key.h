@@ -19,6 +19,7 @@ private:
 	bool inFirstDown = false;
 	bool wasFirstDelay = false;
 
+	String prevKeyName;
 	SDL_Scancode key;
 
 public:
@@ -31,6 +32,8 @@ public:
 
 	Key(Node *node, Screen *screen);
 	~Key();
+
+	virtual void checkEvents();
 };
 
 #endif // KEY_H

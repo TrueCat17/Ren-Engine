@@ -55,7 +55,7 @@ void Screen::updateLists() {
 void Screen::show(const String &name) {
 	Screen *scr = getMain(name);
 	if (scr) {
-		GV::screens->addChild(scr);//Наверх в списке потомков своего родителя
+		GV::screens->addChildAt(scr, GV::screens->children.size());//Наверх в списке потомков своего родителя
 		return;
 	}
 
@@ -67,7 +67,7 @@ void Screen::show(const String &name) {
 
 	scr = new Screen(node, nullptr);
 	scr->updateProps();
-	GV::screens->addChild(scr);
+	GV::screens->addChildAt(scr, GV::screens->children.size());
 }
 void Screen::hide(const String &name) {
 	if (GV::screens) {
@@ -88,7 +88,7 @@ void Screen::addToShow(const std::string &name) {
 
 	for (size_t i = 0; i < toHideList.size(); ++i) {
 		if (toHideList[i] == name) {
-			toHideList.erase(toHideList.cbegin() + i);
+			toHideList.erase(toHideList.cbegin() + int(i));
 			return;
 		}
 	}
@@ -100,7 +100,7 @@ void Screen::addToHide(const std::string &name) {
 
 	for (size_t i = 0; i < toShowList.size(); ++i) {
 		if (toShowList[i] == name) {
-			toShowList.erase(toShowList.cbegin() + i);
+			toShowList.erase(toShowList.cbegin() + int(i));
 			return;
 		}
 	}
@@ -148,8 +148,97 @@ void Screen::updateScreens() {
 	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
 
-void Screen::checkEvents() {
+struct StackElem {
+	Container *obj;
+	size_t curChildNum;
+	size_t curChildIndex;
+};
 
+static std::vector<StackElem> screenStack;
+static Screen* calcedScreen;
+
+void Screen::checkScreenEvents() {
+	if (screenStack.empty()) {
+		String rootVar = "_SL_" + calcedScreen->name;
+		calcedScreen->props = PyDict_GetItemString(PyUtils::global, rootVar.c_str());
+		if (!calcedScreen->props) {
+			Utils::outMsg("Screen::checkEvents", rootVar + " not found");
+			return;
+		}
+		if (!PyList_CheckExact(calcedScreen->props) && !PyTuple_CheckExact(calcedScreen->props)) {
+			Utils::outMsg("Screen::checkEvents", "_SL_stack is not list or tuple");
+			return;
+		}
+
+		screenStack.push_back({calcedScreen, 0, 0});
+	}
+
+	StackElem elem = screenStack.back();
+	Container *obj = elem.obj;
+	size_t num = elem.curChildNum;
+	size_t index = elem.curChildIndex;
+
+	while (true) {
+		const size_t countCalcs = size_t(Py_SIZE(obj->props));
+		const size_t countChildren = countCalcs - obj->node->countPropsToCalc;
+		while (countChildren > obj->screenChildren.size()) {
+			obj->addChildrenFromNode();
+		}
+
+		if (num == obj->screenChildren.size() || index == countCalcs) {
+			obj->updateProps();
+
+			screenStack.pop_back();
+			if (screenStack.empty()) return;
+
+			elem = screenStack.back();
+			obj = elem.obj;
+			num = elem.curChildNum;
+			index = elem.curChildIndex;
+			continue;
+		}
+
+
+		Child *child = obj->screenChildren[num];
+		++num;
+		++screenStack.back().curChildNum;
+
+		if (child->node->screenNum == size_t(-1)) {
+			child->enable = true;
+			continue;
+		}
+
+		if (obj->node->countPropsToCalc) {
+			child->props = PySequence_Fast_GET_ITEM(obj->props, child->node->screenNum);
+		}else {
+			child->props = PySequence_Fast_GET_ITEM(obj->props, index);
+			++index;
+			++screenStack.back().curChildIndex;
+		}
+
+		if (!child->props || child->props == Py_None) continue;
+		if (!PyList_CheckExact(child->props) && !PyTuple_CheckExact(child->props)) {
+			Utils::outMsg("Screen::checkEvents",
+						  String("Expected list or tuple, got ") + child->props->ob_type->tp_name);
+			child->props = nullptr;
+			continue;
+		}
+
+		if (!child->node->isScreenEnd) {
+			obj = static_cast<Container*>(child);
+			num = 0;
+			index = 0;
+			screenStack.push_back({obj, num, index});
+			continue;
+		}
+
+		child->updateProps();
+
+		if (child->node->withScreenEvent) {
+			child->checkEvents();
+			return;
+		}
+	}
 }
 
 
@@ -166,25 +255,15 @@ Screen::Screen(Node *node, Screen *screen):
 	}
 }
 
-void Screen::updateProps() {
+void Screen::calcProps() {
 	if (!co) return;
+
+	screenStack.clear();
+	calcedScreen = this;
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
 	if (!PyEval_EvalCode(co, PyUtils::global, nullptr)) {
 		PyUtils::errorProcessing(screenCode);
-		return;
 	}
-
-	if (props) {
-		Py_DECREF(props);
-	}
-	props = PyDict_GetItemString(PyUtils::global, "SL_last");
-	if (!props) {
-		Utils::outMsg("Screen::updateProps", "SL_last not found");
-		return;
-	}
-	Py_INCREF(props);
-
-	Container::updateProps();
 }

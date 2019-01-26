@@ -8,7 +8,6 @@
 
 class Hotspot: public Child {
 private:
-	String rectStr;
 	double scaleX = 1;
 	double scaleY = 1;
 
@@ -19,8 +18,11 @@ public:
 
 	Hotspot(Node *node, Screen *screen);
 
-	virtual bool checkAlpha(int x, int y) const;
+	virtual void updatePos();
+	virtual void updateSize();
+	virtual void checkEvents();
 
+	virtual bool checkAlpha(int x, int y) const;
 	virtual void draw() const;
 };
 

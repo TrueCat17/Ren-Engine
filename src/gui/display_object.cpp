@@ -44,8 +44,8 @@ void DisplayObject::updateGlobal() {
 	double sinA = Math::getSin(parentGlobalRotate);
 	double cosA = Math::getCos(parentGlobalRotate);
 
-	int rotX = x * cosA - y * sinA;
-	int rotY = x * sinA + y * cosA;
+	int rotX = int(x * cosA - y * sinA);
+	int rotY = int(x * sinA + y * cosA);
 
 	globalX = parentGlobalX + parentXAnchor + rotX - xAnchor;
 	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
@@ -88,7 +88,7 @@ void DisplayObject::draw() const {
 DisplayObject::~DisplayObject() {
 	for (size_t i = 0; i < objects.size(); ++i) {
 		if (objects[i] == this) {
-			objects.erase(objects.begin() + i);
+			objects.erase(objects.begin() + int(i));
 			break;
 		}
 	}

@@ -87,3 +87,54 @@ void TextButton::updateTexture(bool skipeError) {
 		updateSize();
 	}
 }
+
+void TextButton::checkEvents() {
+	const String *styleName = nullptr;
+	if (btnRect.mouseOvered != prevMouseOver) {
+		const Node *style = node->getProp("style");
+		styleName = style ? &style->params : &node->command;
+	}
+
+	if (btnRect.mouseOvered) {
+		if (!prevMouseOver) {
+			const Node *hoverSound = node->getProp("hover_sound");
+			if (hoverSound) {
+				Music::play("button_hover " + hoverSound->params, hoverSound->getFileName(), hoverSound->getNumLine());
+			}else {
+				const std::string sound = PyUtils::getStr(Style::getProp(*styleName, "hover_sound"));
+				if (sound != "None") {
+					Music::play("button_hover '" + sound + "'",
+								getFileName(), getNumLine());
+				}
+			}
+
+			const Node *hovered = node->getProp("hovered");
+			if (hovered) {
+				PyUtils::exec(hovered->getFileName(), hovered->getNumLine(), "exec_funcs(" + hovered->params + ")");
+			}else {
+				PyUtils::exec(getFileName(), getNumLine(),
+							  "exec_funcs(style." + *styleName + ".hovered)");
+			}
+		}
+	}else {
+		if (prevMouseOver) {
+			const Node *unhovered = node->getProp("unhovered");
+			if (unhovered) {
+				PyUtils::exec(unhovered->getFileName(), unhovered->getNumLine(), "exec_funcs(" + unhovered->params + ")");
+			}else {
+				PyUtils::exec(getFileName(), getNumLine(),
+							  "exec_funcs(style." + *styleName + ".unhovered)");
+			}
+		}
+	}
+	prevMouseOver = btnRect.mouseOvered;
+
+	if (isModal()) {
+		if (btnRect.mouseLeftDown) {
+			btnRect.onLeftClick();
+		}
+		if (btnRect.mouseRightDown) {
+			btnRect.onRightClick();
+		}
+	}
+}

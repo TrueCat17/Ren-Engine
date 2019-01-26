@@ -13,7 +13,7 @@ Text::Text(Node *node, Screen *screen):
 	tf(new TextField())
 {
 	tf->wordWrap = true;
-	addChild(tf);
+	addChildAt(tf, 0);
 }
 Text::~Text() {
 	delete tf;

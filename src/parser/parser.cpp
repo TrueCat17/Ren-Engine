@@ -139,7 +139,7 @@ Parser::Parser(const String &dir) {
 
 						if (!q1 && !q2) {
 							if (c == '#') {
-								s.erase(s.begin() + i, s.end());
+								s.erase(s.begin() + int(i), s.end());
 								break;
 							}
 						}
@@ -280,6 +280,8 @@ static void initScreenNode(Node *node) {
 		firstParam->command = (node->command == "hotspot") ? "crop" : "first_param";
 		firstParam->params = args[0];
 		toInsert.push_back(firstParam);
+
+		initScreenNode(firstParam);
 	}
 
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
@@ -309,6 +311,8 @@ static void initScreenNode(Node *node) {
 		param->command = name;
 		param->params = value;
 		toInsert.push_back(param);
+
+		initScreenNode(param);
 	}
 
 	node->children.insert(node->children.begin(), toInsert.begin(), toInsert.end());
@@ -378,7 +382,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		const std::vector<String> words = headLine.split(' ');
 
 		if (words.size() >= 2 && words[1] != "python:") {
-			res->priority = words[1].toDouble();
+			res->priority = int(words[1].toDouble());
 		}else {
 			res->priority = 0;
 		}
@@ -469,8 +473,8 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 				}
 			}
 			++i;
-			node->children.insert(node->children.begin(), res->children.begin() + i, res->children.end());
-			res->children.erase(res->children.begin() + i, res->children.end());
+			node->children.insert(node->children.begin(), res->children.begin() + int(i), res->children.end());
+			res->children.erase(res->children.begin() + int(i), res->children.end());
 		}
 		res->children.push_back(node);
 

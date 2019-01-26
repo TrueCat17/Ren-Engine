@@ -22,8 +22,8 @@
 String Node::loadPath;
 
 static const size_t NODES_IN_PART = 10000;
-size_t Node::countNodes = 0;
-std::vector<Node*> Node::nodes;
+static size_t countNodes = 0;
+static std::vector<Node*> nodes;
 
 Node::Node(const String &fileName, size_t numLine, size_t id):
 	fileName(fileName),
@@ -90,8 +90,27 @@ public:
 };
 
 
-String Node::jumpNextLabel;
-bool Node::jumpNextIsCall;
+static String jumpNextLabel;
+static bool jumpNextIsCall;
+
+static size_t preloadImages(const Node *parent, size_t start, size_t count);
+
+static void jump(const String &label, bool isCall) {
+	for (Node *node : GV::mainExecNode->children) {
+		if (node->command == "label" && node->params == label) {
+			try {
+				node->execute();
+			}catch (ReturnException) {}
+
+			if (!isCall) {
+				throw ExitException();
+			}
+			return;
+		}
+	}
+	Utils::outMsg("Node::jump(call)",
+				  "Метка <" + label + "> не найдена\n");
+}
 
 
 void Node::execute() {
@@ -127,7 +146,7 @@ void Node::execute() {
 	size_t nextStackDepth = curStackDepth + 1;
 	if (!initing && nextStackDepth < Node::stack.size()) {
 		const std::pair<String, String> &next = Node::stack[nextStackDepth];
-		nextNum = next.first.toDouble();
+		nextNum = size_t(next.first.toDouble());
 		nextCommand = next.second;
 
 		if (nextCommand != "label" && nextNum >= children.size()) {
@@ -180,13 +199,13 @@ void Node::execute() {
 							  "load_global_vars('" + loadPath + "py_globals')");
 
 				startScreensVec = Game::loadInfo(loadPath);
-			}else if (0){
+			}else {
 				std::lock_guard g(PyUtils::pyExecMutex);
 
 				PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
 				if (startScreens) {
 					if (PyList_CheckExact(startScreens)) {
-						size_t len = Py_SIZE(startScreens);
+						size_t len = size_t(Py_SIZE(startScreens));
 						for (size_t i = 0; i < len; ++i) {
 							PyObject *elem = PyList_GET_ITEM(startScreens, i);
 							if (PyString_CheckExact(elem)) {
@@ -248,7 +267,7 @@ void Node::execute() {
 					node->command == "with"  ||
 					!i)
 				{
-					preloadImages(this, i + 1, Config::get("count_preload_commands").toInt());
+					preloadImages(this, i + 1, size_t(Config::get("count_preload_commands").toInt()));
 				}
 			}
 		}
@@ -450,7 +469,7 @@ void Node::execute() {
 							  getPlace());
 				res = 0;
 			}
-			choose = res;
+			choose = size_t(res);
 		}
 
 		Node *menuItem = children[choose];
@@ -646,23 +665,6 @@ void Node::execute() {
 }
 
 
-void Node::jump(const String &label, bool isCall) {
-	for (Node *node : GV::mainExecNode->children) {
-		if (node->command == "label" && node->params == label) {
-			try {
-				node->execute();
-			}catch (ReturnException) {}
-
-			if (!isCall) {
-				throw ExitException();
-			}
-			return;
-		}
-	}
-	Utils::outMsg("Node::jump(call)",
-				  "Метка <" + label + "> не найдена\n");
-}
-
 void Node::jumpNext(const std::string &label, bool isCall) {
 	jumpNextLabel = label;
 	jumpNextIsCall = isCall;
@@ -692,7 +694,7 @@ PyObject* Node::getPyList() const {
 
 		if (!childIsBlock) {
 			std::vector<String> toJoin;
-			size_t len = Py_SIZE(childPyList);
+			size_t len = size_t(Py_SIZE(childPyList));
 			for (size_t i = 0; i < len; ++i) {
 				PyObject *elem = PyList_GET_ITEM(childPyList, i);
 				const char *chars = PyString_AS_STRING(elem);
@@ -747,8 +749,43 @@ std::vector<String> Node::getImageChildren() const {
 
 
 
-int Node::preloadImages(const Node *parent, int start, int count) {
-	for (size_t i = start; i < parent->children.size() && count > 0; ++i) {
+static void preloadImageAt(const std::vector<String> &children) {
+	auto fileExists = [](const String &path) -> bool {
+		if (std::filesystem::exists(path.c_str())) {
+			return !std::filesystem::is_directory(path.c_str());
+		}
+		return false;
+	};
+
+	for (const String &str : children) {
+		if (!str.isSimpleString()) continue;
+
+		const String image = str.substr(1, str.size() - 2);
+
+		if (Utils::imageWasRegistered(image)) {
+			const String &imageName = image;
+
+			const std::pair<String, size_t> place = Utils::getImagePlace(imageName);
+
+			const String code = Utils::getImageCode(imageName);
+			const String imagePath = PyUtils::exec(place.first, place.second, code, true);
+			if (imagePath) {
+				if (fileExists(imagePath)) {
+					ImageManipulator::loadImage(imagePath);
+				}
+			}
+
+			const std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
+			preloadImageAt(declAt);
+		}else {
+			if (fileExists(image)) {
+				ImageManipulator::loadImage(image);
+			}
+		}
+	}
+}
+static size_t preloadImages(const Node *parent, size_t start, size_t count) {
+	for (size_t i = start; i < parent->children.size() && count; ++i) {
 		const Node *child = parent->children[i];
 		const String &childCommand = child->command;
 		const String &childParams = child->params;
@@ -805,41 +842,6 @@ int Node::preloadImages(const Node *parent, int start, int count) {
 	}
 
 	return count;
-}
-void Node::preloadImageAt(const std::vector<String> &children) {
-	auto fileExists = [](const String &path) -> bool {
-		if (std::filesystem::exists(path.c_str())) {
-			return !std::filesystem::is_directory(path.c_str());
-		}
-		return false;
-	};
-
-	for (const String &str : children) {
-		if (str.isSimpleString()) {
-			const String image = str.substr(1, str.size() - 2);
-
-			if (Utils::imageWasRegistered(image)) {
-				const String &imageName = image;
-
-				const std::pair<String, size_t> place = Utils::getImagePlace(imageName);
-
-				const String code = Utils::getImageCode(imageName);
-				const String imagePath = PyUtils::exec(place.first, place.second, code, true);
-				if (imagePath) {
-					if (fileExists(imagePath)) {
-						ImageManipulator::loadImage(imagePath);
-					}
-				}
-
-				const std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
-				preloadImageAt(declAt);
-			}else {
-				if (fileExists(image)) {
-					ImageManipulator::loadImage(image);
-				}
-			}
-		}
-	}
 }
 
 Node* Node::getProp(const String &name) {

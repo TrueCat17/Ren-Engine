@@ -11,7 +11,7 @@ class Text: public Child {
 private:
 	String prevText;
 
-	int prevColor = 0;
+	Uint32 prevColor = 0;
 
 	int prevWidth = 0;
 	int prevHeight = 0;
@@ -21,7 +21,7 @@ protected:
 
 public:
 	int text_size = 20;
-	int color = 0;
+	Uint32 color = 0;
 
 	String font;
 	String textHAlign;

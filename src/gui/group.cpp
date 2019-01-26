@@ -14,9 +14,6 @@ void Group::updateGlobal() {
 	}
 }
 
-DisplayObject* Group::getChildAt(size_t index) const {
-	return children[index];
-}
 size_t Group::getChildIndex(DisplayObject *child) const {
 	for (size_t i = 0; i < children.size(); ++i) {
 		if (children[i] == child){
@@ -26,9 +23,6 @@ size_t Group::getChildIndex(DisplayObject *child) const {
 	return size_t(-1);
 }
 
-void Group::addChild(DisplayObject *child) {
-	Group::addChildAt(child, children.size());
-}
 void Group::addChildAt(DisplayObject *child, size_t index) {
 	if (child == this) {
 		Utils::outMsg("Group::addChild(At)", "Добавление объекта в самого себя");
@@ -39,7 +33,7 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 		child->parent->removeChild(child);
 	}
 
-	auto to = std::min(children.begin() + index, children.end());
+	auto to = std::min(children.begin() + int(index), children.end());
 	children.insert(to, child);
 
 	child->parent = this;
@@ -59,21 +53,13 @@ void Group::removeChild(DisplayObject *child) {
 	}
 }
 void Group::removeChildAt(size_t index) {
-	DisplayObject *child = children[index];
-
-	if (child->parent != this) {
-		Utils::outMsg("Group::removeChildAt", "Удаление объекта не из своего родителя");
-		return;
-	}
-
-	children.erase(children.begin() + index);
+	children.erase(children.begin() + int(index));
 }
 void Group::clearChildren() {
 	while (children.size()) {
 		DisplayObject *obj = children[0];
 		delete obj;//Удаляется так же и из текущего объекта как из родителя (а значит и из children)
 	}
-	children.clear();
 }
 
 bool Group::checkAlpha(int x, int y) const {

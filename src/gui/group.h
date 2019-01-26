@@ -12,10 +12,8 @@ public:
 
 	virtual void updateGlobal();
 
-	DisplayObject* getChildAt(size_t index) const;
 	size_t getChildIndex(DisplayObject *child) const;
 
-	void addChild(DisplayObject *child);
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
 	virtual void removeChild(DisplayObject *child);

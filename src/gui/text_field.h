@@ -3,12 +3,10 @@
 
 #include <vector>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
-
 #include "gui/display_object.h"
 #include "utils/string.h"
+
+typedef struct _TTF_Font TTF_Font;
 
 
 class TextField: public DisplayObject {
@@ -16,7 +14,7 @@ private:
 	static const int MIN_TEXT_SIZE = 10;
 	static const int MAX_TEXT_SIZE = 72;
 
-	int charOutNum = 0;
+	size_t charOutNum = 0;
 
 	int charX = 0;
 	int charWidth = 0;
@@ -26,7 +24,7 @@ private:
 	int textSize = 0;
 	int originalTextSize = 0;
 
-	int prevDrawTextColor = 0;
+	Uint32 prevDrawTextColor = 0;
 	TTF_Font *prevDrawFont = nullptr;
 	String prevText;
 
@@ -41,11 +39,11 @@ private:
 	int maxHeight = -1;
 
 	int getLineWidth(String text, bool resetPrevStyle = false);
-	void addChars(String c, int color);
+	void addChars(String c, Uint32 color);
 
-	int mainColor = 0;
+	Uint32 mainColor = 0;
 
-	int curColor = 0;//Цвет
+	Uint32 curColor = 0;//Цвет
 	int isBold = 0;//Жирный
 	int isItalic = 0;//Курсив
 	int isUnderline = 0;//Подчёркнутый
@@ -67,9 +65,6 @@ private:
 	void addText();
 
 public:
-	static const char *defaultFontName;
-
-
 	bool wordWrap = false;
 
 	TextField();
@@ -80,7 +75,7 @@ public:
 	void setAlign(String hAlign = "left", String vAlign = "top");
 
 	String getText() const;
-	void setText(const String &text, int color = 0x000000);
+	void setText(const String &text, Uint32 color = 0x000000);
 
 	int getMaxWidth() const;
 	int getMaxHeight() const;

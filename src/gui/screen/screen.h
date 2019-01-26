@@ -36,7 +36,7 @@ public:
 	static void updateScreens();
 	static bool hasModal() { return _hasModal; }
 
-	static void checkEvents();
+	static void checkScreenEvents();
 
 	static void addToShow(const std::string &name);
 	static void addToHide(const std::string &name);
@@ -48,7 +48,7 @@ public:
 
 	Screen(Node *node, Screen *screen);
 
-	virtual void updateProps();
+	void calcProps();
 
 	const String& getName() const { return name; }
 };

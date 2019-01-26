@@ -20,8 +20,8 @@ bool BtnRect::objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 			double sinA = Math::getSin(-child->getGlobalRotate());
 			double cosA = Math::getCos(-child->getGlobalRotate());
 
-			int rotX = x * cosA - y * sinA + child->xAnchor;
-			int rotY = x * sinA + y * cosA + child->yAnchor;
+			int rotX = int(x * cosA - y * sinA + child->xAnchor);
+			int rotY = int(x * sinA + y * cosA + child->yAnchor);
 
 			if (child->checkAlpha(rotX, rotY)) {
 				return false;
@@ -58,7 +58,7 @@ BtnRect::~BtnRect() {
 	for (size_t i = 0; i < btnRects.size(); ++i) {
 		BtnRect *btnRect = btnRects[i];
 		if (btnRect == this) {
-			btnRects.erase(btnRects.begin() + i);
+			btnRects.erase(btnRects.begin() + int(i));
 			return;
 		}
 	}
@@ -76,7 +76,7 @@ void BtnRect::checkMouseCursor() {
 		btnRect->mouseRightDown = false;
 	}
 
-	for (int i = btnRects.size() - 1; i >= 0; --i) {
+	for (size_t i = btnRects.size() - 1; i != size_t(-1); --i) {
 		BtnRect *btnRect = btnRects[i];
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
@@ -87,8 +87,8 @@ void BtnRect::checkMouseCursor() {
 		double sinA = Math::getSin(-owner->getGlobalRotate());
 		double cosA = Math::getCos(-owner->getGlobalRotate());
 
-		int rotX = x * cosA - y * sinA + owner->xAnchor;
-		int rotY = x * sinA + y * cosA + owner->yAnchor;
+		int rotX = int(x * cosA - y * sinA + owner->xAnchor);
+		int rotY = int(x * sinA + y * cosA + owner->yAnchor);
 
 		if (rotX > 0 && rotX < owner->getWidth() &&
 			rotY > 0 && rotY < owner->getHeight()
@@ -118,7 +118,7 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 	int mouseX = Mouse::getX();
 	int mouseY = Mouse::getY();
 
-	for (int i = btnRects.size() - 1; i >= 0; --i) {
+	for (size_t i = btnRects.size() - 1; i != size_t(-1); --i) {
 		BtnRect *btnRect = btnRects[i];
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
@@ -130,8 +130,8 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 		double sinA = Math::getSin(-owner->getGlobalRotate());
 		double cosA = Math::getCos(-owner->getGlobalRotate());
 
-		int rotX = x * cosA - y * sinA + owner->xAnchor;
-		int rotY = x * sinA + y * cosA + owner->yAnchor;
+		int rotX = int(x * cosA - y * sinA + owner->xAnchor);
+		int rotY = int(x * sinA + y * cosA + owner->yAnchor);
 
 		if (rotX > 0 && rotX < owner->getWidth() &&
 			rotY > 0 && rotY < owner->getHeight()

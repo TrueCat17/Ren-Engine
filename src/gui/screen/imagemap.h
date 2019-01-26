@@ -17,6 +17,7 @@ public:
 
 	Imagemap(Node *node, Screen *screen);
 
+	virtual void updateSize();
 	virtual void updateTexture(bool skipError = false);
 };
 

@@ -38,7 +38,6 @@ public:
 	Node *node;
 
 	Container *screenParent;
-	std::vector<Child*> screenChildren;
 
 	const std::vector<ScreenUpdateFunc>& updateFuncs;
 	PyObject *props = nullptr;
@@ -46,10 +45,12 @@ public:
 
 	Child(Node *node, Container *screenParent, Screen *screen);
 
-	virtual void updateProps();
+	void updateProps();
 	virtual void updatePos();
 	virtual void updateSize();
+
 	virtual void updateTexture(bool skipError = false);
+	virtual void checkEvents();
 
 	void setInBox(bool v, bool h) { inVBox = v; inHBox = h; }
 

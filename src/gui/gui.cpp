@@ -30,7 +30,7 @@ void GUI::update() {
 				std::cout << "update <" << scr->getName() << ">:\n";
 				const int a = Utils::getTimer();
 #endif
-				scr->updateProps();
+				scr->calcProps();
 #if printTime
 				const int b = Utils::getTimer();
 #endif

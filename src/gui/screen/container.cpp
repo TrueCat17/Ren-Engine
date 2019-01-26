@@ -45,52 +45,21 @@ void Container::addChildAt(DisplayObject *child, size_t index) {
 }
 
 
-
-void Container::updateProps() {
-	Child::updateProps();
-
-	if (!props || props == Py_None) return;
-	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
-		Utils::outMsg("Container::updateProps", String("Expected list or tuple, got ") + props->ob_type->tp_name);
-		return;
-	}
-
-	const size_t countCalcs = size_t(Py_SIZE(props));
-	const size_t countChildren = countCalcs - node->countPropsToCalc;
-	while (countChildren > screenChildren.size()) {
-		addChildrenFromNode();
-	}
-
-
-	if (node->countPropsToCalc) {
-		for (Child *child : screenChildren) {
-			size_t num = child->node->screenNum;
-			if (num == size_t(-1)) {
-				child->enable = true;
-				continue;
-			}
-
-			child->props = PySequence_Fast_GET_ITEM(props, num);
-			child->updateProps();
-		}
-	}else {
-		size_t i = 0;
-		for (Child *child : screenChildren) {
-			if (child->node->screenNum == size_t(-1)) {
-				child->enable = true;
-				continue;
-			}
-
-			child->props = PySequence_Fast_GET_ITEM(props, i);
-			child->updateProps();
-
-			++i;
-			if (i == countCalcs) break;
+void Container::updatePos() {
+	for (Child *child : screenChildren) {
+		if (child->enable) {
+			child->updatePos();
 		}
 	}
+	Child::updatePos();
 }
 
 void Container::updateSize() {
+	for (Child *child : screenChildren) {
+		if (child->enable) {
+			child->updateSize();
+		}
+	}
 	Child::updateSize();
 
 	//Установлено через [x/y/]size
@@ -258,8 +227,10 @@ void Container::addChildrenFromNode() {
 			}else {
 				Child *prev = this;
 				//prev->screenParent != prev mean that prev is fakeContainer (if/elif/else/while/for)
-				while (prev->screenParent != prev && prev->screenChildren.size()) {
-					prev = prev->screenChildren.back();
+				while (prev->screenParent != prev &&
+					   static_cast<Container*>(prev)->screenChildren.size())
+				{
+					prev = static_cast<Container*>(prev)->screenChildren.back();
 				}
 				index = screenParent->getChildIndex(prev) + 1;
 			}

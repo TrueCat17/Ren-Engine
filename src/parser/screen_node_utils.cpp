@@ -61,7 +61,11 @@ static void initConsts(Node *node) {
 	node->countPropsToCalc = 0;
 
 	if (node->isScreenProp) {
-		node->isScreenConst = !node->isScreenEvent && PyUtils::isConstExpr(node->params);
+		if (node->isScreenEvent) {
+			node->parent->withScreenEvent = true;
+		}else {
+			node->isScreenConst = PyUtils::isConstExpr(node->params);
+		}
 		return;
 	}
 	if (node->command == "$" || node->command == "python") return;
@@ -129,7 +133,7 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	std::vector<String> code = childRes.split('\n');
 
 	if (child->isScreenProp || child->isScreenEnd) {
-		res += indent + "SL_last[" + index + "] = ";// + childRes + '\n';
+		res += indent + "_SL_last[" + index + "] = ";
 
 		for (size_t i = 0; i < code.size(); ++i) {
 			if (i) {
@@ -141,12 +145,9 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 			}
 		}
 
-		for (Node *grandChild : child->children) {
-			if (grandChild->isScreenEvent) {
-				res += "\n" +
-					   indent + "SL_check_events()";
-				break;
-			}
+		if (child->withScreenEvent) {
+			res += "\n" +
+				   indent + "_SL_check_events()";
 		}
 		res += '\n';
 
@@ -157,7 +158,7 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	const String &childCommand = child->command;
 	if (childCommand != "elif" && childCommand != "else") {
 		if (childCommand != "$" && childCommand != "python") {
-			res += indent + "SL_stack.append(SL_last)\n";
+			res += indent + "_SL_stack.append(_SL_last)\n";
 		}
 
 		res += indent + "try:\n";
@@ -179,11 +180,11 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	}
 	if (hasEnd) {
 		res += indent + "except:\n";
-		res += indent + "    error_processing()\n";
+		res += indent + "    _SL_error_processing()\n";
 
 		if (childCommand != "$" && childCommand != "python") {
 			res += indent + "finally:\n";
-			res += indent + "    SL_last = SL_stack.pop()\n";
+			res += indent + "    _SL_last = _SL_stack.pop()\n";
 		}
 	}
 }
@@ -191,7 +192,7 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 
 static String initCycleCode(Node *node) {
 	String res;
-	String id = "SL_counter" + String(node->id);
+	String id = "_SL_counter" + String(node->id);
 	String indent = "    ";
 
 	const String &command = node->command;
@@ -199,20 +200,20 @@ static String initCycleCode(Node *node) {
 
 	size_t count = maxScreenChild(node) + 1;
 
-	PyUtils::exec(node->getFileName(), node->getNumLine(), "SL_counter" + String(node->id) + " = 0");
+	PyUtils::exec(node->getFileName(), node->getNumLine(), id + " = 0");
 
 	res +=
-			"SL_last[" + String(node->screenNum) + "] = SL_last = [None] * " + id + "\n"
-			"SL_last_len = " + id + "\n" +
+			"_SL_last[" + String(node->screenNum) + "] = _SL_last = [None] * " + id + "\n"
+			"_SL_last_len = " + id + "\n" +
 			id + " = 0\n"
 			"\n" +
 			command + ' ' + params + ":\n" +
 			indent + "\n";
 
 	res +=
-			indent + "if " + id + " == SL_last_len:\n" +
-			indent + "    SL_last += [None] * " + (100 * count) + "\n" +
-			indent + "    SL_last_len += " + (100 * count) + "\n" +
+			indent + "if " + id + " == _SL_last_len:\n" +
+			indent + "    _SL_last += [None] * " + (100 * count) + "\n" +
+			indent + "    _SL_last_len += " + (100 * count) + "\n" +
 			indent + "\n";
 
 
@@ -246,7 +247,7 @@ static String initCode(Node *node) {
 			t = t->parent;
 		}
 
-		return "SL_counter" + String(t->id) + " += " + String(maxScreenChild(t)) + "\n" +
+		return "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t)) + "\n" +
 				command + "\n";
 	}
 
@@ -279,8 +280,7 @@ static String initCode(Node *node) {
 	String indent;
 
 	if (command == "screen") {
-		res = "SL_stack = []\n"
-			  "SL_last = None\n\n";
+		res = "_SL_stack = []\n\n";
 	}else
 	if (command == "if" || command == "elif" || command == "else") {
 		res = command + " " + params + ":\n";
@@ -288,10 +288,12 @@ static String initCode(Node *node) {
 	}
 
 	res += indent;
-	if (command != "screen") {
-		res += "SL_last[" + String(node->screenNum) + "] = ";
+	if (command == "screen") {
+		res += "_SL_" + params + " = ";
+	}else {
+		res += "_SL_last[" + String(node->screenNum) + "] = ";
 	}
-	res += "SL_last = [\n";
+	res += "_SL_last = [\n";
 	size_t bracketBegin = res.size() - 2;
 
 	size_t lastPropNum = size_t(-1);
@@ -335,6 +337,9 @@ static String initCode(Node *node) {
 
 
 	if (command == "screen") {
+		res += "\n"
+			   "_SL_check_events()\n";
+
 		Logger::log("\n\n\n" + res);
 //		abort();
 	}

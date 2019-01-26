@@ -22,7 +22,7 @@ struct SyntaxPart {
 	}
 };
 
-std::map<String, std::map<String, SyntaxPart>> mapSyntax;
+static std::map<String, std::map<String, SyntaxPart>> mapSyntax;
 
 
 static void addBlockChildren(const String &parents, const String &childs) {

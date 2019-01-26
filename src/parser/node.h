@@ -11,20 +11,8 @@
 
 class Node {
 private:
-	static std::vector<Node*> nodes;
-	static size_t countNodes;
 	Node(const String &fileName, size_t numLine, size_t id);
 	~Node();
-
-
-	static String jumpNextLabel;
-	static bool jumpNextIsCall;
-
-	static int preloadImages(const Node *parent, int start, int count);
-	static void preloadImageAt(const std::vector<String> &children);
-
-	static void jump(const String &label, bool isCall);
-
 
 	String fileName;
 	size_t numLine;
@@ -56,6 +44,7 @@ public:
 
 	bool isScreenProp = false;       //xpos, ypos, pos, ...
 	bool isScreenEvent = false;      //action, alternate, hover_sound...
+	bool withScreenEvent = false;    //some child is screen event
 	bool isScreenConst = false;      //have only const {children and props}?
 	bool isScreenEnd = false;        //all children (not props) are const
 	size_t screenNum   = size_t(-1); //childNum, but skip screenConst children

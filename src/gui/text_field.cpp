@@ -1,5 +1,7 @@
 #include "text_field.h"
 
+#include <SDL2/SDL_ttf.h>
+
 #include "group.h"
 #include "renderer.h"
 
@@ -7,19 +9,16 @@
 #include "utils/utils.h"
 
 
-const char *TextField::defaultFontName = "Arial";
+static const char *defaultFontName = "Arial";
 
-TextField::TextField() {
-
-}
+TextField::TextField() {}
 
 void TextField::setFont(String fontName, int textSize, bool setAsOriginal) {
 	if (!fontName) {
 		fontName = defaultFontName;
 	}
 
-	if (textSize < MIN_TEXT_SIZE) textSize = MIN_TEXT_SIZE;
-	if (textSize > MAX_TEXT_SIZE) textSize = MAX_TEXT_SIZE;
+	textSize = Math::inBounds(textSize, MIN_TEXT_SIZE, MAX_TEXT_SIZE);
 	this->textSize = textSize;
 	this->fontName = fontName;
 
@@ -70,7 +69,7 @@ void TextField::pushStyle() {
 	isStrike = 0;
 }
 void TextField::popStyle() {
-	const int level = bolds.size() - 1;
+	const size_t level = bolds.size() - 1;
 
 	isBold = bolds[level];
 	isItalic = italics[level];
@@ -83,7 +82,7 @@ void TextField::popStyle() {
 	strikes.pop_back();
 }
 void TextField::resetStyle() {
-	int level = bolds.size() - 1;
+	size_t level = bolds.size() - 1;
 
 	bolds[level] = 0;
 	italics[level] = 0;
@@ -95,7 +94,7 @@ String TextField::getText() const {
 	return prevText;
 }
 
-void TextField::setText(const String &text, int color) {
+void TextField::setText(const String &text, Uint32 color) {
 	if (text && !font) {
 		setFont("", 20, true);
 	}
@@ -120,14 +119,14 @@ void TextField::setText(const String &text, int color) {
 	for (size_t i = countLinesAtStart; i < lines.size(); ++i) {
 		String line = lines[i];
 
-		SDL_Rect lineRect = { 0, int(i * charHeight), 0, charHeight };
+		SDL_Rect lineRect = { 0, int(i) * charHeight, 0, charHeight };
 		lineRect.w = getLineWidth(line);
 
-		const int INDENT = charWidth * 1.5;
+		const int INDENT = int(charWidth * 1.5);
 
 		if (wordWrap && maxW > INDENT && lineRect.w > maxW) {//Включён перенос строк по словам (и он возможен) и он нужен
-			int n = line.size() - 1;
-			while (n > 0) {
+			size_t n = line.size() - 1;
+			while (n) {
 				size_t indexOpen = line.find_last_of('{', n);
 				size_t indexClose = line.find_last_of('}', n);
 				if (indexOpen != size_t(-1)) {
@@ -147,9 +146,9 @@ void TextField::setText(const String &text, int color) {
 			}
 
 			//Если перенос возможен, то разделяем текущую строку на две
-			if (int(line.size()) > n + 1) {
+			if (line.size() > n + 1) {
 				String newLine = line.substr(n + 1);
-				lines.insert(lines.begin() + i + 1, newLine);
+				lines.insert(lines.begin() + int(i) + 1, newLine);
 			}
 			lines[i].erase(n);
 			//И обрабатываем текущую строку снова
@@ -165,7 +164,7 @@ void TextField::setText(const String &text, int color) {
 	popStyle();
 
 	rect.w = std::max(maxWidth, maxLineWidth);
-	int textHeight = charHeight * lines.size();
+	int textHeight = charHeight * int(lines.size());
 
 	//Если не уместились с этим размером шрифта
 	if ((textHeight > maxH || maxLineWidth > maxW) && textSize > MIN_TEXT_SIZE) {
@@ -219,20 +218,24 @@ void TextField::addText() {
 	}
 
 	const String line = lines[numLine];
-	const int length = line.size();
+	const size_t length = line.size();
 
 	for (; charOutNum < length; ++charOutNum) {
 		char c = line[charOutNum];
 
 		if (c == '{') {
-			int start = charOutNum + 1;
-			int end = charOutNum + 2;
+			size_t start = charOutNum + 1;
+			size_t end = charOutNum + 2;
 			while (end < length && line[end] != '}') {
 				++end;
 			}
 			charOutNum = end;
 
-			int k = line[start] == '/' ? (++start, -1) : 1;//открытие или закрытие тэга
+			int k = 1;//открытие или закрытие тэга
+			if (line[start] == '/') {
+				++start;
+				k = -1;
+			}
 
 			start = line.find_first_not_of(' ', start);
 			end = line.find_last_not_of(' ', end);
@@ -244,12 +247,12 @@ void TextField::addText() {
 			else if (type == "s") isStrike += k;
 			else if (type.startsWith("color")) {
 				if (k == 1) {
-					int sepIndex = type.find('=');
+					size_t sepIndex = type.find('=');
 					String colorStr = type.substr(sepIndex + 1);
 					if (colorStr && colorStr[0] == '#') {
 						colorStr.erase(0, 1);
 					}
-					int newColor = colorStr.toInt(16);
+					Uint32 newColor = Uint32(colorStr.toInt(16));
 
 					curColor = newColor;
 				}else {
@@ -267,8 +270,8 @@ void TextField::addText() {
 			if (isUnderline < 0) isUnderline = 0;
 			if (isStrike < 0) isStrike = 0;
 		}else {
-			int startStyle = charOutNum;
-			int endStyle = charOutNum + 1;
+			size_t startStyle = charOutNum;
+			size_t endStyle = charOutNum + 1;
 
 			while (endStyle < length && line[endStyle] != '{') {
 				++endStyle;
@@ -302,7 +305,11 @@ int TextField::getLineWidth(String text, bool resetPrevStyle) {
 			}
 			i = end;
 
-			int k = text[start] == '/' ? (++start, -1) : 1;//открытие или закрытие тэга
+			int k = 1;//открытие или закрытие тэга
+			if (text[start] == '/') {
+				++start;
+				k = -1;
+			}
 
 			start = text.find_first_not_of(' ', start);
 			end = text.find_last_not_of(' ', end);
@@ -351,7 +358,7 @@ int TextField::getLineWidth(String text, bool resetPrevStyle) {
 	return res;
 }
 
-void TextField::addChars(String c, int color) {
+void TextField::addChars(String c, Uint32 color) {
 	if (!font) return;
 
 	int style = TTF_STYLE_NORMAL;
@@ -369,7 +376,7 @@ void TextField::addChars(String c, int color) {
 	charX += strWidth;
 
 	SDL_Color sdlColor;
-	sdlColor.r = color >> 16;
+	sdlColor.r = Uint8(color >> 16);
 	sdlColor.g = (color >> 8) & 0xFF;
 	sdlColor.b = color & 0xFF;
 	sdlColor.a = 0xFF;
@@ -411,9 +418,9 @@ void TextField::setAlign(String hAlign, String vAlign) {
 
 	int indentY = 0;
 	if (vAlign == "center") {
-		indentY = (getHeight() - lines.size() * charHeight) / 2;
+		indentY = (getHeight() - int(lines.size()) * charHeight) / 2;
 	}else if (vAlign == "down") {
-		indentY = getHeight() - lines.size() * charHeight;
+		indentY = getHeight() - int(lines.size()) * charHeight;
 	}
 
 	int maxWidth = this->maxWidth;
@@ -426,7 +433,7 @@ void TextField::setAlign(String hAlign, String vAlign) {
 	if (hAlign == "left") {
 		for (size_t i = 0; i < rects.size(); ++i) {
 			rects[i].x = 0;
-			rects[i].y = i * charHeight + indentY;
+			rects[i].y = int(i) * charHeight + indentY;
 		}
 	}else {
 		bool isCenter = hAlign == "center";
@@ -436,7 +443,7 @@ void TextField::setAlign(String hAlign, String vAlign) {
 			}else {
 				rects[i].x = maxWidth - rects[i].w;
 			}
-			rects[i].y = i * charHeight + indentY;
+			rects[i].y = int(i) * charHeight + indentY;
 		}
 	}
 
@@ -452,8 +459,8 @@ void TextField::setAlign(String hAlign, String vAlign) {
 		int x = rects[i].x;
 		int y = rects[i].y;
 
-		int rotX = x * cosA - y * sinA;
-		int rotY = x * sinA + y * cosA;
+		int rotX = int(x * cosA - y * sinA);
+		int rotY = int(x * sinA + y * cosA);
 
 		rects[i].x = rotX;
 		rects[i].y = rotY;

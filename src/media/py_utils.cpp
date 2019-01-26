@@ -99,7 +99,7 @@ static void setGlobalValue(const char *key, T t) {
 
 template<typename T>
 static void setGlobalFunc(const char *key, T t) {
-	PyObject *pyFunc = makePyFunc(t);
+	PyObject *pyFunc = makeFuncImpl(key, t);
 	Py_REFCNT(pyFunc) = 0;
 
 	PyDict_SetItemString(PyUtils::global, key, pyFunc);
@@ -143,7 +143,7 @@ PyUtils::PyUtils() {
 	setGlobalFunc("show_screen", Screen::addToShow);
 	setGlobalFunc("hide_screen", Screen::addToHide);
 	setGlobalFunc("has_screen", Screen::hasScreen);
-	setGlobalFunc("SL_check_events", Screen::checkEvents);
+	setGlobalFunc("_SL_check_events", Screen::checkScreenEvents);
 
 	setGlobalFunc("start_mod", Game::startMod);
 	setGlobalFunc("get_mod_start_time", Game::getModStartTime);
@@ -232,7 +232,7 @@ void PyUtils::errorProcessing(const String &code) {
 		PyObject *res = PyObject_Call(formatTraceback, args, nullptr);
 		Py_DECREF(args);
 
-		size_t len = Py_SIZE(res);
+		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
 			PyObject *item = PyList_GET_ITEM(res, i);
 			traceback += PyString_AS_STRING(item);
