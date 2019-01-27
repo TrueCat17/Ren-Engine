@@ -52,20 +52,20 @@ public:
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
 	int getGlobalRotate() const { return globalRotate; }
-	virtual void updateGlobal();
-
 	double getGlobalAlpha() const { return globalAlpha; }
+	virtual void updateGlobal();
 
 	int getX() const { return rect.x; }
 	int getY() const { return rect.y; }
+	int getWidth() const { return rect.w; }
+	int getHeight() const { return rect.h; }
 	double getAlpha() const { return alpha; }
 
 	void setX(int value) { rect.x = value; }
 	void setY(int value) { rect.y = value; }
+	void setWidth(int value) { rect.w = value; }
+	void setHeight(int value) { rect.h = value; }
 	void setAlpha(double value) { alpha = value; }
-
-	int getWidth() const { return rect.w; }
-	int getHeight() const { return rect.h; }
 
 	void setPos(int x, int y);
 	void setSize(int w, int h);

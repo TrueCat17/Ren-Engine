@@ -15,10 +15,33 @@
 #include "utils/utils.h"
 
 
-std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> ImageManipulator::functions;
+static std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> functions;
 
-std::deque<String> ImageManipulator::toLoadImages;
-std::mutex ImageManipulator::toLoadMutex;
+static std::deque<String> toLoadImages;
+static std::mutex toLoadMutex;
+
+
+static inline bool smallImage(int w, int h) {
+	return h < 32 && w * h < 64 * 32;
+}
+
+
+static void preloadThread();
+
+static SurfacePtr scale(const std::vector<String> &args);
+static SurfacePtr factorScale(const std::vector<String> &args);
+static SurfacePtr rendererScale(const std::vector<String> &args);
+static SurfacePtr crop(const std::vector<String> &args);
+static SurfacePtr composite(const std::vector<String> &args);
+static SurfacePtr flip(const std::vector<String> &args);
+static SurfacePtr matrixColor(const std::vector<String> &args);
+static SurfacePtr reColor(const std::vector<String> &args);
+static SurfacePtr rotozoom(const std::vector<String> &args);
+static SurfacePtr mask(const std::vector<String> &args);
+
+static SurfacePtr blurH(const std::vector<String> &args);
+static SurfacePtr blurV(const std::vector<String> &args);
+static SurfacePtr motionBlur(const std::vector<String> &args);
 
 
 void ImageManipulator::init() {
@@ -42,14 +65,16 @@ void ImageManipulator::init() {
 
 
 SurfacePtr ImageManipulator::getNewNotClear(int w, int h) {
+	if (w <= 0 || h <= 0) return nullptr;
+
 	int pitch = w * 4;
-	void *pixels = SDL_malloc(h * pitch);
+	void *pixels = SDL_malloc(size_t(h * pitch));
 
 	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, 32, pitch, SDL_PIXELFORMAT_RGBA32),
 				   SDL_FreeSurface);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 
-	res->flags &= ~SDL_PREALLOC;
+	res->flags &= Uint32(~SDL_PREALLOC);
 	return res;
 }
 
@@ -64,7 +89,7 @@ void ImageManipulator::loadImage(const std::string &desc) {
 		toLoadImages.push_back(desc);
 	}
 }
-void ImageManipulator::preloadThread() {
+void preloadThread() {
 	while (!GV::exit) {
 		if (toLoadImages.empty()) {
 			Utils::sleep(5, false);
@@ -75,11 +100,14 @@ void ImageManipulator::preloadThread() {
 				desc = toLoadImages.front();
 				toLoadImages.pop_front();
 			}
-			getImage(desc);
+			ImageManipulator::getImage(desc);
 		}
 	}
 }
 
+
+static std::mutex vecMutex;
+static std::vector<String> processingImages;
 
 SurfacePtr ImageManipulator::getImage(String desc) {
 	desc = Algo::clear(desc);
@@ -88,9 +116,6 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 	if (res) return res;
 
 
-	static std::mutex vecMutex;
-	static std::vector<String> processingImages;
-
 	bool in = true;
 	while (in) {
 		{
@@ -98,11 +123,9 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 			in = Algo::in(desc, processingImages);
 			if (!in) {
 				res = ImageCaches::getThereIsSurfaceOrNull(desc);
-				if (res) {
-					return res;
-				}else {
-					processingImages.push_back(desc);
-				}
+				if (res) return res;
+
+				processingImages.push_back(desc);
 			}
 		}
 		if (in) {
@@ -121,7 +144,7 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 
 			for (size_t i = 0; i < processingImages.size(); ++i) {
 				if (processingImages[i] == desc) {
-					processingImages.erase(processingImages.begin() + i);
+					processingImages.erase(processingImages.begin() + int(i));
 					return;
 				}
 			}
@@ -132,7 +155,7 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 	const std::vector<String> args = Algo::getArgs(desc, '|');
 
 	if (args.empty()) {
-		Utils::outMsg("Image::getImage", "Список аргументов пуст");
+		Utils::outMsg("ImageManipulator::getImage", "Список аргументов пуст");
 		return nullptr;
 	}
 	if (args.size() == 1) {
@@ -147,7 +170,7 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 
 	auto it = functions.find(command);
 	if (it == functions.end()) {
-		Utils::outMsg("Image::getImage", "Неизвестная команда <" + command + ">");
+		Utils::outMsg("ImageManipulator::getImage", "Неизвестная команда <" + command + ">");
 	}else {
 		auto func = it->second;
 		res = func(args);
@@ -158,19 +181,19 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 }
 
 
-SurfacePtr ImageManipulator::scale(const std::vector<String> &args) {
+static SurfacePtr scale(const std::vector<String> &args) {
 	if (args.size() != 4) {
-		Utils::outMsg("Image::scale", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::scale", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const int w = Algo::clear(args[2]).toInt();
 	const int h = Algo::clear(args[3]).toInt();
 	if (w <= 0 || h <= 0) {
-		Utils::outMsg("Image::scale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::scale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -181,24 +204,24 @@ SurfacePtr ImageManipulator::scale(const std::vector<String> &args) {
 	const SDL_Rect imgRect = { 0, 0, img->w, img->h };
 	SDL_Rect resRect = { 0, 0, w, h };
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 
 	return res;
 }
 
-SurfacePtr ImageManipulator::factorScale(const std::vector<String> &args) {
+static SurfacePtr factorScale(const std::vector<String> &args) {
 	if (args.size() != 3) {
-		Utils::outMsg("Image::factorScale", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::factorScale", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const double k = Algo::clear(args[2]).toDouble();
 	if (k <= 0) {
-		Utils::outMsg("Image::factorScale", "Коэффициент масштабирования должен быть > 0:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::factorScale", "Коэффициент масштабирования должен быть > 0:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -209,24 +232,24 @@ SurfacePtr ImageManipulator::factorScale(const std::vector<String> &args) {
 	const SDL_Rect imgRect = { 0, 0, img->w, img->h };
 	SDL_Rect resRect = { 0, 0, std::max(int(img->w * k), 1), std::max(int(img->h * k), 1) };
 
-	SurfacePtr res = getNewNotClear(resRect.w, resRect.h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(resRect.w, resRect.h);
 	SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 
 	return res;
 }
-SurfacePtr ImageManipulator::rendererScale(const std::vector<String> &args) {
+static SurfacePtr rendererScale(const std::vector<String> &args) {
 	if (args.size() != 4) {
-		Utils::outMsg("Image::rendererScale", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::rendererScale", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const int w = Algo::clear(args[2]).toInt();
 	const int h = Algo::clear(args[3]).toInt();
 	if (w <= 0 || h <= 0) {
-		Utils::outMsg("Image::rendererScale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::rendererScale", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -241,12 +264,12 @@ SurfacePtr ImageManipulator::rendererScale(const std::vector<String> &args) {
 	return Renderer::getScaled(img, w, h);
 }
 
-SurfacePtr ImageManipulator::crop(const std::vector<String> &args) {
+static SurfacePtr crop(const std::vector<String> &args) {
 	if (args.size() != 3) {
-		Utils::outMsg("Image::crop", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::crop", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const String rectStr = Algo::clear(args[2]);
@@ -258,11 +281,11 @@ SurfacePtr ImageManipulator::crop(const std::vector<String> &args) {
 	const int h = rectVec[3].toInt();
 
 	if (w <= 0 || h <= 0) {
-		Utils::outMsg("Image::crop", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::crop", "Некорректные размеры:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	if (x + w > img->w || y + h > img->h) {
-		Utils::outMsg("Image::crop", "Область вырезки выходит за пределы изображения:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::crop", "Область вырезки выходит за пределы изображения:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -273,15 +296,15 @@ SurfacePtr ImageManipulator::crop(const std::vector<String> &args) {
 	SDL_Rect imgRect = {x, y, w, h};
 	SDL_Rect resRect = {0, 0, w, h};
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	SDL_BlitScaled(img.get(), &imgRect, res.get(), &resRect);
 
 	return res;
 }
 
-SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
+static SurfacePtr composite(const std::vector<String> &args) {
 	if (args.size() % 2) {
-		Utils::outMsg("Image::composite", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::composite", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -291,17 +314,17 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 	const int resW = sizeVec.size() == 2 ? sizeVec[0].toInt() : 0;
 	const int resH = sizeVec.size() == 2 ? sizeVec[1].toInt() : 0;
 	if (sizeVec.size() != 2 || resW <= 0 || resH <= 0) {
-		Utils::outMsg("Image::composite", "Некорректные размеры <" + sizeStr + ">");
+		Utils::outMsg("ImageManipulator::composite", "Некорректные размеры <" + sizeStr + ">");
 		return nullptr;
 	}
 
 	if (args.size() == 4) {
 		const String posStr = Algo::clear(args[2]);
 		const String imagePath = Algo::clear(args[3]);
-		SurfacePtr image = getImage(imagePath);
+		SurfacePtr image = ImageManipulator::getImage(imagePath);
 
 		if (!image) {
-			Utils::outMsg("Image::composite", "Не удалось получить изображение <" + imagePath + ">");
+			Utils::outMsg("ImageManipulator::composite", "Не удалось получить изображение <" + imagePath + ">");
 		}else {
 			const String imSizeStr = String(image->w) + ' ' + image->h;
 			if (posStr == "0 0" && imSizeStr == sizeStr) {
@@ -337,18 +360,18 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 
 	}
 
-	SurfacePtr res = getNewNotClear(resW, resH);
+	SurfacePtr res = ImageManipulator::getNewNotClear(resW, resH);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 	const int resPitch = res->pitch;
 
 
 	const String firstImgStr = args.size() > 2 ? Algo::clear(args[3]) : "";
-	SurfacePtr firstImg = firstImgStr ? getImage(firstImgStr) : nullptr;
+	SurfacePtr firstImg = firstImgStr ? ImageManipulator::getImage(firstImgStr) : nullptr;
 	if (!firstImg) {
 		if (args.size() > 2) {
-			Utils::outMsg("Image::composite", "Не удалось получить изображение <" + firstImgStr + ">");
+			Utils::outMsg("ImageManipulator::composite", "Не удалось получить изображение <" + firstImgStr + ">");
 		}
-		::memset(resPixels, 0, resH * resPitch);
+		::memset(resPixels, 0, size_t(resH * resPitch));
 	}else {
 		const String firstPosStr = Algo::clear(args[2]);
 		const std::vector<String> firstPosVec = firstPosStr.split(' ');
@@ -359,7 +382,7 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 		const int h = firstImg->h;
 
 		if (yOn > 0) {
-			::memset(resPixels, 0, yOn * resPitch);//up
+			::memset(resPixels, 0, size_t(yOn * resPitch));//up
 		}
 
 		const int left = xOn * 4;
@@ -372,15 +395,15 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 
 		for (int y = yOn; y < yOn + h; ++y) {
 			if (left > 0) {
-				::memset(resPixels + y * resPitch, 0, left);//left
+				::memset(resPixels + y * resPitch, 0, size_t(left));//left
 			}
 			if (right > 0) {
-				::memset(resPixels + y * resPitch + left + center, 0, right);//right
+				::memset(resPixels + y * resPitch + left + center, 0, size_t(right));//right
 			}
 		}
 
 		if (resH > yOn + h) {
-			::memset(resPixels + (yOn + h) * resPitch, 0, (resH - (yOn + h)) * resPitch);//down
+			::memset(resPixels + (yOn + h) * resPitch, 0, size_t((resH - (yOn + h)) * resPitch));//down
 		}
 	}
 
@@ -390,9 +413,9 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 		const std::vector<String> posVec = posStr.split(' ');
 
 		const String imgStr = Algo::clear(args[i + 1]);
-		SurfacePtr img = getImage(imgStr);
+		SurfacePtr img = ImageManipulator::getImage(imgStr);
 		if (!img) {
-			Utils::outMsg("Image::composite", "Не удалось получить изображение <" + imgStr + ">");
+			Utils::outMsg("ImageManipulator::composite", "Не удалось получить изображение <" + imgStr + ">");
 			continue;
 		}
 
@@ -438,7 +461,7 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 						*(Uint32*)dst = *(Uint32*)src;
 					}else {
 						const Uint16 blend = dstA * (255 - srcA);
-						const Uint16 outA = std::min(srcA + (blend + 128) / 256, 255);
+						const Uint16 outA = std::min<Uint16>(srcA + (blend + 128) / 256, 255);
 						const Uint16 sA = srcA * 256 / outA;
 						const Uint16 dA = blend / outA;
 
@@ -453,7 +476,7 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 						dst[Rshift / 8] = (srcR * sA + dstR * dA + 128) / 256;
 						dst[Gshift / 8] = (srcG * sA + dstG * dA + 128) / 256;
 						dst[Bshift / 8] = (srcB * sA + dstB * dA + 128) / 256;
-						dst[Ashift / 8] = outA;
+						dst[Ashift / 8] = Uint8(outA);
 					}
 				}
 			}
@@ -473,13 +496,13 @@ SurfacePtr ImageManipulator::composite(const std::vector<String> &args) {
 	return res;
 }
 
-SurfacePtr ImageManipulator::flip(const std::vector<String> &args) {
+static SurfacePtr flip(const std::vector<String> &args) {
 	if (args.size() != 4) {
-		Utils::outMsg("Image::flip", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::flip", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const bool horizontal = Algo::clear(args[2]) == "True";
@@ -491,7 +514,7 @@ SurfacePtr ImageManipulator::flip(const std::vector<String> &args) {
 	const int w = img->w;
 	const int h = img->h;
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 
 	const Uint32 *imgPixels = (const Uint32*)img->pixels;
 	Uint32 *resPixels = (Uint32*)res->pixels;
@@ -509,7 +532,7 @@ SurfacePtr ImageManipulator::flip(const std::vector<String> &args) {
 				*resPixel++ = *imgPixel--;
 			}
 		}else {
-			::memcpy(resPixel, imgPixel, w * 4);
+			::memcpy(resPixel, imgPixel, size_t(w) * 4);
 		}
 	};
 
@@ -527,19 +550,19 @@ SurfacePtr ImageManipulator::flip(const std::vector<String> &args) {
 	return res;
 }
 
-SurfacePtr ImageManipulator::matrixColor(const std::vector<String> &args) {
+static SurfacePtr matrixColor(const std::vector<String> &args) {
 	if (args.size() != 3) {
-		Utils::outMsg("Image::matrixColor", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::matrixColor", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const String matrixStr = Algo::clear(args[2]);
 	const std::vector<String> matrixVec = matrixStr.split(' ');
 	if (matrixVec.size() != 25) {
-		Utils::outMsg("Image::matrixColor",
+		Utils::outMsg("ImageManipulator::matrixColor",
 					  "Размер матрицы должен быть равен 25,\n"
 					  "Матрица: <" + matrixStr + ">");
 		return img;
@@ -568,10 +591,10 @@ SurfacePtr ImageManipulator::matrixColor(const std::vector<String> &args) {
 	const int h = img->h;
 	const int imgPitch = img->pitch;
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 	if (!matrix[15] && !matrix[16] && !matrix[17] && !matrix[18] && !matrix[19]) {
-		::memset(resPixels, 0, w * h * 4);
+		::memset(resPixels, 0, size_t(w * h * 4));
 		return res;
 	}
 
@@ -592,11 +615,11 @@ SurfacePtr ImageManipulator::matrixColor(const std::vector<String> &args) {
 				const Uint8 oldB = src[Bshift / 8];
 				const Uint8 oldA = src[Ashift / 8];
 
-				const Uint8 newA = Math::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255);
+				const Uint8 newA = Uint8(Math::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255));
 				if (newA) {
-					const Uint8 newR = Math::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255);
-					const Uint8 newG = Math::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255);
-					const Uint8 newB = Math::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255);
+					const Uint8 newR = Uint8(Math::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255));
+					const Uint8 newG = Uint8(Math::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255));
+					const Uint8 newB = Uint8(Math::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255));
 
 					dst[Rshift / 8] = newR;
 					dst[Gshift / 8] = newG;
@@ -628,19 +651,19 @@ SurfacePtr ImageManipulator::matrixColor(const std::vector<String> &args) {
 	return res;
 }
 
-SurfacePtr ImageManipulator::reColor(const std::vector<String> &args) {
+static SurfacePtr reColor(const std::vector<String> &args) {
 	if (args.size() != 3) {
-		Utils::outMsg("Image::reColor", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::reColor", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const String colorsStr = Algo::clear(args[2]);
 	const std::vector<String> colorsVec = colorsStr.split(' ');
 	if (colorsVec.size() != 4) {
-		Utils::outMsg("Image::reColor", "Неверное количество цветов:\n<" + colorsStr + ">");
+		Utils::outMsg("ImageManipulator::reColor", "Неверное количество цветов:\n<" + colorsStr + ">");
 		return img;
 	}
 
@@ -659,10 +682,10 @@ SurfacePtr ImageManipulator::reColor(const std::vector<String> &args) {
 	const int h = img->h;
 	const int imgPitch = img->pitch;
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 	if (!a) {
-		::memset(resPixels, 0, w * h * 4);
+		::memset(resPixels, 0, size_t(w * h * 4));
 		return res;
 	}
 
@@ -700,19 +723,19 @@ SurfacePtr ImageManipulator::reColor(const std::vector<String> &args) {
 	return res;
 }
 
-SurfacePtr ImageManipulator::rotozoom(const std::vector<String> &args) {
+static SurfacePtr rotozoom(const std::vector<String> &args) {
 	if (args.size() != 4) {
-		Utils::outMsg("Image::rotozoom", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::rotozoom", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
-	const int angle = -Algo::clear(args[2]).toDouble();
+	const int angle = int(-Algo::clear(args[2]).toDouble());
 	double zoom = Algo::clear(args[3]).toDouble();
 	if (!zoom) {
-		Utils::outMsg("Image::rotozoom", "zoom не должен быть равен 0");
+		Utils::outMsg("ImageManipulator::rotozoom", "zoom не должен быть равен 0");
 		zoom = 1;
 	}
 	if (zoom == 1 && angle == 0) {
@@ -732,8 +755,8 @@ SurfacePtr ImageManipulator::rotozoom(const std::vector<String> &args) {
 
 	const double absSin = abs(Math::getSin(angle));
 	const double absCos = abs(Math::getCos(angle));
-	const int resW = w * absCos + h * absSin;
-	const int resH = w * absSin + h * absCos;
+	const int resW = int(w * absCos + h * absSin);
+	const int resH = int(w * absSin + h * absCos);
 
 	const SDL_Rect srcRect = {0, 0, img->w, img->h};
 	const SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
@@ -744,18 +767,18 @@ SurfacePtr ImageManipulator::rotozoom(const std::vector<String> &args) {
 	std::shared_ptr<SDL_Renderer> renderer(SDL_CreateSoftwareRenderer(res.get()), SDL_DestroyRenderer);
 
 	if (!renderer) {
-		Utils::outMsg("Image::rotozoom, SDL_CreateSoftwareRenderer", SDL_GetError());
+		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateSoftwareRenderer", SDL_GetError());
 		return nullptr;
 	}
 
 	TexturePtr texture(SDL_CreateTextureFromSurface(renderer.get(), img.get()), SDL_DestroyTexture);
 	if (!texture) {
-		Utils::outMsg("Image::rotozoom, SDL_CreateTextureFromSurface", SDL_GetError());
+		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateTextureFromSurface", SDL_GetError());
 		return nullptr;
 	}
 
 	if (SDL_RenderCopyEx(renderer.get(), texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
-		Utils::outMsg("Image::rotozoom, SDL_RenderCopyEx", SDL_GetError());
+		Utils::outMsg("ImageManipulator::rotozoom, SDL_RenderCopyEx", SDL_GetError());
 		return nullptr;
 	}
 
@@ -814,7 +837,7 @@ static void maskCycles(const int value,
 		}
 	};
 
-	if (ImageManipulator::smallImage(w, h)) {
+	if (smallImage(w, h)) {
 		for (int y = 0; y < h; ++y) {
 			processLine(y);
 		}
@@ -884,63 +907,63 @@ static void maskChooseAlpha(const char alphaChannel, bool alphaFromImage,
 	}
 }
 
-SurfacePtr ImageManipulator::mask(const std::vector<String> &args) {
+static SurfacePtr mask(const std::vector<String> &args) {
 	if (args.size() != 8) {
-		Utils::outMsg("Image::mask", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
-	SurfacePtr mask = getImage(args[2]);
+	SurfacePtr mask = ImageManipulator::getImage(args[2]);
 	if (!mask) return nullptr;
 
 	if (img->w != mask->w || img->h != mask->h) {
 		const String imgSize = String(img->w) + "x" + String(img->h);
 		const String maskSize = String(mask->w) + "x" + String(mask->h);
-		Utils::outMsg("Image::mask", "Размеры маски " + imgSize + " не соответствуют размерам изображения " + maskSize + ":\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Размеры маски " + imgSize + " не соответствуют размерам изображения " + maskSize + ":\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
 	const String channelStr = Algo::clear(args[3]);
 	if (channelStr != "r" && channelStr != "g" && channelStr != "b" && channelStr != "a") {
-		Utils::outMsg("Image::mask", "Некорректный канал <" + channelStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Некорректный канал <" + channelStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	const char channel = channelStr[0];
 
 	const String valueStr = Algo::clear(args[4]);
 	if (!valueStr.isNumber()) {
-		Utils::outMsg("Image::mask", "Значение <" + valueStr + "> должно являться числом:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Значение <" + valueStr + "> должно являться числом:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
-	const int value = valueStr.toDouble();
+	const int value = int(valueStr.toDouble());
 
 	const String cmp = Algo::clear(args[5]);
 	static const std::vector<String> cmps = {"l", "g", "e", "ne", "le", "ge"};
 	if (!Algo::in(cmp, cmps)) {
-		Utils::outMsg("Image::mask", "Некорректная функция сравнения <" + cmp + ">, ожидалось l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Некорректная функция сравнения <" + cmp + ">, ожидалось l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
 	const String alphaStr = Algo::clear(args[6]);
 	if (alphaStr != "r" && alphaStr != "g" && alphaStr != "b" && alphaStr != "a") {
-		Utils::outMsg("Image::mask", "Некорректный канал <" + alphaStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Некорректный канал <" + alphaStr + ">, ожидалось r, g, b или a:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	const char alphaChannel = alphaStr[0];
 
 	const String alphaImage = Algo::clear(args[7]);
 	if (alphaImage != "1" && alphaImage != "2") {
-		Utils::outMsg("Image::mask", "Некорректный номер изображения <" + alphaStr + ">, ожидалось 1 (основа) или 2 (маска):\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Некорректный номер изображения <" + alphaStr + ">, ожидалось 1 (основа) или 2 (маска):\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
 
 	const Uint8 *maskPixels = (Uint8*)mask->pixels;
 
-	SurfacePtr res = getNewNotClear(img->w, img->h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(img->w, img->h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
 
@@ -960,13 +983,13 @@ SurfacePtr ImageManipulator::mask(const std::vector<String> &args) {
 }
 
 
-SurfacePtr ImageManipulator::blurH(const std::vector<String> &args) {
+static SurfacePtr blurH(const std::vector<String> &args) {
 	if (args.size() != 3) {
-		Utils::outMsg("Image::blurH", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::blurH", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const int w = img->w;
@@ -977,14 +1000,14 @@ SurfacePtr ImageManipulator::blurH(const std::vector<String> &args) {
 
 	const int dist = std::min(args[2].toInt(), w);
 	if (dist < 0) {
-		Utils::outMsg("Image::blurH", "Расстояние размытия меньше 0:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::blurH", "Расстояние размытия меньше 0:\n<" + String::join(args, ", ") + ">");
 		return img;
 	}
 	if (!dist) {
 		return img;
 	}
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8 *)res->pixels;
 
 	auto processLine = [&](int y) {
@@ -995,8 +1018,8 @@ SurfacePtr ImageManipulator::blurH(const std::vector<String> &args) {
 			Uint32 r, g, b, a;
 			r = g = b = a = 0;
 
-			const int xStart = std::max(0, x - dist);
-			const int xEnd = std::min(x + dist + 1, w);
+			const Uint32 xStart = Uint32(std::max(0, x - dist));
+			const Uint32 xEnd = Uint32(std::min(x + dist + 1, w));
 			const Uint32 count = xEnd - xStart;
 
 			const Uint8 *pixel = src + xStart * 4;
@@ -1019,10 +1042,10 @@ SurfacePtr ImageManipulator::blurH(const std::vector<String> &args) {
 			}
 
 			if (a) {
-				dst[Rshift / 8] = r / count;
-				dst[Gshift / 8] = g / count;
-				dst[Bshift / 8] = b / count;
-				dst[Ashift / 8] = a / count;
+				dst[Rshift / 8] = Uint8(r / count);
+				dst[Gshift / 8] = Uint8(g / count);
+				dst[Bshift / 8] = Uint8(b / count);
+				dst[Ashift / 8] = Uint8(a / count);
 			}else {
 				*(Uint32*)dst = 0;
 			}
@@ -1043,13 +1066,13 @@ SurfacePtr ImageManipulator::blurH(const std::vector<String> &args) {
 
 	return res;
 }
-SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
+static SurfacePtr blurV(const std::vector<String> &args) {
 	if (args.size() != 3) {
-		Utils::outMsg("Image::blurV", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::blurV", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const int w = img->w;
@@ -1060,7 +1083,7 @@ SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
 
 	const int dist = std::min(args[2].toInt(), w);
 	if (dist < 0) {
-		Utils::outMsg("Image::blurV", "Расстояние размытия меньше 0:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::blurV", "Расстояние размытия меньше 0:\n<" + String::join(args, ", ") + ">");
 		return img;
 	}
 	if (!dist) {
@@ -1071,9 +1094,9 @@ SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
 	const int rotateH = w;
 	const int rotatePitch = rotateW * 4;
 
-	std::unique_ptr<Uint8[]> rotateTo(new Uint8[w * h * 4]);
+	std::unique_ptr<Uint8[]> rotateTo(new Uint8[size_t(w * h * 4)]);
 
-	std::unique_ptr<Uint8[]> rotateFrom(new Uint8[w * h * 4]);
+	std::unique_ptr<Uint8[]> rotateFrom(new Uint8[size_t(w * h * 4)]);
 	auto lineToRotate = [&](int y) {
 		const Uint8 *src = pixels + y * pitch;
 		const Uint8 *srcEnd = src + pitch;
@@ -1110,8 +1133,8 @@ SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
 			Uint32 r, g, b, a;
 			r = g = b = a = 0;
 
-			const int xStart = std::max(0, x - dist);
-			const int xEnd = std::min(x + dist + 1, rotateH);
+			const Uint32 xStart = Uint32(std::max(0, x - dist));
+			const Uint32 xEnd = Uint32(std::min(x + dist + 1, rotateH));
 			const Uint32 count = xEnd - xStart;
 
 			const Uint8 *pixel = src + xStart * 4;
@@ -1134,10 +1157,10 @@ SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
 			}
 
 			if (a) {
-				dst[Rshift / 8] = r / count;
-				dst[Gshift / 8] = g / count;
-				dst[Bshift / 8] = b / count;
-				dst[Ashift / 8] = a / count;
+				dst[Rshift / 8] = Uint8(r / count);
+				dst[Gshift / 8] = Uint8(g / count);
+				dst[Bshift / 8] = Uint8(b / count);
+				dst[Ashift / 8] = Uint8(a / count);
 			}else {
 				*(Uint32*)dst = 0;
 			}
@@ -1156,7 +1179,7 @@ SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
 		}
 	}
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8 *)res->pixels;
 
 	auto rotateToLine = [&](int rotateY) {
@@ -1191,28 +1214,28 @@ SurfacePtr ImageManipulator::blurV(const std::vector<String> &args) {
 }
 
 
-SurfacePtr ImageManipulator::motionBlur(const std::vector<String> &args) {
+static SurfacePtr motionBlur(const std::vector<String> &args) {
 	if (args.size() != 5) {
-		Utils::outMsg("Image::motionBlur", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::motionBlur", "Неверное количество аргументов:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	SurfacePtr img = getImage(args[1]);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const int w = img->w;
 	const int h = img->h;
 	const Uint8 *pixels = (const Uint8*)img->pixels;
-	const size_t pitch = img->pitch;
+	const int pitch = img->pitch;
 
 	const String &strCX = args[2];
 	const String &strCY = args[3];
-	const int cX = Math::inBounds(strCX.toDouble() * (strCX.find('.') == size_t(-1) ? 1 : w), 0, w - 1);
-	const int cY = Math::inBounds(strCY.toDouble() * (strCY.find('.') == size_t(-1) ? 1 : h), 0, h - 1);
+	const int cX = Math::inBounds(int(strCX.toDouble() * (strCX.find('.') == size_t(-1) ? 1 : w)), 0, w - 1);
+	const int cY = Math::inBounds(int(strCY.toDouble() * (strCY.find('.') == size_t(-1) ? 1 : h)), 0, h - 1);
 
 	int dist = args[4].toInt();
 	if (dist <= 0 || dist > 255) {
-		Utils::outMsg("Image::motionBlur", "Расстояние размывания должно быть от 1 до 255:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::motionBlur", "Расстояние размывания должно быть от 1 до 255:\n<" + String::join(args, ", ") + ">");
 		dist = Math::inBounds(dist, 5, 255);
 	}
 	if (dist == 1) {
@@ -1221,15 +1244,15 @@ SurfacePtr ImageManipulator::motionBlur(const std::vector<String> &args) {
 
 	const int maxDX = std::max(cX, w - 1 - cX);
 	const int maxDY = std::max(cY, h - 1 - cY);
-	const float maxDist = std::sqrt(maxDX * maxDX + maxDY * maxDY);
+	const float maxDist = std::sqrt(float(maxDX * maxDX + maxDY * maxDY));
 	const float distK = std::sqrt(dist / maxDist) / 2;
 
 
-	SurfacePtr res = getNewNotClear(w, h);
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
 	auto processLine = [&](int y) {
-		Uint8 *resPixel = resPixels + y * pitch;
+		Uint8 *resPixel = resPixels + size_t(y * pitch);
 
 		for (int x = 0; x < w; ++x) {
 			Uint16 r, g, b, a;
@@ -1237,7 +1260,7 @@ SurfacePtr ImageManipulator::motionBlur(const std::vector<String> &args) {
 
 			const float dX = (cX - x) * distK;
 			const float dY = (cY - y) * distK;
-			const int d = std::sqrt(dX * dX + dY * dY);
+			const int d = int(std::sqrt(dX * dX + dY * dY));
 
 			if (d) {
 				const float dx = dX / d;
@@ -1246,7 +1269,7 @@ SurfacePtr ImageManipulator::motionBlur(const std::vector<String> &args) {
 				float ix = x;
 				float iy = y;
 				for (int i = 0; i < d; ++i) {
-					const Uint8 *pixel = pixels + size_t(iy) * pitch + size_t(ix) * 4;
+					const Uint8 *pixel = pixels + size_t(iy * pitch + ix * 4);
 					ix += dx;
 					iy += dy;
 
@@ -1257,10 +1280,10 @@ SurfacePtr ImageManipulator::motionBlur(const std::vector<String> &args) {
 				}
 
 				if (a) {
-					resPixel[Rshift / 8] = r / d;
-					resPixel[Gshift / 8] = g / d;
-					resPixel[Bshift / 8] = b / d;
-					resPixel[Ashift / 8] = a / d;
+					resPixel[Rshift / 8] = Uint8(r / d);
+					resPixel[Gshift / 8] = Uint8(g / d);
+					resPixel[Bshift / 8] = Uint8(b / d);
+					resPixel[Ashift / 8] = Uint8(a / d);
 				}else {
 					*(Uint32*)resPixel = 0;
 				}

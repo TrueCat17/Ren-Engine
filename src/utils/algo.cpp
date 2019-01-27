@@ -7,10 +7,9 @@ size_t Algo::getStartArg(const String &args, size_t end, const char separator) {
 	while (res < args.size() && args[res] == separator) {
 		++res;
 	}
-	if (res >= args.size()) {
-		return -1;
-	}
-	return res;
+	if (res < args.size()) return res;
+
+	return size_t(-1);
 }
 size_t Algo::getEndArg(const String &args, size_t start, const char separator) {
 	bool wasSeparator = false;

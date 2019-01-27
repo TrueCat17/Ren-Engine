@@ -11,7 +11,7 @@ private:
 public:
 	Image(Node *node, Screen *screen);
 
-	virtual void updateSize();
+	virtual void updateRect(bool callFromContainer = false);
 	virtual void updateTexture(bool skipError = false);
 };
 

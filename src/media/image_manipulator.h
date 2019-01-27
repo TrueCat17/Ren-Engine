@@ -26,33 +26,7 @@ static const Uint8 Ashift = 24;
 
 
 class ImageManipulator {
-private:
-	static std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> functions;
-
-	static std::deque<String> toLoadImages;
-	static std::mutex toLoadMutex;
-	static void preloadThread();
-
-	static SurfacePtr scale(const std::vector<String> &args);
-	static SurfacePtr factorScale(const std::vector<String> &args);
-	static SurfacePtr rendererScale(const std::vector<String> &args);
-	static SurfacePtr crop(const std::vector<String> &args);
-	static SurfacePtr composite(const std::vector<String> &args);
-	static SurfacePtr flip(const std::vector<String> &args);
-	static SurfacePtr matrixColor(const std::vector<String> &args);
-	static SurfacePtr reColor(const std::vector<String> &args);
-	static SurfacePtr rotozoom(const std::vector<String> &args);
-	static SurfacePtr mask(const std::vector<String> &args);
-
-	static SurfacePtr blurH(const std::vector<String> &args);
-	static SurfacePtr blurV(const std::vector<String> &args);
-	static SurfacePtr motionBlur(const std::vector<String> &args);
-
 public:
-	static inline bool smallImage(int w, int h) {
-		return h < 32 && w * h < 64 * 32;
-	}
-
 	static void init();
 	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
 

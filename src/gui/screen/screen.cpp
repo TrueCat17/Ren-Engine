@@ -25,8 +25,8 @@ Node* Screen::getDeclared(const String &name) {
 Screen* Screen::getMain(const String &name) {
 	if (GV::screens) {
 		for (DisplayObject *d : GV::screens->children) {
-			Screen *scr = dynamic_cast<Screen*>(d);
-			if (scr && scr->name == name) {
+			Screen *scr = static_cast<Screen*>(d);
+			if (scr->name == name) {
 				return scr;
 			}
 		}
@@ -54,31 +54,30 @@ void Screen::updateLists() {
 
 void Screen::show(const String &name) {
 	Screen *scr = getMain(name);
-	if (scr) {
-		GV::screens->addChildAt(scr, GV::screens->children.size());//Наверх в списке потомков своего родителя
-		return;
+	if (!scr) {
+		Node *node = getDeclared(name);
+		if (!node) {
+			Utils::outMsg("Screen::show", "Скрин с именем <" + name + "> не существует");
+			return;
+		}
+
+		ScreenNodeUtils::init(node);
+		scr = new Screen(node, nullptr);
 	}
 
-	Node *node = getDeclared(name);
-	if (!node) {
-		Utils::outMsg("Screen::show", "Скрин с именем <" + name + "> не существует");
-		return;
-	}
-
-	scr = new Screen(node, nullptr);
-	scr->updateProps();
 	GV::screens->addChildAt(scr, GV::screens->children.size());
 }
 void Screen::hide(const String &name) {
-	if (GV::screens) {
-		for (DisplayObject *d : GV::screens->children) {
-			Screen *scr = dynamic_cast<Screen*>(d);
-			if (scr && scr->name == name) {
-				delete scr;
-				return;
-			}
+	if (!GV::screens) return;
+
+	for (DisplayObject *d : GV::screens->children) {
+		Screen *scr = static_cast<Screen*>(d);
+		if (scr->name == name) {
+			delete scr;
+			return;
 		}
 	}
+
 	Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не отображается, поэтому его нельзя скрыть");
 }
 
@@ -122,28 +121,19 @@ bool Screen::_hasModal = false;
 void Screen::updateScreens() {
 	if (!GV::screens) return;
 
-	for (DisplayObject *d : GV::screens->children) {
-		Screen *s = dynamic_cast<Screen*>(d);
-		if (s) {
-		//	s->updateScreenProps();
-		}
-	}
-
 	_hasModal = false;
 	for (DisplayObject *d : GV::screens->children) {
-		Screen *s = dynamic_cast<Screen*>(d);
-		if (s && s->modal) {
+		const Screen *s = static_cast<Screen*>(d);
+		if (s->modal) {
 			_hasModal = true;
 			break;
 		}
 	}
 
 	auto zOrderCmp = [](DisplayObject *a, DisplayObject *b) -> bool {
-		Screen *sA = dynamic_cast<Screen*>(a);
-		Screen *sB = dynamic_cast<Screen*>(b);
-		double zA = sA ? sA->zorder : 0;
-		double zB = sB ? sB->zorder : 0;
-		return zA < zB;
+		const Screen *sA = static_cast<Screen*>(a);
+		const Screen *sB = static_cast<Screen*>(b);
+		return sA->zorder < sB->zorder;
 	};
 	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
@@ -246,8 +236,6 @@ Screen::Screen(Node *node, Screen *screen):
 	Container(node, this, screen ? screen : this),
 	name(node->params)
 {
-	ScreenNodeUtils::init(node);
-
 	screenCode = ScreenNodeUtils::getScreenCode(node);
 	co = PyUtils::getCompileObject(screenCode, getFileName(), 0);
 	if (!co) {

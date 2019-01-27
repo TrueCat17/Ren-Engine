@@ -64,6 +64,8 @@ void Key::setUpState(const SDL_Scancode key) {
 	}
 }
 
+void Key::updateRect(bool) {}
+
 void Key::checkEvents() {
 	if (!isModal()) return;
 

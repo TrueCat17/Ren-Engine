@@ -20,8 +20,8 @@ Text::~Text() {
 }
 
 
-void Text::updateSize() {
-	Child::updateSize();
+void Text::updateRect(bool) {
+	Child::updateRect();
 
 	tf->enable = true;
 

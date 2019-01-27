@@ -9,17 +9,6 @@
 
 
 class Game {
-private:
-	static int maxFps;
-
-	static int fps;
-	static int frameTime;
-
-	static long modStartTime;
-	static bool canAutoSave;
-
-	static void _startMod(const String &dir, const String &loadPath = "");
-
 public:
 	static bool modStarting;
 

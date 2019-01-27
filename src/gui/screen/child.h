@@ -19,6 +19,8 @@ protected:
 	bool inVBox = false;
 	bool inHBox = false;
 
+	void updatePos();
+
 public:
 	bool xposIsDouble, yposIsDouble;
 	bool xanchorPreIsDouble, yanchorPreIsDouble;
@@ -35,19 +37,18 @@ public:
 
 	String first_param;
 
-	Node *node;
+	Node *const node;
 
 	Container *screenParent;
 
-	const std::vector<ScreenUpdateFunc>& updateFuncs;
+	const std::vector<ScreenUpdateFunc> *const updateFuncs;
 	PyObject *props = nullptr;
 
 
 	Child(Node *node, Container *screenParent, Screen *screen);
 
 	void updateProps();
-	virtual void updatePos();
-	virtual void updateSize();
+	virtual void updateRect(bool callFromContainer = false);
 
 	virtual void updateTexture(bool skipError = false);
 	virtual void checkEvents();

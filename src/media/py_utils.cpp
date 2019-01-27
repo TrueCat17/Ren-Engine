@@ -21,12 +21,15 @@
 #include "utils/utils.h"
 
 
-PyUtils* PyUtils::obj = nullptr;
+typedef std::tuple<const String, const String, int> PyCode;
+
+static std::map<String, PyObject*> constObjects;
+static std::map<PyCode, PyCodeObject*> compiledObjects;
 
 static PyObject *formatTraceback;
 
-std::map<String, PyObject*> PyUtils::constObjects;
-std::map<PyCode, PyCodeObject*> PyUtils::compiledObjects;
+
+PyUtils* PyUtils::obj = nullptr;
 
 const String PyUtils::True = "True";
 const String PyUtils::False = "False";

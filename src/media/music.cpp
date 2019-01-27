@@ -10,9 +10,11 @@
 #include "utils/utils.h"
 
 
-bool Music::needToClear = false;
+static std::mutex globalMutex;
+static bool needToClear = false;
+
+
 int Music::startUpdateTime = 0;
-std::mutex Music::globalMutex;
 
 std::map<std::string, double> Music::mixerVolumes;
 
@@ -27,10 +29,7 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
-
-		if (!music->audioPos || music->audioLen <= 0) {
-			continue;
-		}
+		if (!music->audioPos || music->audioLen <= 0) continue;
 
 		Uint32 len = Uint32(globalLen) > music->audioLen ? music->audioLen : Uint32(globalLen);
 
@@ -82,7 +81,7 @@ void Music::init() {
 						}
 
 						if (needToDelete) {
-							musics.erase(musics.begin() + i);
+							musics.erase(musics.begin() + int(i));
 							--i;
 							delete music;
 						}
@@ -126,14 +125,12 @@ void Music::clear() {
 void Music::realClear() {
 	mixerVolumes.clear();
 
-	for (size_t i = 0; i < channels.size(); ++i) {
-		Channel *t = channels[i];
+	for (Channel *t : channels) {
 		delete t;
 	}
 	channels.clear();
 
-	for (size_t i = 0; i < musics.size(); ++i) {
-		Music *t = musics[i];
+	for (Music *t : musics) {
 		delete t;
 	}
 	musics.clear();
@@ -240,7 +237,7 @@ void Music::play(const std::string &desc,
 						  "Значением параметра fadein ожидалось число, получено <" + args[3] + ">\n\n" + place);
 			return;
 		}
-		fadeIn = fadeInStr.toDouble() * 1000;
+		fadeIn = int(fadeInStr.toDouble() * 1000);
 	}
 
 
@@ -249,7 +246,7 @@ void Music::play(const std::string &desc,
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
 		if (music->channel->name == channelName) {
-			musics.erase(musics.begin() + i);
+			musics.erase(musics.begin() + int(i));
 			delete music;
 
 			break;
@@ -301,7 +298,7 @@ void Music::stop(const std::string &desc,
 						  "Значением параметра fadeout ожидалось число, получено <" + args[2] + ">\n\n" + place);
 			return;
 		}
-		fadeOut = fadeOutStr.toDouble() * 1000;
+		fadeOut = int(fadeOutStr.toDouble() * 1000);
 	}
 
 	for (size_t i = 0; i < musics.size(); ++i) {
@@ -502,7 +499,7 @@ void Music::loadNextParts(size_t count) {
 }
 
 int Music::getVolume() const {
-	int max = SDL_MIX_MAXVOLUME * channel->volume * mixerVolumes[channel->mixer];
+	int max = int(SDL_MIX_MAXVOLUME * channel->volume * mixerVolumes[channel->mixer]);
 
 	//fadeIn
 	if (fadeIn && (startFadeInTime + fadeIn > startUpdateTime)) {
@@ -511,7 +508,7 @@ int Music::getVolume() const {
 
 	//fadeOut
 	if (fadeOut && startFadeOutTime + fadeOut > startUpdateTime) {
-		return max * (1 - double(startUpdateTime - startFadeOutTime) / fadeOut);
+		return int(max * (1 - double(startUpdateTime - startFadeOutTime) / fadeOut));
 	}
 
 	//usual

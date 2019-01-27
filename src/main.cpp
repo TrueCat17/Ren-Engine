@@ -31,9 +31,9 @@
 #include "utils/utils.h"
 
 
+static std::string versionStr;
 std::string getVersion() {
-	static std::string res;
-	if (res.empty()) {
+	if (versionStr.empty()) {
 		std::string major = "0";
 		std::string minor = "9";
 		std::string micro = "0";
@@ -47,9 +47,9 @@ std::string getVersion() {
 		std::string day = (date[4] == ' ') ? ('0' + date.substr(5, 1)) : date.substr(4, 2);
 		std::string year = date.substr(7, 4);
 
-		res = major + "." + minor + "." + micro + "-" + year + "." + month + "." + day;
+		versionStr = major + "." + minor + "." + micro + "-" + year + "." + month + "." + day;
 	}
-	return res;
+	return versionStr;
 }
 
 //before windowSize-changes
@@ -76,9 +76,9 @@ static void changeWindowSize(bool maximized) {
 
 		if (maximized) {//Можно только уменьшать, увеличивать нельзя
 			if (double(w) / h > k) {
-				w = h * k;
+				w = int(h * k);
 			}else {
-				h = w / k;
+				h = int(w / k);
 			}
 		}else {
 			SDL_Rect usableBounds;
@@ -103,23 +103,23 @@ static void changeWindowSize(bool maximized) {
 			}
 
 			if (abs(dX) >= abs(dY)) {
-				h = w / k;
+				h = int(w / k);
 			}else {
-				w = h * k;
+				w = int(h * k);
 			}
 
 			const int MIN_W = 640;
 			if (w < MIN_W || h < MIN_W / k) {
 				w = MIN_W;
-				h = MIN_W / k;
+				h = int(MIN_W / k);
 			}
 			if (w > usableBounds.w) {
 				w = usableBounds.w;
-				h = w / k;
+				h = int(w / k);
 			}
 			if (h > usableBounds.h) {
 				h = usableBounds.h;
-				w = h * k;
+				w = int(h * k);
 			}
 		}
 		if (w == startW && w == GV::width && h == startH && h == GV::height) return;
@@ -175,12 +175,12 @@ String setDir(String newRoot) {
 	for (size_t i = 0; i < parts.size(); ++i) {
 		String &part = parts[i];
 		if (part == ".") {
-			parts.erase(parts.begin() + i);
+			parts.erase(parts.begin() + int(i));
 			--i;
 		}else
 
 		if (part == ".." && i != 0) {
-			parts.erase(parts.begin() + i - 1, parts.begin() + i + 1);
+			parts.erase(parts.begin() + int(i) - 1, parts.begin() + int(i) + 1);
 			i -= 2;
 		}
 	}

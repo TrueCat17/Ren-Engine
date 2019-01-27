@@ -6,6 +6,8 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
+#include "utils/utils.h"
+
 
 TextButton::TextButton(Node* node, Screen *screen):
 	Text(node, screen)
@@ -18,10 +20,16 @@ TextButton::TextButton(Node* node, Screen *screen):
 		}else {
 			const Node *style = this->node->getProp("style");
 			const String &styleName = style ? style->params : this->node->command;
-			const std::string sound = PyUtils::getStr(Style::getProp(styleName, "activate_sound"));
-			if (sound != "None") {
-				Music::play("button_click '" + sound + "'",
+			PyObject *activateSoundObj = Style::getProp(styleName, "activate_sound");
+
+			if (PyString_CheckExact(activateSoundObj)) {
+				const char *sound = PyString_AS_STRING(activateSoundObj);
+				Music::play("button_click '" + std::string(sound) + "'",
 							this->getFileName(), this->getNumLine());
+			}else if (activateSoundObj != Py_None) {
+				String type = activateSoundObj->ob_type->tp_name;
+				Utils::outMsg("TextButton::onLeftClick",
+							  "In style." + styleName + ".activate_sound expected type str, got " + type);
 			}
 		}
 
@@ -51,8 +59,8 @@ TextButton::TextButton(Node* node, Screen *screen):
 	btnRect.init(this, onLeftClick, onRightClick);
 }
 
-void TextButton::updateSize() {
-	Text::updateSize();
+void TextButton::updateRect(bool) {
+	Text::updateRect(false);
 
 	if (xsize <= 0) {
 		xsizeIsTextureWidth = true;
@@ -69,8 +77,8 @@ void TextButton::updateSize() {
 	}
 }
 
-void TextButton::updateTexture(bool skipeError) {
-	if (skipeError && !ground) return;
+void TextButton::updateTexture(bool skipError) {
+	if (skipError && !ground) return;
 
 	if (!surface || !hover || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
 		if (prevGround != ground && !hover) {
@@ -84,7 +92,7 @@ void TextButton::updateTexture(bool skipeError) {
 
 		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
 		if (ysizeIsTextureHeight) ysize = surface ? surface->h : 0;
-		updateSize();
+		updateRect(false);
 	}
 }
 
@@ -101,10 +109,16 @@ void TextButton::checkEvents() {
 			if (hoverSound) {
 				Music::play("button_hover " + hoverSound->params, hoverSound->getFileName(), hoverSound->getNumLine());
 			}else {
-				const std::string sound = PyUtils::getStr(Style::getProp(*styleName, "hover_sound"));
-				if (sound != "None") {
-					Music::play("button_hover '" + sound + "'",
+				PyObject *hoverSoundObj = Style::getProp(*styleName, "hover_sound");
+
+				if (PyString_CheckExact(hoverSoundObj)) {
+					const char *sound = PyString_AS_STRING(hoverSoundObj);
+					Music::play("button_hover '" + std::string(sound) + "'",
 								getFileName(), getNumLine());
+				}else if (hoverSoundObj != Py_None) {
+					String type = hoverSoundObj->ob_type->tp_name;
+					Utils::outMsg("TextButton::hovered",
+								  "In style." + *styleName + ".hover_sound expected type str, got " + type);
 				}
 			}
 

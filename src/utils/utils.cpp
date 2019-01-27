@@ -205,7 +205,7 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 		if (!defaultDeclAt) return true;
 		if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) return true;
 
-		size_t sizeDefaultDeclAt = Py_SIZE(defaultDeclAt);
+		size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
 		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
 			Node *node = Node::getNewNode("some assign default_decl_at", 0);
 

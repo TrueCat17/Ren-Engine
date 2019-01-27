@@ -1,11 +1,12 @@
 #include "logger.h"
 
 #include <ctime>
+#include <fstream>
 
 #include "utils/string.h"
 
 
-std::ofstream Logger::out;
+static std::ofstream out;
 
 void Logger::init() {
 	out.open("log.txt");
@@ -16,7 +17,7 @@ void Logger::init() {
 }
 
 void Logger::log(const String &str) {
-	const size_t size = out.tellp();
+	const size_t size = size_t(out.tellp());
 	const size_t maxSize = 100 << 10;//100 kB
 	if (size > maxSize) return;
 

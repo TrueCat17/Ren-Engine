@@ -55,8 +55,13 @@ void Child::updateProps() {
 				}
 			}
 
+			bool needAddChildren = false;
 			for (Node *child : node->children) {
-				if (!child->isScreenProp || !child->isScreenConst) continue;
+				if (!child->isScreenConst) continue;
+				if (!child->isScreenProp) {
+					needAddChildren = true;
+					continue;
+				}
 
 				PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
 				PyTuple_SET_ITEM(props, 0, res);
@@ -66,10 +71,11 @@ void Child::updateProps() {
 					func(this, 0);
 				}
 			}
-			updatePos();
-			updateSize();
-			updateGlobal();
+			if (needAddChildren && node->isScreenConst) {
+				static_cast<Container*>(this)->addChildrenFromNode();
+			}
 
+			updateRect();
 			updateTexture(true);
 
 			props = prevProps;
@@ -85,8 +91,8 @@ void Child::updateProps() {
 
 	enable = true;
 
-	for (size_t i = 0; i < updateFuncs.size(); ++i) {
-		ScreenUpdateFunc updateFunc = updateFuncs[i];
+	for (size_t i = 0; i < updateFuncs->size(); ++i) {
+		ScreenUpdateFunc updateFunc = (*updateFuncs)[i];
 		if (updateFunc) {
 			updateFunc(this, i);
 		}
@@ -111,7 +117,7 @@ void Child::updatePos() {
 	}
 }
 
-void Child::updateSize() {
+void Child::updateRect(bool callFromContainer) {
 	setSize(
 		int(xsize * (xsizeIsDouble ? GV::width : 1)),
 		int(ysize * (ysizeIsDouble ? GV::height : 1))
@@ -122,6 +128,10 @@ void Child::updateSize() {
 		crop.y = int(ycrop * (ycropIsDouble ? surface->h : 1));
 		crop.w = int(hcrop * (wcropIsDouble ? surface->w : 1));
 		crop.h = int(wcrop * (hcropIsDouble ? surface->h : 1));
+	}
+
+	if (!callFromContainer) {
+		updatePos();
 	}
 }
 

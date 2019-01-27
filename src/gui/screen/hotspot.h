@@ -18,8 +18,7 @@ public:
 
 	Hotspot(Node *node, Screen *screen);
 
-	virtual void updatePos();
-	virtual void updateSize();
+	virtual void updateRect(bool callFromContainer = false);
 	virtual void checkEvents();
 
 	virtual bool checkAlpha(int x, int y) const;

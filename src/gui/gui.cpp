@@ -1,6 +1,6 @@
 #include "gui.h"
 
-#define printTime 0
+#define printTime 1
 #if printTime
 #include <iostream>
 #endif
@@ -34,8 +34,7 @@ void GUI::update() {
 #if printTime
 				const int b = Utils::getTimer();
 #endif
-				scr->updateSize();
-				scr->updatePos();
+				scr->updateRect();
 				scr->updateGlobal();
 #if printTime
 				const int c = Utils::getTimer();

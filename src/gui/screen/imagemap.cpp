@@ -8,8 +8,8 @@ Imagemap::Imagemap(Node *node, Screen *screen):
 	Container(node, this, screen)
 {}
 
-void Imagemap::updateSize() {
-	Container::updateSize();
+void Imagemap::updateRect(bool) {
+	Container::updateRect();
 
 	if (xsize <= 0) {
 		xsizeIsTextureWidth = true;
@@ -41,6 +41,6 @@ void Imagemap::updateTexture(bool skipError) {
 
 		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
 		if (ysizeIsTextureHeight) ysize = surface ? surface->h : 0;
-		updateSize();
+		updateRect(false);
 	}
 }

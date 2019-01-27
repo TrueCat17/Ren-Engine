@@ -33,6 +33,7 @@ public:
 	Key(Node *node, Screen *screen);
 	~Key();
 
+	virtual void updateRect(bool callFromContainer = false);
 	virtual void checkEvents();
 };
 

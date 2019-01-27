@@ -30,19 +30,21 @@
 #include "utils/utils.h"
 
 
-int Game::maxFps = 60;
+static int maxFps = 60;
 
-int Game::fps = 60;
-int Game::frameTime = 16;
+static int fps = 60;
+static int frameTime = 16;
 
-long Game::modStartTime = 0;
-bool Game::canAutoSave = true;
+static int modStartTime = 0;
+static bool canAutoSave = true;
 
 bool Game::modStarting = false;
 
 
+static void _startMod(const String &dir, const String &loadPath = "");
+
 void Game::startMod(const std::string &dir) {
-	std::thread([=] { Game::_startMod(dir); }).detach();
+	std::thread([=] { _startMod(dir); }).detach();
 }
 int Game::getModStartTime() {
 	return modStartTime;
@@ -91,7 +93,7 @@ void Game::load(const std::string &table, const std::string &name) {
 		std::getline(is, modName);
 	}
 
-	std::thread([=] { Game::_startMod(modName, fullPath); }).detach();
+	std::thread([=] { _startMod(modName, fullPath); }).detach();
 }
 const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::vector<String> startScreensVec;
@@ -106,7 +108,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::getline(is, tmp);
 
 	std::getline(is, tmp);
-	size_t countScreens = tmp.toInt();
+	size_t countScreens = size_t(tmp.toInt());
 	for (size_t i = 0; i < countScreens; ++i) {
 		String name;
 		std::getline(is, name);
@@ -116,7 +118,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 
 
 	std::getline(is, tmp);
-	size_t countMusicChannels = tmp.toInt();
+	size_t countMusicChannels = size_t(tmp.toInt());
 	for (size_t i = 0; i < countMusicChannels; ++i) {
 		std::getline(is, tmp);
 		const std::vector<String> tmpVec = tmp.split(' ');
@@ -138,7 +140,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::getline(is, tmp);
 
 	std::getline(is, tmp);
-	size_t countMusics = tmp.toInt();
+	size_t countMusics = size_t(tmp.toInt());
 	for (size_t i = 0; i < countMusics; ++i) {
 		String url, fileName;
 
@@ -152,11 +154,11 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 			continue;
 		}
 
-		int numLine = tmpVec[0].toInt();
+		size_t numLine = size_t(tmpVec[0].toInt());
 		const String &channel = tmpVec[1];
 		int fadeIn = tmpVec[2].toInt();
 		int fadeOut = tmpVec[3].toInt();
-		int64_t pos = tmpVec[4].toDouble();
+		int64_t pos = int64_t(tmpVec[4].toDouble());
 
 		Music::play(channel + " '" + url + "'", fileName, numLine);
 		Music *music = nullptr;
@@ -186,7 +188,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 
 
 	std::getline(is, tmp);
-	size_t countMixers = tmp.toInt();
+	size_t countMixers = size_t(tmp.toInt());
 	for (size_t i = 0; i < countMixers; ++i) {
 		std::getline(is, tmp);
 
@@ -244,10 +246,10 @@ void Game::save() {
 		//screens
 		std::vector<const Screen*> mainScreens;
 		for (const DisplayObject *d : GV::screens->children) {
-			const Screen* s = dynamic_cast<const Screen*>(d);
+			const Screen* s = static_cast<const Screen*>(d);
 
 			static const std::set<String> noSaveScreens = {"pause", "load", "save"};
-			if (s && !noSaveScreens.count(s->getName())) {
+			if (!noSaveScreens.count(s->getName())) {
 				mainScreens.push_back(s);
 			}
 		}
@@ -290,7 +292,7 @@ void Game::save() {
 
 		const std::map<std::string, double> mixerVolumes = Music::getMixerVolumes();
 		infoFile << mixerVolumes.size() << '\n';
-		for (const std::pair<std::string, double> &p : mixerVolumes) {
+		for (auto &p : mixerVolumes) {
 			infoFile << p.first << ' ' << p.second << '\n';
 		}
 		infoFile << '\n';
@@ -315,8 +317,8 @@ void Game::save() {
 			}
 		}
 
-		size_t width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt();
-		size_t height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt();
+		size_t width = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt());
+		size_t height = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt());
 		const SurfacePtr screenshot = Renderer::getScreenshot(width, height);
 		if (screenshot) {
 			const String screenshotPath = fullPath + "screenshot.png";
@@ -330,10 +332,10 @@ void Game::save() {
 	}
 }
 
-void Game::_startMod(const String &dir, const String &loadPath) {
+static void _startMod(const String &dir, const String &loadPath) {
 	int waitingStartTime = Utils::getTimer();
 
-	modStarting = true;
+	Game::modStarting = true;
 	GV::inGame = false;
 
 	static std::mutex modMutex;
@@ -342,8 +344,8 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 	{
 		std::lock_guard<std::mutex> g2(GV::updateMutex);
 
-		Game::modStartTime = std::time(nullptr);
-		Game::canAutoSave = true;
+		modStartTime = int(std::time(nullptr));
+		canAutoSave = true;
 
 		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
@@ -388,7 +390,7 @@ void Game::_startMod(const String &dir, const String &loadPath) {
 	GV::mainExecNode = p.parse();
 
 	GV::inGame = true;
-	modStarting = false;
+	Game::modStarting = false;
 
 
 	if (loadPath) {
@@ -422,8 +424,8 @@ void Game::makeScreenshot() {
 		fs::create_directory(path);
 	}
 
-	size_t width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt();
-	size_t height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt();
+	size_t width = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt());
+	size_t height = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt());
 
 	{
 		Renderer::needToRender = Renderer::needToRedraw = false;
@@ -514,7 +516,7 @@ std::string Game::getFromConfig(const std::string &param) {
 PyObject* Game::getArgs(const std::string &str) {
 	std::vector<String> vec = Algo::getArgs(str);
 
-	PyObject *res = PyList_New(vec.size());
+	PyObject *res = PyList_New(long(vec.size()));
 	for (const String &s : vec) {
 		PyObject *str = PyString_FromString(s.c_str());
 		PyList_Append(res, str);
@@ -541,11 +543,11 @@ int Game::getFrameTime() {
 int Game::getFps() {
 	return fps;
 }
-void Game::setFps(int fps) {
-	fps = Math::inBounds(fps, 1, maxFps);
+void Game::setFps(int newFps) {
+	newFps = Math::inBounds(newFps, 1, maxFps);
 
-	Game::fps = fps;
-	frameTime = 1000 / fps;
+	fps = newFps;
+	frameTime = 1000 / newFps;
 }
 
 void Game::setStageSize(int width, int height) {

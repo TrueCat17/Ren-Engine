@@ -25,10 +25,16 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 		}else {
 			const Node *style = this->node->getProp("style");
 			const String &styleName = style ? style->params : this->node->command;
-			const std::string sound = PyUtils::getStr(Style::getProp(styleName, "activate_sound"));
-			if (sound != "None") {
-				Music::play("button_click '" + sound + "'",
+			PyObject *activateSoundObj = Style::getProp(styleName, "activate_sound");
+
+			if (PyString_CheckExact(activateSoundObj)) {
+				const char *sound = PyString_AS_STRING(activateSoundObj);
+				Music::play("button_click '" + std::string(sound) + "'",
 							this->getFileName(), this->getNumLine());
+			}else if (activateSoundObj != Py_None) {
+				String type = activateSoundObj->ob_type->tp_name;
+				Utils::outMsg("Hotspot::onLeftClick",
+							  "In style." + styleName + ".activate_sound expected type str, got " + type);
 			}
 		}
 
@@ -58,8 +64,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 	btnRect.init(this, onLeftClick, onRightClick);
 }
 
-void Hotspot::updatePos() {}
-void Hotspot::updateSize() {}
+void Hotspot::updateRect(bool) {}
 
 void Hotspot::checkEvents() {
 	const Imagemap* imageMap = static_cast<Imagemap*>(parent);
@@ -94,12 +99,19 @@ void Hotspot::checkEvents() {
 		if (!prevMouseOver) {
 			const Node *hoverSound = node->getProp("hover_sound");
 			if (hoverSound) {
-				Music::play("button_hover " + hoverSound->params, hoverSound->getFileName(), hoverSound->getNumLine());
+				Music::play("button_hover " + hoverSound->params,
+							hoverSound->getFileName(), hoverSound->getNumLine());
 			}else {
-				const std::string sound = PyUtils::getStr(Style::getProp(*styleName, "hover_sound"));
-				if (sound != "None") {
-					Music::play("button_hover '" + sound + "'",
+				PyObject *hoverSoundObj = Style::getProp(*styleName, "hover_sound");
+
+				if (PyString_CheckExact(hoverSoundObj)) {
+					const char *sound = PyString_AS_STRING(hoverSoundObj);
+					Music::play("button_hover '" + std::string(sound) + "'",
 								getFileName(), getNumLine());
+				}else if (hoverSoundObj != Py_None) {
+					String type = hoverSoundObj->ob_type->tp_name;
+					Utils::outMsg("Hotspot::hovered",
+								  "In style." + *styleName + ".hover_sound expected type str, got " + type);
 				}
 			}
 

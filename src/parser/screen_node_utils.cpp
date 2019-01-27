@@ -26,14 +26,14 @@ static void initUpdateFuncs(Node *node);
 
 
 
-static std::map<Node*, String> screenCodes;
-static std::map<Node*, std::vector<ScreenUpdateFunc>> screenUpdateFuncs;
+static std::map<const Node*, String> screenCodes;
+static std::map<const Node*, const std::vector<ScreenUpdateFunc>*> screenUpdateFuncs;
 
 
-String ScreenNodeUtils::getScreenCode(Node *screenNode) {
+String ScreenNodeUtils::getScreenCode(const Node *screenNode) {
 	return screenCodes[screenNode];
 }
-const std::vector<ScreenUpdateFunc>& ScreenNodeUtils::getUpdateFuncs(Node *node) {
+const std::vector<ScreenUpdateFunc>* ScreenNodeUtils::getUpdateFuncs(const Node *node) {
 	return screenUpdateFuncs[node];
 }
 
@@ -53,6 +53,10 @@ void ScreenNodeUtils::init(Node *node) {
 
 void ScreenNodeUtils::clear() {
 	screenCodes.clear();
+
+	for (auto &p : screenUpdateFuncs) {
+		delete p.second;
+	}
 	screenUpdateFuncs.clear();
 }
 
@@ -376,8 +380,6 @@ static void outError(Child *obj, const String &propName, size_t propIndex, const
 	}
 }
 
-static bool tmpBool;
-
 #define updateCondition(isFloat, var, prop) \
 	if ((isFloat = PyFloat_CheckExact(prop))) { /*set & check*/ \
 		var = PyFloat_AS_DOUBLE(prop); \
@@ -394,6 +396,7 @@ static bool tmpBool;
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
+	[[maybe_unused]] bool tmpBool; \
 	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
 	else { \
 		String type = prop->ob_type->tp_name; \
@@ -641,7 +644,7 @@ static std::map<String, ScreenUpdateFunc> mapScreenFuncs = {
 };
 
 static void initUpdateFuncs(Node *node) {
-	std::vector<ScreenUpdateFunc> vec;
+	std::vector<ScreenUpdateFunc> *vec = new std::vector<ScreenUpdateFunc>();
 
 	size_t maxScreenNum = size_t(-1);
 	for (Node *child : node->children) {
@@ -656,19 +659,19 @@ static void initUpdateFuncs(Node *node) {
 		}
 	}
 
-	vec.resize(maxScreenNum + 1, nullptr);
+	vec->resize(maxScreenNum + 1, nullptr);
 
 	for (Node *child : node->children) {
 		if (!child->isScreenProp || child->isScreenConst || child->isScreenEvent) continue;
 
 		ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
-		vec[child->screenNum] = func;
+		(*vec)[child->screenNum] = func;
 	}
 
 	screenUpdateFuncs[node] = vec;
 }
 
-ScreenUpdateFunc ScreenNodeUtils::getUpdateFunc(String type, String propName) {
+ScreenUpdateFunc ScreenNodeUtils::getUpdateFunc(const String &type, String propName) {
 	ScreenUpdateFunc res = nullptr;
 
 	if (propName == "ground" || propName == "hover" || propName == "mouse") {

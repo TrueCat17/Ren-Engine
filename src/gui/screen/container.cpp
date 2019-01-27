@@ -41,36 +41,35 @@ void Container::addChildAt(DisplayObject *child, size_t index) {
 	pChildren.insert(to, child);
 
 	child->parent = parent;
-	child->updateGlobal();
 }
 
 
-void Container::updatePos() {
+void Container::updateRect(bool) {
 	for (Child *child : screenChildren) {
 		if (child->enable) {
-			child->updatePos();
+			child->updateRect();
+		}else
+		if (child->node->isScreenConst) {
+			child->enable = true;
+			child->updateRect();
 		}
 	}
-	Child::updatePos();
-}
-
-void Container::updateSize() {
-	for (Child *child : screenChildren) {
-		if (child->enable) {
-			child->updateSize();
-		}
-	}
-	Child::updateSize();
-
-	//Установлено через [x/y/]size
-	int userWidth = getWidth();
-	int userHeight = getHeight();
+	Child::updateRect(true);
 
 	using std::max;
 
-	int width;
-	if (hasHBox) {
-		width = 0;
+	if (!hasHBox) {
+		if (getWidth() <= 0) {
+			int width = 0;
+			for (DisplayObject *child : children) {
+				if (child->enable) {
+					width = max(width, child->getWidth());
+				}
+			}
+			setWidth(width);
+		}
+	}else {
+		int width = 0;
 		for (DisplayObject *child : children) {
 			if (!child->enable) continue;
 
@@ -84,20 +83,21 @@ void Container::updateSize() {
 		if (width) {
 			width -= spacing;
 		}
-	}else if (userWidth > 0) {
-		width = userWidth;
-	}else {
-		width = 0;
-		for (DisplayObject *child : children) {
-			if (child->enable) {
-				width = max(width, child->getWidth());
-			}
-		}
+		setWidth(width);
 	}
 
-	int height;
-	if (hasVBox) {
-		height = 0;
+	if (!hasVBox) {
+		if (getHeight() <= 0) {
+			int height = 0;
+			for (DisplayObject *child : children) {
+				if (child->enable) {
+					height = max(height, child->getHeight());
+				}
+			}
+			setHeight(height);
+		}
+	}else {
+		int height = 0;
 		for (DisplayObject *child : children) {
 			if (!child->enable) continue;
 
@@ -111,18 +111,10 @@ void Container::updateSize() {
 		if (height) {
 			height -= spacing;
 		}
-	}else if (userHeight > 0) {
-		height = userHeight;
-	}else {
-		height = 0;
-		for (DisplayObject *child : children) {
-			if (child->enable) {
-				height = max(height, child->getHeight());
-			}
-		}
+		setHeight(height);
 	}
 
-	setSize(width, height);
+	updatePos();
 }
 
 

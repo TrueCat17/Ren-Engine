@@ -31,14 +31,14 @@ void ImageCaches::trimTexturesCache(const SurfacePtr &last) {
 	 * После всего этого новая текстура добавляется в конец кэша
 	 */
 
-	const size_t MAX_SIZE = Config::get("max_size_textures_cache").toInt() * (1 << 20);//в МБ
-	size_t cacheSize = last->w * last->h * 4;
+	const size_t MAX_SIZE = size_t(Config::get("max_size_textures_cache").toInt()) * (1 << 20);//в МБ
+	size_t cacheSize = size_t(last->w * last->h * 4);
 
 	typedef std::map<SurfacePtr, std::pair<int, TexturePtr>>::const_iterator Iter;
 
 	for (Iter it = textures.begin(); it != textures.end(); ++it) {
 		const SurfacePtr &surface = it->first;
-		cacheSize += surface->w * surface->h * 4;
+		cacheSize += size_t(surface->w * surface->h * 4);
 	}
 	if (cacheSize < MAX_SIZE) return;
 
@@ -65,7 +65,7 @@ void ImageCaches::trimTexturesCache(const SurfacePtr &last) {
 		const SurfacePtr &surface = kv.surface();
 
 		if (surface.use_count() == 1) {
-			cacheSize -= surface->w * surface->h * 4;
+			cacheSize -= size_t(surface->w * surface->h * 4);
 			toDelete.push_back(surface);
 		}else
 		if (kv.texture().use_count() == 1) {//1 - value in textures
@@ -78,12 +78,12 @@ void ImageCaches::trimTexturesCache(const SurfacePtr &last) {
 				  [](const KV &a, const KV &b) { return a.time() < b.time(); });
 
 		for (const KV &kv : candidatesToDelete) {
-			if (cacheSize < MAX_SIZE) break;
-
 			const SurfacePtr &surface = kv.surface();
 
-			cacheSize -= surface->w * surface->h * 4;
+			cacheSize -= size_t(surface->w * surface->h * 4);
 			toDelete.push_back(surface);
+
+			if (cacheSize < MAX_SIZE) break;
 		}
 	}
 
@@ -113,8 +113,8 @@ TexturePtr ImageCaches::getTexture(const SurfacePtr &surface) {
 }
 
 void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
-	const size_t MAX_SIZE = Config::get("max_size_surfaces_cache").toInt() * (1 << 20);
-	size_t cacheSize = last->w * last->h * 4;
+	const size_t MAX_SIZE = size_t(Config::get("max_size_surfaces_cache").toInt()) * (1 << 20);
+	size_t cacheSize = size_t(last->w * last->h * 4);
 
 	typedef std::map<String, std::pair<int, SurfacePtr>>::const_iterator Iter;
 
@@ -122,7 +122,7 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
 		const SurfacePtr &surface = it->second.second;
 		if (countSurfaces.find(surface.get()) == countSurfaces.end()) {
-			cacheSize += surface->w * surface->h * 4;
+			cacheSize += size_t(surface->w * surface->h * 4);
 		}
 		countSurfaces[surface.get()] += 1;
 	}
@@ -185,7 +185,7 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 		const SurfacePtr &surface = kv.surface();
 
 		if (!(countSurfaces[surface.get()] -= 1)) {
-			cacheSize -= surface->w * surface->h * 4;
+			cacheSize -= size_t(surface->w * surface->h * 4);
 			toDelete.push_back(surface.get());
 		}
 	}
@@ -229,7 +229,7 @@ SurfacePtr ImageCaches::getSurface(const String &path) {
 	String realPath = path;
 	size_t end = realPath.find('?');
 	if (end != size_t(-1)) {
-		realPath.erase(realPath.begin() + end, realPath.end());
+		realPath.erase(realPath.begin() + int(end), realPath.end());
 	}
 	for (size_t i = 0; i < realPath.size(); ++i) {
 		if (realPath[i] == '\\') {

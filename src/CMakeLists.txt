@@ -4,6 +4,9 @@ project(Ren-Engine)
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++17 -Wno-register")
 
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fopenmp")
+set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
+
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 #	set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-generate")
@@ -93,4 +96,3 @@ endif()
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-

@@ -9,8 +9,8 @@ Image::Image(Node *node, Screen *screen):
 	Container(node, this, screen)
 {}
 
-void Image::updateSize() {
-	Container::updateSize();
+void Image::updateRect(bool) {
+	Container::updateRect();
 
 	if (xsize <= 0 && surface) {
 		xsizeIsTextureWidth = true;

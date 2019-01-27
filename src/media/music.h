@@ -43,10 +43,6 @@ private:
 	static std::vector<Channel*> channels;
 	static std::vector<Music*> musics;
 
-
-	static std::mutex globalMutex;
-
-	static bool needToClear;
 	static int startUpdateTime;
 	static void realClear();
 
@@ -109,7 +105,7 @@ public:
 							   const std::string& fileName, int numLine);
 
 	static void play(const std::string &desc,
-					   const std::string& fileName, size_t numLine);
+					 const std::string& fileName, size_t numLine);
 	static void stop(const std::string &desc,
 					 const std::string& fileName, size_t numLine);
 
@@ -121,7 +117,7 @@ public:
 	const Channel* getChannel() const { return channel; }
 	const std::string& getUrl() const { return url; }
 	const std::string& getFileName() const { return fileName; }
-	int getNumLine() const { return numLine; }
+	size_t getNumLine() const { return numLine; }
 
 	int getFadeIn() const { return std::max(fadeIn + startFadeInTime - startUpdateTime, 0); }
 	int getFadeOut() const { return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0); }

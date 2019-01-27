@@ -14,10 +14,10 @@ class ScreenNodeUtils {
 public:
 	static void init(Node *node);
 
-	static String getScreenCode(Node *screenNode);
+	static String getScreenCode(const Node *screenNode);
 
-	static const std::vector<ScreenUpdateFunc>& getUpdateFuncs(Node *node);
-	static ScreenUpdateFunc getUpdateFunc(String type, String propName);
+	static const std::vector<ScreenUpdateFunc> *getUpdateFuncs(const Node *node);
+	static ScreenUpdateFunc getUpdateFunc(const String &type, String propName);
 
 	static void clear();
 };
