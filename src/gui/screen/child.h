@@ -19,21 +19,24 @@ protected:
 	bool inVBox = false;
 	bool inHBox = false;
 
+	bool xsizeIsTextureWidth = false, ysizeIsTextureHeight = false;
+
 	void updatePos();
 
 public:
-	bool xposIsDouble, yposIsDouble;
-	bool xanchorPreIsDouble, yanchorPreIsDouble;
-	bool xsizeIsDouble, ysizeIsDouble;
-	bool xcropIsDouble, ycropIsDouble, wcropIsDouble, hcropIsDouble;
+	bool xposIsDouble       = false, yposIsDouble       = false;
+	bool xanchorPreIsDouble = false, yanchorPreIsDouble = false;
+	bool xsizeIsDouble      = false, ysizeIsDouble      = false;
 
-	bool xsizeIsTextureWidth, ysizeIsTextureHeight;
+	bool xcropIsDouble = false, ycropIsDouble = false,
+		 wcropIsDouble = false, hcropIsDouble = false;
 
-	double xpos, ypos;
-	double xanchorPre, yanchorPre;
-	double xsize, ysize;
+	double xpos       = 0, ypos       = 0;
+	double xanchorPre = 0, yanchorPre = 0;
+	double xsize      = 0, ysize      = 0;
 
-	double xcrop, ycrop, wcrop, hcrop;
+	double xcrop = 0, ycrop = 0,
+		   wcrop = 0, hcrop = 0;
 
 	String first_param;
 
@@ -48,16 +51,18 @@ public:
 	Child(Node *node, Container *screenParent, Screen *screen);
 
 	void updateProps();
-	virtual void updateRect(bool callFromContainer = false);
+	virtual void updateRect(bool needUpdatePos = true);
 
 	virtual void updateTexture(bool skipError = false);
 	virtual void checkEvents();
 
 	void setInBox(bool v, bool h) { inVBox = v; inHBox = h; }
 
+	bool wasInited() const { return inited; }
 	const String& getType() const { return node->command; }
 
 	Screen* getScreen() const { return screen; }
+	bool isFakeContainer() const { return screenParent && size_t(screenParent) != size_t(this); }
 	bool isModal() const;
 
 	const String& getFileName() const { return node->getFileName(); }

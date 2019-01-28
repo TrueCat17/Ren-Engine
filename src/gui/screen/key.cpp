@@ -76,6 +76,8 @@ void Key::checkEvents() {
 	lastUpdate = GV::numUpdate;
 
 	if (first_param != prevKeyName) {
+		prevKeyName = first_param;
+
 		const int start = first_param.startsWith("K_", false) ? 2 : 0;
 		key = SDL_GetScancodeFromName(first_param.c_str() + start);
 
@@ -94,8 +96,8 @@ void Key::checkEvents() {
 		if ((key == SDL_SCANCODE_SPACE && notReactOnSpace) || (key == SDL_SCANCODE_RETURN && notReactOnEnter)) return;
 
 		if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
-			const int dTime = GV::frameStartTime - lastDown;
-			const int delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
+			const double dTime = (GV::frameStartTime - lastDown) / 1000.0;
+			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
 			if (dTime >= delay) {
 				if (!inFirstDown) {

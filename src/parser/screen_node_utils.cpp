@@ -20,7 +20,7 @@
 static void initConsts(Node *node);
 static void initIsEnd(Node *node);
 static void initNums(Node *node);
-static String initCode(Node *node);
+static String initCode(Node *node, const String& index = "");
 
 static void initUpdateFuncs(Node *node);
 
@@ -68,7 +68,10 @@ static void initConsts(Node *node) {
 		if (node->isScreenEvent) {
 			node->parent->withScreenEvent = true;
 		}else {
-			node->isScreenConst = PyUtils::isConstExpr(node->params);
+			node->isScreenConst =
+					node->command == "style" ||
+					node->command == "has" ||
+					PyUtils::isConstExpr(node->params);
 		}
 		return;
 	}
@@ -109,7 +112,8 @@ static void initIsEnd(Node *node) {
 static void initNums(Node *node) {
 	size_t i = 0;
 	for (Node *child : node->children) {
-		if (child->isScreenConst || child->command == "$" || child->command == "python") continue;
+		if (child->isScreenConst || child->isScreenEvent ||
+			child->command == "$" || child->command == "python") continue;
 
 		child->screenNum = i++;
 		initNums(child);
@@ -133,7 +137,7 @@ static size_t maxScreenChild(Node *node) {
 static void initChildCode(Node *child, String &res, const String &indent, const String &index) {
 	if (child->isScreenConst || child->isScreenEvent) return;
 
-	String childRes = initCode(child);
+	String childRes = initCode(child, index);
 	std::vector<String> code = childRes.split('\n');
 
 	if (child->isScreenProp || child->isScreenEnd) {
@@ -197,6 +201,7 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 static String initCycleCode(Node *node) {
 	String res;
 	String id = "_SL_counter" + String(node->id);
+	String idLen = "_SL_len" + String(node->id);
 	String indent = "    ";
 
 	const String &command = node->command;
@@ -207,17 +212,17 @@ static String initCycleCode(Node *node) {
 	PyUtils::exec(node->getFileName(), node->getNumLine(), id + " = 0");
 
 	res +=
-			"_SL_last[" + String(node->screenNum) + "] = _SL_last = [None] * " + id + "\n"
-			"_SL_last_len = " + id + "\n" +
+			"_SL_last[" + String(node->screenNum) + "] = _SL_last = [None] * " + id + "\n" +
+			idLen + " = " + id + "\n" +
 			id + " = 0\n"
 			"\n" +
 			command + ' ' + params + ":\n" +
 			indent + "\n";
 
 	res +=
-			indent + "if " + id + " == _SL_last_len:\n" +
+			indent + "if " + id + " == " + idLen + ":\n" +
 			indent + "    _SL_last += [None] * " + (100 * count) + "\n" +
-			indent + "    _SL_last_len += " + (100 * count) + "\n" +
+			indent + "    " + idLen + " += " + (100 * count) + "\n" +
 			indent + "\n";
 
 
@@ -238,13 +243,19 @@ static String initCycleCode(Node *node) {
 	return res;
 }
 
-static String initCode(Node *node) {
+static String initCode(Node *node, const String& index) {
 	if (node->isScreenConst || node->isScreenEvent) return "";
 
 	const String &command = node->command;
 	const String &params = node->params;
 
-	if (node->isScreenProp) return params;
+	if (command == "use") {
+		int q = 1;
+		q += 2;
+	}
+
+	if (node->isScreenProp) return params.substr(params.find_first_not_of(' '));
+
 	if (command == "continue" || command == "break") {
 		Node *t = node->parent;
 		while (t->command != "for" && t->command != "while") {
@@ -295,7 +306,7 @@ static String initCode(Node *node) {
 	if (command == "screen") {
 		res += "_SL_" + params + " = ";
 	}else {
-		res += "_SL_last[" + String(node->screenNum) + "] = ";
+		res += "_SL_last[" + index + "] = ";
 	}
 	res += "_SL_last = [\n";
 	size_t bracketBegin = res.size() - 2;
@@ -357,6 +368,17 @@ static String initCode(Node *node) {
 
 
 static void outError(Child *obj, const String &propName, size_t propIndex, const String &expected) {
+	if (!obj->wasInited()) {
+		for (Node *child : obj->node->children) {
+			if (child->isScreenProp && child->command == propName) {
+				String desc = expected + '\n' +
+							  child->getPlace();
+				Utils::outMsg(propName, desc);
+				return;
+			}
+		}
+	}
+
 	for (Node *child : obj->node->children) {
 		if (child->isScreenProp && child->screenNum == propIndex) {
 			String desc = expected + '\n';

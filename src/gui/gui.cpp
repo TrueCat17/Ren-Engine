@@ -1,6 +1,6 @@
 #include "gui.h"
 
-#define printTime 1
+#define printTime 0
 #if printTime
 #include <iostream>
 #endif

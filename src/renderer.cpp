@@ -151,7 +151,7 @@ void Renderer::renderWithOpenGL(SDL_Texture *texture, Uint8 alpha,
 	if (check) {
 		checkErrors("renderWithOpenGL", "glBindTexture");
 	}
-	glColor4f(1, 1, 1, alpha / 255.0);
+	glColor4f(1, 1, 1, GLfloat(alpha) / 255);
 	if (check) {
 		checkErrors("renderWithOpenGL", "glColor4f");
 	}
@@ -212,7 +212,7 @@ bool Renderer::init() {
 	auto initFunc = [&]() {
 		int renderDriver = -1;
 
-		int flags;
+		Uint32 flags;
 		if (Config::get("software_renderer") == "True") {
 			flags = SDL_RENDERER_SOFTWARE;
 		}else {
@@ -241,13 +241,13 @@ bool Renderer::init() {
 
 			if (flags & SDL_RENDERER_ACCELERATED) {
 				GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
-				if (!GV::mainRenderer) {
-					Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-					error = true;
-					inited = true;
-					return;
-				}
 			}
+		}
+		if (!GV::mainRenderer) {
+			Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+			error = true;
+			inited = true;
+			return;
 		}
 
 		SDL_RendererInfo info;
@@ -361,7 +361,7 @@ void Renderer::readPixels() {
 		return;
 	}
 
-	Uint8 *pixels = new Uint8[info->h * info->pitch];
+	Uint8 *pixels = new Uint8[size_t(info->h * info->pitch)];
 	const SDL_PixelFormat *format = info->format;
 
 	if (SDL_RenderReadPixels(GV::mainRenderer, &info->clip_rect, format->format, pixels, info->pitch)) {
@@ -456,6 +456,9 @@ void Renderer::loop() {
 			}
 			if (SDL_RenderClear(GV::mainRenderer)) {
 				Utils::outMsg("SDL_RenderClear", SDL_GetError());
+			}
+			if (SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255)) {
+				Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
 			}
 
 

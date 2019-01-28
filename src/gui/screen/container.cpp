@@ -54,7 +54,7 @@ void Container::updateRect(bool) {
 			child->updateRect();
 		}
 	}
-	Child::updateRect(true);
+	Child::updateRect(false);
 
 	using std::max;
 
@@ -218,8 +218,7 @@ void Container::addChildrenFromNode() {
 				index = children.size();
 			}else {
 				Child *prev = this;
-				//prev->screenParent != prev mean that prev is fakeContainer (if/elif/else/while/for)
-				while (prev->screenParent != prev &&
+				while (prev->isFakeContainer() &&
 					   static_cast<Container*>(prev)->screenChildren.size())
 				{
 					prev = static_cast<Container*>(prev)->screenChildren.back();

@@ -28,15 +28,13 @@ bool Child::isModal() const {
 
 void Child::updateProps() {
 	if (!inited) {
-		inited = true;
-
-		if (!screenParent || screenParent == this) {
+		if (!isFakeContainer()) {
 			const std::vector<String> &propNames = SyntaxChecker::getScreenProps(node->command);
 
 			String style = node->command;
 			for (Node *child : node->children) {
 				if (child->command == "style") {
-					style = child->command;
+					style = child->params;
 					break;
 				}
 			}
@@ -62,6 +60,7 @@ void Child::updateProps() {
 					needAddChildren = true;
 					continue;
 				}
+				if (child->command == "style") continue;
 
 				PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
 				PyTuple_SET_ITEM(props, 0, res);
@@ -80,6 +79,8 @@ void Child::updateProps() {
 
 			props = prevProps;
 		}
+
+		inited = true;
 	}
 
 	if (!props || props == Py_None) return;
@@ -117,7 +118,7 @@ void Child::updatePos() {
 	}
 }
 
-void Child::updateRect(bool callFromContainer) {
+void Child::updateRect(bool needUpdatePos) {
 	setSize(
 		int(xsize * (xsizeIsDouble ? GV::width : 1)),
 		int(ysize * (ysizeIsDouble ? GV::height : 1))
@@ -130,7 +131,7 @@ void Child::updateRect(bool callFromContainer) {
 		crop.h = int(wcrop * (hcropIsDouble ? surface->h : 1));
 	}
 
-	if (!callFromContainer) {
+	if (needUpdatePos) {
 		updatePos();
 	}
 }

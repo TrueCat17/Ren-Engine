@@ -12,7 +12,7 @@
 
 struct RenderStruct {
 	SurfacePtr surface;
-	float angle;
+	int angle;
 	Uint8 alpha;
 
 	bool srcRectIsNull;

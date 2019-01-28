@@ -21,8 +21,6 @@ Text::~Text() {
 
 
 void Text::updateRect(bool) {
-	Child::updateRect();
-
 	tf->enable = true;
 
 	int width = int(xsize * (xsizeIsDouble ? GV::width : 1));
@@ -54,8 +52,10 @@ void Text::updateRect(bool) {
 			tf->setText(first_param, color);
 		}
 
-		if (first_param && (needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
-					 width != prevWidth || height != prevHeight)) {
+		if (first_param &&
+			(needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
+			 width != prevWidth || height != prevHeight))
+		{
 			int w = width  <= 0 ? tf->getWidth()  : width;
 			int h = height <= 0 ? tf->getHeight() : height;
 			tf->setSize(w, h);
@@ -69,6 +69,8 @@ void Text::updateRect(bool) {
 
 	prevWidth = width;
 	prevHeight = height;
+
+	updatePos();
 }
 
 void Text::updateGlobal() {

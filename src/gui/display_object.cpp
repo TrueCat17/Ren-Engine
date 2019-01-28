@@ -11,16 +11,10 @@ std::vector<DisplayObject*> DisplayObject::objects;
 
 
 DisplayObject::DisplayObject() {
-	rect.x = 0;
-	rect.y = 0;
-	rect.w = -1;
-	rect.h = -1;
-
 	objects.push_back(this);
 }
 
 void DisplayObject::updateGlobal() {
-	int x, y;
 	int parentXAnchor, parentYAnchor;
 	int parentGlobalX, parentGlobalY;
 	int parentGlobalRotate;
@@ -38,8 +32,8 @@ void DisplayObject::updateGlobal() {
 		parentGlobalAlpha = 1;
 	}
 
-	x = rect.x + xAnchor - parentXAnchor;
-	y = rect.y + yAnchor - parentYAnchor;
+	int x = rect.x + xAnchor - parentXAnchor;
+	int y = rect.y + yAnchor - parentYAnchor;
 
 	double sinA = Math::getSin(parentGlobalRotate);
 	double cosA = Math::getCos(parentGlobalRotate);
@@ -117,7 +111,7 @@ void DisplayObject::destroyAll() {
 	}
 }
 
-void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha,
+void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha,
 	const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center)
 {
 	if (surface && alpha) {

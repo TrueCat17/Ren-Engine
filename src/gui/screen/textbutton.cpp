@@ -12,6 +12,13 @@
 TextButton::TextButton(Node* node, Screen *screen):
 	Text(node, screen)
 {
+	for (Node *child : node->children) {
+		if (child->command == "hover") {
+			hoverIsStd = false;
+			break;
+		}
+	}
+
 	auto onLeftClick = [this](DisplayObject*) {
 		const Node *activateSound = this->node->getProp("activate_sound");
 		if (activateSound) {
@@ -60,7 +67,8 @@ TextButton::TextButton(Node* node, Screen *screen):
 }
 
 void TextButton::updateRect(bool) {
-	Text::updateRect(false);
+	Child::updateRect(false);
+	Text::updateRect();
 
 	if (xsize <= 0) {
 		xsizeIsTextureWidth = true;
@@ -81,7 +89,7 @@ void TextButton::updateTexture(bool skipError) {
 	if (skipError && !ground) return;
 
 	if (!surface || !hover || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
-		if (prevGround != ground && !hover) {
+		if (prevGround != ground && (hoverIsStd || !hover)) {
 			hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor(r'" + ground + "', im.matrix.contrast(1.5))", true);
 		}
 		prevGround = ground;
@@ -92,7 +100,7 @@ void TextButton::updateTexture(bool skipError) {
 
 		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
 		if (ysizeIsTextureHeight) ysize = surface ? surface->h : 0;
-		updateRect(false);
+		updateRect();
 	}
 }
 

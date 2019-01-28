@@ -105,6 +105,7 @@ TexturePtr ImageCaches::getTexture(const SurfacePtr &surface) {
 	if (texture) {
 		trimTexturesCache(surface);
 		textures[surface] = std::make_pair(Utils::getTimer(), texture);
+		SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_BLEND);
 		return texture;
 	}
 

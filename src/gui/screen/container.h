@@ -18,7 +18,7 @@ public:
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
-	virtual void updateRect(bool callFromContainer = false);
+	virtual void updateRect(bool needUpdatePos = true);
 };
 
 #endif // CONTAINER_H

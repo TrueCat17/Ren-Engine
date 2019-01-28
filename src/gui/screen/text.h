@@ -30,7 +30,7 @@ public:
 	Text(Node *node, Screen *screen);
 	virtual ~Text();
 
-	virtual void updateRect(bool callFromContainer = false);
+	virtual void updateRect(bool needUpdatePos = true);
 	virtual void updateGlobal();
 };
 

@@ -15,17 +15,17 @@ protected:
 
 	double globalAlpha = 1;
 
-	SDL_Rect rect;
+	SDL_Rect rect = {0, 0, -1, -1};
 
 public:
 	static std::vector<DisplayObject*> objects;
 	static void disableAll();
 	static void destroyAll();
 
-	static void pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha,
+	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha,
 							 const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center);
 
-	SDL_Rect crop;
+	SDL_Rect crop = {0, 0, 0, 0};
 	double alpha = 1;
 
 	bool enable = true;

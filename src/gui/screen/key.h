@@ -23,8 +23,8 @@ private:
 	SDL_Scancode key;
 
 public:
-	int keyDelay = 10;
-	int firstKeyDelay = 500;
+	double keyDelay = 0.010;
+	double firstKeyDelay = 0.333;
 
 	static void setToNotReact(const SDL_Scancode key);
 	static void setFirstDownState(const SDL_Scancode key);
@@ -33,7 +33,7 @@ public:
 	Key(Node *node, Screen *screen);
 	~Key();
 
-	virtual void updateRect(bool callFromContainer = false);
+	virtual void updateRect(bool needUpdatePos = true);
 	virtual void checkEvents();
 };
 
