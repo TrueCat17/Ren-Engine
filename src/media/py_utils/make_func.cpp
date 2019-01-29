@@ -13,7 +13,7 @@ void clearPyWrappers() {
 PyObject* pyFuncDelegator(PyObject *indexObj, PyObject *args) {
 	if (!PyInt_CheckExact(indexObj)) {
 		PyErr_SetString(PyExc_SystemError, "Error: index is not int");
-		throw PyConvertError();
+		return nullptr;
 	}
 
 	std::vector<PyWrapperBase> &wrappers = getPyWrappers();
@@ -21,8 +21,7 @@ PyObject* pyFuncDelegator(PyObject *indexObj, PyObject *args) {
 	if (index >= wrappers.size()) {
 		std::string err = "wrapperIndex " + std::to_string(index) + " >= " + std::to_string(wrappers.size());
 		PyErr_SetString(PyExc_SystemError, err.c_str());
-
-		throw PyConvertError();
+		return nullptr;
 	}
 
 	const PyWrapperBase &wrapper = wrappers[index];

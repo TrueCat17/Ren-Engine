@@ -138,6 +138,7 @@ void Screen::updateScreens() {
 	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
 }
 
+
 struct StackElem {
 	Container *obj;
 	size_t curChildNum;
@@ -236,6 +237,27 @@ void Screen::checkScreenEvents() {
 	}
 }
 
+void Screen::errorProcessing() {
+	if (!calcedScreen) return;
+
+	PyObject *res = PyObject_CallObject(PyUtils::sysExcInfo, nullptr);
+
+	PyObject *ptype = PySequence_Fast_GET_ITEM(res, 0);
+	PyObject *pvalue = PySequence_Fast_GET_ITEM(res, 1);
+	PyObject *ptraceback = PySequence_Fast_GET_ITEM(res, 2);
+
+	if (ptype)      Py_INCREF(ptype);
+	if (pvalue)     Py_INCREF(pvalue);
+	if (ptraceback) Py_INCREF(ptraceback);
+
+	Py_DECREF(res);
+
+	PyErr_Restore(ptype, pvalue, ptraceback);
+
+	String code = calcedScreen->screenCode;
+	PyUtils::errorProcessing(code);
+}
+
 
 Screen::Screen(Node *node, Screen *screen):
 	Container(node, this, screen ? screen : this),
@@ -244,7 +266,7 @@ Screen::Screen(Node *node, Screen *screen):
 	if (this->screen != this) return;//not main screen, command <use>
 
 	screenCode = ScreenNodeUtils::getScreenCode(node);
-	co = PyUtils::getCompileObject(screenCode, getFileName(), 0);
+	co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 0);
 	if (!co) {
 		PyUtils::errorProcessing(screenCode);
 	}

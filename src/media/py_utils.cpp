@@ -26,7 +26,8 @@ typedef std::tuple<const String, const String, int> PyCode;
 static std::map<String, PyObject*> constObjects;
 static std::map<PyCode, PyCodeObject*> compiledObjects;
 
-static PyObject *formatTraceback;
+PyObject* PyUtils::sysExcInfo = nullptr;
+PyObject* PyUtils::formatTraceback = nullptr;
 
 
 PyUtils* PyUtils::obj = nullptr;
@@ -87,25 +88,31 @@ static void setGlobalValue(const char *key, T t) {
 	PyObject *res;
 	if constexpr (std::is_same<T, bool>::value) {
 		res = t ? Py_True : Py_False;
-	}
+	}else
 	if constexpr (std::is_same<T, int>::value) {
 		res = PyInt_FromLong(t);
-		Py_REFCNT(res) = 0;
-	}
+	}else
 	if constexpr (std::is_same<T, double>::value) {
 		res = PyFloat_FromDouble(t);
-		Py_REFCNT(res) = 0;
+	}else {
+		Utils::outMsg("PyUtils::setGlobalValue", "Expected types bool, int or double");
+		res = Py_None;
+		Py_INCREF(res);
 	}
 
 	PyDict_SetItemString(PyUtils::global, key, res);
+
+	if constexpr (!std::is_same<T, bool>::value) {
+		Py_DECREF(res);
+	}
 }
 
 template<typename T>
 static void setGlobalFunc(const char *key, T t) {
 	PyObject *pyFunc = makeFuncImpl(key, t);
-	Py_REFCNT(pyFunc) = 0;
 
 	PyDict_SetItemString(PyUtils::global, key, pyFunc);
+	Py_DECREF(pyFunc);
 }
 
 static long ftoi(double d) {
@@ -116,6 +123,17 @@ PyUtils::PyUtils() {
 	Py_Initialize();
 
 	tuple1 = PyTuple_New(1);
+
+	PyObject *sysModule = PyImport_AddModule("sys");
+	PyObject *sysDict = PyModule_GetDict(sysModule);
+	sysExcInfo = PyDict_GetItemString(sysDict, "exc_info");
+	assert(sysExcInfo);
+
+	PyObject *tracebackModule = PyImport_AddModule("traceback");
+	PyObject *tracebackDict = PyModule_GetDict(tracebackModule);
+	formatTraceback = PyDict_GetItemString(tracebackDict, "format_tb");
+	assert(formatTraceback);
+
 
 	PyObject *main = PyImport_AddModule("__main__");
 	global = PyModule_GetDict(main);
@@ -147,6 +165,7 @@ PyUtils::PyUtils() {
 	setGlobalFunc("hide_screen", Screen::addToHide);
 	setGlobalFunc("has_screen", Screen::hasScreen);
 	setGlobalFunc("_SL_check_events", Screen::checkScreenEvents);
+	setGlobalFunc("_SL_error_processing", Screen::errorProcessing);
 
 	setGlobalFunc("start_mod", Game::startMod);
 	setGlobalFunc("get_mod_start_time", Game::getModStartTime);
@@ -187,13 +206,16 @@ PyUtils::PyUtils() {
 PyUtils::~PyUtils() {
 	constObjects.clear();
 
+	sysExcInfo = nullptr;
 	formatTraceback = nullptr;
+
 	global = nullptr;
 	PyUtils::obj = nullptr;
 
 	Py_DECREF(tuple1);
 	tuple1 = nullptr;
 
+	clearPyWrappers();
 	Py_Finalize();
 }
 
@@ -223,13 +245,6 @@ void PyUtils::errorProcessing(const String &code) {
 
 	std::string traceback;
 	if (ptraceback) {
-		if (!formatTraceback) {
-			PyObject *tracebackModule = PyImport_AddModule("traceback");
-			PyObject *dict = PyModule_GetDict(tracebackModule);
-			formatTraceback = PyDict_GetItemString(dict, "format_tb");
-			assert(formatTraceback);
-		}
-
 		PyObject *args = PyTuple_New(1);
 		PyTuple_SET_ITEM(args, 0, ptraceback);
 		PyObject *res = PyObject_Call(formatTraceback, args, nullptr);
@@ -240,6 +255,8 @@ void PyUtils::errorProcessing(const String &code) {
 			PyObject *item = PyList_GET_ITEM(res, i);
 			traceback += PyString_AS_STRING(item);
 		}
+
+		Py_DECREF(res);
 	}
 
 	const String out = String() +

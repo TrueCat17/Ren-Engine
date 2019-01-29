@@ -517,9 +517,10 @@ PyObject* Game::getArgs(const std::string &str) {
 	std::vector<String> vec = Algo::getArgs(str);
 
 	PyObject *res = PyList_New(long(vec.size()));
-	for (const String &s : vec) {
-		PyObject *str = PyString_FromString(s.c_str());
-		PyList_Append(res, str);
+	for (size_t i = 0; i < vec.size(); ++i) {
+		const String &str = vec[i];
+		PyObject *pyStr = PyString_FromString(str.c_str());
+		PyList_SET_ITEM(res, i, pyStr);
 	}
 	return res;
 }
