@@ -1,6 +1,7 @@
 #include "screen_node_utils.h"
 
 #include <iostream>
+#include <map>
 #include <set>
 
 #include "logger.h"
@@ -286,7 +287,9 @@ static String initCode(Node *node, const String& index) {
 		return res;
 	}
 
-	if (node->isScreenConst || node->isScreenEvent) return "";
+	bool isMainScreen = command == "screen" && !index;
+
+	if ((node->isScreenConst && !isMainScreen) || node->isScreenEvent) return "";
 
 	if (node->isScreenProp) return params.substr(params.find_first_not_of(' '));
 
@@ -307,7 +310,7 @@ static String initCode(Node *node, const String& index) {
 
 	String res;
 
-	if (node->isScreenEnd) {
+	if (node->isScreenEnd && !isMainScreen) {
 		res = "(\n";
 		for (Node *child : node->children) {
 			if (child->isScreenConst || child->isScreenEvent) continue;

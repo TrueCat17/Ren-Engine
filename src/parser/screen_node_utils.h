@@ -1,8 +1,6 @@
 #ifndef SCREEN_NODE_UTILS_H
 #define SCREEN_NODE_UTILS_H
 
-#include <map>
-
 #include "parser/node.h"
 #include "utils/string.h"
 

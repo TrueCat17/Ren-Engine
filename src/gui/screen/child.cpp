@@ -136,8 +136,8 @@ void Child::updateRect(bool needUpdatePos) {
 	if (surface) {
 		crop.x = int(xcrop * (xcropIsDouble ? surface->w : 1));
 		crop.y = int(ycrop * (ycropIsDouble ? surface->h : 1));
-		crop.w = int(hcrop * (wcropIsDouble ? surface->w : 1));
-		crop.h = int(wcrop * (hcropIsDouble ? surface->h : 1));
+		crop.w = int(wcrop * (wcropIsDouble ? surface->w : 1));
+		crop.h = int(hcrop * (hcropIsDouble ? surface->h : 1));
 	}
 
 	if (needUpdatePos) {

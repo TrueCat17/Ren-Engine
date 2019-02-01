@@ -48,8 +48,8 @@ void DisplayObject::updateGlobal() {
 }
 
 void DisplayObject::setPos(int x, int y) {
-	setX(x);
-	setY(y);
+	rect.x = x;
+	rect.y = y;
 }
 void DisplayObject::setSize(int w, int h) {
 	rect.w = w;
