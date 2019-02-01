@@ -121,6 +121,12 @@ void Container::updateRect(bool) {
 
 
 void Container::addChildrenFromNode() {
+	Node *node = this->node;
+	if (node->command == "use") {
+		node = Screen::getDeclared(node->params);
+		if (!node) return;
+	}
+
 	for (Node *childNode : node->children) {
 		Child *child = nullptr;
 		const String &childCommand = childNode->command;
@@ -135,14 +141,13 @@ void Container::addChildrenFromNode() {
 		}else
 
 		if (childCommand == "use") {
-			const String &scrName = childNode->params;
-			Node *scrNode = Screen::getDeclared(scrName);
+			Node *scrNode = Screen::getDeclared(childNode->params);
 			if (!scrNode) {
 				Utils::outMsg("Screen::show",
-							  "Скрин с именем <" + scrName + "> не существует\n" +
+							  "Скрин с именем <" + childNode->params + "> не существует\n" +
 							  childNode->getPlace());
 			}else {
-				child = new Screen(scrNode, screen);
+				child = new Screen(childNode, screen);
 			}
 		}else
 

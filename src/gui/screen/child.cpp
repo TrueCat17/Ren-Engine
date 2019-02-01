@@ -18,8 +18,7 @@
 Child::Child(Node *node, Container *screenParent, Screen *screen):
 	screen(screen),
 	node(node),
-	screenParent(screenParent),
-	updateFuncs(ScreenNodeUtils::getUpdateFuncs(node))
+	screenParent(screenParent)
 {}
 
 bool Child::isModal() const {
@@ -29,7 +28,12 @@ bool Child::isModal() const {
 void Child::updateProps() {
 	if (!inited) {
 		if (!isFakeContainer()) {
-			const std::vector<String> &propNames = SyntaxChecker::getScreenProps(node->command);
+			Node *prevNode = node;
+			if (node->command == "use") {
+				node = Screen::getDeclared(node->params);
+			}
+
+			updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
 
 			String style = node->command;
 			for (Node *child : node->children) {
@@ -38,6 +42,8 @@ void Child::updateProps() {
 					break;
 				}
 			}
+
+			const std::vector<String> &propNames = SyntaxChecker::getScreenProps(node->command);
 
 			PyObject *prevProps = props;
 			props = PyUtils::tuple1;
@@ -78,6 +84,7 @@ void Child::updateProps() {
 			updateTexture(true);
 
 			props = prevProps;
+			node = prevNode;
 		}
 
 		inited = true;
@@ -92,10 +99,12 @@ void Child::updateProps() {
 
 	enable = true;
 
-	for (size_t i = 0; i < updateFuncs->size(); ++i) {
-		ScreenUpdateFunc updateFunc = (*updateFuncs)[i];
-		if (updateFunc) {
-			updateFunc(this, i);
+	if (updateFuncs) {
+		for (size_t i = 0; i < updateFuncs->size(); ++i) {
+			ScreenUpdateFunc updateFunc = (*updateFuncs)[i];
+			if (updateFunc) {
+				updateFunc(this, i);
+			}
 		}
 	}
 

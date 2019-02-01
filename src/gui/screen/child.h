@@ -40,11 +40,11 @@ public:
 
 	String first_param;
 
-	Node *const node;
+	Node *node;
 
 	Container *screenParent;
 
-	const std::vector<ScreenUpdateFunc> *const updateFuncs;
+	const std::vector<ScreenUpdateFunc> *updateFuncs = nullptr;
 	PyObject *props = nullptr;
 
 

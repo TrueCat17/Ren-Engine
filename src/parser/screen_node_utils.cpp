@@ -26,6 +26,17 @@ static void initUpdateFuncs(Node *node);
 
 
 
+static Node* getScreenFromUse(Node *node) {
+	Node *screenNode = Screen::getDeclared(node->params);
+	if (screenNode) return screenNode;
+
+	Utils::outMsg("ScreenNodeUtils::getScreenFromUse",
+				  "Screen with name <" + node->params + "> not found\n" +
+				  node->getPlace());
+	return nullptr;
+}
+
+
 static std::map<const Node*, String> screenCodes;
 static std::map<const Node*, const std::vector<ScreenUpdateFunc>*> screenUpdateFuncs;
 
@@ -77,6 +88,15 @@ static void initConsts(Node *node) {
 	}
 	if (node->command == "$" || node->command == "python") return;
 
+	if (node->command == "use") {
+		Node *screenNode = getScreenFromUse(node);
+		if (screenNode) {
+			ScreenNodeUtils::init(screenNode);
+			node->isScreenConst = screenNode->isScreenConst;
+		}
+		return;
+	}
+
 	for (Node *child : node->children) {
 		initConsts(child);
 
@@ -96,6 +116,14 @@ static void initConsts(Node *node) {
 static void initIsEnd(Node *node) {
 	if (node->isScreenProp) return;
 	if (node->command == "$" || node->command == "python") return;
+
+	if (node->command == "use") {
+		Node *screenNode = getScreenFromUse(node);
+		if (screenNode) {
+			node->isScreenEnd = screenNode->isScreenEnd;
+		}
+		return;
+	}
 
 	for (Node *child : node->children) {
 		initIsEnd(child);
@@ -138,6 +166,8 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	if (child->isScreenConst || child->isScreenEvent) return;
 
 	String childRes = initCode(child, index);
+	if (!childRes) return;
+
 	std::vector<String> code = childRes.split('\n');
 
 	if (child->isScreenProp || child->isScreenEnd) {
@@ -178,11 +208,10 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 
 	bool hasEnd = true;
 	if (childCommand == "if" || childCommand == "elif") {                       // child is not-end-condition
-		for (size_t i = child->childNum + 1; i < child->parent->children.size(); ++i) {
-			Node *nextChild = child->parent->children[i];                       // and nextChild
+		if (child->childNum + 1 < child->parent->children.size()) {             // and nextChild
+			Node *nextChild = child->parent->children[child->childNum + 1];
 			if (nextChild->command == "elif" || nextChild->command == "else") { // is may be end-condition
 				hasEnd = false;
-				break;
 			}
 		}
 	}
@@ -244,15 +273,20 @@ static String initCycleCode(Node *node) {
 }
 
 static String initCode(Node *node, const String& index) {
-	if (node->isScreenConst || node->isScreenEvent) return "";
-
 	const String &command = node->command;
 	const String &params = node->params;
 
 	if (command == "use") {
-		int q = 1;
-		q += 2;
+		Node *screenNode = getScreenFromUse(node);
+		if (!screenNode) return "";
+
+		ScreenNodeUtils::init(screenNode);
+
+		String res = initCode(screenNode, index);
+		return res;
 	}
+
+	if (node->isScreenConst || node->isScreenEvent) return "";
 
 	if (node->isScreenProp) return params.substr(params.find_first_not_of(' '));
 
@@ -295,15 +329,17 @@ static String initCode(Node *node, const String& index) {
 	String indent;
 
 	if (command == "screen") {
-		res = "_SL_stack = []\n\n";
+		if (!index) {
+			res = "_SL_stack = []\n\n";
+		}
 	}else
 	if (command == "if" || command == "elif" || command == "else") {
 		res = command + " " + params + ":\n";
-		indent += "    ";
+		indent = "    ";
 	}
 
 	res += indent;
-	if (command == "screen") {
+	if (command == "screen" && !index) {
 		res += "_SL_" + params + " = ";
 	}else {
 		res += "_SL_last[" + index + "] = ";
@@ -332,11 +368,23 @@ static String initCode(Node *node, const String& index) {
 		res.back() = ']';
 	}
 
+	bool empty = false;
 	if (lastPropNum == maxChildNum) {
 		res[bracketBegin] = '(';
 		res.back() = ')';
-	}else {
-		res += "\n\n";
+
+		empty = true;
+		for (Node *child : node->children) {
+			if (child->command == "$" || child->command == "python") {
+				empty = false;
+				break;
+			}
+		}
+	}
+
+	if (!empty) {
+		res += "\n" +
+			   indent + "\n";
 
 		for (Node *child : node->children) {
 			if (child->isScreenConst) continue;
@@ -352,8 +400,10 @@ static String initCode(Node *node, const String& index) {
 
 
 	if (command == "screen") {
-		res += "\n"
-			   "_SL_check_events()\n";
+		if (!index) {
+			res += "\n"
+				   "_SL_check_events()\n";
+		}
 
 		Logger::log("\n\n\n" + res);
 //		abort();
@@ -666,7 +716,7 @@ static std::map<String, ScreenUpdateFunc> mapScreenFuncs = {
 };
 
 static void initUpdateFuncs(Node *node) {
-	std::vector<ScreenUpdateFunc> *vec = new std::vector<ScreenUpdateFunc>();
+	if (screenUpdateFuncs.find(node) != screenUpdateFuncs.end()) return;
 
 	size_t maxScreenNum = size_t(-1);
 	for (Node *child : node->children) {
@@ -681,13 +731,17 @@ static void initUpdateFuncs(Node *node) {
 		}
 	}
 
-	vec->resize(maxScreenNum + 1, nullptr);
+	std::vector<ScreenUpdateFunc> *vec = nullptr;
 
-	for (Node *child : node->children) {
-		if (!child->isScreenProp || child->isScreenConst || child->isScreenEvent) continue;
+	if (maxScreenNum != size_t(-1)) {
+		vec = new std::vector<ScreenUpdateFunc>(maxScreenNum + 1, nullptr);
 
-		ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
-		(*vec)[child->screenNum] = func;
+		for (Node *child : node->children) {
+			if (!child->isScreenProp || child->isScreenConst || child->isScreenEvent) continue;
+
+			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
+			(*vec)[child->screenNum] = func;
+		}
 	}
 
 	screenUpdateFuncs[node] = vec;

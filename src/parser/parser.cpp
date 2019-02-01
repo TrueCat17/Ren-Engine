@@ -38,7 +38,7 @@ static const std::set<String> fakeComps({
 	"if", "elif", "else", "for", "while", "continue", "break", "$", "python"
 });
 static const std::set<String> comps({
-	"screen", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
+	"screen", "use", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
 });
 void Parser::getIsFakeOrIsProp(const String &type, bool &isFake, bool &isProp, bool &isEvent) {
 	isFake = fakeComps.count(type);
@@ -259,13 +259,13 @@ static void initScreenNode(Node *node) {
 	}
 
 
-	static const std::set<String> compsWithFirstParam({"screen", "hotspot", "image", "key", "text", "textbutton"});
+	static const std::set<String> compsWithFirstParam({"screen", "use", "hotspot", "image", "key", "text", "textbutton"});
 	const std::vector<String> args = Algo::getArgs(node->params);
 
 	std::vector<Node*> toInsert;
 
 	const bool firstIsProp = compsWithFirstParam.count(node->command);
-	if (firstIsProp && node->command != "screen") {
+	if (firstIsProp && node->command != "screen" && node->command != "use") {
 		if (args.empty()) {
 			Utils::outMsg("Parser::initScreenNode",
 						  "Неверный синтаксис\n"

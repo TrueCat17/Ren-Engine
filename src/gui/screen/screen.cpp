@@ -170,11 +170,6 @@ void Screen::checkScreenEvents() {
 	size_t index = elem.curChildIndex;
 
 	while (true) {
-		if (obj->getNumLine() == 142) {
-			int q = 1;
-			q += 2;
-		}
-
 		const size_t countCalcs = size_t(Py_SIZE(obj->props));
 		const size_t countChildren = countCalcs - obj->node->countPropsToCalc;
 		while (countChildren > obj->screenChildren.size()) {
