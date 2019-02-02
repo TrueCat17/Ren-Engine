@@ -12,6 +12,7 @@
 #include "utils/algo.h"
 #include "utils/image_caches.h"
 #include "utils/math.h"
+#include "utils/scope_exit.h"
 #include "utils/utils.h"
 
 
@@ -134,22 +135,16 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 	}
 
 
-	struct Deleter {
-		const String &desc;
+	ScopeExit se([&]() {
+		std::lock_guard<std::mutex> g(vecMutex);
 
-		Deleter(const String& desc): desc(desc) {}
-
-		~Deleter() {
-			std::lock_guard<std::mutex> g(vecMutex);
-
-			for (size_t i = 0; i < processingImages.size(); ++i) {
-				if (processingImages[i] == desc) {
-					processingImages.erase(processingImages.begin() + int(i));
-					return;
-				}
+		for (size_t i = 0; i < processingImages.size(); ++i) {
+			if (processingImages[i] == desc) {
+				processingImages.erase(processingImages.begin() + int(i));
+				return;
 			}
 		}
-	} deleter(desc);
+	});
 
 
 	const std::vector<String> args = Algo::getArgs(desc, '|');

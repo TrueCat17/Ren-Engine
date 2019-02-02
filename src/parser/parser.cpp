@@ -13,6 +13,7 @@
 #include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
+#include "utils/scope_exit.h"
 #include "utils/utils.h"
 
 
@@ -237,19 +238,11 @@ Node* Parser::getMainNode() {
 }
 
 static void initScreenNode(Node *node) {
-	struct D {
-		Node *node;
-
-		D(Node *node):
-			node(node)
-		{}
-		~D() {
-			for (size_t i = 0; i < node->children.size(); ++i) {
-				node->children[i]->childNum = i;
-			}
+	ScopeExit se([&]() {
+		for (size_t i = 0; i < node->children.size(); ++i) {
+			node->children[i]->childNum = i;
 		}
-	};
-	D d(node);
+	});
 
 
 	bool isFakeComp;

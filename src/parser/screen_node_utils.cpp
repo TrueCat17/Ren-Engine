@@ -14,6 +14,9 @@
 #include "gui/screen/imagemap.h"
 
 #include "media/py_utils.h"
+
+#include <utils/algo.h>
+#include "utils/scope_exit.h"
 #include "utils/utils.h"
 
 
@@ -25,17 +28,6 @@ static String initCode(Node *node, const String& index = "");
 
 static void initUpdateFuncs(Node *node);
 
-
-
-static Node* getScreenFromUse(Node *node) {
-	Node *screenNode = Screen::getDeclared(node->params);
-	if (screenNode) return screenNode;
-
-	Utils::outMsg("ScreenNodeUtils::getScreenFromUse",
-				  "Screen with name <" + node->params + "> not found\n" +
-				  node->getPlace());
-	return nullptr;
-}
 
 
 static std::map<const Node*, String> screenCodes;
@@ -73,7 +65,20 @@ void ScreenNodeUtils::clear() {
 }
 
 
+static std::vector<String> screensInInit;
+
 static void initConsts(Node *node) {
+	const String &command = node->command;
+	const String &params = node->params;
+
+	ScopeExit se(nullptr);
+	if (command == "screen") {
+		screensInInit.push_back(params);
+		se.func = [&]() {
+			screensInInit.pop_back();
+		};
+	}
+
 	node->countPropsToCalc = 0;
 
 	if (node->isScreenProp) {
@@ -81,19 +86,31 @@ static void initConsts(Node *node) {
 			node->parent->withScreenEvent = true;
 		}else {
 			node->isScreenConst =
-					node->command == "style" ||
-					node->command == "has" ||
-					PyUtils::isConstExpr(node->params);
+					command == "style" ||
+					command == "has" ||
+					PyUtils::isConstExpr(params);
 		}
 		return;
 	}
-	if (node->command == "$" || node->command == "python") return;
+	if (command == "$" || command == "python") return;
 
-	if (node->command == "use") {
-		Node *screenNode = getScreenFromUse(node);
+	if (command == "use") {
+		Node *screenNode = Screen::getDeclared(node->params);
+
 		if (screenNode) {
-			ScreenNodeUtils::init(screenNode);
-			node->isScreenConst = screenNode->isScreenConst;
+			if (Algo::in(params, screensInInit)) {
+				Utils::outMsg("ScreenNodeUtils::initConsts",
+							  "Using screens with recursion: " + String::join(screensInInit, " -> ") + " -> " + params);
+				node->command = "pass";
+			}else {
+				ScreenNodeUtils::init(screenNode);
+				node->isScreenConst = screenNode->isScreenConst;
+			}
+		}else {
+			Utils::outMsg("ScreenNodeUtils::initConsts",
+						  "Screen with name <" + node->params + "> not found\n" +
+						  node->getPlace());
+			node->command = "pass";
 		}
 		return;
 	}
@@ -106,7 +123,7 @@ static void initConsts(Node *node) {
 		}
 	}
 
-	if (node->command == "if" || node->command == "elif" || node->command == "else") return;
+	if (command == "if" || command == "elif" || command == "else") return;
 
 	for (const Node *child : node->children) {
 		if (!child->isScreenConst) return;
@@ -119,7 +136,7 @@ static void initIsEnd(Node *node) {
 	if (node->command == "$" || node->command == "python") return;
 
 	if (node->command == "use") {
-		Node *screenNode = getScreenFromUse(node);
+		Node *screenNode = Screen::getDeclared(node->params);
 		if (screenNode) {
 			node->isScreenEnd = screenNode->isScreenEnd;
 		}
@@ -278,10 +295,8 @@ static String initCode(Node *node, const String& index) {
 	const String &params = node->params;
 
 	if (command == "use") {
-		Node *screenNode = getScreenFromUse(node);
+		Node *screenNode = Screen::getDeclared(params);
 		if (!screenNode) return "";
-
-		ScreenNodeUtils::init(screenNode);
 
 		String res = initCode(screenNode, index);
 		return res;
