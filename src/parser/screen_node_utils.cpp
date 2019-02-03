@@ -71,14 +71,6 @@ static void initConsts(Node *node) {
 	const String &command = node->command;
 	const String &params = node->params;
 
-	ScopeExit se(nullptr);
-	if (command == "screen") {
-		screensInInit.push_back(params);
-		se.func = [&]() {
-			screensInInit.pop_back();
-		};
-	}
-
 	node->countPropsToCalc = 0;
 
 	if (node->isScreenProp) {
@@ -93,6 +85,14 @@ static void initConsts(Node *node) {
 		return;
 	}
 	if (command == "$" || command == "python") return;
+
+	ScopeExit se(nullptr);
+	if (command == "screen") {
+		screensInInit.push_back(params);
+		se.func = [&]() {
+			screensInInit.pop_back();
+		};
+	}
 
 	if (command == "use") {
 		Node *screenNode = Screen::getDeclared(node->params);
@@ -181,7 +181,7 @@ static size_t maxScreenChild(Node *node) {
 
 
 static void initChildCode(Node *child, String &res, const String &indent, const String &index) {
-	if (child->isScreenConst || child->isScreenEvent) return;
+	const String &childCommand = child->command;
 
 	String childRes = initCode(child, index);
 	if (!childRes) return;
@@ -189,7 +189,11 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	std::vector<String> code = childRes.split('\n');
 
 	if (child->isScreenProp || child->isScreenEnd) {
-		res += indent + "_SL_last[" + index + "] = ";
+		if (childCommand != "continue" && childCommand != "break") {
+			res += indent + "_SL_last[" + index + "] = ";
+		}else {
+			res += indent;
+		}
 
 		for (size_t i = 0; i < code.size(); ++i) {
 			if (i) {
@@ -211,7 +215,6 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	}
 
 
-	const String &childCommand = child->command;
 	if (childCommand != "elif" && childCommand != "else") {
 		if (childCommand != "$" && childCommand != "python") {
 			res += indent + "_SL_stack.append(_SL_last)\n";
@@ -268,13 +271,14 @@ static String initCycleCode(Node *node) {
 
 	res +=
 			indent + "if " + id + " == " + idLen + ":\n" +
-			indent + "    _SL_last += [None] * " + (100 * count) + "\n" +
-			indent + "    " + idLen + " += " + (100 * count) + "\n" +
+			indent + "    _SL_last += [None] * " + (50 * count) + "\n" +
+			indent + "    " + idLen + " += " + (50 * count) + "\n" +
 			indent + "\n";
 
 
 	for (Node *child : node->children) {
-		if (child->isScreenConst) continue;
+		if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
+		if (child->isScreenEvent) continue;
 
 		String index = id;
 		if (child->screenNum) {
@@ -302,21 +306,20 @@ static String initCode(Node *node, const String& index) {
 		return res;
 	}
 
-	bool isMainScreen = command == "screen" && !index;
-
-	if ((node->isScreenConst && !isMainScreen) || node->isScreenEvent) return "";
-
-	if (node->isScreenProp) return params.substr(params.find_first_not_of(' '));
-
 	if (command == "continue" || command == "break") {
 		Node *t = node->parent;
 		while (t->command != "for" && t->command != "while") {
 			t = t->parent;
 		}
 
-		return "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t)) + "\n" +
+		return "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t) + 1) + "\n" +
 				command + "\n";
 	}
+
+	bool isMainScreen = command == "screen" && !index;
+	if ((node->isScreenConst && !isMainScreen) || node->isScreenEvent) return "";
+
+	if (node->isScreenProp) return params.substr(params.find_first_not_of(' '));
 
 	if (command == "$" || command == "python") return params;
 
@@ -393,7 +396,9 @@ static String initCode(Node *node, const String& index) {
 
 		empty = true;
 		for (Node *child : node->children) {
-			if (child->command == "$" || child->command == "python") {
+			if (child->command == "$" || child->command == "python" ||
+				child->command == "continue" || child->command == "break")
+			{
 				empty = false;
 				break;
 			}
@@ -405,7 +410,9 @@ static String initCode(Node *node, const String& index) {
 			   indent + "\n";
 
 		for (Node *child : node->children) {
-			if (child->isScreenConst) continue;
+			if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
+			if (child->isScreenEvent) continue;
+
 			if (child->screenNum <= lastPropNum && lastPropNum != size_t(-1)) continue;
 
 			initChildCode(child, res, indent, String(child->screenNum));

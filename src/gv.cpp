@@ -16,8 +16,6 @@ bool GV::exit = false;
 
 SDL_Window *GV::mainWindow;
 SDL_Renderer *GV::mainRenderer;
-bool GV::isOpenGL = false;
-bool GV::checkOpenGlErrors = false;
 
 const Uint8 *GV::keyBoardState = nullptr;
 

@@ -491,9 +491,11 @@ void TextField::draw() const {
 		t.x += globalX;
 		t.y += globalY;
 
+		SDL_Rect srcRect = { 0, 0, surface->w, surface->h };
+
 		SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-		pushToRender(surface, globalRotate, intAlpha, nullptr, &t, &center);
+		pushToRender(surface, globalRotate, intAlpha, srcRect, t, center);
 	}
 }
 

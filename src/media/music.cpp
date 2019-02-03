@@ -23,7 +23,7 @@ std::vector<Music*> Music::musics;
 
 
 void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
-	std::lock_guard<std::mutex> g(globalMutex);
+	std::lock_guard g(globalMutex);
 
 	SDL_memset(stream, 0, size_t(globalLen));
 
@@ -52,7 +52,7 @@ void Music::init() {
 			startUpdateTime = Utils::getTimer();
 
 			{
-				std::lock_guard<std::mutex> g(globalMutex);
+				std::lock_guard g(globalMutex);
 
 				if (needToClear) {
 					needToClear = false;
@@ -117,7 +117,7 @@ void Music::clear() {
 	if (startUpdateTime) {//updated, => SDL_OpenAudio is OK, => clearing in Music::init::loop
 		needToClear = true;
 	}else {//error on SDL_OpenAudio, => clearing now (Music::init::loop not started)
-		std::lock_guard<std::mutex> g(globalMutex);
+		std::lock_guard g(globalMutex);
 		realClear();
 	}
 }
@@ -241,7 +241,7 @@ void Music::play(const std::string &desc,
 	}
 
 
-	std::lock_guard<std::mutex> g(globalMutex);
+	std::lock_guard g(globalMutex);
 
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
@@ -396,7 +396,7 @@ bool Music::initCodec() {
 	return false;
 }
 void Music::setPos(int64_t pos) {
-	std::lock_guard<std::mutex> g(globalMutex);
+	std::lock_guard g(globalMutex);
 
 	audioPos = buffer;
 	audioLen = 0;

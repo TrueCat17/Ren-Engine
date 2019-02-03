@@ -44,7 +44,7 @@ bool Game::modStarting = false;
 static void _startMod(const String &dir, const String &loadPath = "");
 
 void Game::startMod(const std::string &dir) {
-	std::thread([=] { _startMod(dir); }).detach();
+	std::thread(_startMod, dir, "").detach();
 }
 int Game::getModStartTime() {
 	return modStartTime;
@@ -93,7 +93,7 @@ void Game::load(const std::string &table, const std::string &name) {
 		std::getline(is, modName);
 	}
 
-	std::thread([=] { _startMod(modName, fullPath); }).detach();
+	std::thread(_startMod, modName, fullPath).detach();
 }
 const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::vector<String> startScreensVec;
@@ -304,25 +304,28 @@ void Game::save() {
 		GUI::update();
 		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_screenshotting = False");
 
-		while (Renderer::needToRender) {
-			Utils::sleep(1);
-		}
 		{
-			std::lock_guard<std::mutex> g(Renderer::renderMutex);
-			std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
+			while (Renderer::needToRender) {
+				Utils::sleep(1);
+			}
+
+			std::lock_guard g(Renderer::toRenderMutex);
 
 			Renderer::toRender.clear();
 			if (GV::screens) {
 				GV::screens->draw();
 			}
+
+			Renderer::needMakeScreenshot();
 		}
 
-		size_t width = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt());
-		size_t height = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt());
-		const SurfacePtr screenshot = Renderer::getScreenshot(width, height);
+		const SurfacePtr screenshot = Renderer::getScreenshot();
 		if (screenshot) {
-			const String screenshotPath = fullPath + "screenshot.png";
-			IMG_SavePNG(screenshot.get(), screenshotPath.c_str());
+			String screenshotPath = fullPath + "screenshot.png";
+			String width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
+			String height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
+
+			ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
 		}
 	}
 
@@ -332,17 +335,17 @@ void Game::save() {
 	}
 }
 
+static std::mutex modMutex;
 static void _startMod(const String &dir, const String &loadPath) {
 	int waitingStartTime = Utils::getTimer();
 
 	Game::modStarting = true;
 	GV::inGame = false;
 
-	static std::mutex modMutex;
-	std::lock_guard<std::mutex> g(modMutex);
+	std::lock_guard g(modMutex);
 
 	{
-		std::lock_guard<std::mutex> g2(GV::updateMutex);
+		std::lock_guard g2(GV::updateMutex);
 
 		modStartTime = int(std::time(nullptr));
 		canAutoSave = true;
@@ -424,38 +427,42 @@ void Game::makeScreenshot() {
 		fs::create_directory(path);
 	}
 
-	size_t width = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true).toInt());
-	size_t height = size_t(PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true).toInt());
-
 	{
-		Renderer::needToRender = Renderer::needToRedraw = false;
-		std::lock_guard<std::mutex> g(Renderer::renderMutex);
-		std::lock_guard<std::mutex> g2(Renderer::toRenderMutex);
+		while (Renderer::needToRender) {
+			Utils::sleep(1);
+		}
+
+		std::lock_guard g(Renderer::toRenderMutex);
 
 		Renderer::toRender.clear();
 		if (GV::screens) {
 			GV::screens->draw();
 		}
+
+		Renderer::needMakeScreenshot();
 	}
 
-	const SurfacePtr screenshot = Renderer::getScreenshot(width, height);
-	if (screenshot) {
-		bool exists = true;
-		int num = 1;
-		String screenshotPath;
-		while (exists) {
-			String numStr(num);
-			while (numStr.size() < 4) {
-				numStr = '0' + numStr;
-			}
+	const SurfacePtr screenshot = Renderer::getScreenshot();
+	if (!screenshot) return;
 
-			screenshotPath = path + "screenshot_" + numStr + ".png";
-			exists = fs::exists(screenshotPath.c_str());
-
-			++num;
+	bool exists = true;
+	int num = 1;
+	String screenshotPath;
+	while (exists) {
+		String numStr(num);
+		while (numStr.size() < 4) {
+			numStr = '0' + numStr;
 		}
-		IMG_SavePNG(screenshot.get(), screenshotPath.c_str());
+
+		screenshotPath = path + "screenshot_" + numStr + ".png";
+		exists = fs::exists(screenshotPath.c_str());
+
+		++num;
 	}
+
+	String width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
+	String height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
+	ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
 }
 
 void Game::exitFromGame() {
@@ -554,8 +561,8 @@ void Game::setFps(int newFps) {
 void Game::setStageSize(int width, int height) {
 	if (GV::minimized) return;
 
-	std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-	std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+	std::lock_guard g1(Renderer::toRenderMutex);
+	std::lock_guard g2(Renderer::renderMutex);
 
 	bool fullscreen = GV::fullscreen;
 	if (fullscreen) {
@@ -587,8 +594,8 @@ void Game::setFullscreen(bool value) {
 	GV::fullscreen = value;
 	Config::set("window_fullscreen", value ? "True" : "False");
 
-	std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-	std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+	std::lock_guard g1(Renderer::toRenderMutex);
+	std::lock_guard g2(Renderer::renderMutex);
 
 	SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP * value);
 }

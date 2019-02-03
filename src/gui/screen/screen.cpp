@@ -38,7 +38,7 @@ Screen* Screen::getMain(const String &name) {
 void Screen::updateLists() {
 	std::vector<String> toHideCopy, toShowCopy;
 	{
-		std::lock_guard<std::mutex> g(screenMutex);
+		std::lock_guard g(screenMutex);
 		toHideCopy.swap(toHideList);
 		toShowCopy.swap(toShowList);
 	}
@@ -83,7 +83,7 @@ void Screen::hide(const String &name) {
 
 
 void Screen::addToShow(const std::string &name) {
-	std::lock_guard<std::mutex> g(screenMutex);
+	std::lock_guard g(screenMutex);
 
 	for (size_t i = 0; i < toHideList.size(); ++i) {
 		if (toHideList[i] == name) {
@@ -95,7 +95,7 @@ void Screen::addToShow(const std::string &name) {
 	toShowList.push_back(name);
 }
 void Screen::addToHide(const std::string &name) {
-	std::lock_guard<std::mutex> g(screenMutex);
+	std::lock_guard g(screenMutex);
 
 	for (size_t i = 0; i < toShowList.size(); ++i) {
 		if (toShowList[i] == name) {
@@ -107,7 +107,7 @@ void Screen::addToHide(const std::string &name) {
 	toHideList.push_back(name);
 }
 bool Screen::hasScreen(const std::string &name) {
-	std::lock_guard<std::mutex> g(screenMutex);
+	std::lock_guard g(screenMutex);
 
 	for (const String &screenName : toShowList) {
 		if (screenName == name) return true;

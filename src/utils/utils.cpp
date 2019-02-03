@@ -74,6 +74,7 @@ void Utils::sleepMicroSeconds(int ms) {
 	std::this_thread::sleep_for(std::chrono::microseconds(ms));
 }
 
+static std::mutex msgGuard;
 void Utils::outMsg(std::string msg, const std::string &err) {
 	static std::map<std::string, bool> errors;
 	static bool notShow = false;
@@ -85,8 +86,7 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 		errors[msg] = true;
 	}
 	if (msg.size()) {
-		static std::mutex msgGuard;
-		std::lock_guard<std::mutex> g(msgGuard);
+		std::lock_guard g(msgGuard);
 
 		Logger::log(msg + "\n\n");
 		if (notShow) return;

@@ -203,7 +203,7 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 	}
 }
 SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const String &path) {
-	std::lock_guard<std::mutex> g(surfaceMutex);
+	std::lock_guard g(surfaceMutex);
 
 	auto it = surfaces.find(path);
 	if (it != surfaces.end()) {
@@ -221,7 +221,7 @@ SurfacePtr ImageCaches::getSurface(const String &path) {
 	if (t) return t;
 
 	static std::mutex mutex;
-	std::lock_guard<std::mutex> g(mutex);
+	std::lock_guard g(mutex);
 
 	t = getThereIsSurfaceOrNull(path);
 	if (t) return t;
@@ -354,7 +354,7 @@ SurfacePtr ImageCaches::getSurface(const String &path) {
 		surface = newSurface;
 	}
 
-	std::lock_guard<std::mutex> g2(surfaceMutex);
+	std::lock_guard g2(surfaceMutex);
 	trimSurfacesCache(surface);
 	surfaces[path] = std::make_pair(Utils::getTimer(), surface);
 
@@ -365,7 +365,7 @@ void ImageCaches::setSurface(const String &path, const SurfacePtr &surface) {
 	if (!surface) return;
 	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
 
-	std::lock_guard<std::mutex> g(surfaceMutex);
+	std::lock_guard g(surfaceMutex);
 	trimSurfacesCache(surface);
 	surfaces[path] = std::make_pair(Utils::getTimer(), surface);
 }

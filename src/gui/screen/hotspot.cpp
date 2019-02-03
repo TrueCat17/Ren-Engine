@@ -178,5 +178,5 @@ void Hotspot::draw() const {
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(surface, globalRotate, intAlpha, &from, &to, &center);
+	pushToRender(surface, globalRotate, intAlpha, from, to, center);
 }

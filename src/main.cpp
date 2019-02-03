@@ -132,8 +132,8 @@ static void changeWindowSize(bool maximized) {
 			y = (startH - h) / 2;
 		}
 
-		std::lock_guard<std::mutex> g1(Renderer::toRenderMutex);
-		std::lock_guard<std::mutex> g2(Renderer::renderMutex);
+		std::lock_guard g1(Renderer::toRenderMutex);
+		std::lock_guard g2(Renderer::renderMutex);
 
 		if (GV::screens) {
 			GV::screens->setPos(x, y);
@@ -203,8 +203,6 @@ bool init() {
 	Math::init();
 	Logger::init();
 	Config::init();
-
-	GV::checkOpenGlErrors = Config::get("check_fast_opengl_errors") == "True";
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
@@ -441,11 +439,12 @@ void loop() {
 			while (Renderer::needToRender) {
 				Utils::sleep(1);
 			}
-			std::lock_guard<std::mutex> g(Renderer::toRenderMutex);
+			std::lock_guard g(Renderer::toRenderMutex);
 			Renderer::toRender.clear();
 			if (GV::screens) {
-				GV::screens->enable = true;
+				int t1 = Utils::getTimer();
 				GV::screens->draw();
+				std::cout << (Utils::getTimer() - t1) << '\n';
 			}
 			Renderer::needToRender = true;
 

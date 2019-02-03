@@ -28,7 +28,9 @@ static const Uint8 Ashift = 24;
 class ImageManipulator {
 public:
 	static void init();
+
 	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
+	static void saveSurface(const SurfacePtr &imageStr, const std::string &path, const std::string &width, const std::string &height, bool now = false);
 
 	static SurfacePtr getNewNotClear(int w, int h);
 

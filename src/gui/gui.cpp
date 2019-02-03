@@ -7,45 +7,44 @@
 
 #include "gv.h"
 
-#include "gui/screen/child.h"
 #include "gui/screen/screen.h"
-
-#include "gui/screen/style.h"
 
 #include "utils/utils.h"
 
 
 void GUI::update() {
+	if (!GV::screens) return;
+
 	++GV::numUpdate;
 
-	if (GV::screens) {
-		Screen::updateLists();
-		Screen::updateScreens();
+	Screen::updateLists();
+	Screen::updateScreens();
 
-		DisplayObject::disableAll();
-		for (DisplayObject *child : GV::screens->children) {
-			Screen *scr = static_cast<Screen*>(child);
-			try {
+	DisplayObject::disableAll();
+	GV::screens->enable = true;
+
+	for (DisplayObject *child : GV::screens->children) {
+		Screen *scr = static_cast<Screen*>(child);
+		try {
 #if printTime
-				std::cout << "update <" << scr->getName() << ">:\n";
-				const int a = Utils::getTimer();
+			std::cout << "update <" << scr->getName() << ">:\n";
+			const int a = Utils::getTimer();
 #endif
-				scr->calcProps();
+			scr->calcProps();
 #if printTime
-				const int b = Utils::getTimer();
+			const int b = Utils::getTimer();
 #endif
-				scr->updateRect();
-				scr->updateGlobal();
+			scr->updateRect();
+			scr->updateGlobal();
 #if printTime
-				const int c = Utils::getTimer();
-				std::cout << (b-a) << '-' << (c-b) << '\n';
+			const int c = Utils::getTimer();
+			std::cout << (b-a) << '-' << (c-b) << '\n';
 #endif
-			}catch (StopException&) {
-				Utils::outMsg("gui::update", "Неожидаемое исключение StopException (конец итератора)");
-			}
+		}catch (StopException&) {
+			Utils::outMsg("gui::update", "Неожидаемое исключение StopException (конец итератора)");
 		}
-
-		Screen::updateLists();
-		Screen::updateScreens();
 	}
+
+	Screen::updateLists();
+	Screen::updateScreens();
 }

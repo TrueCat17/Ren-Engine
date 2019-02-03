@@ -23,7 +23,7 @@ public:
 	static void destroyAll();
 
 	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha,
-							 const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center);
+							 const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center);
 
 	SDL_Rect crop = {0, 0, 0, 0};
 	double alpha = 1;

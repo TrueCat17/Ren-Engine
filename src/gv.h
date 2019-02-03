@@ -28,8 +28,6 @@ public:
 
 	static SDL_Window *mainWindow;
 	static SDL_Renderer *mainRenderer;
-	static bool isOpenGL;
-	static bool checkOpenGlErrors;
 
 	static const Uint8 *keyBoardState;
 

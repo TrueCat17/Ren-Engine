@@ -76,7 +76,7 @@ void DisplayObject::draw() const {
 	SDL_Point center = { xAnchor, yAnchor };
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 
-	pushToRender(surface, globalRotate, intAlpha, &crop, &t, &center);
+	pushToRender(surface, globalRotate, intAlpha, crop, t, center);
 }
 
 DisplayObject::~DisplayObject() {
@@ -111,19 +111,15 @@ void DisplayObject::destroyAll() {
 	}
 }
 
+
 void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha,
-	const SDL_Rect *srcRect, const SDL_Rect *dstRect, const SDL_Point *center)
+	const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center)
 {
 	if (surface && alpha) {
-		static const SDL_Rect emptyRect = {0, 0, 0, 0};
-		static const SDL_Point emptyPoint = {0, 0};
-
 		Renderer::toRender.push_back({
 			surface, angle, alpha,
-			srcRect == nullptr, dstRect == nullptr, center == nullptr,
-
-			srcRect ? *srcRect : emptyRect, dstRect ? *dstRect : emptyRect,
-			center ? *center : emptyPoint
+			srcRect, dstRect,
+			center
 		});
 	}
 }

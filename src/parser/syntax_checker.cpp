@@ -116,13 +116,14 @@ void SyntaxChecker::init() {
 	addBlockChildren("main", "init, init---python, label, screen");
 	addBlockChildren("init", "for, while, " + conditions + "$, python, image");
 	mapSyntax["init python"] = std::map<String, SyntaxPart>();
-	addBlockChildren("label, if, elif, else, for, while", "pass, return, for, while" + conditions + "pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with");
+	addBlockChildren("label, if, elif, else, for, while",
+		"pass, return, for, while" + conditions +
+		"pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with");
 
 	addBlockChildren("menu", "menuItem");
 	mapSyntax["menuItem"] = mapSyntax["label"];
 
-	addBlockChildren("if, elif, else, for, while", screenElems + "imagemap, hotspot, " + "pass, pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with, continue, break");
-	addBlockChildren("for, while", "continue, break");
+	addBlockChildren("if, elif, else, for, while", screenElems + "imagemap, hotspot, " + "continue, break");
 
 	addBlockChildren("screen, vbox, hbox", "spacing");
 	addBlockChildren("screen, if, elif, else, for, while", screenProps);
@@ -148,16 +149,18 @@ void SyntaxChecker::init() {
 	setSuperParents("$, pass, break, continue, python, if, elif, else, for, while, image", ALL);
 }
 
+static const std::set<String> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});
 bool SyntaxChecker::check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &thereIsNot) {
-	if (superParent == SuperParent::INIT || superParent == SuperParent::LABEL) {
-		//Эти блоки внутри init/label могут содержать в себе абсолютно всё
-		//Поэтому проверка для них отключена
-		static const std::set<String> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});
 
-		if (blocksWithAny.count(parent)) {
-			thereIsNot = false;
-			return true;
-		}
+	if ((superParent == SuperParent::INIT || superParent == SuperParent::LABEL) &&
+		blocksWithAny.count(parent))
+	{
+		thereIsNot = false;
+		return true;
+	}
+
+	if (superParent == SuperParent::SCREEN && child == "else" && (prevChild == "for" || prevChild == "while")) {
+		return false;
 	}
 
 	auto it = mapSyntax.find(parent);

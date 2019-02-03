@@ -100,7 +100,7 @@ static void jump(const String &label, bool isCall) {
 		if (node->command == "label" && node->params == label) {
 			try {
 				node->execute();
-			}catch (ReturnException) {}
+			}catch (ReturnException&) {}
 
 			if (!isCall) {
 				throw ExitException();
@@ -184,12 +184,12 @@ void Node::execute() {
 			int initingStartTime = Utils::getTimer();
 			initing = true;
 			size_t i = 0;
-			for (; i < initBlocks.size(); ++i) {
+			for (; i < initBlocks.size() && !Game::modStarting; ++i) {
 				initBlocks[i]->execute();
-				if (Game::modStarting) break;
 			}
 			initing = false;
-			Logger::logEvent("Mod Initing (" + String(i) + "/" + String(initBlocks.size()) + " blocks)", Utils::getTimer() - initingStartTime, true);
+			Logger::logEvent("Mod Initing (" + String(i) + "/" + String(initBlocks.size()) + " blocks)",
+							 Utils::getTimer() - initingStartTime, true);
 
 			if (Game::modStarting) return;
 
@@ -439,7 +439,7 @@ void Node::execute() {
 		if (choose == NO) {
 			//loaded with screen choose_menu?
 			{
-				std::lock_guard<std::mutex> g(GV::updateMutex);
+				std::lock_guard g(GV::updateMutex);
 				Screen::updateLists();
 			}
 			bool screenThereIs = Screen::getMain("choose_menu");

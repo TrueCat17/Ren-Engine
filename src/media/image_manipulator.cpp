@@ -19,7 +19,9 @@
 static std::map<String, std::function<SurfacePtr(const std::vector<String>&)>> functions;
 
 static std::deque<String> toLoadImages;
-static std::mutex toLoadMutex;
+static std::deque<std::tuple<SurfacePtr, std::string, std::string, std::string>> toSaveImages;
+
+static std::mutex preloadMutex;
 
 
 static inline bool smallImage(int w, int h) {
@@ -84,7 +86,7 @@ void ImageManipulator::loadImage(const std::string &desc) {
 	SurfacePtr image = ImageCaches::getThereIsSurfaceOrNull(desc);
 	if (image) return;
 
-	std::lock_guard<std::mutex> g(toLoadMutex);
+	std::lock_guard g(preloadMutex);
 
 	if (!Algo::in(desc, toLoadImages)) {
 		toLoadImages.push_back(desc);
@@ -92,16 +94,28 @@ void ImageManipulator::loadImage(const std::string &desc) {
 }
 void preloadThread() {
 	while (!GV::exit) {
-		if (toLoadImages.empty()) {
-			Utils::sleep(5, false);
-		}else {
-			String desc;
-			{
-				std::lock_guard<std::mutex> g(toLoadMutex);
-				desc = toLoadImages.front();
-				toLoadImages.pop_front();
+		if (toSaveImages.empty()) {
+			if (toLoadImages.empty()) {
+				Utils::sleep(5, false);
+			}else {
+				String desc;
+				{
+					std::lock_guard g(preloadMutex);
+					desc = toLoadImages.front();
+					toLoadImages.pop_front();
+				}
+				ImageManipulator::getImage(desc);
 			}
-			ImageManipulator::getImage(desc);
+		}else {
+			decltype(toSaveImages)::value_type tuple;
+			{
+				std::lock_guard g(preloadMutex);
+				tuple = toSaveImages.front();
+				toSaveImages.pop_front();
+			}
+
+			auto [img, path, width, height] = tuple;
+			ImageManipulator::saveSurface(img, path, width, height, true);
 		}
 	}
 }
@@ -120,7 +134,7 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 	bool in = true;
 	while (in) {
 		{
-			std::lock_guard<std::mutex> g(vecMutex);
+			std::lock_guard g(vecMutex);
 			in = Algo::in(desc, processingImages);
 			if (!in) {
 				res = ImageCaches::getThereIsSurfaceOrNull(desc);
@@ -136,7 +150,7 @@ SurfacePtr ImageManipulator::getImage(String desc) {
 
 
 	ScopeExit se([&]() {
-		std::lock_guard<std::mutex> g(vecMutex);
+		std::lock_guard g(vecMutex);
 
 		for (size_t i = 0; i < processingImages.size(); ++i) {
 			if (processingImages[i] == desc) {
@@ -344,7 +358,7 @@ static SurfacePtr composite(const std::vector<String> &args) {
 		std::sort(imagesPairs.begin(), imagesPairs.end(),
 				  [](const P &a, const P &b) { return a.second < b.second; });
 
-		std::lock_guard<std::mutex> g(toLoadMutex);
+		std::lock_guard g(preloadMutex);
 
 		for (const P &p : imagesPairs) {
 			const String &desc = p.first;
@@ -1306,7 +1320,17 @@ static SurfacePtr motionBlur(const std::vector<String> &args) {
 
 void ImageManipulator::save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height) {
 	SurfacePtr img = getImage(imageStr);
+	saveSurface(img, path, width, height, true);
+}
+
+void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &path, const std::string &width, const std::string &height, bool now) {
 	if (!img) return;
+
+	if (!now) {
+		std::lock_guard g(preloadMutex);
+		toSaveImages.push_back({img, path, width, height});
+		return;
+	}
 
 	const String widthStr = Algo::clear(width);
 	const String heightStr = Algo::clear(height);
