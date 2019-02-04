@@ -442,9 +442,7 @@ void loop() {
 			std::lock_guard g(Renderer::toRenderMutex);
 			Renderer::toRender.clear();
 			if (GV::screens) {
-				int t1 = Utils::getTimer();
 				GV::screens->draw();
-				std::cout << (Utils::getTimer() - t1) << '\n';
 			}
 			Renderer::needToRender = true;
 

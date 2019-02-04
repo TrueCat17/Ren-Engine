@@ -397,24 +397,22 @@ static void _startMod(const String &dir, const String &loadPath) {
 
 
 	if (loadPath) {
-		{//load stack
-			Node::loading = true;
+		//load stack
+		Node::loading = true;
 
-			std::ifstream is(loadPath + "stack");
+		std::ifstream is(loadPath + "stack");
 
-			while (!is.eof()) {
-				String first, second;
-				is >> first >> second;
-				if (!first || !second) break;
+		while (!is.eof()) {
+			String first, second;
+			is >> first >> second;
+			if (!first || !second) break;
 
-				std::pair<String, String> p(first, second);
-				Node::stack.push_back(p);
-			}
+			std::pair<String, String> p(first, second);
+			Node::stack.push_back(p);
 		}
-
-
-		Node::loadPath = loadPath;
 	}
+
+	Node::loadPath = loadPath;
 	GV::mainExecNode->execute();
 }
 
