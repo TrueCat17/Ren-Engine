@@ -123,7 +123,8 @@ static void initConsts(Node *node) {
 		}
 	}
 
-	if (command == "if" || command == "elif" || command == "else") return;
+	if (command == "if" || command == "elif" || command == "else" ||
+	    command == "for" || command == "while") return;
 
 	for (const Node *child : node->children) {
 		if (!child->isScreenConst) return;
@@ -133,9 +134,12 @@ static void initConsts(Node *node) {
 
 static void initIsEnd(Node *node) {
 	if (node->isScreenProp) return;
-	if (node->command == "$" || node->command == "python") return;
 
-	if (node->command == "use") {
+	const String &command = node->command;
+
+	if (command == "$" || command == "python") return;
+
+	if (command == "use") {
 		Node *screenNode = Screen::getDeclared(node->params);
 		if (screenNode) {
 			node->isScreenEnd = screenNode->isScreenEnd;
@@ -147,7 +151,8 @@ static void initIsEnd(Node *node) {
 		initIsEnd(child);
 	}
 
-	if (node->command == "if" || node->command == "elif" || node->command == "else") return;
+	if (command == "if" || command == "elif" || command == "else" ||
+	    command == "for" || command == "while") return;
 
 	for (const Node *child : node->children) {
 		if (!child->isScreenProp && !child->isScreenConst) return;
@@ -228,10 +233,12 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 	}
 
 	bool hasEnd = true;
-	if (childCommand == "if" || childCommand == "elif") {                       // child is not-end-condition
+	if (childCommand == "if" || childCommand == "elif" ||
+	    childCommand == "for" || childCommand == "while")
+	{                                                                           // child is not-end-[condition/cycle]
 		if (child->childNum + 1 < child->parent->children.size()) {             // and nextChild
 			Node *nextChild = child->parent->children[child->childNum + 1];
-			if (nextChild->command == "elif" || nextChild->command == "else") { // is may be end-condition
+			if (nextChild->command == "elif" || nextChild->command == "else") { // is may be end-[condition/cycle]
 				hasEnd = false;
 			}
 		}
@@ -250,8 +257,9 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 
 static String initCycleCode(Node *node) {
 	String res;
-	String id = "_SL_counter" + String(node->id);
-	String idLen = "_SL_len" + String(node->id);
+	String id = String(node->id);
+	String name = "_SL_counter" + id;
+	String idLen = "_SL_len" + id;
 	String indent = "    ";
 
 	const String &command = node->command;
@@ -259,18 +267,25 @@ static String initCycleCode(Node *node) {
 
 	size_t count = maxScreenChild(node) + 1;
 
-	PyUtils::exec(node->getFileName(), node->getNumLine(), id + " = 0");
+	PyUtils::exec(node->getFileName(), node->getNumLine(), name + " = 0");
+
+	if (node->childNum + 1 < node->parent->children.size()) {
+		Node *next = node->parent->children[node->childNum + 1];
+		if (next->command == "else") {
+			res += "_SL_break" + id + " = False\n";
+		}
+	}
 
 	res +=
-			"_SL_last[" + String(node->screenNum) + "] = _SL_last = [None] * " + id + "\n" +
-			idLen + " = " + id + "\n" +
-			id + " = 0\n"
+	        "_SL_last[" + String(node->screenNum) + "] = _SL_last = [None] * " + name + "\n" +
+	        idLen + " = " + name + "\n" +
+	        name + " = 0\n"
 			"\n" +
 			command + ' ' + params + ":\n" +
 			indent + "\n";
 
 	res +=
-			indent + "if " + id + " == " + idLen + ":\n" +
+	        indent + "if " + name + " == " + idLen + ":\n" +
 			indent + "    _SL_last += [None] * " + (50 * count) + "\n" +
 			indent + "    " + idLen + " += " + (50 * count) + "\n" +
 			indent + "\n";
@@ -280,7 +295,7 @@ static String initCycleCode(Node *node) {
 		if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
 		if (child->isScreenEvent) continue;
 
-		String index = id;
+		String index = name;
 		if (child->screenNum) {
 			index += " + " + String(child->screenNum);
 		}
@@ -289,7 +304,7 @@ static String initCycleCode(Node *node) {
 		res += indent + '\n';
 	}
 
-	res += indent + id + " += " + count + "\n";
+	res += indent + name + " += " + count + "\n";
 
 	return res;
 }
@@ -311,9 +326,19 @@ static String initCode(Node *node, const String& index) {
 		while (t->command != "for" && t->command != "while") {
 			t = t->parent;
 		}
+		String id = String(t->id);
 
-		return "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t) + 1) + "\n" +
-				command + "\n";
+		String res;
+		if (command == "break" &&
+		    t->childNum + 1 < t->parent->children.size() &&
+		    t->parent->children[t->childNum + 1]->command == "else")
+		{
+			res += "_SL_break" + id + " = True\n";
+		}
+
+		res += "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t) + 1) + "\n" +
+		       command + "\n";
+		return res;
 	}
 
 	bool isMainScreen = command == "screen" && !index;
@@ -355,8 +380,14 @@ static String initCode(Node *node, const String& index) {
 		}
 	}else
 	if (command == "if" || command == "elif" || command == "else") {
-		res = command + " " + params + ":\n";
 		indent = "    ";
+
+		if (command == "else" && !node->parent->children[node->childNum - 1]->command.endsWith("if")) {//prev is for/while
+			res += "if not _SL_break" + String(node->parent->children[node->childNum - 1]->id) + ":\n";
+			res += indent + "_SL_last = _SL_stack[-1]\n";
+		}else {
+			res = command + " " + params + ":\n";
+		}
 	}
 
 	res += indent;

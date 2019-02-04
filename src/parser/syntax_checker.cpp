@@ -159,10 +159,6 @@ bool SyntaxChecker::check(const String &parent, const String &child, const Strin
 		return true;
 	}
 
-	if (superParent == SuperParent::SCREEN && child == "else" && (prevChild == "for" || prevChild == "while")) {
-		return false;
-	}
-
 	auto it = mapSyntax.find(parent);
 	thereIsNot = it == mapSyntax.end();
 	if (thereIsNot) {
