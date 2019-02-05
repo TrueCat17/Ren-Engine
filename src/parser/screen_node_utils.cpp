@@ -281,16 +281,19 @@ static String initCycleCode(Node *node) {
 	        idLen + " = " + name + "\n" +
 	        name + " = 0\n"
 			"\n" +
-			command + ' ' + params + ":\n" +
+	        command + ' ' + params + ": # " + String(node->getNumLine()) + " " + node->getFileName() + "\n" +
 			indent + "\n";
 
-	res +=
+	if (count) {
+		res +=
 	        indent + "if " + name + " == " + idLen + ":\n" +
 			indent + "    _SL_last += [None] * " + (50 * count) + "\n" +
 			indent + "    " + idLen + " += " + (50 * count) + "\n" +
 			indent + "\n";
+	}
 
 
+	bool empty = true;
 	for (Node *child : node->children) {
 		if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
 		if (child->isScreenEvent) continue;
@@ -302,9 +305,15 @@ static String initCycleCode(Node *node) {
 		initChildCode(child, res, indent, index);
 
 		res += indent + '\n';
+		empty = false;
+	}
+	if (empty) {
+		res += indent + "pass\n";
 	}
 
-	res += indent + name + " += " + count + "\n";
+	if (count) {
+		res += indent + name + " += " + count + "\n";
+	}
 
 	return res;
 }
@@ -313,11 +322,13 @@ static String initCode(Node *node, const String& index) {
 	const String &command = node->command;
 	const String &params = node->params;
 
+	String res;
+
 	if (command == "use") {
 		Node *screenNode = Screen::getDeclared(params);
 		if (!screenNode) return "";
 
-		String res = initCode(screenNode, index);
+		res = initCode(screenNode, index);
 		return res;
 	}
 
@@ -328,30 +339,48 @@ static String initCode(Node *node, const String& index) {
 		}
 		String id = String(t->id);
 
-		String res;
 		if (command == "break" &&
 		    t->childNum + 1 < t->parent->children.size() &&
 		    t->parent->children[t->childNum + 1]->command == "else")
 		{
-			res += "_SL_break" + id + " = True\n";
+			res = "_SL_break" + id + " = True\n";
 		}
 
 		res += "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t) + 1) + "\n" +
-		       command + "\n";
+		       command + " # " + String(node->getNumLine()) + " " + node->getFileName() + "\n";
 		return res;
 	}
 
 	bool isMainScreen = command == "screen" && !index;
 	if ((node->isScreenConst && !isMainScreen) || node->isScreenEvent) return "";
 
-	if (node->isScreenProp) return params.substr(params.find_first_not_of(' '));
+	if (node->isScreenProp) {
+		res = params;
+		res = res.substr(res.find_first_not_of(' '));
+		res = res.substr(res.find_first_not_of(' '));
+		res += "# " + String(node->getNumLine()) + " " + node->getFileName();
+		return res;
+	}
 
-	if (command == "$" || command == "python") return params;
+	if (command == "$" || command == "python") {
+		size_t startLine = node->getNumLine() + (command == "python");
+
+		std::vector<String> code = params.split('\n');
+		for (size_t i = 0; i < code.size(); ++i) {
+			if (!code[i]) continue;
+
+			res += code[i] + " # " + String(startLine + i) + " " + node->getFileName();
+			if (i != code.size() - 1) {
+				res += "\n";
+			}
+		}
+
+		return res;
+	}
 
 	if (command == "for" || command == "while") return initCycleCode(node);
 
 
-	String res;
 
 	if (node->isScreenEnd && !isMainScreen) {
 		res = "(\n";
@@ -359,7 +388,9 @@ static String initCode(Node *node, const String& index) {
 			if (child->isScreenConst || child->isScreenEvent) continue;
 
 			String childRes = initCode(child);
-			res += "    " + childRes + ",\n";
+			childRes.insert(childRes.firstNotInQuotes('#'), ", ");
+
+			res += "    " + childRes + "\n";
 		}
 
 		if (res.size() != 2) {
@@ -383,10 +414,12 @@ static String initCode(Node *node, const String& index) {
 		indent = "    ";
 
 		if (command == "else" && !node->parent->children[node->childNum - 1]->command.endsWith("if")) {//prev is for/while
-			res += "if not _SL_break" + String(node->parent->children[node->childNum - 1]->id) + ":\n";
+			res +=
+			    "if not _SL_break" + String(node->parent->children[node->childNum - 1]->id) + ":"
+			        " # " + String(node->getNumLine()) + " " + node->getFileName() + "\n";
 			res += indent + "_SL_last = _SL_stack[-1]\n";
 		}else {
-			res = command + " " + params + ":\n";
+			res = command + " " + params + ": # " + String(node->getNumLine()) + " " + node->getFileName() + "\n";
 		}
 	}
 
@@ -409,7 +442,9 @@ static String initCode(Node *node, const String& index) {
 		if (!child->isScreenProp) break;
 
 		String childRes = initCode(child);
-		res += indent + "    " + childRes + ",\n";
+		childRes.insert(childRes.firstNotInQuotes('#'), ", ");
+
+		res += indent + "    " + childRes + "\n";
 		lastPropNum = child->screenNum;
 	}
 
@@ -460,9 +495,6 @@ static String initCode(Node *node, const String& index) {
 			res += "\n"
 				   "_SL_check_events()\n";
 		}
-
-		Logger::log("\n\n\n" + res);
-//		abort();
 	}
 
 	return res;

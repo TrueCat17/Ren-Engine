@@ -153,6 +153,31 @@ bool String::isSimpleString() const {
 	return true;
 }
 
+size_t String::firstNotInQuotes(char c) const {
+	bool q1 = false;
+	bool q2 = false;
+
+	char prev = 0;
+	for (size_t i = 0; i < size(); ++i) {
+		char t = (*this)[i];
+
+		if (t == '\'' && !q2 && prev != '\\') q1 = !q1;
+		if (t == '"'  && !q1 && prev != '\\') q2 = !q2;
+
+		if (!q1 && !q2 && t == c) {
+			return i;
+		}
+
+		if (prev == '\\' && t == '\\') {
+			prev = 0;
+		}else {
+			prev = t;
+		}
+	}
+
+	return size_t(-1);
+}
+
 bool String::startsWith(const String &str, bool withSpaces) const {
 	if (size() < str.size()) return false;
 

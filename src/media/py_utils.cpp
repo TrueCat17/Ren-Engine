@@ -220,6 +220,26 @@ PyUtils::~PyUtils() {
 }
 
 
+static void getRealString(size_t numLine, const String &code, String &fileName, String &numLineStr) {
+	size_t commentEnd = 0;
+	for (size_t i = 0; i < numLine; ++i) {
+		commentEnd = code.find('\n', commentEnd) + 1;
+	}
+	size_t commentStart = code.find_last_of('#', commentEnd) + 1;
+	if (!commentStart) return;
+
+	commentEnd = code.find('\n', commentStart);
+	String comment = code.substr(commentStart, commentEnd - commentStart);
+
+	size_t numLineStart = comment.find_first_not_of(' ');
+	size_t numLineEnd = comment.find_first_of(' ', numLineStart);
+	numLineStr = comment.substr(numLineStart, numLineEnd - numLineStart);
+
+	size_t fileNameStart = comment.find_first_not_of(' ', numLineEnd);
+	size_t fileNameEnd = comment.size();
+	fileName = comment.substr(fileNameStart, fileNameEnd - fileNameStart);
+}
+
 void PyUtils::errorProcessing(const String &code) {
 	PyObject *ptype, *pvalue, *ptraceback;
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
@@ -238,13 +258,13 @@ void PyUtils::errorProcessing(const String &code) {
 	}
 
 	PyObject *typeStrObj = PyObject_Str(ptype);
-	const char *typeStr = PyString_AS_STRING(typeStrObj);
+	String typeStr = PyString_AS_STRING(typeStrObj);
 
 	PyObject *valueStrObj = PyObject_Str(pvalue);
-	const char *valueStr = PyString_AS_STRING(valueStrObj);
+	String valueStr = PyString_AS_STRING(valueStrObj);
 
 	std::string traceback;
-	if (ptraceback) {
+	if (ptraceback && ptraceback != Py_None) {
 		PyObject *args = PyTuple_New(1);
 		PyTuple_SET_ITEM(args, 0, ptraceback);
 		PyObject *res = PyObject_Call(formatTraceback, args, nullptr);
@@ -253,10 +273,49 @@ void PyUtils::errorProcessing(const String &code) {
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
 			PyObject *item = PyList_GET_ITEM(res, i);
-			traceback += PyString_AS_STRING(item);
+			String str = PyString_AS_STRING(item);
+
+			size_t fileNameStart = str.find("_SL_FILE_");
+			if (fileNameStart != size_t(-1)) {
+				size_t fileNameEnd = str.find('"', fileNameStart);
+				String fileName = str.substr(fileNameStart, fileNameEnd - fileNameStart);
+
+				size_t numLineStart = str.find("line ") + 5;
+				size_t numLineEnd = str.find(',', numLineStart);
+				String numLineStr = str.substr(numLineStart, numLineEnd - numLineStart);
+				size_t numLine = size_t(numLineStr.toInt());
+
+				getRealString(numLine, code, fileName, numLineStr);
+
+				str.erase(numLineStart, numLineEnd - numLineStart);
+				str.insert(numLineStart, numLineStr);
+
+				str.erase(fileNameStart, fileNameEnd - fileNameStart);
+				str.insert(fileNameStart, fileName);
+			}
+			traceback += str;
 		}
 
 		Py_DECREF(res);
+	}else {
+		size_t fileNameStart = valueStr.find('(') + 1;
+		size_t fileNameEnd = valueStr.find_last_of(',');
+		String fileName = valueStr.substr(fileNameStart, fileNameEnd - fileNameStart);
+
+		if (fileName.find("_SL_FILE_") != size_t(-1)) {
+			size_t numLineStart = valueStr.find_last_of(' ') + 1;
+			size_t numLineEnd = valueStr.size() - 1;
+			String numLineStr = valueStr.substr(numLineStart, numLineEnd - numLineStart);
+			size_t numLine = size_t(numLineStr.toInt());
+
+			getRealString(numLine, code, fileName, numLineStr);
+
+			valueStr.erase(numLineStart, numLineEnd - numLineStart);
+			valueStr.insert(numLineStart, numLineStr);
+
+			valueStr.erase(fileNameStart, fileNameEnd - fileNameStart);
+			valueStr.insert(fileNameStart, fileName);
+		}
 	}
 
 	const String out = String() +

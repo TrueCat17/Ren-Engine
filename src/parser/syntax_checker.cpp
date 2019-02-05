@@ -115,7 +115,7 @@ void SyntaxChecker::init() {
 
 	addBlockChildren("main", "init, init---python, label, screen");
 	addBlockChildren("init", "for, while, " + conditions + "$, python, image");
-	mapSyntax["init python"] = std::map<String, SyntaxPart>();
+	mapSyntax["init python"] = {};
 	addBlockChildren("label, if, elif, else, for, while",
 		"pass, return, for, while" + conditions +
 		"pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with");

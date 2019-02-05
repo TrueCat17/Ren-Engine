@@ -31,7 +31,7 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 	namespace fs = std::filesystem;
 
 	if (!fs::exists(path)) {
-		outMsg("Директории <" + path + "> не существует");
+		outMsg("Utils::getFileNames", "Directory <" + path + "> not found");
 		static const std::string mainMenu = "mods/main_menu/";
 		if (path != mainMenu) {
 			return getFileNames(mainMenu);
@@ -42,7 +42,12 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 	for (fs::recursive_directory_iterator it(path), end; it != end; ++it) {
 		fs::path filePath(it->path());
 		if (fs::is_regular_file(filePath)) {
-			res.push_back(filePath.string());
+			String str = filePath.string();
+			if (str.find("_SL_FILE_") != size_t(-1)) {
+				Utils::outMsg("Utils::getFileNames", "File name can't to contain _SL_FILE_");
+			}else {
+				res.push_back(filePath.string());
+			}
 		}
 	}
 

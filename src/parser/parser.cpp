@@ -325,12 +325,24 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	}
 
 	bool block = start != end - 1;
-	if (!block && headLine.back() == ':') {
-		Utils::outMsg("Parser::getNode",
-					  "Только объявление блока заканчивается двоеточием\n"
-					  "Строка <" + headLine + ">\n\n" +
-					  res->getPlace());
-		headLine.erase(headLine.size() - 1);
+	if (!block) {
+		if (headLine.back() == ':') {
+			Utils::outMsg("Parser::getNode",
+			              "Только объявление блока заканчивается двоеточием\n"
+			              "Строка <" + headLine + ">\n\n" +
+			              res->getPlace());
+			headLine.erase(headLine.size() - 1);
+		}
+	}else {
+		if (headLine.back() != ':') {
+			Utils::outMsg("Parser::getNode",
+			              "Объявление блока должно заканчиваться двоеточием\n"
+			              "Строка <" + headLine + ">\n\n" +
+			              res->getPlace());
+			headLine = "pass";
+			block = false;
+			end = start + 1;
+		}
 	}
 
 	size_t endType = headLine.find_first_of(' ');
@@ -338,6 +350,21 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		endType = headLine.size() - block;
 	}
 	String type = res->command = headLine.substr(0, endType);
+	if (type.back() == ':') {
+		type.pop_back();
+	}
+
+	if (!block &&
+	    (type == "if" || type == "elif" || type == "else" ||
+	     type == "for" || type == "while" || type == "python"))
+	{
+		Utils::outMsg("Parser::getNode",
+		              "Expected an indented block\n"
+		              "String <" + headLine + ">\n\n" +
+		              res->getPlace());
+		type = res->command = headLine = "pass";
+		endType = 4;
+	}
 
 	size_t startParams = endType + 1;
 	size_t endParams = headLine.size() - 1;

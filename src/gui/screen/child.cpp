@@ -48,8 +48,6 @@ void Child::updateProps() {
 			PyObject *prevProps = props;
 			props = PyUtils::tuple1;
 			for (const String &prop : propNames) {
-				if (prop == "style") continue;
-
 				PyObject *res = Style::getProp(style, prop);
 				PyTuple_SET_ITEM(props, 0, res);
 
@@ -66,7 +64,7 @@ void Child::updateProps() {
 					needAddChildren = true;
 					continue;
 				}
-				if (child->command == "style") continue;
+				if (child->command == "style" || child->command == "pass") continue;
 
 				PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
 				PyTuple_SET_ITEM(props, 0, res);

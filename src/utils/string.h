@@ -45,6 +45,8 @@ public:
 	bool isNumber() const;
 	bool isSimpleString() const;
 
+	size_t firstNotInQuotes(char c) const;
+
 	template <typename T>
 	bool contains(const T &sub) const { return find(sub) != size_t(-1); }
 
