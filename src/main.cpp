@@ -512,7 +512,7 @@ int main(int argc, char **argv) {
 
 #ifdef __WIN32__
 	const char *constPath = "py_libs";
-	const size_t len = SDL_strlen(constPath) + 1;
+	const size_t len = strlen(constPath) + 1;
 	char *path = new char[len];
 	for (size_t i = 0; i < len; ++i) {
 		path[i] = constPath[i];

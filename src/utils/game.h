@@ -10,9 +10,6 @@
 
 class Game {
 public:
-	static bool modStarting;
-
-
 	static void startMod(const std::string &dir);
 	static int getModStartTime();
 

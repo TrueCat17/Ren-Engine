@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <map>
-#include <mutex>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -12,12 +11,6 @@
 #include "utils/string.h"
 
 
-class StopException {};
-class BreakException {};
-class ContinueException {};
-class ReturnException {};
-class ExitException {};
-
 class Node;
 
 typedef struct _object PyObject;
@@ -25,8 +18,6 @@ typedef struct _object PyObject;
 
 class Utils {
 private:
-	static std::map<String, TTF_Font*> fonts;
-
 	static std::map<String, String> images;
 	static std::map<String, Node*> declAts;
 
@@ -40,11 +31,10 @@ public:
 	static void outMsg(std::string msg, const std::string &err = "");
 
 	static TTF_Font* getFont(const String &name, int size);
-	static void destroyAllFonts();
 
 	static Uint32 getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop);
 
-	static bool registerImage(const String &desc, Node *declAt);
+	static void registerImage(Node *imageNode);
 	static bool imageWasRegistered(const std::string &name);
 	static void clearImages() { images.clear(); declAts.clear(); }
 

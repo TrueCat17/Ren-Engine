@@ -3,23 +3,19 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <mutex>
+#include <set>
 #include <filesystem>
-
-#include <Python.h>
 
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
 
-#include "media/image_manipulator.h"
 #include "media/py_utils.h"
-
+#include "media/image_manipulator.h"
 #include "parser/node.h"
-
 #include "utils/game.h"
 
-
-std::map<String, TTF_Font*> Utils::fonts;
 
 std::map<String, String> Utils::images;
 std::map<String, Node*> Utils::declAts;
@@ -79,50 +75,52 @@ void Utils::sleepMicroSeconds(int ms) {
 	std::this_thread::sleep_for(std::chrono::microseconds(ms));
 }
 
-static std::mutex msgGuard;
-void Utils::outMsg(std::string msg, const std::string &err) {
-	static std::map<std::string, bool> errors;
-	static bool notShow = false;
 
+void Utils::outMsg(std::string msg, const std::string &err) {
 	if (err.size()) {
 		msg += " Error:\n" + err;
 
-		if (errors[msg]) return;
-		errors[msg] = true;
+		static std::set<std::string> msgErrors;
+		if (msgErrors.count(msg)) return;
+		msgErrors.insert(msg);
 	}
-	if (msg.size()) {
-		std::lock_guard g(msgGuard);
+	if (msg.empty()) return;
 
-		Logger::log(msg + "\n\n");
-		if (notShow) return;
+	static std::mutex msgGuard;
+	std::lock_guard g(msgGuard);
 
-		static const SDL_MessageBoxButtonData buttons[] = {
-			{SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Ok"},
-			{0, 1, "Close All"}
-		};
+	Logger::log(msg + "\n\n");
 
-		static SDL_MessageBoxData data;
-		data.flags = err.size() ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING;
-		data.window = GV::mainWindow;
-		data.title = "Message";
-		data.message = msg.c_str();
-		data.numbuttons = 2;
-		data.buttons = buttons;
-		data.colorScheme = nullptr;
+	static bool msgCloseAll = false;
+	if (msgCloseAll) return;
 
-		int res = 0;
-		if (SDL_ShowMessageBox(&data, &res)) {
-			std::cout << msg << '\n';
-			std::cout << SDL_GetError() << '\n';
-		}
+	static const SDL_MessageBoxButtonData buttons[] = {
+	    {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Ok"},
+	    {0, 1, "Close All"}
+	};
 
-		if (res == 1) {
-			notShow = true;
-		}
+	static SDL_MessageBoxData data;
+	data.flags = err.empty() ? SDL_MESSAGEBOX_WARNING : SDL_MESSAGEBOX_ERROR;
+	data.window = GV::mainWindow;
+	data.title = "Message";
+	data.message = msg.c_str();
+	data.numbuttons = 2;
+	data.buttons = buttons;
+	data.colorScheme = nullptr;
+
+	int res = 0;
+	if (SDL_ShowMessageBox(&data, &res)) {
+		std::cout << msg << '\n';
+		std::cout << SDL_GetError() << '\n';
+	}
+
+	if (res == 1) {
+		msgCloseAll = true;
 	}
 }
 
 
+static std::map<String, TTF_Font*> fonts;
 TTF_Font* Utils::getFont(const String &name, int size) {
 	const String t = name + "|" + size;
 
@@ -137,13 +135,6 @@ TTF_Font* Utils::getFont(const String &name, int size) {
 		fonts[t] = res;
 	}
 	return res;
-}
-void Utils::destroyAllFonts() {
-	for (auto i = fonts.begin(); i != fonts.end(); ++i) {
-		TTF_Font *font = i->second;
-		TTF_CloseFont(font);
-	}
-	fonts.clear();
 }
 
 
@@ -171,7 +162,8 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 	return (r << 24) + (g << 16) + (b << 8) + a;
 }
 
-bool Utils::registerImage(const String &desc, Node *declAt) {
+void Utils::registerImage(Node *imageNode) {
+	const String &desc = imageNode->params;
 	String name;
 	String path;
 
@@ -195,43 +187,48 @@ bool Utils::registerImage(const String &desc, Node *declAt) {
 
 	name = clear(name);
 	if (!name) {
-		return false;
+		outMsg("Utils::registerImage",
+		       "Empty name\n" +
+		       imageNode->getPlace());
+		return;
 	}
-
 	path = clear(path);
 
 	images[name] = path;
-	declAts[name] = declAt;
+	declAts[name] = imageNode;
 
-	if (declAt->children.empty()) {
-		std::lock_guard g(PyUtils::pyExecMutex);
+	if (!imageNode->children.empty()) return;
 
-		PyObject *defaultDeclAt = PyDict_GetItemString(PyUtils::global, "default_decl_at");
-		if (!defaultDeclAt) return true;
-		if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) return true;
+	std::lock_guard g(PyUtils::pyExecMutex);
 
-		size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
-		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
-			Node *node = Node::getNewNode("some assign default_decl_at", 0);
-
-			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
-			if (PyString_CheckExact(elem)) {
-				node->params = PyString_AS_STRING(elem);
-			}else {
-				PyObject *str = PyObject_Str(elem);
-				if (str) {
-					node->params = PyString_AS_STRING(str);
-					Py_DECREF(str);
-				}else {
-					PyUtils::errorProcessing("str(" + String(elem->ob_type->tp_name) + ")");
-				}
-			}
-
-			declAt->children.push_back(node);
-		}
+	PyObject *defaultDeclAt = PyDict_GetItemString(PyUtils::global, "default_decl_at");
+	if (!defaultDeclAt) {
+		outMsg("Utils::registerImage",
+		       "default_decl_at not defined\n" +
+		       imageNode->getPlace());
+		return;
+	}
+	if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) {
+		outMsg("Utils::registerImage",
+		       "default_decl_at is not list or tuple\n" +
+		       imageNode->getPlace());
+		return;
 	}
 
-	return true;
+	size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
+	for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
+		PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
+		if (!PyString_CheckExact(elem)) {
+			outMsg("Utils::registerImage",
+			       "default_decl_at[" + String(i) + "] is not str\n" +
+			       imageNode->getPlace());
+			continue;
+		}
+
+		Node *node = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
+		node->params = PyString_AS_STRING(elem);
+		imageNode->children.push_back(node);
+	}
 }
 
 bool Utils::imageWasRegistered(const std::string &name) {
@@ -239,44 +236,40 @@ bool Utils::imageWasRegistered(const std::string &name) {
 }
 
 std::string Utils::getImageCode(const std::string &name) {
-	if (images.find(name) == images.end()) {
-		Utils::outMsg("Utils::getImageCode", "Изображение <" + name + "> не зарегистрировано");
-		return "";
-	}
+	auto it = images.find(name);
+	if (it != images.end()) return it->second;
 
-	return images[name];
+	Utils::outMsg("Utils::getImageCode", "Image <" + name + "> not registered");
+	return "";
 }
 PyObject* Utils::getImageDeclAt(const std::string &name) {
-	if (declAts.find(name) == declAts.end()) {
-		Utils::outMsg("Utils::getImageDeclAt", "Изображение <" + name + "> не зарегистрировано");
-		return PyList_New(0);
+	auto it = declAts.find(name);
+	if (it != declAts.end()) {
+		const Node *node = it->second;
+		return node->getPyList();
 	}
 
-	const Node *node = declAts[name];
-	if (node) return node->getPyList();
-
+	Utils::outMsg("Utils::getImageDeclAt", "Image <" + name + "> not registered");
 	return PyList_New(0);
 }
 std::vector<String> Utils::getVectorImageDeclAt(const std::string &name) {
-	if (declAts.find(name) == declAts.end()) {
-		Utils::outMsg("Utils::getVectorImageDeclAt", "Изображение <" + name + "> не зарегистрировано");
-		return std::vector<String>();
+	auto it = declAts.find(name);
+	if (it != declAts.end()) {
+		const Node *node = it->second;
+		return node->getImageChildren();
 	}
 
-	const Node *node = declAts[name];
-	if (!node) return std::vector<String>();
-
-	return node->getImageChildren();
+	Utils::outMsg("Utils::getVectorImageDeclAt", "Image <" + name + "> not registered");
+	return {};
 }
 
 std::pair<String, size_t> Utils::getImagePlace(const std::string &name) {
-	if (declAts.find(name) == declAts.end()) {
-		Utils::outMsg("Utils::getImage", "Изображение <" + name + "> не зарегистрировано");
-		return std::make_pair("NoFile", 0);
+	auto it = declAts.find(name);
+	if (it != declAts.end()) {
+		const Node *node = it->second;
+		return {node->getFileName(), node->getNumLine()};
 	}
 
-	const Node *node = declAts[name];
-	if (!node) return std::make_pair("NoFile", 0);
-
-	return std::make_pair(node->getFileName(), node->getNumLine());
+	Utils::outMsg("Utils::getImagePlace", "Image <" + name + "> not registered");
+	return {"NoFile", 0};
 }

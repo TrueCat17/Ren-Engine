@@ -52,6 +52,7 @@ set(SOURCES
 	media/py_utils/convert_from_py.cpp
 	media/py_utils/convert_to_py.cpp
 	media/py_utils/make_func.cpp
+	media/scenario.cpp
 	
 	parser/node.cpp
 	parser/parser.cpp

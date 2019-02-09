@@ -378,7 +378,7 @@ static void loop() {
 		}
 
 		for (size_t i = 0; i < textures.size(); ++i) {
-			if (!GV::inGame || GV::exit) {
+			if (!GV::inGame) {
 				break;
 			}
 

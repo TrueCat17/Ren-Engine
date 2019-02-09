@@ -21,12 +21,14 @@
 #include "media/image_manipulator.h"
 #include "media/music.h"
 #include "media/py_utils.h"
+#include "media/scenario.h"
 
 #include "parser/parser.h"
 #include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
 #include "utils/math.h"
+#include "utils/mouse.h"
 #include "utils/utils.h"
 
 
@@ -37,8 +39,6 @@ static int frameTime = 16;
 
 static int modStartTime = 0;
 static bool canAutoSave = true;
-
-bool Game::modStarting = false;
 
 
 static void _startMod(const String &dir, const String &loadPath = "");
@@ -105,6 +105,34 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::ifstream is(loadPath + "info");
 	String modName;
 	std::getline(is, modName);
+
+	{
+		int fps;
+		bool hideMouse, autosave;
+
+		std::getline(is, tmp);
+		const std::vector<String> tmpVec = tmp.split(' ');
+		if (tmpVec.size() != 3) {
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 3 args");
+			fps = 60;
+			hideMouse = autosave = true;
+		}else {
+			fps = tmpVec[0].toInt();
+			if (fps == 0) {
+				fps = 60;
+			}else
+			if (fps > maxFps) {
+				fps = maxFps;
+			}
+
+			hideMouse = tmpVec[1] == "True";
+			autosave = tmpVec[2] == "True";
+		}
+
+		Game::setFps(fps);
+		Mouse::setCanHide(hideMouse);
+		Game::setCanAutoSave(autosave);
+	}
 	std::getline(is, tmp);
 
 	std::getline(is, tmp);
@@ -123,7 +151,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 		std::getline(is, tmp);
 		const std::vector<String> tmpVec = tmp.split(' ');
 		if (tmpVec.size() != 4) {
-			Utils::outMsg(loadFile, "В строке <" + tmp + "> ожидалось 4 аргумента");
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 4 args");
 			continue;
 		}
 
@@ -150,7 +178,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 		std::getline(is, tmp);
 		const std::vector<String> tmpVec = tmp.split(' ');
 		if (tmpVec.size() != 5) {
-			Utils::outMsg(loadFile, "В строке <" + tmp + "> ожидалось 5 аргументов");
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 5 args");
 			continue;
 		}
 
@@ -178,10 +206,10 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 			music->setPos(pos);
 		}else {
 			Utils::outMsg(loadFile,
-						  "Не удалось восстановить музыку из файла <" + url + ">\n"
-						  "Место вызова:\n"
-						  "  Файл <" + fileName + ">\n"
-						  "  Строка " + String(numLine));
+			              "Sound-file <" + url + "> not restored\n"
+			              "Play from:\n"
+			              "  File <" + fileName + ">\n"
+			              "  Line " + String(numLine));
 		}
 	}
 	std::getline(is, tmp);
@@ -194,7 +222,7 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 
 		const std::vector<String> tmpVec = tmp.split(' ');
 		if (tmpVec.size() != 2) {
-			Utils::outMsg(loadFile, "В строке <" + tmp + "> ожидалось 2 аргумента");
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 2 args");
 			continue;
 		}
 
@@ -231,8 +259,14 @@ void Game::save() {
 
 	{//save stack
 		std::ofstream stackFile(fullPath + "stack");
-		for (auto p : Node::stack) {
-			stackFile << p.first << ' ' << p.second << '\n';
+
+		std::vector<std::pair<String, String>> stackToSave = Scenario::getStackToSave();
+		if (stackToSave.empty()) {
+			stackFile << '\n';
+		}else {
+			for (auto p : stackToSave) {
+				stackFile << p.first << ' ' << p.second << '\n';
+			}
 		}
 	}
 
@@ -241,7 +275,11 @@ void Game::save() {
 		std::ofstream infoFile(fullPath + "info");
 
 		//mod-name
-		infoFile << GV::mainExecNode->params << "\n\n";
+		//fps hideMouse autosave
+		infoFile << GV::mainExecNode->params << '\n'
+		         << Game::getFps() << ' '
+		         << (Mouse::getCanHide() ? "True" : "False") << ' '
+		         << (Game::getCanAutoSave() ? "True" : "False") << "\n\n";
 
 		//screens
 		std::vector<const Screen*> mainScreens;
@@ -339,7 +377,6 @@ static std::mutex modMutex;
 static void _startMod(const String &dir, const String &loadPath) {
 	int waitingStartTime = Utils::getTimer();
 
-	Game::modStarting = true;
 	GV::inGame = false;
 
 	std::lock_guard g(modMutex);
@@ -375,10 +412,6 @@ static void _startMod(const String &dir, const String &loadPath) {
 		GV::screens->setSize(GV::width, GV::height);
 		GV::screens->updateGlobal();
 
-		GV::numFor = GV::numScreenFor = 0;
-		Node::stackDepth = 0;
-		Node::stack.clear();
-
 		Style::destroyAll();
 
 		delete PyUtils::obj;
@@ -393,27 +426,9 @@ static void _startMod(const String &dir, const String &loadPath) {
 	GV::mainExecNode = p.parse();
 
 	GV::inGame = true;
-	Game::modStarting = false;
-
-
-	if (loadPath) {
-		//load stack
-		Node::loading = true;
-
-		std::ifstream is(loadPath + "stack");
-
-		while (!is.eof()) {
-			String first, second;
-			is >> first >> second;
-			if (!first || !second) break;
-
-			std::pair<String, String> p(first, second);
-			Node::stack.push_back(p);
-		}
-	}
 
 	Node::loadPath = loadPath;
-	GV::mainExecNode->execute();
+	Scenario::execute();
 }
 
 

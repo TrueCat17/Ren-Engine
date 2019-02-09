@@ -19,16 +19,11 @@ private:
 
 public:
 	static String loadPath;
-	static bool loading;
-
-	static size_t stackDepth;
-	static std::vector<std::pair<String, String>> stack;
-
-	static void jumpNext(const std::string &label, bool isCall);
 
 	static Node *getNewNode(const String &fileName, size_t numLine);
 	static void destroyAll();
 
+	static size_t preloadImages(const Node *parent, size_t start, size_t count);
 
 
 	size_t id;//unique id for each Node
@@ -37,25 +32,19 @@ public:
 	Node *parent;
 	size_t childNum;//index in parent Node
 
-	Node *prevNode;//for blocks <elif> and <else>
-	bool condIsTrue = false;
-
 	uint8_t countPropsToCalc;
 
-	bool isScreenProp = false;       //xpos, ypos, pos, ...
-	bool isScreenEvent = false;      //action, alternate, hover_sound...
-	bool withScreenEvent = false;    //some child is screen event
-	bool isScreenConst = false;      //have only const {children and props}?
-	bool isScreenEnd = false;        //all children (not props) are const
-	size_t screenNum   = size_t(-1); //childNum, but skip screenConst children
+	bool isScreenProp = false;     //xpos, ypos, pos, ...
+	bool isScreenEvent = false;    //action, alternate, hover_sound...
+	bool withScreenEvent = false;  //some child is screen event
+	bool isScreenConst = false;    //have only const {children and props}?
+	bool isScreenEnd = false;      //all children (not props) are const
+	size_t screenNum = size_t(-1); //childNum, but skip screenConst children
 
 	String command;//$, play, image, show, ...
 	String params; //text to out, command to execute, condition to check, name for main/label/screen, ...
 
 	std::vector<Node*> children;
-
-
-	void execute();
 
 	PyObject* getPyList() const;
 	std::vector<String> getImageChildren() const;

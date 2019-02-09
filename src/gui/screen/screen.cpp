@@ -7,13 +7,13 @@
 #include "parser/screen_node_utils.h"
 #include "utils/utils.h"
 
-std::vector<Node*> Screen::declared;
+static std::vector<Node*> declared;
 
-std::mutex Screen::screenMutex;
+static std::mutex screenMutex;
 
-std::vector<String> Screen::toShowList;
-std::vector<String> Screen::toHideList;
-
+void Screen::declare(Node *node) {
+	declared.push_back(node);
+}
 Node* Screen::getDeclared(const String &name) {
 	for (Node *node : declared) {
 		if (node->params == name) {
@@ -35,6 +35,37 @@ Screen* Screen::getMain(const String &name) {
 }
 
 
+static void show(const String &name) {
+	Screen *scr = Screen::getMain(name);
+	if (!scr) {
+		Node *node = Screen::getDeclared(name);
+		if (!node) {
+			Utils::outMsg("Screen::show", "Скрин с именем <" + name + "> не существует");
+			return;
+		}
+
+		ScreenNodeUtils::init(node);
+		scr = new Screen(node, nullptr);
+	}
+
+	GV::screens->addChildAt(scr, GV::screens->children.size());
+}
+static void hide(const String &name) {
+	if (!GV::screens) return;
+
+	for (DisplayObject *d : GV::screens->children) {
+		Screen *scr = static_cast<Screen*>(d);
+		if (scr->getName() == name) {
+			delete scr;
+			return;
+		}
+	}
+
+	Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не отображается, поэтому его нельзя скрыть");
+}
+
+static std::vector<String> toShowList;
+static std::vector<String> toHideList;
 void Screen::updateLists() {
 	std::vector<String> toHideCopy, toShowCopy;
 	{
@@ -51,34 +82,12 @@ void Screen::updateLists() {
 	}
 }
 
+void Screen::clear() {
+	declared.clear();
 
-void Screen::show(const String &name) {
-	Screen *scr = getMain(name);
-	if (!scr) {
-		Node *node = getDeclared(name);
-		if (!node) {
-			Utils::outMsg("Screen::show", "Скрин с именем <" + name + "> не существует");
-			return;
-		}
-
-		ScreenNodeUtils::init(node);
-		scr = new Screen(node, nullptr);
-	}
-
-	GV::screens->addChildAt(scr, GV::screens->children.size());
-}
-void Screen::hide(const String &name) {
-	if (!GV::screens) return;
-
-	for (DisplayObject *d : GV::screens->children) {
-		Screen *scr = static_cast<Screen*>(d);
-		if (scr->name == name) {
-			delete scr;
-			return;
-		}
-	}
-
-	Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не отображается, поэтому его нельзя скрыть");
+	std::lock_guard g(screenMutex);
+	toShowList.clear();
+	toHideList.clear();
 }
 
 
@@ -117,7 +126,11 @@ bool Screen::hasScreen(const std::string &name) {
 }
 
 
-bool Screen::_hasModal = false;
+static bool _hasModal = false;
+bool Screen::hasModal() {
+	return _hasModal;
+}
+
 void Screen::updateScreens() {
 	if (!GV::screens) return;
 
@@ -235,17 +248,17 @@ void Screen::checkScreenEvents() {
 void Screen::errorProcessing() {
 	if (!calcedScreen) return;
 
-	PyObject *res = PyObject_CallObject(PyUtils::sysExcInfo, nullptr);
+	PyObject *excInfo = PyObject_CallObject(PyUtils::sysExcInfo, nullptr);
 
-	PyObject *ptype = PySequence_Fast_GET_ITEM(res, 0);
-	PyObject *pvalue = PySequence_Fast_GET_ITEM(res, 1);
-	PyObject *ptraceback = PySequence_Fast_GET_ITEM(res, 2);
+	PyObject *ptype = PySequence_Fast_GET_ITEM(excInfo, 0);
+	PyObject *pvalue = PySequence_Fast_GET_ITEM(excInfo, 1);
+	PyObject *ptraceback = PySequence_Fast_GET_ITEM(excInfo, 2);
 
 	if (ptype)      Py_INCREF(ptype);
 	if (pvalue)     Py_INCREF(pvalue);
 	if (ptraceback) Py_INCREF(ptraceback);
 
-	Py_DECREF(res);
+	Py_DECREF(excInfo);
 
 	PyErr_Restore(ptype, pvalue, ptraceback);
 

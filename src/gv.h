@@ -18,9 +18,6 @@ public:
 	static int height;
 	static bool fullscreen;
 
-	static size_t numFor;
-	static size_t numScreenFor;
-
 	static int numUpdate;
 	static bool minimized;
 	static bool inGame;

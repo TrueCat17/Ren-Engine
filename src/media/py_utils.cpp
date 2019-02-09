@@ -12,6 +12,7 @@
 
 #include "image_manipulator.h"
 #include "music.h"
+#include "scenario.h"
 
 #include "parser/parser.h"
 
@@ -60,7 +61,7 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 	PyObject *t;
 	{
 		std::lock_guard g(PyUtils::pyExecMutex);
-		t = Py_CompileString(tmp.c_str(), fileName.c_str(), Py_file_input);
+		t = Py_CompileStringFlags(tmp.c_str(), fileName.c_str(), Py_file_input, nullptr);
 	}
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
@@ -175,7 +176,7 @@ PyUtils::PyUtils() {
 	setGlobalFunc("exit_from_game", Game::exitFromGame);
 
 	setGlobalFunc("_has_label", Game::hasLabel);
-	setGlobalFunc("_jump_next", Node::jumpNext);
+	setGlobalFunc("_jump_next", Scenario::jumpNext);
 
 	setGlobalFunc("_get_from_hard_config", Game::getFromConfig);
 	setGlobalFunc("get_args", Game::getArgs);
@@ -249,13 +250,6 @@ void PyUtils::errorProcessing(const String &code) {
 	}
 
 	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
-
-	if (ptype == PyExc_StopIteration) {
-		Py_DECREF(ptype);
-		Py_DECREF(pvalue);
-		Py_DECREF(ptraceback);
-		throw StopException();
-	}
 
 	PyObject *typeStrObj = PyObject_Str(ptype);
 	String typeStr = PyString_AS_STRING(typeStrObj);

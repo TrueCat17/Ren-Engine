@@ -141,12 +141,12 @@ void SyntaxChecker::init() {
 
 	setSuperParents("init, init python, label, screen", SuperParent::MAIN);
 	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem, pause", SuperParent::LABEL);
-	setSuperParents(screenElems + "imagemap, hotspot, ground, hover" +
+	setSuperParents(screenElems + "imagemap, hotspot, for, ground, hover" +
 					screenProps + simpleProps + textProps + buttonProps +
 					"spacing, action, first_delay, delay", SuperParent::SCREEN);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
-	setSuperParents("$, pass, break, continue, python, if, elif, else, for, while, image", ALL);
+	setSuperParents("$, pass, break, continue, python, if, elif, else, while, image", ALL);
 }
 
 static const std::set<String> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});

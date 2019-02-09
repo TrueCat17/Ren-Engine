@@ -472,10 +472,6 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		Node *node = getNode(childStart, nextChildStart, superParent, isText);
 		node->parent = res;
 
-		if (node->command == "elif" || node->command == "else") {
-			node->prevNode = res->children[res->children.size() - 1];
-		}
-
 		if (node->command == "with") {
 			size_t i = res->children.size() - 1;
 			while (i != size_t(-1)) {

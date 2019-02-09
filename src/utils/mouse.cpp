@@ -1,31 +1,20 @@
 #include "mouse.h"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_mouse.h>
 
 #include "config.h"
 #include "utils/image_caches.h"
+#include "utils/image_typedefs.h"
 #include "utils/utils.h"
 
-SurfacePtr Mouse::usual;
-SurfacePtr Mouse::btn;
 
-SDL_Cursor *Mouse::usualModeCursor = nullptr;
-SDL_Cursor *Mouse::btnModeCursor = nullptr;
-
-int Mouse::x = 0;
-int Mouse::y = 0;
-
-int Mouse::localX = -1;
-int Mouse::localY = -1;
-
-bool Mouse::canHided = true;
-int Mouse::lastAction = Utils::getTimer();
-
-bool Mouse::mouseDown = false;
-
+static SDL_Cursor *usualModeCursor = nullptr;
+static SDL_Cursor *btnModeCursor = nullptr;
 
 void Mouse::init() {
+	SurfacePtr usual, btn;
+
 	const String usualPath = Config::get("mouse_usual");
 	if (usualPath && usualPath != "None") {
 		usual = ImageCaches::getSurface(usualPath);
@@ -49,9 +38,6 @@ void Mouse::init() {
 	setUsualMode();
 }
 
-void Mouse::update() {
-	SDL_GetMouseState(&x, &y);
-}
 
 void Mouse::setUsualMode() {
 	SDL_SetCursor(usualModeCursor);
@@ -61,6 +47,53 @@ void Mouse::setButtonMode() {
 }
 
 
+static int x = 0;
+static int y = 0;
+
+void Mouse::update() {
+	SDL_GetMouseState(&x, &y);
+}
+
+int Mouse::getX() {
+	return x;
+}
+int Mouse::getY() {
+	return y;
+}
+
+
+static int localX = -1;
+static int localY = -1;
+
+int Mouse::getLocalX() {
+	return localX;
+}
+int Mouse::getLocalY() {
+	return localY;
+}
+void Mouse::setLocal(int x, int y) {
+	localX = x;
+	localY = y;
+}
+
+static bool mouseDown = false;
+bool Mouse::getMouseDown() {
+	return mouseDown;
+}
+void Mouse::setMouseDown(bool value) {
+	mouseDown = value;
+}
+
+static bool canHided = true;
+bool Mouse::getCanHide() {
+	return canHided;
+}
+void Mouse::setCanHide(bool value) {
+	canHided = value;
+}
+
+
+static int lastAction = Utils::getTimer();
 void Mouse::setLastAction() {
 	lastAction = Utils::getTimer();
 }
