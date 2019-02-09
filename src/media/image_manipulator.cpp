@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <algorithm>
+#include <fstream>
 
 #include <SDL2/SDL_image.h>
 
@@ -1323,10 +1324,18 @@ void ImageManipulator::save(const std::string &imageStr, const std::string &path
 	saveSurface(img, path, width, height, true);
 }
 
+//67 bytes
+static Uint8 png1x1Black[] = {
+    137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 55, 110, 249, 36, 0, 0, 0, 10, 73, 68, 65, 84, 8, 215, 99, 96, 0, 0, 0, 2, 0, 1, 226, 33, 188, 51, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
+};
 void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &path, const std::string &width, const std::string &height, bool now) {
 	if (!img) return;
 
 	if (!now) {
+		std::ofstream os(path, std::ios_base::binary);
+		os.write(reinterpret_cast<const char*>(png1x1Black), 67);
+		os.close();
+
 		std::lock_guard g(preloadMutex);
 		toSaveImages.push_back({img, path, width, height});
 		return;
