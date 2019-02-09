@@ -220,16 +220,35 @@ Node* Parser::getMainNode() {
 		prevHeadWord = headWord;
 
 		size_t nextChildStart = start + 1;
-		while (nextChildStart < code.size() && (!code[nextChildStart] || code[nextChildStart][0] == ' ')) {
+		while (nextChildStart < code.size() && (code[nextChildStart].empty() || code[nextChildStart][0] == ' ')) {
 			++nextChildStart;
 		}
 
 		if (ok) {
 			const int superParent = headWord == "label" ? SuperParent::LABEL : headWord == "init" ? SuperParent::INIT : SuperParent::SCREEN;
 			Node *node = getNode(start, nextChildStart, superParent, false);
-			node->parent = res;
-			node->childNum = res->children.size();
-			res->children.push_back(node);
+
+			Node *orig = nullptr;
+			if (node->command == "label" || node->command == "screen") {
+				for (Node *child : res->children) {
+					if (node->command == child->command && node->params == child->params) {
+						orig = child;
+						break;
+					}
+				}
+			}
+
+			if (!orig) {
+				node->parent = res;
+				node->childNum = res->children.size();
+				res->children.push_back(node);
+			}else {
+				Utils::outMsg("Parser::getMainNode",
+				              "Redefinition " + node->command + " " + node->params + ":\n" +
+				              node->getPlace() + "\n" +
+				              "Previous definition:\n" +
+				              orig->getPlace());
+			}
 		}
 		start = nextChildStart;
 	}
@@ -239,8 +258,25 @@ Node* Parser::getMainNode() {
 
 static void initScreenNode(Node *node) {
 	ScopeExit se([&]() {
+		std::map<String, Node*> props;
+
 		for (size_t i = 0; i < node->children.size(); ++i) {
-			node->children[i]->childNum = i;
+			Node *child = node->children[i];
+			child->childNum = i;
+
+			if (child->isScreenProp) {
+				auto it = props.find(child->command);
+				if (it != props.end()) {
+					Node *orig = it->second;
+					Utils::outMsg("Parser::initScreenNode",
+					              "Redefinition " + child->command + ":\n" +
+					              child->getPlace() + "\n" +
+					              "Previous definition:\n" +
+					              orig->getPlace());
+				}else {
+					props[child->command] = child;
+				}
+			}
 		}
 	});
 
