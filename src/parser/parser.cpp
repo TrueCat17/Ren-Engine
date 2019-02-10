@@ -355,6 +355,12 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	headLine.erase(0, headLine.find_first_not_of(' '));
 
 	if (isText) {
+		if (headLine.size() > 1 && headLine[0] == '$') {
+			Utils::outMsg("SyntaxChecker::check",
+			              "Do you mean <$ " + headLine.substr(1) + "> instead <" + headLine + ">?");
+			headLine = "'''" + headLine + "'''";
+		}
+
 		res->command = "text";
 		res->params = headLine;
 		return res;
@@ -412,6 +418,35 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		res->params = headLine.substr(startParams, endParams - startParams + 1);
 		if (type == "$") {
 			checkPythonSyntax(res);
+		}else
+		if (type == "continue" || type == "break") {
+			size_t indent = code[start].find_first_not_of(' ');
+
+			size_t index = start;
+			bool ok = false;
+			while (index) {
+				--index;
+
+				const String &tmp = code[index];
+				if (tmp.empty()) continue;
+
+				const size_t tmpIndent = tmp.find_first_not_of(' ');
+				if (tmpIndent >= indent) continue;
+				if (!tmpIndent) break;
+
+				indent = tmpIndent;
+
+				if (tmp.startsWith("for", false) || tmp.startsWith("while", false)) {
+					ok = true;
+					break;
+				}
+			}
+			if (!ok) {
+				Utils::outMsg("Parser::getNode",
+				              type + " outside loop\n" +
+				              res->getPlace());
+				type = res->command = "pass";
+			}
 		}
 
 		if (superParent & SuperParent::SCREEN) {

@@ -150,20 +150,19 @@ void SyntaxChecker::init() {
 }
 
 static const std::set<String> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});
-bool SyntaxChecker::check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &thereIsNot) {
+bool SyntaxChecker::check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &isText) {
 
 	if ((superParent == SuperParent::INIT || superParent == SuperParent::LABEL) &&
 		blocksWithAny.count(parent))
 	{
-		thereIsNot = false;
+		isText = false;
 		return true;
 	}
 
 	auto it = mapSyntax.find(parent);
-	thereIsNot = it == mapSyntax.end();
-	if (thereIsNot) {
-		return false;
-	}
+	isText = it == mapSyntax.end();
+	if (isText) return false;
+
 	const std::map<String, SyntaxPart> &sps = it->second;
 
 	auto it2 = sps.find(child);
@@ -172,6 +171,11 @@ bool SyntaxChecker::check(const String &parent, const String &child, const Strin
 		return sp.check(prevChild, superParent);
 	}
 
-	thereIsNot = true;
-	return superParent == SuperParent::LABEL;
+	if (superParent == SuperParent::LABEL) {
+		isText = child != "continue" && child != "break";
+		return true;
+	}
+
+	isText = true;
+	return false;
 }

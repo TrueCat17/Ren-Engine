@@ -18,7 +18,7 @@ struct SuperParent {
 class SyntaxChecker {
 public:
 	static void init();
-	static bool check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &thereIsNot);
+	static bool check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &isText);
 
 	static const std::vector<String>& getScreenProps(const String &type);
 };
