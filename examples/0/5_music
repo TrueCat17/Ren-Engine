@@ -19,11 +19,11 @@ music (микшер music, повтор),
 sound, sound2, sound3 (микшер sfx, без повтора),
 ambience, sound_loop, sound_loop2, sound_loop3 (микшер ambience, повтор).
 
-Они зарегистрированы в файле resources/mods/common/std_resources/sound_channels.rpy
+Они зарегистрированы в файле resources/mods/engine/sound_channels.rpy
 
 
 Регистрация звуковых каналов:
-renpy.music.register_channel(name, mixer, loop)
+renpy.music.register_channel("name", "mixer", loop)
 Где name - имя регистрируемого канала,
 	mixer - используемый микшер,
 	loop - True - зациклить, False - без повторов.
@@ -36,10 +36,6 @@ renpy.music.register_channel("sound", "sfx", False)
 renpy.music.set_volume(vol, channel)
 Где vol - громкость от 0 (0%) до 1.0 (100%),
 	channel - звуковой канал.
-
-Также есть volume:
-volume(vol, channel)
-Она делает то же самое.
 
 Для установки громкости всех каналов с определённым микшером есть функция set_mixer_volume(vol, mixer).
 
