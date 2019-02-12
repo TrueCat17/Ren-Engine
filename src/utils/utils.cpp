@@ -6,6 +6,7 @@
 #include <mutex>
 #include <set>
 #include <filesystem>
+#include <algorithm>
 
 #include <SDL2/SDL_ttf.h>
 
@@ -19,11 +20,11 @@
 #include "utils/game.h"
 
 
-static std::map<String, Node*> declAts;
+static std::map<std::string, Node*> declAts;
 
 
-std::vector<String> Utils::getFileNames(const std::string &path) {
-	std::vector<String> res;
+std::vector<std::string> Utils::getFileNames(const std::string &path) {
+	std::vector<std::string> res;
 
 	namespace fs = std::filesystem;
 
@@ -39,7 +40,7 @@ std::vector<String> Utils::getFileNames(const std::string &path) {
 	for (fs::recursive_directory_iterator it(path), end; it != end; ++it) {
 		fs::path filePath(it->path());
 		if (fs::is_regular_file(filePath)) {
-			String str = filePath.string();
+			const std::string str = filePath.string();
 			if (str.find("_SL_FILE_") != size_t(-1)) {
 				Utils::outMsg("Utils::getFileNames", "File name can't to contain _SL_FILE_");
 			}else {
@@ -121,16 +122,16 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 }
 
 
-static std::map<String, TTF_Font*> fonts;
-TTF_Font* Utils::getFont(const String &name, int size) {
-	const String t = name + "|" + size;
+static std::map<std::string, TTF_Font*> fonts;
+TTF_Font* Utils::getFont(const std::string &name, int size) {
+	const std::string t = name + "|" + std::to_string(size);
 
 	auto it = fonts.find(t);
 	if (it != fonts.end()) {
 		return it->second;
 	}
 
-	const String path = "fonts/" + name + ".ttf";
+	const std::string path = "fonts/" + name + ".ttf";
 	TTF_Font *res = TTF_OpenFont(path.c_str(), size);
 	if (res) {
 		fonts[t] = res;
@@ -149,8 +150,11 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 	int y = crop.y + draw.y * crop.h / draw.h;
 
 	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
-		Utils::outMsg("Utils::getPixel", String() +
-					  "Попытка получить цвет точки (" + x + ", " + y + ") у картинки размера " + surface->w + "x" + surface->h);
+		Utils::outMsg("Utils::getPixel",
+		              "Попытка получить цвет точки (" +
+		                  std::to_string(x) + ", " + std::to_string(y) +
+		              ") у картинки размера " +
+		                  std::to_string(surface->w) + "x" + std::to_string(surface->h));
 		return 0;
 	}
 
@@ -164,9 +168,9 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 }
 
 void Utils::registerImage(Node *imageNode) {
-	const String &desc = imageNode->params;
-	String name;
-	String path;
+	const std::string &desc = imageNode->params;
+	std::string name;
+	std::string path;
 
 	size_t i = desc.find("=");
 	if (i == size_t(-1)) {
@@ -177,7 +181,7 @@ void Utils::registerImage(Node *imageNode) {
 		path = desc.substr(i + 1);
 	}
 
-	auto clear = [](String str) -> String {
+	auto clear = [](const std::string &str) -> std::string {
 		size_t start = str.find_first_not_of(' ');
 		size_t end = str.find_last_not_of(' ');
 		if (start == size_t(-1) || end == size_t(-1)) {
@@ -187,7 +191,7 @@ void Utils::registerImage(Node *imageNode) {
 	};
 
 	name = clear(name);
-	if (!name) {
+	if (name.empty()) {
 		outMsg("Utils::registerImage",
 		       "Empty name\n" +
 		       imageNode->getPlace());
@@ -197,7 +201,9 @@ void Utils::registerImage(Node *imageNode) {
 
 	path = clear(path);
 
-	if (path) {
+	if (path.empty()) {
+		if (!imageNode->children.empty()) return;
+	}else {
 		Node *first = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
 		first->params = path;
 
@@ -207,8 +213,6 @@ void Utils::registerImage(Node *imageNode) {
 			imageNode->children.insert(imageNode->children.begin(), first);
 			return;
 		}
-	}else {
-		if (!imageNode->children.empty()) return;
 	}
 
 
@@ -234,7 +238,7 @@ void Utils::registerImage(Node *imageNode) {
 		PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
 		if (!PyString_CheckExact(elem)) {
 			outMsg("Utils::registerImage",
-			       "default_decl_at[" + String(i) + "] is not str\n" +
+			       "default_decl_at[" + std::to_string(i) + "] is not str\n" +
 			       imageNode->getPlace());
 			continue;
 		}
@@ -262,7 +266,7 @@ PyObject* Utils::getImageDeclAt(const std::string &name) {
 	Utils::outMsg("Utils::getImageDeclAt", "Image <" + name + "> not registered");
 	return PyList_New(0);
 }
-std::vector<String> Utils::getVectorImageDeclAt(const std::string &name) {
+std::vector<std::string> Utils::getVectorImageDeclAt(const std::string &name) {
 	auto it = declAts.find(name);
 	if (it != declAts.end()) {
 		const Node *node = it->second;

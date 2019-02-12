@@ -18,10 +18,11 @@
 #include "utils/algo.h"
 #include "utils/game.h"
 #include "utils/mouse.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
-static Node* getLabel(const String &name) {
+static Node* getLabel(const std::string &name) {
 	for (Node *node : GV::mainExecNode->children) {
 		if (node->command == "label" && node->params == name) {
 			return node;
@@ -37,7 +38,7 @@ static std::vector<std::pair<Node*, size_t>> stack;
 
 static void restoreStack() {
 	stack.clear();
-	if (!Node::loadPath) {
+	if (Node::loadPath.empty()) {
 		if (Game::hasLabel("start")) {
 			stack.push_back({getLabel("start"), 0});
 		}
@@ -54,27 +55,27 @@ static void restoreStack() {
 	size_t num = 0;
 
 	while (!is.eof()) {
-		String tmp;
+		std::string tmp;
 		std::getline(is, tmp);
-		if (!tmp) return;
+		if (tmp.empty()) return;
 
-		std::vector<String> tmpVec = tmp.split(' ');
+		std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
 			Utils::outMsg("Scenario::restoreStack", "In string <" + tmp + "> expected 2 args");
 			return;
 		}
 
-		String first = tmpVec[0];
-		String second = tmpVec[1];
+		std::string first = tmpVec[0];
+		std::string second = tmpVec[1];
 
 		Node *node;
 
-		if (first.startsWith("label:")) {
-			String labelName = first.substr(strlen("label:"));
+		if (String::startsWith(first, "label:")) {
+			std::string labelName = first.substr(strlen("label:"));
 			node = getLabel(labelName);
 			if (!node) return;
 
-			num = size_t(second.toInt());
+			num = size_t(String::toInt(second));
 
 			stack.push_back({node, num});
 			prevNode = node;
@@ -90,7 +91,8 @@ static void restoreStack() {
 		if (num - 1 >= prevNode->children.size()) {
 			Utils::outMsg(
 			    "Scenario::restoreStack",
-			    "Node have only " + String(prevNode->children.size()) + " children, need #" + String(num - 1) + "\n" +
+			    "Node have only " + std::to_string(prevNode->children.size()) + " children, "
+			      "need #" + std::to_string(num - 1) + "\n" +
 			    prevNode->getPlace()
 			);
 			return;
@@ -106,7 +108,7 @@ static void restoreStack() {
 			return;
 		}
 
-		num = size_t(second.toInt());
+		num = size_t(String::toInt(second));
 
 		stack.push_back({node, num});
 		prevNode = node;
@@ -114,8 +116,8 @@ static void restoreStack() {
 }
 
 static bool needToSaveStack = false;
-static std::vector<std::pair<String, String>> stackToSave;
-std::vector<std::pair<String, String>> Scenario::getStackToSave() {
+static std::vector<std::pair<std::string, std::string>> stackToSave;
+std::vector<std::pair<std::string, std::string> > Scenario::getStackToSave() {
 	needToSaveStack = true;
 	while (needToSaveStack && GV::inGame) {
 		Utils::sleep(Game::getFrameTime());
@@ -130,9 +132,9 @@ static void checkToSaveStack() {
 
 	for (auto &[node, num] : stack) {
 		if (node->command == "label") {
-			stackToSave.push_back({"label:" + node->params, String(num)});
+			stackToSave.push_back({"label:" + node->params, std::to_string(num)});
 		}else {
-			stackToSave.push_back({node->command, String(num)});
+			stackToSave.push_back({node->command, std::to_string(num)});
 		}
 	}
 
@@ -141,8 +143,8 @@ static void checkToSaveStack() {
 
 
 static void restoreScreens() {
-	std::vector<String> startScreensVec;
-	if (Node::loadPath) {
+	std::vector<std::string> startScreensVec;
+	if (!Node::loadPath.empty()) {
 		PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__,
 		              "load_global_vars('" + Node::loadPath + "py_globals')");
 
@@ -157,10 +159,11 @@ static void restoreScreens() {
 				for (size_t i = 0; i < len; ++i) {
 					PyObject *elem = PyList_GET_ITEM(startScreens, i);
 					if (PyString_CheckExact(elem)) {
-						String name = PyString_AS_STRING(elem);
+						std::string name = PyString_AS_STRING(elem);
 						startScreensVec.push_back(name);
 					}else {
-						Utils::outMsg("Scenario::execute", "type(start_screens[" + String(i) + "]) is not str");
+						Utils::outMsg("Scenario::execute",
+						              "type(start_screens[" + std::to_string(i) + "]) is not str");
 					}
 				}
 			}else {
@@ -171,8 +174,8 @@ static void restoreScreens() {
 		}
 	}
 
-	for (const String &screenName : startScreensVec) {
-		if (screenName) {
+	for (const std::string &screenName : startScreensVec) {
+		if (!screenName.empty()) {
 			Screen::addToShow(screenName);
 		}
 	}
@@ -180,7 +183,7 @@ static void restoreScreens() {
 
 
 
-static String jumpNextLabel;
+static std::string jumpNextLabel;
 static bool jumpNextIsCall;
 
 void Scenario::jumpNext(const std::string &label, bool isCall) {
@@ -219,12 +222,12 @@ void Scenario::execute() {
 	bool initing = true;
 	bool inWithBlock = false;
 
-	jumpNextLabel = "";
+	jumpNextLabel.clear();
 
 	while (true) {
-		if (jumpNextLabel) {
-			const String label = jumpNextLabel;
-			jumpNextLabel = "";
+		if (!jumpNextLabel.empty()) {
+			const std::string label = jumpNextLabel;
+			jumpNextLabel.clear();
 
 			Node *labelNode = getLabel(label);
 			if (!labelNode) continue;
@@ -252,13 +255,13 @@ void Scenario::execute() {
 				if (initNum == initBlocks.size()) {
 					restoreScreens();
 					initing = false;
-					Logger::logEvent("Mod Initing (" + String(initNum) + "/" + String(initBlocks.size()) + " blocks)",
+					Logger::logEvent("Mod Initing (" + std::to_string(initBlocks.size()) + " blocks)",
 					                 Utils::getTimer() - initingStartTime, true);
 				}
 			}else
 
 			if (obj->command == "while") {
-				String code = "bool(" + obj->params + ")";
+				std::string code = "bool(" + obj->params + ")";
 				if (PyUtils::exec(obj->getFileName(), obj->getNumLine(), code, true) == "True") {
 					num = stack.back().second = 0;
 					continue;
@@ -289,8 +292,8 @@ void Scenario::execute() {
 			obj = elem.first;
 			num = elem.second;
 
-			if (prevObj->command.endsWith("if")) {//<if>, <elif>
-				while (num < obj->children.size() && obj->children[num]->command.startsWith("el")) {//<elif>, <else>
+			if (String::endsWith(prevObj->command, "if")) {//<if>, <elif>
+				while (num < obj->children.size() && String::startsWith(obj->children[num]->command, "el")) {//<elif>, <else>
 					++num;
 				}
 			}
@@ -302,7 +305,7 @@ void Scenario::execute() {
 		if (!initing && !inWithBlock) {
 			checkToSaveStack();
 
-			static const String code = "can_exec_next_command()";
+			static const std::string code = "can_exec_next_command()";
 			while (GV::inGame && PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, code, true) == "False") {
 				Utils::sleep(Game::getFrameTime());
 				checkToSaveStack();
@@ -311,12 +314,12 @@ void Scenario::execute() {
 		}
 
 		if (obj->command == "menu") {
-			String resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(), "int(choose_menu_result)", true);
-			int res = resStr.toInt();
+			const std::string resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(), "int(choose_menu_result)", true);
+			int res = String::toInt(resStr);
 
 			if (res < 0 || res >= int(obj->children.size())) {
-				Utils::outMsg("Scenario::execute", String() +
-				              "choose_menu_result = " + res + ", min = 0, max = " + obj->children.size() + "\n" +
+				Utils::outMsg("Scenario::execute",
+				              "choose_menu_result = " + resStr + ", min = 0, max = " + std::to_string(obj->children.size()) + "\n" +
 				              obj->getPlace());
 				res = 0;
 			}
@@ -341,7 +344,7 @@ void Scenario::execute() {
 			}
 			bool screenThereIs = Screen::getMain("choose_menu");
 			if (!screenThereIs) {
-				String variants;
+				std::string variants;
 				for (size_t i = 0; i < child->children.size(); ++i) {
 					variants += child->children[i]->params + ", ";
 				}
@@ -363,12 +366,12 @@ void Scenario::execute() {
 		}
 
 		if (child->command == "scene" || child->command == "show" || child->command == "hide") {
-			String funcName;
+			std::string funcName;
 			if (child->command == "scene") {
 				funcName = "set_scene";
 			}else {
-				if (child->params.startsWith("screen ")) {
-					const String screenName = child->params.substr(strlen("screen "));
+				if (String::startsWith(child->params, "screen ")) {
+					const std::string screenName = child->params.substr(strlen("screen "));
 					if (child->command == "show") {
 						Screen::addToShow(screenName);
 					}else {
@@ -380,7 +383,7 @@ void Scenario::execute() {
 				}
 			}
 
-			const std::vector<String> args = Algo::getArgs(child->params);
+			const std::vector<std::string> args = Algo::getArgs(child->params);
 			if (args.empty() && child->command != "scene") {
 				Utils::outMsg("Scenario::execute",
 				              "Invalid command <" + child->command + " " + child->params + ">\n" +
@@ -388,14 +391,14 @@ void Scenario::execute() {
 				continue;
 			}
 
-			String argsStr = "[";
+			std::string argsStr = "[";
 			for (size_t i = 0; i < args.size(); ++i) {
 				argsStr += "'''" + args[i] + "''', ";
 			}
 			argsStr += "]";
 
 			if (child->command != "hide") {
-				Node::preloadImages(obj, num, size_t(Config::get("count_preload_commands").toInt()));
+				Node::preloadImages(obj, num, size_t(String::toInt(Config::get("count_preload_commands"))));
 
 				argsStr += ", last_show_at";
 
@@ -451,10 +454,10 @@ void Scenario::execute() {
 		}
 
 		if (child->command == "jump" || child->command == "call") {
-			String label = child->params;
-			if (label.startsWith("expression ")) {
+			std::string label = child->params;
+			if (String::startsWith(label, "expression ")) {
 				label = PyUtils::exec(child->getFileName(), child->getNumLine(),
-				                      label.substr(String("expression ").size()), true);
+				                      label.substr(strlen("expression ")), true);
 			}
 
 			Node *labelNode = getLabel(label);
@@ -476,7 +479,7 @@ void Scenario::execute() {
 		}
 
 		if (child->command == "nvl") {
-			const String code = "nvl_" + child->params + "()";
+			const std::string code = "nvl_" + child->params + "()";
 			PyUtils::exec(child->getFileName(), child->getNumLine(), code);
 			continue;
 		}
@@ -486,7 +489,7 @@ void Scenario::execute() {
 			child->params.erase(0, i);
 
 			size_t startText = 0;
-			String nick;
+			std::string nick;
 
 			if (child->params[0] != '"' && child->params[0] != '\'') {//Is character defined?
 				i = child->params.find(' ');
@@ -497,7 +500,7 @@ void Scenario::execute() {
 				nick = "narrator";
 			}
 			size_t endText = child->params.size();
-			String textCode = child->params.substr(startText, endText - startText);
+			std::string textCode = child->params.substr(startText, endText - startText);
 
 			PyUtils::exec(child->getFileName(), child->getNumLine(),
 			              "renpy.say(" + nick + ", " + textCode + ")");
@@ -575,8 +578,8 @@ void Scenario::execute() {
 		}
 
 		if (child->command == "with") {
-			const String &effectName = child->params;
-			const String code = "screen.set_effect(" + effectName + ")";
+			const std::string &effectName = child->params;
+			const std::string code = "screen.set_effect(" + effectName + ")";
 			PyUtils::exec(child->getFileName(), child->getNumLine(), code);
 			continue;
 		}

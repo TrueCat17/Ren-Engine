@@ -3,13 +3,11 @@
 
 #include "gui/screen/child.h"
 
-#include "utils/string.h"
-
 class TextField;
 
 class Text: public Child {
 private:
-	String prevText;
+	std::string prevText;
 
 	Uint32 prevColor = 0;
 
@@ -23,9 +21,9 @@ public:
 	int text_size = 20;
 	Uint32 color = 0;
 
-	String font;
-	String textHAlign;
-	String textVAlign;
+	std::string font;
+	std::string textHAlign;
+	std::string textVAlign;
 
 	Text(Node *node, Screen *screen);
 	virtual ~Text();

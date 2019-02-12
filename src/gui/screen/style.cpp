@@ -1,12 +1,11 @@
 #include "style.h"
 
-#include <vector>
-
 #include "media/py_utils.h"
 #include "utils/utils.h"
 
 
-std::map<String, Style*> Style::styles;
+static std::map<std::string, Style*> styles;
+
 void Style::destroyAll() {
 	for (auto i : styles) {
 		Style *style = i.second;
@@ -22,11 +21,11 @@ Style::~Style() {
 }
 
 
-PyObject* Style::getProp(const String &styleName, const String &propName) {
-	std::map<String, Style*>::const_iterator stylesIt = styles.find(styleName);
+PyObject* Style::getProp(const std::string &styleName, const std::string &propName) {
+	auto stylesIt = styles.find(styleName);
 	if (stylesIt != styles.end()) {
 		Style *style = stylesIt->second;
-		std::map<String, PyObject*>::const_iterator styleIt = style->props.find(propName);
+		auto styleIt = style->props.find(propName);
 		if (styleIt != style->props.end()) return styleIt->second;
 	}
 

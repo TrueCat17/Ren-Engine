@@ -8,8 +8,6 @@
 #include "media/music.h"
 #include "media/py_utils.h"
 
-#include "parser/node.h"
-
 #include "utils/math.h"
 #include "utils/utils.h"
 
@@ -24,7 +22,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 						activateSound->getFileName(), activateSound->getNumLine());
 		}else {
 			const Node *style = this->node->getProp("style");
-			const String &styleName = style ? style->params : this->node->command;
+			const std::string &styleName = style ? style->params : this->node->command;
 			PyObject *activateSoundObj = Style::getProp(styleName, "activate_sound");
 
 			if (PyString_CheckExact(activateSoundObj)) {
@@ -32,7 +30,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 				Music::play("button_click '" + std::string(sound) + "'",
 							this->getFileName(), this->getNumLine());
 			}else if (activateSoundObj != Py_None) {
-				String type = activateSoundObj->ob_type->tp_name;
+				std::string type = activateSoundObj->ob_type->tp_name;
 				Utils::outMsg("Hotspot::onLeftClick",
 							  "In style." + styleName + ".activate_sound expected type str, got " + type);
 			}
@@ -44,7 +42,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 						  "exec_funcs(" + action->params + ")");
 		}else {
 			const Node *style = this->node->getProp("style");
-			const String &styleName = style ? style->params : this->node->command;
+			const std::string &styleName = style ? style->params : this->node->command;
 			PyUtils::exec(this->getFileName(), this->getNumLine(),
 						  "exec_funcs(style." + styleName + ".action)");
 		}
@@ -56,7 +54,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 						  "exec_funcs(" + alternate->params + ")");
 		}else {
 			const Node *style = this->node->getProp("style");
-			const String &styleName = style ? style->params : this->node->command;
+			const std::string &styleName = style ? style->params : this->node->command;
 			PyUtils::exec(this->getFileName(), this->getNumLine(),
 						  "exec_funcs(style." + styleName + ".alternate)");
 		}
@@ -89,7 +87,7 @@ void Hotspot::checkEvents() {
 	);
 
 
-	const String *styleName = nullptr;
+	const std::string *styleName = nullptr;
 	if (btnRect.mouseOvered != prevMouseOver) {
 		const Node *style = node->getProp("style");
 		styleName = style ? &style->params : &node->command;
@@ -109,7 +107,7 @@ void Hotspot::checkEvents() {
 					Music::play("button_hover '" + std::string(sound) + "'",
 								getFileName(), getNumLine());
 				}else if (hoverSoundObj != Py_None) {
-					String type = hoverSoundObj->ob_type->tp_name;
+					std::string type = hoverSoundObj->ob_type->tp_name;
 					Utils::outMsg("Hotspot::hovered",
 								  "In style." + *styleName + ".hover_sound expected type str, got " + type);
 				}

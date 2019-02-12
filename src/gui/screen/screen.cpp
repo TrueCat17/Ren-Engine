@@ -14,7 +14,7 @@ static std::mutex screenMutex;
 void Screen::declare(Node *node) {
 	declared.push_back(node);
 }
-Node* Screen::getDeclared(const String &name) {
+Node* Screen::getDeclared(const std::string &name) {
 	for (Node *node : declared) {
 		if (node->params == name) {
 			return node;
@@ -22,7 +22,7 @@ Node* Screen::getDeclared(const String &name) {
 	}
 	return nullptr;
 }
-Screen* Screen::getMain(const String &name) {
+Screen* Screen::getMain(const std::string &name) {
 	if (GV::screens) {
 		for (DisplayObject *d : GV::screens->children) {
 			Screen *scr = static_cast<Screen*>(d);
@@ -35,7 +35,7 @@ Screen* Screen::getMain(const String &name) {
 }
 
 
-static void show(const String &name) {
+static void show(const std::string &name) {
 	Screen *scr = Screen::getMain(name);
 	if (!scr) {
 		Node *node = Screen::getDeclared(name);
@@ -50,7 +50,7 @@ static void show(const String &name) {
 
 	GV::screens->addChildAt(scr, GV::screens->children.size());
 }
-static void hide(const String &name) {
+static void hide(const std::string &name) {
 	if (!GV::screens) return;
 
 	for (DisplayObject *d : GV::screens->children) {
@@ -64,20 +64,20 @@ static void hide(const String &name) {
 	Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не отображается, поэтому его нельзя скрыть");
 }
 
-static std::vector<String> toShowList;
-static std::vector<String> toHideList;
+static std::vector<std::string> toShowList;
+static std::vector<std::string> toHideList;
 void Screen::updateLists() {
-	std::vector<String> toHideCopy, toShowCopy;
+	std::vector<std::string> toHideCopy, toShowCopy;
 	{
 		std::lock_guard g(screenMutex);
 		toHideCopy.swap(toHideList);
 		toShowCopy.swap(toShowList);
 	}
 
-	for (const String &name : toHideCopy) {
+	for (const std::string &name : toHideCopy) {
 		hide(name);
 	}
-	for (const String &name : toShowCopy) {
+	for (const std::string &name : toShowCopy) {
 		show(name);
 	}
 }
@@ -118,7 +118,7 @@ void Screen::addToHide(const std::string &name) {
 bool Screen::hasScreen(const std::string &name) {
 	std::lock_guard g(screenMutex);
 
-	for (const String &screenName : toShowList) {
+	for (const std::string &screenName : toShowList) {
 		if (screenName == name) return true;
 	}
 
@@ -163,7 +163,7 @@ static Screen* calcedScreen;
 
 void Screen::checkScreenEvents() {
 	if (screenStack.empty()) {
-		String rootVar = "_SL_" + calcedScreen->name;
+		std::string rootVar = "_SL_" + calcedScreen->name;
 		calcedScreen->props = PyDict_GetItemString(PyUtils::global, rootVar.c_str());
 		if (!calcedScreen->props) {
 			Utils::outMsg("Screen::checkEvents", rootVar + " not found");
@@ -223,7 +223,7 @@ void Screen::checkScreenEvents() {
 		if (!child->props || child->props == Py_None) continue;
 		if (!PyList_CheckExact(child->props) && !PyTuple_CheckExact(child->props)) {
 			Utils::outMsg("Screen::checkEvents",
-						  String("Expected list or tuple, got ") + child->props->ob_type->tp_name);
+			              std::string("Expected list or tuple, got ") + child->props->ob_type->tp_name);
 			child->props = nullptr;
 			continue;
 		}
@@ -262,8 +262,7 @@ void Screen::errorProcessing() {
 
 	PyErr_Restore(ptype, pvalue, ptraceback);
 
-	String code = calcedScreen->screenCode;
-	PyUtils::errorProcessing(code);
+	PyUtils::errorProcessing(calcedScreen->screenCode);
 }
 
 

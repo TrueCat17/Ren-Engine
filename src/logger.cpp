@@ -3,8 +3,6 @@
 #include <ctime>
 #include <fstream>
 
-#include "utils/string.h"
-
 
 static std::ofstream out;
 
@@ -16,7 +14,7 @@ void Logger::init() {
 	log(std::asctime(timeInfo));
 }
 
-void Logger::log(const String &str) {
+void Logger::log(const std::string &str) {
 	const size_t size = size_t(out.tellp());
 	const size_t maxSize = 100 << 10;//100 kB
 	if (size > maxSize) return;
@@ -24,7 +22,7 @@ void Logger::log(const String &str) {
 	out << str << '\n';
 	out.flush();
 }
-void Logger::logEvent(const String &event, int time, bool lastInGroup) {
+void Logger::logEvent(const std::string &event, int time, bool lastInGroup) {
 	out << event << ": " << time << " ms\n";
 	if (lastInGroup) {
 		out << "\n\n";

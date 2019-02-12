@@ -2,7 +2,7 @@
 
 #include "utils/utils.h"
 
-size_t Algo::getStartArg(const String &args, size_t end, const char separator) {
+size_t Algo::getStartArg(const std::string &args, size_t end, const char separator) {
 	size_t res = end + 1;
 	while (res < args.size() && args[res] == separator) {
 		++res;
@@ -11,7 +11,7 @@ size_t Algo::getStartArg(const String &args, size_t end, const char separator) {
 
 	return size_t(-1);
 }
-size_t Algo::getEndArg(const String &args, size_t start, const char separator) {
+size_t Algo::getEndArg(const std::string &args, size_t start, const char separator) {
 	bool wasSeparator = false;
 	int b1 = 0;//open (
 	int b2 = 0;//open [
@@ -41,17 +41,17 @@ size_t Algo::getEndArg(const String &args, size_t start, const char separator) {
 		}
 	}
 	if (i == args.size() && (b1 || b2 || q1 || q2)) {
-		String error = "Не закрыта " +
-							((b1 || b2)
-							 ? (String(b1 ? "круглая" : "квадратная")) + " скобка"
-							 : (String(q1 ? "одинарная" : "двойная") + " кавычка")
-						);
+		std::string error = "Не закрыта " +
+		                    ((b1 || b2)
+		                     ? std::string(b1 ? "круглая" : "квадратная") + " скобка"
+		                     : std::string(q1 ? "одинарная" : "двойная") + " кавычка"
+		                    );
 		Utils::outMsg("Utils::getEndArg", error);
 	}
 	return i;
 }
 
-String Algo::clear(String s) {
+std::string Algo::clear(std::string s) {
 	size_t start = s.find_first_not_of(' ');
 	size_t end = s.find_last_not_of(' ') + 1;
 
@@ -80,7 +80,7 @@ String Algo::clear(String s) {
 	return s;
 }
 
-std::vector<String> Algo::getArgs(String args, const char separator) {
+std::vector<std::string> Algo::getArgs(std::string args, const char separator) {
 	size_t start = args.find_first_not_of(' ');
 	size_t end = args.find_last_not_of(' ') + 1;
 
@@ -90,14 +90,14 @@ std::vector<String> Algo::getArgs(String args, const char separator) {
 		args = args.substr(start, end - start);
 	}
 
-	std::vector<String> res;
+	std::vector<std::string> res;
 
 	start = 0;
 	while (start != size_t(-1)) {
 		end = Algo::getEndArg(args, start, separator);
 
-		String t = args.substr(start, end - start);
-		if (t) {
+		std::string t = args.substr(start, end - start);
+		if (!t.empty()) {
 			res.push_back(t);
 		}
 

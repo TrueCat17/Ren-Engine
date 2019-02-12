@@ -1,11 +1,12 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <vector>
+#include <string>
+
 #include <SDL2/SDL_stdinc.h> //Uint32
 
 #include <Python.h>
-
-#include "utils/string.h"
 
 
 class Game {
@@ -17,7 +18,7 @@ public:
 	static void setCanAutoSave(bool v);
 
 	static void load(const std::string &table, const std::string &name);
-	static const std::vector<String> loadInfo(const String &loadPath);
+	static const std::vector<std::string> loadInfo(const std::string &loadPath);
 
 	static void save();
 	static void exitFromGame();

@@ -19,13 +19,19 @@
 #include "utils/game.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
-typedef std::tuple<const String, const String, int> PyCode;
+typedef std::tuple<const std::string, const std::string, int> PyCode;
 
-static std::map<String, PyObject*> constObjects;
+static std::map<std::string, PyObject*> constObjects;
 static std::map<PyCode, PyCodeObject*> compiledObjects;
+
+static const std::string True = "True";
+static const std::string False = "False";
+static const std::string None = "None";
+
 
 PyObject* PyUtils::sysExcInfo = nullptr;
 PyObject* PyUtils::formatTraceback = nullptr;
@@ -33,17 +39,13 @@ PyObject* PyUtils::formatTraceback = nullptr;
 
 PyUtils* PyUtils::obj = nullptr;
 
-const String PyUtils::True = "True";
-const String PyUtils::False = "False";
-const String PyUtils::None = "None";
-
 PyObject *PyUtils::global = nullptr;
 PyObject *PyUtils::tuple1 = nullptr;
 std::recursive_mutex PyUtils::pyExecMutex;
 
 
-PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileName, size_t numLine) {
-	std::tuple<const String&, const String&, int> pyCode(code, fileName, numLine);
+PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
+	std::tuple<const std::string&, const std::string&, int> pyCode(code, fileName, numLine);
 
 	auto i = compiledObjects.find(pyCode);
 	if (i != compiledObjects.end()) {
@@ -51,12 +53,12 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 	}
 
 
-	String indent;
+	std::string indent;
 	if (numLine > 1) {
 		indent.resize(numLine - 1, '\n');
 	}
 
-	const String tmp = indent + code;
+	const std::string tmp = indent + code;
 
 	PyObject *t;
 	{
@@ -65,7 +67,7 @@ PyCodeObject* PyUtils::getCompileObject(const String &code, const String &fileNa
 	}
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
-	std::tuple<const String, const String, int> constPyCode(code, fileName, numLine);
+	std::tuple<const std::string, const std::string, int> constPyCode(code, fileName, numLine);
 	compiledObjects[constPyCode] = co;
 	return co;
 }
@@ -144,7 +146,7 @@ PyUtils::PyUtils() {
 	setGlobalValue("save_screenshotting", false);
 	setGlobalValue("need_screenshot", false);
 	setGlobalValue("screenshot_width", 640);
-	setGlobalValue("screenshot_height", 640 / Config::get("window_w_div_h").toDouble());
+	setGlobalValue("screenshot_height", 640 / String::toDouble(Config::get("window_w_div_h")));
 
 	setGlobalFunc("ftoi", ftoi);
 
@@ -220,7 +222,7 @@ PyUtils::~PyUtils() {
 }
 
 
-static void getRealString(size_t numLine, const String &code, String &fileName, String &numLineStr) {
+static void getRealString(size_t numLine, const std::string &code, std::string &fileName, std::string &numLineStr) {
 	size_t commentEnd = 0;
 	for (size_t i = 0; i < numLine; ++i) {
 		commentEnd = code.find('\n', commentEnd) + 1;
@@ -229,7 +231,7 @@ static void getRealString(size_t numLine, const String &code, String &fileName, 
 	if (!commentStart) return;
 
 	commentEnd = code.find('\n', commentStart);
-	String comment = code.substr(commentStart, commentEnd - commentStart);
+	std::string comment = code.substr(commentStart, commentEnd - commentStart);
 
 	size_t numLineStart = comment.find_first_not_of(' ');
 	size_t numLineEnd = comment.find_first_of(' ', numLineStart);
@@ -240,7 +242,7 @@ static void getRealString(size_t numLine, const String &code, String &fileName, 
 	fileName = comment.substr(fileNameStart, fileNameEnd - fileNameStart);
 }
 
-void PyUtils::errorProcessing(const String &code) {
+void PyUtils::errorProcessing(const std::string &code) {
 	PyObject *ptype, *pvalue, *ptraceback;
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	if (!ptype) {
@@ -251,10 +253,10 @@ void PyUtils::errorProcessing(const String &code) {
 	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
 
 	PyObject *typeStrObj = PyObject_Str(ptype);
-	String typeStr = PyString_AS_STRING(typeStrObj);
+	std::string typeStr = PyString_AS_STRING(typeStrObj);
 
 	PyObject *valueStrObj = PyObject_Str(pvalue);
-	String valueStr = PyString_AS_STRING(valueStrObj);
+	std::string valueStr = PyString_AS_STRING(valueStrObj);
 
 	std::string traceback;
 	if (ptraceback && ptraceback != Py_None) {
@@ -266,17 +268,17 @@ void PyUtils::errorProcessing(const String &code) {
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
 			PyObject *item = PyList_GET_ITEM(res, i);
-			String str = PyString_AS_STRING(item);
+			std::string str = PyString_AS_STRING(item);
 
 			size_t fileNameStart = str.find("_SL_FILE_");
 			if (fileNameStart != size_t(-1)) {
 				size_t fileNameEnd = str.find('"', fileNameStart);
-				String fileName = str.substr(fileNameStart, fileNameEnd - fileNameStart);
+				std::string fileName = str.substr(fileNameStart, fileNameEnd - fileNameStart);
 
 				size_t numLineStart = str.find("line ") + 5;
 				size_t numLineEnd = str.find(',', numLineStart);
-				String numLineStr = str.substr(numLineStart, numLineEnd - numLineStart);
-				size_t numLine = size_t(numLineStr.toInt());
+				std::string numLineStr = str.substr(numLineStart, numLineEnd - numLineStart);
+				size_t numLine = size_t(String::toInt(numLineStr));
 
 				getRealString(numLine, code, fileName, numLineStr);
 
@@ -293,13 +295,13 @@ void PyUtils::errorProcessing(const String &code) {
 	}else {
 		size_t fileNameStart = valueStr.find('(') + 1;
 		size_t fileNameEnd = valueStr.find_last_of(',');
-		String fileName = valueStr.substr(fileNameStart, fileNameEnd - fileNameStart);
+		std::string fileName = valueStr.substr(fileNameStart, fileNameEnd - fileNameStart);
 
 		if (fileName.find("_SL_FILE_") != size_t(-1)) {
 			size_t numLineStart = valueStr.find_last_of(' ') + 1;
 			size_t numLineEnd = valueStr.size() - 1;
-			String numLineStr = valueStr.substr(numLineStart, numLineEnd - numLineStart);
-			size_t numLine = size_t(numLineStr.toInt());
+			std::string numLineStr = valueStr.substr(numLineStart, numLineEnd - numLineStart);
+			size_t numLine = size_t(String::toInt(numLineStr));
 
 			getRealString(numLine, code, fileName, numLineStr);
 
@@ -311,11 +313,11 @@ void PyUtils::errorProcessing(const String &code) {
 		}
 	}
 
-	const String out = String() +
+	const std::string out =
 		"Python Error (" + typeStr + "):\n"
 		"\t" + valueStr + "\n" +
 
-		String(!traceback.empty() ? "Traceback:\n" + traceback + "\n" : "") +
+	    std::string(traceback.empty() ? "" : "Traceback:\n" + traceback + "\n") +
 
 		"Code:\n" +
 		code + "\n\n";
@@ -326,7 +328,7 @@ void PyUtils::errorProcessing(const String &code) {
 	Utils::outMsg("Python", "See details in resources/log.txt");
 }
 
-bool PyUtils::isConstExpr(const String &code, bool checkSimple) {
+bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 	if (checkSimple) {
 		if (code == True || code == False || code == None) {
 			return true;
@@ -358,13 +360,13 @@ bool PyUtils::isConstExpr(const String &code, bool checkSimple) {
 	return true;
 }
 
-String PyUtils::exec(const String &fileName, size_t numLine, const String &code, bool retRes) {
-	if (!code) return "";
+std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std::string &code, bool retRes) {
+	if (code.empty()) return "";
 
-	if (code.isNumber()) {
+	if (String::isNumber(code)) {
 		return code;
 	}
-	if (code.isSimpleString()) {
+	if (String::isSimpleString(code)) {
 		return code.substr(1, code.size() - 2);
 	}
 	if (code == True || code == False || code == None) {
@@ -372,7 +374,7 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 	}
 
 
-	static std::map<String, String> constExprs;
+	static std::map<std::string, std::string> constExprs;
 	bool isConst = retRes && isConstExpr(code, false);
 	if (isConst) {
 		auto i = constExprs.find(code);
@@ -381,7 +383,7 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 		}
 	}
 
-	String res = "empty";
+	std::string res = "empty";
 
 	std::lock_guard g(pyExecMutex);
 
@@ -415,9 +417,9 @@ String PyUtils::exec(const String &fileName, size_t numLine, const String &code,
 	return res;
 }
 
-PyObject* PyUtils::execRetObj(const String &fileName, size_t numLine, const String &code) {
+PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const std::string &code) {
 	PyObject *res = nullptr;
-	if (!code) return res;
+	if (code.empty()) return res;
 
 	bool isConst = isConstExpr(code);
 	if (isConst) {

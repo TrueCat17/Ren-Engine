@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "utils/algo.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -17,7 +18,7 @@ void Config::init() {
 	initing = false;
 }
 
-String Config::get(const String &name) {
+std::string Config::get(const std::string &name) {
 	for (size_t i = 0; i < params.size(); ++i) {
 		if (params[i].name == name) {
 			return params[i].value;
@@ -28,7 +29,7 @@ String Config::get(const String &name) {
 	return "";
 }
 
-void Config::set(const String &name, const String &value, const String &comment) {
+void Config::set(const std::string &name, const std::string &value, const std::string &comment) {
 	bool assigned = false;
 	for (size_t i = 0; i < params.size(); ++i) {
 		Param &param = params[i];
@@ -38,7 +39,7 @@ void Config::set(const String &name, const String &value, const String &comment)
 				assigned = true;
 			}
 
-			if (comment && param.comment != comment) {
+			if (!comment.empty() && param.comment != comment) {
 				param.comment = comment;
 				assigned = true;
 			}
@@ -98,11 +99,11 @@ void Config::load() {
 	}
 
 	while (!is.eof()) {
-		String line;
+		std::string line;
 		std::getline(is, line);
 
 		size_t indexComment = line.find('#');
-		String comment;
+		std::string comment;
 		if (indexComment != size_t(-1)) {
 			comment = line.substr(indexComment + 1);
 
@@ -115,9 +116,9 @@ void Config::load() {
 			comment.erase(end);
 		}
 
-		line.deleteAll("\t");
+		String::deleteAll(line, "\t");
 
-		if (!line) continue;
+		if (line.empty()) continue;
 		if (line[0] == '#') {
 			Utils::outMsg("Config::load", "Комментарии, начинающиеся с начала строки, являются некорректными");
 			continue;
@@ -137,14 +138,14 @@ void Config::load() {
 			continue;
 		}
 
-		String name = line.substr(0, indexAssign);
+		std::string name = line.substr(0, indexAssign);
 		size_t startName = name.find_first_not_of(' ');
 		size_t endName = name.find_last_not_of(' ');
 		if (startName != endName) {
 			name = name.substr(startName, endName - startName + 1);
 		}
 
-		String value = line.substr(indexAssign + 1, indexComment - (indexAssign + 1));
+		std::string value = line.substr(indexAssign + 1, indexComment - (indexAssign + 1));
 		size_t startValue = value.find_first_not_of(' ');
 		size_t endValue = value.find_last_not_of(' ');
 		value = value.substr(startValue, endValue - startValue + 1);
@@ -157,7 +158,7 @@ void Config::save() {
 	if (!changed) return;
 	changed = false;
 
-	auto getCountLetters = [](const String &s) {
+	auto getCountLetters = [](const std::string &s) {
 		size_t res = 0;
 
 		for (size_t i = 0; i < s.size(); ++i) {
@@ -170,8 +171,8 @@ void Config::save() {
 
 	size_t maxSize = 0;
 	for (size_t i = 0; i < params.size(); ++i) {
-		String name = params[i].name;
-		String value = params[i].value;
+		std::string name = params[i].name;
+		std::string value = params[i].value;
 
 		size_t size = getCountLetters(name) + 3 + getCountLetters(value);//3 = getCountLetters(" = ")
 
@@ -185,16 +186,16 @@ void Config::save() {
 	for (size_t i = 0; i < params.size(); ++i) {
 		const Param &param = params[i];
 
-		const String &name = param.name;
-		const String &value = param.value;
-		const String &comment = param.comment;
+		const std::string &name = param.name;
+		const std::string &value = param.value;
+		const std::string &comment = param.comment;
 
 		os << name << " = " << value;
 
-		if (comment) {
+		if (!comment.empty()) {
 			size_t size = getCountLetters(name) + 3 + getCountLetters(value);//3 = getCountLetters(" = ")
 
-			String spaces;
+			std::string spaces;
 			spaces.resize(maxSize - size, ' ');
 			os << spaces << "  # " << comment;
 		}

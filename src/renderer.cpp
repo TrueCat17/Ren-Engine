@@ -1,9 +1,11 @@
 #include "renderer.h"
 
 #include <thread>
+#include <map>
 
 #include <SDL2/SDL_opengl.h>
 
+#include "gv.h"
 #include "config.h"
 #include "gui/group.h"
 #include "media/image_manipulator.h"
@@ -110,7 +112,7 @@ static void checkErrors(const char *from, const char *funcName) {
 	while ((error = glGetError()) != GL_NO_ERROR) {
 		if (++countErrors == maxCountErrors) {
 			fastOpenGL = false;
-			Utils::outMsg("Renderer::" + String(from) + ", " + funcName, "Using OpenGL failed");
+			Utils::outMsg("Renderer::" + std::string(from) + ", " + funcName, "Using OpenGL failed");
 			ImageCaches::clearTextures();
 			break;
 		}
@@ -123,7 +125,7 @@ static void checkErrors(const char *from, const char *funcName) {
 		else if (error == GL_STACK_UNDERFLOW)   str = "GL_STACK_UNDERFLOW";
 		else if (error == GL_OUT_OF_MEMORY)     str = "GL_OUT_OF_MEMORY";
 
-		Utils::outMsg("Renderer::" + String(from) + ", " + funcName, str);
+		Utils::outMsg("Renderer::" + std::string(from) + ", " + funcName, str);
 	}
 }
 
@@ -474,7 +476,7 @@ bool Renderer::init() {
 			for (int i = 0; i < countRenderDrivers; ++i) {
 				SDL_RendererInfo info;
 				SDL_GetRenderDriverInfo(i, &info);
-				if (String(info.name) == "opengl") {
+				if (std::string(info.name) == "opengl") {
 					renderDriver = i;
 					break;
 				}
@@ -501,7 +503,7 @@ bool Renderer::init() {
 
 		SDL_RendererInfo info;
 		SDL_GetRendererInfo(GV::mainRenderer, &info);
-		if (String(info.name) == "opengl") {
+		if (std::string(info.name) == "opengl") {
 			size_t countErrors = 0;
 			const size_t maxCountErrors = 10;
 

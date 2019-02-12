@@ -35,7 +35,7 @@ void Child::updateProps() {
 
 			updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
 
-			String style = node->command;
+			std::string style = node->command;
 			for (Node *child : node->children) {
 				if (child->command == "style") {
 					style = child->params;
@@ -43,11 +43,11 @@ void Child::updateProps() {
 				}
 			}
 
-			const std::vector<String> &propNames = SyntaxChecker::getScreenProps(node->command);
+			const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
 
 			PyObject *prevProps = props;
 			props = PyUtils::tuple1;
-			for (const String &prop : propNames) {
+			for (const std::string &prop : propNames) {
 				PyObject *res = Style::getProp(style, prop);
 				PyTuple_SET_ITEM(props, 0, res);
 
@@ -90,7 +90,8 @@ void Child::updateProps() {
 
 	if (!props || props == Py_None) return;
 	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
-		Utils::outMsg("Child::updateProps", String("Expected list or tuple, got ") + props->ob_type->tp_name);
+		Utils::outMsg("Child::updateProps",
+		              std::string("Expected list or tuple, got ") + props->ob_type->tp_name);
 		return;
 	}
 

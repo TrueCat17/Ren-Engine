@@ -4,6 +4,8 @@
 #include <fstream>
 #include <filesystem>
 
+#include <Python.h>
+
 #include "logger.h"
 
 #include "media/py_utils.h"
@@ -14,6 +16,7 @@
 
 #include "utils/algo.h"
 #include "utils/scope_exit.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -27,21 +30,21 @@ static void checkPythonSyntax(Node *node) {
 }
 
 
-static const std::set<String> eventProps({
+static const std::set<std::string> eventProps({
 	"action", "alternate", "hovered", "unhovered",
 	"activate_sound", "hover_sound"
 });
-bool Parser::isEvent(const String &type) {
+bool Parser::isEvent(const std::string &type) {
 	return eventProps.count(type);
 }
 
-static const std::set<String> fakeComps({
+static const std::set<std::string> fakeComps({
 	"if", "elif", "else", "for", "while", "continue", "break", "$", "python"
 });
-static const std::set<String> comps({
+static const std::set<std::string> comps({
 	"screen", "use", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
 });
-void Parser::getIsFakeOrIsProp(const String &type, bool &isFake, bool &isProp, bool &isEvent) {
+void Parser::getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isProp, bool &isEvent) {
 	isFake = fakeComps.count(type);
 	isProp = !isFake && !comps.count(type);
 	isEvent = isProp && Parser::isEvent(type);
@@ -58,13 +61,13 @@ PyObject* Parser::getMods() {
 		fs::path path(it->path());
 		const std::string pathStr = path.string();
 		if (fs::is_directory(path)) {
-			const String dirName = pathStr.c_str() + modsPath.size();
+			const std::string dirName = pathStr.c_str() + modsPath.size();
 
 			path.append("name");
 			if (fs::exists(path)) {
 				std::ifstream nameFile(path.string());
 
-				String modName;
+				std::string modName;
 				std::getline(nameFile, modName);
 
 				PyObject *pyDirName = PyString_FromString(dirName.c_str());
@@ -75,28 +78,28 @@ PyObject* Parser::getMods() {
 	return res;
 }
 
-Parser::Parser(const String &dir) {
+Parser::Parser(const std::string &dir) {
 	this->dir = dir;
 
 	int searchStartTime = Utils::getTimer();
-	std::vector<String> files = Utils::getFileNames(dir + "/");
+	std::vector<std::string> files = Utils::getFileNames(dir + "/");
 
-	std::vector<String> commonFiles = Utils::getFileNames("mods/common/");
+	std::vector<std::string> commonFiles = Utils::getFileNames("mods/common/");
 	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
-	std::vector<String> engineFiles = Utils::getFileNames("mods/engine/");
+	std::vector<std::string> engineFiles = Utils::getFileNames("mods/engine/");
 	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
-	Logger::logEvent("Searching files (" + String(files.size()) + ")", Utils::getTimer() - searchStartTime);
+	Logger::logEvent("Searching files (" + std::to_string(files.size()) + ")", Utils::getTimer() - searchStartTime);
 
 	int readStartTime = Utils::getTimer();
 	int countFiles = 0;
 	int countLines = 0;
 
-	for (const String &fileName : files) {
-		if (!fileName.endsWith(".rpy")) continue;
+	for (const std::string &fileName : files) {
+		if (!String::endsWith(fileName, ".rpy")) continue;
 
 		bool toPrevLine = false;
 
-		String s;
+		std::string s;
 		std::ifstream is(fileName);
 		code.push_back("FILENAME " + fileName);
 		++countFiles;
@@ -105,9 +108,9 @@ Parser::Parser(const String &dir) {
 			++countLines;
 			std::getline(is, s);
 
-			s.replaceAll('\t', "    ");
+			String::replaceAll(s, "\t", "    ");
 
-			if (s.startsWith("FILENAME", false)) {
+			if (String::startsWith(s, "FILENAME")) {
 				Utils::outMsg("Parser::Parser", "Строка не может начинаться с FILENAME (файл <" + fileName + ">");
 				s = "";
 			}
@@ -117,7 +120,7 @@ Parser::Parser(const String &dir) {
 
 			n = s.find_first_not_of(' ');
 			if (n <= pythonIndent) {
-				pythonIndent = s.endsWith("python:") ? n : size_t(-1);
+				pythonIndent = String::endsWith(s, "python:") ? n : size_t(-1);
 			}
 
 			if (n != size_t(-1) && s[n] != '#') {
@@ -125,7 +128,7 @@ Parser::Parser(const String &dir) {
 					s.erase(0, n);
 
 					for (size_t j = code.size() - 1; j != size_t(-1) ; --j) {
-						if (code[j]) {
+						if (!code[j].empty()) {
 							code[j] += s;
 							break;
 						}
@@ -148,21 +151,20 @@ Parser::Parser(const String &dir) {
 					code.push_back(s);
 				}
 			}else {
-				static String empty = "";
-				code.push_back(empty);
+				code.push_back({});
 			}
 
-			if (s) {
+			if (!s.empty()) {
 				const char last = s.back();
 
-				static const String opsStr = "(,+-*/=[{";
+				static const std::string opsStr = "(,+-*/=[{";
 				static const std::set<char> ops(opsStr.begin(), opsStr.end());
 				toPrevLine = ops.count(last);
 			}
 		}
 	}
 
-	const String event = "Reading (" + String(countLines) + " lines from " + String(countFiles) + " files)";
+	const std::string event = "Reading (" + std::to_string(countLines) + " lines from " + std::to_string(countFiles) + " files)";
 	Logger::logEvent(event, Utils::getTimer() - readStartTime);
 }
 
@@ -185,10 +187,10 @@ Node* Parser::getMainNode() {
 
 	size_t start = 0;
 	size_t end = code.size();
-	String prevHeadWord = "None";
+	std::string prevHeadWord = "None";
 	while (start < end) {
-		const String &headLine = code[start];
-		if (!headLine) {
+		const std::string &headLine = code[start];
+		if (headLine.empty()) {
 			++start;
 			continue;
 		}
@@ -200,7 +202,7 @@ Node* Parser::getMainNode() {
 		if (i && headLine[i - 1] == ':') {
 			--i;
 		}
-		const String headWord = headLine.substr(0, i);
+		const std::string headWord = headLine.substr(0, i);
 
 		if (headWord == "FILENAME") {
 			fileName = headLine.substr(headWord.size() + 1);
@@ -215,7 +217,7 @@ Node* Parser::getMainNode() {
 			Utils::outMsg("Parser::getMainNode",
 						  "Неверный синтаксис в строке <" + headLine + ">\n\n" +
 						  "Файл <" + fileName + ">\n"
-						  "Номер строки: " + String(start - startFile));
+			              "Номер строки: " + std::to_string(start - startFile));
 		}
 		prevHeadWord = headWord;
 
@@ -258,7 +260,7 @@ Node* Parser::getMainNode() {
 
 static void initScreenNode(Node *node) {
 	ScopeExit se([&]() {
-		std::map<String, Node*> props;
+		std::map<std::string, Node*> props;
 
 		for (size_t i = 0; i < node->children.size(); ++i) {
 			Node *child = node->children[i];
@@ -288,8 +290,8 @@ static void initScreenNode(Node *node) {
 	}
 
 
-	static const std::set<String> compsWithFirstParam({"screen", "use", "hotspot", "image", "key", "text", "textbutton"});
-	const std::vector<String> args = Algo::getArgs(node->params);
+	static const std::set<std::string> compsWithFirstParam({"screen", "use", "hotspot", "image", "key", "text", "textbutton"});
+	const std::vector<std::string> args = Algo::getArgs(node->params);
 
 	std::vector<Node*> toInsert;
 
@@ -314,10 +316,10 @@ static void initScreenNode(Node *node) {
 	}
 
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {
-		const String &name = args[i];
+		const std::string &name = args[i];
 		bool t;
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
-			const String str = node->command + ' ' + node->params;
+			const std::string str = node->command + ' ' + node->params;
 			Utils::outMsg("Parser::initScreenNode",
 						  "Неверный синтаксис в строке <" + str + ">\n"
 						  "Параметр <" + name + "> не является свойством объекта типа <" + node->command + ">\n\n" +
@@ -332,7 +334,7 @@ static void initScreenNode(Node *node) {
 						  node->getPlace());
 			continue;
 		}
-		const String &value = args[i + 1];
+		const std::string &value = args[i + 1];
 
 		Node *param = Node::getNewNode(node->getFileName(), node->getNumLine());
 		param->parent = node;
@@ -350,7 +352,7 @@ static void initScreenNode(Node *node) {
 Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	Node *res = Node::getNewNode(fileName, start - startFile);
 
-	String headLine = code[start];
+	std::string headLine = code[start];
 	headLine.erase(headLine.find_last_not_of(' ') + 1);
 	headLine.erase(0, headLine.find_first_not_of(' '));
 
@@ -391,7 +393,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	if (endType == size_t(-1)) {
 		endType = headLine.size() - block;
 	}
-	String type = res->command = headLine.substr(0, endType);
+	std::string type = res->command = headLine.substr(0, endType);
 	if (type.back() == ':') {
 		type.pop_back();
 	}
@@ -427,7 +429,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			while (index) {
 				--index;
 
-				const String &tmp = code[index];
+				const std::string &tmp = code[index];
 				if (tmp.empty()) continue;
 
 				const size_t tmpIndent = tmp.find_first_not_of(' ');
@@ -436,7 +438,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 				indent = tmpIndent;
 
-				if (tmp.startsWith("for", false) || tmp.startsWith("while", false)) {
+				if (String::startsWith(tmp, "for", true) || String::startsWith(tmp, "while", true)) {
 					ok = true;
 					break;
 				}
@@ -466,14 +468,14 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	if (type == "label" || type == "screen") {
 		res->params = headLine.substr(startParams, endParams - startParams);
 	}else
-	if (headLine.startsWith("init", false)) {
-		if (headLine.endsWith(" python:")) {
+	if (String::startsWith(headLine, "init")) {
+		if (String::endsWith(headLine, " python:")) {
 			res->command = type = "init python";
 		}
-		const std::vector<String> words = headLine.split(' ');
+		const std::vector<std::string> words = String::split(headLine, " ");
 
 		if (words.size() >= 2 && words[1] != "python:") {
-			res->priority = int(words[1].toDouble());
+			res->priority = int(String::toDouble(words[1]));
 		}else {
 			res->priority = 0;
 		}
@@ -490,7 +492,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		}while (startIndent == size_t(-1));
 
 		for (i = start + 1; i < end; ++i) {
-			const String &line = code[i];
+			const std::string &line = code[i];
 			if (line.size() > startIndent) {
 				res->params += line.substr(startIndent);
 			}
@@ -504,7 +506,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	}
 
 	size_t childStart = start + 1;
-	String prevHeadWord = "None";
+	std::string prevHeadWord = "None";
 	while (childStart < end) {
 		headLine = code[childStart];
 
@@ -526,7 +528,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		if (i && headLine[i - 1] == ':') {
 			--i;
 		}
-		const String headWord = headLine.substr(startLine, i - startLine);
+		const std::string headWord = headLine.substr(startLine, i - startLine);
 
 		bool isText;
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
@@ -546,13 +548,13 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		if (node->command == "with") {
 			size_t i = res->children.size() - 1;
 			while (i != size_t(-1)) {
-				const static std::set<String> canChildWith = {"scene", "show", "hide"};
+				const static std::set<std::string> canChildWith = {"scene", "show", "hide"};
 
 				Node *child = res->children[i];
-				const String &childCommand = child->command;
-				String &childParams = child->params;
+				const std::string &childCommand = child->command;
+				std::string &childParams = child->params;
 
-				if (canChildWith.count(childCommand) && !childParams.contains(" with ")) {
+				if (canChildWith.count(childCommand) && childParams.find(" with ") == size_t(-1)) {
 					childParams += " with " + node->params;
 					--i;
 				}else {
@@ -579,14 +581,14 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 }
 
 size_t Parser::getNextStart(size_t start) const {
-	if (!code[start]) return start + 1;
+	if (code[start].empty()) return start + 1;
 
 	const size_t countStartIndent = code[start].find_first_not_of(' ');
 
 	size_t last = start;
 	for (size_t i = start + 1; i < code.size(); ++i) {
-		const String &line = code[i];
-		if (line) {
+		const std::string &line = code[i];
+		if (!line.empty()) {
 			const size_t countIndent = line.find_first_not_of(' ');
 			if (countIndent <= countStartIndent) {
 				return last + 1;

@@ -1,6 +1,7 @@
 #include "image_caches.h"
 
 #include <vector>
+#include <map>
 #include <algorithm>
 
 #include <SDL2/SDL.h>
@@ -10,20 +11,18 @@
 #include "gv.h"
 
 #include "gui/display_object.h"
-
 #include "media/image_manipulator.h"
-
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
-std::map<SurfacePtr, std::pair<int, TexturePtr>> ImageCaches::textures;
+static std::map<SurfacePtr, std::pair<int, TexturePtr>> textures;
 
-std::mutex ImageCaches::surfaceMutex;
-std::map<String, std::pair<int, SurfacePtr>> ImageCaches::surfaces;
+static std::mutex surfaceMutex;
+static std::map<std::string, std::pair<int, SurfacePtr>> surfaces;
 
 
-
-void ImageCaches::trimTexturesCache(const SurfacePtr &last) {
+static void trimTexturesCache(const SurfacePtr &last) {
 	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
 	 * пока кэш не уменьшится до нужных размеров
 	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
@@ -31,7 +30,7 @@ void ImageCaches::trimTexturesCache(const SurfacePtr &last) {
 	 * После всего этого новая текстура добавляется в конец кэша
 	 */
 
-	const size_t MAX_SIZE = size_t(Config::get("max_size_textures_cache").toInt()) * (1 << 20);//в МБ
+	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//в МБ
 	size_t cacheSize = size_t(last->w * last->h * 4);
 
 	typedef std::map<SurfacePtr, std::pair<int, TexturePtr>>::const_iterator Iter;
@@ -112,12 +111,15 @@ TexturePtr ImageCaches::getTexture(const SurfacePtr &surface) {
 	Utils::outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
 	return nullptr;
 }
+void ImageCaches::clearTextures() {
+	textures.clear();
+}
 
-void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
-	const size_t MAX_SIZE = size_t(Config::get("max_size_surfaces_cache").toInt()) * (1 << 20);
+static void trimSurfacesCache(const SurfacePtr &last) {
+	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_surfaces_cache"))) * (1 << 20);
 	size_t cacheSize = size_t(last->w * last->h * 4);
 
-	typedef std::map<String, std::pair<int, SurfacePtr>>::const_iterator Iter;
+	typedef std::map<std::string, std::pair<int, SurfacePtr>>::const_iterator Iter;
 
 	std::map<SDL_Surface*, int> countSurfaces;
 	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
@@ -138,12 +140,12 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 			iter(iter)
 		{}
 
-		const String &path() const { return iter->first; }
+		const std::string &path() const { return iter->first; }
 		int time() const { return iter->second.first; }
 		const SurfacePtr& surface() const { return iter->second.second; }
 	};
 
-	std::map<SDL_Surface*, std::vector<String>> paths;
+	std::map<SDL_Surface*, std::vector<std::string>> paths;
 	std::vector<SDL_Surface*> toDelete;
 	std::vector<KV> candidatesToDelete;
 
@@ -197,12 +199,12 @@ void ImageCaches::trimSurfacesCache(const SurfacePtr &last) {
 			obj->surface.reset();
 		}
 
-		for (const String &path : paths[surface]) {
+		for (const std::string &path : paths[surface]) {
 			surfaces.erase(path);
 		}
 	}
 }
-SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const String &path) {
+SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path) {
 	std::lock_guard g(surfaceMutex);
 
 	auto it = surfaces.find(path);
@@ -214,8 +216,8 @@ SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const String &path) {
 }
 
 
-SurfacePtr ImageCaches::getSurface(const String &path) {
-	if (!path) return nullptr;
+SurfacePtr ImageCaches::getSurface(const std::string &path) {
+	if (path.empty()) return nullptr;
 
 	SurfacePtr t = getThereIsSurfaceOrNull(path);
 	if (t) return t;
@@ -227,7 +229,7 @@ SurfacePtr ImageCaches::getSurface(const String &path) {
 	if (t) return t;
 
 
-	String realPath = path;
+	std::string realPath = path;
 	size_t end = realPath.find('?');
 	if (end != size_t(-1)) {
 		realPath.erase(realPath.begin() + int(end), realPath.end());
@@ -361,7 +363,7 @@ SurfacePtr ImageCaches::getSurface(const String &path) {
 	return surface;
 }
 
-void ImageCaches::setSurface(const String &path, const SurfacePtr &surface) {
+void ImageCaches::setSurface(const std::string &path, const SurfacePtr &surface) {
 	if (!surface) return;
 	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
 

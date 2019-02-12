@@ -1,60 +1,62 @@
 #include "syntax_checker.h"
 
+#include <map>
 #include <set>
 
 #include "parser/parser.h"
+#include <utils/string.h>
 #include "utils/utils.h"
 
 
 struct SyntaxPart {
-	std::vector<String> prevs;
+	std::vector<std::string> prevs;
 	int superParent;
 
-	inline bool check(const String &prevChild, const int superParent) const {
+	inline bool check(const std::string &prevChild, const int superParent) const {
 		if (!(this->superParent & superParent)) return false;
 
 		if (prevs.empty()) return true;
 
-		for (const String &prev : prevs) {
+		for (const std::string &prev : prevs) {
 			if (prev == prevChild) return true;
 		}
 		return false;
 	}
 };
 
-static std::map<String, std::map<String, SyntaxPart>> mapSyntax;
+static std::map<std::string, std::map<std::string, SyntaxPart>> mapSyntax;
 
 
-static void addBlockChildren(const String &parents, const String &childs) {
-	const std::vector<String> parentBlocks = parents.split(", ");
-	const std::vector<String> childBlocks = childs.split(", ");
+static void addBlockChildren(const std::string &parents, const std::string &children) {
+	const std::vector<std::string> parentBlocks = String::split(parents, ", ");
+	const std::vector<std::string> childBlocks = String::split(children, ", ");
 
-	for (const String &words : childBlocks) {
-		if (!words) continue;
+	for (const std::string &words : childBlocks) {
+		if (words.empty()) continue;
 
-		std::vector<String> wordsVec = words.split(' ');
-		for (String &s : wordsVec) {
-			s.replaceAll("---", " ");
+		std::vector<std::string> wordsVec = String::split(words, " ");
+		for (std::string &s : wordsVec) {
+			String::replaceAll(s, "---", " ");
 		}
 
-		const String &name = wordsVec[0];
+		const std::string &name = wordsVec[0];
 
 		SyntaxPart sp;
 		sp.prevs.insert(sp.prevs.begin(), wordsVec.begin() + 1, wordsVec.end());
 		sp.superParent = SuperParent::NONE;
 
-		for (const String &parentBlock : parentBlocks) {
-			if (!parentBlock) continue;
+		for (const std::string &parentBlock : parentBlocks) {
+			if (parentBlock.empty()) continue;
 			mapSyntax[parentBlock][name] = sp;
 		}
 	}
 }
-static void setSuperParents(const String &nodesStr, const int superParent) {
-	const std::vector<String> nodes = nodesStr.split(", ");
+static void setSuperParents(const std::string &nodesStr, const int superParent) {
+	const std::vector<std::string> nodes = String::split(nodesStr, ", ");
 
-	for (const String &node : nodes) {
+	for (const std::string &node : nodes) {
 		for (auto &p : mapSyntax) {
-			std::map<String, SyntaxPart> &sps = p.second;
+			std::map<std::string, SyntaxPart> &sps = p.second;
 
 			auto it = sps.find(node);
 			if (it != sps.end()) {
@@ -65,20 +67,20 @@ static void setSuperParents(const String &nodesStr, const int superParent) {
 }
 
 
-static std::map<String, std::vector<String>> mapProps;
-const std::vector<String>& SyntaxChecker::getScreenProps(const String &type) {
+static std::map<std::string, std::vector<std::string>> mapProps;
+const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string &type) {
 	auto it = mapProps.find(type);
 	if (it != mapProps.end()) return it->second;
 
 	auto syntaxIt = mapSyntax.find(type);
 	if (syntaxIt == mapSyntax.end()) {
 		Utils::outMsg("SyntaxChecker::getProps", "Type <" + type + "> not found");
-		static std::vector<String> res;
+		static std::vector<std::string> res;
 		return res;
 	}
 
-	std::map<String, SyntaxPart> children = syntaxIt->second;
-	std::set<String> tmp;
+	std::map<std::string, SyntaxPart> children = syntaxIt->second;
+	std::set<std::string> tmp;
 
 	for (auto &[name, _] : children) {
 		bool isFakeComp, isProp, isEvent;
@@ -92,8 +94,8 @@ const std::vector<String>& SyntaxChecker::getScreenProps(const String &type) {
 		tmp.insert(name);
 	}
 
-	std::vector<String> res;
-	for (const String &name : tmp) {
+	std::vector<std::string> res;
+	for (const std::string &name : tmp) {
 		if (!tmp.count('x' + name)) {//not add <name> if there is <xname> (for example pos:xpos)
 			res.push_back(name);
 		}
@@ -104,14 +106,14 @@ const std::vector<String>& SyntaxChecker::getScreenProps(const String &type) {
 
 
 void SyntaxChecker::init() {
-	const String screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
+	const std::string screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
 
-	const String screenProps = ", use, key, has, modal, zorder, ";
-	const String simpleProps = ", style, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, size, crop, rotate, alpha, ";
-	const String textProps = ", color, font, text_size, text_align, text_valign, ";
-	const String buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";
+	const std::string screenProps = ", use, key, has, modal, zorder, ";
+	const std::string simpleProps = ", style, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, size, crop, rotate, alpha, ";
+	const std::string textProps = ", color, font, text_size, text_align, text_valign, ";
+	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";
 
-	const String conditions = ", if, elif if elif, else if elif for while, ";
+	const std::string conditions = ", if, elif if elif, else if elif for while, ";
 
 	addBlockChildren("main", "init, init---python, label, screen");
 	addBlockChildren("init", "for, while, " + conditions + "$, python, image");
@@ -149,8 +151,8 @@ void SyntaxChecker::init() {
 	setSuperParents("$, pass, break, continue, python, if, elif, else, while, image", ALL);
 }
 
-static const std::set<String> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});
-bool SyntaxChecker::check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &isText) {
+static const std::set<std::string> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});
+bool SyntaxChecker::check(const std::string &parent, const std::string &child, const std::string &prevChild, const int superParent, bool &isText) {
 
 	if ((superParent == SuperParent::INIT || superParent == SuperParent::LABEL) &&
 		blocksWithAny.count(parent))
@@ -163,7 +165,7 @@ bool SyntaxChecker::check(const String &parent, const String &child, const Strin
 	isText = it == mapSyntax.end();
 	if (isText) return false;
 
-	const std::map<String, SyntaxPart> &sps = it->second;
+	const std::map<std::string, SyntaxPart> &sps = it->second;
 
 	auto it2 = sps.find(child);
 	if (it2 != sps.end()) {

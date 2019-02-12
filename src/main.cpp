@@ -28,6 +28,7 @@
 #include "utils/image_caches.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -66,7 +67,7 @@ static void changeWindowSize(bool maximized) {
 		int w = startW;
 		int h = startH;
 
-		double k = Config::get("window_w_div_h").toDouble();
+		double k = String::toDouble(Config::get("window_w_div_h"));
 		if (!k) {
 			k = 1.777;
 			Utils::outMsg("changeWindowSize",
@@ -144,8 +145,8 @@ static void changeWindowSize(bool maximized) {
 		GV::width = w;
 		GV::height = h;
 		if (!GV::fullscreen) {
-			Config::set("window_width", w);
-			Config::set("window_height", h);
+			Config::set("window_width", std::to_string(w));
+			Config::set("window_height", std::to_string(h));
 		}
 		SDL_SetWindowSize(GV::mainWindow, w + x, h + y);
 
@@ -156,9 +157,9 @@ static void changeWindowSize(bool maximized) {
 	startWindowHeight = 0;
 }
 
-static String rootDirectory;
-String setDir(String newRoot) {
-	if (!newRoot) {
+static std::string rootDirectory;
+std::string setDir(std::string newRoot) {
+	if (newRoot.empty()) {
 		char *charsPathUTF8 = SDL_GetBasePath();
 		if (charsPathUTF8) {
 			newRoot = charsPathUTF8;
@@ -167,13 +168,13 @@ String setDir(String newRoot) {
 			Utils::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
 		}
 
-		newRoot.replaceAll('\\', '/');
+		String::replaceAll(newRoot, "\\", "/");
 		newRoot += "../resources/";
 	}
 
-	std::vector<String> parts = newRoot.split('/');
+	std::vector<std::string> parts = String::split(newRoot, "/");
 	for (size_t i = 0; i < parts.size(); ++i) {
-		String &part = parts[i];
+		std::string &part = parts[i];
 		if (part == ".") {
 			parts.erase(parts.begin() + int(i));
 			--i;
@@ -188,7 +189,7 @@ String setDir(String newRoot) {
 		parts.push_back("");
 	}
 
-	rootDirectory = newRoot = String::join(parts, '/');
+	rootDirectory = newRoot = String::join(parts, "/");
 
 	std::error_code ec;
 
@@ -209,7 +210,7 @@ bool init() {
 		return true;
 	}
 
-	String scaleQuality = Config::get("scale_quality");
+	std::string scaleQuality = Config::get("scale_quality");
 	if (scaleQuality != "0" && scaleQuality != "1" && scaleQuality != "2") {
 		Utils::outMsg("Config::get",
 					  "Значением параметра scale_quality ожидалось 0, 1 или 2, получено: <" + scaleQuality + ">");
@@ -234,14 +235,14 @@ bool init() {
 	Mouse::init();
 
 
-	const int fps = Config::get("max_fps").toInt();
+	const int fps = String::toInt(Config::get("max_fps"));
 	Game::setMaxFps(fps);
 
 
 	GV::fullscreen = Config::get("window_fullscreen") == "True";
 
-	int x = Config::get("window_x").toInt();
-	int y = Config::get("window_y").toInt();
+	int x = String::toInt(Config::get("window_x"));
+	int y = String::toInt(Config::get("window_y"));
 	int w, h;
 
 	Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
@@ -250,11 +251,11 @@ bool init() {
 		GV::width = w = GV::displayMode.w;
 		GV::height = h = GV::displayMode.h;
 	}else {
-		GV::width = w = Math::inBounds(Config::get("window_width").toInt(), 640, 2400);
-		GV::height = h = Math::inBounds(Config::get("window_height").toInt(), 360, 1350);
+		GV::width = w = Math::inBounds(String::toInt(Config::get("window_width")), 640, 2400);
+		GV::height = h = Math::inBounds(String::toInt(Config::get("window_height")), 360, 1350);
 	}
 
-	const String windowTitle = Config::get("window_title");
+	const std::string windowTitle = Config::get("window_title");
 	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
 	if (!GV::mainWindow) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
@@ -268,8 +269,8 @@ bool init() {
 		}
 	}
 
-	const String iconPath = Config::get("window_icon");
-	if (iconPath && iconPath != "None") {
+	const std::string iconPath = Config::get("window_icon");
+	if (!iconPath.empty() && iconPath != "None") {
 		SurfacePtr icon = ImageCaches::getSurface(iconPath);
 		if (icon) {
 			SDL_SetWindowIcon(GV::mainWindow, icon.get());
@@ -345,8 +346,8 @@ void loop() {
 					x = std::max(x - leftBorderSize, 1);
 					y = std::max(y - captionHeight, 1);
 
-					Config::set("window_x", x);
-					Config::set("window_y", y);
+					Config::set("window_x", std::to_string(x));
+					Config::set("window_y", std::to_string(y));
 				}
 			}else
 
@@ -524,11 +525,11 @@ int main(int argc, char **argv) {
 	}
 #endif
 
-	String arg;
+	std::string arg;
 	if (argc == 2) {
 		arg = argv[1];
 	}else if (argc > 2) {
-		Utils::outMsg("main", "Expected max 1 arg, get: " + String(argc - 1));
+		Utils::outMsg("main", "Expected max 1 arg, get: " + std::to_string(argc - 1));
 		return 0;
 	}
 
@@ -551,7 +552,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (const String errMsg = setDir(arg)) {
+	const std::string errMsg = setDir(arg);
+	if (!errMsg.empty()) {
 		Utils::outMsg("setDir", errMsg);
 		return 0;
 	}
@@ -564,13 +566,14 @@ int main(int argc, char **argv) {
 		Logger::logEvent("Ren-Engine (version " + getVersion() + ") Initing", Utils::getTimer() - initStartTime);
 
 		const char *platform = SDL_GetPlatform();
-		Logger::log(String("OS: ") + platform);
+		Logger::log(std::string("OS: ") + platform);
 
 		SDL_RendererInfo info;
 		SDL_GetRendererInfo(GV::mainRenderer, &info);
-		String driverInfo = String("Renderer: ") + info.name + ", "
-							"maxTextureWidth = " + info.max_texture_width + ", "
-							"maxTextureHeight = " + info.max_texture_height + "\n";
+		std::string driverInfo =
+		        std::string("Renderer: ") + info.name + ", "
+		        "maxTextureWidth = " + std::to_string(info.max_texture_width) + ", "
+		        "maxTextureHeight = " + std::to_string(info.max_texture_height) + "\n";
 		Logger::log(driverInfo);
 
 		Logger::log("Resource Directory: " + rootDirectory);

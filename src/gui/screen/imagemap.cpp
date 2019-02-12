@@ -1,8 +1,7 @@
 #include "imagemap.h"
 
-#include "media/py_utils.h"
 #include "media/image_manipulator.h"
-#include "parser/node.h"
+#include "media/py_utils.h"
 
 Imagemap::Imagemap(Node *node, Screen *screen):
 	Container(node, this, screen)
@@ -27,10 +26,10 @@ void Imagemap::updateRect(bool) {
 }
 
 void Imagemap::updateTexture(bool skipError) {
-	if (skipError && !groundPath) return;
+	if (skipError && groundPath.empty()) return;
 
 	if (!surface || !hover || prevGroundPath != groundPath || prevHoverPath != hoverPath) {
-		if (prevGroundPath != groundPath && !hoverPath) {
+		if (prevGroundPath != groundPath && hoverPath.empty()) {
 			hoverPath = PyUtils::exec("CPP_EMBED: screen_imagemap.cpp", __LINE__, "im.MatrixColor(r'" + groundPath + "', im.matrix.contrast(1.5))", true);
 		}
 		prevGroundPath = groundPath;

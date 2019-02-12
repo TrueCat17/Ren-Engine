@@ -17,6 +17,7 @@
 
 #include "media/py_utils.h"
 
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -129,7 +130,7 @@ void Container::addChildrenFromNode() {
 
 	for (Node *childNode : node->children) {
 		Child *child = nullptr;
-		const String &childCommand = childNode->command;
+		const std::string &childCommand = childNode->command;
 
 		if (childCommand == "has") {
 			if (childNode->params == "vbox") {
@@ -195,7 +196,7 @@ void Container::addChildrenFromNode() {
 		}else
 
 		{
-			static const std::vector<String> propsVec = String(
+			static const std::vector<std::string> propsVec = String::split(
 				"break, continue, $, python, "
 				"pass, "
 				"has, first_param, spacing, "
@@ -204,9 +205,9 @@ void Container::addChildrenFromNode() {
 				"modal, zorder, ground, hover, "
 				"action, alternate, hovered, unhovered, activate_sound, hover_sound, mouse, "
 				"color, font, text_size, text_align, text_valign"
-			).split(", ");
+			, ", ");
 
-			static const std::set<String> props = { propsVec.begin(), propsVec.end() };
+			static const std::set<std::string> props = { propsVec.begin(), propsVec.end() };
 
 			if (!props.count(childNode->command)) {
 				Utils::outMsg("ScreenContainer::addChildrenFromNode",

@@ -26,7 +26,9 @@ void Text::updateRect(bool) {
 	int width = int(xsize * (xsizeIsDouble ? GV::width : 1));
 	int height = int(ysize * (ysizeIsDouble ? GV::height : 1));
 
-	if (first_param || prevText) {
+	if (first_param.empty() && prevText.empty()) {
+		setSize(width, height);
+	}else {
 		bool needUpdate = false;
 
 		if (tf->getMaxWidth() != width) {
@@ -52,7 +54,7 @@ void Text::updateRect(bool) {
 			tf->setText(first_param, color);
 		}
 
-		if (first_param &&
+		if (!first_param.empty() &&
 			(needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
 			 width != prevWidth || height != prevHeight))
 		{
@@ -63,8 +65,6 @@ void Text::updateRect(bool) {
 
 			tf->setAlign(textHAlign, textVAlign);
 		}
-	}else {
-		setSize(width, height);
 	}
 
 	prevWidth = width;
@@ -77,7 +77,7 @@ void Text::updateGlobal() {
 	int prevGlobalRotate = getGlobalRotate();
 	Child::updateGlobal();
 
-	if (tf->getText() && prevGlobalRotate != getGlobalRotate()) {
+	if (!tf->getText().empty() && prevGlobalRotate != getGlobalRotate()) {
 		tf->setAlign(tf->getHAlign(), tf->getVAlign());
 	}
 }

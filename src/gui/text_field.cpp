@@ -6,15 +6,16 @@
 #include "renderer.h"
 
 #include "utils/math.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
-static const char *defaultFontName = "Arial";
+static const std::string defaultFontName = "Arial";
 
 TextField::TextField() {}
 
-void TextField::setFont(String fontName, int textSize, bool setAsOriginal) {
-	if (!fontName) {
+void TextField::setFont(std::string fontName, int textSize, bool setAsOriginal) {
+	if (fontName.empty()) {
 		fontName = defaultFontName;
 	}
 
@@ -29,14 +30,14 @@ void TextField::setFont(String fontName, int textSize, bool setAsOriginal) {
 	font = Utils::getFont(fontName, textSize);
 	if (!font && fontName != defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
-		Utils::outMsg("Text::setFont", "Загружается шрифт <" + String(defaultFontName) + ">");
+		Utils::outMsg("Text::setFont", "Загружается шрифт <" + defaultFontName + ">");
 
 		fontName = defaultFontName;
 		font = Utils::getFont(fontName, textSize);
 	}
 	if (!font && fontName == defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
-		Utils::outMsg("Text::setFont", "Шрифт <" + String(defaultFontName) + "> не загрузился. Текст не будет отображаться.\n");
+		Utils::outMsg("Text::setFont", "Шрифт <" + defaultFontName + "> не загрузился. Текст не будет отображаться.\n");
 	}else {
 		TTF_SizeUTF8(font, "t", &charWidth, nullptr);//просто буква наугад
 		charHeight = TTF_FontHeight(font);
@@ -90,12 +91,12 @@ void TextField::resetStyle() {
 	strikes[level] = 0;
 }
 
-String TextField::getText() const {
+std::string TextField::getText() const {
 	return prevText;
 }
 
-void TextField::setText(const String &text, Uint32 color) {
-	if (text && !font) {
+void TextField::setText(const std::string &text, Uint32 color) {
+	if (!text.empty() && !font) {
 		setFont("", 20, true);
 	}
 	if (!font) return;
@@ -105,10 +106,10 @@ void TextField::setText(const String &text, Uint32 color) {
 	const int maxW = maxWidth  > 0 ? maxWidth  : 1e9;
 	const int maxH = maxHeight > 0 ? maxHeight : 1e9;
 
-	if (text) {
-		lines = text.split("\n");
-	}else {
+	if (text.empty()) {
 		lines.clear();
+	}else {
+		lines = String::split(text, "\n");
 	}
 
 	curColor = mainColor = color;
@@ -117,7 +118,7 @@ void TextField::setText(const String &text, Uint32 color) {
 	pushStyle();
 	std::vector<SDL_Rect> tmpRects;
 	for (size_t i = countLinesAtStart; i < lines.size(); ++i) {
-		String line = lines[i];
+		std::string line = lines[i];
 
 		SDL_Rect lineRect = { 0, int(i) * charHeight, 0, charHeight };
 		lineRect.w = getLineWidth(line);
@@ -147,7 +148,7 @@ void TextField::setText(const String &text, Uint32 color) {
 
 			//Если перенос возможен, то разделяем текущую строку на две
 			if (line.size() > n + 1) {
-				String newLine = line.substr(n + 1);
+				const std::string newLine = line.substr(n + 1);
 				lines.insert(lines.begin() + int(i) + 1, newLine);
 			}
 			lines[i].erase(n);
@@ -217,7 +218,7 @@ void TextField::addText() {
 		}
 	}
 
-	const String line = lines[numLine];
+	const std::string line = lines[numLine];
 	const size_t length = line.size();
 
 	for (; charOutNum < length; ++charOutNum) {
@@ -239,20 +240,20 @@ void TextField::addText() {
 
 			start = line.find_first_not_of(' ', start);
 			end = line.find_last_not_of(' ', end);
-			String type = line.substr(start, end - start);
+			std::string type = line.substr(start, end - start);
 
 			if (type == "b") isBold += k;
 			else if (type == "i") isItalic += k;
 			else if (type == "u") isUnderline += k;
 			else if (type == "s") isStrike += k;
-			else if (type.startsWith("color")) {
+			else if (String::startsWith(type, "color")) {
 				if (k == 1) {
 					size_t sepIndex = type.find('=');
-					String colorStr = type.substr(sepIndex + 1);
-					if (colorStr && colorStr[0] == '#') {
+					std::string colorStr = type.substr(sepIndex + 1);
+					if (!colorStr.empty() && colorStr[0] == '#') {
 						colorStr.erase(0, 1);
 					}
-					Uint32 newColor = Uint32(colorStr.toInt(16));
+					Uint32 newColor = Uint32(String::toInt(colorStr, 16));
 
 					curColor = newColor;
 				}else {
@@ -277,7 +278,7 @@ void TextField::addText() {
 				++endStyle;
 			}
 			charOutNum = endStyle - 1;
-			String oneStyleStr = line.substr(startStyle, endStyle - startStyle);
+			std::string oneStyleStr = line.substr(startStyle, endStyle - startStyle);
 
 			addChars(oneStyleStr, curColor);
 		}
@@ -287,7 +288,7 @@ void TextField::addText() {
 	charX = 0;
 }
 
-int TextField::getLineWidth(String text, bool resetPrevStyle) {
+int TextField::getLineWidth(std::string text, bool resetPrevStyle) {
 	if (resetPrevStyle) {
 		resetStyle();
 	}
@@ -313,13 +314,13 @@ int TextField::getLineWidth(String text, bool resetPrevStyle) {
 
 			start = text.find_first_not_of(' ', start);
 			end = text.find_last_not_of(' ', end);
-			String type = text.substr(start, end - start);
+			std::string type = text.substr(start, end - start);
 
 			if (type == "b") isBold += k;
 			else if (type == "i") isItalic += k;
 			else if (type == "u") isUnderline += k;
 			else if (type == "s") isStrike += k;
-			else if (type.startsWith("color"));
+			else if (String::startsWith(type, "color"));
 			else {
 				Utils::outMsg("Text::getLineWidth",
 							  "Неизвестный тэг <" + type + ">");
@@ -338,7 +339,7 @@ int TextField::getLineWidth(String text, bool resetPrevStyle) {
 			}
 
 			i = endStyle - 1;
-			String oneStyleStr = text.substr(startStyle, endStyle - startStyle);
+			std::string oneStyleStr = text.substr(startStyle, endStyle - startStyle);
 
 			int charsWidth, charsHeight;
 
@@ -358,7 +359,7 @@ int TextField::getLineWidth(String text, bool resetPrevStyle) {
 	return res;
 }
 
-void TextField::addChars(String c, Uint32 color) {
+void TextField::addChars(std::string c, Uint32 color) {
 	if (!font) return;
 
 	int style = TTF_STYLE_NORMAL;
@@ -404,7 +405,7 @@ void TextField::addChars(String c, Uint32 color) {
 	SDL_FreeSurface(surfaceText);
 }
 
-void TextField::setAlign(String hAlign, String vAlign) {
+void TextField::setAlign(std::string hAlign, std::string vAlign) {
 	if (hAlign != "left" && hAlign != "center" && hAlign != "right") {
 		Utils::outMsg("Text::setAlign", "Недопустимое значение hAlign: <" + hAlign + ">\n");
 		hAlign = "left";

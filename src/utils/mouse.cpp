@@ -6,6 +6,7 @@
 #include "config.h"
 #include "utils/image_caches.h"
 #include "utils/image_typedefs.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -15,8 +16,8 @@ static SDL_Cursor *btnModeCursor = nullptr;
 void Mouse::init() {
 	SurfacePtr usual, btn;
 
-	const String usualPath = Config::get("mouse_usual");
-	if (usualPath && usualPath != "None") {
+	const std::string usualPath = Config::get("mouse_usual");
+	if (!usualPath.empty() && usualPath != "None") {
 		usual = ImageCaches::getSurface(usualPath);
 	}
 	if (usual) {
@@ -25,8 +26,8 @@ void Mouse::init() {
 		usualModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 	}
 
-	const String btnPath = Config::get("mouse_btn");
-	if (btnPath && btnPath != "None") {
+	const std::string btnPath = Config::get("mouse_btn");
+	if (!btnPath.empty() && btnPath != "None") {
 		btn = ImageCaches::getSurface(btnPath);
 	}
 	if (btn) {
@@ -100,7 +101,7 @@ void Mouse::setLastAction() {
 void Mouse::checkCursorVisible() {
 	bool show = true;
 	if (canHided) {
-		const double timeToHide = Config::get("mouse_hide_time").toDouble();
+		const double timeToHide = String::toDouble(Config::get("mouse_hide_time"));
 
 		if (timeToHide > 0) {
 			const double time = (Utils::getTimer() - lastAction) / 1000.0;

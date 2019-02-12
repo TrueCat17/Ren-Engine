@@ -7,6 +7,7 @@
 
 #include "utils/algo.h"
 #include "utils/math.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -142,11 +143,10 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
 		if (channel->name == name) {
-			const String place = "Файл <" + fileName + ">\n"
-								 "Строка " + String(numLine);
-
+			const std::string place = "Файл <" + fileName + ">\n"
+			                          "Строка " + std::to_string(numLine);
 			Utils::outMsg("Music::registerChannel",
-						  "Канал с именем <" + name + "> уже существует\n\n" + place);
+			              "Канал с именем <" + name + "> уже существует\n\n" + place);
 			return;
 		}
 	}
@@ -172,8 +172,8 @@ bool Music::hasChannel(const std::string &name) {
 void Music::setVolume(double volume, const std::string &channelName,
 					  const std::string &fileName, int numLine)
 {
-	const String place = "Файл <" + fileName + ">\n"
-						 "Строка " + String(numLine);
+	const std::string place = "Файл <" + fileName + ">\n"
+	                          "Строка " + std::to_string(numLine);
 
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
@@ -189,14 +189,14 @@ void Music::setVolume(double volume, const std::string &channelName,
 void Music::setMixerVolume(double volume, const std::string &mixer,
 						   const std::string &fileName, int numLine)
 {
-	const String place = "Файл <" + fileName + ">\n"
-						 "Строка " + String(numLine);
+	const std::string place = "Файл <" + fileName + ">\n"
+	                          "Строка " + std::to_string(numLine);
 
 	if (mixerVolumes.find(mixer) != mixerVolumes.end()) {
 		mixerVolumes[mixer] = Math::inBounds(volume, 0, 1);
 	}else {
 		Utils::outMsg("Music::setMixerVolume",
-					  "Микшер с именем <" + mixer + "> сейчас не используется никаким каналом\n\n" + place);
+		              "Микшер с именем <" + mixer + "> сейчас не используется никаким каналом\n\n" + place);
 	}
 }
 
@@ -204,7 +204,7 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 void Music::play(const std::string &desc,
 				 const std::string &fileName, size_t numLine)
 {
-	std::vector<String> args = Algo::getArgs(desc);
+	std::vector<std::string> args = Algo::getArgs(desc);
 	if (args.size() != 2 && args.size() != 4) {
 		Utils::outMsg("Music::play",
 					  "Команда play ожидает 2 или 4 параметра:\n"
@@ -213,16 +213,16 @@ void Music::play(const std::string &desc,
 		return;
 	}
 
-	String channelName = Algo::clear(args[0]);
-	String url = PyUtils::exec(fileName, numLine, args[1], true);
+	std::string channelName = Algo::clear(args[0]);
+	std::string url = PyUtils::exec(fileName, numLine, args[1], true);
 	for (size_t i = 0; i < url.size(); ++i) {
 		if (url[i] == '\\') {
 			url[i] = '/';
 		}
 	}
 
-	const String place = "Файл <" + fileName + ">\n"
-						 "Строка " + String(numLine) + ": <" + desc + ">";
+	const std::string place = "Файл <" + fileName + ">\n"
+	                          "Строка " + std::to_string(numLine) + ": <" + desc + ">";
 
 	int fadeIn = 0;
 	if (args.size() > 2) {
@@ -231,13 +231,13 @@ void Music::play(const std::string &desc,
 						  "3-м параметром ожидалось слово <fadein>\n\n" + place);
 			return;
 		}
-		String fadeInStr = PyUtils::exec(fileName, numLine, args[3], true);
-		if (!fadeInStr.isNumber()) {
+		std::string fadeInStr = PyUtils::exec(fileName, numLine, args[3], true);
+		if (!String::isNumber(fadeInStr)) {
 			Utils::outMsg("Music::play",
 						  "Значением параметра fadein ожидалось число, получено <" + args[3] + ">\n\n" + place);
 			return;
 		}
-		fadeIn = int(fadeInStr.toDouble() * 1000);
+		fadeIn = int(String::toDouble(fadeInStr) * 1000);
 	}
 
 
@@ -272,10 +272,10 @@ void Music::play(const std::string &desc,
 void Music::stop(const std::string &desc,
 				 const std::string& fileName, size_t numLine)
 {
-	const String place = "Файл <" + fileName + ">\n"
-						 "Строка " + String(numLine) + ": <" + desc + ">";
+	const std::string place = "Файл <" + fileName + ">\n"
+	                          "Строка " + std::to_string(numLine) + ": <" + desc + ">";
 
-	std::vector<String> args = Algo::getArgs(desc);
+	std::vector<std::string> args = Algo::getArgs(desc);
 	if (args.size() != 1 && args.size() != 3) {
 		Utils::outMsg("Music::stop",
 					  "Команда stop ожидает 1 или 3 параметра:\n"
@@ -283,7 +283,7 @@ void Music::stop(const std::string &desc,
 		return;
 	}
 
-	String channelName = Algo::clear(args[0]);
+	std::string channelName = Algo::clear(args[0]);
 
 	int fadeOut = 0;
 	if (args.size() > 1) {
@@ -292,13 +292,13 @@ void Music::stop(const std::string &desc,
 						  "3-м параметром ожидалось слово <fadeout>\n\n" + place);
 			return;
 		}
-		String fadeOutStr = PyUtils::exec(fileName, numLine, args[2], true);
-		if (!fadeOutStr.isNumber()) {
+		std::string fadeOutStr = PyUtils::exec(fileName, numLine, args[2], true);
+		if (!String::isNumber(fadeOutStr)) {
 			Utils::outMsg("Music::stop",
 						  "Значением параметра fadeout ожидалось число, получено <" + args[2] + ">\n\n" + place);
 			return;
 		}
-		fadeOut = int(fadeOutStr.toDouble() * 1000);
+		fadeOut = int(String::toDouble(fadeOutStr) * 1000);
 	}
 
 	for (size_t i = 0; i < musics.size(); ++i) {

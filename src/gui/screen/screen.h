@@ -2,25 +2,23 @@
 #define SCREEN_H
 
 #include <vector>
-#include <mutex>
+#include <string>
 
 #include "gui/screen/container.h"
-
-#include "utils/string.h"
 
 class Screen: public Container {
 private:
 	PyCodeObject *co;
 
-	String name;
-	String screenCode;
+	std::string name;
+	std::string screenCode;
 
 public:
 	static void declare(Node *node);
-	static Node* getDeclared(const String &name);
+	static Node* getDeclared(const std::string &name);
 	static void clear();
 
-	static Screen* getMain(const String &name);
+	static Screen* getMain(const std::string &name);
 
 	static void updateLists();
 	static void updateScreens();
@@ -41,7 +39,7 @@ public:
 
 	void calcProps();
 
-	const String& getName() const { return name; }
+	const std::string& getName() const { return name; }
 };
 
 #endif // SCREEN_H

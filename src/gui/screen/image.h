@@ -6,7 +6,7 @@
 
 class Image: public Container {
 private:
-	String prevImagePath;
+	std::string prevImagePath;
 
 public:
 	Image(Node *node, Screen *screen);

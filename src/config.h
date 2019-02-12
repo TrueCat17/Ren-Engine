@@ -2,13 +2,12 @@
 #define CONFIG_H
 
 #include <vector>
-
-#include "utils/string.h"
+#include <string>
 
 struct Param {
-	String name;
-	String value;
-	String comment;
+	std::string name;
+	std::string value;
+	std::string comment;
 };
 
 class Config {
@@ -22,8 +21,8 @@ private:
 
 public:
 	static void init();
-	static String get(const String &name);
-	static void set(const String &name, const String &value, const String &comment = "");
+	static std::string get(const std::string &name);
+	static void set(const std::string &name, const std::string &value, const std::string &comment = "");
 	static void save();
 };
 

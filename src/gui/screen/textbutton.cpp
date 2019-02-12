@@ -6,6 +6,7 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -26,7 +27,7 @@ TextButton::TextButton(Node* node, Screen *screen):
 						activateSound->getFileName(), activateSound->getNumLine());
 		}else {
 			const Node *style = this->node->getProp("style");
-			const String &styleName = style ? style->params : this->node->command;
+			const std::string &styleName = style ? style->params : this->node->command;
 			PyObject *activateSoundObj = Style::getProp(styleName, "activate_sound");
 
 			if (PyString_CheckExact(activateSoundObj)) {
@@ -34,7 +35,7 @@ TextButton::TextButton(Node* node, Screen *screen):
 				Music::play("button_click '" + std::string(sound) + "'",
 							this->getFileName(), this->getNumLine());
 			}else if (activateSoundObj != Py_None) {
-				String type = activateSoundObj->ob_type->tp_name;
+				std::string type = activateSoundObj->ob_type->tp_name;
 				Utils::outMsg("TextButton::onLeftClick",
 							  "In style." + styleName + ".activate_sound expected type str, got " + type);
 			}
@@ -46,7 +47,7 @@ TextButton::TextButton(Node* node, Screen *screen):
 						  "exec_funcs(" + action->params + ")");
 		}else {
 			const Node *style = this->node->getProp("style");
-			const String &styleName = style ? style->params : this->node->command;
+			const std::string &styleName = style ? style->params : this->node->command;
 			PyUtils::exec(this->getFileName(), this->getNumLine(),
 						  "exec_funcs(style." + styleName + ".action)");
 		}
@@ -58,7 +59,7 @@ TextButton::TextButton(Node* node, Screen *screen):
 						  "exec_funcs(" + alternate->params + ")");
 		}else {
 			const Node *style = this->node->getProp("style");
-			const String &styleName = style ? style->params : this->node->command;
+			const std::string &styleName = style ? style->params : this->node->command;
 			PyUtils::exec(this->getFileName(), this->getNumLine(),
 						  "exec_funcs(style." + styleName + ".alternate)");
 		}
@@ -86,16 +87,16 @@ void TextButton::updateRect(bool) {
 }
 
 void TextButton::updateTexture(bool skipError) {
-	if (skipError && !ground) return;
+	if (skipError && ground.empty()) return;
 
-	if (!surface || !hover || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
-		if (prevGround != ground && (hoverIsStd || !hover)) {
+	if (!surface || hover.empty() || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
+		if (prevGround != ground && (hoverIsStd || hover.empty())) {
 			hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor(r'" + ground + "', im.matrix.contrast(1.5))", true);
 		}
 		prevGround = ground;
 		prevHover = hover;
 
-		const String &path = !btnRect.mouseOvered ? ground : hover;
+		const std::string &path = !btnRect.mouseOvered ? ground : hover;
 		surface = ImageManipulator::getImage(path);
 
 		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
@@ -105,7 +106,7 @@ void TextButton::updateTexture(bool skipError) {
 }
 
 void TextButton::checkEvents() {
-	const String *styleName = nullptr;
+	const std::string *styleName = nullptr;
 	if (btnRect.mouseOvered != prevMouseOver) {
 		const Node *style = node->getProp("style");
 		styleName = style ? &style->params : &node->command;
@@ -124,7 +125,7 @@ void TextButton::checkEvents() {
 					Music::play("button_hover '" + std::string(sound) + "'",
 								getFileName(), getNumLine());
 				}else if (hoverSoundObj != Py_None) {
-					String type = hoverSoundObj->ob_type->tp_name;
+					std::string type = hoverSoundObj->ob_type->tp_name;
 					Utils::outMsg("TextButton::hovered",
 								  "In style." + *styleName + ".hover_sound expected type str, got " + type);
 				}

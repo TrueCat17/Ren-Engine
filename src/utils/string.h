@@ -4,60 +4,26 @@
 #include <string>
 #include <vector>
 
-class String: public std::string {
+class String {
 public:
-	String() {}
-	String(char c): std::string(1, c) {}
-	String(const char *s): std::string(s) {}
-	String(int i, int base = 10);
-	String(size_t i, int base = 10);
-	String(double d): std::string(std::to_string(d)) {}
+	static std::string repeat(const std::string &str, size_t count);
 
-	String(const std::string &str): std::string(str) {}
-	String(std::string &&str): std::string(str) {}
+	static int toInt(const std::string &str, int base = 10);
+	static double toDouble(const std::string &str);
 
+	static bool isNumber(const std::string &str);
+	static bool isSimpleString(const std::string &str);
 
-	template<typename T>
-	String operator+(const T& t) const {
-		return static_cast<const std::string&>(*this) + String(t);
-	}
-	template<typename T>
-	String& operator+=(const T& t) {
-		static_cast<std::string&>(*this) += String(t);
-		return *this;
-	}
-	template<typename T>
-	String& operator=(const T& t) {
-		static_cast<std::string&>(*this) = String(t);
-		return *this;
-	}
-	String& operator=(char t[]) {
-		static_cast<std::string&>(*this) = t;
-		return *this;
-	}
+	static size_t firstNotInQuotes(const std::string &str, char c);
 
-	String repeat(size_t count) const;
+	static bool startsWith(const std::string &str, const std::string &substr, bool skipSpaces = false);
+	static bool endsWith(const std::string &str, const std::string &substr);
 
-	operator bool() const { return !empty(); }
-	int toInt(int base = 10) const;
-	double toDouble() const;
+	static void deleteAll(std::string &str, const std::string &toRemove);
+	static void replaceAll(std::string &str, const std::string &from, const std::string &to);
 
-	bool isNumber() const;
-	bool isSimpleString() const;
-
-	size_t firstNotInQuotes(char c) const;
-
-	template <typename T>
-	bool contains(const T &sub) const { return find(sub) != size_t(-1); }
-
-	bool startsWith(const String &str, bool withSpaces = true) const;
-	bool endsWith(const String &str) const;
-
-	void deleteAll(const String &str);
-	void replaceAll(const String &from, const String &to);
-
-	std::vector<String> split(const String &separator) const;
-	static String join(const std::vector<String> &strings, const String &separator);
+	static std::vector<std::string> split(const std::string &str, const std::string &separator);
+	static std::string join(const std::vector<std::string> &strings, const std::string &separator);
 };
 
 #endif // STRING_H

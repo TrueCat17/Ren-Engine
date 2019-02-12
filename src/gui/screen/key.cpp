@@ -2,7 +2,7 @@
 
 #include "gv.h"
 #include "media/py_utils.h"
-#include "parser/node.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 bool Key::notReactOnSpace = false;
@@ -78,7 +78,7 @@ void Key::checkEvents() {
 	if (first_param != prevKeyName) {
 		prevKeyName = first_param;
 
-		const int start = first_param.startsWith("K_", false) ? 2 : 0;
+		const int start = String::startsWith(first_param, "K_", true) ? 2 : 0;
 		key = SDL_GetScancodeFromName(first_param.c_str() + start);
 
 		lastDown = 0;
@@ -111,7 +111,7 @@ void Key::checkEvents() {
 					PyUtils::exec(action->getFileName(), action->getNumLine(), "exec_funcs(" + action->params + ")");
 				}else {
 					const Node *style = node->getProp("style");
-					const String &styleName = style ? style->params : node->command;
+					const std::string &styleName = style ? style->params : node->command;
 					PyUtils::exec(getFileName(), getNumLine(),
 								  "exec_funcs(style." + styleName + ".action)");
 				}

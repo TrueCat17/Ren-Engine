@@ -19,10 +19,10 @@ public:
 		return !(c & 0b10000000) || c & 0b01000000;
 	}
 
-	static size_t getStartArg(const String &args, size_t end, const char separator = ' ');
-	static size_t getEndArg(const String &args, size_t start, const char separator = ' ');
-	static String clear(String s);
-	static std::vector<String> getArgs(String args, const char separator = ' ');
+	static size_t getStartArg(const std::string &args, size_t end, const char separator = ' ');
+	static size_t getEndArg(const std::string &args, size_t start, const char separator = ' ');
+	static std::string clear(std::string s);
+	static std::vector<std::string> getArgs(std::string args, const char separator = ' ');
 
 };
 

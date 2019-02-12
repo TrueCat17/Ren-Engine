@@ -5,8 +5,6 @@
 
 #include "child.h"
 
-#include "utils/string.h"
-
 
 class Key: public Child {
 private:
@@ -21,7 +19,7 @@ private:
 	bool inFirstDown = false;
 	bool wasFirstDelay = false;
 
-	String prevKeyName;
+	std::string prevKeyName;
 	SDL_Scancode key;
 
 public:

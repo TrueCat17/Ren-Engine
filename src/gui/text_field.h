@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "gui/display_object.h"
-#include "utils/string.h"
 
 typedef struct _TTF_Font TTF_Font;
 
@@ -20,26 +19,26 @@ private:
 	int charWidth = 0;
 	int charHeight = 0;
 
-	String fontName;
+	std::string fontName;
 	int textSize = 0;
 	int originalTextSize = 0;
 
 	Uint32 prevDrawTextColor = 0;
 	TTF_Font *prevDrawFont = nullptr;
-	String prevText;
+	std::string prevText;
 
 	std::vector<SDL_Rect> rects;
 
 	TTF_Font *font = nullptr;
 
-	String hAlign = "left";
-	String vAlign = "top";
+	std::string hAlign = "left";
+	std::string vAlign = "top";
 
 	int maxWidth = -1;
 	int maxHeight = -1;
 
-	int getLineWidth(String text, bool resetPrevStyle = false);
-	void addChars(String c, Uint32 color);
+	int getLineWidth(std::string text, bool resetPrevStyle = false);
+	void addChars(std::string c, Uint32 color);
 
 	Uint32 mainColor = 0;
 
@@ -60,7 +59,7 @@ private:
 
 	std::vector<SurfacePtr> lineSurfaces;
 
-	std::vector<String> lines;
+	std::vector<std::string> lines;
 	size_t numLine = 0;
 	void addText();
 
@@ -70,20 +69,20 @@ public:
 	TextField();
 	virtual ~TextField();
 
-	String getHAlign() const { return hAlign; }
-	String getVAlign() const { return vAlign; }
-	void setAlign(String hAlign = "left", String vAlign = "top");
+	std::string getHAlign() const { return hAlign; }
+	std::string getVAlign() const { return vAlign; }
+	void setAlign(std::string hAlign = "left", std::string vAlign = "top");
 
-	String getText() const;
-	void setText(const String &text, Uint32 color = 0x000000);
+	std::string getText() const;
+	void setText(const std::string &text, Uint32 color = 0x000000);
 
 	int getMaxWidth() const;
 	int getMaxHeight() const;
 	void setMaxWidth(int width);
 	void setMaxHeight(int height);
 
-	void setFont(String fontName = "", int textSize = 20, bool setAsOriginal = true);
-	String getFontName() const { return fontName; }
+	void setFont(std::string fontName = "", int textSize = 20, bool setAsOriginal = true);
+	std::string getFontName() const { return fontName; }
 	int getFontSize() const { return textSize; }
 	int getOriginalFontSize() const { return originalTextSize; }
 

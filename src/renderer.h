@@ -4,9 +4,6 @@
 #include <mutex>
 #include <vector>
 
-#include <SDL2/SDL.h>
-
-#include "gv.h"
 #include "utils/image_typedefs.h"
 
 struct RenderStruct {

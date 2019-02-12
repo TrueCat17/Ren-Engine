@@ -6,12 +6,12 @@
 
 class Imagemap: public Container {
 private:
-	String prevGroundPath;
-	String prevHoverPath;
+	std::string prevGroundPath;
+	std::string prevHoverPath;
 
 public:
-	String groundPath;
-	String hoverPath;
+	std::string groundPath;
+	std::string hoverPath;
 
 	SurfacePtr hover = nullptr;
 

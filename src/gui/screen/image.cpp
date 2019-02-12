@@ -1,8 +1,6 @@
 #include "image.h"
 
-#include "media/py_utils.h"
 #include "media/image_manipulator.h"
-#include "parser/node.h"
 
 
 Image::Image(Node *node, Screen *screen):
@@ -28,7 +26,7 @@ void Image::updateRect(bool) {
 }
 
 void Image::updateTexture(bool skipError) {
-	if (skipError && !first_param) return;
+	if (skipError && first_param.empty()) return;
 
 	if (!surface || first_param != prevImagePath) {
 		prevImagePath = first_param;

@@ -17,6 +17,7 @@
 
 #include <utils/algo.h>
 #include "utils/scope_exit.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -24,17 +25,17 @@
 static void initConsts(Node *node);
 static void initIsEnd(Node *node);
 static void initNums(Node *node);
-static String initCode(Node *node, const String& index = "");
+static std::string initCode(Node *node, const std::string& index = "");
 
 static void initUpdateFuncs(Node *node);
 
 
 
-static std::map<const Node*, String> screenCodes;
+static std::map<const Node*, std::string> screenCodes;
 static std::map<const Node*, const std::vector<ScreenUpdateFunc>*> screenUpdateFuncs;
 
 
-String ScreenNodeUtils::getScreenCode(const Node *screenNode) {
+std::string ScreenNodeUtils::getScreenCode(const Node *screenNode) {
 	return screenCodes[screenNode];
 }
 const std::vector<ScreenUpdateFunc>* ScreenNodeUtils::getUpdateFuncs(const Node *node) {
@@ -49,7 +50,7 @@ void ScreenNodeUtils::init(Node *node) {
 	initIsEnd(node);
 	initNums(node);
 
-	String screenCode = initCode(node);
+	std::string screenCode = initCode(node);
 	screenCodes[node] = screenCode;
 
 	initUpdateFuncs(node);
@@ -65,11 +66,11 @@ void ScreenNodeUtils::clear() {
 }
 
 
-static std::vector<String> screensInInit;
+static std::vector<std::string> screensInInit;
 
 static void initConsts(Node *node) {
-	const String &command = node->command;
-	const String &params = node->params;
+	const std::string &command = node->command;
+	const std::string &params = node->params;
 
 	node->countPropsToCalc = 0;
 
@@ -135,7 +136,7 @@ static void initConsts(Node *node) {
 static void initIsEnd(Node *node) {
 	if (node->isScreenProp) return;
 
-	const String &command = node->command;
+	const std::string &command = node->command;
 
 	if (command == "$" || command == "python") return;
 
@@ -185,13 +186,13 @@ static size_t maxScreenChild(Node *node) {
 }
 
 
-static void initChildCode(Node *child, String &res, const String &indent, const String &index) {
-	const String &childCommand = child->command;
+static void initChildCode(Node *child, std::string &res, const std::string &indent, const std::string &index) {
+	const std::string &childCommand = child->command;
 
-	String childRes = initCode(child, index);
-	if (!childRes) return;
+	std::string childRes = initCode(child, index);
+	if (childRes.empty()) return;
 
-	std::vector<String> code = childRes.split('\n');
+	std::vector<std::string> code = String::split(childRes, "\n");
 
 	if (child->isScreenProp || child->isScreenEnd) {
 		if (childCommand != "continue" && childCommand != "break") {
@@ -228,7 +229,7 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 		res += indent + "try:\n";
 	}
 
-	for (const String &line : code) {
+	for (const std::string &line : code) {
 		res += indent + "    " + line + '\n';
 	}
 
@@ -255,15 +256,15 @@ static void initChildCode(Node *child, String &res, const String &indent, const 
 }
 
 
-static String initCycleCode(Node *node) {
-	String res;
-	String id = String(node->id);
-	String name = "_SL_counter" + id;
-	String idLen = "_SL_len" + id;
-	String indent = "    ";
+static std::string initCycleCode(Node *node) {
+	std::string res;
+	std::string id = std::to_string(node->id);
+	std::string name = "_SL_counter" + id;
+	std::string idLen = "_SL_len" + id;
+	std::string indent = "    ";
 
-	const String &command = node->command;
-	const String &params = node->params;
+	const std::string &command = node->command;
+	const std::string &params = node->params;
 
 	size_t count = maxScreenChild(node) + 1;
 
@@ -277,18 +278,18 @@ static String initCycleCode(Node *node) {
 	}
 
 	res +=
-	        "_SL_last[" + String(node->screenNum) + "] = _SL_last = [None] * " + name + "\n" +
+	        "_SL_last[" + std::to_string(node->screenNum) + "] = _SL_last = [None] * " + name + "\n" +
 	        idLen + " = " + name + "\n" +
 	        name + " = 0\n"
 			"\n" +
-	        command + ' ' + params + ": # " + String(node->getNumLine()) + " " + node->getFileName() + "\n" +
+	        command + ' ' + params + ": # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n" +
 			indent + "\n";
 
 	if (count) {
 		res +=
 	        indent + "if " + name + " == " + idLen + ":\n" +
-			indent + "    _SL_last += [None] * " + (50 * count) + "\n" +
-			indent + "    " + idLen + " += " + (50 * count) + "\n" +
+		    indent + "    _SL_last += [None] * " + std::to_string(50 * count) + "\n" +
+		    indent + "    " + idLen + " += " + std::to_string(50 * count) + "\n" +
 			indent + "\n";
 	}
 
@@ -298,9 +299,9 @@ static String initCycleCode(Node *node) {
 		if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
 		if (child->isScreenEvent) continue;
 
-		String index = name;
+		std::string index = name;
 		if (child->screenNum) {
-			index += " + " + String(child->screenNum);
+			index += " + " + std::to_string(child->screenNum);
 		}
 		initChildCode(child, res, indent, index);
 
@@ -312,17 +313,17 @@ static String initCycleCode(Node *node) {
 	}
 
 	if (count) {
-		res += indent + name + " += " + count + "\n";
+		res += indent + name + " += " + std::to_string(count) + "\n";
 	}
 
 	return res;
 }
 
-static String initCode(Node *node, const String& index) {
-	const String &command = node->command;
-	const String &params = node->params;
+static std::string initCode(Node *node, const std::string& index) {
+	const std::string &command = node->command;
+	const std::string &params = node->params;
 
-	String res;
+	std::string res;
 
 	if (command == "use") {
 		Node *screenNode = Screen::getDeclared(params);
@@ -337,7 +338,7 @@ static String initCode(Node *node, const String& index) {
 		while (t->command != "for" && t->command != "while") {
 			t = t->parent;
 		}
-		String id = String(t->id);
+		std::string id = std::to_string(t->id);
 
 		if (command == "break" &&
 		    t->childNum + 1 < t->parent->children.size() &&
@@ -346,30 +347,30 @@ static String initCode(Node *node, const String& index) {
 			res = "_SL_break" + id + " = True\n";
 		}
 
-		res += "_SL_counter" + String(t->id) + " += " + String(maxScreenChild(t) + 1) + "\n" +
-		       command + " # " + String(node->getNumLine()) + " " + node->getFileName() + "\n";
+		res += "_SL_counter" + id + " += " + std::to_string(maxScreenChild(t) + 1) + "\n" +
+		       command + " # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
 		return res;
 	}
 
-	bool isMainScreen = command == "screen" && !index;
+	bool isMainScreen = command == "screen" && index.empty();
 	if ((node->isScreenConst && !isMainScreen) || node->isScreenEvent) return "";
 
 	if (node->isScreenProp) {
 		res = params;
 		res = res.substr(res.find_first_not_of(' '));
 		res = res.substr(res.find_first_not_of(' '));
-		res += "# " + String(node->getNumLine()) + " " + node->getFileName();
+		res += "# " + std::to_string(node->getNumLine()) + " " + node->getFileName();
 		return res;
 	}
 
 	if (command == "$" || command == "python") {
 		size_t startLine = node->getNumLine() + (command == "python");
 
-		std::vector<String> code = params.split('\n');
+		const std::vector<std::string> code = String::split(params, "\n");
 		for (size_t i = 0; i < code.size(); ++i) {
-			if (!code[i]) continue;
+			if (code[i].empty()) continue;
 
-			res += code[i] + " # " + String(startLine + i) + " " + node->getFileName();
+			res += code[i] + " # " + std::to_string(startLine + i) + " " + node->getFileName();
 			if (i != code.size() - 1) {
 				res += "\n";
 			}
@@ -387,8 +388,8 @@ static String initCode(Node *node, const String& index) {
 		for (Node *child : node->children) {
 			if (child->isScreenConst || child->isScreenEvent) continue;
 
-			String childRes = initCode(child);
-			childRes.insert(childRes.firstNotInQuotes('#'), ", ");
+			std::string childRes = initCode(child);
+			childRes.insert(String::firstNotInQuotes(childRes, '#'), ", ");
 
 			res += "    " + childRes + "\n";
 		}
@@ -403,28 +404,28 @@ static String initCode(Node *node, const String& index) {
 	}
 
 
-	String indent;
+	std::string indent;
 
 	if (command == "screen") {
-		if (!index) {
+		if (index.empty()) {
 			res = "_SL_stack = []\n\n";
 		}
 	}else
 	if (command == "if" || command == "elif" || command == "else") {
 		indent = "    ";
 
-		if (command == "else" && !node->parent->children[node->childNum - 1]->command.endsWith("if")) {//prev is for/while
+		if (command == "else" && !String::endsWith(node->parent->children[node->childNum - 1]->command, "if")) {//prev is for/while
 			res +=
-			    "if not _SL_break" + String(node->parent->children[node->childNum - 1]->id) + ":"
-			        " # " + String(node->getNumLine()) + " " + node->getFileName() + "\n";
+			    "if not _SL_break" + std::to_string(node->parent->children[node->childNum - 1]->id) + ":"
+			        " # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
 			res += indent + "_SL_last = _SL_stack[-1]\n";
 		}else {
-			res = command + " " + params + ": # " + String(node->getNumLine()) + " " + node->getFileName() + "\n";
+			res = command + " " + params + ": # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
 		}
 	}
 
 	res += indent;
-	if (command == "screen" && !index) {
+	if (command == "screen" && index.empty()) {
 		res += "_SL_" + params + " = ";
 	}else {
 		res += "_SL_last[" + index + "] = ";
@@ -441,15 +442,15 @@ static String initCode(Node *node, const String& index) {
 		if (child->isScreenConst) continue;
 		if (!child->isScreenProp) break;
 
-		String childRes = initCode(child);
-		childRes.insert(childRes.firstNotInQuotes('#'), ", ");
+		std::string childRes = initCode(child);
+		childRes.insert(String::firstNotInQuotes(childRes, '#'), ", ");
 
 		res += indent + "    " + childRes + "\n";
 		lastPropNum = child->screenNum;
 	}
 
 	if (maxChildNum != size_t(-1)) {
-		res += (indent + "    None,\n").repeat(maxChildNum - lastPropNum);
+		res += String::repeat(indent + "    None,\n", maxChildNum - lastPropNum);
 		res += indent + "]";
 	}else {
 		res.back() = ']';
@@ -481,7 +482,7 @@ static String initCode(Node *node, const String& index) {
 
 			if (child->screenNum <= lastPropNum && lastPropNum != size_t(-1)) continue;
 
-			initChildCode(child, res, indent, String(child->screenNum));
+			initChildCode(child, res, indent, std::to_string(child->screenNum));
 
 			if (child->screenNum != maxChildNum) {
 				res += indent + '\n';
@@ -491,7 +492,7 @@ static String initCode(Node *node, const String& index) {
 
 
 	if (command == "screen") {
-		if (!index) {
+		if (index.empty()) {
 			res += "\n"
 				   "_SL_check_events()\n";
 		}
@@ -505,12 +506,12 @@ static String initCode(Node *node, const String& index) {
 
 
 
-static void outError(Child *obj, const String &propName, size_t propIndex, const String &expected) {
+static void outError(Child *obj, const std::string &propName, size_t propIndex, const std::string &expected) {
 	if (!obj->wasInited()) {
 		for (Node *child : obj->node->children) {
 			if (child->isScreenProp && child->command == propName) {
-				String desc = expected + '\n' +
-							  child->getPlace();
+				std::string desc = expected + '\n' +
+				                   child->getPlace();
 				Utils::outMsg(propName, desc);
 				return;
 			}
@@ -519,12 +520,12 @@ static void outError(Child *obj, const String &propName, size_t propIndex, const
 
 	for (Node *child : obj->node->children) {
 		if (child->isScreenProp && child->screenNum == propIndex) {
-			String desc = expected + '\n';
+			std::string desc = expected + '\n';
 
 			if (child->command == propName) {
 				desc += child->getPlace();
 			}else {
-				String style = obj->node->command;
+				std::string style = obj->node->command;
 				for (Node *child : obj->node->children) {
 					if (child->command == "style") {
 						style = child->params;
@@ -559,7 +560,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	[[maybe_unused]] bool tmpBool; \
 	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
 	else { \
-		String type = prop->ob_type->tp_name; \
+	    std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, int or long, got " + type); \
 	} \
 }
@@ -573,7 +574,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyBool_Check(prop)) { \
 		static_cast<Type*>(obj)->propName = prop == Py_True; \
 	}else { \
-		String type = prop->ob_type->tp_name; \
+	    std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
 	} \
 }
@@ -584,7 +585,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(obj->propName##IsDouble, obj->propName, prop) \
 	else { \
-		String type = prop->ob_type->tp_name; \
+	    std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, int or long, got " + type); \
 	} \
 }
@@ -594,12 +595,12 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
 	if (!PyList_CheckExact(prop) && !PyTuple_CheckExact(prop)) { \
-		String type = prop->ob_type->tp_name; \
+	    std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types list or tuple, got " + type); \
 		return; \
 	} \
 	if (Py_SIZE(prop) != 2) { \
-		String size = int(Py_SIZE(prop)); \
+	    std::string size = std::to_string(Py_SIZE(prop)); \
 		outError(obj, #propName, propIndex, "Expected sequence with size == 2, got " + size); \
 		return; \
 	} \
@@ -609,12 +610,12 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(obj->x##propName##IsDouble, obj->x##propName, x) \
 	else { \
-		String type = x->ob_type->tp_name; \
+	    std::string type = x->ob_type->tp_name; \
 		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, int or long, got " + type); \
 	} \
 	updateCondition(obj->y##propName##IsDouble, obj->y##propName, y) \
 	else { \
-		String type = y->ob_type->tp_name; \
+	    std::string type = y->ob_type->tp_name; \
 		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, int or long, got " + type); \
 	} \
 }
@@ -627,7 +628,7 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	updateCondition(obj->x_or_y##posIsDouble = obj->x_or_y##anchorPreIsDouble, \
 					obj->x_or_y##pos = obj->x_or_y##anchorPre, prop) \
 	else { \
-		String type = prop->ob_type->tp_name; \
+	    std::string type = prop->ob_type->tp_name; \
 		outError(obj, #x_or_y"align", propIndex, "Expected types float, int or long, got " + type); \
 	} \
 }
@@ -636,12 +637,12 @@ static void update_align(Child *obj, size_t propIndex) {
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
 
 	if (!PyList_CheckExact(prop) && !PyTuple_CheckExact(prop)) {
-		String type = prop->ob_type->tp_name;
+		std::string type = prop->ob_type->tp_name;
 		outError(obj, "align", propIndex, "Expected types list or tuple, got " + type);
 		return;
 	}
 	if (Py_SIZE(prop) != 2) {
-		String size = int(Py_SIZE(prop));
+		std::string size = std::to_string(Py_SIZE(prop));
 		outError(obj, "align", propIndex, "Expected sequence with size == 2, got " + size);
 		return;
 	}
@@ -652,14 +653,14 @@ static void update_align(Child *obj, size_t propIndex) {
 	updateCondition(obj->xposIsDouble = obj->xanchorPreIsDouble,
 					obj->xpos = obj->xanchorPre, x)
 	else {
-		String type = x->ob_type->tp_name;
+		std::string type = x->ob_type->tp_name;
 		outError(obj, "align", propIndex, "At xalign-prop expected types float, int or long, got " + type);
 	}
 
 	updateCondition(obj->yposIsDouble = obj->yanchorPreIsDouble,
 					obj->ypos = obj->yanchorPre, y)
 	else {
-		String type = y->ob_type->tp_name;
+		std::string type = y->ob_type->tp_name;
 		outError(obj, "align", propIndex, "At yalign-prop expected types float, int or long, got " + type);
 	}
 }
@@ -671,7 +672,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyString_CheckExact(prop)) { \
 		static_cast<Type*>(obj)->propName = PyString_AS_STRING(prop); \
 	}else { \
-		String type = prop->ob_type->tp_name; \
+	    std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type str, got " + type); \
 	} \
 }
@@ -681,12 +682,12 @@ static void update_crop(Child *obj, size_t propIndex) {
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
 
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
-		String type = prop->ob_type->tp_name;
+		std::string type = prop->ob_type->tp_name;
 		outError(obj, "crop", propIndex, "Expected types tuple or list, got " + type);
 		return;
 	}
 	if (Py_SIZE(prop) != 4) {
-		String size = int(Py_SIZE(prop));
+		std::string size = std::to_string(Py_SIZE(prop));
 		outError(obj, "crop", propIndex, "Expected sequence with size == 4, got " + size);
 		return;
 	}
@@ -698,25 +699,25 @@ static void update_crop(Child *obj, size_t propIndex) {
 
 	updateCondition(obj->xcropIsDouble, obj->xcrop, x)
 	else {
-		String type = x->ob_type->tp_name;
+		std::string type = x->ob_type->tp_name;
 		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, int or long, got " + type);
 	}
 
 	updateCondition(obj->ycropIsDouble, obj->ycrop, y)
 	else {
-		String type = y->ob_type->tp_name;
+		std::string type = y->ob_type->tp_name;
 		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, int or long, got " + type);
 	}
 
 	updateCondition(obj->wcropIsDouble, obj->wcrop, w)
 	else {
-		String type = w->ob_type->tp_name;
+		std::string type = w->ob_type->tp_name;
 		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, int or long, got " + type);
 	}
 
 	updateCondition(obj->hcropIsDouble, obj->hcrop, h)
 	else {
-		String type = h->ob_type->tp_name;
+		std::string type = h->ob_type->tp_name;
 		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, int or long, got " + type);
 	}
 }
@@ -768,7 +769,7 @@ makeUpdateFuncWithStr(Imagemap, groundPath, ground_imagemap)
 makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
 
 
-static std::map<String, ScreenUpdateFunc> mapScreenFuncs = {
+static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"alpha",             update_alpha},
 	{"rotate",            update_rotate},
 	{"delay",             update_keyDelay},
@@ -835,7 +836,7 @@ static void initUpdateFuncs(Node *node) {
 	screenUpdateFuncs[node] = vec;
 }
 
-ScreenUpdateFunc ScreenNodeUtils::getUpdateFunc(const String &type, String propName) {
+ScreenUpdateFunc ScreenNodeUtils::getUpdateFunc(const std::string &type, std::string propName) {
 	ScreenUpdateFunc res = nullptr;
 
 	if (propName == "ground" || propName == "hover" || propName == "mouse") {

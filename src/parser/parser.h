@@ -2,20 +2,18 @@
 #define PARSER_H
 
 #include <vector>
-
-#include <Python.h>
-
-#include "utils/string.h"
+#include <string>
 
 class Node;
+typedef struct _object PyObject;
 
 
 class Parser {
 private:
-	std::vector<String> code;
+	std::vector<std::string> code;
 
-	String dir;
-	String fileName = "NO_FILE";
+	std::string dir;
+	std::string fileName = "NO_FILE";
 	size_t startFile = 0;
 	size_t pythonIndent = size_t(-1);
 
@@ -24,11 +22,11 @@ private:
 	Node* getNode(size_t start, size_t end, int superParent, bool isText);
 	Node* getMainNode();
 public:
-	static bool isEvent(const String &type);
-	static void getIsFakeOrIsProp(const String &type, bool &isFake, bool &isProp, bool &isEvent);
+	static bool isEvent(const std::string &type);
+	static void getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isProp, bool &isEvent);
 	static PyObject* getMods();
 
-	Parser(const String &dir);
+	Parser(const std::string &dir);
 	Node* parse();
 };
 

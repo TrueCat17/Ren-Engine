@@ -2,21 +2,18 @@
 #define STYLE_H
 
 #include <map>
+#include <string>
 
 #include <Python.h>
-
-#include "utils/string.h"
 
 
 class Style {
 private:
-	static std::map<String, Style*> styles;
-
-	std::map<String, PyObject*> props;
+	std::map<std::string, PyObject*> props;
 
 public:
 	static void destroyAll();
-	static PyObject* getProp(const String &styleName, const String &propName);
+	static PyObject* getProp(const std::string &styleName, const std::string &propName);
 
 	~Style();
 };

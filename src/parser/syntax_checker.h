@@ -2,9 +2,7 @@
 #define SYNTAXCHECKER_H
 
 #include <vector>
-#include <map>
-
-#include <utils/string.h>
+#include <string>
 
 struct SuperParent {
 	static const int NONE     = 0;
@@ -18,9 +16,9 @@ struct SuperParent {
 class SyntaxChecker {
 public:
 	static void init();
-	static bool check(const String &parent, const String &child, const String &prevChild, const int superParent, bool &isText);
+	static bool check(const std::string &parent, const std::string &child, const std::string &prevChild, const int superParent, bool &isText);
 
-	static const std::vector<String>& getScreenProps(const String &type);
+	static const std::vector<std::string>& getScreenProps(const std::string &type);
 };
 
 #endif // SYNTAXCHECKER_H

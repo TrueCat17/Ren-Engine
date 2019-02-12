@@ -29,6 +29,7 @@
 #include "utils/algo.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -41,7 +42,7 @@ static int modStartTime = 0;
 static bool canAutoSave = true;
 
 
-static void _startMod(const String &dir, const String &loadPath = "");
+static void _startMod(const std::string &dir, const std::string &loadPath = "");
 
 void Game::startMod(const std::string &dir) {
 	std::thread(_startMod, dir, "").detach();
@@ -86,7 +87,7 @@ void Game::load(const std::string &table, const std::string &name) {
 		}
 	}
 
-	String modName;
+	std::string modName;
 	{//load info
 		std::ifstream is(fullPath + "info");
 
@@ -95,15 +96,15 @@ void Game::load(const std::string &table, const std::string &name) {
 
 	std::thread(_startMod, modName, fullPath).detach();
 }
-const std::vector<String> Game::loadInfo(const String &loadPath) {
-	std::vector<String> startScreensVec;
+const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
+	std::vector<std::string> startScreensVec;
 
 	const char *loadFile = "CPP_Embed: Game::loadInfo";
-	String tmp;
+	std::string tmp;
 
 
 	std::ifstream is(loadPath + "info");
-	String modName;
+	std::string modName;
 	std::getline(is, modName);
 
 	{
@@ -111,13 +112,13 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 		bool hideMouse, autosave;
 
 		std::getline(is, tmp);
-		const std::vector<String> tmpVec = tmp.split(' ');
+		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 3) {
 			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 3 args");
 			fps = 60;
 			hideMouse = autosave = true;
 		}else {
-			fps = tmpVec[0].toInt();
+			fps = String::toInt(tmpVec[0]);
 			if (fps == 0) {
 				fps = 60;
 			}else
@@ -136,9 +137,9 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::getline(is, tmp);
 
 	std::getline(is, tmp);
-	size_t countScreens = size_t(tmp.toInt());
+	size_t countScreens = size_t(String::toInt(tmp));
 	for (size_t i = 0; i < countScreens; ++i) {
-		String name;
+		std::string name;
 		std::getline(is, name);
 		startScreensVec.push_back(name);
 	}
@@ -146,19 +147,19 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 
 
 	std::getline(is, tmp);
-	size_t countMusicChannels = size_t(tmp.toInt());
+	size_t countMusicChannels = size_t(String::toInt(tmp));
 	for (size_t i = 0; i < countMusicChannels; ++i) {
 		std::getline(is, tmp);
-		const std::vector<String> tmpVec = tmp.split(' ');
+		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 4) {
 			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 4 args");
 			continue;
 		}
 
-		const String &name = tmpVec[0];
-		const String &mixer = tmpVec[1];
-		const String &loop = tmpVec[2];
-		double volume = tmpVec[3].toDouble();
+		const std::string &name = tmpVec[0];
+		const std::string &mixer = tmpVec[1];
+		const std::string &loop = tmpVec[2];
+		double volume = String::toDouble(tmpVec[3]);
 
 		if (!Music::hasChannel(name)) {
 			Music::registerChannel(name, mixer, loop == "True", loadFile, 0);
@@ -168,25 +169,25 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 	std::getline(is, tmp);
 
 	std::getline(is, tmp);
-	size_t countMusics = size_t(tmp.toInt());
+	size_t countMusics = size_t(String::toInt(tmp));
 	for (size_t i = 0; i < countMusics; ++i) {
-		String url, fileName;
+		std::string url, fileName;
 
 		std::getline(is, url);
 		std::getline(is, fileName);
 
 		std::getline(is, tmp);
-		const std::vector<String> tmpVec = tmp.split(' ');
+		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 5) {
 			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 5 args");
 			continue;
 		}
 
-		size_t numLine = size_t(tmpVec[0].toInt());
-		const String &channel = tmpVec[1];
-		int fadeIn = tmpVec[2].toInt();
-		int fadeOut = tmpVec[3].toInt();
-		int64_t pos = int64_t(tmpVec[4].toDouble());
+		size_t numLine = size_t(String::toInt(tmpVec[0]));
+		const std::string &channel = tmpVec[1];
+		int fadeIn = String::toInt(tmpVec[2]);
+		int fadeOut = String::toInt(tmpVec[3]);
+		int64_t pos = int64_t(String::toDouble(tmpVec[4]));
 
 		Music::play(channel + " '" + url + "'", fileName, numLine);
 		Music *music = nullptr;
@@ -209,25 +210,25 @@ const std::vector<String> Game::loadInfo(const String &loadPath) {
 			              "Sound-file <" + url + "> not restored\n"
 			              "Play from:\n"
 			              "  File <" + fileName + ">\n"
-			              "  Line " + String(numLine));
+			              "  Line " + std::to_string(numLine));
 		}
 	}
 	std::getline(is, tmp);
 
 
 	std::getline(is, tmp);
-	size_t countMixers = size_t(tmp.toInt());
+	size_t countMixers = size_t(String::toInt(tmp));
 	for (size_t i = 0; i < countMixers; ++i) {
 		std::getline(is, tmp);
 
-		const std::vector<String> tmpVec = tmp.split(' ');
+		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
 			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 2 args");
 			continue;
 		}
 
-		const String &name = tmpVec[0];
-		double volume = tmpVec[1].toDouble();
+		const std::string &name = tmpVec[0];
+		double volume = String::toDouble(tmpVec[1]);
 
 		Music::setMixerVolume(volume, name, loadFile, 0);
 	}
@@ -260,7 +261,7 @@ void Game::save() {
 	{//save stack
 		std::ofstream stackFile(fullPath + "stack");
 
-		std::vector<std::pair<String, String>> stackToSave = Scenario::getStackToSave();
+		std::vector<std::pair<std::string, std::string>> stackToSave = Scenario::getStackToSave();
 		if (stackToSave.empty()) {
 			stackFile << '\n';
 		}else {
@@ -286,7 +287,7 @@ void Game::save() {
 		for (const DisplayObject *d : GV::screens->children) {
 			const Screen* s = static_cast<const Screen*>(d);
 
-			static const std::set<String> noSaveScreens = {"pause", "load", "save"};
+			static const std::set<std::string> noSaveScreens = {"pause", "load", "save"};
 			if (!noSaveScreens.count(s->getName())) {
 				mainScreens.push_back(s);
 			}
@@ -315,8 +316,8 @@ void Game::save() {
 		for (size_t i = 0; i < musics.size(); ++i) {
 			const Music *music = musics[i];
 
-			String musicUrl = music->getUrl();
-			String musicFileName = music->getFileName();
+			std::string musicUrl = music->getUrl();
+			std::string musicFileName = music->getFileName();
 
 			infoFile << musicUrl << '\n'
 					 << musicFileName << '\n'
@@ -359,9 +360,9 @@ void Game::save() {
 
 		const SurfacePtr screenshot = Renderer::getScreenshot();
 		if (screenshot) {
-			String screenshotPath = fullPath + "screenshot.png";
-			String width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
-			String height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
+			std::string screenshotPath = fullPath + "screenshot.png";
+			std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
+			std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
 
 			ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
 		}
@@ -374,7 +375,7 @@ void Game::save() {
 }
 
 static std::mutex modMutex;
-static void _startMod(const String &dir, const String &loadPath) {
+static void _startMod(const std::string &dir, const std::string &loadPath) {
 	int waitingStartTime = Utils::getTimer();
 
 	GV::inGame = false;
@@ -460,9 +461,9 @@ void Game::makeScreenshot() {
 
 	bool exists = true;
 	int num = 1;
-	String screenshotPath;
+	std::string screenshotPath;
 	while (exists) {
-		String numStr(num);
+		std::string numStr = std::to_string(num);
 		while (numStr.size() < 4) {
 			numStr = '0' + numStr;
 		}
@@ -473,8 +474,8 @@ void Game::makeScreenshot() {
 		++num;
 	}
 
-	String width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
-	String height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
+	std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
+	std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
 	ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
 }
 
@@ -534,11 +535,11 @@ std::string Game::getFromConfig(const std::string &param) {
 	return Config::get(param);
 }
 PyObject* Game::getArgs(const std::string &str) {
-	std::vector<String> vec = Algo::getArgs(str);
+	std::vector<std::string> vec = Algo::getArgs(str);
 
 	PyObject *res = PyList_New(long(vec.size()));
 	for (size_t i = 0; i < vec.size(); ++i) {
-		const String &str = vec[i];
+		const std::string &str = vec[i];
 		PyObject *pyStr = PyString_FromString(str.c_str());
 		PyList_SET_ITEM(res, i, pyStr);
 	}

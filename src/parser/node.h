@@ -3,24 +3,23 @@
 
 #include <vector>
 #include <map>
+#include <string>
 
 #include <Python.h>
-
-#include "utils/string.h"
 
 
 class Node {
 private:
-	Node(const String &fileName, size_t numLine, size_t id);
+	Node(const std::string &fileName, size_t numLine, size_t id);
 	~Node();
 
-	String fileName;
+	std::string fileName;
 	size_t numLine;
 
 public:
-	static String loadPath;
+	static std::string loadPath;
 
-	static Node *getNewNode(const String &fileName, size_t numLine);
+	static Node *getNewNode(const std::string &fileName, size_t numLine);
 	static void destroyAll();
 
 	static size_t preloadImages(const Node *parent, size_t start, size_t count);
@@ -41,19 +40,19 @@ public:
 	bool isScreenEnd = false;      //all children (not props) are const
 	size_t screenNum = size_t(-1); //childNum, but skip screenConst children
 
-	String command;//$, play, image, show, ...
-	String params; //text to out, command to execute, condition to check, name for main/label/screen, ...
+	std::string command;//$, play, image, show, ...
+	std::string params; //text to out, command to execute, condition to check, name for main/label/screen, ...
 
 	std::vector<Node*> children;
 
 	PyObject* getPyList() const;
-	std::vector<String> getImageChildren() const;
+	std::vector<std::string> getImageChildren() const;
 
-	Node* getProp(const String &name);
+	Node* getProp(const std::string &name);
 
-	const String& getFileName() const { return fileName; }
+	const std::string& getFileName() const { return fileName; }
 	size_t getNumLine() const { return numLine; }
-	String getPlace() const;
+	std::string getPlace() const;
 };
 
 #endif // NODE_H

@@ -20,20 +20,20 @@
 #include "utils/mouse.h"
 #include "utils/utils.h"
 
-String Node::loadPath;
+std::string Node::loadPath;
 
 static const size_t NODES_IN_PART = 10000;
 static size_t countNodes = 0;
 static std::vector<Node*> nodes;
 
-Node::Node(const String &fileName, size_t numLine, size_t id):
+Node::Node(const std::string &fileName, size_t numLine, size_t id):
 	fileName(fileName),
 	numLine(numLine),
 	id(id)
 {}
 Node::~Node() {}
 
-Node* Node::getNewNode(const String &fileName, size_t numLine) {
+Node* Node::getNewNode(const std::string &fileName, size_t numLine) {
 	if ((countNodes % NODES_IN_PART) == 0) {
 		nodes.push_back((Node*)::malloc(NODES_IN_PART * sizeof(Node)));
 	}
@@ -63,14 +63,14 @@ void Node::destroyAll() {
 PyObject* Node::getPyList() const {
 	PyObject *res = PyList_New(0);
 
-	static const std::set<String> highLevelCommands = {"image", "scene", "show", "hide"};
+	static const std::set<std::string> highLevelCommands = {"image", "scene", "show", "hide"};
 	bool isHighLevelCommands = highLevelCommands.count(command);
 
 	if (!isHighLevelCommands) {
-		if (command) {
+		if (!command.empty()) {
 			PyList_Append(res, PyString_FromString(command.c_str()));
 		}
-		if (params) {
+		if (!params.empty()) {
 			PyList_Append(res, PyString_FromString(params.c_str()));
 		}
 	}
@@ -78,7 +78,7 @@ PyObject* Node::getPyList() const {
 	for (const Node* child : children) {
 		PyObject *childPyList = child->getPyList();
 
-		static const std::set<String> blockCommandsInImage = {"contains", "block", "parallel"};
+		static const std::set<std::string> blockCommandsInImage = {"contains", "block", "parallel"};
 		bool childIsBlock = blockCommandsInImage.count(child->command);
 
 		if (childIsBlock) {
@@ -86,16 +86,16 @@ PyObject* Node::getPyList() const {
 		}else {
 			size_t len = size_t(Py_SIZE(childPyList));
 
-			std::vector<String> toJoin;
+			std::vector<std::string> toJoin;
 			toJoin.reserve(len);
 
 			for (size_t i = 0; i < len; ++i) {
 				PyObject *elem = PyList_GET_ITEM(childPyList, i);
 				const char *chars = PyString_AS_STRING(elem);
-				toJoin.push_back(String(chars));
+				toJoin.push_back(std::string(chars));
 			}
 
-			String joinedStr = String::join(toJoin, ' ');
+			std::string joinedStr = String::join(toJoin, " ");
 			PyObject *joined = PyString_FromString(joinedStr.c_str());
 
 			PyList_Append(res, joined);
@@ -104,33 +104,33 @@ PyObject* Node::getPyList() const {
 
 	return res;
 }
-std::vector<String> Node::getImageChildren() const {
-	std::vector<String> res;
+std::vector<std::string> Node::getImageChildren() const {
+	std::vector<std::string> res;
 
-	static const std::vector<String> highLevelCommands = {"image", "scene", "show", "hide"};
+	static const std::vector<std::string> highLevelCommands = {"image", "scene", "show", "hide"};
 	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
 
 	if (!isHighLevelCommands) {
-		if (command) {
+		if (!command.empty()) {
 			res.push_back(command);
 		}
-		if (params) {
+		if (!params.empty()) {
 			res.push_back(params);
 		}
 	}
 
 	for (const Node* child : children) {
-		static const std::vector<String> blockCommandsInImage = {"contains", "block", "parallel"};
+		static const std::vector<std::string> blockCommandsInImage = {"contains", "block", "parallel"};
 		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
 
 		if (!childIsBlock) {
-			if (child->command || child->params) {
-				const String str = Algo::clear(child->command + " " + child->params);
+			if (!child->command.empty() || !child->params.empty()) {
+				const std::string str = Algo::clear(child->command + " " + child->params);
 				res.push_back(str);
 			}
 		}else {
-			const std::vector<String> childChildren = child->getImageChildren();
-			for (const String &str : childChildren) {
+			const std::vector<std::string> childChildren = child->getImageChildren();
+			for (const std::string &str : childChildren) {
 				res.push_back(str);
 			}
 		}
@@ -141,21 +141,21 @@ std::vector<String> Node::getImageChildren() const {
 
 
 
-static void preloadImageAt(const std::vector<String> &children) {
-	auto fileExists = [](const String &path) -> bool {
-		if (std::filesystem::exists(path.c_str())) {
-			return !std::filesystem::is_directory(path.c_str());
+static void preloadImageAt(const std::vector<std::string> &children) {
+	auto fileExists = [](const std::string &path) -> bool {
+		if (std::filesystem::exists(path)) {
+			return !std::filesystem::is_directory(path);
 		}
 		return false;
 	};
 
-	for (const String &str : children) {
-		if (!str.isSimpleString()) continue;
+	for (const std::string &str : children) {
+		if (!String::isSimpleString(str)) continue;
 
-		const String image = str.substr(1, str.size() - 2);
+		const std::string image = str.substr(1, str.size() - 2);
 
 		if (Utils::imageWasRegistered(image)) {
-			const std::vector<String> declAt = Utils::getVectorImageDeclAt(image);
+			const std::vector<std::string> declAt = Utils::getVectorImageDeclAt(image);
 			preloadImageAt(declAt);
 		}else {
 			if (fileExists(image)) {
@@ -167,15 +167,15 @@ static void preloadImageAt(const std::vector<String> &children) {
 size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 	for (size_t i = start; i < parent->children.size() && count; ++i) {
 		const Node *child = parent->children[i];
-		const String &childCommand = child->command;
-		const String &childParams = child->params;
+		const std::string &childCommand = child->command;
+		const std::string &childParams = child->params;
 
 		if (childCommand == "with") {
 			count = preloadImages(child, 0, count);
 		}else
 
 		if (childCommand == "jump" || childCommand == "call") {
-			const String &label = childParams;
+			const std::string &label = childParams;
 
 			for (size_t j = 0; j < GV::mainExecNode->children.size(); ++j) {
 				Node *t = GV::mainExecNode->children[j];
@@ -196,22 +196,22 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 
 
 
-		if ((childCommand == "show" && !childParams.startsWith("screen ")) ||
+		if ((childCommand == "show" && !String::startsWith(childParams, "screen ")) ||
 			childCommand == "scene")
 		{
-			static const std::set<String> words = {"at", "with", "behind", "as"};
+			static const std::set<std::string> words = {"at", "with", "behind", "as"};
 
 			--count;
 
-			std::vector<String> args = Algo::getArgs(childParams);
+			std::vector<std::string> args = Algo::getArgs(childParams);
 			while (args.size() > 2 && words.count(args[args.size() - 2])) {
 				args.erase(args.end() - 2, args.end());
 			}
 			if (args.empty()) continue;
 
-			const String imageName = String::join(args, ' ');
+			const std::string imageName = String::join(args, " ");
 
-			std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
+			std::vector<std::string> declAt = Utils::getVectorImageDeclAt(imageName);
 			preloadImageAt(declAt);
 		}
 	}
@@ -219,7 +219,7 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 	return count;
 }
 
-Node* Node::getProp(const String &name) {
+Node* Node::getProp(const std::string &name) {
 	for (Node *child : children) {
 		if (child->command == name) {
 			return child;
@@ -228,9 +228,9 @@ Node* Node::getProp(const String &name) {
 	return nullptr;
 }
 
-String Node::getPlace() const {
+std::string Node::getPlace() const {
 	return "Место объявления объекта <" + command + ">:\n"
 			"  Файл <" + fileName + ">\n" +
-			"  Номер строки: " + String(numLine);
+	        "  Номер строки: " + std::to_string(numLine);
 }
 

@@ -1,5 +1,6 @@
 #include "display_object.h"
 
+#include "gv.h"
 #include "group.h"
 #include "renderer.h"
 

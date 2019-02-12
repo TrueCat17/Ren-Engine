@@ -1,13 +1,13 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-class String;
+#include <string>
 
 class Logger {
 public:
 	static void init();
-	static void log(const String& str);
-	static void logEvent(const String &event, int time, bool lastInGroup = false);
+	static void log(const std::string &str);
+	static void logEvent(const std::string &event, int time, bool lastInGroup = false);
 };
 
 #endif // LOGGER_H

@@ -2,21 +2,20 @@
 #define TEXTBUTTON_H
 
 #include "gui/screen/text.h"
-#include "parser/node.h"
 #include "utils/btn_rect.h"
 
 
 class TextButton: public Text {
 private:
-	String prevGround;
-	String prevHover;
+	std::string prevGround;
+	std::string prevHover;
 
 	bool hoverIsStd = true;
 	bool prevMouseOver = false;
 
 public:
-	String ground;
-	String hover;
+	std::string ground;
+	std::string hover;
 
 	BtnRect btnRect;
 

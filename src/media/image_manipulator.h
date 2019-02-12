@@ -1,16 +1,9 @@
 #ifndef IMAGE_MANIPULATOR_H
 #define IMAGE_MANIPULATOR_H
 
-#include <vector>
-#include <map>
-#include <deque>
-#include <functional>
-#include <mutex>
-
 #include <SDL2/SDL_endian.h>
 
 #include "utils/image_typedefs.h"
-#include "utils/string.h"
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 static const Uint8 Rshift = 24;
@@ -35,7 +28,7 @@ public:
 	static SurfacePtr getNewNotClear(int w, int h);
 
 	static void loadImage(const std::string &desc);
-	static SurfacePtr getImage(String desc);
+	static SurfacePtr getImage(std::string desc);
 };
 
 #endif // IMAGE_MANIPULATOR_H
