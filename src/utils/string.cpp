@@ -59,7 +59,7 @@ int String::toInt(const std::string &str, int base) {
 		else {
 			c = 0;
 			Utils::outMsg("String::toInt",
-			              "Строка '" + str + "' не является корректным числом в " + std::to_string(base) + "-ричной системе счисления");
+			              "String <" + str + "> is invalid number in numeral system with base " + std::to_string(base));
 			return 0;
 		}
 

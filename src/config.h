@@ -11,14 +11,6 @@ struct Param {
 };
 
 class Config {
-private:
-	static std::vector<Param> params;
-	static bool initing;
-	static bool changed;
-
-	static void setDefault();
-	static void load();
-
 public:
 	static void init();
 	static std::string get(const std::string &name);

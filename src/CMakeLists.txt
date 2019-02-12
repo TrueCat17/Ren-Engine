@@ -72,9 +72,13 @@ set(SOURCES
 link_libraries(
 	pthread
 	stdc++fs
-	:libpython2.7.a z dl util
 	SDL2 SDL2_image SDL2_ttf
 )
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+	link_libraries(:libpython2.7.a z dl util) # static
+else()
+	link_libraries(python2.7) # dynamic
+endif()
 
 if (WIN32)
 	include_directories(./include)

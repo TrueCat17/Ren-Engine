@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include <set>
+#include <map>
 #include <fstream>
 #include <filesystem>
 
@@ -111,7 +112,7 @@ Parser::Parser(const std::string &dir) {
 			String::replaceAll(s, "\t", "    ");
 
 			if (String::startsWith(s, "FILENAME")) {
-				Utils::outMsg("Parser::Parser", "Строка не может начинаться с FILENAME (файл <" + fileName + ">");
+				Utils::outMsg("Parser::Parser", "String cannot begin with FILENAME (file <" + fileName + ">");
 				s = "";
 			}
 
@@ -215,9 +216,9 @@ Node* Parser::getMainNode() {
 		bool ok = SyntaxChecker::check("main", headWord, prevHeadWord, SuperParent::MAIN, t);
 		if (!ok) {
 			Utils::outMsg("Parser::getMainNode",
-						  "Неверный синтаксис в строке <" + headLine + ">\n\n" +
-						  "Файл <" + fileName + ">\n"
-			              "Номер строки: " + std::to_string(start - startFile));
+			              "Invalid syntax in string <" + headLine + ">\n\n" +
+			              "File <" + fileName + ">\n"
+			              "Line: " + std::to_string(start - startFile));
 		}
 		prevHeadWord = headWord;
 
@@ -299,8 +300,8 @@ static void initScreenNode(Node *node) {
 	if (firstIsProp && node->command != "screen" && node->command != "use") {
 		if (args.empty()) {
 			Utils::outMsg("Parser::initScreenNode",
-						  "Неверный синтаксис\n"
-						  "Объект <" + node->command + "> не имеет основного параметра\n\n" +
+			              "Invalid syntax\n"
+			              "Object <" + node->command + "> must have main parameter\n\n" +
 						  node->getPlace());
 			return;
 		}
@@ -321,15 +322,15 @@ static void initScreenNode(Node *node) {
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
 			const std::string str = node->command + ' ' + node->params;
 			Utils::outMsg("Parser::initScreenNode",
-						  "Неверный синтаксис в строке <" + str + ">\n"
-						  "Параметр <" + name + "> не является свойством объекта типа <" + node->command + ">\n\n" +
+			              "Invalid syntax in string <" + str + ">\n"
+			              "Parameter <" + name + "> is not property of <" + node->command + ">\n\n" +
 						  node->getPlace());
 			continue;
 		}
 
 		if (i + 1 >= args.size()) {
 			Utils::outMsg("Parser::initScreenNode",
-						  "У параметра <" + name + "> пропущено значение в строке\n" +
+			              "Skip value of parameter <" + name + "> in string\n" +
 						  "<" + node->params + ">\n\n" +
 						  node->getPlace());
 			continue;
@@ -372,16 +373,16 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	if (!block) {
 		if (headLine.back() == ':') {
 			Utils::outMsg("Parser::getNode",
-			              "Только объявление блока заканчивается двоеточием\n"
-			              "Строка <" + headLine + ">\n\n" +
+			              "Only block declaration ends with a colon\n"
+			              "String <" + headLine + ">\n\n" +
 			              res->getPlace());
 			headLine.erase(headLine.size() - 1);
 		}
 	}else {
 		if (headLine.back() != ':') {
 			Utils::outMsg("Parser::getNode",
-			              "Объявление блока должно заканчиваться двоеточием\n"
-			              "Строка <" + headLine + ">\n\n" +
+			              "Block declaration must ends with a colon\n"
+			              "String <" + headLine + ">\n\n" +
 			              res->getPlace());
 			headLine = "pass";
 			block = false;
@@ -460,8 +461,8 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 	if (headLine.back() != ':') {
 		Utils::outMsg("Parser::getNode",
-					  "Объявление блока должно заканчиваться двоеточием\n"
-					  "Строка <" + headLine + ">\n\n" +
+		              "Block declaration must ends with a colon\n"
+		              "String <" + headLine + ">\n\n" +
 					  res->getPlace());
 	}
 
@@ -533,7 +534,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		bool isText;
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
 			Utils::outMsg("Parser::getNode",
-						  "Неверный синтаксис в строке <" + headLine + ">\n"
+			              "Invalid syntax in string <" + headLine + ">\n"
 						  "(node: <" + headWord + ">, parentNode: <" + type + ">, prevNode: <" + prevHeadWord + ">)\n\n" +
 						  res->getPlace());
 			childStart = getNextStart(childStart);

@@ -67,8 +67,8 @@ void Game::load(const std::string &table, const std::string &name) {
 	namespace fs = std::filesystem;
 
 	auto outError = [&](const std::string &dir) {
-		Utils::outMsg(std::string() + "Ошибка при попытке открыть сохранение <" + table + "_" + name + ">\n"
-									  "Отсутствует директория <" + dir + ">");
+		Utils::outMsg(std::string() + "Could not to open save <" + table + "_" + name + ">\n"
+		                              "Directory <" + dir + "> not found");
 	};
 	for (const std::string &path : {saves, tablePath, fullPath}) {
 		if (!fs::exists(path)) {
@@ -82,7 +82,7 @@ void Game::load(const std::string &table, const std::string &name) {
 	};
 	for (const char *fileName : {"stack", "info", "py_globals"}) {
 		if (!fileExists(fullPath + fileName)) {
-			Utils::outMsg("Файл <" + fullPath + fileName + "> не существует или пуст");
+			Utils::outMsg("File <" + fullPath + fileName + "> not exists or empty");
 			return;
 		}
 	}

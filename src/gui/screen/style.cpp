@@ -33,13 +33,13 @@ PyObject* Style::getProp(const std::string &styleName, const std::string &propNa
 
 	PyObject *pyStyles = PyDict_GetItemString(PyUtils::global, "style");
 	if (!pyStyles) {
-		Utils::outMsg("Style::getProp", "Объект <style> не существует");
+		Utils::outMsg("Style::getProp", "Name <style> is not defined");
 		Py_RETURN_NONE;
 	}
 
 	PyObject *pyStyle = PyObject_GetAttrString(pyStyles, styleName.c_str());
 	if (!pyStyle || pyStyle == Py_None) {
-		Utils::outMsg("Style::getProp", "Стиль <" + styleName + "> не существует");
+		Utils::outMsg("Style::getProp", "Style <" + styleName + "> is not defined");
 		Py_RETURN_NONE;
 	}
 

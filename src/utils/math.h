@@ -1,7 +1,6 @@
 #ifndef MATH_H
 #define MATH_H
 
-
 class Math {
 private:
 	static double* sins;

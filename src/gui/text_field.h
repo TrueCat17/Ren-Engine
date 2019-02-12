@@ -42,11 +42,11 @@ private:
 
 	Uint32 mainColor = 0;
 
-	Uint32 curColor = 0;//Цвет
-	int isBold = 0;//Жирный
-	int isItalic = 0;//Курсив
-	int isUnderline = 0;//Подчёркнутый
-	int isStrike = 0;//Зачёркнутый
+	Uint32 curColor = 0;
+	int isBold = 0;
+	int isItalic = 0;
+	int isUnderline = 0;
+	int isStrike = 0;
 
 	std::vector<int> bolds;
 	std::vector<int> italics;

@@ -1,23 +1,12 @@
-﻿#include "node.h"
+#include "node.h"
 
 #include <set>
-#include <fstream>
 #include <filesystem>
 
 #include "gv.h"
-#include "config.h"
-#include "logger.h"
-
-#include "gui/screen/screen.h"
-#include "gui/screen/style.h"
-
 #include "media/image_manipulator.h"
-#include "media/music.h"
-#include "media/py_utils.h"
-
 #include "utils/algo.h"
-#include "utils/game.h"
-#include "utils/mouse.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 std::string Node::loadPath;
@@ -123,14 +112,14 @@ std::vector<std::string> Node::getImageChildren() const {
 		static const std::vector<std::string> blockCommandsInImage = {"contains", "block", "parallel"};
 		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
 
-		if (!childIsBlock) {
-			if (!child->command.empty() || !child->params.empty()) {
-				const std::string str = Algo::clear(child->command + " " + child->params);
+		if (childIsBlock) {
+			const std::vector<std::string> childChildren = child->getImageChildren();
+			for (const std::string &str : childChildren) {
 				res.push_back(str);
 			}
 		}else {
-			const std::vector<std::string> childChildren = child->getImageChildren();
-			for (const std::string &str : childChildren) {
+			if (!child->command.empty() || !child->params.empty()) {
+				const std::string str = Algo::clear(child->command + " " + child->params);
 				res.push_back(str);
 			}
 		}
@@ -229,8 +218,8 @@ Node* Node::getProp(const std::string &name) {
 }
 
 std::string Node::getPlace() const {
-	return "Место объявления объекта <" + command + ">:\n"
-			"  Файл <" + fileName + ">\n" +
-	        "  Номер строки: " + std::to_string(numLine);
+	return "Object <" + command + "> declared in:\n"
+	        "  File <" + fileName + ">\n" +
+	        "  Line: " + std::to_string(numLine);
 }
 

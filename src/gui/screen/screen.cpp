@@ -7,6 +7,7 @@
 #include "parser/screen_node_utils.h"
 #include "utils/utils.h"
 
+
 static std::vector<Node*> declared;
 
 static std::mutex screenMutex;
@@ -40,7 +41,7 @@ static void show(const std::string &name) {
 	if (!scr) {
 		Node *node = Screen::getDeclared(name);
 		if (!node) {
-			Utils::outMsg("Screen::show", "Скрин с именем <" + name + "> не существует");
+			Utils::outMsg("Screen::show", "Screen <" + name + "> is not defined");
 			return;
 		}
 
@@ -61,7 +62,7 @@ static void hide(const std::string &name) {
 		}
 	}
 
-	Utils::outMsg("Screen::hide", "Скрин с именем <" + name + "> не отображается, поэтому его нельзя скрыть");
+	Utils::outMsg("Screen::hide", "Screen <" + name + "> is not shown");
 }
 
 static std::vector<std::string> toShowList;

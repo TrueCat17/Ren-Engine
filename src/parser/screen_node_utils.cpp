@@ -1,10 +1,7 @@
 #include "screen_node_utils.h"
 
-#include <iostream>
 #include <map>
 #include <set>
-
-#include "logger.h"
 
 #include "gui/screen/screen.h"
 #include "gui/screen/key.h"

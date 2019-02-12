@@ -23,14 +23,13 @@ static std::map<std::string, std::pair<int, SurfacePtr>> surfaces;
 
 
 static void trimTexturesCache(const SurfacePtr &last) {
-	/* Если размер кэша текстур превышает желаемый, то удалять неиспользуемые сейчас текстуры до тех пор,
-	 * пока кэш не уменьшится до нужных размеров
-	 * Текстуры удаляются в порядке последнего использования (сначала те, что использовались давно)
-	 * Может оказаться так, что все текстуры нужны, тогда никакая из них не удаляется и кэш превышает желаемый размер
-	 * После всего этого новая текстура добавляется в конец кэша
+	/* If texture-cache size overpass need, then remove unused now textures while cache size more needed
+	 * Textures removes in order last using
+	 * If all textures uses now, nothing is removed
+	 * After trim add new texture
 	 */
 
-	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//в МБ
+	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//in MegaBytes
 	size_t cacheSize = size_t(last->w * last->h * 4);
 
 	typedef std::map<SurfacePtr, std::pair<int, TexturePtr>>::const_iterator Iter;

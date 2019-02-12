@@ -1,14 +1,10 @@
 #include "child.h"
 
-#include <algorithm>
-#include <set>
-
 #include "gv.h"
 
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
-#include "parser/node.h"
 #include "parser/syntax_checker.h"
 
 #include "media/py_utils.h"

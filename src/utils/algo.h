@@ -1,7 +1,8 @@
 #ifndef ALGO_H
 #define ALGO_H
 
-#include "utils/string.h"
+#include <vector>
+#include <string>
 
 class Algo {
 public:
@@ -15,7 +16,7 @@ public:
 	}
 
 	static inline bool isFirstByte(const char c) {
-		//2-й и последующие байты в 2-чном представлении в UTF-8 начинаются с 10 (0b10xxxxxx)
+		//second and next bytes in UTF-8 start from 10 in binary (0b10xxxxxx)
 		return !(c & 0b10000000) || c & 0b01000000;
 	}
 

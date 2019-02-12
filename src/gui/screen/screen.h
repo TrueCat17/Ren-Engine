@@ -2,7 +2,6 @@
 #define SCREEN_H
 
 #include <vector>
-#include <string>
 
 #include "gui/screen/container.h"
 

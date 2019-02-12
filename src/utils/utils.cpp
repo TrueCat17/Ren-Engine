@@ -5,17 +5,17 @@
 #include <thread>
 #include <mutex>
 #include <set>
+#include <map>
 #include <filesystem>
 #include <algorithm>
 
 #include <SDL2/SDL_ttf.h>
 
 #include "gv.h"
-#include "config.h"
 #include "logger.h"
 
-#include "media/py_utils.h"
 #include "media/image_manipulator.h"
+#include "media/py_utils.h"
 #include "parser/node.h"
 #include "utils/game.h"
 
@@ -151,9 +151,9 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 
 	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
 		Utils::outMsg("Utils::getPixel",
-		              "Попытка получить цвет точки (" +
+		              "Point (" +
 		                  std::to_string(x) + ", " + std::to_string(y) +
-		              ") у картинки размера " +
+		              ") is invalid for image with size " +
 		                  std::to_string(surface->w) + "x" + std::to_string(surface->h));
 		return 0;
 	}

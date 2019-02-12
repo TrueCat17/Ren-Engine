@@ -61,7 +61,7 @@ static void restoreStack() {
 
 		std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
-			Utils::outMsg("Scenario::restoreStack", "In string <" + tmp + "> expected 2 args");
+			Utils::outMsg("Scenario::restoreStack", "In string <" + tmp + "> expected 2 arguments");
 			return;
 		}
 

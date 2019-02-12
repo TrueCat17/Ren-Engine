@@ -24,11 +24,6 @@ size_t Group::getChildIndex(DisplayObject *child) const {
 }
 
 void Group::addChildAt(DisplayObject *child, size_t index) {
-	if (child == this) {
-		Utils::outMsg("Group::addChild(At)", "Добавление объекта в самого себя");
-		return;
-	}
-
 	if (child->parent) {
 		child->parent->removeChild(child);
 	}
@@ -40,11 +35,6 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 	child->updateGlobal();
 }
 void Group::removeChild(DisplayObject *child) {
-	if (child->parent != this) {
-		Utils::outMsg("Group::removeChild", "Удаление объекта не из своего родителя");
-		return;
-	}
-
 	for (size_t i = 0; i < children.size(); ++i) {
 		if (children[i] == child) {
 			removeChildAt(i);
@@ -58,7 +48,7 @@ void Group::removeChildAt(size_t index) {
 void Group::clearChildren() {
 	while (children.size()) {
 		DisplayObject *obj = children[0];
-		delete obj;//Удаляется так же и из текущего объекта как из родителя (а значит и из children)
+		delete obj;//remove from .parent=this (thereforce from children of parent)
 	}
 }
 

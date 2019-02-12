@@ -27,11 +27,6 @@ Container::Container(Node *node, Container *screenParent, Screen *screen):
 
 
 void Container::addChildAt(DisplayObject *child, size_t index) {
-	if (child == screenParent) {
-		Utils::outMsg("ScreenContainer::addChild(At)", "Добавление объекта в самого себя");
-		return;
-	}
-
 	Group *parent = screenParent;
 	auto &pChildren = parent->children;
 
@@ -145,7 +140,7 @@ void Container::addChildrenFromNode() {
 			Node *scrNode = Screen::getDeclared(childNode->params);
 			if (!scrNode) {
 				Utils::outMsg("Screen::show",
-							  "Скрин с именем <" + childNode->params + "> не существует\n" +
+				              "Screen <" + childNode->params + "> is not defined\n" +
 							  childNode->getPlace());
 			}else {
 				child = new Screen(childNode, screen);
@@ -211,7 +206,7 @@ void Container::addChildrenFromNode() {
 
 			if (!props.count(childNode->command)) {
 				Utils::outMsg("ScreenContainer::addChildrenFromNode",
-							  "Неизвестный тип потомка <" + childNode->command + ">\n" +
+				              "Unknown type <" + childNode->command + ">\n" +
 							  childNode->getPlace());
 			}
 		}

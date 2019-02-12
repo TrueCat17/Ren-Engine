@@ -30,16 +30,16 @@ void TextField::setFont(std::string fontName, int textSize, bool setAsOriginal) 
 	font = Utils::getFont(fontName, textSize);
 	if (!font && fontName != defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
-		Utils::outMsg("Text::setFont", "Загружается шрифт <" + defaultFontName + ">");
+		Utils::outMsg("Text::setFont", "Loading font <" + defaultFontName + ">");
 
 		fontName = defaultFontName;
 		font = Utils::getFont(fontName, textSize);
 	}
 	if (!font && fontName == defaultFontName) {
 		Utils::outMsg("TTF_Open_Font", TTF_GetError());
-		Utils::outMsg("Text::setFont", "Шрифт <" + defaultFontName + "> не загрузился. Текст не будет отображаться.\n");
+		Utils::outMsg("Text::setFont", "Could not load font <" + defaultFontName + ">. No text will be displayed.\n");
 	}else {
-		TTF_SizeUTF8(font, "t", &charWidth, nullptr);//просто буква наугад
+		TTF_SizeUTF8(font, "t", &charWidth, nullptr);//just random symbol
 		charHeight = TTF_FontHeight(font);
 	}
 }
@@ -125,7 +125,7 @@ void TextField::setText(const std::string &text, Uint32 color) {
 
 		const int INDENT = int(charWidth * 1.5);
 
-		if (wordWrap && maxW > INDENT && lineRect.w > maxW) {//Включён перенос строк по словам (и он возможен) и он нужен
+		if (wordWrap && maxW > INDENT && lineRect.w > maxW) {//wordwrap is on, possible and need
 			size_t n = line.size() - 1;
 			while (n) {
 				size_t indexOpen = line.find_last_of('{', n);
@@ -139,20 +139,20 @@ void TextField::setText(const std::string &text, Uint32 color) {
 
 				--n;
 			}
-			if (!n && //Если перенести по пробелу нельзя и
-				textSize > MIN_TEXT_SIZE) //можно уменьшить шрифт
+			if (!n && //could not wordwrap
+			    textSize > MIN_TEXT_SIZE) //try decrease font size
 			{
-				maxLineWidth = maxW + 1;//переход к попытке уместить текст меньшим шрифтом
+				maxLineWidth = maxW + 1;
 				break;
 			}
 
-			//Если перенос возможен, то разделяем текущую строку на две
+			//if wordwrap is possible - divide line
 			if (line.size() > n + 1) {
 				const std::string newLine = line.substr(n + 1);
 				lines.insert(lines.begin() + int(i) + 1, newLine);
 			}
 			lines[i].erase(n);
-			//И обрабатываем текущую строку снова
+			//processing current line again
 			--i;
 			continue;
 		}
@@ -167,14 +167,14 @@ void TextField::setText(const std::string &text, Uint32 color) {
 	rect.w = std::max(maxWidth, maxLineWidth);
 	int textHeight = charHeight * int(lines.size());
 
-	//Если не уместились с этим размером шрифта
+	//if could not to set text with current font size
 	if ((textHeight > maxH || maxLineWidth > maxW) && textSize > MIN_TEXT_SIZE) {
-		setFont(fontName, textSize - 2, false);//Устанавливаем меньший шрифт
-		setText(text, color);//И пытаемся ещё раз
+		setFont(fontName, textSize - 2, false);//decrease font size
+		setText(text, color);//try again
 		return;
 	}
 
-	//Не перерисовываем, если нарисовано будет ровно то же самое, что есть уже сейчас
+	//not redraw if no changes
 	if (prevDrawFont == font && prevDrawTextColor == color && prevText == text && tmpRects.size() == rects.size()) {
 		return;
 	}
@@ -232,7 +232,7 @@ void TextField::addText() {
 			}
 			charOutNum = end;
 
-			int k = 1;//открытие или закрытие тэга
+			int k = 1;//open/close tag
 			if (line[start] == '/') {
 				++start;
 				k = -1;
@@ -263,7 +263,7 @@ void TextField::addText() {
 
 			else {
 				Utils::outMsg("Text::addText",
-							  "Неизвестный тэг <" + type + ">");
+				              "Unknown tag <" + type + ">");
 			}
 
 			if (isBold < 0) isBold = 0;
@@ -306,7 +306,7 @@ int TextField::getLineWidth(std::string text, bool resetPrevStyle) {
 			}
 			i = end;
 
-			int k = 1;//открытие или закрытие тэга
+			int k = 1;//open/close tag
 			if (text[start] == '/') {
 				++start;
 				k = -1;
@@ -323,7 +323,7 @@ int TextField::getLineWidth(std::string text, bool resetPrevStyle) {
 			else if (String::startsWith(type, "color"));
 			else {
 				Utils::outMsg("Text::getLineWidth",
-							  "Неизвестный тэг <" + type + ">");
+				              "Unknown tag <" + type + ">");
 			}
 
 			if (isBold < 0) isBold = 0;
@@ -407,11 +407,11 @@ void TextField::addChars(std::string c, Uint32 color) {
 
 void TextField::setAlign(std::string hAlign, std::string vAlign) {
 	if (hAlign != "left" && hAlign != "center" && hAlign != "right") {
-		Utils::outMsg("Text::setAlign", "Недопустимое значение hAlign: <" + hAlign + ">\n");
+		Utils::outMsg("Text::setAlign", "Unexpected hAlign: <" + hAlign + ">\n");
 		hAlign = "left";
 	}
 	if (vAlign != "top" && vAlign != "center" && vAlign != "down") {
-		Utils::outMsg("Text::setAlign", "Недопустимое значение vAlign: <" + vAlign + ">\n");
+		Utils::outMsg("Text::setAlign", "Unexpected vAlign: <" + vAlign + ">\n");
 		vAlign = "top";
 	}
 	this->hAlign = hAlign;

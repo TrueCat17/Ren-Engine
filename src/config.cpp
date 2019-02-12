@@ -7,9 +7,13 @@
 #include "utils/utils.h"
 
 
-std::vector<Param> Config::params;
-bool Config::initing = false;
-bool Config::changed = false;
+static std::vector<Param> params;
+static bool initing = false;
+static bool changed = false;
+
+static void setDefault();
+static void load();
+
 
 void Config::init() {
 	initing = true;
@@ -25,7 +29,7 @@ std::string Config::get(const std::string &name) {
 		}
 	}
 
-	Utils::outMsg("Config::get", "Попытка получить значение несуществующего параметра <" + name + ">");
+	Utils::outMsg("Config::get", "Param <" + name + "> there is not");
 	return "";
 }
 
@@ -58,43 +62,43 @@ void Config::set(const std::string &name, const std::string &value, const std::s
 		if (initing) {
 			params.push_back({name, value, comment});
 		}else {
-			Utils::outMsg("Config::set", "Попытка установить значение несуществующего параметра <" + name + ">");
+			Utils::outMsg("Config::set", "Param <" + name + "> there is not");
 		}
 	}
 }
 
-void Config::setDefault() {
-	set("window_title", "Ren-Engine");
-	set("window_icon", "None");
+static void setDefault() {
+	Config::set("window_title", "Ren-Engine");
+	Config::set("window_icon", "None");
 
-	set("window_x", "300");
-	set("window_y", "70");
-	set("window_width", "800");
-	set("window_height", "600");
-	set("window_w_div_h", "1.777");
-	set("window_fullscreen", "False");
+	Config::set("window_x", "300");
+	Config::set("window_y", "70");
+	Config::set("window_width", "800");
+	Config::set("window_height", "600");
+	Config::set("window_w_div_h", "1.777");
+	Config::set("window_fullscreen", "False");
 
-	set("mouse_usual", "None");
-	set("mouse_btn", "None");
-	set("mouse_hide_time", "0");
+	Config::set("mouse_usual", "None");
+	Config::set("mouse_btn", "None");
+	Config::set("mouse_hide_time", "0");
 
-	set("scale_quality", "0");
-	set("software_renderer", "False");
-	set("fast_opengl", "True");
-	set("check_fast_opengl_errors", "False");
-	set("opengl_vsync", "False");
-	set("max_fps", "30");
+	Config::set("scale_quality", "0");
+	Config::set("software_renderer", "False");
+	Config::set("fast_opengl", "True");
+	Config::set("check_fast_opengl_errors", "False");
+	Config::set("opengl_vsync", "False");
+	Config::set("max_fps", "30");
 
-	set("max_size_textures_cache", "50");
-	set("max_size_surfaces_cache", "200");
-	set("count_preload_commands", "0");
+	Config::set("max_size_textures_cache", "50");
+	Config::set("max_size_surfaces_cache", "200");
+	Config::set("count_preload_commands", "0");
 }
 
-void Config::load() {
+static void load() {
 	std::ifstream is("params.conf");
 	if (!is.is_open()) {
-		Utils::outMsg("Config::load", "Не удалось загрузить файл <params.conf>'\n"
-									  "Используются настройки по-умолчанию");
+		Utils::outMsg("Config::load", "Could not to load file <resources/params.conf>\n"
+		                              "Using default settings");
 		return;
 	}
 
@@ -120,7 +124,7 @@ void Config::load() {
 
 		if (line.empty()) continue;
 		if (line[0] == '#') {
-			Utils::outMsg("Config::load", "Комментарии, начинающиеся с начала строки, являются некорректными");
+			Utils::outMsg("Config::load", "Comment at the begining of the line is invalid");
 			continue;
 		}
 
@@ -128,13 +132,13 @@ void Config::load() {
 		indexComment = line.find('#');
 
 		if (indexAssign == size_t(-1)) {
-			Utils::outMsg("Config::load", "В строке <" + line + "> нет символа '='");
+			Utils::outMsg("Config::load", "In the line <" + line + "> there is no symbol '='");
 			continue;
 		}
 		if (indexComment == size_t(-1)) {
 			indexComment = line.size();
 		}else if (indexComment < indexAssign) {
-			Utils::outMsg("Config::load", "В строке <" + line + "> символ '#', начинающий комментарий, идёт перед символом '='");
+			Utils::outMsg("Config::load", "In the line <" + line + "> symbol '=' is commented");
 			continue;
 		}
 
@@ -150,7 +154,7 @@ void Config::load() {
 		size_t endValue = value.find_last_not_of(' ');
 		value = value.substr(startValue, endValue - startValue + 1);
 
-		set(name, value, comment);
+		Config::set(name, value, comment);
 	}
 }
 
@@ -174,7 +178,7 @@ void Config::save() {
 		std::string name = params[i].name;
 		std::string value = params[i].value;
 
-		size_t size = getCountLetters(name) + 3 + getCountLetters(value);//3 = getCountLetters(" = ")
+		size_t size = getCountLetters(name) + strlen(" = ") + getCountLetters(value);
 
 		if (size > maxSize) {
 			maxSize = size;
@@ -193,7 +197,7 @@ void Config::save() {
 		os << name << " = " << value;
 
 		if (!comment.empty()) {
-			size_t size = getCountLetters(name) + 3 + getCountLetters(value);//3 = getCountLetters(" = ")
+			size_t size = getCountLetters(name) + strlen(" = ") + getCountLetters(value);
 
 			std::string spaces;
 			spaces.resize(maxSize - size, ' ');

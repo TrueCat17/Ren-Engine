@@ -5,7 +5,6 @@
 #include "gui/text_field.h"
 
 #include "media/py_utils.h"
-#include "parser/node.h"
 #include "utils/utils.h"
 
 Text::Text(Node *node, Screen *screen):

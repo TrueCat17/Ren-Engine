@@ -41,12 +41,12 @@ size_t Algo::getEndArg(const std::string &args, size_t start, const char separat
 		}
 	}
 	if (i == args.size() && (b1 || b2 || q1 || q2)) {
-		std::string error = "Не закрыта " +
+		std::string error = "Not closed " +
 		                    ((b1 || b2)
-		                     ? std::string(b1 ? "круглая" : "квадратная") + " скобка"
-		                     : std::string(q1 ? "одинарная" : "двойная") + " кавычка"
+		                     ? std::string(b1 ? "round" : "square") + " bracket"
+		                     : std::string(q1 ? "single" : "double") + " quote"
 		                    );
-		Utils::outMsg("Utils::getEndArg", error);
+		Utils::outMsg("Algo::getEndArg", error);
 	}
 	return i;
 }
@@ -66,7 +66,7 @@ std::string Algo::clear(std::string s) {
 		if (s[s.size() - n - 1] == ')') {
 			++n;
 		}else{
-			Utils::outMsg("Utils::clear", "Путаница в скобках:\n<" + s + ">");
+			Utils::outMsg("Algo::clear", "Invalid brackets:\n<" + s + ">");
 			return nullptr;
 		}
 	}

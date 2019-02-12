@@ -2,7 +2,7 @@
 #define BTNRECT_H
 
 #include <vector>
-#include <functional>
+#include <bits/std_function.h>
 
 #include "gui/display_object.h"
 

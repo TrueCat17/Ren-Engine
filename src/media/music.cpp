@@ -74,7 +74,7 @@ void Music::init() {
 							music->audioLen = 0;
 							if (av_seek_frame(music->formatCtx, music->audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
 								Utils::outMsg("Music::loop",
-											  "Ошибка при перемотке к началу, запущено:\n" + music->place);
+								              "Error on restart, play from:\n" + music->place);
 							}else {
 								needToDelete = false;
 								music->loadNextParts(MIN_PART_COUNT);
@@ -143,10 +143,10 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
 		if (channel->name == name) {
-			const std::string place = "Файл <" + fileName + ">\n"
-			                          "Строка " + std::to_string(numLine);
+			const std::string place = "File <" + fileName + ">\n"
+			                          "Line " + std::to_string(numLine);
 			Utils::outMsg("Music::registerChannel",
-			              "Канал с именем <" + name + "> уже существует\n\n" + place);
+			              "Channel <" + name + "> already exists\n\n" + place);
 			return;
 		}
 	}
@@ -172,8 +172,8 @@ bool Music::hasChannel(const std::string &name) {
 void Music::setVolume(double volume, const std::string &channelName,
 					  const std::string &fileName, int numLine)
 {
-	const std::string place = "Файл <" + fileName + ">\n"
-	                          "Строка " + std::to_string(numLine);
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
 
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
@@ -184,19 +184,19 @@ void Music::setVolume(double volume, const std::string &channelName,
 	}
 
 	Utils::outMsg("Music::setVolume",
-				  "Канал с именем <" + channelName + "> не существует\n\n" + place);
+	              "Channel <" + channelName + "> not found\n\n" + place);
 }
 void Music::setMixerVolume(double volume, const std::string &mixer,
 						   const std::string &fileName, int numLine)
 {
-	const std::string place = "Файл <" + fileName + ">\n"
-	                          "Строка " + std::to_string(numLine);
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
 
 	if (mixerVolumes.find(mixer) != mixerVolumes.end()) {
 		mixerVolumes[mixer] = Math::inBounds(volume, 0, 1);
 	}else {
 		Utils::outMsg("Music::setMixerVolume",
-		              "Микшер с именем <" + mixer + "> сейчас не используется никаким каналом\n\n" + place);
+		              "Mixer <" + mixer + "> is not used by any channel now\n\n" + place);
 	}
 }
 
@@ -204,12 +204,15 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 void Music::play(const std::string &desc,
 				 const std::string &fileName, size_t numLine)
 {
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
+
 	std::vector<std::string> args = Algo::getArgs(desc);
 	if (args.size() != 2 && args.size() != 4) {
 		Utils::outMsg("Music::play",
-					  "Команда play ожидает 2 или 4 параметра:\n"
+		              "Expected 2 or 4 arguments:\n"
 					  "channelName fileName ['fadein' time]\n"
-					  "Получено: <" + desc + ">");
+		              "Got: <" + desc + ">\n\n" + place);
 		return;
 	}
 
@@ -221,20 +224,17 @@ void Music::play(const std::string &desc,
 		}
 	}
 
-	const std::string place = "Файл <" + fileName + ">\n"
-	                          "Строка " + std::to_string(numLine) + ": <" + desc + ">";
-
 	int fadeIn = 0;
 	if (args.size() > 2) {
 		if (args[2] != "fadein") {
 			Utils::outMsg("Music::play",
-						  "3-м параметром ожидалось слово <fadein>\n\n" + place);
+			              "3 argument must be <fadein>\n\n" + place);
 			return;
 		}
 		std::string fadeInStr = PyUtils::exec(fileName, numLine, args[3], true);
 		if (!String::isNumber(fadeInStr)) {
 			Utils::outMsg("Music::play",
-						  "Значением параметра fadein ожидалось число, получено <" + args[3] + ">\n\n" + place);
+			              "Fadein value expected number, got <" + args[3] + ">\n\n" + place);
 			return;
 		}
 		fadeIn = int(String::toDouble(fadeInStr) * 1000);
@@ -267,19 +267,20 @@ void Music::play(const std::string &desc,
 		}
 	}
 
-	Utils::outMsg("Music::play", "Канал с именем <" + channelName + "> не найден\n\n" + place);
+	Utils::outMsg("Music::play", "Channel <" + channelName + "> not found\n\n" + place);
 }
 void Music::stop(const std::string &desc,
 				 const std::string& fileName, size_t numLine)
 {
-	const std::string place = "Файл <" + fileName + ">\n"
-	                          "Строка " + std::to_string(numLine) + ": <" + desc + ">";
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
 
 	std::vector<std::string> args = Algo::getArgs(desc);
 	if (args.size() != 1 && args.size() != 3) {
 		Utils::outMsg("Music::stop",
-					  "Команда stop ожидает 1 или 3 параметра:\n"
-					  "channelName ['fadeout' time]\n\n" + place);
+		              "Excpected 1 or 3 arguments:\n"
+		              "channelName ['fadeout' time]\n"
+		              "Got: <" + desc + ">\n\n" + place);
 		return;
 	}
 
@@ -289,13 +290,13 @@ void Music::stop(const std::string &desc,
 	if (args.size() > 1) {
 		if (args[1] != "fadeout") {
 			Utils::outMsg("Music::stop",
-						  "3-м параметром ожидалось слово <fadeout>\n\n" + place);
+			              "2 argument must be <fadeout>\n\n" + place);
 			return;
 		}
 		std::string fadeOutStr = PyUtils::exec(fileName, numLine, args[2], true);
 		if (!String::isNumber(fadeOutStr)) {
 			Utils::outMsg("Music::stop",
-						  "Значением параметра fadeout ожидалось число, получено <" + args[2] + ">\n\n" + place);
+			              "Fadeout value expected number, got <" + args[2] + ">\n\n" + place);
 			return;
 		}
 		fadeOut = int(String::toDouble(fadeOutStr) * 1000);
@@ -309,7 +310,6 @@ void Music::stop(const std::string &desc,
 			return;
 		}
 	}
-	Utils::outMsg("Music::stop", "На канале с именем <" + channelName + "> сейчас ничего не проигрывается\n\n" + place);
 }
 
 
@@ -334,16 +334,16 @@ bool Music::initCodec() {
 	if (int error = avformat_open_input(&formatCtx, url.c_str(), nullptr, nullptr)) {
 		if (error == AVERROR(ENOENT)) {
 			Utils::outMsg("Music::initCodec: avformat_open_input",
-						  "Файл <" + url + "> не найден\n\n" + place);
+			              "File <" + url + "> not found\n\n" + place);
 			return true;
 		}
 		Utils::outMsg("Music::initCodec: avformat_open_input",
-					  "Не удалось открыть поток в файле <" + url + ">\n\n" + place);
+		              "Could not to open input stream in file <" + url + ">\n\n" + place);
 		return true;
 	}
 	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
 		Utils::outMsg("Music::initCodec: avformat_find_stream_info",
-					  "Не удалось найти информацию о потоке в файле <" + url +">\n\n" + place);
+		              "Could not to found info about stream in file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -355,7 +355,7 @@ bool Music::initCodec() {
 	}
 	if (audioStream == -1) {
 		Utils::outMsg("Music::initCodec",
-					  "Не удалось найти аудио-поток в файле <" + url + ">\n\n" + place);
+		              "Could not to found audio-stream in file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -363,7 +363,7 @@ bool Music::initCodec() {
 	AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
 	if (!codec) {
 		Utils::outMsg("Music::initCodec: avcodec_find_decoder",
-					  "Кодек для файла <" + url + "> не найден\n\n" + place);
+		              "Codec for file <" + url + "> not found\n\n" + place);
 		return true;
 	}
 
@@ -372,7 +372,7 @@ bool Music::initCodec() {
 
 	if (avcodec_open2(codecCtx, codec, nullptr)) {
 		Utils::outMsg("Music::initCodec: avcodec_open2",
-					  "Не удалось открыть кодек для файла <" + url + ">\n\n" + place);
+		              "Could not to open codec for file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -384,12 +384,12 @@ bool Music::initCodec() {
 									  inChannelLayout, codecCtx->sample_fmt, codecCtx->sample_rate, 0, nullptr);
 	if (!auConvertCtx) {
 		Utils::outMsg("Music::initCodec: swr_alloc_set_opts",
-					  "Не удалось создать SwrContext для конвертации потока файла <" + url + ">\n\n" + place);
+		              "Could not to create SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
 	}
 	if (swr_init(auConvertCtx)) {
 		Utils::outMsg("Music::initCodec: swr_init",
-					  "Не удалось инициализировать SwrContext для конвертации потока файла <" + url + ">\n\n" + place);
+		              "Could not to init SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -402,7 +402,7 @@ void Music::setPos(int64_t pos) {
 	audioLen = 0;
 
 	if (av_seek_frame(formatCtx, audioStream, pos, AVSEEK_FLAG_FRAME) < 0) {
-		Utils::outMsg("Music::setPos", "Не удалось перемотать файл <" + url + ">");
+		Utils::outMsg("Music::setPos", "Could not to rewind file <" + url + ">");
 	}else {
 		loadNextParts(MIN_PART_COUNT);
 	}
@@ -448,7 +448,7 @@ void Music::loadNextParts(size_t count) {
 		int sendError = avcodec_send_packet(codecCtx, packet);
 		if (sendError && sendError != AVERROR(EAGAIN)) {
 			Utils::outMsg("Music::loadNextParts: avcodec_send_packet",
-						  "Не удалось отправить пакет кодеку файла <" + url + ">\n\n" + place);
+			              "Could not to send packet to codec of file <" + url + ">\n\n" + place);
 			return;
 		}
 
@@ -456,7 +456,7 @@ void Music::loadNextParts(size_t count) {
 		if (reveiveError && reveiveError != AVERROR(EAGAIN)) {
 			av_packet_unref(packet);
 			Utils::outMsg("Music::loadNextParts: avcodec_receive_frame",
-						  "Не удалось принять кадр (AVFrame) потока файла <" + url + ">\n\n" + place);
+			              "Could not to receive frame from codec of file <" + url + ">\n\n" + place);
 			return;
 		}
 		lastFramePts = frame->pts;
@@ -468,7 +468,7 @@ void Music::loadNextParts(size_t count) {
 									   (const uint8_t **)frame->data, frame->nb_samples);
 			if (countSamples < 0) {
 				Utils::outMsg("Music::loadNextParts: swr_convert",
-							  "Не удалось конвертировать кадр (AVFrame) потока файла <" + url + ">\n\n" + place);
+				              "Could not to convert frame of file <" + url + ">\n\n" + place);
 				av_packet_unref(packet);
 				av_frame_unref(frame);
 				return;

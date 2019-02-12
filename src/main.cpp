@@ -75,7 +75,7 @@ static void changeWindowSize(bool maximized) {
 						  "<" + Config::get("window_w_div_h") + ">");
 		}
 
-		if (maximized) {//Можно только уменьшать, увеличивать нельзя
+		if (maximized) {//can only scale down
 			if (double(w) / h > k) {
 				w = int(h * k);
 			}else {
@@ -213,12 +213,12 @@ bool init() {
 	std::string scaleQuality = Config::get("scale_quality");
 	if (scaleQuality != "0" && scaleQuality != "1" && scaleQuality != "2") {
 		Utils::outMsg("Config::get",
-					  "Значением параметра scale_quality ожидалось 0, 1 или 2, получено: <" + scaleQuality + ">");
+		              "Value of param scale_quality expected 0, 1 or 2, got <" + scaleQuality + ">");
 		scaleQuality = "0";
 	}
 	if (scaleQuality != "0") {
 		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
-			Utils::outMsg("SDL_SetHint", "Не удалось настроить сглаживание");
+			Utils::outMsg("SDL_SetHint", "Could not to set scale quality");
 		}
 	}
 
@@ -338,7 +338,7 @@ void loop() {
 			if (event.window.event == SDL_WINDOWEVENT_MOVED) {
 				int x, y;
 				SDL_GetWindowPosition(GV::mainWindow, &x, &y);
-				if (x || y) {//Если оба равны 0, то скорее всего это глюк, игнорируем его
+				if (x || y) {//if x and y are 0 - then probably it error, ignore
 					int leftBorderSize;
 					int captionHeight;
 					SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
@@ -452,25 +452,6 @@ void loop() {
 		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
 
 		Config::save();
-
-#if 0
-		auto screenObjects = ScreenChild::getScreenObjects();
-
-		std::cout << "FPS: " << Game::getFps() << '\n';
-
-		size_t count = std::count_if(screenObjects.begin(), screenObjects.end(), [](ScreenChild* scr) { return scr->enable; });
-		std::cout << count << '/' << screenObjects.size() << '\n';
-
-		std::map<String, int> m;
-		for (ScreenChild *i : screenObjects) {
-			auto c = i->getType();
-			m[c] = m[c] + 1;
-		}
-		for (auto p : m) {
-			std::cout << p.first << ": " << p.second << '\n';
-		}
-		std::cout << '\n';
-#endif
 
 		if (PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save", true) == "True") {
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_save = False");

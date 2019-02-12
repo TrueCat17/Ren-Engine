@@ -2,7 +2,6 @@
 #define NODE_H
 
 #include <vector>
-#include <map>
 #include <string>
 
 #include <Python.h>
