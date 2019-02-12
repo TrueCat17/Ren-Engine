@@ -500,24 +500,24 @@ int Game::getStageHeight() {
 	return GV::height;
 }
 
-int Game::getTextureWidth(const std::string &image) {
+int Game::getImageWidth(const std::string &image) {
 	SurfacePtr surface = ImageManipulator::getImage(image);
 	if (surface) {
 		return surface->w;
 	}
-	Utils::outMsg("Game::getTextureWidth", "surface == nullptr");
+	Utils::outMsg("Game::getImageWidth", "surface == nullptr");
 	return 0;
 }
-int Game::getTextureHeight(const std::string &image) {
+int Game::getImageHeight(const std::string &image) {
 	SurfacePtr surface = ImageManipulator::getImage(image);
 	if (surface) {
 		return surface->h;
 	}
-	Utils::outMsg("Game::getTextureHeight", "surface == nullptr");
+	Utils::outMsg("Game::getImageHeight", "surface == nullptr");
 	return 0;
 }
 
-Uint32 Game::getPixel(const std::string &image, int x, int y) {
+Uint32 Game::getImagePixel(const std::string &image, int x, int y) {
 	SurfacePtr surface = ImageManipulator::getImage(image);
 	if (surface) {
 		SDL_Rect draw = {x, y, surface->w, surface->h};
@@ -525,7 +525,7 @@ Uint32 Game::getPixel(const std::string &image, int x, int y) {
 		Uint32 pixel = Utils::getPixel(surface, draw, crop);
 		return pixel;
 	}
-	Utils::outMsg("Game::getPixel", "surface == nullptr");
+	Utils::outMsg("Game::getImagePixel", "surface == nullptr");
 	return 0;
 }
 

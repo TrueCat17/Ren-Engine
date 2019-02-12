@@ -30,10 +30,10 @@ public:
 	static int getStageWidth();
 	static int getStageHeight();
 
-	static int getTextureWidth(const std::string &image);
-	static int getTextureHeight(const std::string &image);
+	static int getImageWidth(const std::string &image);
+	static int getImageHeight(const std::string &image);
 
-	static Uint32 getPixel(const std::string &image, int x, int y);
+	static Uint32 getImagePixel(const std::string &image, int x, int y);
 
 	static std::string getFromConfig(const std::string &param);
 

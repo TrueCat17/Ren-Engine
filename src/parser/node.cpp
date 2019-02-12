@@ -155,19 +155,7 @@ static void preloadImageAt(const std::vector<String> &children) {
 		const String image = str.substr(1, str.size() - 2);
 
 		if (Utils::imageWasRegistered(image)) {
-			const String &imageName = image;
-
-			const std::pair<String, size_t> place = Utils::getImagePlace(imageName);
-
-			const String code = Utils::getImageCode(imageName);
-			const String imagePath = PyUtils::exec(place.first, place.second, code, true);
-			if (imagePath) {
-				if (fileExists(imagePath)) {
-					ImageManipulator::loadImage(imagePath);
-				}
-			}
-
-			const std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
+			const std::vector<String> declAt = Utils::getVectorImageDeclAt(image);
 			preloadImageAt(declAt);
 		}else {
 			if (fileExists(image)) {
@@ -222,11 +210,6 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 			if (args.empty()) continue;
 
 			const String imageName = String::join(args, ' ');
-			const String code = Utils::getImageCode(imageName);
-			const String imageCode = PyUtils::exec(parent->getFileName(), parent->getNumLine(), code, true);
-			if (imageCode) {
-				ImageManipulator::loadImage(imageCode);
-			}
 
 			std::vector<String> declAt = Utils::getVectorImageDeclAt(imageName);
 			preloadImageAt(declAt);

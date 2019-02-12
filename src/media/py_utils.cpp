@@ -159,8 +159,7 @@ PyUtils::PyUtils() {
 	setGlobalFunc("_stop", Music::stop);
 
 	setGlobalFunc("image_was_registered", Utils::imageWasRegistered);
-	setGlobalFunc("get_image_code", Utils::getImageCode);
-	setGlobalFunc("get_image_decl_at", Utils::getImageDeclAt);
+	setGlobalFunc("get_image", Utils::getImageDeclAt);
 
 	setGlobalFunc("show_screen", Screen::addToShow);
 	setGlobalFunc("hide_screen", Screen::addToHide);
@@ -195,9 +194,9 @@ PyUtils::PyUtils() {
 
 	setGlobalFunc("save_image", ImageManipulator::save);
 	setGlobalFunc("load_image", ImageManipulator::loadImage);
-	setGlobalFunc("get_texture_width", Game::getTextureWidth);
-	setGlobalFunc("get_texture_height", Game::getTextureHeight);
-	setGlobalFunc("get_pixel", Game::getPixel);
+	setGlobalFunc("get_image_width", Game::getImageWidth);
+	setGlobalFunc("get_image_height", Game::getImageHeight);
+	setGlobalFunc("get_image_pixel", Game::getImagePixel);
 
 	setGlobalFunc("get_mouse", getMouse);
 	setGlobalFunc("get_local_mouse", getLocalMouse);

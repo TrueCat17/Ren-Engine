@@ -1,7 +1,8 @@
 #ifndef IMAGETYPEDEFS_H
 #define IMAGETYPEDEFS_H
 
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_surface.h>
+typedef struct SDL_Texture SDL_Texture;
 
 //from <memory>:
 #include <typeinfo>

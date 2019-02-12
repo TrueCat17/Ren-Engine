@@ -7,6 +7,8 @@
 #include <set>
 #include <filesystem>
 
+#include <SDL2/SDL_ttf.h>
+
 #include "gv.h"
 #include "config.h"
 #include "logger.h"
@@ -17,8 +19,7 @@
 #include "utils/game.h"
 
 
-std::map<String, String> Utils::images;
-std::map<String, Node*> Utils::declAts;
+static std::map<String, Node*> declAts;
 
 
 std::vector<String> Utils::getFileNames(const std::string &path) {
@@ -192,12 +193,25 @@ void Utils::registerImage(Node *imageNode) {
 		       imageNode->getPlace());
 		return;
 	}
-	path = clear(path);
-
-	images[name] = path;
 	declAts[name] = imageNode;
 
-	if (!imageNode->children.empty()) return;
+	path = clear(path);
+
+	if (path) {
+		Node *first = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
+		first->params = path;
+
+		if (imageNode->children.empty()) {
+			imageNode->children.push_back(first);
+		}else {
+			imageNode->children.insert(imageNode->children.begin(), first);
+			return;
+		}
+	}else {
+		if (!imageNode->children.empty()) return;
+	}
+
+
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
@@ -232,16 +246,12 @@ void Utils::registerImage(Node *imageNode) {
 }
 
 bool Utils::imageWasRegistered(const std::string &name) {
-	return images.find(name) != images.end();
+	return declAts.find(name) != declAts.end();
+}
+void Utils::clearImages() {
+	declAts.clear();
 }
 
-std::string Utils::getImageCode(const std::string &name) {
-	auto it = images.find(name);
-	if (it != images.end()) return it->second;
-
-	Utils::outMsg("Utils::getImageCode", "Image <" + name + "> not registered");
-	return "";
-}
 PyObject* Utils::getImageDeclAt(const std::string &name) {
 	auto it = declAts.find(name);
 	if (it != declAts.end()) {
@@ -261,15 +271,4 @@ std::vector<String> Utils::getVectorImageDeclAt(const std::string &name) {
 
 	Utils::outMsg("Utils::getVectorImageDeclAt", "Image <" + name + "> not registered");
 	return {};
-}
-
-std::pair<String, size_t> Utils::getImagePlace(const std::string &name) {
-	auto it = declAts.find(name);
-	if (it != declAts.end()) {
-		const Node *node = it->second;
-		return {node->getFileName(), node->getNumLine()};
-	}
-
-	Utils::outMsg("Utils::getImagePlace", "Image <" + name + "> not registered");
-	return {"NoFile", 0};
 }
