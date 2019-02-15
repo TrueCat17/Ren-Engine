@@ -59,7 +59,7 @@ void Container::updateRect(bool) {
 			int width = 0;
 			for (DisplayObject *child : children) {
 				if (child->enable) {
-					width = max(width, child->getWidth());
+					width = max(width, child->getX() + child->getWidth());
 				}
 			}
 			setWidth(width);
@@ -87,7 +87,7 @@ void Container::updateRect(bool) {
 			int height = 0;
 			for (DisplayObject *child : children) {
 				if (child->enable) {
-					height = max(height, child->getHeight());
+					height = max(height, child->getY() + child->getHeight());
 				}
 			}
 			setHeight(height);

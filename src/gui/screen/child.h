@@ -59,7 +59,6 @@ public:
 	void setInBox(bool v, bool h) { inVBox = v; inHBox = h; }
 
 	bool wasInited() const { return inited; }
-	const std::string& getType() const { return node->command; }
 
 	Screen* getScreen() const { return screen; }
 	bool isFakeContainer() const { return screenParent && size_t(screenParent) != size_t(this); }
