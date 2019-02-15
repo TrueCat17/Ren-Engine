@@ -448,9 +448,8 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 		}
 	}
 
-	int w = this->maxWidth  <= 0 ? maxWidth : this->maxWidth;
-	int h = this->maxHeight <= 0 ? (int(rects.size()) * charHeight) : this->maxHeight;
-	setSize(w, h);
+	setWidth(this->maxWidth  <= 0 ? maxWidth : this->maxWidth);
+	setHeight(this->maxHeight <= 0 ? (int(rects.size()) * charHeight) : this->maxHeight);
 
 
 	double sinA = Math::getSin(getGlobalRotate());
@@ -470,6 +469,14 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 
 bool TextField::checkAlpha(int x, int y) const {
 	if (!enable || globalAlpha <= 0) return false;
+
+	if (globalClip) {
+		if (x + globalX < clipRect.x ||
+		    y + globalY < clipRect.y ||
+		    x + globalX >= clipRect.x + clipRect.w ||
+		    y + globalY >= clipRect.y + clipRect.h
+		) return false;
+	}
 
 	for (const SDL_Rect &rect : rects) {
 		if (x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h) {
@@ -496,7 +503,7 @@ void TextField::draw() const {
 
 		SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-		pushToRender(surface, globalRotate, intAlpha, srcRect, t, center);
+		pushToRender(surface, globalRotate, intAlpha, globalClip, clipRect, srcRect, t, center);
 	}
 }
 

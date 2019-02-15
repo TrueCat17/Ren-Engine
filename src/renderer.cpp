@@ -1,5 +1,22 @@
 #include "renderer.h"
 
+
+static
+bool operator==(const SDL_Rect &a, const SDL_Rect &b) {
+	return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+}
+static
+bool operator==(const SDL_Point &a, const SDL_Point &b) {
+	return a.x == b.x && a.y == b.y;
+}
+
+bool RenderStruct::operator==(const RenderStruct &o) const {
+	auto a = std::tie(  surface,   angle,   alpha,   clip,   clipRect,   srcRect,   dstRect,   center);
+	auto b = std::tie(o.surface, o.angle, o.alpha, o.clip, o.clipRect, o.srcRect, o.dstRect, o.center);
+	return a == b;
+}
+
+
 #include <thread>
 #include <map>
 
@@ -303,14 +320,6 @@ static void loop() {
 	static std::vector<TexturePtr> prevTextures;
 
 
-	auto changedToRender = [&]() -> bool {
-		if (prevToRender.size() != toRender.size()) return true;
-		for (size_t i = 0; i < toRender.size(); ++i) {
-			if (prevToRender[i] != toRender[i]) return true;
-		}
-		return false;
-	};
-
 	while (!GV::exit) {
 		if (!scaled) {
 			scale();
@@ -329,7 +338,7 @@ static void loop() {
 		}
 		Renderer::needToRender = false;
 
-		if (!Renderer::needToRedraw && !changedToRender()) {
+		if (!Renderer::needToRedraw && toRender == prevToRender) {
 			continue;
 		}
 		Renderer::needToRedraw = false;
@@ -386,6 +395,12 @@ static void loop() {
 
 			const RenderStruct &rs = toRender[i];
 			const TexturePtr &texture = textures[i];
+
+			if (rs.clip) {
+				SDL_RenderSetClipRect(GV::mainRenderer, &rs.clipRect);
+			}else {
+				SDL_RenderSetClipRect(GV::mainRenderer, nullptr);
+			}
 
 			if (fastOpenGL) {
 				renderWithOpenGL(texture.get(),

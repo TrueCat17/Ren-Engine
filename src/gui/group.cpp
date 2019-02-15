@@ -37,16 +37,13 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 void Group::removeChild(DisplayObject *child) {
 	for (size_t i = 0; i < children.size(); ++i) {
 		if (children[i] == child) {
-			removeChildAt(i);
+			children.erase(children.begin() + int(i));
 			break;
 		}
 	}
 }
-void Group::removeChildAt(size_t index) {
-	children.erase(children.begin() + int(index));
-}
 void Group::clearChildren() {
-	while (children.size()) {
+	while (!children.empty()) {
 		DisplayObject *obj = children[0];
 		delete obj;//remove from .parent=this (thereforce from children of parent)
 	}

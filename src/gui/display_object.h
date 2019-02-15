@@ -9,26 +9,29 @@ class Group;
 
 class DisplayObject {
 protected:
+	SDL_Rect rect = {0, 0, -1, -1};
+	SDL_Rect clipRect = {0, 0, 0, 0};
+
 	int globalX = 0;
 	int globalY = 0;
 	int globalRotate = 0;
-
 	double globalAlpha = 1;
 
-	SDL_Rect rect = {0, 0, -1, -1};
+	bool globalClip = false;
 
 public:
 	static std::vector<DisplayObject*> objects;
 	static void disableAll();
 	static void destroyAll();
 
-	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha,
-							 const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center);
+	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip,
+	                         const SDL_Rect clipRect, const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center);
+
+	bool clip = false;
+	bool enable = true;
 
 	SDL_Rect crop = {0, 0, 0, 0};
 	double alpha = 1;
-
-	bool enable = true;
 
 	int rotate = 0;
 
@@ -45,9 +48,6 @@ public:
 	virtual ~DisplayObject();
 
 	void removeFromParent();
-
-	const SDL_Rect& getDrawRect() const { return rect; }
-	const SDL_Rect& getCropRect() const { return crop; }
 
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
@@ -66,9 +66,6 @@ public:
 	void setWidth(int value) { rect.w = value; }
 	void setHeight(int value) { rect.h = value; }
 	void setAlpha(double value) { alpha = value; }
-
-	void setPos(int x, int y);
-	void setSize(int w, int h);
 
 	virtual bool checkAlpha(int x, int y) const;
 	virtual void draw() const;

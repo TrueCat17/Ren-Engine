@@ -10,15 +10,13 @@ public:
 	Group() {}
 	virtual ~Group();
 
-	virtual void updateGlobal();
+	void removeChild(DisplayObject *child);
+	void clearChildren();
 
 	size_t getChildIndex(DisplayObject *child) const;
-
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
-	virtual void removeChild(DisplayObject *child);
-	virtual void removeChildAt(size_t index);
-	virtual void clearChildren();
+	virtual void updateGlobal();
 
 	virtual bool checkAlpha(int x, int y) const;
 	virtual void draw() const;

@@ -77,14 +77,11 @@ void Hotspot::checkEvents() {
 		scaleY = double(parentHeight) / ground->h;
 	}
 
-	setPos(
-		int(xcrop * (xcropIsDouble ? GV::width : 1) * scaleX),
-		int(ycrop * (ycropIsDouble ? GV::height : 1) * scaleY)
-	);
-	setSize(
-		int(wcrop * (wcropIsDouble ? GV::width : 1) * scaleX),
-		int(hcrop * (hcropIsDouble ? GV::height : 1) * scaleY)
-	);
+	setX(int(xcrop * (xcropIsDouble ? GV::width  : 1) * scaleX));
+	setY(int(ycrop * (ycropIsDouble ? GV::height : 1) * scaleY));
+
+	setWidth( int(wcrop * (wcropIsDouble ? GV::width  : 1) * scaleX));
+	setHeight(int(hcrop * (hcropIsDouble ? GV::height : 1) * scaleY));
 
 
 	const std::string *styleName = nullptr;
@@ -153,22 +150,27 @@ bool Hotspot::checkAlpha(int x, int y) const {
 	if (!enable || globalAlpha <= 0) return false;
 
 	const Imagemap *imageMap = static_cast<Imagemap*>(parent);
-
-	x = getX() + x;
-	y = getY() + y;
-	if (x < getX() || x >= getX() + getWidth() || y < getY() || y >= getY() + getHeight()) return false;
-
-	SDL_Rect rect = {x, y, imageMap->getDrawRect().w, imageMap->getDrawRect().h};
-
 	SurfacePtr hover = imageMap->hover;
-	Uint32 hoverPixel = Utils::getPixel(hover, rect, imageMap->getCropRect());
+	if (!hover) return false;
 
-	Uint8 alpha = hoverPixel & 0xFF;
+	if (globalClip) {
+		if (x + globalX < clipRect.x ||
+		    y + globalY < clipRect.y ||
+		    x + globalX >= clipRect.x + clipRect.w ||
+		    y + globalY >= clipRect.y + clipRect.h
+		) return false;
+	}
+
+	if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) return false;
+
+	SDL_Rect rect = {x + getX(), y + getY(), imageMap->getWidth(), imageMap->getHeight()};
+	Uint32 color = Utils::getPixel(hover, rect, imageMap->crop);
+	Uint8 alpha = color & 0xFF;
 	return alpha > 0;
 }
 
 void Hotspot::draw() const {
-	if (!enable || !surface || globalAlpha <= 0) return;
+	if (!enable || globalAlpha <= 0 || !surface) return;
 
 	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
 	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
@@ -176,5 +178,5 @@ void Hotspot::draw() const {
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(surface, globalRotate, intAlpha, from, to, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClip, clipRect, from, to, center);
 }

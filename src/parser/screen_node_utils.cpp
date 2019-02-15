@@ -722,6 +722,7 @@ static void update_crop(Child *obj, size_t propIndex) {
 
 makeUpdateFunc(alpha)
 makeUpdateFunc(rotate)
+makeUpdateFuncWithBool(Child, clip, clip)
 
 makeUpdateFuncWithIsDouble(xpos)
 makeUpdateFuncWithIsDouble(ypos)
@@ -769,6 +770,7 @@ makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
 static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"alpha",             update_alpha},
 	{"rotate",            update_rotate},
+    {"clip",              update_clip},
 	{"delay",             update_keyDelay},
 	{"first_delay",       update_firstKeyDelay},
 	{"xpos",              update_xpos},

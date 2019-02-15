@@ -26,7 +26,8 @@ void Text::updateRect(bool) {
 	int height = int(ysize * (ysizeIsDouble ? GV::height : 1));
 
 	if (first_param.empty() && prevText.empty()) {
-		setSize(width, height);
+		setWidth(width);
+		setHeight(height);
 	}else {
 		bool needUpdate = false;
 
@@ -59,8 +60,10 @@ void Text::updateRect(bool) {
 		{
 			int w = width  <= 0 ? tf->getWidth()  : width;
 			int h = height <= 0 ? tf->getHeight() : height;
-			tf->setSize(w, h);
-			setSize(w, h);
+			tf->setWidth(w);
+			tf->setHeight(h);
+			setWidth(w);
+			setHeight(h);
 
 			tf->setAlign(textHAlign, textVAlign);
 		}

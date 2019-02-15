@@ -46,28 +46,44 @@ void DisplayObject::updateGlobal() {
 	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
 	globalRotate = parentGlobalRotate + rotate;
 	globalAlpha = parentGlobalAlpha * alpha;
-}
 
-void DisplayObject::setPos(int x, int y) {
-	rect.x = x;
-	rect.y = y;
-}
-void DisplayObject::setSize(int w, int h) {
-	rect.w = w;
-	rect.h = h;
+	if (parent && parent->globalClip) {
+		globalClip = true;
+		if (clip) {
+			clipRect.x = std::max(parent->clipRect.x, globalX);
+			clipRect.y = std::max(parent->clipRect.y, globalY);
+			clipRect.w = std::min(parent->clipRect.x + parent->clipRect.w, globalX + getWidth()) - clipRect.x;
+			clipRect.h = std::min(parent->clipRect.y + parent->clipRect.h, globalY + getHeight()) - clipRect.y;
+		}else {
+			clipRect = parent->clipRect;
+		}
+	}else {
+		if (clip) {
+			globalClip = true;
+			clipRect = {globalX, globalY, getWidth(), getHeight()};
+		}else {
+			globalClip = false;
+		}
+	}
 }
 
 bool DisplayObject::checkAlpha(int x, int y) const {
-	if (!enable || globalAlpha <= 0) return false;
+	if (!enable || globalAlpha <= 0 || !surface) return false;
 
-	if (surface && (x >= 0 && y >= 0 && x < rect.w && y < rect.h)) {
-		SDL_Rect rect = {x, y, this->rect.w, this->rect.h};
-		Uint32 color = Utils::getPixel(surface, rect, crop);
-		Uint8 alpha = color & 255;
-
-		return alpha > 0;
+	if (globalClip) {
+		if (x + globalX < clipRect.x ||
+		    y + globalY < clipRect.y ||
+		    x + globalX >= clipRect.x + clipRect.w ||
+		    y + globalY >= clipRect.y + clipRect.h
+		) return false;
 	}
-	return false;
+
+	if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) return false;
+
+	SDL_Rect rect = {x, y, getWidth(), getHeight()};
+	Uint32 color = Utils::getPixel(surface, rect, crop);
+	Uint8 alpha = color & 255;
+	return alpha > 0;
 }
 
 void DisplayObject::draw() const {
@@ -77,7 +93,7 @@ void DisplayObject::draw() const {
 	SDL_Point center = { xAnchor, yAnchor };
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 
-	pushToRender(surface, globalRotate, intAlpha, crop, t, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClip, clipRect, crop, t, center);
 }
 
 DisplayObject::~DisplayObject() {
@@ -106,21 +122,19 @@ void DisplayObject::disableAll() {
 void DisplayObject::destroyAll() {
 	GV::screens = nullptr;
 
-	while (objects.size()) {
+	while (!objects.empty()) {
 		DisplayObject *obj = objects[0];
 		delete obj;
 	}
 }
 
 
-void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha,
-	const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center)
+void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip, const SDL_Rect clipRect,
+    const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center)
 {
-	if (surface && alpha) {
-		Renderer::toRender.push_back({
-			surface, angle, alpha,
-			srcRect, dstRect,
-			center
-		});
-	}
+	Renderer::toRender.push_back({
+	    surface, angle, alpha, clip,
+	    clipRect, srcRect, dstRect,
+	    center
+	});
 }

@@ -6,26 +6,21 @@
 
 #include "utils/image_typedefs.h"
 
+
 struct RenderStruct {
 	SurfacePtr surface;
 	int angle;
 	Uint8 alpha;
 
+	bool clip;
+	SDL_Rect clipRect;
+
 	SDL_Rect srcRect;
 	SDL_Rect dstRect;
+
 	SDL_Point center;
 
-	bool operator==(const RenderStruct &o) const {
-		return  surface == o.surface &&
-				angle == o.angle &&
-				alpha == o.alpha &&
-				srcRect.x == o.srcRect.x && srcRect.y == o.srcRect.y && srcRect.w == o.srcRect.w && srcRect.h == o.srcRect.h &&
-				dstRect.x == o.dstRect.x && dstRect.y == o.dstRect.y && dstRect.w == o.dstRect.w && dstRect.h == o.dstRect.h &&
-				center.x == o.center.x && center.y == o.center.y;
-	}
-	bool operator!=(const RenderStruct &o) const {
-		return !(*this == o);
-	}
+	bool operator==(const RenderStruct &o) const;
 };
 
 class Renderer {

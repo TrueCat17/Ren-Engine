@@ -137,8 +137,10 @@ static void changeWindowSize(bool maximized) {
 		std::lock_guard g2(Renderer::renderMutex);
 
 		if (GV::screens) {
-			GV::screens->setPos(x, y);
-			GV::screens->setSize(w, h);
+			GV::screens->setX(x);
+			GV::screens->setY(y);
+			GV::screens->setWidth(w);
+			GV::screens->setHeight(h);
 			GV::screens->updateGlobal();
 		}
 

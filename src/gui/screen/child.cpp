@@ -123,10 +123,8 @@ void Child::updatePos() {
 }
 
 void Child::updateRect(bool needUpdatePos) {
-	setSize(
-		int(xsize * (xsizeIsDouble ? GV::width : 1)),
-		int(ysize * (ysizeIsDouble ? GV::height : 1))
-	);
+	setWidth( int(xsize * (xsizeIsDouble ? GV::width  : 1)));
+	setHeight(int(ysize * (ysizeIsDouble ? GV::height : 1)));
 
 	if (surface) {
 		crop.x = int(xcrop * (xcropIsDouble ? surface->w : 1));

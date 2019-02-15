@@ -409,8 +409,10 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		DisplayObject::destroyAll();
 
 		GV::screens = new Group();
-		GV::screens->setPos(x, y);
-		GV::screens->setSize(GV::width, GV::height);
+		GV::screens->setX(x);
+		GV::screens->setY(y);
+		GV::screens->setWidth(GV::width);
+		GV::screens->setHeight(GV::height);
 		GV::screens->updateGlobal();
 
 		Style::destroyAll();
