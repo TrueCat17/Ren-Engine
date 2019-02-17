@@ -470,7 +470,7 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 bool TextField::checkAlpha(int x, int y) const {
 	if (!enable || globalAlpha <= 0) return false;
 
-	if (globalClip) {
+	if (globalClipping) {
 		if (x + globalX < clipRect.x ||
 		    y + globalY < clipRect.y ||
 		    x + globalX >= clipRect.x + clipRect.w ||
@@ -503,7 +503,7 @@ void TextField::draw() const {
 
 		SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-		pushToRender(surface, globalRotate, intAlpha, globalClip, clipRect, srcRect, t, center);
+		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, srcRect, t, center);
 	}
 }
 

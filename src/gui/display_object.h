@@ -17,17 +17,17 @@ protected:
 	int globalRotate = 0;
 	double globalAlpha = 1;
 
-	bool globalClip = false;
+	bool globalClipping = false;
 
 public:
 	static std::vector<DisplayObject*> objects;
 	static void disableAll();
 	static void destroyAll();
 
-	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip,
+	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clipping,
 	                         const SDL_Rect clipRect, const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center);
 
-	bool clip = false;
+	bool clipping = false;
 	bool enable = true;
 
 	SDL_Rect crop = {0, 0, 0, 0};

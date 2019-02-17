@@ -153,7 +153,7 @@ bool Hotspot::checkAlpha(int x, int y) const {
 	SurfacePtr hover = imageMap->hover;
 	if (!hover) return false;
 
-	if (globalClip) {
+	if (globalClipping) {
 		if (x + globalX < clipRect.x ||
 		    y + globalY < clipRect.y ||
 		    x + globalX >= clipRect.x + clipRect.w ||
@@ -178,5 +178,5 @@ void Hotspot::draw() const {
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(surface, globalRotate, intAlpha, globalClip, clipRect, from, to, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, from, to, center);
 }

@@ -47,9 +47,9 @@ void DisplayObject::updateGlobal() {
 	globalRotate = parentGlobalRotate + rotate;
 	globalAlpha = parentGlobalAlpha * alpha;
 
-	if (parent && parent->globalClip) {
-		globalClip = true;
-		if (clip) {
+	if (parent && parent->globalClipping) {
+		globalClipping = true;
+		if (clipping) {
 			clipRect.x = std::max(parent->clipRect.x, globalX);
 			clipRect.y = std::max(parent->clipRect.y, globalY);
 			clipRect.w = std::min(parent->clipRect.x + parent->clipRect.w, globalX + getWidth()) - clipRect.x;
@@ -58,11 +58,11 @@ void DisplayObject::updateGlobal() {
 			clipRect = parent->clipRect;
 		}
 	}else {
-		if (clip) {
-			globalClip = true;
+		if (clipping) {
+			globalClipping = true;
 			clipRect = {globalX, globalY, getWidth(), getHeight()};
 		}else {
-			globalClip = false;
+			globalClipping = false;
 		}
 	}
 }
@@ -70,7 +70,7 @@ void DisplayObject::updateGlobal() {
 bool DisplayObject::checkAlpha(int x, int y) const {
 	if (!enable || globalAlpha <= 0 || !surface) return false;
 
-	if (globalClip) {
+	if (globalClipping) {
 		if (x + globalX < clipRect.x ||
 		    y + globalY < clipRect.y ||
 		    x + globalX >= clipRect.x + clipRect.w ||
@@ -93,7 +93,7 @@ void DisplayObject::draw() const {
 	SDL_Point center = { xAnchor, yAnchor };
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 
-	pushToRender(surface, globalRotate, intAlpha, globalClip, clipRect, crop, t, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, crop, t, center);
 }
 
 DisplayObject::~DisplayObject() {

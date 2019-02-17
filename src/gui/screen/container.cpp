@@ -196,7 +196,7 @@ void Container::addChildrenFromNode() {
 				"pass, "
 				"has, first_param, spacing, "
 				"xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
-			    "align, anchor, pos, size, crop, rotate, alpha, clip, "
+			    "align, anchor, pos, size, crop, rotate, alpha, clipping, "
 				"modal, zorder, ground, hover, "
 				"action, alternate, hovered, unhovered, activate_sound, hover_sound, mouse, "
 				"color, font, text_size, text_align, text_valign"
