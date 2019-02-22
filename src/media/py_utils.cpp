@@ -330,12 +330,22 @@ void PyUtils::errorProcessing(const std::string &code) {
 
 bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 	if (checkSimple) {
-		if (code == True || code == False || code == None) {
-			return true;
+		size_t start = code.find_first_not_of(' ');
+		if (start != size_t(-1)) {
+			size_t end = code.find_last_not_of(' ');
+			const std::string s = code.substr(start, end - start + 1);
+
+			if (s == True || s == False || s == None) {
+				return true;
+			}
+		}else {
+			if (code == True || code == False || code == None) {
+				return true;
+			}
 		}
 	}
 
-
+	bool hex = false;
 	bool q1 = false;
 	bool q2 = false;
 	char prev = 0;
@@ -345,9 +355,14 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 
 		if (!q1 && !q2) {
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-				if (!((c == 'X' || c == 'x') && prev == '0')) {
-					return false;
+				if ((c == 'X' || c == 'x') && prev == '0') {
+					hex = true;
+				}else {
+					if (!hex && ((c > 'F' && c <= 'Z') || (c > 'f' && c <= 'z'))) return false;
 				}
+			}else
+			if (c < '0' || c > '9') {
+				hex = false;
 			}
 		}
 

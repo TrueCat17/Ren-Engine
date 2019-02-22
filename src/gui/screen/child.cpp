@@ -23,8 +23,10 @@ bool Child::isModal() const {
 
 void Child::updateProps() {
 	if (!inited) {
+		Node *prevNode = node;
+		PyObject *prevProps = props;
+
 		if (!isFakeContainer()) {
-			Node *prevNode = node;
 			if (node->command == "use") {
 				node = Screen::getDeclared(node->params);
 			}
@@ -41,7 +43,6 @@ void Child::updateProps() {
 
 			const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
 
-			PyObject *prevProps = props;
 			props = PyUtils::tuple1;
 			for (const std::string &prop : propNames) {
 				PyObject *res = Style::getProp(style, prop);
@@ -52,34 +53,40 @@ void Child::updateProps() {
 					func(this, 0);
 				}
 			}
-
-			bool needAddChildren = false;
-			for (Node *child : node->children) {
-				if (!child->isScreenConst) continue;
-				if (!child->isScreenProp) {
-					needAddChildren = true;
-					continue;
-				}
-				if (child->command == "style" || child->command == "pass") continue;
-
-				PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
-				PyTuple_SET_ITEM(props, 0, res);
-
-				ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
-				if (func) {
-					func(this, 0);
-				}
-			}
-			if (needAddChildren && node->isScreenConst) {
-				static_cast<Container*>(this)->addChildrenFromNode();
-			}
-
-			updateRect();
-			updateTexture(true);
-
-			props = prevProps;
-			node = prevNode;
 		}
+
+		bool needAddChildren = false;
+		bool hasNotConstChild = false;
+		for (Node *child : node->children) {
+			if (!child->isScreenConst) {
+				if (!child->isScreenProp) {
+					hasNotConstChild = true;
+				}
+				continue;
+			}
+			if (!child->isScreenProp) {
+				needAddChildren = true;
+				continue;
+			}
+			if (child->command == "style" || child->command == "pass") continue;
+
+			PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
+			PyTuple_SET_ITEM(props, 0, res);
+
+			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
+			if (func) {
+				func(this, 0);
+			}
+		}
+		if (needAddChildren && !hasNotConstChild) {
+			static_cast<Container*>(this)->addChildrenFromNode();
+		}
+
+		updateRect();
+		updateTexture(true);
+
+		props = prevProps;
+		node = prevNode;
 
 		inited = true;
 	}

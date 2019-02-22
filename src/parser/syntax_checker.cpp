@@ -106,9 +106,9 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 
 
 void SyntaxChecker::init() {
-	const std::string screenElems = ", vbox, hbox, null, image, text, textbutton, button, ";
+	const std::string screenElems = ", vbox, hbox, null, image, text, textbutton, button, use, ";
 
-	const std::string screenProps = ", use, key, has, modal, zorder, ";
+	const std::string screenProps = ", key, has, modal, zorder, ";
 	const std::string simpleProps = ", style, xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, align, anchor, pos, size, crop, rotate, alpha, clipping, ";
 	const std::string textProps = ", color, font, text_size, text_align, text_valign, ";
 	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";

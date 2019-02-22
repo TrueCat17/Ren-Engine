@@ -288,6 +288,11 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 
 	const std::string rectStr = Algo::clear(args[2]);
 	const std::vector<std::string> rectVec = String::split(rectStr, " ");
+	if (rectVec.size() != 4) {
+		Utils::outMsg("ImageManipulator::crop",
+		              "Expected rect as a sequence with size 4:\n<" + String::join(args, ", ") + ">");
+		return nullptr;
+	}
 
 	const int x = String::toInt(rectVec[0]);
 	const int y = String::toInt(rectVec[1]);
@@ -299,7 +304,11 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 		return nullptr;
 	}
 	if (x + w > img->w || y + h > img->h) {
-		Utils::outMsg("ImageManipulator::crop", "Crop area outside image:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::crop", std::string() +
+		              "Crop area outside image:\n"
+		              "Crop: (" + String::join(rectVec, ", ") + ")\n"
+		              "Image size: " + std::to_string(img->w) + "x" + std::to_string(img->h) + "\n"
+		              "<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -357,7 +366,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 			images[image] = i;
 		}
 	}
-	if (images.size()) {
+	if (!images.empty()) {
 		typedef std::pair<std::string, size_t> P;
 		std::vector<P> imagesPairs(images.begin(), images.end());
 
@@ -390,6 +399,11 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 	}else {
 		const std::string firstPosStr = Algo::clear(args[2]);
 		const std::vector<std::string> firstPosVec = String::split(firstPosStr, " ");
+		if (firstPosVec.size() != 2) {
+			Utils::outMsg("ImageManipulator::composite",
+			              "Expected pos as a sequence with size 2:\n<" + String::join(args, ", ") + ">");
+			return nullptr;
+		}
 
 		const int xOn = String::toInt(firstPosVec[0]);
 		const int yOn = String::toInt(firstPosVec[1]);
@@ -426,6 +440,11 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 	for (size_t i = 4; i < args.size(); i += 2) {
 		const std::string posStr = Algo::clear(args[i]);
 		const std::vector<std::string> posVec = String::split(posStr, " ");
+		if (posVec.size() != 2) {
+			Utils::outMsg("ImageManipulator::composite",
+			              "Expected pos as a sequence with size 2:\n<" + String::join(args, ", ") + ">");
+			return nullptr;
+		}
 
 		const std::string imgStr = Algo::clear(args[i + 1]);
 		SurfacePtr img = ImageManipulator::getImage(imgStr);

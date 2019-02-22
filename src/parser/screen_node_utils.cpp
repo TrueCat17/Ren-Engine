@@ -103,6 +103,7 @@ static void initConsts(Node *node) {
 			}else {
 				ScreenNodeUtils::init(screenNode);
 				node->isScreenConst = screenNode->isScreenConst;
+				node->countPropsToCalc = screenNode->countPropsToCalc;
 			}
 		}else {
 			Utils::outMsg("ScreenNodeUtils::initConsts",
