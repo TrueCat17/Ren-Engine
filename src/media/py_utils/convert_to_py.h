@@ -10,14 +10,19 @@ PyObject* convertToPy(PyObject *obj);
 
 PyObject* convertToPy(    bool obj);
 
-PyObject* convertToPy(  int8_t obj);
-PyObject* convertToPy( uint8_t obj);
-PyObject* convertToPy( int16_t obj);
-PyObject* convertToPy(uint16_t obj);
-PyObject* convertToPy( int32_t obj);
-PyObject* convertToPy(uint32_t obj);
-PyObject* convertToPy( int64_t obj);
-PyObject* convertToPy(uint64_t obj);
+
+PyObject* convertToPy(  signed char obj);
+PyObject* convertToPy(unsigned char obj);
+PyObject* convertToPy(  signed short obj);
+PyObject* convertToPy(unsigned short obj);
+PyObject* convertToPy(  signed int obj);
+PyObject* convertToPy(unsigned int obj);
+PyObject* convertToPy(  signed long long obj);
+PyObject* convertToPy(unsigned long long obj);
+
+PyObject* convertToPy(signed long int obj);
+PyObject* convertToPy(unsigned long int obj);
+
 
 PyObject* convertToPy( float obj);
 PyObject* convertToPy(double obj);
