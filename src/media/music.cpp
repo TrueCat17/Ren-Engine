@@ -42,60 +42,56 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 		music->audioLen -= len;
 	}
 }
+void Music::loop() {
+	while (true) {
+		startUpdateTime = Utils::getTimer();
+
+		{
+			std::lock_guard g(globalMutex);
+
+			if (needToClear) {
+				needToClear = false;
+				realClear();
+			}
+
+			for (size_t i = 0; i < musics.size(); ++i) {
+				if (GV::exit) return;
+
+				Music *music = musics[i];
+
+				if (!music->isEnded()) {
+					music->update();
+					continue;
+				}
+
+				if (music->channel->loop && music->ended) {//ended, not stopped
+					if (av_seek_frame(music->formatCtx, music->audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
+						Utils::outMsg("Music::loop",
+						              "Error on restart, play from:\n" + music->place);
+					}else {
+						music->ended = false;
+						music->audioPos = nullptr;
+						music->audioLen = 0;
+						music->loadNextParts(MIN_PART_COUNT);
+						continue;
+					}
+				}
+
+				musics.erase(musics.begin() + int(i));
+				--i;
+				delete music;
+			}
+		}
+		const int spend = Utils::getTimer() - startUpdateTime;
+		Utils::sleep(10 - spend, false);
+	}
+}
+
 void Music::init() {
 #if !FF_API_NEXT
 	av_register_all();
 #endif
 	av_log_set_level(AV_LOG_ERROR);
-
-	auto loop = [&] {
-		while (true) {
-			startUpdateTime = Utils::getTimer();
-
-			{
-				std::lock_guard g(globalMutex);
-
-				if (needToClear) {
-					needToClear = false;
-					realClear();
-				}
-
-				for (size_t i = 0; i < musics.size(); ++i) {
-					if (GV::exit) return;
-
-					Music *music = musics[i];
-
-					if (music->isEnded()) {
-						bool needToDelete = true;
-
-						if (music->channel->loop && music->ended) {//ended, not stopped
-							music->ended = false;
-							music->audioPos = nullptr;
-							music->audioLen = 0;
-							if (av_seek_frame(music->formatCtx, music->audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
-								Utils::outMsg("Music::loop",
-								              "Error on restart, play from:\n" + music->place);
-							}else {
-								needToDelete = false;
-								music->loadNextParts(MIN_PART_COUNT);
-							}
-						}
-
-						if (needToDelete) {
-							musics.erase(musics.begin() + int(i));
-							--i;
-							delete music;
-						}
-					}else {
-						music->update();
-					}
-				}
-			}
-			const int spend = Utils::getTimer() - startUpdateTime;
-			Utils::sleep(10 - spend, false);
-		}
-	};
-
 
 	static SDL_AudioSpec wantedSpec;
 	wantedSpec.freq = 44100;
@@ -159,11 +155,8 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 	}
 }
 bool Music::hasChannel(const std::string &name) {
-	for (size_t i = 0; i < channels.size(); ++i) {
-		Channel *channel = channels[i];
-		if (channel->name == name) {
-			return true;
-		}
+	for (const Channel *channel : channels) {
+		if (channel->name == name) return true;
 	}
 	return false;
 }
@@ -172,29 +165,26 @@ bool Music::hasChannel(const std::string &name) {
 void Music::setVolume(double volume, const std::string &channelName,
 					  const std::string &fileName, int numLine)
 {
-	const std::string place = "File <" + fileName + ">\n"
-	                          "Line " + std::to_string(numLine);
-
-	for (size_t i = 0; i < channels.size(); ++i) {
-		Channel *channel = channels[i];
+	for (Channel *channel : channels) {
 		if (channel->name == channelName) {
 			channel->volume = Math::inBounds(volume, 0, 1);
 			return;
 		}
 	}
 
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
 	Utils::outMsg("Music::setVolume",
 	              "Channel <" + channelName + "> not found\n\n" + place);
 }
 void Music::setMixerVolume(double volume, const std::string &mixer,
 						   const std::string &fileName, int numLine)
 {
-	const std::string place = "File <" + fileName + ">\n"
-	                          "Line " + std::to_string(numLine);
-
-	if (mixerVolumes.find(mixer) != mixerVolumes.end()) {
+	if (mixerVolumes.count(mixer)) {
 		mixerVolumes[mixer] = Math::inBounds(volume, 0, 1);
 	}else {
+		const std::string place = "File <" + fileName + ">\n"
+		                          "Line " + std::to_string(numLine);
 		Utils::outMsg("Music::setMixerVolume",
 		              "Mixer <" + mixer + "> is not used by any channel now\n\n" + place);
 	}
@@ -218,11 +208,7 @@ void Music::play(const std::string &desc,
 
 	std::string channelName = Algo::clear(args[0]);
 	std::string url = PyUtils::exec(fileName, numLine, args[1], true);
-	for (size_t i = 0; i < url.size(); ++i) {
-		if (url[i] == '\\') {
-			url[i] = '/';
-		}
-	}
+	String::replaceAll(url, "\\", "/");
 
 	int fadeIn = 0;
 	if (args.size() > 2) {
@@ -253,18 +239,17 @@ void Music::play(const std::string &desc,
 		}
 	}
 
-	for (size_t i = 0; i < channels.size(); ++i) {
-		Channel *channel = channels[i];
-		if (channel->name == channelName) {
-			Music *music = new Music(url, channel, fadeIn, fileName, numLine, place);
-			if (music->initCodec()){
-				delete music;
-			}else {
-				music->loadNextParts(MIN_PART_COUNT);
-				musics.push_back(music);
-			}
-			return;
+	for (Channel *channel : channels) {
+		if (channel->name != channelName) continue;
+
+		Music *music = new Music(url, channel, fadeIn, fileName, numLine, place);
+		if (music->initCodec()){
+			delete music;
+		}else {
+			music->loadNextParts(MIN_PART_COUNT);
+			musics.push_back(music);
 		}
+		return;
 	}
 
 	Utils::outMsg("Music::play", "Channel <" + channelName + "> not found\n\n" + place);
@@ -278,13 +263,17 @@ void Music::stop(const std::string &desc,
 	std::vector<std::string> args = Algo::getArgs(desc);
 	if (args.size() != 1 && args.size() != 3) {
 		Utils::outMsg("Music::stop",
-		              "Excpected 1 or 3 arguments:\n"
+		              "Expected 1 or 3 arguments:\n"
 		              "channelName ['fadeout' time]\n"
 		              "Got: <" + desc + ">\n\n" + place);
 		return;
 	}
 
 	std::string channelName = Algo::clear(args[0]);
+	if (!hasChannel(channelName)) {
+		Utils::outMsg("Music::stop", "Channel <" + channelName + "> not found\n\n" + place);
+		return;
+	}
 
 	int fadeOut = 0;
 	if (args.size() > 1) {
@@ -302,13 +291,12 @@ void Music::stop(const std::string &desc,
 		fadeOut = int(String::toDouble(fadeOutStr) * 1000);
 	}
 
-	for (size_t i = 0; i < musics.size(); ++i) {
-		Music *music = musics[i];
-		if (music->channel->name == channelName) {
-			music->fadeOut = fadeOut;
-			music->startFadeOutTime = Utils::getTimer();
-			return;
-		}
+	for (Music *music : musics) {
+		if (music->channel->name != channelName) continue;
+
+		music->fadeOut = fadeOut;
+		music->startFadeOutTime = Utils::getTimer();
+		return;
 	}
 }
 
@@ -475,15 +463,10 @@ void Music::loadNextParts(size_t count) {
 			}
 		}
 
-		Uint32 lastLen = Uint32(countSamples) * 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
-
 		if (audioPos && audioLen && audioPos != buffer) {
-			uint8_t *old = new uint8_t[audioLen]();
-			memcpy(old, audioPos, audioLen);
-
-			memcpy(buffer, old, audioLen);
-			delete[] old;
+			memmove(buffer, audioPos, audioLen);
 		}
+		Uint32 lastLen = Uint32(countSamples) * 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
 		memcpy(buffer + audioLen, tmpBuffer, lastLen);
 
 		audioPos = buffer;

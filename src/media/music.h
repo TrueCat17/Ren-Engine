@@ -47,6 +47,7 @@ private:
 	static void realClear();
 
 	static void fillAudio(void *, Uint8 *stream, int globalLen);
+	static void loop();
 
 
 	std::string url;

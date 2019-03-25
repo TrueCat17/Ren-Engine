@@ -21,4 +21,6 @@ Group *GV::screens = nullptr;
 int GV::frameStartTime = 0;
 std::mutex GV::updateMutex;
 
+std::mutex GV::mutexForSmartPtr;
+
 Node *GV::mainExecNode = nullptr;

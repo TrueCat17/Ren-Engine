@@ -1,9 +1,13 @@
 #include "key.h"
 
 #include "gv.h"
+
+#include "screen.h"
+
 #include "media/py_utils.h"
 #include "utils/string.h"
 #include "utils/utils.h"
+
 
 bool Key::notReactOnSpace = false;
 bool Key::notReactOnEnter = false;
@@ -15,7 +19,7 @@ Key::Key(Node *node, Screen *screen):
 	screenKeys.push_back(this);
 }
 Key::~Key() {
-	const bool isModal = this->isModal();
+	const bool isModal = Screen::destroyedScreenIsModal;
 	for (size_t i = 0; i < screenKeys.size(); ++i) {
 		Key *sk = screenKeys[i];
 
@@ -23,7 +27,9 @@ Key::~Key() {
 			screenKeys.erase(screenKeys.begin() + int(i));
 			--i;
 		}else
-		if (isModal && prevIsDown && sk->key == key && !sk->isModal()) {
+		if (isModal && prevIsDown && screen != sk->screen &&
+		    sk->key == key && !sk->isModal())
+		{
 			sk->lastDown = Utils::getTimer();
 			sk->inFirstDown = true;
 			sk->wasFirstDelay = false;

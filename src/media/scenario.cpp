@@ -295,6 +295,7 @@ void Scenario::execute() {
 			if (String::endsWith(prevObj->command, "if")) {//<if>, <elif>
 				while (num < obj->children.size() && String::startsWith(obj->children[num]->command, "el")) {//<elif>, <else>
 					++num;
+					++stack.back().second;
 				}
 			}
 

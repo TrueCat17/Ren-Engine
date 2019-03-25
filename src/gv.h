@@ -33,6 +33,8 @@ public:
 	static int frameStartTime;
 	static std::mutex updateMutex;
 
+	static std::mutex mutexForSmartPtr;
+
 	static Node *mainExecNode;
 };
 

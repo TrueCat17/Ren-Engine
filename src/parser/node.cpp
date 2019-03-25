@@ -11,7 +11,7 @@
 
 std::string Node::loadPath;
 
-static const size_t NODES_IN_PART = 10000;
+static const size_t NODES_IN_PART = 5000;
 static size_t countNodes = 0;
 static std::vector<Node*> nodes;
 

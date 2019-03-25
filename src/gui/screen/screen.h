@@ -13,6 +13,9 @@ private:
 	std::string screenCode;
 
 public:
+	static bool destroyedScreenIsModal;
+
+
 	static void declare(Node *node);
 	static Node* getDeclared(const std::string &name);
 	static void clear();
@@ -35,6 +38,7 @@ public:
 	bool modal = false;
 
 	Screen(Node *node, Screen *screen);
+	virtual ~Screen() { destroyedScreenIsModal = hasModal() && modal; }
 
 	void calcProps();
 

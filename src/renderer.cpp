@@ -338,9 +338,7 @@ static void loop() {
 		}
 		Renderer::needToRender = false;
 
-		if (!Renderer::needToRedraw && toRender == prevToRender) {
-			continue;
-		}
+		if (!Renderer::needToRedraw && toRender == prevToRender) continue;
 		Renderer::needToRedraw = false;
 
 
@@ -389,18 +387,12 @@ static void loop() {
 		}
 
 		for (size_t i = 0; i < textures.size(); ++i) {
-			if (!GV::inGame) {
-				break;
-			}
+			if (!GV::inGame) break;
 
 			const RenderStruct &rs = toRender[i];
 			const TexturePtr &texture = textures[i];
 
-			if (rs.clip) {
-				SDL_RenderSetClipRect(GV::mainRenderer, &rs.clipRect);
-			}else {
-				SDL_RenderSetClipRect(GV::mainRenderer, nullptr);
-			}
+			SDL_RenderSetClipRect(GV::mainRenderer, rs.clip ? &rs.clipRect : nullptr);
 
 			if (fastOpenGL) {
 				renderWithOpenGL(texture.get(),
@@ -470,74 +462,71 @@ static void loop() {
 	SDL_DestroyRenderer(GV::mainRenderer);
 }
 
+static void initImpl(bool *inited, bool *error) {
+	int renderDriver = -1;
 
+	Uint32 flags;
+	if (Config::get("software_renderer") == "True") {
+		flags = SDL_RENDERER_SOFTWARE;
+	}else {
+		flags = SDL_RENDERER_ACCELERATED;
+		if (Config::get("opengl_vsync") == "True") {
+			flags |= SDL_RENDERER_PRESENTVSYNC;
+		}
+
+		int countRenderDrivers = SDL_GetNumRenderDrivers();
+		for (int i = 0; i < countRenderDrivers; ++i) {
+			SDL_RendererInfo info;
+			SDL_GetRenderDriverInfo(i, &info);
+			if (std::string(info.name) == "opengl") {
+				renderDriver = i;
+				break;
+			}
+		}
+		if (renderDriver == -1) {
+			Utils::outMsg("Renderer::init", "OpenGL driver not found");
+		}
+	}
+
+	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
+	if (!GV::mainRenderer) {
+		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+
+		if (flags & SDL_RENDERER_ACCELERATED) {
+			GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
+		}
+	}
+	if (!GV::mainRenderer) {
+		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+		*error = true;
+		*inited = true;
+		return;
+	}
+
+	SDL_RendererInfo info;
+	SDL_GetRendererInfo(GV::mainRenderer, &info);
+	if (std::string(info.name) == "opengl") {
+		size_t countErrors = 0;
+		const size_t maxCountErrors = 10;
+
+		while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
+		if (countErrors == maxCountErrors) {
+			Utils::outMsg("Renderer::init", "Using OpenGL failed");
+		}else {
+			fastOpenGL = Config::get("fast_opengl") == "True";
+		}
+	}
+	Renderer::maxTextureWidth = info.max_texture_width;
+	Renderer::maxTextureHeight = info.max_texture_height;
+
+	*inited = true;
+	loop();
+}
 bool Renderer::init() {
 	bool inited = false;
 	bool error = false;
 
-	auto initFunc = [&]() {
-		int renderDriver = -1;
-
-		Uint32 flags;
-		if (Config::get("software_renderer") == "True") {
-			flags = SDL_RENDERER_SOFTWARE;
-		}else {
-			flags = SDL_RENDERER_ACCELERATED;
-			if (Config::get("opengl_vsync") == "True") {
-				flags |= SDL_RENDERER_PRESENTVSYNC;
-			}
-
-			int countRenderDrivers = SDL_GetNumRenderDrivers();
-			for (int i = 0; i < countRenderDrivers; ++i) {
-				SDL_RendererInfo info;
-				SDL_GetRenderDriverInfo(i, &info);
-				if (std::string(info.name) == "opengl") {
-					renderDriver = i;
-					break;
-				}
-			}
-			if (renderDriver == -1) {
-				Utils::outMsg("Renderer::init", "OpenGL driver not found");
-			}
-		}
-
-		GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
-		if (!GV::mainRenderer) {
-			Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-
-			if (flags & SDL_RENDERER_ACCELERATED) {
-				GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
-			}
-		}
-		if (!GV::mainRenderer) {
-			Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-			error = true;
-			inited = true;
-			return;
-		}
-
-		SDL_RendererInfo info;
-		SDL_GetRendererInfo(GV::mainRenderer, &info);
-		if (std::string(info.name) == "opengl") {
-			size_t countErrors = 0;
-			const size_t maxCountErrors = 10;
-
-			while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
-			if (countErrors == maxCountErrors) {
-				Utils::outMsg("Renderer::init", "Using OpenGL failed");
-			}else {
-				fastOpenGL = Config::get("fast_opengl") == "True";
-			}
-		}
-		maxTextureWidth = info.max_texture_width;
-		maxTextureHeight = info.max_texture_height;
-
-		inited = true;
-		loop();
-	};
-
-
-	std::thread(initFunc).detach();
+	std::thread(initImpl, &inited, &error).detach();
 	while (!inited) {
 		Utils::sleep(1, false);
 	}

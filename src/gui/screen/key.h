@@ -20,7 +20,7 @@ private:
 	bool wasFirstDelay = false;
 
 	std::string prevKeyName;
-	SDL_Scancode key;
+	SDL_Scancode key = SDL_SCANCODE_UNKNOWN;
 
 public:
 	double keyDelay = 0.010;

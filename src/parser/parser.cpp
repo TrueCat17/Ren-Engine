@@ -11,8 +11,8 @@
 
 #include "media/py_utils.h"
 
-#include "parser/syntax_checker.h"
 #include "parser/node.h"
+#include "parser/syntax_checker.h"
 #include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
@@ -255,6 +255,8 @@ Node* Parser::getMainNode() {
 		}
 		start = nextChildStart;
 	}
+
+	code.clear();
 
 	return res;
 }

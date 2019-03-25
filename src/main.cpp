@@ -161,6 +161,17 @@ static void changeWindowSize(bool maximized) {
 
 static std::string rootDirectory;
 std::string setDir(std::string newRoot) {
+
+#ifdef __WIN32__
+	Py_SetPythonHome(const_cast<char*>("./py_libs/"));
+#else
+	if (!setlocale(LC_ALL, "C.UTF-8")) {
+		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
+	}
+	setenv("PYTHONPATH", "./py_libs/Lib/", 1);
+	setenv("PYTHONHOME", "./py_libs/Lib/", 1);
+#endif
+
 	if (newRoot.empty()) {
 		char *charsPathUTF8 = SDL_GetBasePath();
 		if (charsPathUTF8) {
@@ -193,9 +204,8 @@ std::string setDir(std::string newRoot) {
 
 	rootDirectory = newRoot = String::join(parts, "/");
 
-	std::error_code ec;
-
 	std::filesystem::path path(newRoot.c_str());
+	std::error_code ec;
 	std::filesystem::current_path(path, ec);
 
 	if (!ec.value()) return "";
@@ -493,20 +503,6 @@ void destroy() {
 
 int main(int argc, char **argv) {
 	int initStartTime = Utils::getTimer();
-
-#ifdef __WIN32__
-	const char *constPath = "py_libs";
-	const size_t len = strlen(constPath) + 1;
-	char *path = new char[len];
-	for (size_t i = 0; i < len; ++i) {
-		path[i] = constPath[i];
-	}
-	Py_SetPythonHome(path);
-#else
-	if (!setlocale(LC_ALL, "C.UTF-8")) {
-		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
-	}
-#endif
 
 	std::string arg;
 	if (argc == 2) {

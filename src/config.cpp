@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <cstring>
 #include <fstream>
 
 #include "utils/algo.h"
@@ -9,6 +10,7 @@
 
 static std::vector<Param> params;
 static bool initing = false;
+static bool loading = false;
 static bool changed = false;
 
 static void setDefault();
@@ -18,15 +20,16 @@ static void load();
 void Config::init() {
 	initing = true;
 	setDefault();
-	load();
 	initing = false;
+
+	loading = true;
+	load();
+	loading = false;
 }
 
 std::string Config::get(const std::string &name) {
-	for (size_t i = 0; i < params.size(); ++i) {
-		if (params[i].name == name) {
-			return params[i].value;
-		}
+	for (const Param &param : params) {
+		if (param.name == name) return param.value;
 	}
 
 	Utils::outMsg("Config::get", "Param <" + name + "> there is not");
@@ -34,36 +37,29 @@ std::string Config::get(const std::string &name) {
 }
 
 void Config::set(const std::string &name, const std::string &value, const std::string &comment) {
-	bool assigned = false;
-	for (size_t i = 0; i < params.size(); ++i) {
-		Param &param = params[i];
-		if (param.name == name) {
-			if (param.value != value) {
-				param.value = value;
-				assigned = true;
-			}
+	for (Param &param : params) {
+		if (param.name != name) continue;
 
-			if (!comment.empty() && param.comment != comment) {
-				param.comment = comment;
-				assigned = true;
-			}
-
-			if (!assigned) return;
-
-			break;
+		bool assigned = false;
+		if (param.value != value) {
+			param.value = value;
+			assigned = true;
 		}
-	}
+		if (!comment.empty() && param.comment != comment) {
+			param.comment = comment;
+			assigned = true;
+		}
 
-	if (assigned) {
-		if (!initing) {
+		if (!initing && !loading && assigned) {
 			changed = true;
 		}
+		return;
+	}
+
+	if (initing) {
+		params.push_back({name, value, comment});
 	}else {
-		if (initing) {
-			params.push_back({name, value, comment});
-		}else {
-			Utils::outMsg("Config::set", "Param <" + name + "> there is not");
-		}
+		Utils::outMsg("Config::set", "Param <" + name + "> there is not");
 	}
 }
 
@@ -91,7 +87,7 @@ static void setDefault() {
 
 	Config::set("max_size_textures_cache", "50");
 	Config::set("max_size_surfaces_cache", "200");
-	Config::set("count_preload_commands", "0");
+	Config::set("count_preload_commands", "3");
 }
 
 static void load() {
@@ -129,8 +125,6 @@ static void load() {
 		}
 
 		size_t indexAssign = line.find('=');
-		indexComment = line.find('#');
-
 		if (indexAssign == size_t(-1)) {
 			Utils::outMsg("Config::load", "In the line <" + line + "> there is no symbol '='");
 			continue;
@@ -138,7 +132,7 @@ static void load() {
 		if (indexComment == size_t(-1)) {
 			indexComment = line.size();
 		}else if (indexComment < indexAssign) {
-			Utils::outMsg("Config::load", "In the line <" + line + "> symbol '=' is commented");
+			Utils::outMsg("Config::load", "In the line <" + line + "> first symbol '=' is commented");
 			continue;
 		}
 
@@ -164,7 +158,6 @@ void Config::save() {
 
 	auto getCountLetters = [](const std::string &s) {
 		size_t res = 0;
-
 		for (size_t i = 0; i < s.size(); ++i) {
 			if (Algo::isFirstByte(s[i])) {
 				++res;
@@ -174,9 +167,9 @@ void Config::save() {
 	};
 
 	size_t maxSize = 0;
-	for (size_t i = 0; i < params.size(); ++i) {
-		std::string name = params[i].name;
-		std::string value = params[i].value;
+	for (const Param &param : params) {
+		const std::string &name = param.name;
+		const std::string &value = param.value;
 
 		size_t size = getCountLetters(name) + strlen(" = ") + getCountLetters(value);
 
@@ -187,9 +180,7 @@ void Config::save() {
 
 	std::ofstream os("params.conf");
 
-	for (size_t i = 0; i < params.size(); ++i) {
-		const Param &param = params[i];
-
+	for (const Param &param : params) {
 		const std::string &name = param.name;
 		const std::string &value = param.value;
 		const std::string &comment = param.comment;

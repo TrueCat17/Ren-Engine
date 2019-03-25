@@ -798,20 +798,21 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	SurfacePtr res(SDL_CreateRGBSurfaceWithFormat(0, resW, resH, 32, SDL_PIXELFORMAT_RGBA32),
 				   SDL_FreeSurface);
 
-	std::shared_ptr<SDL_Renderer> renderer(SDL_CreateSoftwareRenderer(res.get()), SDL_DestroyRenderer);
+	SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
+	ScopeExit se([&]() { SDL_DestroyRenderer(renderer); });
 
 	if (!renderer) {
 		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateSoftwareRenderer", SDL_GetError());
 		return nullptr;
 	}
 
-	TexturePtr texture(SDL_CreateTextureFromSurface(renderer.get(), img.get()), SDL_DestroyTexture);
+	TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
 	if (!texture) {
 		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateTextureFromSurface", SDL_GetError());
 		return nullptr;
 	}
 
-	if (SDL_RenderCopyEx(renderer.get(), texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
+	if (SDL_RenderCopyEx(renderer, texture.get(), &srcRect, &dstRect, angle, nullptr, flip)) {
 		Utils::outMsg("ImageManipulator::rotozoom, SDL_RenderCopyEx", SDL_GetError());
 		return nullptr;
 	}

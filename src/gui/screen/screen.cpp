@@ -8,8 +8,10 @@
 #include "utils/utils.h"
 
 
-static std::vector<Node*> declared;
+bool Screen::destroyedScreenIsModal = false;
 
+
+static std::vector<Node*> declared;
 static std::mutex screenMutex;
 
 void Screen::declare(Node *node) {
