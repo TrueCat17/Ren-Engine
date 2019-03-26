@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <filesystem>
+#include <float.h>
 
 #include <SDL2/SDL.h>
 #undef main //for cancel declare spec. start-func on Windows
@@ -14,7 +15,6 @@
 #include "renderer.h"
 
 #include "gui/gui.h"
-#include "gui/screen/child.h"
 #include "gui/screen/key.h"
 
 #include "media/image_manipulator.h"
@@ -30,7 +30,6 @@
 #include "utils/mouse.h"
 #include "utils/string.h"
 #include "utils/utils.h"
-
 
 static std::string versionStr;
 std::string getVersion() {
@@ -68,7 +67,7 @@ static void changeWindowSize(bool maximized) {
 		int h = startH;
 
 		double k = String::toDouble(Config::get("window_w_div_h"));
-		if (!k) {
+		if (k < 0.1) {
 			k = 1.777;
 			Utils::outMsg("changeWindowSize",
 						  "Invalid <window_w_div_h> in <../resources/params.conf>:\n"
@@ -258,14 +257,9 @@ bool init() {
 	int w, h;
 
 	Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
-	if (GV::fullscreen) {
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-		GV::width = w = GV::displayMode.w;
-		GV::height = h = GV::displayMode.h;
-	}else {
-		GV::width = w = Math::inBounds(String::toInt(Config::get("window_width")), 640, 2400);
-		GV::height = h = Math::inBounds(String::toInt(Config::get("window_height")), 360, 1350);
-	}
+
+	GV::width = w = Math::inBounds(String::toInt(Config::get("window_width")), 640, 2400);
+	GV::height = h = Math::inBounds(String::toInt(Config::get("window_height")), 360, 1350);
 
 	const std::string windowTitle = Config::get("window_title");
 	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
@@ -273,7 +267,9 @@ bool init() {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;
 	}
-	if (!GV::fullscreen) {
+	if (GV::fullscreen) {
+		SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+	}else{
 		changeWindowSize(false);
 
 		if (GV::width != w || GV::height != h) {

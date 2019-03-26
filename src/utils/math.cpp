@@ -1,15 +1,27 @@
 #include "math.h"
 
 #include <math.h>
+#include <float.h>
 
-double* Math::sins = new double[360];
-double* Math::coss = new double[360];
+double* Math::sins = nullptr;
+double* Math::coss = nullptr;
 
 void Math::init() {
-	for (unsigned int i = 0; i < 360; ++i) {
+	sins = new double[360 * 2];
+	coss = new double[360 * 2];
+
+	for (size_t i = 0; i < 360; ++i) {
 		//on MinGW sin&cos not in std
 		using namespace std;
-		sins[i] = sin(i * M_PI / 180);
-		coss[i] = cos(i * M_PI / 180);
+		sins[i] = sins[i + 360] = sin(i * M_PI / 180);
+		coss[i] = coss[i + 360] = cos(i * M_PI / 180);
 	}
+
+	//to sins[-1], that eq to sins[359]
+	sins += 360;
+	coss += 360;
+}
+
+bool Math::doublesAreEq(double a, double b) {
+	return (a - b) < DBL_EPSILON;
 }

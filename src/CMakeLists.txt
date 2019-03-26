@@ -26,13 +26,13 @@ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -s")
 
-#	set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-generate")
-#	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fprofile-generate")
+#    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-generate")
+#    set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fprofile-generate")
 
-    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-use")
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fprofile-use")
+#    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fprofile-use")
+#    set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fprofile-use")
 
-	set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -flto")
+    set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -flto")
 	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -flto")
 endif()
 

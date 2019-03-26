@@ -9,8 +9,10 @@ private:
 public:
 	static void init();
 
-	static double getSin(int angle) { return sins[((angle % 360) + 360) % 360]; }
-	static double getCos(int angle) { return coss[((angle % 360) + 360) % 360]; }
+	static bool doublesAreEq(double a, double b);
+
+	static double getSin(int angle) { return sins[angle % 360]; }
+	static double getCos(int angle) { return coss[angle % 360]; }
 
 	template<typename T, typename MIN, typename MAX>
 	static T inBounds(T value, MIN min, MAX max) { return (value < T(min)) ? min : (value > T(max)) ? max : value; }

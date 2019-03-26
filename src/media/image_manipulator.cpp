@@ -239,7 +239,7 @@ static SurfacePtr factorScale(const std::vector<std::string> &args) {
 		return nullptr;
 	}
 
-	if (k == 1) {
+	if (Math::doublesAreEq(k, 1)) {
 		return img;
 	}
 
@@ -487,12 +487,12 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 			for (; dst < dstEnd; src += 4, dst += 4) {
 				const Uint16 srcA = src[Ashift / 8];
 				if (srcA == 255) {
-					*(Uint32*)dst = *(Uint32*)src;
+					*(Uint32*)dst = *(const Uint32*)src;
 				}else if (srcA) {
 					const Uint16 dstA = dst[Ashift / 8];
 
 					if (!dstA) {
-						*(Uint32*)dst = *(Uint32*)src;
+						*(Uint32*)dst = *(const Uint32*)src;
 					}else {
 						const Uint16 blend = dstA * (255 - srcA);
 						const Uint16 outA = std::min<Uint16>(srcA + (blend + 128) / 256, 255);
@@ -627,7 +627,12 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
-	if (!matrix[15] && !matrix[16] && !matrix[17] && !matrix[18] && !matrix[19]) {
+	if (Math::doublesAreEq(matrix[15], 0) &&
+	    Math::doublesAreEq(matrix[16], 0) &&
+	    Math::doublesAreEq(matrix[17], 0) &&
+	    Math::doublesAreEq(matrix[18], 0) &&
+	    Math::doublesAreEq(matrix[19], 0))
+	{
 		::memset(resPixels, 0, size_t(w * h * 4));
 		return res;
 	}
@@ -637,13 +642,15 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 	const double extraB = matrix[14] * 255;
 	const double extraA = matrix[19] * 255;
 
+	const bool extraAisNot0 = !Math::doublesAreEq(extraA, 0);
+
 	auto processLine = [&](int y) {
 		const Uint8 *src = imgPixels + y * imgPitch;
 		Uint8 *dst = resPixels + y * imgPitch;
 
 		const Uint8 *dstEnd = dst + imgPitch;
 		while (dst != dstEnd) {
-			if (*(const Uint32*)(src) || extraA) {
+			if (*(const Uint32*)(src) || extraAisNot0) {
 				const Uint8 oldR = src[Rshift / 8];
 				const Uint8 oldG = src[Gshift / 8];
 				const Uint8 oldB = src[Bshift / 8];
@@ -768,11 +775,11 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 
 	const int angle = int(-String::toDouble(Algo::clear(args[2])));
 	double zoom = String::toDouble(Algo::clear(args[3]));
-	if (!zoom) {
+	if (Math::doublesAreEq(zoom, 0)) {
 		Utils::outMsg("ImageManipulator::rotozoom", "zoom must be not equal 0");
 		zoom = 1;
 	}
-	if (zoom == 1 && angle == 0) {
+	if (Math::doublesAreEq(zoom, 1) && angle == 0) {
 		return img;
 	}
 
@@ -1323,7 +1330,7 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 					*(Uint32*)resPixel = 0;
 				}
 			}else {
-				*(Uint32*)resPixel = *(Uint32*)(pixels + y * pitch + x * 4);
+				*(Uint32*)resPixel = *(const Uint32*)(pixels + y * pitch + x * 4);
 			}
 			resPixel += 4;
 		}
