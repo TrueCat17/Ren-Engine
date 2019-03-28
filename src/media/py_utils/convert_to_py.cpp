@@ -6,10 +6,9 @@ PyObject* convertToPy(PyObject *obj) {
 }
 
 PyObject* convertToPy(bool obj) {
-	if (obj) {
-		Py_RETURN_TRUE;
-	}
-	Py_RETURN_FALSE;
+	PyObject *res = obj ? Py_True : Py_False;
+	Py_INCREF(res);
+	return res;
 }
 
 
@@ -51,26 +50,6 @@ PyObject* convertToPy(unsigned long long obj) {
 		return PyInt_FromLong(long(obj));
 	return PyLong_FromUnsignedLongLong(obj);
 }
-
-
-
-//if long == int32_t, x86, 32-bit
-#if ((LONG_MAX) == (INT_MAX))
-PyObject* convertToPy(signed long int obj) {
-	return convertToPy(static_cast<signed int>(obj));
-}
-PyObject* convertToPy(unsigned long int obj) {
-	return convertToPy(static_cast<unsigned int>(obj));
-}
-#else
-//if long != int32_t, x86-64, 64-bit
-PyObject* convertToPy(signed long int obj) {
-	return convertToPy(static_cast<signed long long>(obj));
-}
-PyObject* convertToPy(unsigned long int obj) {
-	return convertToPy(static_cast<unsigned long long>(obj));
-}
-#endif
 
 
 

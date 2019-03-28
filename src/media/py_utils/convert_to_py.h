@@ -20,9 +20,27 @@ PyObject* convertToPy(unsigned int obj);
 PyObject* convertToPy(  signed long long obj);
 PyObject* convertToPy(unsigned long long obj);
 
-PyObject* convertToPy(signed long int obj);
-PyObject* convertToPy(unsigned long int obj);
-
+//if long == int32_t, x86, 32-bit
+#if ((LONG_MAX) == (INT_MAX))
+inline
+PyObject* convertToPy(signed long int obj) {
+	return convertToPy(static_cast<signed int>(obj));
+}
+inline
+PyObject* convertToPy(unsigned long int obj) {
+	return convertToPy(static_cast<unsigned int>(obj));
+}
+#else
+//if long != int32_t, x86-64, 64-bit
+inline
+PyObject* convertToPy(signed long int obj) {
+	return convertToPy(static_cast<signed long long>(obj));
+}
+inline
+PyObject* convertToPy(unsigned long int obj) {
+	return convertToPy(static_cast<unsigned long long>(obj));
+}
+#endif
 
 PyObject* convertToPy( float obj);
 PyObject* convertToPy(double obj);

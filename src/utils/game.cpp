@@ -494,6 +494,17 @@ bool Game::hasLabel(const std::string &label) {
 	}
 	return false;
 }
+PyObject* Game::getAllLabels() {
+	PyObject *res = PyList_New(0);
+	for (Node *node : GV::mainExecNode->children) {
+		if (node->command == "label") {
+			PyObject *name = PyString_FromString(node->params.c_str());
+			PyList_Append(res, name);
+			Py_DECREF(name);
+		}
+	}
+	return res;
+}
 
 
 int Game::getStageWidth() {

@@ -246,6 +246,8 @@ void Music::play(const std::string &desc,
 		if (music->initCodec()){
 			delete music;
 		}else {
+			PyUtils::exec(fileName, numLine, "persistent._seen_audio['" + url + "'] = True");
+
 			music->loadNextParts(MIN_PART_COUNT);
 			musics.push_back(music);
 		}

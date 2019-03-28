@@ -47,6 +47,8 @@ std::recursive_mutex PyUtils::pyExecMutex;
 PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
 	std::tuple<const std::string&, const std::string&, int> pyCode(code, fileName, numLine);
 
+	std::lock_guard g(PyUtils::pyExecMutex);
+
 	auto i = compiledObjects.find(pyCode);
 	if (i != compiledObjects.end()) {
 		return i->second;
@@ -60,11 +62,7 @@ PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::stri
 
 	const std::string tmp = indent + code;
 
-	PyObject *t;
-	{
-		std::lock_guard g(PyUtils::pyExecMutex);
-		t = Py_CompileStringFlags(tmp.c_str(), fileName.c_str(), Py_file_input, nullptr);
-	}
+	PyObject *t = Py_CompileStringFlags(tmp.c_str(), fileName.c_str(), Py_file_input, nullptr);
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
 	std::tuple<const std::string, const std::string, int> constPyCode(code, fileName, numLine);
@@ -121,6 +119,9 @@ static void setGlobalFunc(const char *key, T t) {
 static long ftoi(double d) {
 	return long(d);
 }
+static std::string getCurrentMod() {
+	return GV::mainExecNode->params;
+}
 
 PyUtils::PyUtils() {
 	Py_Initialize();
@@ -130,12 +131,12 @@ PyUtils::PyUtils() {
 	PyObject *sysModule = PyImport_AddModule("sys");
 	PyObject *sysDict = PyModule_GetDict(sysModule);
 	sysExcInfo = PyDict_GetItemString(sysDict, "exc_info");
-	assert(sysExcInfo);
+	if (!sysExcInfo) throw std::runtime_error("sys.exc_info == nullptr");
 
 	PyObject *tracebackModule = PyImport_AddModule("traceback");
 	PyObject *tracebackDict = PyModule_GetDict(tracebackModule);
 	formatTraceback = PyDict_GetItemString(tracebackDict, "format_tb");
-	assert(formatTraceback);
+	if (!formatTraceback) throw std::runtime_error("traceback.format_tb == nullptr");
 
 
 	PyObject *main = PyImport_AddModule("__main__");
@@ -150,6 +151,7 @@ PyUtils::PyUtils() {
 
 	setGlobalFunc("ftoi", ftoi);
 
+	setGlobalFunc("get_current_mod", getCurrentMod);
 	setGlobalFunc("get_mods", Parser::getMods);
 	setGlobalFunc("_out_msg", Utils::outMsg);
 
@@ -177,6 +179,7 @@ PyUtils::PyUtils() {
 	setGlobalFunc("exit_from_game", Game::exitFromGame);
 
 	setGlobalFunc("_has_label", Game::hasLabel);
+	setGlobalFunc("_get_all_labels", Game::getAllLabels);
 	setGlobalFunc("_jump_next", Scenario::jumpNext);
 
 	setGlobalFunc("_get_from_hard_config", Game::getFromConfig);

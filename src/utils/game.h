@@ -27,6 +27,7 @@ public:
 	static void makeScreenshot();
 
 	static bool hasLabel(const std::string &label);
+	static PyObject* getAllLabels();
 
 	static int getStageWidth();
 	static int getStageHeight();
