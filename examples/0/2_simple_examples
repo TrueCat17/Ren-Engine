@@ -344,13 +344,13 @@ A:	1. Происходит парсинг (разбор) всех rpy-файло
 	get_image("image name")
 Например, если изображение было зарегистрировано так:
 	image bg room = "images/bg/room.jpg"
-Или так
+Или так:
 	image bg room:
 		"images/bg/room.jpg"
 То get_image("bg room") вернёт в обоих случаях ["images/bg/room.jpg"] (конечно, если default_decl_at пуст, см. главу 7: atl)
 
 Узнать, было ли зарегистрировано изображение командой image:
-	image_was_registered("image name")
+	image_was_registered("bg room")
 
 Показать скрин с именем screen_name:
 	show_screen("screen_name") или renpy.show_screen
