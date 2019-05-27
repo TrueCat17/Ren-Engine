@@ -1,11 +1,11 @@
 #include "node.h"
 
 #include <set>
-#include <filesystem>
 
 #include "gv.h"
 #include "media/image_manipulator.h"
 #include "utils/algo.h"
+#include "utils/file_system.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -132,10 +132,7 @@ std::vector<std::string> Node::getImageChildren() const {
 
 static void preloadImageAt(const std::vector<std::string> &children) {
 	auto fileExists = [](const std::string &path) -> bool {
-		if (std::filesystem::exists(path)) {
-			return !std::filesystem::is_directory(path);
-		}
-		return false;
+		return FileSystem::exists(path) && !FileSystem::isDirectory(path);
 	};
 
 	for (const std::string &str : children) {

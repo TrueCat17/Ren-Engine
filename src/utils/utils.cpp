@@ -6,8 +6,6 @@
 #include <mutex>
 #include <set>
 #include <map>
-#include <filesystem>
-#include <algorithm>
 
 #include <SDL2/SDL_ttf.h>
 
@@ -17,6 +15,7 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 #include "parser/node.h"
+#include "utils/file_system.h"
 #include "utils/game.h"
 
 
@@ -24,33 +23,16 @@ static std::map<std::string, Node*> declAts;
 
 
 std::vector<std::string> Utils::getFileNames(const std::string &path) {
-	std::vector<std::string> res;
-
-	namespace fs = std::filesystem;
-
-	if (!fs::exists(path)) {
+	if (!FileSystem::exists(path)) {
 		outMsg("Utils::getFileNames", "Directory <" + path + "> not found");
-		static const std::string mainMenu = "mods/main_menu/";
+		static const std::string mainMenu = "mods/main_menu";
 		if (path != mainMenu) {
 			return getFileNames(mainMenu);
 		}
-		return res;
+		return {};
 	}
 
-	for (fs::recursive_directory_iterator it(path), end; it != end; ++it) {
-		fs::path filePath(it->path());
-		if (fs::is_regular_file(filePath)) {
-			const std::string str = filePath.string();
-			if (str.find("_SL_FILE_") != size_t(-1)) {
-				Utils::outMsg("Utils::getFileNames", "File name can't to contain _SL_FILE_");
-			}else {
-				res.push_back(filePath.string());
-			}
-		}
-	}
-
-	std::sort(res.begin(), res.end());
-	return res;
+	return FileSystem::getFilesRecursive(path);
 }
 
 int Utils::getTimer() {

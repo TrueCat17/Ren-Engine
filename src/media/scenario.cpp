@@ -53,7 +53,7 @@ static void restoreStack() {
 		return;
 	}
 
-	std::ifstream is(Node::loadPath + "stack");
+	std::ifstream is(Node::loadPath + "/stack");
 
 	Node *prevNode = nullptr;
 	size_t num = 0;
@@ -150,7 +150,7 @@ static void restoreScreens() {
 	std::vector<std::string> startScreensVec;
 	if (!Node::loadPath.empty()) {
 		PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__,
-		              "load_global_vars('" + Node::loadPath + "py_globals')");
+		              "load_global_vars('" + Node::loadPath + "/py_globals')");
 
 		startScreensVec = Game::loadInfo(Node::loadPath);
 	}else {
@@ -249,6 +249,18 @@ void Scenario::execute() {
 		if (!GV::inGame || !obj) break;
 
 
+		if (!initing && !inWithBlock) {
+			checkToSaveStack();
+
+			static const std::string code = "can_exec_next_command()";
+			while (GV::inGame && PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, code, true) == "False") {
+				Utils::sleep(Game::getFrameTime());
+				checkToSaveStack();
+			}
+			if (!GV::inGame) return;
+		}
+
+
 		if (num == obj->children.size()) {
 			if (obj->command == "init" || obj->command == "init python") {
 				if (obj->command == "init python") {
@@ -310,17 +322,6 @@ void Scenario::execute() {
 			continue;
 		}
 
-
-		if (!initing && !inWithBlock) {
-			checkToSaveStack();
-
-			static const std::string code = "can_exec_next_command()";
-			while (GV::inGame && PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, code, true) == "False") {
-				Utils::sleep(Game::getFrameTime());
-				checkToSaveStack();
-			}
-			if (!GV::inGame) return;
-		}
 
 		if (obj->command == "menu") {
 			const std::string resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(), "int(choose_menu_result)", true);
@@ -458,7 +459,7 @@ void Scenario::execute() {
 		}
 
 		if (child->command == "pause") {
-			PyUtils::exec(child->getFileName(), child->getNumLine(), "pause_end = time.time() + (" + child->params + ")");
+			PyUtils::exec(child->getFileName(), child->getNumLine(), "pause(" + child->params + ")");
 			continue;
 		}
 

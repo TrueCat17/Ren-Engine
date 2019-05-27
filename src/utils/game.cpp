@@ -2,7 +2,6 @@
 
 #include <set>
 #include <thread>
-#include <filesystem>
 #include <fstream>
 #include <time.h>
 
@@ -27,6 +26,7 @@
 #include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
+#include "utils/file_system.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
 #include "utils/string.h"
@@ -40,6 +40,8 @@ static int frameTime = 16;
 
 static int modStartTime = 0;
 static bool canAutoSave = true;
+
+static const std::string savesPath = "saves";
 
 
 static void _startMod(const std::string &dir, const std::string &loadPath = "");
@@ -60,27 +62,21 @@ void Game::setCanAutoSave(bool v) {
 
 
 void Game::load(const std::string &table, const std::string &name) {
-	static const std::string saves = "saves/";
-	const std::string tablePath = saves + table + '/';
-	const std::string fullPath = saves + table + '/' + name + '/';
+	const std::string tablePath = savesPath + '/' + table;
+	const std::string fullPath = tablePath + '/' + name;
 
-	namespace fs = std::filesystem;
-
-	auto outError = [&](const std::string &dir) {
-		Utils::outMsg(std::string() + "Could not to open save <" + table + "_" + name + ">\n"
-		                              "Directory <" + dir + "> not found");
-	};
-	for (const std::string &path : {saves, tablePath, fullPath}) {
-		if (!fs::exists(path)) {
-			outError(path);
+	for (const std::string &path : {savesPath, tablePath, fullPath}) {
+		if (!FileSystem::exists(path)) {
+			Utils::outMsg("Could not to open save <" + table + "_" + name + ">\n"
+			              "Directory <" + path + "> not found");
 			return;
 		}
 	}
 
 	auto fileExists = [](const std::string &path) -> bool {
-		return fs::exists(path) && !fs::is_directory(path) && fs::file_size(path);
+		return FileSystem::exists(path) && !FileSystem::isDirectory(path) && FileSystem::getFileSize(path);
 	};
-	for (const char *fileName : {"stack", "info", "py_globals"}) {
+	for (const char *fileName : {"/stack", "/info", "/py_globals"}) {
 		if (!fileExists(fullPath + fileName)) {
 			Utils::outMsg("File <" + fullPath + fileName + "> not exists or empty");
 			return;
@@ -89,7 +85,7 @@ void Game::load(const std::string &table, const std::string &name) {
 
 	std::string modName;
 	{//load info
-		std::ifstream is(fullPath + "info");
+		std::ifstream is(fullPath + "/info");
 
 		std::getline(is, modName);
 	}
@@ -103,7 +99,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	std::string tmp;
 
 
-	std::ifstream is(loadPath + "info");
+	std::ifstream is(loadPath + "/info");
 	std::string modName;
 	std::getline(is, modName);
 
@@ -241,17 +237,14 @@ void Game::save() {
 	const std::string table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
 	const std::string name  = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_name",  true);
 
-	static const std::string saves = "saves/";
-	const std::string tablePath = saves + table + '/';
-	const std::string fullPath = tablePath + name + '/';
+	const std::string tablePath = savesPath + '/' + table;
+	const std::string fullPath = tablePath + '/' + name;
 
 
 	{//check directory to save
-		namespace fs = std::filesystem;
-
-		for (const std::string &path : {saves, tablePath, fullPath}) {
-			if (!fs::exists(path)) {
-				fs::create_directory(path);
+		for (const std::string &path : {savesPath, tablePath, fullPath}) {
+			if (!FileSystem::exists(path)) {
+				FileSystem::createDirectory(path);
 			}
 		}
 	}
@@ -259,7 +252,7 @@ void Game::save() {
 
 
 	{//save stack
-		std::ofstream stackFile(fullPath + "stack");
+		std::ofstream stackFile(fullPath + "/stack");
 
 		std::vector<std::pair<std::string, std::string>> stackToSave = Scenario::getStackToSave();
 		if (stackToSave.empty()) {
@@ -273,7 +266,7 @@ void Game::save() {
 
 
 	{//save info
-		std::ofstream infoFile(fullPath + "info");
+		std::ofstream infoFile(fullPath + "/info");
 
 		//mod-name
 		//fps hideMouse autosave
@@ -360,7 +353,7 @@ void Game::save() {
 
 		const SurfacePtr screenshot = Renderer::getScreenshot();
 		if (screenshot) {
-			std::string screenshotPath = fullPath + "screenshot.png";
+			std::string screenshotPath = fullPath + "/screenshot.png";
 			std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
 			std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
 
@@ -370,7 +363,7 @@ void Game::save() {
 
 
 	{//save python global-vars
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_global_vars('" + fullPath + "py_globals')");
+		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_global_vars('" + fullPath + "/py_globals')");
 	}
 }
 
@@ -436,11 +429,10 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 
 void Game::makeScreenshot() {
-	static const std::string path = "screenshots/";
+	static const std::string path = "screenshots";
 
-	namespace fs = std::filesystem;
-	if (!fs::exists(path)) {
-		fs::create_directory(path);
+	if (!FileSystem::exists(path)) {
+		FileSystem::createDirectory(path);
 	}
 
 	{
@@ -470,8 +462,8 @@ void Game::makeScreenshot() {
 			numStr = '0' + numStr;
 		}
 
-		screenshotPath = path + "screenshot_" + numStr + ".png";
-		exists = fs::exists(screenshotPath.c_str());
+		screenshotPath = path + "/screenshot_" + numStr + ".png";
+		exists = FileSystem::exists(screenshotPath.c_str());
 
 		++num;
 	}

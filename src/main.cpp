@@ -1,6 +1,5 @@
 #include <iostream>
 #include <thread>
-#include <filesystem>
 #include <float.h>
 
 #include <SDL2/SDL.h>
@@ -24,6 +23,7 @@
 #include "parser/syntax_checker.h"
 
 #include "utils/btn_rect.h"
+#include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/image_caches.h"
 #include "utils/math.h"
@@ -203,12 +203,7 @@ std::string setDir(std::string newRoot) {
 
 	rootDirectory = newRoot = String::join(parts, "/");
 
-	std::filesystem::path path(newRoot.c_str());
-	std::error_code ec;
-	std::filesystem::current_path(path, ec);
-
-	if (!ec.value()) return "";
-	return "Set current_path to <" + newRoot + "> failed";
+	return FileSystem::setCurrentPath(newRoot);
 }
 
 bool init() {
@@ -302,10 +297,12 @@ void loop() {
 	bool mouseOut = false;
 	bool mouseOutPrevDown = false;
 
-	while (!GV::exit) {
-		while (!GV::inGame) {
+	while (true) {
+		while (!GV::inGame && !GV::exit) {
 			Utils::sleep(10, false);
 		}
+		if (GV::exit) break;
+
 
 		GV::updateMutex.lock();
 

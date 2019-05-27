@@ -3,7 +3,6 @@
 #include <set>
 #include <map>
 #include <fstream>
-#include <filesystem>
 
 #include <Python.h>
 
@@ -16,6 +15,7 @@
 #include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
+#include "utils/file_system.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -52,28 +52,22 @@ void Parser::getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isPr
 }
 
 
+static const std::string modsPath = "mods/";
 PyObject* Parser::getMods() {
 	PyObject *res = PyDict_New();
 
-	namespace fs = std::filesystem;
+	std::vector<std::string> dirs = FileSystem::getDirectories(modsPath);
+	for (std::string dir : dirs) {
+		std::string path = dir + "/name";
+		if (FileSystem::exists(path)) {
+			std::ifstream nameFile(path);
 
-	static const std::string modsPath = "mods/";
-	for (fs::directory_iterator it(modsPath), end; it != end; ++it) {
-		fs::path path(it->path());
-		const std::string pathStr = path.string();
-		if (fs::is_directory(path)) {
-			const std::string dirName = pathStr.c_str() + modsPath.size();
+			std::string modName;
+			std::getline(nameFile, modName);
 
-			path.append("name");
-			if (fs::exists(path)) {
-				std::ifstream nameFile(path.string());
-
-				std::string modName;
-				std::getline(nameFile, modName);
-
-				PyObject *pyDirName = PyString_FromString(dirName.c_str());
-				PyDict_SetItemString(res, modName.c_str(), pyDirName);
-			}
+			dir.erase(0, modsPath.size());//lost only dirName, without "mods/"
+			PyObject *pyDirName = PyString_FromString(dir.c_str());
+			PyDict_SetItemString(res, modName.c_str(), pyDirName);
 		}
 	}
 	return res;
@@ -83,7 +77,7 @@ Parser::Parser(const std::string &dir) {
 	this->dir = dir;
 
 	int searchStartTime = Utils::getTimer();
-	std::vector<std::string> files = Utils::getFileNames(dir + "/");
+	std::vector<std::string> files = Utils::getFileNames(dir);
 
 	std::vector<std::string> commonFiles = Utils::getFileNames("mods/common/");
 	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
