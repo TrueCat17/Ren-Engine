@@ -32,9 +32,9 @@ static Node* getLabel(const std::string &name) {
 	Utils::outMsg("Scenario::getLabel", "Label <" + name + "> not found");
 	return nullptr;
 }
-static void markLabel(Node *node) {
-	PyUtils::exec(node->getFileName(), node->getNumLine(),
-	              "persistent._seen_labels[get_current_mod()]['" + node->params + "'] = True");
+static void markLabel(const std::string &fileName, size_t numLine, const std::string &label) {
+	PyUtils::exec(fileName, numLine,
+	              "persistent._seen_labels[get_current_mod()]['''" + label + "'''] = True");
 }
 
 
@@ -275,7 +275,8 @@ void Scenario::execute() {
 					                 Utils::getTimer() - initingStartTime, true);
 
 					if (Game::hasLabel("start")) {
-						markLabel(getLabel("start"));
+						Node *start = getLabel("start");
+						markLabel(start->getFileName(), start->getNumLine(), "start");
 					}
 				}
 			}else
@@ -477,7 +478,7 @@ void Scenario::execute() {
 				stack.clear();
 			}
 
-			markLabel(child);
+			markLabel(child->getFileName(), child->getNumLine(), label);
 
 			obj = labelNode;
 			num = 0;
