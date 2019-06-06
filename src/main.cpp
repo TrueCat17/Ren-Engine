@@ -197,9 +197,6 @@ std::string setDir(std::string newRoot) {
 			i -= 2;
 		}
 	}
-	if (parts.size() && parts[parts.size() - 1] != "") {
-		parts.push_back("");
-	}
 
 	rootDirectory = newRoot = String::join(parts, "/");
 

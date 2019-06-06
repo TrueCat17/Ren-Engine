@@ -304,52 +304,56 @@ SurfacePtr ImageCaches::getSurface(const std::string &path) {
 					dst += 4;
 				}
 			}
-		}else
+		}else {
+			bool hasColorKey = SDL_GetColorKey(surface.get(), nullptr) == 0;
+			SDL_ClearError();//if has not color key
 
-		if (format == SDL_PIXELFORMAT_RGB24) {
-			for (int y = 0; y < surface->h; ++y) {
-				const Uint8 *src = pixels + y * pitch;
-				const Uint8 *srcEnd = src + (w - (w % 4)) * 3;
-				Uint8 *dst = newPixels + y * newPitch;
+			if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
+				for (int y = 0; y < surface->h; ++y) {
+					const Uint8 *src = pixels + y * pitch;
+					const Uint8 *srcEnd = src + (w - (w % 4)) * 3;
+					Uint8 *dst = newPixels + y * newPitch;
 
-				while (src != srcEnd) {
-					dst[Rshift / 8] = src[Rshift / 8];
-					dst[Gshift / 8] = src[Gshift / 8];
-					dst[Bshift / 8] = src[Bshift / 8];
-					dst[Ashift / 8] = 255;
+					while (src != srcEnd) {
+						dst[Rshift / 8] = src[Rshift / 8];
+						dst[Gshift / 8] = src[Gshift / 8];
+						dst[Bshift / 8] = src[Bshift / 8];
+						dst[Ashift / 8] = 255;
 
-					dst[Rshift / 8 + 4] = src[Rshift / 8 + 3];
-					dst[Gshift / 8 + 4] = src[Gshift / 8 + 3];
-					dst[Bshift / 8 + 4] = src[Bshift / 8 + 3];
-					dst[Ashift / 8 + 4] = 255;
+						dst[Rshift / 8 + 4] = src[Rshift / 8 + 3];
+						dst[Gshift / 8 + 4] = src[Gshift / 8 + 3];
+						dst[Bshift / 8 + 4] = src[Bshift / 8 + 3];
+						dst[Ashift / 8 + 4] = 255;
 
-					dst[Rshift / 8 + 8] = src[Rshift / 8 + 6];
-					dst[Gshift / 8 + 8] = src[Gshift / 8 + 6];
-					dst[Bshift / 8 + 8] = src[Bshift / 8 + 6];
-					dst[Ashift / 8 + 8] = 255;
+						dst[Rshift / 8 + 8] = src[Rshift / 8 + 6];
+						dst[Gshift / 8 + 8] = src[Gshift / 8 + 6];
+						dst[Bshift / 8 + 8] = src[Bshift / 8 + 6];
+						dst[Ashift / 8 + 8] = 255;
 
-					dst[Rshift / 8 + 12] = src[Rshift / 8 + 9];
-					dst[Gshift / 8 + 12] = src[Gshift / 8 + 9];
-					dst[Bshift / 8 + 12] = src[Bshift / 8 + 9];
-					dst[Ashift / 8 + 12] = 255;
+						dst[Rshift / 8 + 12] = src[Rshift / 8 + 9];
+						dst[Gshift / 8 + 12] = src[Gshift / 8 + 9];
+						dst[Bshift / 8 + 12] = src[Bshift / 8 + 9];
+						dst[Ashift / 8 + 12] = 255;
 
-					src += 12;
-					dst += 16;
+						src += 12;
+						dst += 16;
+					}
+					for (int i = 0; i < surface->w % 4; ++i) {
+						dst[Rshift / 8] = src[Rshift / 8];
+						dst[Gshift / 8] = src[Gshift / 8];
+						dst[Bshift / 8] = src[Bshift / 8];
+						dst[Ashift / 8] = 255;
+
+						src += 3;
+						dst += 4;
+					}
 				}
-				for (int i = 0; i < surface->w % 4; ++i) {
-					dst[Rshift / 8] = src[Rshift / 8];
-					dst[Gshift / 8] = src[Gshift / 8];
-					dst[Bshift / 8] = src[Bshift / 8];
-					dst[Ashift / 8] = 255;
-
-					src += 3;
-					dst += 4;
+			}else {
+				if (hasColorKey) {
+					SDL_FillRect(newSurface.get(), nullptr, 0);
 				}
+				SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
 			}
-		}
-
-		else {
-			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
 		}
 
 		surface = newSurface;

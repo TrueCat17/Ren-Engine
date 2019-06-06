@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <filesystem>
 
+#include <SDL2/SDL.h>
+
 
 static std::string clear(std::string path) {
 	if (path.empty() || (path.back() != '/' && path.back() != '\\')) {
-		return  path;
+		return path;
 	}
 	return path.substr(0, path.size() - 1);
 }
@@ -19,7 +21,13 @@ std::string FileSystem::setCurrentPath(std::string path) {
 	path = clear(path);
 
 	std::error_code ec;
-	std::filesystem::current_path(path, ec);
+#ifdef __WIN32__
+	auto buf = (wchar_t*)SDL_iconv_utf8_ucs2(path.c_str());
+	std::filesystem::current_path(buf, ec);
+	SDL_free(buf);
+#else
+	std::filesystem::current_path(path.c_str(), ec);
+#endif
 
 	if (!ec.value()) return "";
 	return "Set current path to <" + path + "> failed\n" + ec.message();

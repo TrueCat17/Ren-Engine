@@ -2,20 +2,60 @@ cmake_minimum_required(VERSION 2.8)
 
 project(Ren-Engine)
 
+set(ReleasePlatform "default")
 
 
 # win32
-#set(CMAKE_CXX_COMPILER "i686-w64-mingw32-g++")
-#include_directories(../lib/include)
-#include_directories(../lib/include/python27)
+set(ReleasePlatform "win")
 
-# linux-x32
-#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -m32 -include ./force_link_glibc_2.17.h")
-#set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -m32 -include ./force_link_glibc_2.17.h")
+# linux-i686
+#set(ReleasePlatform "linux")
 
 
+link_libraries(
+	pthread
+	stdc++fs
+	SDL2 SDL2_image SDL2_ttf
+)
 
-set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++17 -Wno-register")
+if ("${ReleasePlatform}" STREQUAL "win")
+	set(CMAKE_CXX_COMPILER "i686-w64-mingw32-g++-posix")
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib/include)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib/include/python27)
+	link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib/win32)
+
+	link_libraries(python27) # dynamic
+	link_libraries(
+		msvcr90 # for python
+		opengl32
+		avformat-58 avcodec-58 avutil-56 swresample-3
+	)
+elseif ("${ReleasePlatform}" STREQUAL "linux")
+	set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -m32 -include ./force_link_glibc_2.17.h")
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -m32 -include ./force_link_glibc_2.17.h")
+
+else() # default
+	include_directories(/usr/include/python2.7)
+
+	link_libraries(
+		jemalloc
+		GL
+		avformat avcodec avutil swresample
+	)
+endif()
+
+
+if (NOT "${ReleasePlatform}" STREQUAL "win")
+	if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+		link_libraries(:libpython2.7.a dl util z) # static
+	else()
+		link_libraries(python2.7) # dynamic
+	endif()
+endif()
+
+set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # to remove <unrecognized command line option -rdynamic>
+
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++17 -Wno-register -Wall -Wextra -pedantic")
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fopenmp")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
@@ -86,40 +126,6 @@ set(SOURCES
 	utils/string.cpp
 	utils/utils.cpp
 )
-
-link_libraries(
-	pthread
-	stdc++fs
-	SDL2 SDL2_image SDL2_ttf
-)
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-	if (WIN32)
-		link_libraries(lz)
-	else()
-#		set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -nostdlib")
-#		link_libraries(c z)
-	endif()
-	link_libraries(:libpython2.7.a dl util z) # static
-else()
-	link_libraries(python2.7) # dynamic
-endif()
-
-if (WIN32)
-	link_libraries(
-		msvcr90 # for python
-		opengl32
-		avformat-57 avcodec-57 avutil-55 swresample-2
-	)
-else()
-	include_directories(/usr/include/python2.7)
-
-#	link_directories(../lib/linux-i686)
-	link_libraries(
-		jemalloc
-		GL
-		avformat avcodec avutil swresample
-	)
-endif()
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})

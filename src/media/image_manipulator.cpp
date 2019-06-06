@@ -8,6 +8,9 @@
 #include <set>
 #include <deque>
 
+#include <cmath>
+#include <cstring>
+
 #include <SDL2/SDL_image.h>
 
 #include "gv.h"
