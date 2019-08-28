@@ -153,6 +153,11 @@ $ show_character(character, "place_name", location = None)
 Скрытие персонажа character на карте:
 $ hide_character(character)
 
+Разрешить или запретить управление персонажем игроку:
+$ set_rpg_control(value)
+Здесь value - True (чтобы разрешить) или False (запретить).
+Полученить текущее значение можно функцией get_rpg_control().
+
 Принудительное передвижение персонажа:
 $ character.move_to_place("place_name", is_run = False, end_stop_time = -1)
 Где character - персонаж,
