@@ -1,0 +1,7 @@
+Documentation moved to wiki
+
+Документация перемещена в wiki
+
+
+https://github.com/TrueCat17/Ren-Engine/wiki
+
