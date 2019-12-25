@@ -43,7 +43,7 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 	}
 }
 void Music::loop() {
-	while (true) {
+	while (!GV::exit) {
 		startUpdateTime = Utils::getTimer();
 
 		{

@@ -90,7 +90,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 	}
 }
 
-TexturePtr ImageCaches::getTexture(const SurfacePtr &surface) {
+TexturePtr ImageCaches::getTexture(SDL_Renderer *renderer, const SurfacePtr &surface) {
 	if (!surface) return nullptr;
 
 	auto it = textures.find(surface);
@@ -99,7 +99,7 @@ TexturePtr ImageCaches::getTexture(const SurfacePtr &surface) {
 		return it->second.second;
 	}
 
-	TexturePtr texture(SDL_CreateTextureFromSurface(GV::mainRenderer, surface.get()), SDL_DestroyTexture);
+	TexturePtr texture(SDL_CreateTextureFromSurface(renderer, surface.get()), SDL_DestroyTexture);
 	if (texture) {
 		trimTexturesCache(surface);
 		textures[surface] = std::make_pair(Utils::getTimer(), texture);
@@ -258,8 +258,11 @@ SurfacePtr ImageCaches::getSurface(const std::string &path) {
 		const int newPitch = newSurface->pitch;
 		Uint8 *newPixels = (Uint8*)newSurface->pixels;
 
+		bool hasColorKey = SDL_GetColorKey(surface.get(), nullptr) == 0;
+		SDL_ClearError();//if has not color key
+
 		const SDL_Palette *palette = surface->format->palette;
-		if (palette) {
+		if (palette && !hasColorKey) {
 			for (int y = 0; y < h; ++y) {
 				const Uint8 *src = pixels + y * pitch;
 				const Uint8 *srcEnd = src + w - (w % 4);
@@ -304,11 +307,8 @@ SurfacePtr ImageCaches::getSurface(const std::string &path) {
 					dst += 4;
 				}
 			}
-		}else {
-			bool hasColorKey = SDL_GetColorKey(surface.get(), nullptr) == 0;
-			SDL_ClearError();//if has not color key
-
-			if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
+		}else
+		if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
 				for (int y = 0; y < surface->h; ++y) {
 					const Uint8 *src = pixels + y * pitch;
 					const Uint8 *srcEnd = src + (w - (w % 4)) * 3;
@@ -347,13 +347,12 @@ SurfacePtr ImageCaches::getSurface(const std::string &path) {
 						src += 3;
 						dst += 4;
 					}
-				}
-			}else {
-				if (hasColorKey) {
-					SDL_FillRect(newSurface.get(), nullptr, 0);
-				}
-				SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
 			}
+		}else {
+			if (hasColorKey) {
+				SDL_FillRect(newSurface.get(), nullptr, 0);
+			}
+			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
 		}
 
 		surface = newSurface;

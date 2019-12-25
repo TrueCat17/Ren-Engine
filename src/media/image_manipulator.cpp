@@ -274,7 +274,7 @@ static SurfacePtr rendererScale(const std::vector<std::string> &args) {
 		return img;
 	}
 
-	if (w > Renderer::maxTextureWidth || h > Renderer::maxTextureHeight) {
+	if (w > Renderer::info.max_texture_width || h > Renderer::info.max_texture_height) {
 		return scale(args);
 	}
 

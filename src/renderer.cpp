@@ -38,9 +38,6 @@ bool RenderStruct::operator==(const RenderStruct &o) const {
 
 
 
-int Renderer::maxTextureWidth = 0;
-int Renderer::maxTextureHeight = 0;
-
 bool Renderer::needToRender = false;
 bool Renderer::needToRedraw = false;
 
@@ -49,11 +46,11 @@ std::mutex Renderer::renderMutex;
 std::mutex Renderer::toRenderMutex;
 std::vector<RenderStruct> Renderer::toRender;
 
+SDL_RendererInfo Renderer::info;
+
 
 static bool fastOpenGL = false;
 static bool checkOpenGlErrors = false;
-
-
 
 static GLuint queryTexture(SDL_Texture *texture, int &width, int &height) {
 	if (!texture) {
@@ -67,6 +64,12 @@ static GLuint queryTexture(SDL_Texture *texture, int &width, int &height) {
 
 	struct GL_FBOList;
 
+	enum SDL_ScaleMode {
+		SDL_ScaleModeNearest,
+		SDL_ScaleModeLinear,
+		SDL_ScaleModeBest
+	};
+
 	struct Texture {
 		const void *magic;
 		Uint32 format;              /**< The pixel format of the texture */
@@ -75,6 +78,7 @@ static GLuint queryTexture(SDL_Texture *texture, int &width, int &height) {
 		int h;                      /**< The height of the texture */
 		int modMode;                /**< The texture modulation mode */
 		SDL_BlendMode blendMode;    /**< The texture blend mode */
+		SDL_ScaleMode scaleMode;    /**< The texture scale mode */
 		Uint8 r, g, b, a;           /**< Texture modulation values */
 
 		SDL_Renderer *renderer;
@@ -86,6 +90,8 @@ static GLuint queryTexture(SDL_Texture *texture, int &width, int &height) {
 		int pitch;
 		SDL_Rect locked_rect;
 
+		Uint32 last_command_generation; /* last command queue generation this texture was in. */
+
 		void *driverdata;           /**< Driver specific texture representation */
 
 		SDL_Texture *prev;
@@ -94,7 +100,6 @@ static GLuint queryTexture(SDL_Texture *texture, int &width, int &height) {
 
 	struct TextureData {
 		GLuint texture;
-		GLenum type;
 		GLfloat texw;
 		GLfloat texh;
 		GLenum format;
@@ -140,7 +145,7 @@ static void checkErrors(const char *from, const char *funcName) {
 		}
 
 		const char *str = "Unknown";
-			 if (error == GL_INVALID_ENUM)      str = "GL_INVALID_ENUM";
+		     if (error == GL_INVALID_ENUM)      str = "GL_INVALID_ENUM";
 		else if (error == GL_INVALID_VALUE)     str = "GL_INVALID_VALUE";
 		else if (error == GL_INVALID_OPERATION) str = "GL_INVALID_OPERATION";
 		else if (error == GL_STACK_OVERFLOW)    str = "GL_STACK_OVERFLOW";
@@ -152,7 +157,7 @@ static void checkErrors(const char *from, const char *funcName) {
 }
 
 static void renderWithOpenGL(SDL_Texture *texture, int angle, Uint8 alpha,
-								const SDL_Rect *src, const SDL_Rect *dst, const SDL_Point *center)
+                                const SDL_Rect *src, const SDL_Rect *dst, const SDL_Point *center)
 {
 	if (!alpha || !dst->w || !dst->h) return;
 
@@ -227,6 +232,8 @@ static void renderWithOpenGL(SDL_Texture *texture, int angle, Uint8 alpha,
 }
 
 
+static SDL_Renderer *renderer = nullptr;
+
 static SDL_Texture *tmpTexture = nullptr;
 static SurfacePtr toScaleSurface;
 static SurfacePtr scaledSurface;
@@ -252,7 +259,7 @@ SurfacePtr Renderer::getScaled(const SurfacePtr &src, int width, int height) {
 }
 static void scale() {
 	int textureWidth, textureHeight;
-	queryTexture(tmpTexture, textureWidth, textureHeight);
+	SDL_QueryTexture(tmpTexture, nullptr, nullptr, &textureWidth, &textureHeight);
 
 	if (scaleWidth > textureWidth || scaleHeight > textureHeight) {
 		SDL_DestroyTexture(tmpTexture);
@@ -260,7 +267,7 @@ static void scale() {
 		textureWidth  = int(std::ceil(scaleWidth / 256.0)) * 256;
 		textureHeight = int(std::ceil(scaleHeight / 256.0)) * 256;
 
-		tmpTexture = SDL_CreateTexture(GV::mainRenderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
+		tmpTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
 									   textureWidth, textureHeight);
 		if (!tmpTexture) {
 			Utils::outMsg("SDL_CreateTexture", SDL_GetError());
@@ -268,17 +275,29 @@ static void scale() {
 	}
 
 	SDL_Rect dstRect = {0, 0, scaleWidth, scaleHeight};
-	TexturePtr toRender = ImageCaches::getTexture(toScaleSurface);
+	TexturePtr toRender = ImageCaches::getTexture(renderer, toScaleSurface);
 
-	SDL_SetRenderTarget(GV::mainRenderer, tmpTexture);
-	SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 0);
-	SDL_RenderFillRect(GV::mainRenderer, &dstRect);
-	SDL_RenderCopy(GV::mainRenderer, toRender.get(), nullptr, &dstRect);
+	if (SDL_SetRenderTarget(renderer, tmpTexture)) {
+		Utils::outMsg("Renderer::scale, SDL_SetRenderTarget", SDL_GetError());
+	}
+	if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)) {
+		Utils::outMsg("Renderer::scale, SDL_SetRenderDrawColor", SDL_GetError());
+	}
+	if (SDL_RenderClear(renderer)) {
+		Utils::outMsg("Renderer::scale, SDL_RenderClear", SDL_GetError());
+	}
+	if (SDL_RenderCopy(renderer, toRender.get(), nullptr, &dstRect)) {
+		Utils::outMsg("Renderer::scale, SDL_RenderCopy", SDL_GetError());
+	}
 
 	scaledSurface = ImageManipulator::getNewNotClear(scaleWidth, scaleHeight);
-	SDL_RenderReadPixels(GV::mainRenderer, &dstRect, SDL_PIXELFORMAT_RGBA32, scaledSurface->pixels, scaledSurface->pitch);
+	if (SDL_RenderReadPixels(renderer, &dstRect, SDL_PIXELFORMAT_RGBA32, scaledSurface->pixels, scaledSurface->pitch)) {
+		Utils::outMsg("Renderer::scale, SDL_RenderReadPixels", SDL_GetError());
+	}
 
-	SDL_SetRenderTarget(GV::mainRenderer, nullptr);
+	if (SDL_SetRenderTarget(renderer, nullptr)) {
+		Utils::outMsg("Renderer::scale, SDL_SetRenderTarget(nullptr)", SDL_GetError());
+	}
 
 	scaled = true;
 }
@@ -301,16 +320,15 @@ SurfacePtr Renderer::getScreenshot() {
 
 static void readPixels() {
 	int w, h;
-	SDL_GetRendererOutputSize(GV::mainRenderer, &w, &h);
+	SDL_GetRendererOutputSize(renderer, &w, &h);
 
 	screenshot = ImageManipulator::getNewNotClear(w, h);
-	if (SDL_RenderReadPixels(GV::mainRenderer, &screenshot->clip_rect,
+	if (SDL_RenderReadPixels(renderer, &screenshot->clip_rect,
 							 SDL_PIXELFORMAT_RGBA32, screenshot->pixels, screenshot->pitch))
 	{
 		Utils::outMsg("SDL_RenderReadPixels", SDL_GetError());
 	}
 }
-
 
 
 static void loop() {
@@ -330,6 +348,7 @@ static void loop() {
 			scale();
 			continue;
 		}
+
 		if (!Renderer::needToRender || GV::minimized) {
 			Utils::sleep(1, false);
 			continue;
@@ -359,7 +378,7 @@ static void loop() {
 				if (it != cache.end()) {
 					textures.push_back(it->second);
 				}else {
-					const TexturePtr texture = ImageCaches::getTexture(rs.surface);
+					const TexturePtr texture = ImageCaches::getTexture(renderer, rs.surface);
 					textures.push_back(texture);
 					cache[rs.surface] = texture;
 				}
@@ -368,19 +387,23 @@ static void loop() {
 
 		if (fastOpenGL) {
 			checkErrors("loop", "Start");
-		}
 
-		if (SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255)) {
+			glViewport(0, 0, GV::width, GV::height);
+			checkErrors("loop", "glViewport");
+			glMatrixMode(GL_PROJECTION);
+			checkErrors("loop", "glMatrixMode");
+			glLoadIdentity();
+			glOrtho(0, GV::width, GV::height, 0, 0.0, 1.0);
+			checkErrors("loop", "glOrtho");
+			glMatrixMode(GL_MODELVIEW);
+			checkErrors("loop", "glMatrixMode");
+		}
+		if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)) {
 			Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
 		}
-		if (SDL_RenderClear(GV::mainRenderer)) {
+		if (SDL_RenderClear(renderer)) {
 			Utils::outMsg("SDL_RenderClear", SDL_GetError());
 		}
-		if (SDL_SetRenderDrawColor(GV::mainRenderer, 0, 0, 0, 255)) {
-			Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
-		}
-
-
 		if (fastOpenGL) {
 			glEnable(GL_TEXTURE_2D);
 			checkErrors("loop", "glEnable(GL_TEXTURE_2D)");
@@ -397,35 +420,29 @@ static void loop() {
 			const RenderStruct &rs = toRender[i];
 			const TexturePtr &texture = textures[i];
 
-			SDL_RenderSetClipRect(GV::mainRenderer, rs.clip ? &rs.clipRect : nullptr);
+			SDL_RenderSetClipRect(renderer, rs.clip ? &rs.clipRect : nullptr);
 
 			if (fastOpenGL) {
 				renderWithOpenGL(texture.get(),
-								 rs.angle, rs.alpha,
-								 &rs.srcRect,
-								 &rs.dstRect,
-								 &rs.center);
+				                 rs.angle, rs.alpha,
+				                 &rs.srcRect,
+				                 &rs.dstRect,
+				                 &rs.center);
 			}else {
 				if (SDL_SetTextureAlphaMod(texture.get(), rs.alpha)) {
 					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 				}
 
-				if (SDL_RenderCopyEx(GV::mainRenderer, texture.get(),
-									 &rs.srcRect,
-									 &rs.dstRect,
-									 rs.angle,
-									 &rs.center,
-									 SDL_FLIP_NONE))
+				if (SDL_RenderCopyEx(renderer, texture.get(),
+				                     &rs.srcRect,
+				                     &rs.dstRect,
+				                     rs.angle,
+				                     &rs.center,
+				                     SDL_FLIP_NONE))
 				{
 					Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
 				}
 			}
-		}
-		if (fastOpenGL) {
-			glDisable(GL_TEXTURE_2D);
-			checkErrors("loop", "glDisables(GL_TEXTURE_2D)");
-			glDisable(GL_BLEND);
-			checkErrors("loop", "glDisable(GL_BLEND)");
 		}
 
 		if (GV::screens) {
@@ -445,7 +462,7 @@ static void loop() {
 					glRecti(0, 0, empty.w, empty.h);
 					checkErrors("loop", "glRecti");
 				}else {
-					if (SDL_RenderFillRect(GV::mainRenderer, &empty)) {
+					if (SDL_RenderFillRect(renderer, &empty)) {
 						Utils::outMsg("SDL_RenderFillRect", SDL_GetError());
 					}
 				}
@@ -456,7 +473,7 @@ static void loop() {
 				Renderer::needToRedraw = true;
 				screenshoted = true;
 			}else {
-				SDL_RenderPresent(GV::mainRenderer);
+				SDL_RenderPresent(renderer);
 			}
 		}
 
@@ -464,7 +481,7 @@ static void loop() {
 		prevTextures.swap(textures);
 	}
 
-	SDL_DestroyRenderer(GV::mainRenderer);
+	SDL_DestroyRenderer(renderer);
 }
 
 static void initImpl(bool *inited, bool *error) {
@@ -479,50 +496,55 @@ static void initImpl(bool *inited, bool *error) {
 			flags |= SDL_RENDERER_PRESENTVSYNC;
 		}
 
+		std::string opengl = "opengl";
 		int countRenderDrivers = SDL_GetNumRenderDrivers();
 		for (int i = 0; i < countRenderDrivers; ++i) {
 			SDL_RendererInfo info;
 			SDL_GetRenderDriverInfo(i, &info);
-			if (std::string(info.name) == "opengl") {
+			if (info.name == opengl) {
 				renderDriver = i;
 				break;
 			}
 		}
 		if (renderDriver == -1) {
 			Utils::outMsg("Renderer::init", "OpenGL driver not found");
+		}else {
+			fastOpenGL = Config::get("fast_opengl") == "True";
+			if (fastOpenGL) {
+				SDL_SetHint(SDL_HINT_RENDER_BATCHING, "false");
+			}
 		}
 	}
 
-	GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, renderDriver, flags);
-	if (!GV::mainRenderer) {
+	renderer = SDL_CreateRenderer(GV::mainWindow, -1, flags);
+	if (!renderer) {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 
 		if (flags & SDL_RENDERER_ACCELERATED) {
-			GV::mainRenderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
+			renderer = SDL_CreateRenderer(GV::mainWindow, -1, SDL_RENDERER_SOFTWARE);
+			if (!renderer) {
+				Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
+			}
+		}
+
+		if (!renderer) {
+			*error = true;
+			*inited = true;
+			return;
 		}
 	}
-	if (!GV::mainRenderer) {
-		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
-		*error = true;
-		*inited = true;
-		return;
-	}
 
-	SDL_RendererInfo info;
-	SDL_GetRendererInfo(GV::mainRenderer, &info);
-	if (std::string(info.name) == "opengl") {
+	SDL_GetRendererInfo(renderer, &Renderer::info);
+	if (std::string(Renderer::info.name) == "opengl") {
 		size_t countErrors = 0;
 		const size_t maxCountErrors = 10;
 
 		while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
 		if (countErrors == maxCountErrors) {
 			Utils::outMsg("Renderer::init", "Using OpenGL failed");
-		}else {
-			fastOpenGL = Config::get("fast_opengl") == "True";
+			fastOpenGL = false;
 		}
 	}
-	Renderer::maxTextureWidth = info.max_texture_width;
-	Renderer::maxTextureHeight = info.max_texture_height;
 
 	*inited = true;
 	loop();

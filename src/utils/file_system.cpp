@@ -1,7 +1,16 @@
 #include "file_system.h"
 
 #include <algorithm>
-#include <filesystem>
+
+#ifdef __cpp_lib_filesystem
+	#include <filesystem>
+	namespace fs = std::filesystem;
+#elif 1
+	#include <experimental/filesystem>
+	namespace fs = std::experimental::filesystem;
+#else
+	#error "Header <filesystem> not found"
+#endif
 
 #include <SDL2/SDL.h>
 
@@ -15,7 +24,7 @@ static std::string clear(std::string path) {
 
 
 std::string FileSystem::getCurrentPath() {
-	return std::filesystem::current_path().string();
+	return fs::current_path().string();
 }
 std::string FileSystem::setCurrentPath(std::string path) {
 	path = clear(path);
@@ -23,10 +32,10 @@ std::string FileSystem::setCurrentPath(std::string path) {
 	std::error_code ec;
 #ifdef __WIN32__
 	auto buf = (wchar_t*)SDL_iconv_utf8_ucs2(path.c_str());
-	std::filesystem::current_path(buf, ec);
+	fs::current_path(buf, ec);
 	SDL_free(buf);
 #else
-	std::filesystem::current_path(path.c_str(), ec);
+	fs::current_path(path.c_str(), ec);
 #endif
 
 	if (!ec.value()) return "";
@@ -34,19 +43,19 @@ std::string FileSystem::setCurrentPath(std::string path) {
 }
 
 bool FileSystem::exists(std::string path) {
-	return std::filesystem::exists(clear(path));
+	return fs::exists(clear(path));
 }
 bool FileSystem::isDirectory(std::string path) {
-	return std::filesystem::is_directory(clear(path));
+	return fs::is_directory(clear(path));
 }
 uintmax_t FileSystem::getFileSize(std::string path) {
-	return std::filesystem::file_size(path);
+	return fs::file_size(path);
 }
 
 std::vector<std::string> FileSystem::getDirectories(std::string path) {
 	std::vector<std::string> res;
 
-	for (std::filesystem::directory_iterator it(clear(path)), end; it != end; ++it) {
+	for (fs::directory_iterator it(clear(path)), end; it != end; ++it) {
 		const std::string pathStr = clear(it->path().string());
 		if (FileSystem::isDirectory(pathStr)) {
 			res.push_back(pathStr);
@@ -56,15 +65,15 @@ std::vector<std::string> FileSystem::getDirectories(std::string path) {
 }
 
 void FileSystem::createDirectory(std::string path) {
-	std::filesystem::create_directory(path);
+	fs::create_directory(path);
 }
 
 std::vector<std::string> FileSystem::getFilesRecursive(std::string path) {
 	std::vector<std::string> res;
 
-	for (std::filesystem::recursive_directory_iterator it(clear(path)), end; it != end; ++it) {
+	for (fs::recursive_directory_iterator it(clear(path)), end; it != end; ++it) {
 		const std::string pathStr = clear(it->path().string());
-		if (std::filesystem::is_regular_file(pathStr)) {
+		if (fs::is_regular_file(pathStr)) {
 			if (pathStr.find("_SL_FILE_") == size_t(-1)) {
 				res.push_back(pathStr);
 			}

@@ -12,7 +12,6 @@ bool GV::inGame = false;
 bool GV::exit = false;
 
 SDL_Window *GV::mainWindow;
-SDL_Renderer *GV::mainRenderer;
 
 const Uint8 *GV::keyBoardState = nullptr;
 

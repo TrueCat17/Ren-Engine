@@ -25,9 +25,6 @@ struct RenderStruct {
 
 class Renderer {
 public:
-	static int maxTextureWidth;
-	static int maxTextureHeight;
-
 	static bool needToRender;
 	static bool needToRedraw;
 
@@ -36,6 +33,7 @@ public:
 	static std::mutex toRenderMutex;
 	static std::vector<RenderStruct> toRender;
 
+	static SDL_RendererInfo info;
 	static bool init();
 
 	static void needMakeScreenshot();

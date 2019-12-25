@@ -4,55 +4,58 @@
 
 
 std::string String::repeat(const std::string &str, size_t count) {
+	size_t size = str.size() * count;
+	if (!size) return "";
+	
 	std::string res;
-	res.resize(str.size() * count);
-
-	char *dst = res.data();
+	res.resize(size);
+	
+	char *dst = &res[0];
 	const char *srcEnd = str.data() + str.size();
-
+	
 	while (count--) {
 		const char *src = str.data();
 		while (src != srcEnd) {
 			*dst++ = *src++;
 		}
 	}
-
+	
 	return res;
 }
 
 std::vector<std::string> String::split(const std::string &str, const std::string &separator) {
 	std::vector<std::string> res;
-
+	
 	size_t prev = -separator.size();
 	size_t n;
-
+	
 	size_t start;
 	size_t end;
-
+	
 	while ((n = str.find(separator, prev + separator.size())) != size_t(-1)) {
 		start = prev + separator.size();
 		end = n;
-
+		
 		res.push_back(str.substr(start, end - start));
-
+		
 		prev = n;
 	}
-
+	
 	start = prev + separator.size();
 	end = n;
 	res.push_back(str.substr(start, end - start));
-
+	
 	return res;
 }
 
 int String::toInt(const std::string &str, int base) {
 	if (str.empty()) return 0;
-
+	
 	int res = 0;
 	bool neg = str[0] == '-';
 	for (size_t i = neg; i < str.size(); ++i) {
 		char c = str[i];
-
+		
 		if (c >= '0' && c <= '9') c -= '0';
 		else if (c >= 'a' && c <= 'z' && base > c - 'a') c = c - 'a' + 10;
 		else if (c >= 'A' && c <= 'Z' && base > c - 'A') c = c - 'A' + 10;
@@ -62,13 +65,13 @@ int String::toInt(const std::string &str, int base) {
 			              "String <" + str + "> is invalid number in numeral system with base " + std::to_string(base));
 			return 0;
 		}
-
+		
 		res = res * base + c;
 	}
 	if (neg) {
 		res *= -1;
 	}
-
+	
 	return res;
 }
 double String::toDouble(const std::string &str) {
@@ -84,12 +87,12 @@ bool String::isNumber(const std::string &str) {
 		f = str[start];
 	}
 	if (start == str.size()) return false;
-
+	
 	if (f == '-' || f == '+') {
 		++start;
 		if (start == str.size()) return false;
 	}
-
+	
 	bool wasDot = false;
 	bool wasE = false;
 	for (size_t i = start; i < str.size(); ++i) {
@@ -113,12 +116,12 @@ bool String::isNumber(const std::string &str) {
 			return false;
 		}
 	}
-
+	
 	return true;
 }
 bool String::isSimpleString(const std::string &str) {
 	if (str.size() < 2) return false;
-
+	
 	char f = str.front();
 	if (f != '\'' && f != '"') return false;
 	char b = str.back();
@@ -134,31 +137,31 @@ bool String::isSimpleString(const std::string &str) {
 size_t String::firstNotInQuotes(const std::string &str, char c) {
 	bool q1 = false;
 	bool q2 = false;
-
+	
 	char prev = 0;
 	for (size_t i = 0; i < str.size(); ++i) {
 		char t = str[i];
-
+		
 		if (t == '\'' && !q2 && prev != '\\') q1 = !q1;
 		if (t == '"'  && !q1 && prev != '\\') q2 = !q2;
-
+		
 		if (!q1 && !q2 && t == c) {
 			return i;
 		}
-
+		
 		if (prev == '\\' && t == '\\') {
 			prev = 0;
 		}else {
 			prev = t;
 		}
 	}
-
+	
 	return size_t(-1);
 }
 
 bool String::startsWith(const std::string &str, const std::string &substr, bool skipSpaces) {
 	if (str.size() < substr.size()) return false;
-
+	
 	size_t k = 0;
 	if (skipSpaces) {
 		while (k < str.size() && (str[k] == ' ' || str[k] == '\t')) {
@@ -168,7 +171,7 @@ bool String::startsWith(const std::string &str, const std::string &substr, bool 
 			return str.empty();
 		}
 	}
-
+	
 	for (size_t i = 0; i < substr.size(); ++i) {
 		if (str[i + k] != substr[i]) {
 			return false;
@@ -178,7 +181,7 @@ bool String::startsWith(const std::string &str, const std::string &substr, bool 
 }
 bool String::endsWith(const std::string &str, const std::string &substr) {
 	if (str.size() < substr.size()) return false;
-
+	
 	for (size_t i = 0; i < substr.size(); ++i) {
 		if (str[str.size() - i - 1] != substr[substr.size() - i - 1]) {
 			return false;
@@ -204,13 +207,13 @@ void String::replaceAll(std::string &str, const std::string &from, const std::st
 
 std::string String::join(const std::vector<std::string> &strings, const std::string &separator) {
 	std::string res;
-
+	
 	size_t size = separator.size() * (strings.size() - 1);
 	for (const std::string &s : strings) {
 		size += s.size();
 	}
 	res.reserve(size);
-
+	
 	for (size_t i = 0; i < strings.size(); ++i) {
 		res += strings[i];
 

@@ -24,7 +24,6 @@ public:
 	static bool exit;
 
 	static SDL_Window *mainWindow;
-	static SDL_Renderer *mainRenderer;
 
 	static const Uint8 *keyBoardState;
 

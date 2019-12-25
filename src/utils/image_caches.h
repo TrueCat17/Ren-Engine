@@ -11,7 +11,7 @@ public:
 	static SurfacePtr getSurface(const std::string &path);
 	static void setSurface(const std::string &path, const SurfacePtr &surface);
 
-	static TexturePtr getTexture(const SurfacePtr &surface);
+	static TexturePtr getTexture(SDL_Renderer *renderer, const SurfacePtr &surface);
 	static void clearTextures();
 };
 

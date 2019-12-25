@@ -327,46 +327,49 @@ void loop() {
 				Mouse::setLastAction();
 			}
 
-			if (event.window.event == SDL_WINDOWEVENT_EXPOSED) {
-				Renderer::needToRedraw = true;
-			}else
-			if (event.window.event == SDL_WINDOWEVENT_ENTER) {
-				mouseOut = false;
-			}else
-			if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
-				mouseOut = true;
-			}else
+			if (event.type == SDL_WINDOWEVENT) {
+				if (event.window.event == SDL_WINDOWEVENT_EXPOSED || event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+					Renderer::needToRedraw = true;
+					GV::minimized = false;
+				}else
+				if (event.window.event == SDL_WINDOWEVENT_ENTER) {
+					mouseOut = false;
+				}else
+				if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
+					mouseOut = true;
+				}else
 
-			if (event.window.event == SDL_WINDOWEVENT_MOVED) {
-				int x, y;
-				SDL_GetWindowPosition(GV::mainWindow, &x, &y);
-				if (x || y) {//if x and y are 0 - then probably it error, ignore
-					int leftBorderSize;
-					int captionHeight;
-					SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+				if (event.window.event == SDL_WINDOWEVENT_MOVED) {
+					int x, y;
+					SDL_GetWindowPosition(GV::mainWindow, &x, &y);
+					if (x || y) {//if x and y are 0 - then probably it error, ignore
+						int leftBorderSize;
+						int captionHeight;
+						SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
 
-					x = std::max(x - leftBorderSize, 1);
-					y = std::max(y - captionHeight, 1);
+						x = std::max(x - leftBorderSize, 1);
+						y = std::max(y - captionHeight, 1);
 
-					Config::set("window_x", std::to_string(x));
-					Config::set("window_y", std::to_string(y));
-				}
-			}else
+						Config::set("window_x", std::to_string(x));
+						Config::set("window_y", std::to_string(y));
+					}
+				}else
 
-			if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
-				maximazed = true;
-			}else
-			if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
-				maximazed = false;
-				GV::minimized = false;
-			}else
-			if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
-				GV::minimized = true;
-			}else
+				if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
+					maximazed = true;
+				}else
+				if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
+					maximazed = false;
+					GV::minimized = false;
+				}else
+				if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+					GV::minimized = true;
+				}else
 
-			if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-				if (!GV::minimized && !startWindowWidth && !startWindowHeight) {
-					resizeWithoutMouseDown = true;
+				if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+					if (!GV::minimized && !startWindowWidth && !startWindowHeight) {
+						resizeWithoutMouseDown = true;
+					}
 				}
 			}else
 
@@ -391,7 +394,7 @@ void loop() {
 
 					SDL_Scancode key = event.key.keysym.scancode;
 
-					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_SPACE) {
+					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_KP_ENTER || key == SDL_SCANCODE_SPACE) {
 						if (BtnRect::checkMouseClick(true, true)) {
 							Key::setToNotReact(key);
 						}else {
@@ -509,8 +512,8 @@ int main(int argc, char **argv) {
 						 "  ./Ren-Engine [resources_dir=../resources/]\n"
 						 "  ./Ren-Engine --help    - show this help and exit\n"
 						 "  ./Ren-Engine --version - show version and exit\n"
-						 "See https://github.com/TrueCat17/Ren-Engine\n"
-						 "and https://github.com/TrueCat17/Ren-Engine/tree/master/examples\n";
+			             "Github: https://github.com/TrueCat17/Ren-Engine\n"
+			             "Wiki:   https://github.com/TrueCat17/Ren-Engine/wiki\n";
 			return 0;
 		}
 	}
@@ -537,12 +540,10 @@ int main(int argc, char **argv) {
 		const char *platform = SDL_GetPlatform();
 		Logger::log(std::string("OS: ") + platform);
 
-		SDL_RendererInfo info;
-		SDL_GetRendererInfo(GV::mainRenderer, &info);
 		std::string driverInfo =
-		        std::string("Renderer: ") + info.name + ", "
-		        "maxTextureWidth = " + std::to_string(info.max_texture_width) + ", "
-		        "maxTextureHeight = " + std::to_string(info.max_texture_height) + "\n";
+		        std::string("Renderer: ") + Renderer::info.name + ", "
+		        "maxTextureWidth = " + std::to_string(Renderer::info.max_texture_width) + ", "
+		        "maxTextureHeight = " + std::to_string(Renderer::info.max_texture_height) + "\n";
 		Logger::log(driverInfo);
 
 		Logger::log("Resource Directory: " + rootDirectory);

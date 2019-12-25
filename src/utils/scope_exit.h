@@ -1,7 +1,7 @@
 #ifndef SCOPE_EXIT_H
 #define SCOPE_EXIT_H
 
-#include <bits/std_function.h>
+#include <functional>
 
 struct ScopeExit {
 	std::function<void()> func;

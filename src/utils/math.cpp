@@ -1,6 +1,6 @@
 #include "math.h"
 
-# define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846
 
 #include <math.h>
 #include <float.h>
@@ -13,7 +13,7 @@ void Math::init() {
 	sins = new double[360 * 2];
 	coss = new double[360 * 2];
 
-	for (size_t i = 0; i < 360; ++i) {
+	for (unsigned i = 0; i < 360; ++i) {
 		//on MinGW sin&cos not in std
 		using namespace std;
 		sins[i] = sins[i + 360] = sin(i * M_PI / 180);
