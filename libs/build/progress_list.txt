@@ -1,0 +1,11 @@
+Python start
+jemalloc start
+ffmpeg start
+zlib start
+freetype start
+jpeg start
+libpng start
+libwebp start
+SDL2 start
+SDL2_image start
+SDL2_ttf start
