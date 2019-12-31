@@ -1,28 +1,44 @@
 #include "math.h"
 
-#define M_PI 3.14159265358979323846
+//#define M_PI 3.14159265358979323846
 
 #include <math.h>
 #include <float.h>
 
-
-double* Math::sins = nullptr;
-double* Math::coss = nullptr;
-
+static double *sins;
 void Math::init() {
-	sins = new double[360 * 2];
-	coss = new double[360 * 2];
+	sins = new double[91]();
+	for (int i = 0; i <= 90; ++i) {
+		sins[i] = sin(i * (M_PI / 180));
+	}
+}
 
-	for (unsigned i = 0; i < 360; ++i) {
-		//on MinGW sin&cos not in std
-		using namespace std;
-		sins[i] = sins[i + 360] = sin(i * M_PI / 180);
-		coss[i] = coss[i + 360] = cos(i * M_PI / 180);
+double Math::getSin(int i) {
+	if (!i) return 0;
+
+	i = i % 360;
+	if (i < 0) {
+		i += 360;
 	}
 
-	//to sins[-1], that eq to sins[359]
-	sins += 360;
-	coss += 360;
+	double k = i < 180 ? 1 : -1;
+	i = i % 180;
+
+	return sins[i < 90 ? i : 180 - i] * k;
+}
+
+double Math::getCos(int i) {
+	if (!i) return 1;
+
+	i = (i - 90) % 360;
+	if (i < 0) {
+		i += 360;
+	}
+
+	double k = i > 180 ? 1 : -1;
+	i = i % 180;
+
+	return sins[i < 90 ? i : 180 - i] * k;
 }
 
 bool Math::doublesAreEq(double a, double b) {
