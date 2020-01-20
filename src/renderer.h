@@ -27,6 +27,7 @@ class Renderer {
 public:
 	static bool needToRender;
 	static bool needToRedraw;
+	static bool needToUpdateViewPort;
 
 	static std::mutex renderMutex;
 

@@ -616,5 +616,6 @@ void Game::setFullscreen(bool value) {
 	std::lock_guard g1(Renderer::toRenderMutex);
 	std::lock_guard g2(Renderer::renderMutex);
 
+	Renderer::needToUpdateViewPort = true;
 	SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP * value);
 }

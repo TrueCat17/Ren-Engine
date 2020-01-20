@@ -152,6 +152,7 @@ static void changeWindowSize(bool maximized) {
 		SDL_SetWindowSize(GV::mainWindow, w + x, h + y);
 
 		Renderer::needToRedraw = true;
+		Renderer::needToUpdateViewPort = true;
 	}
 
 	startWindowWidth = 0;

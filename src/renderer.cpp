@@ -1,10 +1,16 @@
 #include "renderer.h"
+#include "utils/math.h"
 
 
 static
 bool operator==(const SDL_Rect &a, const SDL_Rect &b) {
 	return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
 }
+static
+bool operator!=(const SDL_Rect &a, const SDL_Rect &b) {
+	return !(a == b);
+}
+
 static
 bool operator==(const SDL_Point &a, const SDL_Point &b) {
 	return a.x == b.x && a.y == b.y;
@@ -40,6 +46,7 @@ bool RenderStruct::operator==(const RenderStruct &o) const {
 
 bool Renderer::needToRender = false;
 bool Renderer::needToRedraw = false;
+bool Renderer::needToUpdateViewPort = true;
 
 std::mutex Renderer::renderMutex;
 
@@ -52,189 +59,229 @@ SDL_RendererInfo Renderer::info;
 static bool fastOpenGL = false;
 static bool checkOpenGlErrors = false;
 
-static GLuint queryTexture(SDL_Texture *texture, int &width, int &height) {
-	if (!texture) {
-		width = height = 0;
-		return 0;
+static void checkErrorsImpl(const char *from, const char *glFuncName) {
+	GLuint error = glGetError();
+	if (error == GL_NO_ERROR) return;
+
+	fastOpenGL = false;
+	Utils::outMsg("Renderer::" + std::string(from) + ", " + glFuncName, "Using OpenGL failed");
+	ImageCaches::clearTextures();
+
+	const char *str = "Unknown";
+	     if (error == GL_INVALID_ENUM)      str = "GL_INVALID_ENUM";
+	else if (error == GL_INVALID_VALUE)     str = "GL_INVALID_VALUE";
+	else if (error == GL_INVALID_OPERATION) str = "GL_INVALID_OPERATION";
+	else if (error == GL_STACK_OVERFLOW)    str = "GL_STACK_OVERFLOW";
+	else if (error == GL_STACK_UNDERFLOW)   str = "GL_STACK_UNDERFLOW";
+	else if (error == GL_OUT_OF_MEMORY)     str = "GL_OUT_OF_MEMORY";
+
+	Utils::outMsg("Renderer::" + std::string(from) + ", " + glFuncName, str);
+}
+#define checkErrors(glFuncName) checkErrorsImpl(__FUNCTION__, glFuncName)
+
+
+static SDL_Texture *currentTexture = nullptr;
+static void bindTexture(SDL_Texture *texture) {
+	if (!texture || currentTexture == texture) return;
+
+	currentTexture = texture;
+	if (SDL_GL_BindTexture(texture, nullptr, nullptr)) {
+		Utils::outMsg("SDL_GL_BindTexture", SDL_GetError());
 	}
-
-	//copy-paste from SDL sources
-
-	struct SDL_SW_YUVTexture;
-
-	struct GL_FBOList;
-
-	enum SDL_ScaleMode {
-		SDL_ScaleModeNearest,
-		SDL_ScaleModeLinear,
-		SDL_ScaleModeBest
-	};
-
-	struct Texture {
-		const void *magic;
-		Uint32 format;              /**< The pixel format of the texture */
-		int access;                 /**< SDL_TextureAccess */
-		int w;                      /**< The width of the texture */
-		int h;                      /**< The height of the texture */
-		int modMode;                /**< The texture modulation mode */
-		SDL_BlendMode blendMode;    /**< The texture blend mode */
-		SDL_ScaleMode scaleMode;    /**< The texture scale mode */
-		Uint8 r, g, b, a;           /**< Texture modulation values */
-
-		SDL_Renderer *renderer;
-
-		/* Support for formats not supported directly by the renderer */
-		SDL_Texture *native;
-		SDL_SW_YUVTexture *yuv;
-		void *pixels;
-		int pitch;
-		SDL_Rect locked_rect;
-
-		Uint32 last_command_generation; /* last command queue generation this texture was in. */
-
-		void *driverdata;           /**< Driver specific texture representation */
-
-		SDL_Texture *prev;
-		SDL_Texture *next;
-	};
-
-	struct TextureData {
-		GLuint texture;
-		GLfloat texw;
-		GLfloat texh;
-		GLenum format;
-		GLenum formattype;
-		void *pixels;
-		int pitch;
-		SDL_Rect locked_rect;
-
-		/* YUV texture support */
-		SDL_bool yuv;
-		SDL_bool nv12;
-		GLuint utexture;
-		GLuint vtexture;
-
-		GL_FBOList *fbo;
-	};
-
-	Texture *t = reinterpret_cast<Texture*>(texture);
-	if (t->native) {
-		t = reinterpret_cast<Texture*>(t->native);
+}
+static void unbindTexture() {
+	if (currentTexture) {
+		currentTexture = nullptr;
+		glBindTexture(GL_TEXTURE_2D, 0);
+		checkErrors("glBindTexture(GL_TEXTURE_2D, 0)");
 	}
-	TextureData *data = reinterpret_cast<TextureData*>(t->driverdata);
-
-	width = t->w;
-	height = t->h;
-
-	return data->texture;
 }
 
 
-
-static void checkErrors(const char *from, const char *funcName) {
-	size_t countErrors = 0;
-	const size_t maxCountErrors = 10;
-
-	GLuint error;
-	while ((error = glGetError()) != GL_NO_ERROR) {
-		if (++countErrors == maxCountErrors) {
-			fastOpenGL = false;
-			Utils::outMsg("Renderer::" + std::string(from) + ", " + funcName, "Using OpenGL failed");
-			ImageCaches::clearTextures();
-			break;
-		}
-
-		const char *str = "Unknown";
-		     if (error == GL_INVALID_ENUM)      str = "GL_INVALID_ENUM";
-		else if (error == GL_INVALID_VALUE)     str = "GL_INVALID_VALUE";
-		else if (error == GL_INVALID_OPERATION) str = "GL_INVALID_OPERATION";
-		else if (error == GL_STACK_OVERFLOW)    str = "GL_STACK_OVERFLOW";
-		else if (error == GL_STACK_UNDERFLOW)   str = "GL_STACK_UNDERFLOW";
-		else if (error == GL_OUT_OF_MEMORY)     str = "GL_OUT_OF_MEMORY";
-
-		Utils::outMsg("Renderer::" + std::string(from) + ", " + funcName, str);
-	}
-}
-
-static void renderWithOpenGL(SDL_Texture *texture, int angle, Uint8 alpha,
-                                const SDL_Rect *src, const SDL_Rect *dst, const SDL_Point *center)
-{
-	if (!alpha || !dst->w || !dst->h) return;
-
-	int textureWidth, textureHeight;
-	GLuint textureId = queryTexture(texture, textureWidth, textureHeight);
-
-	SDL_Rect realSrc;
-	if (src) {
-		if (!src->w || !src->h) return;
-		realSrc = {src->x, src->y, src->w, src->h};
+static SDL_Rect currentClipRect = {0, 0, -1, -1};
+static void setClipRect(const SDL_Rect *clipRect) {
+	SDL_Rect rect;
+	if (clipRect) {
+		rect = *clipRect;
 	}else {
-		realSrc = {0, 0, textureWidth, textureHeight};
+		rect = {0, 0, GV::width, GV::height};
 	}
+
+	if (currentClipRect == rect) return;
+
+	currentClipRect = rect;
+	glScissor(rect.x, rect.y, rect.w, rect.h);
+	if (checkOpenGlErrors) {
+		checkErrors("glScissor");
+	}
+}
+
+
+static void fastRenderOne(const RenderStruct *obj) {
+	if (!obj->alpha || !obj->srcRect.w || !obj->srcRect.h || !obj->dstRect.w || !obj->dstRect.h) return;
 
 	const bool check = checkOpenGlErrors;
 
-	glBindTexture(GL_TEXTURE_2D, textureId);
-	if (check) {
-		checkErrors("renderWithOpenGL", "glBindTexture");
-	}
-	glColor4f(1, 1, 1, GLfloat(alpha) / 255);
-	if (check) {
-		checkErrors("renderWithOpenGL", "glColor4f");
-	}
-
-	if (angle) {
-		int dX = dst->x + (center ? center->x : 0);
-		int dY = dst->y + (center ? center->y : 0);
+	if (obj->angle) {
+		int dX = obj->dstRect.x + obj->center.x;
+		int dY = obj->dstRect.y + obj->center.y;
 
 		glPushMatrix();
 		if (check) {
-			checkErrors("renderWithOpenGL", "glPushMatrix");
+			checkErrors("glPushMatrix");
 		}
 		glTranslated(dX, dY, 0);
 		if (check) {
-			checkErrors("renderWithOpenGL", "glTranslated");
+			checkErrors("glTranslated");
 		}
-		glRotated(angle, 0, 0, 1);
+		glRotated(obj->angle, 0, 0, 1);
 		if (check) {
-			checkErrors("renderWithOpenGL", "glRotated");
+			checkErrors("glRotated");
 		}
 		glTranslated(-dX, -dY, 0);
 		if (check) {
-			checkErrors("renderWithOpenGL", "glTranslated");
+			checkErrors("glTranslated");
 		}
 	}
 
-	float w = textureWidth;
-	float h = textureHeight;
+	float w = obj->surface->w;
+	float h = obj->surface->h;
 
-	float minX = realSrc.x / w;
-	float minY = realSrc.y / h;
-	float maxX = (realSrc.x + realSrc.w) / w;
-	float maxY = (realSrc.y + realSrc.h) / h;
+	float texMinX = obj->srcRect.x / w;
+	float texMinY = obj->srcRect.y / h;
+	float texMaxX = (obj->srcRect.x + obj->srcRect.w) / w;
+	float texMaxY = (obj->srcRect.y + obj->srcRect.h) / h;
+
+	int vertMinX = obj->dstRect.x;
+	int vertMinY = obj->dstRect.y;
+	int vertMaxX = obj->dstRect.x + obj->dstRect.w;
+	int vertMaxY = obj->dstRect.y + obj->dstRect.h;
 
 	glBegin(GL_QUADS);
-	glTexCoord2f(minX, minY); glVertex2f(dst->x, dst->y);
-	glTexCoord2f(minX, maxY); glVertex2f(dst->x, dst->y + dst->h);
-	glTexCoord2f(maxX, maxY); glVertex2f(dst->x + dst->w, dst->y + dst->h);
-	glTexCoord2f(maxX, minY); glVertex2f(dst->x + dst->w, dst->y);
+	glTexCoord2f(texMinX, texMinY); glVertex2i(vertMinX, vertMinY);
+	glTexCoord2f(texMinX, texMaxY); glVertex2i(vertMinX, vertMaxY);
+	glTexCoord2f(texMaxX, texMaxY); glVertex2i(vertMaxX, vertMaxY);
+	glTexCoord2f(texMaxX, texMinY); glVertex2i(vertMaxX, vertMinY);
 	glEnd();
 	if (check) {
-		checkErrors("renderWithOpenGL", "glBegin(GL_QUADS)/glTexCoord2f/glVertex2f/glEnd");
+		checkErrors("glBegin(GL_QUADS)/glTexCoord2f/glVertex2i/glEnd");
 	}
 
-	if (angle) {
+	if (obj->angle) {
 		glPopMatrix();
 		if (check) {
-			checkErrors("renderWithOpenGL", "glPopMatrix");
+			checkErrors("glPopMatrix");
 		}
 	}
 }
+
+static const size_t MAX_RENDER_GROUP_SIZE = 1024;
+static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
+	float texBuffer[MAX_RENDER_GROUP_SIZE * 8];
+	int vertexBuffer[MAX_RENDER_GROUP_SIZE * 8];
+
+	float *texPtr = texBuffer;
+	int *vertexPtr = vertexBuffer;
+
+	float w = startObj->surface->w;
+	float h = startObj->surface->h;
+
+	const RenderStruct *obj = startObj;
+	const RenderStruct *endObj = startObj + count;
+	while (obj != endObj) {
+		float texMinX = obj->srcRect.x / w;
+		float texMinY = obj->srcRect.y / h;
+		float texMaxX = (obj->srcRect.x + obj->srcRect.w) / w;
+		float texMaxY = (obj->srcRect.y + obj->srcRect.h) / h;
+
+		texPtr[0] = texMinX;
+		texPtr[1] = texMinY;
+		texPtr[2] = texMinX;
+		texPtr[3] = texMaxY;
+		texPtr[4] = texMaxX;
+		texPtr[5] = texMaxY;
+		texPtr[6] = texMaxX;
+		texPtr[7] = texMinY;
+		texPtr += 8;
+
+		int vertMinX = obj->dstRect.x;
+		int vertMinY = obj->dstRect.y;
+		int vertMaxX = obj->dstRect.x + obj->dstRect.w;
+		int vertMaxY = obj->dstRect.y + obj->dstRect.h;
+
+		vertexPtr[0] = vertMinX;
+		vertexPtr[1] = vertMinY;
+		vertexPtr[2] = vertMinX;
+		vertexPtr[3] = vertMaxY;
+		vertexPtr[4] = vertMaxX;
+		vertexPtr[5] = vertMaxY;
+		vertexPtr[6] = vertMaxX;
+		vertexPtr[7] = vertMinY;
+
+		if (obj->angle) {
+			const double sinA = Math::getSin(obj->angle);
+			const double cosA = Math::getCos(obj->angle);
+			const SDL_Point center = {vertMinX + obj->center.x, vertMinY + obj->center.y};
+
+			auto rotate = [&](SDL_Point *a) {
+				int x = a->x - center.x;
+				int y = a->y - center.y;
+
+				a->x = int(x * cosA - y * sinA) + center.x;
+				a->y = int(x * sinA + y * cosA) + center.y;
+			};
+			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 0));
+			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 2));
+			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 4));
+			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 6));
+		}
+		vertexPtr += 8;
+
+		++obj;
+	}
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	checkErrors("glEnableClientState(GL_VERTEX_ARRAY)");
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	checkErrors("glEnableClientState(GL_TEXTURE_COORD_ARRAY)");
+
+	glTexCoordPointer(2, GL_FLOAT, 0, texBuffer);
+	checkErrors("glTexCoordPointer");
+	glVertexPointer(2, GL_INT, 0, vertexBuffer);
+	checkErrors("glVertexPointer");
+
+	glDrawArrays(GL_QUADS, 0, int(count * 4));
+	checkErrors("glDrawArrays");
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	checkErrors("glDisableClientState(GL_VERTEX_ARRAY)");
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	checkErrors("glDisableClientState(GL_TEXTURE_COORD_ARRAY)");
+}
+
+static void fastRender(const RenderStruct *obj, size_t count) {
+	glColor4f(1, 1, 1, GLfloat(obj->alpha) / 255);
+	if (checkOpenGlErrors) {
+		checkErrors("glColor4f");
+	}
+
+	if (count < 1) {
+		for (size_t i = 0; i < count; ++i) {
+			fastRenderOne(obj + i);
+		}
+	}else {
+		fastRenderGroup(obj, count);
+	}
+}
+
 
 
 static SDL_Renderer *renderer = nullptr;
 
 static SDL_Texture *tmpTexture = nullptr;
+static int textureWidth = 0;
+static int textureHeight = 0;
+
 static SurfacePtr toScaleSurface;
 static SurfacePtr scaledSurface;
 static bool scaled = true;
@@ -258,9 +305,6 @@ SurfacePtr Renderer::getScaled(const SurfacePtr &src, int width, int height) {
 	return scaledSurface;
 }
 static void scale() {
-	int textureWidth, textureHeight;
-	SDL_QueryTexture(tmpTexture, nullptr, nullptr, &textureWidth, &textureHeight);
-
 	if (scaleWidth > textureWidth || scaleHeight > textureHeight) {
 		SDL_DestroyTexture(tmpTexture);
 
@@ -300,6 +344,7 @@ static void scale() {
 	}
 
 	scaled = true;
+	Renderer::needToUpdateViewPort = true;
 }
 
 
@@ -386,17 +431,21 @@ static void loop() {
 		}
 
 		if (fastOpenGL) {
-			checkErrors("loop", "Start");
+			checkErrors("Start");
 
-			glViewport(0, 0, GV::width, GV::height);
-			checkErrors("loop", "glViewport");
-			glMatrixMode(GL_PROJECTION);
-			checkErrors("loop", "glMatrixMode");
-			glLoadIdentity();
-			glOrtho(0, GV::width, GV::height, 0, 0.0, 1.0);
-			checkErrors("loop", "glOrtho");
-			glMatrixMode(GL_MODELVIEW);
-			checkErrors("loop", "glMatrixMode");
+			if (Renderer::needToUpdateViewPort) {
+				Renderer::needToUpdateViewPort = false;
+
+				glViewport(0, 0, GV::width, GV::height);
+				checkErrors("glViewport");
+				glMatrixMode(GL_PROJECTION);
+				checkErrors("glMatrixMode");
+				glLoadIdentity();
+				glOrtho(0, GV::width, GV::height, 0, 0.0, 1.0);
+				checkErrors("glOrtho");
+				glMatrixMode(GL_MODELVIEW);
+				checkErrors("glMatrixMode");
+			}
 		}
 		if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)) {
 			Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
@@ -406,29 +455,62 @@ static void loop() {
 		}
 		if (fastOpenGL) {
 			glEnable(GL_TEXTURE_2D);
-			checkErrors("loop", "glEnable(GL_TEXTURE_2D)");
+			checkErrors("glEnable(GL_TEXTURE_2D)");
 
 			glEnable(GL_BLEND);
-			checkErrors("loop", "glEnable(GL_BLEND)");
+			checkErrors("glEnable(GL_BLEND)");
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			checkErrors("loop", "glBlendFunc");
+			checkErrors("glBlendFunc");
+
+			glEnable(GL_SCISSOR_TEST);
+			checkErrors("glEnable(GL_SCISSOR_TEST)");
 		}
 
-		for (size_t i = 0; i < textures.size(); ++i) {
-			if (!GV::inGame) break;
+		if (fastOpenGL && !textures.empty()) {
+			size_t start = 0;
+			SDL_Texture *prevTexture = nullptr;
+			Uint8 prevAlpha = 0;
+			bool prevClip = false;
+			SDL_Rect prevClipRect = {0, 0, 0, 0};
 
-			const RenderStruct &rs = toRender[i];
-			const TexturePtr &texture = textures[i];
+			size_t count = 0;
+			for (size_t i = 0; i < textures.size(); ++i) {
+				if (!GV::inGame) break;
 
-			SDL_RenderSetClipRect(renderer, rs.clip ? &rs.clipRect : nullptr);
+				const RenderStruct &rs = toRender[i];
+				SDL_Texture *texture = textures[i].get();
 
-			if (fastOpenGL) {
-				renderWithOpenGL(texture.get(),
-				                 rs.angle, rs.alpha,
-				                 &rs.srcRect,
-				                 &rs.dstRect,
-				                 &rs.center);
-			}else {
+				if (prevTexture != texture || prevAlpha != rs.alpha ||
+				    prevClip != rs.clip || prevClipRect != rs.clipRect || count == MAX_RENDER_GROUP_SIZE)
+				{
+					setClipRect(prevClip ? &prevClipRect : nullptr);
+					bindTexture(prevTexture);
+					fastRender(toRender.data() + start, count);
+
+					prevTexture = texture;
+					prevClip = rs.clip;
+					prevClipRect = rs.clipRect;
+					prevAlpha = rs.alpha;
+					start = i;
+					count = 0;
+				}
+				++count;
+			}
+			setClipRect(prevClip ? &prevClipRect : nullptr);
+			bindTexture(prevTexture);
+			fastRender(toRender.data() + start, count);
+			unbindTexture();
+		}else {
+			for (size_t i = 0; i < textures.size(); ++i) {
+				if (!GV::inGame) break;
+
+				const RenderStruct &rs = toRender[i];
+				const TexturePtr &texture = textures[i];
+
+				if (SDL_RenderSetClipRect(renderer, rs.clip ? &rs.clipRect : nullptr)) {
+					Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
+				}
+
 				if (SDL_SetTextureAlphaMod(texture.get(), rs.alpha)) {
 					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 				}
@@ -458,9 +540,9 @@ static void loop() {
 			if (empty.w && empty.h) {
 				if (fastOpenGL) {
 					glColor4f(0, 0, 0, 1);
-					checkErrors("loop", "glColor4f");
+					checkErrors("glColor4f");
 					glRecti(0, 0, empty.w, empty.h);
-					checkErrors("loop", "glRecti");
+					checkErrors("glRecti");
 				}else {
 					if (SDL_RenderFillRect(renderer, &empty)) {
 						Utils::outMsg("SDL_RenderFillRect", SDL_GetError());
