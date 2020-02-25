@@ -16,9 +16,132 @@
 #include "utils/utils.h"
 
 
+static bool unusualFormat(const SurfacePtr &surface) {
+	if (surface->format->palette) return false;
+	if (surface->format->format == SDL_PIXELFORMAT_RGBA32) return false;
+	if (surface->format->format == SDL_PIXELFORMAT_RGB24 && SDL_HasColorKey(surface.get()) == SDL_FALSE) return false;
+
+	return true;
+}
+static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
+	Uint32 format = surface->format->format;
+	if (format == SDL_PIXELFORMAT_RGBA32) return surface;
+
+	const int w = surface->w;
+	const int h = surface->h;
+	const int pitch = surface->pitch;
+	const Uint8 *pixels = (const Uint8*)surface->pixels;
+
+	SurfacePtr newSurface = ImageManipulator::getNewNotClear(w, h);
+	const int newPitch = newSurface->pitch;
+	Uint8 *newPixels = (Uint8*)newSurface->pixels;
+
+	Uint32 colorKey;
+	bool hasColorKey = SDL_GetColorKey(surface.get(), &colorKey) == 0;
+	SDL_ClearError();//if has not color key
+
+	const SDL_Palette *palette = surface->format->palette;
+	if (palette) {
+		for (int y = 0; y < h; ++y) {
+			const Uint8 *src = pixels + y * pitch;
+			const Uint8 *srcEnd = src + w - (w % 4);
+			Uint8 *dst = newPixels + y * newPitch;
+
+			while (src != srcEnd) {
+				const SDL_Color &color1 = palette->colors[*src++];
+				const SDL_Color &color2 = palette->colors[*src++];
+				const SDL_Color &color3 = palette->colors[*src++];
+				const SDL_Color &color4 = palette->colors[*src++];
+
+				dst[Rshift / 8] = color1.r;
+				dst[Gshift / 8] = color1.g;
+				dst[Bshift / 8] = color1.b;
+				dst[Ashift / 8] = color1.a;
+
+				dst[Rshift / 8 + 4] = color2.r;
+				dst[Gshift / 8 + 4] = color2.g;
+				dst[Bshift / 8 + 4] = color2.b;
+				dst[Ashift / 8 + 4] = color2.a;
+
+				dst[Rshift / 8 + 8] = color3.r;
+				dst[Gshift / 8 + 8] = color3.g;
+				dst[Bshift / 8 + 8] = color3.b;
+				dst[Ashift / 8 + 8] = color3.a;
+
+				dst[Rshift / 8 + 12] = color4.r;
+				dst[Gshift / 8 + 12] = color4.g;
+				dst[Bshift / 8 + 12] = color4.b;
+				dst[Ashift / 8 + 12] = color4.a;
+
+				dst += 16;
+			}
+			for (int i = 0; i < surface->w % 4; ++i) {
+				const SDL_Color &color = palette->colors[*src++];
+
+				dst[Rshift / 8] = color.r;
+				dst[Gshift / 8] = color.g;
+				dst[Bshift / 8] = color.b;
+				dst[Ashift / 8] = color.a;
+
+				dst += 4;
+			}
+		}
+	}else
+		if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
+			for (int y = 0; y < surface->h; ++y) {
+				const Uint8 *src = pixels + y * pitch;
+				const Uint8 *srcEnd = src + (w - (w % 4)) * 3;
+				Uint8 *dst = newPixels + y * newPitch;
+
+				while (src != srcEnd) {
+					dst[Rshift / 8] = src[Rshift / 8];
+					dst[Gshift / 8] = src[Gshift / 8];
+					dst[Bshift / 8] = src[Bshift / 8];
+					dst[Ashift / 8] = 255;
+
+					dst[Rshift / 8 + 4] = src[Rshift / 8 + 3];
+					dst[Gshift / 8 + 4] = src[Gshift / 8 + 3];
+					dst[Bshift / 8 + 4] = src[Bshift / 8 + 3];
+					dst[Ashift / 8 + 4] = 255;
+
+					dst[Rshift / 8 + 8] = src[Rshift / 8 + 6];
+					dst[Gshift / 8 + 8] = src[Gshift / 8 + 6];
+					dst[Bshift / 8 + 8] = src[Bshift / 8 + 6];
+					dst[Ashift / 8 + 8] = 255;
+
+					dst[Rshift / 8 + 12] = src[Rshift / 8 + 9];
+					dst[Gshift / 8 + 12] = src[Gshift / 8 + 9];
+					dst[Bshift / 8 + 12] = src[Bshift / 8 + 9];
+					dst[Ashift / 8 + 12] = 255;
+
+					src += 12;
+					dst += 16;
+				}
+				for (int i = 0; i < surface->w % 4; ++i) {
+					dst[Rshift / 8] = src[Rshift / 8];
+					dst[Gshift / 8] = src[Gshift / 8];
+					dst[Bshift / 8] = src[Bshift / 8];
+					dst[Ashift / 8] = 255;
+
+					src += 3;
+					dst += 4;
+				}
+			}
+		}else {
+			if (hasColorKey) {
+				SDL_FillRect(newSurface.get(), nullptr, 0);
+			}
+			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
+		}
+
+	return newSurface;
+}
+
+
+
 static std::map<SurfacePtr, std::pair<int, TexturePtr>> textures;
 
-static std::mutex surfaceMutex;
+static std::recursive_mutex surfaceMutex;
 static std::map<std::string, std::pair<int, SurfacePtr>> surfaces;
 
 
@@ -30,13 +153,13 @@ static void trimTexturesCache(const SurfacePtr &last) {
 	 */
 
 	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//in MegaBytes
-	size_t cacheSize = size_t(last->w * last->h * 4);
+	size_t cacheSize = size_t(last->h * last->pitch);
 
 	typedef std::map<SurfacePtr, std::pair<int, TexturePtr>>::const_iterator Iter;
 
 	for (Iter it = textures.begin(); it != textures.end(); ++it) {
 		const SurfacePtr &surface = it->first;
-		cacheSize += size_t(surface->w * surface->h * 4);
+		cacheSize += size_t(surface->h * surface->pitch);
 	}
 	if (cacheSize < MAX_SIZE) return;
 
@@ -63,7 +186,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 		const SurfacePtr &surface = kv.surface();
 
 		if (surface.use_count() == 1) {
-			cacheSize -= size_t(surface->w * surface->h * 4);
+			cacheSize -= size_t(surface->h * surface->pitch);
 			toDelete.push_back(surface);
 		}else
 		if (kv.texture().use_count() == 1) {//1 - value in textures
@@ -78,7 +201,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 		for (const KV &kv : candidatesToDelete) {
 			const SurfacePtr &surface = kv.surface();
 
-			cacheSize -= size_t(surface->w * surface->h * 4);
+			cacheSize -= size_t(surface->h * surface->pitch);
 			toDelete.push_back(surface);
 
 			if (cacheSize < MAX_SIZE) break;
@@ -116,7 +239,7 @@ void ImageCaches::clearTextures() {
 
 static void trimSurfacesCache(const SurfacePtr &last) {
 	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_surfaces_cache"))) * (1 << 20);
-	size_t cacheSize = size_t(last->w * last->h * 4);
+	size_t cacheSize = size_t(last->h * last->pitch);
 
 	typedef std::map<std::string, std::pair<int, SurfacePtr>>::const_iterator Iter;
 
@@ -124,7 +247,7 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
 		const SurfacePtr &surface = it->second.second;
 		if (countSurfaces.find(surface.get()) == countSurfaces.end()) {
-			cacheSize += size_t(surface->w * surface->h * 4);
+			cacheSize += size_t(surface->h * surface->pitch);
 		}
 		countSurfaces[surface.get()] += 1;
 	}
@@ -187,7 +310,7 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 		const SurfacePtr &surface = kv.surface();
 
 		if (!(countSurfaces[surface.get()] -= 1)) {
-			cacheSize -= size_t(surface->w * surface->h * 4);
+			cacheSize -= size_t(surface->h * surface->pitch);
 			toDelete.push_back(surface.get());
 		}
 	}
@@ -203,8 +326,19 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 		}
 	}
 }
-SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path) {
+
+
+SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path, bool formatRGBA32) {
 	std::lock_guard g(surfaceMutex);
+
+	if (formatRGBA32) {
+		SurfacePtr res = getThereIsSurfaceOrNull(path, false);
+		if (res && res->format->format != SDL_PIXELFORMAT_RGBA32) {
+			res = convertToRGBA32(res);
+			setSurface(path, res);
+		}
+		return res;
+	}
 
 	auto it = surfaces.find(path);
 	if (it != surfaces.end()) {
@@ -215,18 +349,25 @@ SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path) {
 }
 
 
-SurfacePtr ImageCaches::getSurface(const std::string &path) {
+
+
+SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
+	std::lock_guard g(surfaceMutex);
+
+	SurfacePtr res;
+	if (formatRGBA32) {
+		res = getSurface(path, false);
+		if (res && res->format->format != SDL_PIXELFORMAT_RGBA32) {
+			res = convertToRGBA32(res);
+			setSurface(path, res);
+		}
+		return res;
+	}
+
 	if (path.empty()) return nullptr;
 
-	SurfacePtr t = getThereIsSurfaceOrNull(path);
-	if (t) return t;
-
-	static std::mutex mutex;
-	std::lock_guard g(mutex);
-
-	t = getThereIsSurfaceOrNull(path);
-	if (t) return t;
-
+	res = getThereIsSurfaceOrNull(path, formatRGBA32);
+	if (res) return res;
 
 	std::string realPath = path;
 	size_t end = realPath.find('?');
@@ -239,130 +380,27 @@ SurfacePtr ImageCaches::getSurface(const std::string &path) {
 		}
 	}
 
-	SurfacePtr surface(IMG_Load(realPath.c_str()), SDL_FreeSurface);
-	if (!surface) {
+	res.reset(IMG_Load(realPath.c_str()), SDL_FreeSurface);
+	if (!res) {
 		Utils::outMsg("IMG_Load", IMG_GetError());
 		return nullptr;
 	}
 
-	SDL_SetSurfaceBlendMode(surface.get(), SDL_BLENDMODE_NONE);
-
-	const int w = surface->w;
-	const int h = surface->h;
-	const int pitch = surface->pitch;
-	const Uint8 *pixels = (const Uint8*)surface->pixels;
-
-	Uint32 format = surface->format->format;
-	if (format != SDL_PIXELFORMAT_RGBA32) {
-		SurfacePtr newSurface = ImageManipulator::getNewNotClear(w, h);
-		const int newPitch = newSurface->pitch;
-		Uint8 *newPixels = (Uint8*)newSurface->pixels;
-
-		bool hasColorKey = SDL_GetColorKey(surface.get(), nullptr) == 0;
-		SDL_ClearError();//if has not color key
-
-		const SDL_Palette *palette = surface->format->palette;
-		if (palette && !hasColorKey) {
-			for (int y = 0; y < h; ++y) {
-				const Uint8 *src = pixels + y * pitch;
-				const Uint8 *srcEnd = src + w - (w % 4);
-				Uint8 *dst = newPixels + y * newPitch;
-
-				while (src != srcEnd) {
-					const SDL_Color &color1 = palette->colors[*src++];
-					const SDL_Color &color2 = palette->colors[*src++];
-					const SDL_Color &color3 = palette->colors[*src++];
-					const SDL_Color &color4 = palette->colors[*src++];
-
-					dst[Rshift / 8] = color1.r;
-					dst[Gshift / 8] = color1.g;
-					dst[Bshift / 8] = color1.b;
-					dst[Ashift / 8] = color1.a;
-
-					dst[Rshift / 8 + 4] = color2.r;
-					dst[Gshift / 8 + 4] = color2.g;
-					dst[Bshift / 8 + 4] = color2.b;
-					dst[Ashift / 8 + 4] = color2.a;
-
-					dst[Rshift / 8 + 8] = color3.r;
-					dst[Gshift / 8 + 8] = color3.g;
-					dst[Bshift / 8 + 8] = color3.b;
-					dst[Ashift / 8 + 8] = color3.a;
-
-					dst[Rshift / 8 + 12] = color4.r;
-					dst[Gshift / 8 + 12] = color4.g;
-					dst[Bshift / 8 + 12] = color4.b;
-					dst[Ashift / 8 + 12] = color4.a;
-
-					dst += 16;
-				}
-				for (int i = 0; i < surface->w % 4; ++i) {
-					const SDL_Color &color = palette->colors[*src++];
-
-					dst[Rshift / 8] = color.r;
-					dst[Gshift / 8] = color.g;
-					dst[Bshift / 8] = color.b;
-					dst[Ashift / 8] = color.a;
-
-					dst += 4;
-				}
-			}
-		}else
-		if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
-				for (int y = 0; y < surface->h; ++y) {
-					const Uint8 *src = pixels + y * pitch;
-					const Uint8 *srcEnd = src + (w - (w % 4)) * 3;
-					Uint8 *dst = newPixels + y * newPitch;
-
-					while (src != srcEnd) {
-						dst[Rshift / 8] = src[Rshift / 8];
-						dst[Gshift / 8] = src[Gshift / 8];
-						dst[Bshift / 8] = src[Bshift / 8];
-						dst[Ashift / 8] = 255;
-
-						dst[Rshift / 8 + 4] = src[Rshift / 8 + 3];
-						dst[Gshift / 8 + 4] = src[Gshift / 8 + 3];
-						dst[Bshift / 8 + 4] = src[Bshift / 8 + 3];
-						dst[Ashift / 8 + 4] = 255;
-
-						dst[Rshift / 8 + 8] = src[Rshift / 8 + 6];
-						dst[Gshift / 8 + 8] = src[Gshift / 8 + 6];
-						dst[Bshift / 8 + 8] = src[Bshift / 8 + 6];
-						dst[Ashift / 8 + 8] = 255;
-
-						dst[Rshift / 8 + 12] = src[Rshift / 8 + 9];
-						dst[Gshift / 8 + 12] = src[Gshift / 8 + 9];
-						dst[Bshift / 8 + 12] = src[Bshift / 8 + 9];
-						dst[Ashift / 8 + 12] = 255;
-
-						src += 12;
-						dst += 16;
-					}
-					for (int i = 0; i < surface->w % 4; ++i) {
-						dst[Rshift / 8] = src[Rshift / 8];
-						dst[Gshift / 8] = src[Gshift / 8];
-						dst[Bshift / 8] = src[Bshift / 8];
-						dst[Ashift / 8] = 255;
-
-						src += 3;
-						dst += 4;
-					}
-			}
-		}else {
-			if (hasColorKey) {
-				SDL_FillRect(newSurface.get(), nullptr, 0);
-			}
-			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
-		}
-
-		surface = newSurface;
+	SDL_Palette *palette = res->format->palette;
+	Uint32 colorKey;
+	bool hasColorKey = SDL_GetColorKey(res.get(), &colorKey) == 0;
+	SDL_ClearError();//if has not color key
+	if (palette && hasColorKey) {
+		SDL_Color &color = palette->colors[colorKey];
+		color.r = color.g = color.b = color.a = 0;
 	}
 
-	std::lock_guard g2(surfaceMutex);
-	trimSurfacesCache(surface);
-	surfaces[path] = std::make_pair(Utils::getTimer(), surface);
+	if (unusualFormat(res)) {
+		res = convertToRGBA32(res);
+	}
+	setSurface(path, res);
 
-	return surface;
+	return res;
 }
 
 void ImageCaches::setSurface(const std::string &path, const SurfacePtr &surface) {

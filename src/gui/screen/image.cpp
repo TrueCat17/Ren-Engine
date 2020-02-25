@@ -31,7 +31,7 @@ void Image::updateTexture(bool skipError) {
 	if (!surface || first_param != prevImagePath) {
 		prevImagePath = first_param;
 
-		surface = ImageManipulator::getImage(first_param);
+		surface = ImageManipulator::getImage(first_param, false);
 		if (surface) {
 			if (xsizeIsTextureWidth) xsize = surface->w;
 			if (ysizeIsTextureHeight) ysize = surface->h;

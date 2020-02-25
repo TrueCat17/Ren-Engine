@@ -91,7 +91,7 @@ SurfacePtr ImageManipulator::getNewNotClear(int w, int h) {
 
 
 void ImageManipulator::loadImage(const std::string &desc) {
-	SurfacePtr image = ImageCaches::getThereIsSurfaceOrNull(desc);
+	SurfacePtr image = ImageCaches::getThereIsSurfaceOrNull(desc, false);
 	if (image) return;
 
 	std::lock_guard g(preloadMutex);
@@ -112,7 +112,7 @@ void preloadThread() {
 					desc = toLoadImages.front();
 					toLoadImages.pop_front();
 				}
-				ImageManipulator::getImage(desc);
+				ImageManipulator::getImage(desc, false);
 			}
 		}else {
 			decltype(toSaveImages)::value_type tuple;
@@ -132,10 +132,10 @@ void preloadThread() {
 static std::mutex vecMutex;
 static std::vector<std::string> processingImages;
 
-SurfacePtr ImageManipulator::getImage(std::string desc) {
+SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 	desc = Algo::clear(desc);
 
-	SurfacePtr res = ImageCaches::getThereIsSurfaceOrNull(desc);
+	SurfacePtr res = ImageCaches::getThereIsSurfaceOrNull(desc, formatRGBA32);
 	if (res) return res;
 
 
@@ -145,7 +145,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc) {
 			std::lock_guard g(vecMutex);
 			in = Algo::in(desc, processingImages);
 			if (!in) {
-				res = ImageCaches::getThereIsSurfaceOrNull(desc);
+				res = ImageCaches::getThereIsSurfaceOrNull(desc, formatRGBA32);
 				if (res) return res;
 
 				processingImages.push_back(desc);
@@ -178,7 +178,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc) {
 	if (args.size() == 1) {
 		const std::string imagePath = Algo::clear(args[0]);
 
-		res = ImageCaches::getSurface(imagePath);
+		res = ImageCaches::getSurface(imagePath, formatRGBA32);
 		return res;
 	}
 

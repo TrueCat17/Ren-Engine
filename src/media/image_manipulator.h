@@ -28,7 +28,7 @@ public:
 	static SurfacePtr getNewNotClear(int w, int h);
 
 	static void loadImage(const std::string &desc);
-	static SurfacePtr getImage(std::string desc);
+	static SurfacePtr getImage(std::string desc, bool formatRGBA32 = true);
 };
 
 #endif // IMAGE_MANIPULATOR_H

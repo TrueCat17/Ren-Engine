@@ -161,6 +161,7 @@ set(SOURCES
 	utils/image_caches.cpp
 	utils/math.cpp
 	utils/mouse.cpp
+	utils/path_finder.cpp
 	utils/string.cpp
 	utils/utils.cpp
 )

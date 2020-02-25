@@ -80,13 +80,41 @@ static void checkErrorsImpl(const char *from, const char *glFuncName) {
 #define checkErrors(glFuncName) checkErrorsImpl(__FUNCTION__, glFuncName)
 
 
-static SDL_Texture *currentTexture = nullptr;
-static void bindTexture(SDL_Texture *texture) {
-	if (!texture || currentTexture == texture) return;
+static bool surfaceIsOpaque(const SurfacePtr &surface) {
+	SDL_Palette *palette = surface->format->palette;
+	if (palette) {
+		for (int i = 0; i < palette->ncolors; ++i) {
+			if (palette->colors[i].a != 255) return false;
+		}
+		return true;
+	}
+	return surface->format->Amask == 0;
+}
 
-	currentTexture = texture;
-	if (SDL_GL_BindTexture(texture, nullptr, nullptr)) {
-		Utils::outMsg("SDL_GL_BindTexture", SDL_GetError());
+static SDL_Texture *currentTexture = nullptr;
+static bool currentTextureIsOpaque = false;
+static void bindTexture(SDL_Texture *texture, bool opaque) {
+	if (!texture) return;
+
+	if (currentTexture != texture) {
+		if (!currentTexture) currentTextureIsOpaque = !opaque;
+		currentTexture = texture;
+
+		if (SDL_GL_BindTexture(texture, nullptr, nullptr)) {
+			Utils::outMsg("SDL_GL_BindTexture", SDL_GetError());
+		}
+	}
+
+	if (currentTextureIsOpaque != opaque) {
+		currentTextureIsOpaque = opaque;
+
+		if (opaque) {
+			glDisable(GL_BLEND);
+			checkErrors("glDisable(GL_BLEND)");
+		}else {
+			glEnable(GL_BLEND);
+			checkErrors("glEnable(GL_BLEND)");
+		}
 	}
 }
 static void unbindTexture() {
@@ -453,22 +481,18 @@ static void loop() {
 		if (SDL_RenderClear(renderer)) {
 			Utils::outMsg("SDL_RenderClear", SDL_GetError());
 		}
-		if (fastOpenGL) {
+
+		if (fastOpenGL && !textures.empty()) {
 			glEnable(GL_TEXTURE_2D);
 			checkErrors("glEnable(GL_TEXTURE_2D)");
-
-			glEnable(GL_BLEND);
-			checkErrors("glEnable(GL_BLEND)");
+			glEnable(GL_SCISSOR_TEST);
+			checkErrors("glEnable(GL_SCISSOR_TEST)");
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			checkErrors("glBlendFunc");
 
-			glEnable(GL_SCISSOR_TEST);
-			checkErrors("glEnable(GL_SCISSOR_TEST)");
-		}
-
-		if (fastOpenGL && !textures.empty()) {
 			size_t start = 0;
 			SDL_Texture *prevTexture = nullptr;
+			bool prevIsOpaque = false;
 			Uint8 prevAlpha = 0;
 			bool prevClip = false;
 			SDL_Rect prevClipRect = {0, 0, 0, 0};
@@ -484,20 +508,21 @@ static void loop() {
 				    prevClip != rs.clip || prevClipRect != rs.clipRect || count == MAX_RENDER_GROUP_SIZE)
 				{
 					setClipRect(prevClip ? &prevClipRect : nullptr);
-					bindTexture(prevTexture);
+					bindTexture(prevTexture, prevIsOpaque);
 					fastRender(toRender.data() + start, count);
 
 					prevTexture = texture;
+					prevIsOpaque = surfaceIsOpaque(rs.surface);
+					prevAlpha = rs.alpha;
 					prevClip = rs.clip;
 					prevClipRect = rs.clipRect;
-					prevAlpha = rs.alpha;
 					start = i;
 					count = 0;
 				}
 				++count;
 			}
 			setClipRect(prevClip ? &prevClipRect : nullptr);
-			bindTexture(prevTexture);
+			bindTexture(prevTexture, prevIsOpaque);
 			fastRender(toRender.data() + start, count);
 			unbindTexture();
 		}else {

@@ -36,7 +36,7 @@ std::string getVersion() {
 	if (versionStr.empty()) {
 		std::string major = "0";
 		std::string minor = "9";
-		std::string micro = "0";
+		std::string micro = "1";
 
 		std::string date = __DATE__;
 
@@ -209,7 +209,7 @@ bool init() {
 	Logger::init();
 	Config::init();
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
+	if (SDL_Init(SDL_INIT_VIDEO)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
 	}
@@ -393,9 +393,12 @@ void loop() {
 				if (!event.key.repeat) {
 					updateKeyboard = true;
 
-					SDL_Scancode key = event.key.keysym.scancode;
+					SDL_Keycode key = event.key.keysym.sym;
+					if (key == SDLK_KP_ENTER) {
+						key = SDLK_RETURN;
+					}
 
-					if (key == SDL_SCANCODE_RETURN || key == SDL_SCANCODE_KP_ENTER || key == SDL_SCANCODE_SPACE) {
+					if (key == SDLK_RETURN || key == SDLK_SPACE) {
 						if (BtnRect::checkMouseClick(true, true)) {
 							Key::setToNotReact(key);
 						}else {
@@ -410,7 +413,7 @@ void loop() {
 			if (event.type == SDL_KEYUP) {
 				updateKeyboard = true;
 
-				SDL_Scancode key = event.key.keysym.scancode;
+				SDL_Keycode key = event.key.keysym.sym;
 				Key::setUpState(key);
 			}
 		}

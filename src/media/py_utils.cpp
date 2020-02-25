@@ -20,6 +20,7 @@
 #include "utils/math.h"
 #include "utils/mouse.h"
 #include "utils/string.h"
+#include "utils/path_finder.h"
 #include "utils/utils.h"
 
 
@@ -113,7 +114,7 @@ static void setGlobalFunc(const char *key, T t) {
 	PyObject *pyFunc = makeFuncImpl(key, t);
 
 	PyDict_SetItemString(PyUtils::global, key, pyFunc);
-	Py_DECREF(pyFunc);
+	--pyFunc->ob_refcnt;
 }
 
 static long ftoi(double d) {
@@ -122,6 +123,7 @@ static long ftoi(double d) {
 static std::string getCurrentMod() {
 	return GV::mainExecNode->params;
 }
+
 
 PyUtils::PyUtils() {
 	Py_Initialize();
@@ -207,6 +209,10 @@ PyUtils::PyUtils() {
 	setGlobalFunc("get_local_mouse", getLocalMouse);
 	setGlobalFunc("get_mouse_down", Mouse::getMouseDown);
 	setGlobalFunc("set_can_mouse_hide", Mouse::setCanHide);
+
+	setGlobalFunc("path_update_location", PathFinder::updateLocation);
+	setGlobalFunc("path_on_location", PathFinder::findPath);
+	setGlobalFunc("path_between_locations", PathFinder::findPathBetweenLocations);
 }
 PyUtils::~PyUtils() {
 	constObjects.clear();

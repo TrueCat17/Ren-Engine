@@ -29,6 +29,7 @@
 #include "utils/file_system.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/path_finder.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -507,7 +508,7 @@ int Game::getStageHeight() {
 }
 
 int Game::getImageWidth(const std::string &image) {
-	SurfacePtr surface = ImageManipulator::getImage(image);
+	SurfacePtr surface = ImageManipulator::getImage(image, false);
 	if (surface) {
 		return surface->w;
 	}
@@ -515,7 +516,7 @@ int Game::getImageWidth(const std::string &image) {
 	return 0;
 }
 int Game::getImageHeight(const std::string &image) {
-	SurfacePtr surface = ImageManipulator::getImage(image);
+	SurfacePtr surface = ImageManipulator::getImage(image, false);
 	if (surface) {
 		return surface->h;
 	}
@@ -524,7 +525,7 @@ int Game::getImageHeight(const std::string &image) {
 }
 
 Uint32 Game::getImagePixel(const std::string &image, int x, int y) {
-	SurfacePtr surface = ImageManipulator::getImage(image);
+	SurfacePtr surface = ImageManipulator::getImage(image, false);
 	if (surface) {
 		SDL_Rect draw = {x, y, surface->w, surface->h};
 		SDL_Rect crop = {0, 0, surface->w, surface->h};

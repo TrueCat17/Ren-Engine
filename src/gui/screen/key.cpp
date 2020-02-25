@@ -37,15 +37,14 @@ Key::~Key() {
 	}
 }
 
-void Key::setToNotReact(const SDL_Scancode key) {
-	if (key == SDL_SCANCODE_SPACE) {
+void Key::setToNotReact(const SDL_Keycode key) {
+	if (key == SDLK_SPACE) {
 		notReactOnSpace = true;
-	}else
-	if (key == SDL_SCANCODE_RETURN) {
+	}else if (key == SDLK_RETURN) {
 		notReactOnEnter = true;
 	}
 }
-void Key::setFirstDownState(const SDL_Scancode key) {
+void Key::setFirstDownState(const SDL_Keycode key) {
 	for (Key *sk : screenKeys) {
 		if (sk->key == key && sk->isModal()) {
 			sk->lastDown = 0;
@@ -54,11 +53,11 @@ void Key::setFirstDownState(const SDL_Scancode key) {
 		}
 	}
 }
-void Key::setUpState(const SDL_Scancode key) {
-	if (key == SDL_SCANCODE_SPACE) {
+void Key::setUpState(const SDL_Keycode key) {
+	if (key == SDLK_SPACE) {
 		notReactOnSpace = false;
 	}else
-	if (key == SDL_SCANCODE_RETURN) {
+	if (key == SDLK_RETURN) {
 		notReactOnEnter = false;
 	}
 
@@ -85,7 +84,8 @@ void Key::checkEvents() {
 		prevKeyName = first_param;
 
 		const int start = String::startsWith(first_param, "K_", true) ? 2 : 0;
-		key = SDL_GetScancodeFromName(first_param.c_str() + start);
+		key = SDL_GetKeyFromName(first_param.c_str() + start);
+		scancode = SDL_GetScancodeFromKey(key);
 
 		lastDown = 0;
 		prevIsDown = false;
@@ -93,15 +93,15 @@ void Key::checkEvents() {
 		wasFirstDelay = false;
 	}
 
-	if (key == SDL_SCANCODE_UNKNOWN) {
+	if (key == SDLK_UNKNOWN) {
 		Utils::outMsg("SDL_GetScancodeFromName",
 					  "KeyName <" + first_param + ">\n" +
 					  SDL_GetError() + '\n' +
 					  node->getPlace());
 	}else {
-		if ((key == SDL_SCANCODE_SPACE && notReactOnSpace) || (key == SDL_SCANCODE_RETURN && notReactOnEnter)) return;
+		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 
-		if ((GV::keyBoardState && GV::keyBoardState[key]) || inFirstDown) {
+		if ((GV::keyBoardState && GV::keyBoardState[scancode]) || inFirstDown) {
 			const double dTime = (GV::frameStartTime - lastDown) / 1000.0;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 

@@ -7,8 +7,8 @@
 
 class ImageCaches {
 public:
-	static SurfacePtr getThereIsSurfaceOrNull(const std::string &path);
-	static SurfacePtr getSurface(const std::string &path);
+	static SurfacePtr getThereIsSurfaceOrNull(const std::string &path, bool formatRGBA32 = true);
+	static SurfacePtr getSurface(const std::string &path, bool formatRGBA32 = true);
 	static void setSurface(const std::string &path, const SurfacePtr &surface);
 
 	static TexturePtr getTexture(SDL_Renderer *renderer, const SurfacePtr &surface);

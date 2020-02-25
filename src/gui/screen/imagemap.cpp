@@ -35,8 +35,8 @@ void Imagemap::updateTexture(bool skipError) {
 		prevGroundPath = groundPath;
 		prevHoverPath = hoverPath;
 
-		surface = ImageManipulator::getImage(groundPath);
-		hover = ImageManipulator::getImage(hoverPath);
+		surface = ImageManipulator::getImage(groundPath, false);
+		hover = ImageManipulator::getImage(hoverPath, false);
 
 		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
 		if (ysizeIsTextureHeight) ysize = surface ? surface->h : 0;

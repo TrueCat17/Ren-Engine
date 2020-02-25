@@ -140,13 +140,18 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 		return 0;
 	}
 
-	const Uint8 *pixel = ((const Uint8 *)surface->pixels + y * surface->pitch + x * 4);
-	const Uint32 r = pixel[Rshift / 8];
-	const Uint32 g = pixel[Gshift / 8];
-	const Uint32 b = pixel[Bshift / 8];
-	const Uint32 a = pixel[Ashift / 8];
-
-	return (r << 24) + (g << 16) + (b << 8) + a;
+	const Uint8 *pixel = (const Uint8 *)surface->pixels + y * surface->pitch + x * surface->format->BytesPerPixel;
+	Uint8 r, g, b, a;
+	if (surface->format->palette) {
+		SDL_Color &c = surface->format->palette->colors[*pixel];
+		r = c.r;
+		g = c.g;
+		b = c.b;
+		a = c.a;
+	}else {
+		SDL_GetRGBA(*reinterpret_cast<const Uint32*>(pixel), surface->format, &r, &g, &b, &a);
+	}
+	return (Uint32(r) << 24) + (Uint32(g) << 16) + (Uint32(b) << 8) + a;
 }
 
 void Utils::registerImage(Node *imageNode) {

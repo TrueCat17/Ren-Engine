@@ -97,7 +97,7 @@ void TextButton::updateTexture(bool skipError) {
 		prevHover = hover;
 
 		const std::string &path = !btnRect.mouseOvered ? ground : hover;
-		surface = ImageManipulator::getImage(path);
+		surface = ImageManipulator::getImage(path, false);
 
 		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
 		if (ysizeIsTextureHeight) ysize = surface ? surface->h : 0;
