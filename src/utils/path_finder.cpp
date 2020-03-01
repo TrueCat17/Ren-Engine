@@ -766,15 +766,15 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	size_t s = size_t(Py_SIZE(bannedExitDestinations));
 	for (size_t i = 0; i < s; ++i) {
 		PyObject *elem = PyList_GET_ITEM(bannedExitDestinations, i);
-		if (!PyTuple_CheckExact(elem)) {
-			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExitDestinations[i] is tuple with len 2");
+		if (!PyTuple_CheckExact(elem) || Py_SIZE(elem) != 2) {
+			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects banned_exit_destinations[i] is tuple with len 2");
 			continue;
 		}
 
 		PyObject *pyLocationName = PyTuple_GET_ITEM(elem, 0);
 		PyObject *pyPlaceName = PyTuple_GET_ITEM(elem, 1);
-		if (!(PyString_CheckExact(pyLocationName) && (PyString_CheckExact(pyPlaceName) || pyPlaceName == Py_None))) {
-			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects type(location_name) is str and type(place_name) is str or NoneType");
+		if (!PyString_CheckExact(pyLocationName) || !PyString_CheckExact(pyPlaceName)) {
+			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects banned_exit_destination[i] == (str, str)");
 			continue;
 		}
 
