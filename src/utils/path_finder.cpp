@@ -13,6 +13,8 @@
 #include "utils/utils.h"
 
 
+static const float EXIT_COST = 20;
+
 static uint32_t divCeil(uint32_t a, uint32_t b) {
 	return (a + b - 1) / b;
 }
@@ -876,7 +878,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		}else {
 			for (LocationNode &tmpNode : locationNodes) {
 				if (node.toLocationName == tmpNode.mipMap->name && node.toPlaceName == tmpNode.placeName) {
-					node.destinations.push_back({tmpNode.id, 1});//1 - because cost must be > 0
+					node.destinations.push_back({tmpNode.id, EXIT_COST});
 					break;
 				}
 			}
@@ -926,9 +928,9 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 		path.push_back({PointInt(-1), startId});
 	}
-	if (!path.empty()) {
-		path.back() = {xStart, yStart};
-		path.front() = {xEnd, yEnd};
+	if (path.size() > 1) {
+		path[path.size() - 1] = {xStart, yStart};
+		path[0] = {xEnd, yEnd};
 	}
 
 	//set result
