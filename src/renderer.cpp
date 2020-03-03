@@ -43,9 +43,11 @@ bool RenderStruct::operator==(const RenderStruct &o) const {
 #include "utils/utils.h"
 
 
+typedef void (GLAPIENTRY *BLENDCOLOR_TYPE)(GLclampf, GLclampf, GLclampf, GLclampf);
+static BLENDCOLOR_TYPE blendColor;
+static PFNGLBLENDFUNCSEPARATEPROC blendFuncSeparate;
 
 static SDL_Renderer *renderer = nullptr;
-static PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
 
 bool Renderer::needToRender = false;
 bool Renderer::needToRedraw = false;
@@ -112,7 +114,7 @@ static void bindTexture(SDL_Texture *texture, bool opaque) {
 		currentTextureIsOpaque = opaque;
 
 		if (opaque) {
-			glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+			blendFuncSeparate(GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
 			checkErrors("glBlendFuncSeparate");
 		}else {
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -299,7 +301,7 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 static void fastRender(const RenderStruct *obj, size_t count) {
 	glColor4f(1, 1, 1, GLfloat(obj->alpha) / 255);
 	checkErrors("glColor4f");
-	glBlendColor(1, 1, 1, GLfloat(obj->alpha) / 255);
+	blendColor(1, 1, 1, GLfloat(obj->alpha) / 255);
 	checkErrors("glBlendColor");
 
 	if (count < 7) {
@@ -666,9 +668,10 @@ static void initImpl(bool *inited, bool *error) {
 		}
 	}
 	if (fastOpenGL) {
-		glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
-		if (!glBlendFuncSeparate) {
-			Utils::outMsg("Renderer::init", "glBlendFuncSeparate not found");
+		blendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
+		blendColor = (BLENDCOLOR_TYPE)SDL_GL_GetProcAddress("glBlendColor");
+		if (!blendFuncSeparate || !blendColor) {
+			Utils::outMsg("Renderer::init", "glBlendFuncSeparate or glBlendColor not found");
 			fastOpenGL = false;
 		}
 	}
