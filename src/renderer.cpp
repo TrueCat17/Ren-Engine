@@ -44,6 +44,9 @@ bool RenderStruct::operator==(const RenderStruct &o) const {
 
 
 
+static SDL_Renderer *renderer = nullptr;
+static PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
+
 bool Renderer::needToRender = false;
 bool Renderer::needToRedraw = false;
 bool Renderer::needToUpdateViewPort = true;
@@ -109,19 +112,19 @@ static void bindTexture(SDL_Texture *texture, bool opaque) {
 		currentTextureIsOpaque = opaque;
 
 		if (opaque) {
-			glDisable(GL_BLEND);
-			checkErrors("glDisable(GL_BLEND)");
+			glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+			checkErrors("glBlendFuncSeparate");
 		}else {
-			glEnable(GL_BLEND);
-			checkErrors("glEnable(GL_BLEND)");
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			checkErrors("glBlendFunc");
 		}
 	}
 }
 static void unbindTexture() {
 	if (currentTexture) {
-		currentTexture = nullptr;
-		glBindTexture(GL_TEXTURE_2D, 0);
+		SDL_GL_UnbindTexture(currentTexture);
 		checkErrors("glBindTexture(GL_TEXTURE_2D, 0)");
+		currentTexture = nullptr;
 	}
 }
 
@@ -132,15 +135,21 @@ static void setClipRect(const SDL_Rect *clipRect) {
 	if (clipRect) {
 		rect = *clipRect;
 	}else {
-		rect = {0, 0, GV::width, GV::height};
+		rect = {GV::screens->getX(), GV::screens->getY(), GV::width, GV::height};
 	}
 
 	if (currentClipRect == rect) return;
 
 	currentClipRect = rect;
-	glScissor(rect.x, rect.y, rect.w, rect.h);
-	if (checkOpenGlErrors) {
-		checkErrors("glScissor");
+	if (fastOpenGL) {
+		glScissor(rect.x, rect.y, rect.w, rect.h);
+		if (checkOpenGlErrors) {
+			checkErrors("glScissor");
+		}
+	}else {
+		if (SDL_RenderSetClipRect(renderer, &rect)) {
+			Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
+		}
 	}
 }
 
@@ -289,11 +298,11 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 
 static void fastRender(const RenderStruct *obj, size_t count) {
 	glColor4f(1, 1, 1, GLfloat(obj->alpha) / 255);
-	if (checkOpenGlErrors) {
-		checkErrors("glColor4f");
-	}
+	checkErrors("glColor4f");
+	glBlendColor(1, 1, 1, GLfloat(obj->alpha) / 255);
+	checkErrors("glBlendColor");
 
-	if (count < 1) {
+	if (count < 7) {
 		for (size_t i = 0; i < count; ++i) {
 			fastRenderOne(obj + i);
 		}
@@ -303,8 +312,6 @@ static void fastRender(const RenderStruct *obj, size_t count) {
 }
 
 
-
-static SDL_Renderer *renderer = nullptr;
 
 static SDL_Texture *tmpTexture = nullptr;
 static int textureWidth = 0;
@@ -339,10 +346,12 @@ static void scale() {
 		textureWidth  = int(std::ceil(scaleWidth / 256.0)) * 256;
 		textureHeight = int(std::ceil(scaleHeight / 256.0)) * 256;
 
-		tmpTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET,
-									   textureWidth, textureHeight);
+		tmpTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, textureWidth, textureHeight);
 		if (!tmpTexture) {
 			Utils::outMsg("SDL_CreateTexture", SDL_GetError());
+			scaledSurface = nullptr;
+			scaled = true;
+			return;
 		}
 	}
 
@@ -464,12 +473,17 @@ static void loop() {
 			if (Renderer::needToUpdateViewPort) {
 				Renderer::needToUpdateViewPort = false;
 
-				glViewport(0, 0, GV::width, GV::height);
+				int x = GV::screens->getX();
+				int y = GV::screens->getY();
+				int w = GV::width;
+				int h = GV::height;
+
+				glViewport(x, y, w, h);
 				checkErrors("glViewport");
 				glMatrixMode(GL_PROJECTION);
 				checkErrors("glMatrixMode");
 				glLoadIdentity();
-				glOrtho(0, GV::width, GV::height, 0, 0.0, 1.0);
+				glOrtho(x, w + x, h + y, y, 0.0, 1.0);
 				checkErrors("glOrtho");
 				glMatrixMode(GL_MODELVIEW);
 				checkErrors("glMatrixMode");
@@ -483,12 +497,10 @@ static void loop() {
 		}
 
 		if (fastOpenGL && !textures.empty()) {
-			glEnable(GL_TEXTURE_2D);
-			checkErrors("glEnable(GL_TEXTURE_2D)");
+			glEnable(GL_BLEND);
+			checkErrors("glEnable(GL_BLEND)");
 			glEnable(GL_SCISSOR_TEST);
 			checkErrors("glEnable(GL_SCISSOR_TEST)");
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			checkErrors("glBlendFunc");
 
 			size_t start = 0;
 			SDL_Texture *prevTexture = nullptr;
@@ -532,9 +544,7 @@ static void loop() {
 				const RenderStruct &rs = toRender[i];
 				const TexturePtr &texture = textures[i];
 
-				if (SDL_RenderSetClipRect(renderer, rs.clip ? &rs.clipRect : nullptr)) {
-					Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
-				}
+				setClipRect(rs.clip ? &rs.clipRect : nullptr);
 
 				if (SDL_SetTextureAlphaMod(texture.get(), rs.alpha)) {
 					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
@@ -563,6 +573,8 @@ static void loop() {
 			}
 
 			if (empty.w && empty.h) {
+				setClipRect(&empty);
+
 				if (fastOpenGL) {
 					glColor4f(0, 0, 0, 1);
 					checkErrors("glColor4f");
@@ -590,6 +602,7 @@ static void loop() {
 
 	SDL_DestroyRenderer(renderer);
 }
+
 
 static void initImpl(bool *inited, bool *error) {
 	int renderDriver = -1;
@@ -649,6 +662,13 @@ static void initImpl(bool *inited, bool *error) {
 		while (++countErrors < maxCountErrors && glGetError() != GL_NO_ERROR) {}
 		if (countErrors == maxCountErrors) {
 			Utils::outMsg("Renderer::init", "Using OpenGL failed");
+			fastOpenGL = false;
+		}
+	}
+	if (fastOpenGL) {
+		glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
+		if (!glBlendFuncSeparate) {
+			Utils::outMsg("Renderer::init", "glBlendFuncSeparate not found");
 			fastOpenGL = false;
 		}
 	}

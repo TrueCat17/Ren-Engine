@@ -414,6 +414,9 @@ void loop() {
 				updateKeyboard = true;
 
 				SDL_Keycode key = event.key.keysym.sym;
+				if (key == SDLK_KP_ENTER) {
+					key = SDLK_RETURN;
+				}
 				Key::setUpState(key);
 			}
 		}

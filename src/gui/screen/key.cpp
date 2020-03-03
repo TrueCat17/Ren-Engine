@@ -101,7 +101,13 @@ void Key::checkEvents() {
 	}else {
 		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 
-		if ((GV::keyBoardState && GV::keyBoardState[scancode]) || inFirstDown) {
+		auto keyPressed = [](SDL_Scancode scancode) -> bool {
+			if (!GV::keyBoardState) return false;
+			if (GV::keyBoardState[scancode]) return true;
+			if (scancode == SDL_SCANCODE_RETURN) return GV::keyBoardState[SDL_SCANCODE_KP_ENTER];
+			return false;
+		};
+		if (inFirstDown || keyPressed(scancode)) {
 			const double dTime = (GV::frameStartTime - lastDown) / 1000.0;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
