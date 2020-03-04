@@ -135,7 +135,7 @@ static void bitmapMake(const SurfacePtr &surface) {
 
 		if (surface->format->BytesPerPixel == 4) {
 			for (size_t y = 0; y < heightBitmapObject; ++y) {
-				const Uint8 *line = pixels + y * widthBitmapObject * 4;
+				const Uint8 *line = pixels + y * size_t(surface->pitch);
 				const size_t lineBitmap = y * widthBitmapObject;
 
 				for (size_t x = 0; x < widthBitmapObject; ++x) {
@@ -155,20 +155,26 @@ static void bitmapMake(const SurfacePtr &surface) {
 				color.r = color.g = color.b = color.a = 0;
 			}
 
-			size_t i = 0;
-			size_t last8 = size - (size % 8);
-			for (; i < last8; i += 8) {
-				if (bool(colors[pixels[i + 0]].a) == freeTransparent) bitmapObject[i + 0] = true;
-				if (bool(colors[pixels[i + 1]].a) == freeTransparent) bitmapObject[i + 1] = true;
-				if (bool(colors[pixels[i + 2]].a) == freeTransparent) bitmapObject[i + 2] = true;
-				if (bool(colors[pixels[i + 3]].a) == freeTransparent) bitmapObject[i + 3] = true;
-				if (bool(colors[pixels[i + 4]].a) == freeTransparent) bitmapObject[i + 4] = true;
-				if (bool(colors[pixels[i + 5]].a) == freeTransparent) bitmapObject[i + 5] = true;
-				if (bool(colors[pixels[i + 6]].a) == freeTransparent) bitmapObject[i + 6] = true;
-				if (bool(colors[pixels[i + 7]].a) == freeTransparent) bitmapObject[i + 7] = true;
-			}
-			for (; i < size; ++i) {
-				if (bool(colors[pixels[i]].a) == freeTransparent) bitmapObject[i] = true;
+
+			for (size_t y = 0; y < heightBitmapObject; ++y) {
+				const Uint8 *line = pixels + y * size_t(surface->pitch);
+				const size_t lineBitmap = y * widthBitmapObject;
+
+				size_t last8 = widthBitmapObject - (widthBitmapObject % 8);
+				size_t x = 0;
+				for (; x < last8; x += 8) {
+					if (bool(colors[line[x + 0]].a) == freeTransparent) bitmapObject[lineBitmap + x + 0] = true;
+					if (bool(colors[line[x + 1]].a) == freeTransparent) bitmapObject[lineBitmap + x + 1] = true;
+					if (bool(colors[line[x + 2]].a) == freeTransparent) bitmapObject[lineBitmap + x + 2] = true;
+					if (bool(colors[line[x + 3]].a) == freeTransparent) bitmapObject[lineBitmap + x + 3] = true;
+					if (bool(colors[line[x + 4]].a) == freeTransparent) bitmapObject[lineBitmap + x + 4] = true;
+					if (bool(colors[line[x + 5]].a) == freeTransparent) bitmapObject[lineBitmap + x + 5] = true;
+					if (bool(colors[line[x + 6]].a) == freeTransparent) bitmapObject[lineBitmap + x + 6] = true;
+					if (bool(colors[line[x + 7]].a) == freeTransparent) bitmapObject[lineBitmap + x + 7] = true;
+				}
+				for (; x < widthBitmapObject; ++x) {
+					if (bool(colors[line[x]].a) == freeTransparent) bitmapObject[lineBitmap + x] = true;
+				}
 			}
 		}
 	}
@@ -532,7 +538,6 @@ static PointNears getNears(Point *point, Point *end) {
 
 	return res;
 }
-
 static void getPath(Point *start, Point *end) {
 	if (getFromMap(end->x, end->y) != 1) return;
 	if (start == end) {
@@ -916,7 +921,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	//get result
 	path.clear();
 	uint16_t endId = endNode.id;
-	while (endId != uint16_t(-1)) {
+	while (endId != uint16_t(-1) && locationNodes[endId].prevId != uint16_t(-1)) {
 		LocationNode &localEndNode = locationNodes[endId];
 		uint16_t startId = localEndNode.prevId;
 		LocationNode &localStartNode = locationNodes[startId];
