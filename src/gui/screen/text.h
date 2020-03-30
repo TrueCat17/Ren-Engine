@@ -9,16 +9,13 @@ class Text: public Child {
 private:
 	std::string prevText;
 
-	Uint32 prevColor = 0;
-
 	int prevWidth = 0;
 	int prevHeight = 0;
 
-protected:
+public:
 	TextField *tf;
 
-public:
-	int text_size = 20;
+	float text_size = 20;
 	Uint32 color = 0;
 
 	std::string font;

@@ -24,26 +24,31 @@ std::string String::repeat(const std::string &str, size_t count) {
 }
 
 std::vector<std::string> String::split(const std::string &str, const std::string &separator) {
-	std::vector<std::string> res;
-	
 	size_t prev = -separator.size();
 	size_t n;
-	
 	size_t start;
-	size_t end;
 	
+	size_t count = 1;
 	while ((n = str.find(separator, prev + separator.size())) != size_t(-1)) {
 		start = prev + separator.size();
-		end = n;
-		
-		res.push_back(str.substr(start, end - start));
-		
+		prev = n;
+
+		++count;
+	}
+
+	std::vector<std::string> res;
+	res.reserve(count);
+
+	prev = -separator.size();
+	while ((n = str.find(separator, prev + separator.size())) != size_t(-1)) {
+		start = prev + separator.size();
+		res.push_back(str.substr(start, n - start));
+
 		prev = n;
 	}
 	
 	start = prev + separator.size();
-	end = n;
-	res.push_back(str.substr(start, end - start));
+	res.push_back(str.substr(start));
 	
 	return res;
 }
@@ -75,8 +80,13 @@ int String::toInt(const std::string &str, int base) {
 	return res;
 }
 double String::toDouble(const std::string &str) {
-	if (str.empty()) return 0;
-	return std::atof(str.c_str());
+	char *end;
+	double res = strtod(str.c_str(), &end);
+	if (end != str.c_str() + str.size()) {
+		Utils::outMsg("String::toDouble", "Could not to convert <" + str + "> to double");
+	}
+
+	return res;
 }
 
 bool String::isNumber(const std::string &str) {

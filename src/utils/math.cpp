@@ -1,15 +1,15 @@
 #include "math.h"
 
-#define M_PI 3.14159265358979323846
-
 #include <math.h>
 #include <float.h>
 
 static double *sins;
 void Math::init() {
+	const double PI = atan(1) * 4;
+
 	sins = new double[91]();
 	for (int i = 0; i <= 90; ++i) {
-		sins[i] = sin(i * (M_PI / 180));
+		sins[i] = sin(i * (PI / 180));
 	}
 }
 
@@ -41,6 +41,9 @@ double Math::getCos(int i) {
 	return sins[i < 90 ? i : 180 - i] * k;
 }
 
+bool Math::floatsAreEq(float a, float b) {
+	return abs(a - b) < FLT_EPSILON;
+}
 bool Math::doublesAreEq(double a, double b) {
-	return (a - b) < DBL_EPSILON;
+	return abs(a - b) < DBL_EPSILON;
 }

@@ -6,7 +6,6 @@
 #include "utils/image_typedefs.h"
 
 
-typedef struct _TTF_Font TTF_Font;
 typedef struct _object PyObject;
 class Node;
 
@@ -20,8 +19,6 @@ public:
 	static void sleepMicroSeconds(int ms);
 
 	static void outMsg(std::string msg, const std::string &err = "");
-
-	static TTF_Font* getFont(const std::string &name, int size);
 
 	static Uint32 getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop);
 

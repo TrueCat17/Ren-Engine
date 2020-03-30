@@ -1,12 +1,8 @@
 #include "renderer.h"
-#include "utils/math.h"
 
-
-static
 bool operator==(const SDL_Rect &a, const SDL_Rect &b) {
 	return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
 }
-static
 bool operator!=(const SDL_Rect &a, const SDL_Rect &b) {
 	return !(a == b);
 }
@@ -143,15 +139,8 @@ static void setClipRect(const SDL_Rect *clipRect) {
 	if (currentClipRect == rect) return;
 
 	currentClipRect = rect;
-	if (fastOpenGL) {
-		glScissor(rect.x, rect.y, rect.w, rect.h);
-		if (checkOpenGlErrors) {
-			checkErrors("glScissor");
-		}
-	}else {
-		if (SDL_RenderSetClipRect(renderer, &rect)) {
-			Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
-		}
+	if (SDL_RenderSetClipRect(renderer, &rect)) {
+		Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
 	}
 }
 
@@ -501,8 +490,6 @@ static void loop() {
 		if (fastOpenGL && !textures.empty()) {
 			glEnable(GL_BLEND);
 			checkErrors("glEnable(GL_BLEND)");
-			glEnable(GL_SCISSOR_TEST);
-			checkErrors("glEnable(GL_SCISSOR_TEST)");
 
 			size_t start = 0;
 			SDL_Texture *prevTexture = nullptr;

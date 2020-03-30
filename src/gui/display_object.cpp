@@ -89,11 +89,11 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 void DisplayObject::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
-	SDL_Rect t = {globalX, globalY, rect.w, rect.h};
-	SDL_Point center = { xAnchor, yAnchor };
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
+	SDL_Rect dstRect = {globalX, globalY, rect.w, rect.h};
+	SDL_Point center = { xAnchor, yAnchor };
 
-	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, crop, t, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, crop, dstRect, center);
 }
 
 DisplayObject::~DisplayObject() {
@@ -129,8 +129,8 @@ void DisplayObject::destroyAll() {
 }
 
 
-void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip, const SDL_Rect clipRect,
-    const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center)
+void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip, const SDL_Rect &clipRect,
+    const SDL_Rect &srcRect, const SDL_Rect &dstRect, const SDL_Point center)
 {
 	Renderer::toRender.push_back({
 	    surface, angle, alpha, clip,

@@ -4,14 +4,14 @@
 
 #include "gui/text_field.h"
 
-#include "media/py_utils.h"
+#include "utils/math.h"
 #include "utils/utils.h"
 
 Text::Text(Node *node, Screen *screen):
-	Child(node, nullptr, screen),
-	tf(new TextField())
+    Child(node, nullptr, screen),
+    tf(new TextField())
 {
-	tf->wordWrap = true;
+	tf->wordwrap = true;
 	addChildAt(tf, 0);
 }
 Text::~Text() {
@@ -31,27 +31,27 @@ void Text::updateRect(bool) {
 	}else {
 		bool needUpdate = false;
 
-		if (tf->getMaxWidth() != width) {
-			tf->setMaxWidth(width);
+		if (tf->maxWidth != width) {
+			tf->maxWidth = width;
 			needUpdate = true;
 		}
-		if (tf->getMaxHeight() != height) {
-			tf->setMaxHeight(height);
+		if (tf->maxHeight != height) {
+			tf->maxHeight = height;
 			needUpdate = true;
 		}
 
-		if (tf->getFontName() != font || tf->getFontSize() != text_size) {
+		if (tf->mainStyle.fontName != font || !Math::floatsAreEq(tf->mainStyle.fontSize, text_size)) {
 			tf->setFont(font, text_size);
 			needUpdate = true;
 		}
-		if (first_param != prevText || color != prevColor) {
+		if (first_param != prevText || tf->mainStyle.color != color) {
 			prevText = first_param;
-			prevColor = color;
+			tf->mainStyle.color = color;
 			needUpdate = true;
 		}
 
 		if (needUpdate) {
-			tf->setText(first_param, color);
+			tf->setText(first_param);
 		}
 
 		if (!first_param.empty() &&
@@ -60,8 +60,6 @@ void Text::updateRect(bool) {
 		{
 			int w = width  <= 0 ? tf->getWidth()  : width;
 			int h = height <= 0 ? tf->getHeight() : height;
-			tf->setWidth(w);
-			tf->setHeight(h);
 			setWidth(w);
 			setHeight(h);
 
@@ -79,7 +77,7 @@ void Text::updateGlobal() {
 	int prevGlobalRotate = getGlobalRotate();
 	Child::updateGlobal();
 
-	if (!tf->getText().empty() && prevGlobalRotate != getGlobalRotate()) {
+	if (!prevText.empty() && prevGlobalRotate != getGlobalRotate()) {
 		tf->setAlign(tf->getHAlign(), tf->getVAlign());
 	}
 }

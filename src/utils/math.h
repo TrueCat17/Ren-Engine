@@ -7,6 +7,7 @@ public:
 	static double getSin(int angle);
 	static double getCos(int angle);
 
+	static bool floatsAreEq(float a, float b);
 	static bool doublesAreEq(double a, double b);
 
 	template<typename T, typename MIN, typename MAX>

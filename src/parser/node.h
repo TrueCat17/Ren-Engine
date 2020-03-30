@@ -10,7 +10,6 @@
 class Node {
 private:
 	Node(const std::string &fileName, size_t numLine, size_t id);
-	~Node();
 
 	std::string fileName;
 	size_t numLine;
@@ -25,7 +24,7 @@ public:
 
 
 	size_t id;//unique id for each Node
-	int priority;//for init-block
+	double priority;//for init-block
 
 	Node *parent;
 	size_t childNum;//index in parent Node
@@ -47,7 +46,7 @@ public:
 	PyObject* getPyList() const;
 	std::vector<std::string> getImageChildren() const;
 
-	Node* getProp(const std::string &name);
+	Node* getProp(const std::string &name) const;
 
 	const std::string& getFileName() const { return fileName; }
 	size_t getNumLine() const { return numLine; }

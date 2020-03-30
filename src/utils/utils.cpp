@@ -104,24 +104,6 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 }
 
 
-static std::map<std::string, TTF_Font*> fonts;
-TTF_Font* Utils::getFont(const std::string &name, int size) {
-	const std::string t = name + "|" + std::to_string(size);
-
-	auto it = fonts.find(t);
-	if (it != fonts.end()) {
-		return it->second;
-	}
-
-	const std::string path = "fonts/" + name + ".ttf";
-	TTF_Font *res = TTF_OpenFont(path.c_str(), size);
-	if (res) {
-		fonts[t] = res;
-	}
-	return res;
-}
-
-
 Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {
 		Utils::outMsg("Utils::getPixel", "surface == nullptr");

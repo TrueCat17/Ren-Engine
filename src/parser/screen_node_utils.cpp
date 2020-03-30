@@ -3,6 +3,9 @@
 #include <map>
 #include <set>
 
+#include <SDL2/SDL_ttf.h>
+
+#include "gui/text_field.h"
 #include "gui/screen/screen.h"
 #include "gui/screen/key.h"
 #include "gui/screen/text.h"
@@ -720,6 +723,50 @@ static void update_crop(Child *obj, size_t propIndex) {
 	}
 }
 
+#define makeUpdateTextFunc(propName, mask) \
+static void update_text_##propName(Child *obj, size_t propIndex) { \
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	auto &fontStyle = static_cast<Text*>(obj)->tf->mainStyle.fontStyle; \
+	\
+	if (prop == Py_True) { \
+	    fontStyle |= mask; \
+	}else if (prop == Py_False) { \
+	    fontStyle &= ~mask; \
+	}else { \
+	    std::string type = prop->ob_type->tp_name; \
+	    outError(obj, #propName, propIndex, "Expected bool, got " + type); \
+	} \
+}
+static void update_text_outlinecolor(Child *obj, size_t propIndex) {
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
+	auto &style = static_cast<Text*>(obj)->tf->mainStyle;
+
+	if (PyInt_CheckExact(prop)) {
+		long l = PyInt_AS_LONG(prop);
+		if (l < 0 || l > 0xFFFFFF) {
+			outError(obj, "outlinecolor", propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(l) + ">");
+		}else {
+			style.outlineColor = Uint32(l);
+			style.enableOutline = true;
+		}
+	}else
+	if (PyLong_CheckExact(prop)) {
+		double d = PyLong_AsDouble(prop);
+		if (d < 0 || d > 0xFFFFFF) {
+			outError(obj, "outlinecolor", propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">");
+		}else {
+			style.outlineColor = Uint32(d);
+			style.enableOutline = true;
+		}
+	}else
+	if (prop == Py_None || prop == Py_False) {
+		style.enableOutline = false;
+	}
+	else {
+		std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name;
+		outError(obj, "outlinecolor", propIndex, "Expected types int, long, None or False, got " + type);
+	}
+}
 
 makeUpdateFunc(alpha)
 makeUpdateFunc(rotate)
@@ -753,6 +800,10 @@ makeUpdateFuncType(Container, spacing)
 
 makeUpdateFuncType(Text, color)
 makeUpdateFuncType(Text, text_size)
+makeUpdateTextFunc(bold, TTF_STYLE_BOLD)
+makeUpdateTextFunc(italic, TTF_STYLE_ITALIC)
+makeUpdateTextFunc(underline, TTF_STYLE_UNDERLINE)
+makeUpdateTextFunc(strikethrough, TTF_STYLE_STRIKETHROUGH)
 
 makeUpdateFuncWithStrSimple(Text, font)
 makeUpdateFuncWithStr(Text, textHAlign, text_align)
@@ -771,7 +822,7 @@ makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
 static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"alpha",             update_alpha},
 	{"rotate",            update_rotate},
-    {"clipping",          update_clipping},
+	{"clipping",          update_clipping},
 	{"delay",             update_keyDelay},
 	{"first_delay",       update_firstKeyDelay},
 	{"xpos",              update_xpos},
@@ -792,10 +843,15 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"modal",             update_modal},
 	{"spacing",           update_spacing},
 	{"color",             update_color},
-	{"text_size",         update_text_size},
+	{"outlinecolor",      update_text_outlinecolor},
 	{"font",              update_font},
 	{"text_align",        update_text_align},
 	{"text_valign",       update_text_valign},
+	{"text_size",         update_text_size},
+	{"bold",              update_text_bold},
+	{"italic",            update_text_italic},
+	{"underline",         update_text_underline},
+	{"strikethrough",     update_text_strikethrough},
 	{"ground_textbutton", update_ground_textbutton},
 	{"hover_textbutton",  update_hover_textbutton},
 	{"mouse_textbutton",  update_mouse_textbutton},

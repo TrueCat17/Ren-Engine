@@ -25,7 +25,7 @@ public:
 	static void destroyAll();
 
 	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clipping,
-	                         const SDL_Rect clipRect, const SDL_Rect srcRect, const SDL_Rect dstRect, const SDL_Point center);
+	                         const SDL_Rect &clipRect, const SDL_Rect &srcRect, const SDL_Rect &dstRect, const SDL_Point center);
 
 	bool clipping = false;
 	bool enable = true;

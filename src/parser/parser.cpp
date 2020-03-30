@@ -4,8 +4,6 @@
 #include <map>
 #include <fstream>
 
-#include <Python.h>
-
 #include "logger.h"
 
 #include "media/py_utils.h"
@@ -383,17 +381,16 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			headLine = "pass";
 			block = false;
 			end = start + 1;
+		}else {
+			headLine.pop_back();
 		}
 	}
 
 	size_t endType = headLine.find_first_of(' ');
 	if (endType == size_t(-1)) {
-		endType = headLine.size() - block;
+		endType = headLine.size();
 	}
 	std::string type = res->command = headLine.substr(0, endType);
-	if (type.back() == ':') {
-		type.pop_back();
-	}
 
 	if (!block &&
 	    (type == "if" || type == "elif" || type == "else" ||
@@ -404,17 +401,17 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		              "String <" + headLine + ">\n\n" +
 		              res->getPlace());
 		type = res->command = headLine = "pass";
-		endType = 4;
+		endType = headLine.size();
 	}
 
-	size_t startParams = endType + 1;
-	size_t endParams = headLine.size() - 1;
-	if (startParams > endParams) {
-		startParams = endParams + 1;
+	size_t startParams = headLine.find_first_not_of(' ', endType);
+	if (startParams == size_t(-1)) {
+		startParams = headLine.size();
 	}
+	size_t endParams = headLine.size();
 
 	if (!block) {
-		res->params = headLine.substr(startParams, endParams - startParams + 1);
+		res->params = headLine.substr(startParams, endParams - startParams);
 		if (type == "$") {
 			checkPythonSyntax(res);
 		}else
@@ -435,14 +432,14 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 				indent = tmpIndent;
 
-				if (String::startsWith(tmp, "for", true) || String::startsWith(tmp, "while", true)) {
+				if (String::startsWith(tmp, "for ", true) || String::startsWith(tmp, "while ", true)) {
 					ok = true;
 					break;
 				}
 			}
 			if (!ok) {
 				Utils::outMsg("Parser::getNode",
-				              type + " outside loop\n" +
+				              "<" + type + "> outside loop\n" +
 				              res->getPlace());
 				type = res->command = "pass";
 			}
@@ -455,24 +452,14 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	}
 
 
-	if (headLine.back() != ':') {
-		Utils::outMsg("Parser::getNode",
-		              "Block declaration must ends with a colon\n"
-		              "String <" + headLine + ">\n\n" +
-					  res->getPlace());
-	}
-
-	if (type == "label" || type == "screen") {
-		res->params = headLine.substr(startParams, endParams - startParams);
-	}else
 	if (String::startsWith(headLine, "init")) {
-		if (String::endsWith(headLine, " python:")) {
+		if (String::endsWith(headLine, " python")) {
 			res->command = type = "init python";
 		}
 		const std::vector<std::string> words = String::split(headLine, " ");
 
-		if (words.size() >= 2 && words[1] != "python:") {
-			res->priority = int(String::toDouble(words[1]));
+		if (words.size() >= 2 && words[1] != "python") {
+			res->priority = String::toDouble(words[1]);
 		}else {
 			res->priority = 0;
 		}

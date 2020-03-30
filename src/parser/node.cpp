@@ -20,7 +20,6 @@ Node::Node(const std::string &fileName, size_t numLine, size_t id):
 	numLine(numLine),
 	id(id)
 {}
-Node::~Node() {}
 
 Node* Node::getNewNode(const std::string &fileName, size_t numLine) {
 	if ((countNodes % NODES_IN_PART) == 0) {
@@ -205,7 +204,7 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 	return count;
 }
 
-Node* Node::getProp(const std::string &name) {
+Node* Node::getProp(const std::string &name) const {
 	for (Node *child : children) {
 		if (child->command == name) {
 			return child;
