@@ -29,8 +29,6 @@ void Text::updateRect(bool) {
 		setWidth(width);
 		setHeight(height);
 	}else {
-		bool needUpdate = false;
-
 		if (tf->maxWidth != width) {
 			tf->maxWidth = width;
 			needUpdate = true;
@@ -44,9 +42,8 @@ void Text::updateRect(bool) {
 			tf->setFont(font, text_size);
 			needUpdate = true;
 		}
-		if (first_param != prevText || tf->mainStyle.color != color) {
+		if (first_param != prevText) {
 			prevText = first_param;
-			tf->mainStyle.color = color;
 			needUpdate = true;
 		}
 
@@ -67,6 +64,7 @@ void Text::updateRect(bool) {
 		}
 	}
 
+	needUpdate = false;
 	prevWidth = width;
 	prevHeight = height;
 

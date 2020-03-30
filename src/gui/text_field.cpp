@@ -459,7 +459,8 @@ void TextField::setText(const std::string &text) {
 		}
 	}
 
-	if (tmpLines == lines && tmpLineRects == lineRects) return;
+	if (prevMainStyle == mainStyle && tmpLines == lines && tmpLineRects == lineRects) return;
+	prevMainStyle = mainStyle;
 	lines.swap(tmpLines);
 	lineRects.swap(tmpLineRects);
 

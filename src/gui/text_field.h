@@ -22,6 +22,12 @@ struct TextStyle {
 
 	Uint32 color = 0;
 	float alpha = 1.0;
+
+	bool operator==(const TextStyle &o) const {
+		auto a = std::tie(  tag,   font,   fontName,   fontSize,   fontStyle,   enableOutline,   outlineColor,   color,   alpha);
+		auto b = std::tie(o.tag, o.font, o.fontName, o.fontSize, o.fontStyle, o.enableOutline, o.outlineColor, o.color, o.alpha);
+		return a == b;
+	}
 };
 
 
@@ -30,6 +36,7 @@ private:
 	std::string hAlign = "left";
 	std::string vAlign = "top";
 
+	TextStyle prevMainStyle;
 	std::vector<std::string> lines;
 	std::vector<SDL_Rect> lineRects;
 

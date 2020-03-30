@@ -13,10 +13,10 @@ private:
 	int prevHeight = 0;
 
 public:
-	TextField *tf;
+	bool needUpdate = false;
 
 	float text_size = 20;
-	Uint32 color = 0;
+	TextField *tf;
 
 	std::string font;
 	std::string textHAlign;

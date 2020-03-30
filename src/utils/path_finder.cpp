@@ -799,6 +799,12 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		}
 	}
 
+	auto tooManyNodes = []() {
+		Utils::outMsg("PathFinder::findPathBetweenLocations", "Too many nodes");
+		return PyTuple_New(0);
+	};
+	uint16_t errorNodeId = uint16_t(-3);//-1 - undefined, -2 - end, -3 - start
+
 	//add needed places and exits to nodes
 	for (auto [name, mipMap] : mipMaps) {
 		for (const LocationPlace &place : mipMap->params.places) {
@@ -809,8 +815,9 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 			locationNodes.push_back({});
 			LocationNode &node = locationNodes.back();
-
 			node.id = uint16_t(locationNodes.size() - 1);
+			if (node.id == errorNodeId) return tooManyNodes();
+
 			node.changed = false;
 			node.x = x;
 			node.y = y;
@@ -824,8 +831,9 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 			locationNodes.push_back({});
 			LocationNode &node = locationNodes.back();
-
 			node.id = uint16_t(locationNodes.size() - 1);
+			if (node.id == errorNodeId) return tooManyNodes();
+
 			node.changed = false;
 			node.x = x;
 			node.y = y;

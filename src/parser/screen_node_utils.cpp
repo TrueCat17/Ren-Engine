@@ -726,46 +726,73 @@ static void update_crop(Child *obj, size_t propIndex) {
 #define makeUpdateTextFunc(propName, mask) \
 static void update_text_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	auto &fontStyle = static_cast<Text*>(obj)->tf->mainStyle.fontStyle; \
+	auto text = static_cast<Text*>(obj); \
+	auto &fontStyle = text->tf->mainStyle.fontStyle; \
+	auto oldFontStyle = fontStyle; \
 	\
 	if (prop == Py_True) { \
 	    fontStyle |= mask; \
+	    if (fontStyle != oldFontStyle) { \
+	        text->needUpdate = true; \
+	    } \
 	}else if (prop == Py_False) { \
 	    fontStyle &= ~mask; \
+	    if (fontStyle != oldFontStyle) { \
+	        text->needUpdate = true; \
+	    } \
 	}else { \
 	    std::string type = prop->ob_type->tp_name; \
 	    outError(obj, #propName, propIndex, "Expected bool, got " + type); \
 	} \
 }
-static void update_text_outlinecolor(Child *obj, size_t propIndex) {
-	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
-	auto &style = static_cast<Text*>(obj)->tf->mainStyle;
-
-	if (PyInt_CheckExact(prop)) {
-		long l = PyInt_AS_LONG(prop);
-		if (l < 0 || l > 0xFFFFFF) {
-			outError(obj, "outlinecolor", propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(l) + ">");
-		}else {
-			style.outlineColor = Uint32(l);
-			style.enableOutline = true;
-		}
-	}else
-	if (PyLong_CheckExact(prop)) {
-		double d = PyLong_AsDouble(prop);
-		if (d < 0 || d > 0xFFFFFF) {
-			outError(obj, "outlinecolor", propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">");
-		}else {
-			style.outlineColor = Uint32(d);
-			style.enableOutline = true;
-		}
-	}else
-	if (prop == Py_None || prop == Py_False) {
-		style.enableOutline = false;
-	}
-	else {
-		std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name;
-		outError(obj, "outlinecolor", propIndex, "Expected types int, long, None or False, got " + type);
-	}
+#define makeUpdateTextColor(propName, isOutline) \
+static void update_text_##propName(Child *obj, size_t propIndex) { \
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	auto text = static_cast<Text*>(obj); \
+	auto &style = text->tf->mainStyle; \
+	\
+	Uint32 v = Uint32(-1); \
+	if (PyInt_CheckExact(prop)) { \
+	    long l = PyInt_AS_LONG(prop); \
+	    if (l < 0 || l > 0xFFFFFF) { \
+	        outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(l) + ">"); \
+	    }else { \
+	        v = Uint32(l); \
+	    } \
+	}else \
+	if (PyLong_CheckExact(prop)) { \
+	    double d = PyLong_AsDouble(prop); \
+	    if (d < 0 || d > 0xFFFFFF) { \
+	        outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
+	    }else { \
+	        v = Uint32(d); \
+	    } \
+	}else \
+	if (prop == Py_None || prop == Py_False) { \
+	    if (style.enableOutline) { \
+	        text->needUpdate = true; \
+	        style.enableOutline = false; \
+	    } \
+	} \
+	else { \
+	    std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
+	    outError(obj, #propName, propIndex, "Expected types int, long, None or False, got " + type); \
+	} \
+	\
+	if (v != Uint32(-1)) { \
+	    if (isOutline) { \
+	        if (style.outlineColor != v || !style.enableOutline) { \
+	            text->needUpdate = true; \
+	            style.outlineColor = v; \
+	            style.enableOutline = true; \
+	        } \
+	    }else { \
+	        if (style.color != v) { \
+	            text->needUpdate = true; \
+	            style.color = v; \
+	        } \
+	    } \
+	} \
 }
 
 makeUpdateFunc(alpha)
@@ -798,8 +825,9 @@ makeUpdateFuncWithBool(Screen, modal, modal)
 
 makeUpdateFuncType(Container, spacing)
 
-makeUpdateFuncType(Text, color)
 makeUpdateFuncType(Text, text_size)
+makeUpdateTextColor(color, false)
+makeUpdateTextColor(outlinecolor, true)
 makeUpdateTextFunc(bold, TTF_STYLE_BOLD)
 makeUpdateTextFunc(italic, TTF_STYLE_ITALIC)
 makeUpdateTextFunc(underline, TTF_STYLE_UNDERLINE)
@@ -842,7 +870,7 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"zorder",            update_zorder},
 	{"modal",             update_modal},
 	{"spacing",           update_spacing},
-	{"color",             update_color},
+    {"color",             update_text_color},
 	{"outlinecolor",      update_text_outlinecolor},
 	{"font",              update_font},
 	{"text_align",        update_text_align},
