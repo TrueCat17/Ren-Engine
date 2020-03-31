@@ -93,7 +93,7 @@ SurfacePtr ImageManipulator::getNewNotClear(int w, int h, Uint32 format) {
 	pitch = (pitch + 3) & ~3;//align to 4
 	void *pixels = SDL_malloc(size_t(h * pitch));
 
-	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, 32, pitch, format),
+	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, SDL_BITSPERPIXEL(format), pitch, format),
 				   SDL_FreeSurface);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 
@@ -206,7 +206,9 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 	}
 
 	ImageCaches::setSurface(desc, res);
-	res = ImageCaches::getSurface(desc, formatRGBA32);
+	if (res && formatRGBA32 && res->format->format != SDL_PIXELFORMAT_RGBA32) {
+		res = ImageCaches::getSurface(desc, true);
+	}
 	return res;
 }
 
@@ -298,7 +300,7 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 		Utils::outMsg("ImageManipulator::crop", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
-	SurfacePtr img = ImageManipulator::getImage(args[1], false);
+	SurfacePtr img = getNotPaletteImage(args[1]);
 	if (!img) return nullptr;
 
 	const std::string rectStr = Algo::clear(args[2]);
