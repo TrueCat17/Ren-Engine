@@ -110,7 +110,7 @@ static void bindTexture(SDL_Texture *texture, bool opaque) {
 		currentTextureIsOpaque = opaque;
 
 		if (opaque) {
-			blendFuncSeparate(GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+			blendFuncSeparate(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA);
 			checkErrors("glBlendFuncSeparate");
 		}else {
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

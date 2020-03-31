@@ -452,13 +452,14 @@ void loop() {
 			while (Renderer::needToRender) {
 				Utils::sleep(1);
 			}
-			std::lock_guard g(Renderer::toRenderMutex);
-			Renderer::toRender.clear();
-			if (GV::screens) {
-				GV::screens->draw();
+			{
+				std::lock_guard g(Renderer::toRenderMutex);
+				Renderer::toRender.clear();
+				if (GV::screens) {
+					GV::screens->draw();
+				}
+				Renderer::needToRender = true;
 			}
-			Renderer::needToRender = true;
-
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('sl_check_autosave') and sl_check_autosave()");
 		}
 		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
