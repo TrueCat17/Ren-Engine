@@ -66,7 +66,7 @@ public:
 
 template<typename T>
 void SmartPtr<T>::clear() {
-	if (!counter) return;
+	if (!counter || GV::exit) return;
 
 	if (--*counter) return;
 
