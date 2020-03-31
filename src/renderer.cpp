@@ -133,7 +133,11 @@ static void setClipRect(const SDL_Rect *clipRect) {
 	if (clipRect) {
 		rect = *clipRect;
 	}else {
-		rect = {GV::screens->getX(), GV::screens->getY(), GV::width, GV::height};
+		rect = {0, 0, GV::width, GV::height};
+		if (GV::screens) {
+			rect.x = GV::screens->getX();
+			rect.y = GV::screens->getY();
+		}
 	}
 
 	if (currentClipRect == rect) return;
@@ -522,9 +526,11 @@ static void loop() {
 				}
 				++count;
 			}
-			setClipRect(prevClip ? &prevClipRect : nullptr);
-			bindTexture(prevTexture, prevIsOpaque);
-			fastRender(toRender.data() + start, count);
+			if (prevTexture) {
+				setClipRect(prevClip ? &prevClipRect : nullptr);
+				bindTexture(prevTexture, prevIsOpaque);
+				fastRender(toRender.data() + start, count);
+			}
 			unbindTexture();
 		}else {
 			for (size_t i = 0; i < textures.size(); ++i) {
