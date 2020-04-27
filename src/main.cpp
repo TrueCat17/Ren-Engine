@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <list>
 #include <float.h>
 
 #include <SDL2/SDL.h>
@@ -32,7 +33,7 @@
 #include "utils/utils.h"
 
 static std::string versionStr;
-std::string getVersion() {
+static std::string getVersion() {
 	if (versionStr.empty()) {
 		std::string major = "0";
 		std::string minor = "9";
@@ -160,8 +161,7 @@ static void changeWindowSize(bool maximized) {
 }
 
 static std::string rootDirectory;
-std::string setDir(std::string newRoot) {
-
+static std::string setDir(std::string newRoot) {
 #ifdef __WIN32__
 	Py_SetPythonHome(const_cast<char*>("./py_libs/"));
 #else
@@ -204,7 +204,7 @@ std::string setDir(std::string newRoot) {
 	return FileSystem::setCurrentPath(newRoot);
 }
 
-bool init() {
+static bool init() {
 	Math::init();
 	Logger::init();
 	Config::init();
@@ -290,7 +290,11 @@ bool init() {
 }
 
 
-void loop() {
+static int lastFrameStartTime = Utils::getTimer();
+static std::list<SDL_Event> events;
+static std::mutex eventMutex;
+
+static void loop() {
 	bool maximazed = false;
 	bool mouseOut = false;
 	bool mouseOutPrevDown = false;
@@ -299,125 +303,126 @@ void loop() {
 		while (!GV::inGame && !GV::exit) {
 			Utils::sleep(10, false);
 		}
-		if (GV::exit) break;
+		if (GV::exit) return;
 
 
 		GV::updateMutex.lock();
 
-		int startTime = Utils::getTimer();
+		lastFrameStartTime = Utils::getTimer();
 
 		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;
 		bool mouseWasUp = false;
 
-		bool mouseOutDown = false;
-
 		bool updateKeyboard = false;
-
 
 		Mouse::update();
 		BtnRect::checkMouseCursor();
 
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-			if (event.window.event == SDL_WINDOWEVENT_CLOSE || event.type == SDL_QUIT) {
-				GV::exit = true;
-				return;
-			}
-			if ((event.type & (SDL_MOUSEMOTION | SDL_MOUSEBUTTONDOWN | SDL_MOUSEBUTTONUP | SDL_MOUSEWHEEL)) == event.type) {
-				Mouse::setLastAction();
-			}
+		{
+			auto g = std::lock_guard(eventMutex);
 
-			if (event.type == SDL_WINDOWEVENT) {
-				if (event.window.event == SDL_WINDOWEVENT_EXPOSED || event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
-					Renderer::needToRedraw = true;
-					GV::minimized = false;
-				}else
-				if (event.window.event == SDL_WINDOWEVENT_ENTER) {
-					mouseOut = false;
-				}else
-				if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
-					mouseOut = true;
-				}else
+			while (!events.empty()) {
+				if (GV::exit) return;
 
-				if (event.window.event == SDL_WINDOWEVENT_MOVED) {
-					int x, y;
-					SDL_GetWindowPosition(GV::mainWindow, &x, &y);
-					if (x || y) {//if x and y are 0 - then probably it error, ignore
-						int leftBorderSize;
-						int captionHeight;
-						SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+				SDL_Event event = events.front();
+				events.pop_front();
 
-						x = std::max(x - leftBorderSize, 1);
-						y = std::max(y - captionHeight, 1);
-
-						Config::set("window_x", std::to_string(x));
-						Config::set("window_y", std::to_string(y));
-					}
-				}else
-
-				if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
-					maximazed = true;
-				}else
-				if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
-					maximazed = false;
-					GV::minimized = false;
-				}else
-				if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
-					GV::minimized = true;
-				}else
-
-				if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-					if (!GV::minimized && !startWindowWidth && !startWindowHeight) {
-						resizeWithoutMouseDown = true;
-					}
+				if ((event.type & (SDL_MOUSEMOTION | SDL_MOUSEBUTTONDOWN | SDL_MOUSEBUTTONUP | SDL_MOUSEWHEEL)) == event.type) {
+					Mouse::setLastAction();
 				}
-			}else
 
-			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				bool left = event.button.button == SDL_BUTTON_LEFT;
-				bool right = event.button.button == SDL_BUTTON_RIGHT;
-				if (left || right) {
-					if (left) {
-						mouseWasDown = true;
+				if (event.type == SDL_WINDOWEVENT) {
+					if (event.window.event == SDL_WINDOWEVENT_EXPOSED || event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+						Renderer::needToRedraw = true;
+						GV::minimized = false;
+					}else
+					if (event.window.event == SDL_WINDOWEVENT_ENTER) {
+						mouseOut = false;
+					}else
+					if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
+						mouseOut = true;
+					}else
+
+					if (event.window.event == SDL_WINDOWEVENT_MOVED) {
+						int x, y;
+						SDL_GetWindowPosition(GV::mainWindow, &x, &y);
+						if (x || y) {//if x and y are 0 - then probably it error, ignore
+							int leftBorderSize;
+							int captionHeight;
+							SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
+
+							x = std::max(x - leftBorderSize, 1);
+							y = std::max(y - captionHeight, 1);
+
+							Config::set("window_x", std::to_string(x));
+							Config::set("window_y", std::to_string(y));
+						}
+					}else
+
+					if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
+						maximazed = true;
+					}else
+					if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
+						maximazed = false;
+						GV::minimized = false;
+					}else
+					if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
+						GV::minimized = true;
+					}else
+
+					if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+						if (!GV::minimized && !startWindowWidth && !startWindowHeight) {
+							resizeWithoutMouseDown = true;
+						}
 					}
-					BtnRect::checkMouseClick(left);
-				}
-			}else
-			if (event.type == SDL_MOUSEBUTTONUP) {
-				mouseWasUp = true;
-				Mouse::setMouseDown(false);
-			}else
+				}else
 
-			if (event.type == SDL_KEYDOWN) {
-				if (!event.key.repeat) {
+				if (event.type == SDL_MOUSEBUTTONDOWN) {
+					bool left = event.button.button == SDL_BUTTON_LEFT;
+					bool right = event.button.button == SDL_BUTTON_RIGHT;
+					if (left || right) {
+						if (left) {
+							mouseWasDown = true;
+						}
+						BtnRect::checkMouseClick(left);
+					}
+				}else
+				if (event.type == SDL_MOUSEBUTTONUP) {
+					mouseWasUp = true;
+					Mouse::setMouseDown(false);
+				}else
+
+				if (event.type == SDL_KEYDOWN) {
+					if (!event.key.repeat) {
+						updateKeyboard = true;
+
+						SDL_Keycode key = event.key.keysym.sym;
+						if (key == SDLK_KP_ENTER) {
+							key = SDLK_RETURN;
+						}
+
+						if (key == SDLK_RETURN || key == SDLK_SPACE) {
+							if (BtnRect::checkMouseClick(true, true)) {
+								Key::setToNotReact(key);
+							}else {
+								Key::setFirstDownState(key);
+							}
+						}else {
+							Key::setFirstDownState(key);
+						}
+					}
+				}else
+
+				if (event.type == SDL_KEYUP) {
 					updateKeyboard = true;
 
 					SDL_Keycode key = event.key.keysym.sym;
 					if (key == SDLK_KP_ENTER) {
 						key = SDLK_RETURN;
 					}
-
-					if (key == SDLK_RETURN || key == SDLK_SPACE) {
-						if (BtnRect::checkMouseClick(true, true)) {
-							Key::setToNotReact(key);
-						}else {
-							Key::setFirstDownState(key);
-						}
-					}else {
-						Key::setFirstDownState(key);
-					}
+					Key::setUpState(key);
 				}
-			}else
-
-			if (event.type == SDL_KEYUP) {
-				updateKeyboard = true;
-
-				SDL_Keycode key = event.key.keysym.sym;
-				if (key == SDLK_KP_ENTER) {
-					key = SDLK_RETURN;
-				}
-				Key::setUpState(key);
 			}
 		}
 		if (GV::minimized) {
@@ -426,6 +431,7 @@ void loop() {
 
 		Mouse::checkCursorVisible();
 
+		bool mouseOutDown = false;
 		if (mouseOut) {
 			mouseOutDown = SDL_GetGlobalMouseState(nullptr, nullptr);
 		}
@@ -477,10 +483,49 @@ void loop() {
 
 		GV::updateMutex.unlock();
 
-		const int spent = Utils::getTimer() - startTime;
+		const int spent = Utils::getTimer() - lastFrameStartTime;
 		const int timeToSleep = Game::getFrameTime() - spent;
 //		std::cout << spent << ' ' << timeToSleep << '\n';
 		Utils::sleep(timeToSleep);
+	}
+}
+
+static void eventLoop() {
+	std::thread(loop).detach();
+	static bool stopping = false;
+
+	while (true) {
+		Utils::sleep(10, false);
+		while (!Utils::msgOuted) {
+			stopping = false;
+			Utils::sleep(10, false);
+			lastFrameStartTime = Utils::getTimer();
+		}
+
+		auto g = std::lock_guard(eventMutex);
+
+		SDL_Event event;
+		while (SDL_PollEvent(&event)) {
+			if (event.window.event == SDL_WINDOWEVENT_CLOSE || event.type == SDL_QUIT) {
+				GV::exit = true;
+				return;
+			}
+
+			events.push_back(event);
+		}
+
+		if (Utils::getTimer() - lastFrameStartTime < 15 * 1000) {
+			stopping = true;
+		}else {
+			if (!stopping) continue;
+			stopping = false;
+
+			bool toClose = Utils::confirm(Config::get("window_title").c_str(), "Application is not responding", "Stop", "Wait");
+			if (toClose) {
+				GV::exit = true;
+				return;
+			}
+		}
 	}
 }
 
@@ -568,7 +613,7 @@ int main(int argc, char **argv) {
 		SDL_WarpMouseGlobal(mouseX, mouseY);
 	}
 
-	loop();
+	eventLoop();
 	destroy();
 
 	std::cout << "\nOk!\n";

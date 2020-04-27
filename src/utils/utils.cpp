@@ -60,6 +60,9 @@ void Utils::sleepMicroSeconds(int ms) {
 }
 
 
+bool Utils::msgOuted = true;
+static std::mutex msgGuard;
+
 void Utils::outMsg(std::string msg, const std::string &err) {
 	if (err.size()) {
 		msg += " Error:\n" + err;
@@ -70,7 +73,6 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	}
 	if (msg.empty()) return;
 
-	static std::mutex msgGuard;
 	std::lock_guard g(msgGuard);
 
 	Logger::log(msg + "\n\n");
@@ -93,6 +95,7 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	data.colorScheme = nullptr;
 
 	int res = 0;
+	msgOuted = false;
 	if (SDL_ShowMessageBox(&data, &res)) {
 		std::cout << msg << '\n';
 		std::cout << SDL_GetError() << '\n';
@@ -101,6 +104,30 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	if (res == 1) {
 		msgCloseAll = true;
 	}
+	msgOuted = true;
+}
+bool Utils::confirm(const char *title, const char *question, const char *yes, const char *no) {
+	std::lock_guard g(msgGuard);
+
+	static const SDL_MessageBoxButtonData buttons[] = {
+	    {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, yes},
+	    {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, no}
+	};
+
+	static SDL_MessageBoxData data;
+	data.flags = SDL_MESSAGEBOX_INFORMATION;
+	data.window = GV::mainWindow;
+	data.title = title;
+	data.message = question;
+	data.numbuttons = 2;
+	data.buttons = buttons;
+	data.colorScheme = nullptr;
+
+	int res = 0;
+	if (SDL_ShowMessageBox(&data, &res)) {
+		std::cout << SDL_GetError() << '\n';
+	}
+	return res == 0;
 }
 
 
