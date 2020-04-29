@@ -370,6 +370,8 @@ void Game::save() {
 
 static std::mutex modMutex;
 static void _startMod(const std::string &dir, const std::string &loadPath) {
+	Utils::setThreadName("scenario");
+
 	int waitingStartTime = Utils::getTimer();
 
 	GV::inGame = false;

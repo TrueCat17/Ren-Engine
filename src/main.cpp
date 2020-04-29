@@ -209,6 +209,8 @@ static bool init() {
 	Logger::init();
 	Config::init();
 
+	Utils::setThreadName(Config::get("window_title"));
+
 	if (SDL_Init(SDL_INIT_VIDEO)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
 		return true;
@@ -295,6 +297,8 @@ static std::list<SDL_Event> events;
 static std::mutex eventMutex;
 
 static void loop() {
+	Utils::setThreadName("loop");
+
 	bool maximazed = false;
 	bool mouseOut = false;
 	bool mouseOutPrevDown = false;

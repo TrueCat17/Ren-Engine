@@ -113,6 +113,8 @@ void ImageManipulator::loadImage(const std::string &desc) {
 	}
 }
 void preloadThread() {
+	Utils::setThreadName("preload");
+
 	while (!GV::exit) {
 		if (toSaveImages.empty()) {
 			if (toLoadImages.empty()) {

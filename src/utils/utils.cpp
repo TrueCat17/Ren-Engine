@@ -6,6 +6,7 @@
 #include <mutex>
 #include <set>
 #include <map>
+#include <pthread.h>
 
 #include <SDL2/SDL_ttf.h>
 
@@ -14,13 +15,44 @@
 
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
+
 #include "parser/node.h"
+
+#include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/game.h"
+#include "utils/string.h"
 
 
 static std::map<std::string, Node*> declAts;
 
+
+void Utils::setThreadName(std::string name) {
+	size_t maxNameSize = 14;//if more - no change in task manager
+
+	if (name.empty()) {
+		name = "empty_name";
+	}else
+	if (name.size() > maxNameSize) {
+		std::string ending = "..";
+		name.erase(maxNameSize - ending.size());
+
+		if (!Algo::isFirstByte(name.back())) {
+			while (!Algo::isFirstByte(name.back())) {
+				name.pop_back();
+			}
+			name.pop_back();
+		}
+		while (name.back() == ' ') {
+			name.pop_back();
+		}
+		name += ending;
+	}
+
+	if (pthread_setname_np(pthread_self(), name.c_str())) {
+		outMsg("pthread_setname_np", "Error on set process name <" + name + ">");
+	}
+}
 
 std::vector<std::string> Utils::getFileNames(const std::string &path) {
 	if (!FileSystem::exists(path)) {

@@ -12,6 +12,8 @@ class Node;
 
 class Utils {
 public:
+	static void setThreadName(std::string name);
+
 	static std::vector<std::string> getFileNames(const std::string &path);
 
 	static int getTimer();

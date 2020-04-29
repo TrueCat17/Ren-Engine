@@ -609,6 +609,8 @@ static void loop() {
 
 
 static void initImpl(bool *inited, bool *error) {
+	Utils::setThreadName("renderer");
+
 	int renderDriver = -1;
 
 	Uint32 flags;

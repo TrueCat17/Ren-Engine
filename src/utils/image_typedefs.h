@@ -1,8 +1,6 @@
 #ifndef IMAGETYPEDEFS_H
 #define IMAGETYPEDEFS_H
 
-#include <mutex>
-
 #include "gv.h"
 
 
