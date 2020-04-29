@@ -40,11 +40,18 @@ void Mouse::init() {
 }
 
 
+static SDL_Cursor* currentCursor = nullptr;
 void Mouse::setUsualMode() {
-	SDL_SetCursor(usualModeCursor);
+	if (currentCursor != usualModeCursor) {
+		currentCursor = usualModeCursor;
+		SDL_SetCursor(usualModeCursor);
+	}
 }
 void Mouse::setButtonMode() {
-	SDL_SetCursor(btnModeCursor);
+	if (currentCursor != btnModeCursor) {
+		currentCursor = btnModeCursor;
+		SDL_SetCursor(btnModeCursor);
+	}
 }
 
 
