@@ -5,6 +5,7 @@
 #include <thread>
 #include <mutex>
 #include <set>
+#include <list>
 #include <map>
 #include <pthread.h>
 
@@ -92,25 +93,28 @@ void Utils::sleepMicroSeconds(int ms) {
 }
 
 
-bool Utils::msgOuted = true;
+struct Message {
+	uint8_t id;
+	bool isError;
+
+	bool _padding[sizeof(void*)-2];
+	std::string str;
+
+	bool operator==(const Message& msg) const { return id == msg.id; }
+};
+
+static std::list<Message> messagesToOut;
+static bool msgCloseAll = false;
 static std::mutex msgGuard;
 
-void Utils::outMsg(std::string msg, const std::string &err) {
-	if (err.size()) {
-		msg += " Error:\n" + err;
+bool Utils::realOutMsg() {
+	if (messagesToOut.empty() || msgCloseAll) return false;
 
-		static std::set<std::string> msgErrors;
-		if (msgErrors.count(msg)) return;
-		msgErrors.insert(msg);
+	Message msg;
+	{
+		std::lock_guard g(msgGuard);
+		msg = messagesToOut.front();
 	}
-	if (msg.empty()) return;
-
-	std::lock_guard g(msgGuard);
-
-	Logger::log(msg + "\n\n");
-
-	static bool msgCloseAll = false;
-	if (msgCloseAll) return;
 
 	static const SDL_MessageBoxButtonData buttons[] = {
 	    {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Ok"},
@@ -118,48 +122,62 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	};
 
 	static SDL_MessageBoxData data;
-	data.flags = err.empty() ? SDL_MESSAGEBOX_WARNING : SDL_MESSAGEBOX_ERROR;
+	data.flags = msg.isError ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING;
 	data.window = GV::mainWindow;
 	data.title = "Message";
-	data.message = msg.c_str();
+	data.message = msg.str.c_str();
 	data.numbuttons = 2;
 	data.buttons = buttons;
 	data.colorScheme = nullptr;
 
 	int res = 0;
-	msgOuted = false;
 	if (SDL_ShowMessageBox(&data, &res)) {
-		std::cout << msg << '\n';
+		std::cout << msg.str << '\n';
 		std::cout << SDL_GetError() << '\n';
 	}
 
+	std::lock_guard g(msgGuard);
 	if (res == 1) {
 		msgCloseAll = true;
+		messagesToOut.clear();
+	}else {
+		messagesToOut.pop_front();
 	}
-	msgOuted = true;
+
+	return !messagesToOut.empty();
 }
-bool Utils::confirm(const char *title, const char *question, const char *yes, const char *no) {
-	std::lock_guard g(msgGuard);
 
-	static const SDL_MessageBoxButtonData buttons[] = {
-	    {SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, yes},
-	    {SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, no}
-	};
+void Utils::outMsg(std::string msg, const std::string &err) {
+	{
+		std::lock_guard g(msgGuard);
 
-	static SDL_MessageBoxData data;
-	data.flags = SDL_MESSAGEBOX_INFORMATION;
-	data.window = GV::mainWindow;
-	data.title = title;
-	data.message = question;
-	data.numbuttons = 2;
-	data.buttons = buttons;
-	data.colorScheme = nullptr;
+		if (!err.empty()) {
+			msg += " Error:\n" + err;
 
-	int res = 0;
-	if (SDL_ShowMessageBox(&data, &res)) {
-		std::cout << SDL_GetError() << '\n';
+			static std::set<std::string> msgErrors;
+			if (msgErrors.count(msg)) return;
+			msgErrors.insert(msg);
+		}
+		if (msg.empty()) return;
+
+		Logger::log(msg + "\n\n");
 	}
-	return res == 0;
+
+	if (msgCloseAll) return;
+
+	static uint8_t nextId = 0;
+	Message message;
+	message.id = nextId++;
+	message.isError = !err.empty();
+	message.str = msg;
+
+	messagesToOut.push_back(message);
+	while (true) {
+		sleep(10, false);
+
+		std::lock_guard g(msgGuard);
+		if (!Algo::in(message, messagesToOut)) break;
+	}
 }
 
 

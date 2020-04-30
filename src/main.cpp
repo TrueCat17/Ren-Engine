@@ -496,17 +496,13 @@ static void loop() {
 
 static void eventLoop() {
 	std::thread(loop).detach();
-	static bool stopping = false;
 
 	while (true) {
-		Utils::sleep(10, false);
-		while (!Utils::msgOuted) {
-			stopping = false;
-			Utils::sleep(10, false);
-			lastFrameStartTime = Utils::getTimer();
-		}
+		while (Utils::realOutMsg()) {}
 
-		auto g = std::lock_guard(eventMutex);
+		Utils::sleep(10, false);
+
+		std::lock_guard g(eventMutex);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
@@ -516,19 +512,6 @@ static void eventLoop() {
 			}
 
 			events.push_back(event);
-		}
-
-		if (Utils::getTimer() - lastFrameStartTime < 15 * 1000) {
-			stopping = true;
-		}else {
-			if (!stopping) continue;
-			stopping = false;
-
-			bool toClose = Utils::confirm(Config::get("window_title").c_str(), "Application is not responding", "Stop", "Wait");
-			if (toClose) {
-				GV::exit = true;
-				return;
-			}
 		}
 	}
 }

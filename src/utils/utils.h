@@ -20,9 +20,8 @@ public:
 	static void sleep(int ms, bool checkInGame = true);
 	static void sleepMicroSeconds(int ms);
 
-	static bool msgOuted;
 	static void outMsg(std::string msg, const std::string &err = "");
-	static bool confirm(const char *title, const char *question, const char *yes, const char *no);
+	static bool realOutMsg();
 
 	static Uint32 getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop);
 
