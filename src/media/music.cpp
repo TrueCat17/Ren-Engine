@@ -2,6 +2,14 @@
 
 #include <thread>
 
+#include <SDL2/SDL_audio.h>
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
+}
+
 #include "gv.h"
 #include "media/py_utils.h"
 
@@ -11,19 +19,23 @@
 #include "utils/utils.h"
 
 
+static const size_t PART_SIZE = (1 << 10) * 32;//32 Kb
+static const size_t MIN_PART_COUNT = 2;
+static const size_t MAX_PART_COUNT = 5;
+
+
 static std::mutex globalMutex;
-static bool needToClear = false;
 
 
-int Music::startUpdateTime = 0;
+static int startUpdateTime = 0;
 
-std::map<std::string, double> Music::mixerVolumes;
+static std::map<std::string, double> mixerVolumes;
 
-std::vector<Channel*> Music::channels;
-std::vector<Music*> Music::musics;
+static std::vector<Channel*> channels;
+static std::vector<Music*> musics;
 
 
-void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
+static void fillAudio(void *, Uint8 *stream, int globalLen) {
 	std::lock_guard g(globalMutex);
 
 	SDL_memset(stream, 0, size_t(globalLen));
@@ -42,6 +54,25 @@ void Music::fillAudio(void *, Uint8 *stream, int globalLen) {
 		music->audioLen -= len;
 	}
 }
+static void startMusic() {
+	static SDL_AudioSpec wantedSpec;
+	wantedSpec.freq = 44100;
+	wantedSpec.format = AUDIO_S16SYS;
+	wantedSpec.channels = 2;
+	wantedSpec.silence = 0;
+	wantedSpec.samples = 0;
+	wantedSpec.callback = fillAudio;
+
+	if (SDL_OpenAudio(&wantedSpec, nullptr)) {
+		Utils::outMsg("SDL_OpenAudio", SDL_GetError());
+		return;
+	}
+	SDL_PauseAudio(0);
+}
+static void stopMusic() {
+	SDL_CloseAudio();
+}
+
 void Music::loop() {
 	Utils::setThreadName("music_loop");
 
@@ -50,11 +81,6 @@ void Music::loop() {
 
 		{
 			std::lock_guard g(globalMutex);
-
-			if (needToClear) {
-				needToClear = false;
-				realClear();
-			}
 
 			for (size_t i = 0; i < musics.size(); ++i) {
 				if (GV::exit) return;
@@ -82,6 +108,10 @@ void Music::loop() {
 				musics.erase(musics.begin() + int(i));
 				--i;
 				delete music;
+
+				if (musics.empty()) {
+					stopMusic();
+				}
 			}
 		}
 		const int spend = Utils::getTimer() - startUpdateTime;
@@ -90,38 +120,14 @@ void Music::loop() {
 }
 
 void Music::init() {
-#if !FF_API_NEXT
-	av_register_all();
-#endif
 	av_log_set_level(AV_LOG_ERROR);
-
-	static SDL_AudioSpec wantedSpec;
-	wantedSpec.freq = 44100;
-	wantedSpec.format = AUDIO_S16SYS;
-	wantedSpec.channels = 2;
-	wantedSpec.silence = 0;
-	wantedSpec.samples = 0;
-	wantedSpec.callback = fillAudio;
-
-	if (SDL_OpenAudio(&wantedSpec, nullptr)) {
-		Utils::outMsg("Music::init: SDL_OpenAudio", SDL_GetError());
-		return;
-	}
-	SDL_PauseAudio(0);
-
 	std::thread(loop).detach();
 }
 
 void Music::clear() {
-	if (startUpdateTime) {//updated, => SDL_OpenAudio is OK, => clearing in Music::init::loop
-		needToClear = true;
-	}else {//error on SDL_OpenAudio, => clearing now (Music::init::loop not started)
-		std::lock_guard g(globalMutex);
-		realClear();
-	}
-}
+	std::lock_guard g(globalMutex);
 
-void Music::realClear() {
+	stopMusic();
 	mixerVolumes.clear();
 
 	for (Channel *t : channels) {
@@ -250,6 +256,9 @@ void Music::play(const std::string &desc,
 		}else {
 			PyUtils::exec(fileName, numLine, "persistent._seen_audio['" + url + "'] = True");
 
+			if (musics.empty()) {
+				startMusic();
+			}
 			music->loadNextParts(MIN_PART_COUNT);
 			musics.push_back(music);
 		}
@@ -305,6 +314,16 @@ void Music::stop(const std::string &desc,
 }
 
 
+const std::vector<Channel*>& Music::getChannels() {
+	return channels;
+}
+const std::vector<Music*>& Music::getMusics() {
+	return musics;
+}
+const std::map<std::string, double>& Music::getMixerVolumes() {
+	return mixerVolumes;
+}
+
 
 
 Music::Music(const std::string &url, Channel *channel, int fadeIn,
@@ -315,8 +334,37 @@ Music::Music(const std::string &url, Channel *channel, int fadeIn,
 	fadeIn(fadeIn),
 	fileName(fileName),
 	numLine(numLine),
-	place(place)
+    place(place),
+
+    packet((AVPacket *)av_malloc(sizeof(AVPacket))),
+    frame(av_frame_alloc()),
+
+    tmpBuffer((uint8_t *)av_malloc(PART_SIZE)),
+    buffer((uint8_t *)av_malloc(PART_SIZE * (MAX_PART_COUNT + 1)))
 { }
+
+Music::~Music() {
+	audioPos = nullptr;
+	audioLen = 0;
+
+	av_free(buffer);
+	av_free(tmpBuffer);
+	buffer = nullptr;
+	tmpBuffer = nullptr;
+
+	av_free(packet);
+	av_free(frame);
+	packet = nullptr;
+	frame = nullptr;
+
+	avcodec_close(codecCtx);
+	avformat_close_input(&formatCtx);
+	codecCtx = nullptr;
+	formatCtx = nullptr;
+
+	swr_free(&auConvertCtx);
+	auConvertCtx = nullptr;
+}
 
 
 bool Music::initCodec() {
@@ -387,42 +435,7 @@ bool Music::initCodec() {
 
 	return false;
 }
-void Music::setPos(int64_t pos) {
-	std::lock_guard g(globalMutex);
 
-	audioPos = buffer;
-	audioLen = 0;
-
-	if (av_seek_frame(formatCtx, audioStream, pos, AVSEEK_FLAG_FRAME) < 0) {
-		Utils::outMsg("Music::setPos", "Could not to rewind file <" + url + ">");
-	}else {
-		loadNextParts(MIN_PART_COUNT);
-	}
-}
-
-
-Music::~Music() {
-	audioPos = nullptr;
-	audioLen = 0;
-
-	av_free(packet);
-	av_free(frame);
-	packet = nullptr;
-	frame = nullptr;
-
-	av_free(buffer);
-	av_free(tmpBuffer);
-	buffer = nullptr;
-	tmpBuffer = nullptr;
-
-	avcodec_close(codecCtx);
-	avformat_close_input(&formatCtx);
-	codecCtx = nullptr;
-	formatCtx = nullptr;
-
-	swr_free(&auConvertCtx);
-	auConvertCtx = nullptr;
-}
 
 
 void Music::update() {
@@ -457,7 +470,7 @@ void Music::loadNextParts(size_t count) {
 		if (!sendError && !reveiveError) {
 			countSamples = swr_convert(auConvertCtx,
 									   &tmpBuffer, PART_SIZE,
-									   (const uint8_t **)frame->data, frame->nb_samples);
+			                           const_cast<const uint8_t**>(frame->data), frame->nb_samples);
 			if (countSamples < 0) {
 				Utils::outMsg("Music::loadNextParts: swr_convert",
 				              "Could not to convert frame of file <" + url + ">\n\n" + place);
@@ -503,4 +516,50 @@ int Music::getVolume() const {
 }
 bool Music::isEnded() const {
 	return ended || (startFadeOutTime && (startFadeOutTime + fadeOut < startUpdateTime));
+}
+
+
+const Channel* Music::getChannel() const {
+	return channel;
+}
+const std::string& Music::getUrl() const {
+	return url;
+}
+const std::string& Music::getFileName() const {
+	return fileName;
+}
+size_t Music::getNumLine() const {
+	return numLine;
+}
+
+
+int Music::getFadeIn() const {
+	return std::max(fadeIn + startFadeInTime - startUpdateTime, 0);
+}
+int Music::getFadeOut() const {
+	return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0);
+}
+int64_t Music::getPos() const {
+	return lastFramePts;
+}
+
+void Music::setFadeIn(int v) {
+	fadeIn = v;
+	startFadeInTime = startUpdateTime;
+}
+void Music::setFadeOut(int v) {
+	fadeOut = v;
+	startFadeOutTime = startUpdateTime;
+}
+void Music::setPos(int64_t pos) {
+	std::lock_guard g(globalMutex);
+
+	audioPos = buffer;
+	audioLen = 0;
+
+	if (av_seek_frame(formatCtx, audioStream, pos, AVSEEK_FLAG_FRAME) < 0) {
+		Utils::outMsg("Music::setPos", "Could not to rewind file <" + url + ">");
+	}else {
+		loadNextParts(MIN_PART_COUNT);
+	}
 }

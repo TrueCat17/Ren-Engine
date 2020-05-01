@@ -4,15 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <mutex>
-
-#include <SDL2/SDL.h>
-
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-}
+#include <inttypes.h>
 
 
 
@@ -31,22 +23,14 @@ struct Channel {
 };
 
 
+struct AVFormatContext;
+struct AVCodecContext;
+struct SwrContext;
+struct AVPacket;
+struct AVFrame;
+
 class Music {
 private:
-	static const size_t PART_SIZE = (1 << 10) * 32;//32 Kb
-	static const size_t MIN_PART_COUNT = 2;
-	static const size_t MAX_PART_COUNT = 5;
-
-
-	static std::map<std::string, double> mixerVolumes;
-
-	static std::vector<Channel*> channels;
-	static std::vector<Music*> musics;
-
-	static int startUpdateTime;
-	static void realClear();
-
-	static void fillAudio(void *, Uint8 *stream, int globalLen);
 	static void loop();
 
 
@@ -68,17 +52,15 @@ private:
 
 	int audioStream = -1;
 
-	uint8_t *tmpBuffer = (uint8_t *)av_malloc(PART_SIZE);
-	uint8_t *buffer = (uint8_t *)av_malloc(PART_SIZE * (MAX_PART_COUNT + 1));
-	Uint8 *audioPos = nullptr;
-	Uint32 audioLen = 0;
-
 	AVFormatContext	*formatCtx = nullptr;
 	AVCodecContext *codecCtx = nullptr;
 	SwrContext *auConvertCtx = nullptr;
 
-	AVPacket *packet = (AVPacket *)av_malloc(sizeof(AVPacket));
-	AVFrame *frame = av_frame_alloc();
+	AVPacket *packet;
+	AVFrame *frame;
+
+	uint8_t *tmpBuffer;
+	uint8_t *buffer;
 
 
 	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &fileName, size_t numLine, const std::string &place);
@@ -87,9 +69,6 @@ private:
 	bool initCodec();
 	void update();
 	void loadNextParts(size_t count);
-
-	int getVolume() const;
-	bool isEnded() const;
 
 
 public:
@@ -110,22 +89,29 @@ public:
 	static void stop(const std::string &desc,
 					 const std::string& fileName, size_t numLine);
 
-	static const std::vector<Channel*>& getChannels() { return channels; }
-	static const std::vector<Music*>&   getMusics()   { return musics; }
-	static const std::map<std::string, double>& getMixerVolumes() { return mixerVolumes; }
+	static const std::vector<Channel*>& getChannels();
+	static const std::vector<Music*>&   getMusics();
+	static const std::map<std::string, double>& getMixerVolumes();
 
 
-	const Channel* getChannel() const { return channel; }
-	const std::string& getUrl() const { return url; }
-	const std::string& getFileName() const { return fileName; }
-	size_t getNumLine() const { return numLine; }
+	uint8_t *audioPos = nullptr;
+	uint32_t audioLen = 0;
 
-	int getFadeIn() const { return std::max(fadeIn + startFadeInTime - startUpdateTime, 0); }
-	int getFadeOut() const { return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0); }
-	int64_t getPos() const { return lastFramePts; }
 
-	void setFadeIn(int v) { fadeIn = v; startFadeInTime = startUpdateTime; }
-	void setFadeOut(int v) { fadeOut = v; startFadeOutTime = startUpdateTime; }
+	int getVolume() const;
+	bool isEnded() const;
+
+	const Channel* getChannel() const;
+	const std::string& getUrl() const;
+	const std::string& getFileName() const;
+	size_t getNumLine() const;
+
+	int getFadeIn() const;
+	int getFadeOut() const;
+	int64_t getPos() const;
+
+	void setFadeIn(int v);
+	void setFadeOut(int v);
 	void setPos(int64_t pos);
 };
 
