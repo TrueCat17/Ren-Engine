@@ -497,7 +497,7 @@ static void loop() {
 static void eventLoop() {
 	std::thread(loop).detach();
 
-	while (true) {
+	while (!GV::exit) {
 		while (Utils::realOutMsg()) {}
 
 		Utils::sleep(10, false);
