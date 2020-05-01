@@ -29,6 +29,7 @@ static std::map<std::string, Node*> declAts;
 
 
 void Utils::setThreadName(std::string name) {
+#ifndef __WIN32__ //suspend on wine
 	size_t maxNameSize = 14;//if more - no change in task manager
 
 	if (name.empty()) {
@@ -53,6 +54,7 @@ void Utils::setThreadName(std::string name) {
 	if (pthread_setname_np(pthread_self(), name.c_str())) {
 		outMsg("pthread_setname_np", "Error on set process name <" + name + ">");
 	}
+#endif
 }
 
 std::vector<std::string> Utils::getFileNames(const std::string &path) {
