@@ -13,7 +13,7 @@ bool GV::exit = false;
 
 SDL_Window *GV::mainWindow;
 
-const Uint8 *GV::keyBoardState = nullptr;
+Uint8 GV::keyBoardState[SDL_NUM_SCANCODES];
 
 Group *GV::screens = nullptr;
 

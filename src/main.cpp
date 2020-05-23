@@ -238,6 +238,9 @@ static bool init() {
 		return true;
 	}
 
+	for (size_t i = 0; i < SDL_NUM_SCANCODES; ++i) {
+		GV::keyBoardState[i] = false;
+	}
 	Mouse::init();
 
 
@@ -318,8 +321,6 @@ static void loop() {
 		bool mouseWasDown = false;
 		bool mouseWasUp = false;
 
-		bool updateKeyboard = false;
-
 		Mouse::update();
 		BtnRect::checkMouseCursor();
 
@@ -398,8 +399,8 @@ static void loop() {
 				}else
 
 				if (event.type == SDL_KEYDOWN) {
-					if (!event.key.repeat) {
-						updateKeyboard = true;
+					if (!GV::keyBoardState[event.key.keysym.scancode]) {
+						GV::keyBoardState[event.key.keysym.scancode] = true;
 
 						SDL_Keycode key = event.key.keysym.sym;
 						if (key == SDLK_KP_ENTER) {
@@ -419,7 +420,7 @@ static void loop() {
 				}else
 
 				if (event.type == SDL_KEYUP) {
-					updateKeyboard = true;
+					GV::keyBoardState[event.key.keysym.scancode] = false;
 
 					SDL_Keycode key = event.key.keysym.sym;
 					if (key == SDLK_KP_ENTER) {
@@ -438,9 +439,6 @@ static void loop() {
 		bool mouseOutDown = false;
 		if (mouseOut) {
 			mouseOutDown = SDL_GetGlobalMouseState(nullptr, nullptr);
-		}
-		if (updateKeyboard) {
-			Game::updateKeyboard();
 		}
 
 		if (resizeWithoutMouseDown || !(mouseWasDown || mouseWasUp)) {

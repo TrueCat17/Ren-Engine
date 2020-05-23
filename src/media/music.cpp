@@ -24,8 +24,7 @@ static const size_t MIN_PART_COUNT = 2;
 static const size_t MAX_PART_COUNT = 5;
 
 
-static std::mutex globalMutex;
-
+static std::mutex musicMutex;
 
 static int startUpdateTime = 0;
 
@@ -36,7 +35,7 @@ static std::vector<Music*> musics;
 
 
 static void fillAudio(void *, Uint8 *stream, int globalLen) {
-	std::lock_guard g(globalMutex);
+	std::lock_guard g(musicMutex);
 
 	SDL_memset(stream, 0, size_t(globalLen));
 
@@ -80,7 +79,7 @@ void Music::loop() {
 		startUpdateTime = Utils::getTimer();
 
 		{
-			std::lock_guard g(globalMutex);
+			std::lock_guard g(musicMutex);
 
 			for (size_t i = 0; i < musics.size(); ++i) {
 				if (GV::exit) return;
@@ -125,7 +124,7 @@ void Music::init() {
 }
 
 void Music::clear() {
-	std::lock_guard g(globalMutex);
+	std::lock_guard g(musicMutex);
 
 	stopMusic();
 	mixerVolumes.clear();
@@ -144,6 +143,8 @@ void Music::clear() {
 void Music::registerChannel(const std::string &name, const std::string &mixer, bool loop,
 							const std::string &fileName, int numLine)
 {
+	std::lock_guard g(musicMutex);
+
 	for (size_t i = 0; i < channels.size(); ++i) {
 		Channel *channel = channels[i];
 		if (channel->name == name) {
@@ -200,7 +201,7 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 
 
 void Music::play(const std::string &desc,
-				 const std::string &fileName, size_t numLine)
+                 const std::string &fileName, uint32_t numLine)
 {
 	const std::string place = "File <" + fileName + ">\n"
 	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
@@ -209,7 +210,7 @@ void Music::play(const std::string &desc,
 	if (args.size() != 2 && args.size() != 4) {
 		Utils::outMsg("Music::play",
 		              "Expected 2 or 4 arguments:\n"
-					  "channelName fileName ['fadein' time]\n"
+		              "channelName fileName ['fadein' time]\n"
 		              "Got: <" + desc + ">\n\n" + place);
 		return;
 	}
@@ -234,8 +235,9 @@ void Music::play(const std::string &desc,
 		fadeIn = int(String::toDouble(fadeInStr) * 1000);
 	}
 
+	std::lock_guard g(musicMutex);
 
-	std::lock_guard g(globalMutex);
+	bool wasEmpty = musics.empty();
 
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
@@ -256,7 +258,7 @@ void Music::play(const std::string &desc,
 		}else {
 			PyUtils::exec(fileName, numLine, "persistent._seen_audio['" + url + "'] = True");
 
-			if (musics.empty()) {
+			if (wasEmpty) {
 				startMusic();
 			}
 			music->loadNextParts(MIN_PART_COUNT);
@@ -267,8 +269,9 @@ void Music::play(const std::string &desc,
 
 	Utils::outMsg("Music::play", "Channel <" + channelName + "> not found\n\n" + place);
 }
+
 void Music::stop(const std::string &desc,
-				 const std::string& fileName, size_t numLine)
+                 const std::string &fileName, uint32_t numLine)
 {
 	const std::string place = "File <" + fileName + ">\n"
 	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
@@ -303,6 +306,8 @@ void Music::stop(const std::string &desc,
 		}
 		fadeOut = int(String::toDouble(fadeOutStr) * 1000);
 	}
+
+	std::lock_guard g(musicMutex);
 
 	for (Music *music : musics) {
 		if (music->channel->name != channelName) continue;
@@ -552,7 +557,7 @@ void Music::setFadeOut(int v) {
 	startFadeOutTime = startUpdateTime;
 }
 void Music::setPos(int64_t pos) {
-	std::lock_guard g(globalMutex);
+	std::lock_guard g(musicMutex);
 
 	audioPos = buffer;
 	audioLen = 0;

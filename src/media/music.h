@@ -82,12 +82,12 @@ public:
 	static void setVolume(double volume, const std::string &channelName,
 						  const std::string &fileName, int numLine);
 	static void setMixerVolume(double volume, const std::string &mixer,
-							   const std::string& fileName, int numLine);
+	                           const std::string &fileName, int numLine);
 
 	static void play(const std::string &desc,
-					 const std::string& fileName, size_t numLine);
+	                 const std::string &fileName, uint32_t numLine);
 	static void stop(const std::string &desc,
-					 const std::string& fileName, size_t numLine);
+	                 const std::string &fileName, uint32_t numLine);
 
 	static const std::vector<Channel*>& getChannels();
 	static const std::vector<Music*>&   getMusics();

@@ -102,7 +102,6 @@ void Key::checkEvents() {
 		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 
 		auto keyPressed = [](SDL_Scancode scancode) -> bool {
-			if (!GV::keyBoardState) return false;
 			if (GV::keyBoardState[scancode]) return true;
 			if (scancode == SDL_SCANCODE_RETURN) return GV::keyBoardState[SDL_SCANCODE_KP_ENTER];
 			return false;

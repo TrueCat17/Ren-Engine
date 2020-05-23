@@ -41,8 +41,6 @@ public:
 
 	static PyObject* getArgs(const std::string &str);
 
-	static void updateKeyboard();
-
 	static void setMaxFps(int fps);
 
 	static int getFrameTime();

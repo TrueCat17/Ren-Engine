@@ -555,13 +555,6 @@ PyObject* Game::getArgs(const std::string &str) {
 }
 
 
-void Game::updateKeyboard() {
-	GV::keyBoardState = SDL_GetKeyboardState(nullptr);
-	if (!GV::keyBoardState) {
-		Utils::outMsg("SDL_GetKeyboardState", SDL_GetError());
-	}
-}
-
 
 void Game::setMaxFps(int fps) {
 	maxFps = Math::inBounds(fps, 1, 60);

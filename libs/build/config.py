@@ -10,7 +10,7 @@ cc = 'gcc' # usual
 
 
 build = os.path.dirname(os.path.abspath(__file__))
-build.replace('/', '\\')
+build = build.replace('\\', '/')
 
 for c in build:
 	if c >= 'a' and c <= 'z': continue

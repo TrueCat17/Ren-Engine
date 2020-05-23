@@ -25,7 +25,7 @@ public:
 
 	static SDL_Window *mainWindow;
 
-	static const Uint8 *keyBoardState;
+	static Uint8 keyBoardState[SDL_NUM_SCANCODES];
 
 	static Group *screens;
 
