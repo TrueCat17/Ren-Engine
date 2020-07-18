@@ -38,8 +38,6 @@ PyObject* PyUtils::sysExcInfo = nullptr;
 PyObject* PyUtils::formatTraceback = nullptr;
 
 
-PyUtils* PyUtils::obj = nullptr;
-
 PyObject *PyUtils::global = nullptr;
 PyObject *PyUtils::tuple1 = nullptr;
 std::recursive_mutex PyUtils::pyExecMutex;
@@ -124,8 +122,14 @@ static std::string getCurrentMod() {
 	return GV::mainExecNode->params;
 }
 
+void PyUtils::init() {
+	//clear
+	constObjects.clear();
+	clearPyWrappers();
+	Py_XDECREF(PyUtils::tuple1);
+	Py_Finalize();
 
-PyUtils::PyUtils() {
+
 	Py_Initialize();
 
 	tuple1 = PyTuple_New(1);
@@ -213,21 +217,6 @@ PyUtils::PyUtils() {
 	setGlobalFunc("path_update_location", PathFinder::updateLocation);
 	setGlobalFunc("path_on_location", PathFinder::findPath);
 	setGlobalFunc("path_between_locations", PathFinder::findPathBetweenLocations);
-}
-PyUtils::~PyUtils() {
-	constObjects.clear();
-
-	sysExcInfo = nullptr;
-	formatTraceback = nullptr;
-
-	global = nullptr;
-	PyUtils::obj = nullptr;
-
-	Py_DECREF(tuple1);
-	tuple1 = nullptr;
-
-	clearPyWrappers();
-	Py_Finalize();
 }
 
 

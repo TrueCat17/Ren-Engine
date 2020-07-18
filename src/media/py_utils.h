@@ -7,9 +7,7 @@
 
 
 class PyUtils {
-public:	
-	static PyUtils *obj;
-
+public:
 	static PyObject *global;
 	static PyObject *tuple1;
 	static PyObject *sysExcInfo;
@@ -23,9 +21,7 @@ public:
 	static PyObject* execRetObj(const std::string &fileName, size_t numLine, const std::string &code);
 	static void errorProcessing(const std::string &code);
 
-
-	PyUtils();
-	~PyUtils();
+	static void init();
 };
 
 #endif // PYUTILS_H

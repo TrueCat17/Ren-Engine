@@ -2,6 +2,8 @@
 
 #include <set>
 
+#include <Python.h>
+
 #include "gv.h"
 #include "media/image_manipulator.h"
 #include "utils/algo.h"

@@ -3,13 +3,10 @@
 #define printTime 0
 #if printTime
 #include <iostream>
+#include "utils/utils.h"
 #endif
 
-#include "gv.h"
-
 #include "gui/screen/screen.h"
-
-#include "utils/utils.h"
 
 
 void GUI::update() {

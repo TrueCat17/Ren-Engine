@@ -7,7 +7,7 @@
 
 class Screen: public Container {
 private:
-	PyCodeObject *co;
+	void *co;
 
 	std::string name;
 	std::string screenCode;

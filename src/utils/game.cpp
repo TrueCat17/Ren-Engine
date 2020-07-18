@@ -180,7 +180,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 			continue;
 		}
 
-		size_t numLine = size_t(String::toInt(tmpVec[0]));
+		uint32_t numLine = uint32_t(String::toInt(tmpVec[0]));
 		const std::string &channel = tmpVec[1];
 		int fadeIn = String::toInt(tmpVec[2]);
 		int fadeOut = String::toInt(tmpVec[3]);
@@ -413,8 +413,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 		Style::destroyAll();
 
-		delete PyUtils::obj;
-		PyUtils::obj = new PyUtils();
+		PyUtils::init();
 
 		ScreenNodeUtils::clear();
 

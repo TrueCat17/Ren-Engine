@@ -290,7 +290,7 @@ void Screen::calcProps() {
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
-	if (!PyEval_EvalCode(co, PyUtils::global, nullptr)) {
+	if (!PyEval_EvalCode(static_cast<PyCodeObject*>(co), PyUtils::global, nullptr)) {
 		PyUtils::errorProcessing(screenCode);
 	}
 }

@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include <Python.h>
+typedef struct _object PyObject;
 
 
 class Node {
