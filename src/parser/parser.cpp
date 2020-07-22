@@ -83,6 +83,12 @@ Parser::Parser(const std::string &dir) {
 	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
 	Logger::logEvent("Searching files (" + std::to_string(files.size()) + ")", Utils::getTimer() - searchStartTime);
 
+	for (const std::string &fileName : files) {
+		if (fileName.find("_SL_FILE_") != size_t(-1)) {
+			Utils::outMsg("Parser::Parser", "File <" + fileName + "> must be renamed to not contain <_SL_FILE_>");
+		}
+	}
+
 	int readStartTime = Utils::getTimer();
 	int countFiles = 0;
 	int countLines = 0;

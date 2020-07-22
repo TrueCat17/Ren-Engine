@@ -2,17 +2,13 @@
 
 #include <algorithm>
 
-#ifdef __cpp_lib_filesystem
-	#include <filesystem>
-	namespace fs = std::filesystem;
-#elif 1
-	#include <experimental/filesystem>
-	namespace fs = std::experimental::filesystem;
-#else
-	#error "Header <filesystem> not found"
-#endif
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include <SDL2/SDL.h>
+
+#include "utils/string.h"
+#include "utils/utils.h"
 
 
 static std::string clear(std::string path) {
@@ -42,41 +38,60 @@ std::string FileSystem::setCurrentPath(std::string path) {
 	return "Set current path to <" + path + "> failed\n" + ec.message();
 }
 
-bool FileSystem::exists(std::string path) {
+bool FileSystem::exists(const std::string &path) {
 	return fs::exists(clear(path));
 }
-bool FileSystem::isDirectory(std::string path) {
+bool FileSystem::isDirectory(const std::string &path) {
 	return fs::is_directory(clear(path));
 }
-uintmax_t FileSystem::getFileSize(std::string path) {
+uintmax_t FileSystem::getFileSize(const std::string &path) {
 	return fs::file_size(path);
 }
 
-std::vector<std::string> FileSystem::getDirectories(std::string path) {
+std::vector<std::string> FileSystem::getDirectories(const std::string &path) {
 	std::vector<std::string> res;
 
 	for (fs::directory_iterator it(clear(path)), end; it != end; ++it) {
-		const std::string pathStr = clear(it->path().string());
+		std::string pathStr = clear(it->path().string());
 		if (FileSystem::isDirectory(pathStr)) {
+			String::replaceAll(pathStr, "\\", "/");
 			res.push_back(pathStr);
 		}
 	}
 	return res;
 }
 
-void FileSystem::createDirectory(std::string path) {
+void FileSystem::createDirectory(const std::string &path) {
 	fs::create_directory(path);
 }
 
-std::vector<std::string> FileSystem::getFilesRecursive(std::string path) {
+std::string FileSystem::getParentDirectory(const std::string &path) {
+	return fs::path(clear(path)).lexically_normal().parent_path().string();
+}
+
+std::vector<std::string> FileSystem::getFiles(const std::string &path) {
+	std::vector<std::string> res;
+
+	for (fs::directory_iterator it(clear(path)), end; it != end; ++it) {
+		std::string pathStr = clear(it->path().string());
+		if (fs::is_regular_file(pathStr)) {
+			String::replaceAll(pathStr, "\\", "/");
+			res.push_back(pathStr);
+		}
+	}
+
+	std::sort(res.begin(), res.end());
+	return res;
+}
+
+std::vector<std::string> FileSystem::getFilesRecursive(const std::string &path) {
 	std::vector<std::string> res;
 
 	for (fs::recursive_directory_iterator it(clear(path)), end; it != end; ++it) {
-		const std::string pathStr = clear(it->path().string());
+		std::string pathStr = clear(it->path().string());
 		if (fs::is_regular_file(pathStr)) {
-			if (pathStr.find("_SL_FILE_") == size_t(-1)) {
-				res.push_back(pathStr);
-			}
+			String::replaceAll(pathStr, "\\", "/");
+			res.push_back(pathStr);
 		}
 	}
 

@@ -6,8 +6,8 @@ project(Ren-Engine)
 if (NOT(PLATFORM))
 	set(PLATFORM "linux-x86_64")
 
-#	set(PLATFORM "linux-i686")
-#	set(PLATFORM "win32")
+	#set(PLATFORM "linux-i686")
+	#set(PLATFORM "win32")
 endif()
 
 
@@ -74,6 +74,8 @@ link_libraries(
 	SDL2 SDL2_image SDL2_ttf
 	jpeg png16 webp
 	freetype
+	brotlidec-static
+	brotlicommon-static
 	z
 )
 

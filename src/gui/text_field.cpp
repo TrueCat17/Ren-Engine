@@ -10,6 +10,7 @@
 #include "media/py_utils.h"
 
 #include "utils/algo.h"
+#include "utils/file_system.h"
 #include "utils/math.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -32,13 +33,22 @@ TTF_Font* getFont(const std::string &name, int size) {
 		return it->second;
 	}
 
-	std::string path = "fonts/" + name + ".ttf";
-	TTF_Font *res = TTF_OpenFont(path.c_str(), size);
-	if (res) {
-		return fonts[t] = res;
+	std::string startName = "fonts/" + name + '.';
+	std::string dir = FileSystem::getParentDirectory(startName);
+	std::vector<std::string> files = FileSystem::getFiles(dir);
+
+	TTF_Font *res;
+	for (const std::string &file : files) {
+		if (!String::startsWith(file, startName)) continue;
+		if (file.find('.', startName.size()) != size_t(-1)) continue;
+
+		res = TTF_OpenFont(file.c_str(), size);
+		if (res) {
+			return fonts[t] = res;
+		}
+		SDL_ClearError();
 	}
 
-	Utils::outMsg("TTF_Open_Font", TTF_GetError());
 	if (name != defaultFontName) {
 		Utils::outMsg("getFont", "Could not load font <" + name + ">.\nTry to load default font.");
 		res = getFont(defaultFontName, size);
