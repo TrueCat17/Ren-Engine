@@ -36,12 +36,17 @@ def copy(cmd, lto = True):
 		content = f.read()
 		
 		if not lto:
-			content = content.replace('--with-lto', '--without-lto').replace('-flto', '')
+			content = content.replace('--with-lto', '--without-lto')
+			content = content.replace('-flto', '')
+			content = content.replace('--enable-optimizations', '--disable-optimizations')
+		
 		content = content.replace('CC="gcc"', 'CC="' + cc + '"')
 		
-		if os.sys.platform != 'win32':
+		if os.sys.platform not in ('win32', 'msys', 'msys2'):
 			content = content.replace('--host=mingw32', '')
 			content = content.replace('--target-os=mingw32', '')
+		else:
+			content = content.replace('-j4', '-j1')
 		
 		for dep in dirs:
 			lib_var = '\n' + dep.upper() + '_DIR='

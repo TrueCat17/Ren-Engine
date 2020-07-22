@@ -8,6 +8,7 @@ export LDFLAGS="-lm -flto"
 ./configure \
 	--disable-shared \
 	--enable-static \
-	--with-bzip2=no
+	--with-bzip2=no \
+	--with-brotli=yes
 
 make clean

@@ -8,8 +8,8 @@ LIBWEBP_DIR="libwebp-1.0.3"
 
 export CC="gcc"
 export CFLAGS="-O2 -flto"
-export CPPFLAGS="-I$PWD/../$SDL2_DIR/include -I$PWD/../$JPEG_DIR -I$PWD/../$LIBPNG_DIR -I$PWD/../$LIBWEBP_DIR/src/webp"
-export LDFLAGS="-lm -flto -L$PWD/../000res"
+export CPPFLAGS="-I$PWD/../$SDL2_DIR/include -I$PWD/../$JPEG_DIR -I$PWD/../$LIBPNG_DIR -I$PWD/../$LIBWEBP_DIR/src"
+export LDFLAGS="-lm -pthread -flto -L$PWD/../000res"
 
 ./configure \
 	--enable-static \

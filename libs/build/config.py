@@ -1,12 +1,15 @@
 import os
 
-libs = ['Python', 'jemalloc', 'ffmpeg', 'zlib', 'freetype', 'jpeg', 'libpng', 'libwebp', 'SDL2', 'SDL2_image', 'SDL2_ttf']
-if os.sys.platform == 'win32':
+libs = ['Python', 'jemalloc', 'ffmpeg', 'zlib', 'brotli', 'freetype', 'jpeg', 'libpng', 'libwebp', 'SDL2', 'SDL2_image', 'SDL2_ttf']
+if os.sys.platform in ('win32', 'msys', 'msys2'):
 	libs.remove('Python')
 	libs.remove('jemalloc')
 
-cc = 'gcc' # usual
-#cc = 'i686-linux-gnu-gcc' # linux-i686
+bits = 64
+if bits == 64:
+	cc = 'gcc'
+else:
+	cc = 'i686-linux-gnu-gcc'
 
 
 build = os.path.dirname(os.path.abspath(__file__))
