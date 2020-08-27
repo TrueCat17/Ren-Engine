@@ -33,8 +33,9 @@ void DisplayObject::updateGlobal() {
 		parentGlobalAlpha = 1;
 	}
 
-	int x = rect.x + xAnchor - parentXAnchor;
-	int y = rect.y + yAnchor - parentYAnchor;
+
+	int x = int(rect.x + xAnchor - parentXAnchor);
+	int y = int(rect.y + yAnchor - parentYAnchor);
 
 	double sinA = Math::getSin(parentGlobalRotate);
 	double cosA = Math::getCos(parentGlobalRotate);
@@ -42,8 +43,8 @@ void DisplayObject::updateGlobal() {
 	int rotX = int(x * cosA - y * sinA);
 	int rotY = int(x * sinA + y * cosA);
 
-	globalX = parentGlobalX + parentXAnchor + rotX - xAnchor;
-	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
+	globalX = int(parentGlobalX + parentXAnchor + rotX - xAnchor);
+	globalY = int(parentGlobalY + parentYAnchor + rotY - yAnchor);
 	globalRotate = parentGlobalRotate + rotate;
 	globalAlpha = parentGlobalAlpha * alpha;
 
@@ -60,7 +61,7 @@ void DisplayObject::updateGlobal() {
 	}else {
 		if (clipping) {
 			globalClipping = true;
-			clipRect = {globalX, globalY, getWidth(), getHeight()};
+			clipRect = { globalX, globalY, getWidth(), getHeight() };
 		}else {
 			globalClipping = false;
 		}
@@ -80,7 +81,7 @@ bool DisplayObject::checkAlpha(int x, int y) const {
 
 	if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) return false;
 
-	SDL_Rect rect = {x, y, getWidth(), getHeight()};
+	SDL_Rect rect = { x, y, getWidth(), getHeight() };
 	Uint32 color = Utils::getPixel(surface, rect, crop);
 	Uint8 alpha = color & 255;
 	return alpha > 0;
@@ -90,7 +91,7 @@ void DisplayObject::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
-	SDL_Rect dstRect = {globalX, globalY, rect.w, rect.h};
+	SDL_Rect dstRect = { globalX, globalY, rect.w, rect.h };
 	SDL_Point center = { xAnchor, yAnchor };
 
 	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, crop, dstRect, center);
@@ -99,7 +100,7 @@ void DisplayObject::draw() const {
 DisplayObject::~DisplayObject() {
 	for (size_t i = 0; i < objects.size(); ++i) {
 		if (objects[i] == this) {
-			objects.erase(objects.begin() + int(i));
+			objects.erase(objects.begin() + long(i));
 			break;
 		}
 	}
@@ -132,6 +133,10 @@ void DisplayObject::destroyAll() {
 void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip, const SDL_Rect &clipRect,
     const SDL_Rect &srcRect, const SDL_Rect &dstRect, const SDL_Point center)
 {
+	if (clip && angle) {
+		Utils::outMsg("DisplayObject::pushToRender", "Clipped object can't rotate");
+	}
+
 	Renderer::toRender.push_back({
 	    surface, angle, alpha, clip,
 	    clipRect, srcRect, dstRect,

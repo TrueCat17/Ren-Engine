@@ -22,7 +22,7 @@ void Logger::log(const std::string &str) {
 	out << str << '\n';
 	out.flush();
 }
-void Logger::logEvent(const std::string &event, int time, bool lastInGroup) {
+void Logger::logEvent(const std::string &event, long time, bool lastInGroup) {
 	out << event << ": " << time << " ms\n";
 	if (lastInGroup) {
 		out << "\n\n";

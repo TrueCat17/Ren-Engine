@@ -10,19 +10,8 @@ Image::Image(Node *node, Screen *screen):
 void Image::updateRect(bool) {
 	Container::updateRect();
 
-	if (xsize <= 0 && surface) {
-		xsizeIsTextureWidth = true;
-		xsize = surface->w;
-	}else {
-		xsizeIsTextureWidth = false;
-	}
-
-	if (ysize <= 0 && surface) {
-		ysizeIsTextureHeight = true;
-		ysize = surface->h;
-	}else {
-		ysizeIsTextureHeight = false;
-	}
+	xsize = std::max(xsize, 0.0);
+	ysize = std::max(ysize, 0.0);
 }
 
 void Image::updateTexture(bool skipError) {
@@ -32,9 +21,5 @@ void Image::updateTexture(bool skipError) {
 		prevImagePath = first_param;
 
 		surface = ImageManipulator::getImage(first_param, false);
-		if (surface) {
-			if (xsizeIsTextureWidth) xsize = surface->w;
-			if (ysizeIsTextureHeight) ysize = surface->h;
-		}
 	}
 }

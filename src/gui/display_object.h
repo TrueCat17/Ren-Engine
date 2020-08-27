@@ -14,8 +14,12 @@ protected:
 
 	int globalX = 0;
 	int globalY = 0;
+
 	int globalRotate = 0;
 	double globalAlpha = 1;
+
+	double globalZoomX = 1;
+	double globalZoomY = 1;
 
 	bool globalClipping = false;
 
@@ -39,6 +43,9 @@ public:
 	int xAnchor = 0;
 	int yAnchor = 0;
 
+	double xzoom = 1;
+	double yzoom = 1;
+
 	SurfacePtr surface = nullptr;
 
 	Group *parent = nullptr;
@@ -51,6 +58,8 @@ public:
 
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
+	double getGlobalZoomX() const { return globalZoomX; }
+	double getGlobalZoomY() const { return globalZoomY; }
 	int getGlobalRotate() const { return globalRotate; }
 	double getGlobalAlpha() const { return globalAlpha; }
 	virtual void updateGlobal();

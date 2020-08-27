@@ -26,7 +26,7 @@ static const size_t MAX_PART_COUNT = 5;
 
 static std::mutex musicMutex;
 
-static int startUpdateTime = 0;
+static long startUpdateTime = 0;
 
 static std::map<std::string, double> mixerVolumes;
 
@@ -104,7 +104,7 @@ void Music::loop() {
 					}
 				}
 
-				musics.erase(musics.begin() + int(i));
+				musics.erase(musics.begin() + long(i));
 				--i;
 				delete music;
 
@@ -113,7 +113,7 @@ void Music::loop() {
 				}
 			}
 		}
-		const int spend = Utils::getTimer() - startUpdateTime;
+		const long spend = Utils::getTimer() - startUpdateTime;
 		Utils::sleep(10 - spend, false);
 	}
 }
@@ -141,7 +141,7 @@ void Music::clear() {
 }
 
 void Music::registerChannel(const std::string &name, const std::string &mixer, bool loop,
-							const std::string &fileName, int numLine)
+                            const std::string &fileName, size_t numLine)
 {
 	std::lock_guard g(musicMutex);
 
@@ -172,7 +172,7 @@ bool Music::hasChannel(const std::string &name) {
 
 
 void Music::setVolume(double volume, const std::string &channelName,
-					  const std::string &fileName, int numLine)
+                      const std::string &fileName, size_t numLine)
 {
 	for (Channel *channel : channels) {
 		if (channel->name == channelName) {
@@ -187,7 +187,7 @@ void Music::setVolume(double volume, const std::string &channelName,
 	              "Channel <" + channelName + "> not found\n\n" + place);
 }
 void Music::setMixerVolume(double volume, const std::string &mixer,
-						   const std::string &fileName, int numLine)
+                           const std::string &fileName, size_t numLine)
 {
 	if (mixerVolumes.count(mixer)) {
 		mixerVolumes[mixer] = Math::inBounds(volume, 0, 1);
@@ -201,7 +201,7 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 
 
 void Music::play(const std::string &desc,
-                 const std::string &fileName, uint32_t numLine)
+                 const std::string &fileName, size_t numLine)
 {
 	const std::string place = "File <" + fileName + ">\n"
 	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
@@ -219,7 +219,7 @@ void Music::play(const std::string &desc,
 	std::string url = PyUtils::exec(fileName, numLine, args[1], true);
 	String::replaceAll(url, "\\", "/");
 
-	int fadeIn = 0;
+	long fadeIn = 0;
 	if (args.size() > 2) {
 		if (args[2] != "fadein") {
 			Utils::outMsg("Music::play",
@@ -232,7 +232,7 @@ void Music::play(const std::string &desc,
 			              "Fadein value expected number, got <" + args[3] + ">\n\n" + place);
 			return;
 		}
-		fadeIn = int(String::toDouble(fadeInStr) * 1000);
+		fadeIn = long(String::toDouble(fadeInStr) * 1000);
 	}
 
 	std::lock_guard g(musicMutex);
@@ -242,7 +242,7 @@ void Music::play(const std::string &desc,
 	for (size_t i = 0; i < musics.size(); ++i) {
 		Music *music = musics[i];
 		if (music->channel->name == channelName) {
-			musics.erase(musics.begin() + int(i));
+			musics.erase(musics.begin() + long(i));
 			delete music;
 
 			break;
@@ -271,7 +271,7 @@ void Music::play(const std::string &desc,
 }
 
 void Music::stop(const std::string &desc,
-                 const std::string &fileName, uint32_t numLine)
+                 const std::string &fileName, size_t numLine)
 {
 	const std::string place = "File <" + fileName + ">\n"
 	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
@@ -291,7 +291,7 @@ void Music::stop(const std::string &desc,
 		return;
 	}
 
-	int fadeOut = 0;
+	long fadeOut = 0;
 	if (args.size() > 1) {
 		if (args[1] != "fadeout") {
 			Utils::outMsg("Music::stop",
@@ -304,7 +304,7 @@ void Music::stop(const std::string &desc,
 			              "Fadeout value expected number, got <" + args[2] + ">\n\n" + place);
 			return;
 		}
-		fadeOut = int(String::toDouble(fadeOutStr) * 1000);
+		fadeOut = long(String::toDouble(fadeOutStr) * 1000);
 	}
 
 	std::lock_guard g(musicMutex);
@@ -331,8 +331,8 @@ const std::map<std::string, double>& Music::getMixerVolumes() {
 
 
 
-Music::Music(const std::string &url, Channel *channel, int fadeIn,
-			 const std::string &fileName, size_t numLine, const std::string &place):
+Music::Music(const std::string &url, Channel *channel, long fadeIn,
+             const std::string &fileName, size_t numLine, const std::string &place):
 	url(url),
 	channel(channel),
 	startFadeInTime(Utils::getTimer()),
@@ -508,12 +508,12 @@ int Music::getVolume() const {
 
 	//fadeIn
 	if (fadeIn && (startFadeInTime + fadeIn > startUpdateTime)) {
-		return max * (startUpdateTime - startFadeInTime) / fadeIn;
+		return max * int(startUpdateTime - startFadeInTime) / fadeIn;
 	}
 
 	//fadeOut
 	if (fadeOut && startFadeOutTime + fadeOut > startUpdateTime) {
-		return int(max * (1 - double(startUpdateTime - startFadeOutTime) / fadeOut));
+		return max - max * int(startUpdateTime - startFadeOutTime) / fadeOut;
 	}
 
 	//usual
@@ -538,21 +538,21 @@ size_t Music::getNumLine() const {
 }
 
 
-int Music::getFadeIn() const {
-	return std::max(fadeIn + startFadeInTime - startUpdateTime, 0);
+long Music::getFadeIn() const {
+	return std::max(fadeIn + startFadeInTime - startUpdateTime, 0l);
 }
-int Music::getFadeOut() const {
-	return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0);
+long Music::getFadeOut() const {
+	return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0l);
 }
 int64_t Music::getPos() const {
 	return lastFramePts;
 }
 
-void Music::setFadeIn(int v) {
+void Music::setFadeIn(long v) {
 	fadeIn = v;
 	startFadeInTime = startUpdateTime;
 }
-void Music::setFadeOut(int v) {
+void Music::setFadeOut(long v) {
 	fadeOut = v;
 	startFadeOutTime = startUpdateTime;
 }

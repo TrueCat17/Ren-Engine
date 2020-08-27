@@ -38,6 +38,20 @@ template<>
 template<>
 uint64_t convertFromPy<uint64_t>(PyObject *obj, const char *funcName, size_t argIndex);
 
+//if long == int32_t, x86, 32-bit
+#if ((LONG_MAX) == (INT_MAX))
+template<>
+inline
+signed long int convertFromPy(PyObject* obj, const char *funcName, size_t argIndex) {
+	return convertFromPy<int32_t>(obj, funcName, argIndex);
+}
+template<>
+inline
+unsigned long int convertFromPy(PyObject* obj, const char *funcName, size_t argIndex) {
+	return convertFromPy<uint32_t>(obj, funcName, argIndex);
+}
+#endif
+
 
 template<>
  float convertFromPy<float>(PyObject *obj, const char *funcName, size_t argIndex);

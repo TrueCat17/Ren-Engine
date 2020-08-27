@@ -96,5 +96,5 @@ std::vector<std::string> FileSystem::getFilesRecursive(const std::string &path) 
 	}
 
 	std::sort(res.begin(), res.end());
-	return  res;
+	return res;
 }

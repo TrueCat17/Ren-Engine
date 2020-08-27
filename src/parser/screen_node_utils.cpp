@@ -14,6 +14,7 @@
 #include "gui/screen/imagemap.h"
 
 #include "media/py_utils.h"
+#include "media/py_utils/absolute.h"
 
 #include <utils/algo.h>
 #include "utils/scope_exit.h"
@@ -35,15 +36,7 @@ static std::map<const Node*, std::string> screenCodes;
 static std::map<const Node*, const std::vector<ScreenUpdateFunc>*> screenUpdateFuncs;
 
 
-std::string ScreenNodeUtils::getScreenCode(const Node *screenNode) {
-	return screenCodes[screenNode];
-}
-const std::vector<ScreenUpdateFunc>* ScreenNodeUtils::getUpdateFuncs(const Node *node) {
-	return screenUpdateFuncs[node];
-}
-
-
-void ScreenNodeUtils::init(Node *node) {
+void initScreen(Node *node) {
 	if (screenCodes.find(node) != screenCodes.end()) return;
 
 	initConsts(node);
@@ -54,6 +47,18 @@ void ScreenNodeUtils::init(Node *node) {
 	screenCodes[node] = screenCode;
 
 	initUpdateFuncs(node);
+}
+
+
+std::string ScreenNodeUtils::getScreenCode(Node *screenNode) {
+	auto it = screenCodes.find(screenNode);
+	if (it != screenCodes.end()) return it->second;
+
+	initScreen(screenNode);
+	return screenCodes[screenNode];
+}
+const std::vector<ScreenUpdateFunc>* ScreenNodeUtils::getUpdateFuncs(const Node *node) {
+	return screenUpdateFuncs[node];
 }
 
 void ScreenNodeUtils::clear() {
@@ -104,7 +109,7 @@ static void initConsts(Node *node) {
 							  "Using screens with recursion: " + String::join(screensInInit, " -> ") + " -> " + params);
 				node->command = "pass";
 			}else {
-				ScreenNodeUtils::init(screenNode);
+				initScreen(screenNode);
 				node->isScreenConst = screenNode->isScreenConst;
 				node->countPropsToCalc = screenNode->countPropsToCalc;
 			}
@@ -123,6 +128,12 @@ static void initConsts(Node *node) {
 		if (child->isScreenProp && !child->isScreenConst && !child->isScreenEvent) {
 			++node->countPropsToCalc;
 		}
+	}
+
+
+	if (command == "button" || command == "textbutton") {
+		node->withScreenEvent = true;
+		return;
 	}
 
 	if (command == "if" || command == "elif" || command == "else" ||
@@ -279,19 +290,19 @@ static std::string initCycleCode(Node *node) {
 	}
 
 	res +=
-	        "_SL_last[" + std::to_string(node->screenNum) + "] = _SL_last = [None] * " + name + "\n" +
-	        idLen + " = " + name + "\n" +
-	        name + " = 0\n"
-			"\n" +
-	        command + ' ' + params + ": # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n" +
-			indent + "\n";
+	    "_SL_last[" + std::to_string(node->screenNum) + "] = _SL_last = [None] * " + name + "\n" +
+	    idLen + " = " + name + "\n" +
+	    name + " = 0\n"
+	    "\n" +
+	    command + ' ' + params + ": # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n" +
+	    indent + "\n";
 
 	if (count) {
 		res +=
-	        indent + "if " + name + " == " + idLen + ":\n" +
+		    indent + "if " + name + " == " + idLen + ":\n" +
 		    indent + "    _SL_last += [None] * " + std::to_string(50 * count) + "\n" +
 		    indent + "    " + idLen + " += " + std::to_string(50 * count) + "\n" +
-			indent + "\n";
+		    indent + "\n";
 	}
 
 
@@ -543,7 +554,8 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 }
 
 #define updateCondition(isFloat, var, prop) \
-	if ((isFloat = PyFloat_CheckExact(prop))) { /*set & check*/ \
+	isFloat = PyFloat_CheckExact(prop); \
+	if (isFloat || PyAbsolute_CheckExact(prop)) { \
 		var = PyFloat_AS_DOUBLE(prop); \
 	}else \
 	if (PyInt_CheckExact(prop)) { \
@@ -561,8 +573,8 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	[[maybe_unused]] bool tmpBool; \
 	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
 	else { \
-	    std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, int or long, got " + type); \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
 }
 
@@ -575,7 +587,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyBool_Check(prop)) { \
 		static_cast<Type*>(obj)->propName = prop == Py_True; \
 	}else { \
-	    std::string type = prop->ob_type->tp_name; \
+		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
 	} \
 }
@@ -586,22 +598,37 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(obj->propName##IsDouble, obj->propName, prop) \
 	else { \
-	    std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, int or long, got " + type); \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
 }
 
-#define makeUpdateCommonFunc(propName) \
+#define makeUpdateCommonFuncWithOptionalIsDouble(propName, xIsDouble, yIsDouble) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	if (!PyList_CheckExact(prop) && !PyTuple_CheckExact(prop)) { \
-	    std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types list or tuple, got " + type); \
+	bool tmpBool; \
+	bool isNumber = true; \
+	[[maybe_unused]] bool unusedBool; \
+	double value = 0; \
+	updateCondition(tmpBool, value, prop) \
+	else { \
+		isNumber = false; \
+	} \
+	\
+	if (isNumber) { \
+		xIsDouble = tmpBool; yIsDouble = tmpBool; \
+		obj->x##propName = obj->y##propName = value; \
+		return; \
+	} \
+	\
+	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) { \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type); \
 		return; \
 	} \
 	if (Py_SIZE(prop) != 2) { \
-	    std::string size = std::to_string(Py_SIZE(prop)); \
+		std::string size = std::to_string(Py_SIZE(prop)); \
 		outError(obj, #propName, propIndex, "Expected sequence with size == 2, got " + size); \
 		return; \
 	} \
@@ -609,37 +636,57 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0); \
 	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1); \
 	\
-	updateCondition(obj->x##propName##IsDouble, obj->x##propName, x) \
+	updateCondition(xIsDouble, obj->x##propName, x) \
 	else { \
-	    std::string type = x->ob_type->tp_name; \
-		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, int or long, got " + type); \
+		std::string type = x->ob_type->tp_name; \
+		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
-	updateCondition(obj->y##propName##IsDouble, obj->y##propName, y) \
+	updateCondition(yIsDouble, obj->y##propName, y) \
 	else { \
-	    std::string type = y->ob_type->tp_name; \
-		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, int or long, got " + type); \
+		std::string type = y->ob_type->tp_name; \
+		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
 }
+
+#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithOptionalIsDouble(propName, obj->x##propName##IsDouble, obj->y##propName##IsDouble)
+#define makeUpdateCommonFuncWithoutIsDouble(propName) makeUpdateCommonFuncWithOptionalIsDouble(propName, unusedBool, unusedBool)
 
 
 #define makeUpdateFuncWithAlign(x_or_y) \
 static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	updateCondition(obj->x_or_y##posIsDouble = obj->x_or_y##anchorPreIsDouble, \
-					obj->x_or_y##pos = obj->x_or_y##anchorPre, prop) \
+	bool isFloat; \
+	double value = 0; \
+	updateCondition(isFloat, value, prop) \
 	else { \
-	    std::string type = prop->ob_type->tp_name; \
-		outError(obj, #x_or_y"align", propIndex, "Expected types float, int or long, got " + type); \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
+	obj->x_or_y##posIsDouble = obj->x_or_y##anchorPreIsDouble = isFloat; \
+	obj->x_or_y##pos = obj->x_or_y##anchorPre = value; \
 }
 
 static void update_align(Child *obj, size_t propIndex) {
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
 
-	if (!PyList_CheckExact(prop) && !PyTuple_CheckExact(prop)) {
+	bool isFloat;
+	bool isNumber = true;
+	double value = 0;
+	updateCondition(isFloat, value, prop)
+	else {
+		isNumber = false;
+	}
+
+	if (isNumber) {
+		obj->xposIsDouble = obj->xanchorPreIsDouble = obj->yposIsDouble = obj->yanchorPreIsDouble = isFloat;
+		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = value;
+		return;
+	}
+
+	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
 		std::string type = prop->ob_type->tp_name;
-		outError(obj, "align", propIndex, "Expected types list or tuple, got " + type);
+		outError(obj, "align", propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type);
 		return;
 	}
 	if (Py_SIZE(prop) != 2) {
@@ -651,19 +698,21 @@ static void update_align(Child *obj, size_t propIndex) {
 	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0);
 	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1);
 
-	updateCondition(obj->xposIsDouble = obj->xanchorPreIsDouble,
-					obj->xpos = obj->xanchorPre, x)
+	updateCondition(isFloat, value, x)
 	else {
 		std::string type = x->ob_type->tp_name;
-		outError(obj, "align", propIndex, "At xalign-prop expected types float, int or long, got " + type);
+		outError(obj, "align", propIndex, "At xalign-prop expected types float, absolute, int or long, got " + type);
 	}
+	obj->xposIsDouble = obj->xanchorPreIsDouble = isFloat;
+	obj->xpos = obj->xanchorPre = value;
 
-	updateCondition(obj->yposIsDouble = obj->yanchorPreIsDouble,
-					obj->ypos = obj->yanchorPre, y)
+	updateCondition(isFloat, value, y)
 	else {
 		std::string type = y->ob_type->tp_name;
-		outError(obj, "align", propIndex, "At yalign-prop expected types float, int or long, got " + type);
+		outError(obj, "align", propIndex, "At yalign-prop expected types float, absolute, int or long, got " + type);
 	}
+	obj->yposIsDouble = obj->yanchorPreIsDouble = isFloat;
+	obj->ypos = obj->yanchorPre = value;
 }
 
 #define makeUpdateFuncWithStr(Type, propName, funcPostfix) \
@@ -673,7 +722,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyString_CheckExact(prop)) { \
 		static_cast<Type*>(obj)->propName = PyString_AS_STRING(prop); \
 	}else { \
-	    std::string type = prop->ob_type->tp_name; \
+		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type str, got " + type); \
 	} \
 }
@@ -701,25 +750,25 @@ static void update_crop(Child *obj, size_t propIndex) {
 	updateCondition(obj->xcropIsDouble, obj->xcrop, x)
 	else {
 		std::string type = x->ob_type->tp_name;
-		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, int or long, got " + type);
+		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
 	updateCondition(obj->ycropIsDouble, obj->ycrop, y)
 	else {
 		std::string type = y->ob_type->tp_name;
-		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, int or long, got " + type);
+		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
 	updateCondition(obj->wcropIsDouble, obj->wcrop, w)
 	else {
 		std::string type = w->ob_type->tp_name;
-		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, int or long, got " + type);
+		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
 	updateCondition(obj->hcropIsDouble, obj->hcrop, h)
 	else {
 		std::string type = h->ob_type->tp_name;
-		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, int or long, got " + type);
+		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 }
 
@@ -731,18 +780,18 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	auto oldFontStyle = fontStyle; \
 	\
 	if (prop == Py_True) { \
-	    fontStyle |= mask; \
-	    if (fontStyle != oldFontStyle) { \
-	        text->needUpdate = true; \
-	    } \
+		fontStyle |= mask; \
+		if (fontStyle != oldFontStyle) { \
+			text->needUpdate = true; \
+		} \
 	}else if (prop == Py_False) { \
-	    fontStyle &= ~mask; \
-	    if (fontStyle != oldFontStyle) { \
-	        text->needUpdate = true; \
-	    } \
+		fontStyle &= ~mask; \
+		if (fontStyle != oldFontStyle) { \
+			text->needUpdate = true; \
+		} \
 	}else { \
-	    std::string type = prop->ob_type->tp_name; \
-	    outError(obj, #propName, propIndex, "Expected bool, got " + type); \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected bool, got " + type); \
 	} \
 }
 #define makeUpdateTextColor(propName, isOutline) \
@@ -753,45 +802,45 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	\
 	Uint32 v = Uint32(-1); \
 	if (PyInt_CheckExact(prop)) { \
-	    long l = PyInt_AS_LONG(prop); \
-	    if (l < 0 || l > 0xFFFFFF) { \
-	        outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(l) + ">"); \
-	    }else { \
-	        v = Uint32(l); \
-	    } \
+		long l = PyInt_AS_LONG(prop); \
+		if (l < 0 || l > 0xFFFFFF) { \
+			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(l) + ">"); \
+		}else { \
+			v = Uint32(l); \
+		} \
 	}else \
 	if (PyLong_CheckExact(prop)) { \
-	    double d = PyLong_AsDouble(prop); \
-	    if (d < 0 || d > 0xFFFFFF) { \
-	        outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
-	    }else { \
-	        v = Uint32(d); \
-	    } \
+		double d = PyLong_AsDouble(prop); \
+		if (d < 0 || d > 0xFFFFFF) { \
+			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
+		}else { \
+			v = Uint32(d); \
+		} \
 	}else \
 	if (prop == Py_None || prop == Py_False) { \
-	    if (style.enableOutline) { \
-	        text->needUpdate = true; \
-	        style.enableOutline = false; \
-	    } \
+		if (style.enableOutline) { \
+			text->needUpdate = true; \
+			style.enableOutline = false; \
+		} \
 	} \
 	else { \
-	    std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
-	    outError(obj, #propName, propIndex, "Expected types int, long, None or False, got " + type); \
+		std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected types int, long, None or False, got " + type); \
 	} \
 	\
 	if (v != Uint32(-1)) { \
-	    if (isOutline) { \
-	        if (style.outlineColor != v || !style.enableOutline) { \
-	            text->needUpdate = true; \
-	            style.outlineColor = v; \
-	            style.enableOutline = true; \
-	        } \
-	    }else { \
-	        if (style.color != v) { \
-	            text->needUpdate = true; \
-	            style.color = v; \
-	        } \
-	    } \
+		if constexpr (isOutline) { \
+			if (style.outlineColor != v || !style.enableOutline) { \
+				text->needUpdate = true; \
+				style.outlineColor = v; \
+				style.enableOutline = true; \
+			} \
+		}else { \
+			if (style.color != v) { \
+				text->needUpdate = true; \
+				style.color = v; \
+			} \
+		} \
 	} \
 }
 
@@ -808,9 +857,13 @@ makeUpdateFuncWithIsDouble(yanchorPre)
 makeUpdateFuncWithIsDouble(xsize)
 makeUpdateFuncWithIsDouble(ysize)
 
+makeUpdateFuncType(Child, xzoom)
+makeUpdateFuncType(Child, yzoom)
+
 makeUpdateCommonFunc(pos)
 makeUpdateCommonFunc(anchorPre)
 makeUpdateCommonFunc(size)
+makeUpdateCommonFuncWithoutIsDouble(zoom)
 
 makeUpdateFuncWithAlign(x)
 makeUpdateFuncWithAlign(y)
@@ -859,9 +912,12 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"yanchor",           update_yanchorPre},
 	{"xsize",             update_xsize},
 	{"ysize",             update_ysize},
+	{"xzoom",             update_xzoom},
+	{"yzoom",             update_yzoom},
 	{"pos",               update_pos},
 	{"anchor",            update_anchorPre},
 	{"size",              update_size},
+	{"zoom",              update_zoom},
 	{"xalign",            update_xalign},
 	{"yalign",            update_yalign},
 	{"align",             update_align},
@@ -870,7 +926,7 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"zorder",            update_zorder},
 	{"modal",             update_modal},
 	{"spacing",           update_spacing},
-    {"color",             update_text_color},
+	{"color",             update_text_color},
 	{"outlinecolor",      update_text_outlinecolor},
 	{"font",              update_font},
 	{"text_align",        update_text_align},

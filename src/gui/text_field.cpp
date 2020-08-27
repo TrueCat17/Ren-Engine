@@ -67,7 +67,7 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 		Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 		return;
 	}
-	if (style.alpha * 255 < 1.0f) return;
+	if (style.alpha * 255 < 1.0) return;
 
 	SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
 
@@ -114,10 +114,10 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 
 	if (style.enableOutline) {
 		SDL_BlitSurface(surfaceText, nullptr, tmpSurface.get(), nullptr);
-		SDL_SetSurfaceAlphaMod(tmpSurface.get(), Uint8(std::min(style.alpha * 255, 255.0f)));
+		SDL_SetSurfaceAlphaMod(tmpSurface.get(), Uint8(std::min(style.alpha * 255, 255.0)));
 		SDL_BlitSurface(tmpSurface.get(), nullptr, surface, &rect);
 	}else {
-		SDL_SetSurfaceAlphaMod(surfaceText, Uint8(std::min(style.alpha * 255, 255.0f)));
+		SDL_SetSurfaceAlphaMod(surfaceText, Uint8(std::min(style.alpha * 255, 255.0)));
 		SDL_BlitSurface(surfaceText, nullptr, surface, &rect);
 	}
 	SDL_FreeSurface(surfaceText);
@@ -133,18 +133,15 @@ static std::string getTagValue(std::string &tag) {
 	return "";
 }
 static SurfacePtr getImage(const std::string &path) {
-	std::string realPath;
-
 	if (Utils::imageWasRegistered(path)) {
-		std::vector<std::string> comands = Utils::getVectorImageDeclAt(path);
-		if (comands.empty()) return nullptr;
+		std::vector<std::string> commands = Utils::getVectorImageDeclAt(path);
+		if (commands.empty()) return nullptr;
 
-		realPath = PyUtils::exec("text_field.cpp", __LINE__, comands.front(), true);
-	}else {
-		realPath = PyUtils::exec("text_field.cpp", __LINE__, path, true);
+		std::string realPath = PyUtils::exec("CPP_EMBED: text_field.cpp", __LINE__, commands.front(), true);
+		return ImageManipulator::getImage(realPath);
 	}
 
-	return ImageManipulator::getImage(realPath);
+	return ImageManipulator::getImage(path);
 }
 static Uint32 getColor(std::string value) {
 	if (!value.empty() && value.front() == '#') {
@@ -242,15 +239,15 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			}
 			style.tag = tag;
 
-			auto apply = [](float &prop, std::string &value) {
+			auto apply = [](double &prop, std::string &value) {
 				if (value[0] == '*') {
 					value.erase(0, 1);
-					prop *= float(String::toDouble(value));
+					prop *= String::toDouble(value);
 				}else {
 					if (value[0] == '+' || value[0] == '-') {
-						prop += float(String::toDouble(value));
+						prop += String::toDouble(value);
 					}else {
-						prop = float(String::toDouble(value));
+						prop = String::toDouble(value);
 					}
 				}
 			};
@@ -328,7 +325,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 	return i + 1;
 }
 
-void TextField::setFont(std::string fontName, float fontSize) {
+void TextField::setFont(std::string fontName, double fontSize) {
 	mainStyle.fontSize = fontSize;
 	mainStyle.fontName = fontName.empty() ? defaultFontName : fontName;
 	updateFont(mainStyle);
@@ -445,7 +442,7 @@ void TextField::setText(const std::string &text) {
 
 				std::string nextLine = line.substr(startNextLine);
 				line.erase(startNextLine);
-				tmpLines.insert(tmpLines.begin() + int(numLine + 1), nextLine);
+				tmpLines.insert(tmpLines.begin() + long(numLine + 1), nextLine);
 				break;
 			}
 
@@ -464,7 +461,7 @@ void TextField::setText(const std::string &text) {
 		if (currentHeight >= maxH) {
 			tmpLineRects.back().h -= currentHeight - maxH;
 			currentHeight = maxH;
-			tmpLines.erase(tmpLines.begin() + int(numLine + 1), tmpLines.end());
+			tmpLines.erase(tmpLines.begin() + long(numLine + 1), tmpLines.end());
 			break;
 		}
 	}

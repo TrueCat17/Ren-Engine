@@ -37,7 +37,7 @@ static std::string getVersion() {
 	if (versionStr.empty()) {
 		std::string major = "0";
 		std::string minor = "9";
-		std::string micro = "1";
+		std::string micro = "2";
 
 		std::string date = __DATE__;
 
@@ -189,12 +189,12 @@ static std::string setDir(std::string newRoot) {
 	for (size_t i = 0; i < parts.size(); ++i) {
 		std::string &part = parts[i];
 		if (part == ".") {
-			parts.erase(parts.begin() + int(i));
+			parts.erase(parts.begin() + long(i));
 			--i;
 		}else
 
 		if (part == ".." && i != 0) {
-			parts.erase(parts.begin() + int(i) - 1, parts.begin() + int(i) + 1);
+			parts.erase(parts.begin() + long(i) - 1, parts.begin() + long(i) + 1);
 			i -= 2;
 		}
 	}
@@ -295,7 +295,7 @@ static bool init() {
 }
 
 
-static int lastFrameStartTime = Utils::getTimer();
+static long lastFrameStartTime = Utils::getTimer();
 static std::list<SDL_Event> events;
 static std::mutex eventMutex;
 
@@ -485,8 +485,8 @@ static void loop() {
 
 		GV::updateMutex.unlock();
 
-		const int spent = Utils::getTimer() - lastFrameStartTime;
-		const int timeToSleep = Game::getFrameTime() - spent;
+		const long spent = Utils::getTimer() - lastFrameStartTime;
+		const long timeToSleep = Game::getFrameTime() - spent;
 //		std::cout << spent << ' ' << timeToSleep << '\n';
 		Utils::sleep(timeToSleep);
 	}
@@ -518,7 +518,7 @@ void destroy() {
 	GV::exit = true;
 	GV::inGame = false;
 
-	int toSleep = Game::getFrameTime() + 3;
+	long toSleep = Game::getFrameTime() + 3;
 
 	SDL_Event event;
 	while (toSleep) {
@@ -533,7 +533,7 @@ void destroy() {
 }
 
 int main(int argc, char **argv) {
-	int initStartTime = Utils::getTimer();
+	long initStartTime = Utils::getTimer();
 
 	std::string arg;
 	if (argc == 2) {

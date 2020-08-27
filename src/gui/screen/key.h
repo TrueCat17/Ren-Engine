@@ -12,7 +12,7 @@ private:
 	static bool notReactOnEnter;
 	static std::vector<Key*> screenKeys;
 
-	int lastDown = 0;
+	long lastDown = 0;
 	int lastUpdate = -1;
 	bool prevIsDown = false;
 

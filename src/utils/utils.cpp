@@ -70,15 +70,15 @@ std::vector<std::string> Utils::getFileNames(const std::string &path) {
 	return FileSystem::getFilesRecursive(path);
 }
 
-int Utils::getTimer() {
+long Utils::getTimer() {
 	static auto startTime = std::chrono::system_clock::now();
 
 	auto now = std::chrono::system_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
-	return int(duration.count());
+	return duration.count();
 }
-void Utils::sleep(int ms, bool checkInGame) {
-	const int MIN_SLEEP = Game::getFrameTime();
+void Utils::sleep(long ms, bool checkInGame) {
+	const long MIN_SLEEP = Game::getFrameTime();
 
 	while ((GV::inGame || !checkInGame) && ms >= MIN_SLEEP) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(MIN_SLEEP));
@@ -90,7 +90,7 @@ void Utils::sleep(int ms, bool checkInGame) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 	}
 }
-void Utils::sleepMicroSeconds(int ms) {
+void Utils::sleepMicroSeconds(long ms) {
 	std::this_thread::sleep_for(std::chrono::microseconds(ms));
 }
 
@@ -116,6 +116,7 @@ bool Utils::realOutMsg() {
 	{
 		std::lock_guard g(msgGuard);
 		msg = messagesToOut.front();
+		messagesToOut.pop_front();
 	}
 
 	static const SDL_MessageBoxButtonData buttons[] = {
@@ -142,8 +143,6 @@ bool Utils::realOutMsg() {
 	if (res == 1) {
 		msgCloseAll = true;
 		messagesToOut.clear();
-	}else {
-		messagesToOut.pop_front();
 	}
 
 	return !messagesToOut.empty();

@@ -29,7 +29,7 @@ public:
 
 	static Group *screens;
 
-	static int frameStartTime;
+	static long frameStartTime;
 	static std::mutex updateMutex;
 
 	static std::mutex mutexForSmartPtr;

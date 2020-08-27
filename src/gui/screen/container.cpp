@@ -33,7 +33,7 @@ void Container::addChildAt(DisplayObject *child, size_t index) {
 	if (child->parent) {
 		child->parent->removeChild(child);
 	}
-	auto to = std::min(pChildren.begin() + int(index), pChildren.end());
+	auto to = std::min(pChildren.begin() + long(index), pChildren.end());
 	pChildren.insert(to, child);
 
 	child->parent = parent;
@@ -195,8 +195,8 @@ void Container::addChildrenFromNode() {
 				"break, continue, $, python, "
 				"pass, "
 				"has, first_param, spacing, "
-				"xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, "
-			    "align, anchor, pos, size, crop, rotate, alpha, clipping, "
+			    "xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, xzoom, yzoom, "
+			    "align, anchor, pos, size, zoom, crop, rotate, alpha, clipping, "
 				"modal, zorder, ground, hover, "
 				"action, alternate, hovered, unhovered, activate_sound, hover_sound, mouse, "
 				"color, font, text_size, text_align, text_valign"

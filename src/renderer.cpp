@@ -144,7 +144,7 @@ static void setClipRect(const SDL_Rect *clipRect) {
 	currentClipRect = rect;
 
 	if (fastOpenGL) {
-		glScissor(rect.x, rect.y, rect.w, rect.h);
+		glScissor(rect.x, GV::height - rect.y - rect.h, rect.w, rect.h);//at glScissor lower pixel - y=0
 		if (checkOpenGlErrors) {
 			checkErrors("glScissor");
 		}

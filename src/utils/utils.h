@@ -16,9 +16,9 @@ public:
 
 	static std::vector<std::string> getFileNames(const std::string &path);
 
-	static int getTimer();
-	static void sleep(int ms, bool checkInGame = true);
-	static void sleepMicroSeconds(int ms);
+	static long getTimer();
+	static void sleep(long ms, bool checkInGame = true);
+	static void sleepMicroSeconds(long ms);
 
 	static void outMsg(std::string msg, const std::string &err = "");
 	static bool realOutMsg();

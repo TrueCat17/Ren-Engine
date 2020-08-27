@@ -24,7 +24,7 @@ Key::~Key() {
 		Key *sk = screenKeys[i];
 
 		if (screenKeys[i] == this) {
-			screenKeys.erase(screenKeys.begin() + int(i));
+			screenKeys.erase(screenKeys.begin() + long(i));
 			--i;
 		}else
 		if (isModal && prevIsDown && screen != sk->screen &&

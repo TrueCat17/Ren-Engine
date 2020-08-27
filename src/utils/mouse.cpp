@@ -101,7 +101,7 @@ void Mouse::setCanHide(bool value) {
 }
 
 
-static int lastAction = Utils::getTimer();
+static long lastAction = Utils::getTimer();
 void Mouse::setLastAction() {
 	lastAction = Utils::getTimer();
 }

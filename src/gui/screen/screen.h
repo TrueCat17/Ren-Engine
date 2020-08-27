@@ -1,8 +1,6 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include <vector>
-
 #include "gui/screen/container.h"
 
 class Screen: public Container {
@@ -32,6 +30,8 @@ public:
 	static void addToShow(const std::string &name);
 	static void addToHide(const std::string &name);
 	static bool hasScreen(const std::string &name);
+
+	static void logScreenCode(const std::string &name);
 
 
 	double zorder = 0;

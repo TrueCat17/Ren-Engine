@@ -7,7 +7,7 @@ class Logger {
 public:
 	static void init();
 	static void log(const std::string &str);
-	static void logEvent(const std::string &event, int time, bool lastInGroup = false);
+	static void logEvent(const std::string &event, long time, bool lastInGroup = false);
 };
 
 #endif // LOGGER_H

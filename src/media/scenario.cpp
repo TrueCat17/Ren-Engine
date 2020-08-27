@@ -18,16 +18,20 @@
 #include "utils/algo.h"
 #include "utils/game.h"
 #include "utils/mouse.h"
+#include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
 
+
+static std::map<std::string, Node*> declaredLabels;
+
+static void declareLabel(Node *labelNode) {
+	declaredLabels[labelNode->params] = labelNode;
+}
 static Node* getLabel(const std::string &name) {
-	for (Node *node : GV::mainExecNode->children) {
-		if (node->command == "label" && node->params == name) {
-			return node;
-		}
-	}
+	auto it = declaredLabels.find(name);
+	if (it != declaredLabels.end()) return it->second;
 
 	Utils::outMsg("Scenario::getLabel", "Label <" + name + "> not found");
 	return nullptr;
@@ -197,13 +201,20 @@ void Scenario::jumpNext(const std::string &label, bool isCall) {
 
 
 void Scenario::execute() {
-	int initingStartTime = Utils::getTimer();
+	long initingStartTime = Utils::getTimer();
 	size_t initNum = 0;
+
+	ScopeExit se([]() {
+		declaredLabels.clear();
+	});
 
 	std::vector<Node*> initBlocks;
 	for (Node *node : GV::mainExecNode->children) {
 		if (node->command == "init" || node->command == "init python") {
 			initBlocks.push_back(node);
+		}else
+		if (node->command == "label") {
+			declareLabel(node);
 		}else
 		if (node->command == "screen") {
 			Screen::declare(node);

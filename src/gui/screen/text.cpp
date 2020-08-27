@@ -22,8 +22,11 @@ Text::~Text() {
 void Text::updateRect(bool) {
 	tf->enable = true;
 
-	int width = int(xsize * (xsizeIsDouble ? GV::width : 1));
-	int height = int(ysize * (ysizeIsDouble ? GV::height : 1));
+	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
+	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
+
+	int width  = int(xsize * (xsizeIsDouble ? GV::width  : 1) * globalZoomX);
+	int height = int(ysize * (ysizeIsDouble ? GV::height : 1) * globalZoomY);
 
 	if (first_param.empty() && prevText.empty()) {
 		setWidth(width);
@@ -38,8 +41,8 @@ void Text::updateRect(bool) {
 			needUpdate = true;
 		}
 
-		if (tf->mainStyle.fontName != font || !Math::floatsAreEq(tf->mainStyle.fontSize, text_size)) {
-			tf->setFont(font, text_size);
+		if (tf->mainStyle.fontName != font || !Math::doublesAreEq(tf->mainStyle.fontSize, text_size * globalZoomY)) {
+			tf->setFont(font, text_size * globalZoomY);
 			needUpdate = true;
 		}
 		if (first_param != prevText) {

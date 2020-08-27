@@ -41,11 +41,11 @@ public:
 
 	static PyObject* getArgs(const std::string &str);
 
-	static void setMaxFps(int fps);
+	static void setMaxFps(long fps);
 
-	static int getFrameTime();
-	static int getFps();
-	static void setFps(int fps);
+	static long getFrameTime();
+	static long getFps();
+	static void setFps(long fps);
 
 	static void setStageSize(int width, int height);
 	static void setFullscreen(bool value);

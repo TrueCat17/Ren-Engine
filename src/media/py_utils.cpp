@@ -1,5 +1,6 @@
 #include "py_utils.h"
 #include "py_utils/make_func.h"
+#include "py_utils/absolute.h"
 
 #include <iostream>
 
@@ -24,7 +25,7 @@
 #include "utils/utils.h"
 
 
-typedef std::tuple<const std::string, const std::string, int> PyCode;
+typedef std::tuple<const std::string, const std::string, uint32_t> PyCode;
 
 static std::map<std::string, PyObject*> constObjects;
 static std::map<PyCode, PyCodeObject*> compiledObjects;
@@ -44,28 +45,25 @@ std::recursive_mutex PyUtils::pyExecMutex;
 
 
 PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
-	std::tuple<const std::string&, const std::string&, int> pyCode(code, fileName, numLine);
+	std::tuple<const std::string&, const std::string&, size_t> refPyCode(code, fileName, numLine);
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
-	auto i = compiledObjects.find(pyCode);
+	auto i = compiledObjects.find(refPyCode);
 	if (i != compiledObjects.end()) {
 		return i->second;
 	}
 
 
-	std::string indent;
-	if (numLine > 1) {
-		indent.resize(numLine - 1, '\n');
-	}
+	std::string indentCode;
+	indentCode.reserve(numLine - 1 + code.size());
+	indentCode.insert(0, numLine - 1, '\n');
+	indentCode += code;
 
-	const std::string tmp = indent + code;
-
-	PyObject *t = Py_CompileStringFlags(tmp.c_str(), fileName.c_str(), Py_file_input, nullptr);
+	PyObject *t = Py_CompileStringFlags(indentCode.c_str(), fileName.c_str(), Py_file_input, nullptr);
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
 
-	std::tuple<const std::string, const std::string, int> constPyCode(code, fileName, numLine);
-	compiledObjects[constPyCode] = co;
+	compiledObjects[refPyCode] = co;
 	return co;
 }
 
@@ -85,26 +83,9 @@ static PyObject* getLocalMouse() {
 
 template<typename T>
 static void setGlobalValue(const char *key, T t) {
-	PyObject *res;
-	if constexpr (std::is_same<T, bool>::value) {
-		res = t ? Py_True : Py_False;
-	}else
-	if constexpr (std::is_same<T, int>::value) {
-		res = PyInt_FromLong(t);
-	}else
-	if constexpr (std::is_same<T, double>::value) {
-		res = PyFloat_FromDouble(t);
-	}else {
-		Utils::outMsg("PyUtils::setGlobalValue", "Expected types bool, int or double");
-		res = Py_None;
-		Py_INCREF(res);
-	}
-
+	PyObject *res = convertToPy(t);
 	PyDict_SetItemString(PyUtils::global, key, res);
-
-	if constexpr (!std::is_same<T, bool>::value) {
-		Py_DECREF(res);
-	}
+	Py_DECREF(res);
 }
 
 template<typename T>
@@ -149,6 +130,14 @@ void PyUtils::init() {
 	global = PyModule_GetDict(main);
 
 
+	if (PyType_Ready(&PyAbsolute_Type) < 0) {
+		Utils::outMsg("PyUtils::init", "Can't initialize absolute type");
+	}else {
+		PyObject *builtinModule = PyImport_AddModule("__builtin__");
+		PyObject *builtinDict = PyModule_GetDict(builtinModule);
+		PyDict_SetItemString(builtinDict, "absolute", (PyObject*)&PyAbsolute_Type);
+	}
+
 	setGlobalValue("need_save", false);
 	setGlobalValue("save_screenshotting", false);
 	setGlobalValue("need_screenshot", false);
@@ -174,6 +163,7 @@ void PyUtils::init() {
 	setGlobalFunc("show_screen", Screen::addToShow);
 	setGlobalFunc("hide_screen", Screen::addToHide);
 	setGlobalFunc("has_screen", Screen::hasScreen);
+	setGlobalFunc("_log_screen_code", Screen::logScreenCode);
 	setGlobalFunc("_SL_check_events", Screen::checkScreenEvents);
 	setGlobalFunc("_SL_error_processing", Screen::errorProcessing);
 
@@ -331,13 +321,10 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 		size_t start = code.find_first_not_of(' ');
 		if (start != size_t(-1)) {
 			size_t end = code.find_last_not_of(' ');
-			const std::string s = code.substr(start, end - start + 1);
+			std::string_view s = code;
+			s = s.substr(start, end - start + 1);
 
 			if (s == True || s == False || s == None) {
-				return true;
-			}
-		}else {
-			if (code == True || code == False || code == None) {
 				return true;
 			}
 		}

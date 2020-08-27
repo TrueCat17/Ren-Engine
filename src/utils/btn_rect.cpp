@@ -58,7 +58,7 @@ BtnRect::~BtnRect() {
 	for (size_t i = 0; i < btnRects.size(); ++i) {
 		BtnRect *btnRect = btnRects[i];
 		if (btnRect == this) {
-			btnRects.erase(btnRects.begin() + int(i));
+			btnRects.erase(btnRects.begin() + long(i));
 			return;
 		}
 	}

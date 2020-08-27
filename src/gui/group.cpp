@@ -28,7 +28,7 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 		child->parent->removeChild(child);
 	}
 
-	auto to = std::min(children.begin() + int(index), children.end());
+	auto to = std::min(children.begin() + long(index), children.end());
 	children.insert(to, child);
 
 	child->parent = this;
@@ -37,7 +37,7 @@ void Group::addChildAt(DisplayObject *child, size_t index) {
 void Group::removeChild(DisplayObject *child) {
 	for (size_t i = 0; i < children.size(); ++i) {
 		if (children[i] == child) {
-			children.erase(children.begin() + int(i));
+			children.erase(children.begin() + long(i));
 			break;
 		}
 	}

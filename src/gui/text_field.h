@@ -13,19 +13,19 @@ struct TextStyle {
 
 	TTF_Font *font = nullptr;
 	std::string fontName;
-	float fontSize = 0;
+	double fontSize = 0;
+
+	double alpha = 1.0;
+	Uint32 color = 0;
 
 	Uint8 fontStyle = 0;//TTF_STYLE_NORMAL
 
 	bool enableOutline = false;
 	Uint32 outlineColor = 0;
 
-	Uint32 color = 0;
-	float alpha = 1.0;
-
 	bool operator==(const TextStyle &o) const {
-		auto a = std::tie(  tag,   font,   fontName,   fontSize,   fontStyle,   enableOutline,   outlineColor,   color,   alpha);
-		auto b = std::tie(o.tag, o.font, o.fontName, o.fontSize, o.fontStyle, o.enableOutline, o.outlineColor, o.color, o.alpha);
+		auto a = std::tie(  tag,   font,   fontName,   fontSize,   alpha,   color,   fontStyle,   enableOutline,   outlineColor);
+		auto b = std::tie(o.tag, o.font, o.fontName, o.fontSize, o.alpha, o.color, o.fontStyle, o.enableOutline, o.outlineColor);
 		return a == b;
 	}
 };
@@ -56,7 +56,7 @@ public:
 	const std::string& getVAlign() const { return vAlign; }
 	void setAlign(std::string hAlign = "left", std::string vAlign = "top");
 
-	void setFont(std::string fontName, float fontSize);
+	void setFont(std::string fontName, double fontSize);
 	void setText(const std::string &text);
 
 	virtual bool checkAlpha(int x, int y) const;

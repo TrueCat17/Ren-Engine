@@ -71,19 +71,8 @@ void TextButton::updateRect(bool) {
 	Child::updateRect(false);
 	Text::updateRect();
 
-	if (xsize <= 0) {
-		xsizeIsTextureWidth = true;
-		xsize = surface ? surface->w : 0;
-	}else {
-		xsizeIsTextureWidth = false;
-	}
-
-	if (ysize <= 0) {
-		ysizeIsTextureHeight = true;
-		ysize = surface ? surface->h : 0;
-	}else {
-		ysizeIsTextureHeight = false;
-	}
+	xsize = std::max(xsize, 0.0);
+	ysize = std::max(ysize, 0.0);
 }
 
 void TextButton::updateTexture(bool skipError) {
@@ -91,7 +80,7 @@ void TextButton::updateTexture(bool skipError) {
 
 	if (!surface || hover.empty() || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
 		if (prevGround != ground && (hoverIsStd || hover.empty())) {
-			hover = PyUtils::exec("CPP_EMBED: screen_textbutton.cpp", __LINE__, "im.MatrixColor(r'" + ground + "', im.matrix.contrast(1.5))", true);
+			hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__, "im.MatrixColor(r'" + ground + "', im.matrix.contrast(1.5))", true);
 		}
 		prevGround = ground;
 		prevHover = hover;
@@ -99,8 +88,6 @@ void TextButton::updateTexture(bool skipError) {
 		const std::string &path = !btnRect.mouseOvered ? ground : hover;
 		surface = ImageManipulator::getImage(path, false);
 
-		if (xsizeIsTextureWidth)  xsize = surface ? surface->w : 0;
-		if (ysizeIsTextureHeight) ysize = surface ? surface->h : 0;
 		updateRect();
 	}
 }

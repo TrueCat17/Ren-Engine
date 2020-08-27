@@ -146,6 +146,7 @@ set(SOURCES
 	media/image_manipulator.cpp
 	media/music.cpp
 	media/py_utils.cpp
+	media/py_utils/absolute.cpp
 	media/py_utils/convert_from_py.cpp
 	media/py_utils/convert_to_py.cpp
 	media/py_utils/make_func.cpp

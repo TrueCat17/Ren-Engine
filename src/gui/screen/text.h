@@ -15,7 +15,7 @@ private:
 public:
 	bool needUpdate = false;
 
-	float text_size = 20;
+	double text_size = 20;
 	TextField *tf;
 
 	std::string font;

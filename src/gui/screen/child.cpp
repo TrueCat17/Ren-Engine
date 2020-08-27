@@ -114,24 +114,30 @@ void Child::updateProps() {
 }
 
 void Child::updatePos() {
-	xAnchor = int(xanchorPre * (xanchorPreIsDouble ? getWidth() : 1));
-	yAnchor = int(yanchorPre * (yanchorPreIsDouble ? getHeight() : 1));
+	double parentGlobalZoomX = parent ? parent->getGlobalZoomX() : 1;
+	double parentGlobalZoomY = parent ? parent->getGlobalZoomY() : 1;
+
+	xAnchor = int(xanchorPre * (xanchorPreIsDouble ? getWidth() : globalZoomX));
+	yAnchor = int(yanchorPre * (yanchorPreIsDouble ? getHeight() : globalZoomY));
 
 	if (!inHBox) {
-		int endXPos = int(xpos * (xposIsDouble ? parent->getWidth() : 1));
+		int endXPos = int(xpos * (xposIsDouble ? parent->getWidth() : parentGlobalZoomX));
 		int x = endXPos - xAnchor;
 		setX(x);
 	}
 	if (!inVBox) {
-		int endYPos = int(ypos * (yposIsDouble ? parent->getHeight() : 1));
+		int endYPos = int(ypos * (yposIsDouble ? parent->getHeight() : parentGlobalZoomY));
 		int y = endYPos - yAnchor;
 		setY(y);
 	}
 }
 
 void Child::updateRect(bool needUpdatePos) {
-	setWidth( int(xsize * (xsizeIsDouble ? GV::width  : 1)));
-	setHeight(int(ysize * (ysizeIsDouble ? GV::height : 1)));
+	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
+	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
+
+	setWidth( int(xsize * (xsizeIsDouble ? GV::width  : 1) * globalZoomX));
+	setHeight(int(ysize * (ysizeIsDouble ? GV::height : 1) * globalZoomY));
 
 	if (surface) {
 		crop.x = int(xcrop * (xcropIsDouble ? surface->w : 1));

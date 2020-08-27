@@ -19,8 +19,6 @@ protected:
 	bool inVBox = false;
 	bool inHBox = false;
 
-	bool xsizeIsTextureWidth = false, ysizeIsTextureHeight = false;
-
 	void updatePos();
 
 public:

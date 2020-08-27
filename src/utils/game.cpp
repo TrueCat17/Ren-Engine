@@ -34,10 +34,10 @@
 #include "utils/utils.h"
 
 
-static int maxFps = 60;
+static long maxFps = 60;
 
-static int fps = 60;
-static int frameTime = 16;
+static long fps = 60;
+static long frameTime = 16;
 
 static int modStartTime = 0;
 static bool canAutoSave = true;
@@ -105,7 +105,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	std::getline(is, modName);
 
 	{
-		int fps;
+		long fps;
 		bool hideMouse, autosave;
 
 		std::getline(is, tmp);
@@ -372,7 +372,7 @@ static std::mutex modMutex;
 static void _startMod(const std::string &dir, const std::string &loadPath) {
 	Utils::setThreadName("scenario");
 
-	int waitingStartTime = Utils::getTimer();
+	long waitingStartTime = Utils::getTimer();
 
 	GV::inGame = false;
 
@@ -387,7 +387,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
-		int clearStartTime = Utils::getTimer();
+		long clearStartTime = Utils::getTimer();
 		Music::clear();
 
 		Utils::clearImages();
@@ -555,17 +555,17 @@ PyObject* Game::getArgs(const std::string &str) {
 
 
 
-void Game::setMaxFps(int fps) {
+void Game::setMaxFps(long fps) {
 	maxFps = Math::inBounds(fps, 1, 60);
 }
 
-int Game::getFrameTime() {
+long Game::getFrameTime() {
 	return frameTime;
 }
-int Game::getFps() {
+long Game::getFps() {
 	return fps;
 }
-void Game::setFps(int newFps) {
+void Game::setFps(long newFps) {
 	newFps = Math::inBounds(newFps, 1, maxFps);
 
 	fps = newFps;

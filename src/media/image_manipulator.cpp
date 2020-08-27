@@ -176,7 +176,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 
 		for (size_t i = 0; i < processingImages.size(); ++i) {
 			if (processingImages[i] == desc) {
-				processingImages.erase(processingImages.begin() + int(i));
+				processingImages.erase(processingImages.begin() + long(i));
 				return;
 			}
 		}

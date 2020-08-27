@@ -52,29 +52,36 @@ void Parser::getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isPr
 
 static const std::string modsPath = "mods/";
 PyObject* Parser::getMods() {
-	PyObject *res = PyDict_New();
+	std::vector<std::pair<std::string, std::string>> res;
 
 	std::vector<std::string> dirs = FileSystem::getDirectories(modsPath);
 	for (std::string dir : dirs) {
-		std::string path = dir + "/name";
-		if (FileSystem::exists(path)) {
-			std::ifstream nameFile(path);
+		if (!FileSystem::exists(dir + "/name")) continue;
 
-			std::string modName;
-			std::getline(nameFile, modName);
+		std::ifstream nameFile(dir + "/name");
+		std::string modName;
+		std::getline(nameFile, modName);
 
-			dir.erase(0, modsPath.size());//lost only dirName, without "mods/"
-			PyObject *pyDirName = PyString_FromString(dir.c_str());
-			PyDict_SetItemString(res, modName.c_str(), pyDirName);
-		}
+		dir.erase(0, modsPath.size());//lost only dirName, without "mods/"
+
+		res.push_back({modName, dir});
 	}
-	return res;
+	std::sort(res.begin(), res.end());
+
+	PyObject *pyRes = PyTuple_New(long(res.size()));
+	for (size_t i = 0; i < res.size(); ++i) {
+		PyObject *item = PyTuple_New(2);
+		PyTuple_SET_ITEM(item, 0, PyString_FromString(res[i].first.c_str()));
+		PyTuple_SET_ITEM(item, 1, PyString_FromString(res[i].second.c_str()));
+		PyTuple_SET_ITEM(pyRes, i, item);
+	}
+	return pyRes;
 }
 
 Parser::Parser(const std::string &dir) {
 	this->dir = dir;
 
-	int searchStartTime = Utils::getTimer();
+	long searchStartTime = Utils::getTimer();
 	std::vector<std::string> files = Utils::getFileNames(dir);
 
 	std::vector<std::string> commonFiles = Utils::getFileNames("mods/common/");
@@ -89,7 +96,7 @@ Parser::Parser(const std::string &dir) {
 		}
 	}
 
-	int readStartTime = Utils::getTimer();
+	long readStartTime = Utils::getTimer();
 	int countFiles = 0;
 	int countLines = 0;
 
@@ -142,7 +149,7 @@ Parser::Parser(const std::string &dir) {
 
 						if (!q1 && !q2) {
 							if (c == '#') {
-								s.erase(s.begin() + int(i), s.end());
+								s.erase(s.begin() + long(i), s.end());
 								break;
 							}
 						}
@@ -168,7 +175,7 @@ Parser::Parser(const std::string &dir) {
 }
 
 Node* Parser::parse() {
-	int parsingStartTime = Utils::getTimer();
+	long parsingStartTime = Utils::getTimer();
 	Node *res = getMainNode();
 	Logger::logEvent("Parsing", Utils::getTimer() - parsingStartTime);
 
@@ -229,27 +236,21 @@ Node* Parser::getMainNode() {
 			const int superParent = headWord == "label" ? SuperParent::LABEL : headWord == "init" ? SuperParent::INIT : SuperParent::SCREEN;
 			Node *node = getNode(start, nextChildStart, superParent, false);
 
-			Node *orig = nullptr;
 			if (node->command == "label" || node->command == "screen") {
 				for (Node *child : res->children) {
 					if (node->command == child->command && node->params == child->params) {
-						orig = child;
+						Logger::log("\nRedefinition " + node->command + " <" + node->params + ">:\n" +
+						            node->getPlace() + "\n" +
+						            "Previous definition:\n" +
+						            child->getPlace() + "\n");
 						break;
 					}
 				}
 			}
 
-			if (!orig) {
-				node->parent = res;
-				node->childNum = res->children.size();
-				res->children.push_back(node);
-			}else {
-				Utils::outMsg("Parser::getMainNode",
-				              "Redefinition " + node->command + " " + node->params + ":\n" +
-				              node->getPlace() + "\n" +
-				              "Previous definition:\n" +
-				              orig->getPlace());
-			}
+			node->parent = res;
+			node->childNum = res->children.size();
+			res->children.push_back(node);
 		}
 		start = nextChildStart;
 	}
@@ -552,8 +553,8 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 				}
 			}
 			++i;
-			node->children.insert(node->children.begin(), res->children.begin() + int(i), res->children.end());
-			res->children.erase(res->children.begin() + int(i), res->children.end());
+			node->children.insert(node->children.begin(), res->children.begin() + long(i), res->children.end());
+			res->children.erase(res->children.begin() + long(i), res->children.end());
 		}
 		res->children.push_back(node);
 

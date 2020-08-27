@@ -39,11 +39,11 @@ private:
 
 	bool ended = false;
 
-	int startFadeInTime = 0;
-	int startFadeOutTime = 0;
+	long startFadeInTime = 0;
+	long startFadeOutTime = 0;
 
-	int fadeIn = 0;
-	int fadeOut = 0;
+	long fadeIn = 0;
+	long fadeOut = 0;
 	int64_t lastFramePts = 0;
 
 	std::string fileName;
@@ -63,7 +63,7 @@ private:
 	uint8_t *buffer;
 
 
-	Music(const std::string &url, Channel *channel, int fadeIn, const std::string &fileName, size_t numLine, const std::string &place);
+	Music(const std::string &url, Channel *channel, long fadeIn, const std::string &fileName, size_t numLine, const std::string &place);
 	~Music();
 
 	bool initCodec();
@@ -76,18 +76,18 @@ public:
 	static void clear();
 
 	static void registerChannel(const std::string &name, const std::string &mixer, bool loop,
-								const std::string &fileName, int numLine);
+	                            const std::string &fileName, size_t numLine);
 	static bool hasChannel(const std::string &name);
 
 	static void setVolume(double volume, const std::string &channelName,
-						  const std::string &fileName, int numLine);
+	                      const std::string &fileName, size_t numLine);
 	static void setMixerVolume(double volume, const std::string &mixer,
-	                           const std::string &fileName, int numLine);
+	                           const std::string &fileName, size_t numLine);
 
 	static void play(const std::string &desc,
-	                 const std::string &fileName, uint32_t numLine);
+	                 const std::string &fileName, size_t numLine);
 	static void stop(const std::string &desc,
-	                 const std::string &fileName, uint32_t numLine);
+	                 const std::string &fileName, size_t numLine);
 
 	static const std::vector<Channel*>& getChannels();
 	static const std::vector<Music*>&   getMusics();
@@ -106,12 +106,12 @@ public:
 	const std::string& getFileName() const;
 	size_t getNumLine() const;
 
-	int getFadeIn() const;
-	int getFadeOut() const;
+	long getFadeIn() const;
+	long getFadeOut() const;
 	int64_t getPos() const;
 
-	void setFadeIn(int v);
-	void setFadeOut(int v);
+	void setFadeIn(long v);
+	void setFadeOut(long v);
 	void setPos(int64_t pos);
 };
 

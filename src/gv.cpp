@@ -17,7 +17,7 @@ Uint8 GV::keyBoardState[SDL_NUM_SCANCODES];
 
 Group *GV::screens = nullptr;
 
-int GV::frameStartTime = 0;
+long GV::frameStartTime = 0;
 std::mutex GV::updateMutex;
 
 std::mutex GV::mutexForSmartPtr;

@@ -1,8 +1,10 @@
 #include "screen.h"
 
 #include <algorithm>
+#include <map>
 
 #include "gv.h"
+#include "logger.h"
 #include "media/py_utils.h"
 #include "parser/screen_node_utils.h"
 #include "utils/utils.h"
@@ -11,19 +13,15 @@
 bool Screen::destroyedScreenIsModal = false;
 
 
-static std::vector<Node*> declared;
+static std::map<std::string, Node*> declared;
 static std::mutex screenMutex;
 
-void Screen::declare(Node *node) {
-	declared.push_back(node);
+void Screen::declare(Node *screenNode) {
+	declared[screenNode->params] = screenNode;
 }
 Node* Screen::getDeclared(const std::string &name) {
-	for (Node *node : declared) {
-		if (node->params == name) {
-			return node;
-		}
-	}
-	return nullptr;
+	auto it = declared.find(name);
+	return it != declared.end() ? it->second : nullptr;
 }
 Screen* Screen::getMain(const std::string &name) {
 	if (GV::screens) {
@@ -47,7 +45,6 @@ static void show(const std::string &name) {
 			return;
 		}
 
-		ScreenNodeUtils::init(node);
 		scr = new Screen(node, nullptr);
 	}
 
@@ -99,7 +96,7 @@ void Screen::addToShow(const std::string &name) {
 
 	for (size_t i = 0; i < toHideList.size(); ++i) {
 		if (toHideList[i] == name) {
-			toHideList.erase(toHideList.cbegin() + int(i));
+			toHideList.erase(toHideList.cbegin() + long(i));
 			return;
 		}
 	}
@@ -111,7 +108,7 @@ void Screen::addToHide(const std::string &name) {
 
 	for (size_t i = 0; i < toShowList.size(); ++i) {
 		if (toShowList[i] == name) {
-			toShowList.erase(toShowList.cbegin() + int(i));
+			toShowList.erase(toShowList.cbegin() + long(i));
 			return;
 		}
 	}
@@ -127,6 +124,13 @@ bool Screen::hasScreen(const std::string &name) {
 
 	return getMain(name);
 }
+
+void Screen::logScreenCode(const std::string &name) {
+	Node* node = getDeclared(name);
+	std::string code = ScreenNodeUtils::getScreenCode(node);
+	Logger::log("\n\n\nCode of screen <" + name + ">:\n\n" + code + "\n\n\n");
+}
+
 
 
 static bool _hasModal = false;
@@ -276,7 +280,7 @@ Screen::Screen(Node *node, Screen *screen):
 	if (this->screen != this) return;//not main screen, command <use>
 
 	screenCode = ScreenNodeUtils::getScreenCode(node);
-	co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 0);
+	co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 1);
 	if (!co) {
 		PyUtils::errorProcessing(screenCode);
 	}
