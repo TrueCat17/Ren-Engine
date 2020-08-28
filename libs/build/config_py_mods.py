@@ -6,7 +6,7 @@ from shutil import copyfile
 from config import *
 
 
-libs_on = ['math', '_struct', 'time', 'operator', '_random', '_collections', 'itertools', '_md5', '_sha', '_sha256', '_sha512', 'binascii', 'cStringIO', 'cPickle']
+libs_on = ['math', '_struct', 'time', 'datetime', 'operator', '_random', '_collections', 'itertools', '_md5', '_sha', '_sha256', '_sha512', 'binascii', 'cStringIO', 'cPickle']
 libs_off = ['pwd']
 
 for i in os.listdir(main):
