@@ -1,0 +1,1 @@
+It's python files (and dependence) for win32, because Python can't built with MinGW
