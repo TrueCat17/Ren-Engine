@@ -2,6 +2,7 @@
 #define GV_H
 
 #include <mutex>
+#include <thread>
 
 #include <SDL2/SDL.h>
 
@@ -22,6 +23,8 @@ public:
 	static bool minimized;
 	static bool inGame;
 	static bool exit;
+
+	static std::thread::id messageThreadId;
 
 	static SDL_Window *mainWindow;
 

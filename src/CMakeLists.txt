@@ -14,15 +14,15 @@ endif()
 
 if (PLATFORM STREQUAL "win32")
 	set(CMAKE_CXX_COMPILER "i686-w64-mingw32-g++")
-	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../lib/win32")
+	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/win32")
 
 elseif (PLATFORM STREQUAL "linux-i686")
 	set(CMAKE_CXX_COMPILER "i686-linux-gnu-g++")
-	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../lib/linux-i686")
+	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/linux-i686")
 
 elseif(PLATFORM  STREQUAL "linux-x86_64")
-	set(CMAKE_CXX_COMPILER "g++")
-	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../lib/linux-x86_64")
+	set(CMAKE_CXX_COMPILER "x86_64-linux-gnu-g++")
+	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/linux-x86_64")
 
 else()
 	message(FATAL_ERROR "Unknown PLATFORM")

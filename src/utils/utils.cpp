@@ -173,11 +173,15 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	message.str = msg;
 
 	messagesToOut.push_back(message);
-	while (true) {
-		sleep(10, false);
+	if (GV::messageThreadId == std::this_thread::get_id() || GV::messageThreadId == std::thread::id()) {
+		while (Utils::realOutMsg()) {}
+	}else {
+		while (true) {
+			sleep(10, false);
 
-		std::lock_guard g(msgGuard);
-		if (!Algo::in(message, messagesToOut)) break;
+			std::lock_guard g(msgGuard);
+			if (!Algo::in(message, messagesToOut)) break;
+		}
 	}
 }
 

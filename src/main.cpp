@@ -495,6 +495,8 @@ static void loop() {
 static void eventLoop() {
 	std::thread(loop).detach();
 
+	GV::messageThreadId = std::this_thread::get_id();
+
 	while (!GV::exit) {
 		while (Utils::realOutMsg()) {}
 

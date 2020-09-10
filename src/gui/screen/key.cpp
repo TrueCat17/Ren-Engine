@@ -110,7 +110,7 @@ void Key::checkEvents() {
 			const double dTime = (GV::frameStartTime - lastDown) / 1000.0;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
-			if (dTime >= delay) {
+			if (dTime >= delay || !lastDown) {
 				if (!inFirstDown) {
 					wasFirstDelay = true;
 				}

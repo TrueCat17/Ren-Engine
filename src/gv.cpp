@@ -11,6 +11,8 @@ bool GV::minimized = false;
 bool GV::inGame = false;
 bool GV::exit = false;
 
+std::thread::id GV::messageThreadId;
+
 SDL_Window *GV::mainWindow;
 
 Uint8 GV::keyBoardState[SDL_NUM_SCANCODES];
