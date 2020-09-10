@@ -173,9 +173,10 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	message.str = msg;
 
 	messagesToOut.push_back(message);
-	if (GV::messageThreadId == std::this_thread::get_id() || GV::messageThreadId == std::thread::id()) {
+	if (GV::messageThreadId == std::this_thread::get_id()) {
 		while (Utils::realOutMsg()) {}
-	}else {
+	}else
+	if (GV::messageThreadId != std::thread::id()) {
 		while (true) {
 			sleep(10, false);
 
