@@ -11,14 +11,15 @@ run prev 2 commands again.
 Also you must open `%msys2_dir%/home/user/.bashrc`, add `PATH="/mingw32/bin:$PATH"` and restart MSYS2.
 
 You must have installed **packages**: `python3`, `git`, `nasm`, `autoconf`, `automake`, `libtool`, `make`, `cmake`, `gcc`, `g++`.  
-Examples for:
+
+Examples:
 * MSYS2: `pacman -S python3 git nasm autoconf automake libtool make mingw-w64-i686-cmake mingw-w64-i686-gcc`  
-(not just cmake and gcc!),
-* Debian-based OS: `apt-get install python3 git nasm autoconf automake libtool make cmake gcc g++`.
+(not just cmake and gcc!)
+* Debian-based OS: `apt-get install python3 git nasm autoconf automake libtool make cmake gcc g++`
 
 **If your OS is Linux**, you must also install:
 * for audio subsystem: `libasound-dev libpulse-dev`
-* for window subsystem: `libdbus-1-dev libudev-dev libxrandr-dev libxcursor-dev libxxf86vm-dev`
+* for window subsystem: `libdbus-1-dev libudev-dev libxrandr-dev libxcursor-dev libxxf86vm-dev`  
 (or just `xorg-dev`, but it is not only needed packages).
 
 ***
