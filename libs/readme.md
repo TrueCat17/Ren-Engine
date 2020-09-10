@@ -1,21 +1,22 @@
 ## Preparing
 
-For start, if your OS is **Windows**, you must download and install
-[MSYS2](https://repo.msys2.org/distrib/msys2-i686-latest.exe)).
+For start, **if your OS is Windows**, you must download and install
+[MSYS2](https://repo.msys2.org/distrib/msys2-i686-latest.exe).  
 After it, you must update package database in MSYS2's PACkage MANager:  
 `pacman -Syu`  
 and (if needed, close MSYS2 and run it again) update rest:  
 `pacman -Su`  
-If you have some errors with PGP keys, see [it](https://www.msys2.org/news/#2020-06-29-new-packagers), fix problem and
+If you have some errors with PGP keys, see [this page](https://www.msys2.org/news/#2020-06-29-new-packagers), fix problem and
 run prev 2 commands again.  
 Also you must open `%msys2_dir%/home/user/.bashrc`, add `PATH="/mingw32/bin:$PATH"` and restart MSYS2.
 
-You must have installed **packages**: `python3`, `git`, `nasm`, `autoconf`, `automake`, `libtool`, `make`, `cmake`, `gcc`, `g++`.
+You must have installed **packages**: `python3`, `git`, `nasm`, `autoconf`, `automake`, `libtool`, `make`, `cmake`, `gcc`, `g++`.  
 Examples for:
-* MSYS2: `pacman -S python3 git nasm autoconf automake libtool make mingw-w64-i686-cmake mingw-w64-i686-gcc` (not just cmake and gcc!),
+* MSYS2: `pacman -S python3 git nasm autoconf automake libtool make mingw-w64-i686-cmake mingw-w64-i686-gcc`  
+(not just cmake and gcc!),
 * Debian-based OS: `apt-get install python3 git nasm autoconf automake libtool make cmake gcc g++`.
 
-If your OS is **Linux**, you must also install:
+**If your OS is Linux**, you must also install:
 * for audio subsystem: `libasound-dev libpulse-dev`
 * for window subsystem: `libdbus-1-dev libudev-dev libxrandr-dev libxcursor-dev libxxf86vm-dev`
 (or just `xorg-dev`, but it is not only needed packages).
@@ -25,13 +26,13 @@ If your OS is **Linux**, you must also install:
 ## Building
 
 1. Open console (MSYS2 for Windows) and change dir to `scripts`:
-```bash
+```
 $ cd Ren-Engine/libs/scripts
 ```
 
 
 2. Set <start> status:
-```bash
+```
 $ ./progress.py
 Choose need actions for all libs:
 1. Download and build
@@ -41,14 +42,14 @@ Choose need actions for all libs:
 
 
 3. Download (~90 MB) and extract (~400 MB) sources:
-```bash
+```
 $ ./download.py
 ```
 This step uses cache (dir `download`) and copy (git) or extract (archives) downloaded to `sources`.
 
 
 4. Check libs ready to build:
-```bash
+```
 $ ./check.py
 All libs exists.
 ```
@@ -56,14 +57,14 @@ Usually, you must do steps 2, 3 and 4 only once.
 
 
 5. Copy files (bash-scripts) for building libs:
-```bash
+```
 $ ./copy_sh.py
 ```
 Here you can choose platform (x32 or x64, Linux only), enable/disable optimisations that makes building slower, etc...
 
 
 6. Build libs:
-```bash
+```
 $ ./build.py
 # ... building prev libs ...
 Build <SDL2_ttf>
@@ -74,7 +75,7 @@ Ok!
 
 
 7. Copy include-files:
-```bash
+```
 $ ./copy_incs.py
 ```
 This step is last, because some include-files generates in `build` (substep `configure`).
@@ -91,6 +92,7 @@ If there are some errors, you can fix it and restart `./build` again.
 Logs and Errors of building you can see at `libs/sources/%lib%` in files
 * `conf_out.txt` and `conf_err.txt` for configurate,
 * `make_out.txt` and `make_err.txt` for make.
+
 You can edit to fix and run files `./conf.sh` and `./make.sh` in any lib.  
 After it, don't forget to open `scripts/progress_list.txt` and to change status fixed lib to `configurated` or `maked`.  
 Also you can fix `scripts/%conf-or-make%/%lib%.sh` for `copy_sh.py`, that generates `*.sh`-files from this.
@@ -104,7 +106,7 @@ Status any lib in `scripts/progress_list.txt` can set to next values:
 ***
 
 Example for building with lto after building without lto:
-```bash
+```
 $ ./progress.py
 > 2
 
