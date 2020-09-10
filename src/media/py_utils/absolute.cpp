@@ -65,8 +65,9 @@ static PyObject* reduce(PyObject *self, PyObject *) {
 	PyTuple_SET_ITEM(args, 0, pyFloat);
 
 	PyObject *res = PyTuple_New(2);
-	Py_INCREF(&PyAbsolute_Type);
-	PyTuple_SET_ITEM(res, 0, reinterpret_cast<PyObject*>(&PyAbsolute_Type));
+	PyObject *type = reinterpret_cast<PyObject*>(&PyAbsolute_Type);
+	Py_INCREF(type);
+	PyTuple_SET_ITEM(res, 0, type);
 	PyTuple_SET_ITEM(res, 1, reinterpret_cast<PyObject*>(args));
 	return res;
 }
