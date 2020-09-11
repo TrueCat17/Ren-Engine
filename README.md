@@ -17,10 +17,10 @@ Ren-Engine - это движок для игр: Визуальных Новел�
 Информацию об использовании движка, о создании своих игр и ссылку на **демо** вы можете найти в документации на
 [wiki](https://github.com/TrueCat17/Ren-Engine/wiki) проекта.
 
-### Сборка
-Если вы по какой-то причине решили собрать движок самостоятельно, то инструкция для этого есть в `build/readme`.  
-Но перед этим нужно будет собрать ещё и 12 библиотек (см. `libs/readme`), от которых прямо или косвенно он зависит.  
-Скачивание всех исходников и их сборка автоматизированы в десяток команд, и в общей сложности занимают 20 минут.
+#### Сборка
+Если вы по какой-то причине решили собрать движок самостоятельно, то см. `build/readme`.  
+Но сначала нужно собрать 12 библиотек (см. `libs/readme`), от которых прямо или косвенно он зависит.  
+Скачивание всех исходников и их сборка автоматизированы в десяток команд, выполняющиеся за 20 минут.
 
 
 
@@ -29,7 +29,7 @@ Ren-Engine - это движок для игр: Визуальных Новел�
 Ren-Engine is a engine for games: Visual Novells, RPG, etc...   
 It is similar to Ren'Py, file format - Ren'Py's `rpy`.  
 Compability is not full, but there are some new opportunities, and something changed for unification and logicality:
-for example, language for description interface ScreenLang or starting of mods.
+for example, language for interface description ScreenLang or starting of mods.
 
 But implemented almost all functions for Visual Novells based on Ren'Py.
 
@@ -41,7 +41,7 @@ Info to using Ren-Engine, about creation your games and link to **demo** you can
 Unfortunately, parts of engine outside Visual Novells have unstable "api" now (before 1.0 release),
 so the documentation has no English translation now, but you can use translator.
 
-### Building
+#### Building
 If you for some reason decided to build engine by yourself, see `build/readme`.  
 But before you must build 12 libs (see `libs/readme`), that are direct or indirect dependences.  
 Downloading and building automated to ~10 commands and generally take 20 minutes.
