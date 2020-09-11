@@ -1,33 +1,47 @@
 # Ren-Engine
-Ren-Engine - это движок для игр.
-Принципы работы аналогичны Ren'Py.
-Формат файлов такой же.
-Поддерживаются изображения (image), анимации (ATL), музыка (play/stop), интерфейсы (ScreenLang), условия, циклы, python-вставки и т. д.
-Поддерживаются не все возможности, в то же время введены некоторые новые.
-Но главная особенность - гораздо бОльшая производительность (примерно в 130 раз быстрее).
-Именно ради этого он и существует.
 
-# Исходники
-Код написан на С++ и лежит в src.
-Он кроссплатформенный, но для сборки требуются
 
-# Библиотеки:
-SDL2, sdl-image, sdl-ttf, python 2.7, ffmpeg (avformat, avcodec, avutil, swresample).
-Они тоже кроссплатформенные, но их нужно уметь установить и подключить.
-Т. к. на каждой платформе это делается отдельно - у нас 100% будут сборки только для Linux и Windows.
-Остальные - не 100%.
 
-# Сборка
-Собирается всё это через cmake.
-Выбор компилятора вроде как не важен...
+## \[ru]
 
-# Ресурсы
-Ресурсы располагаются в resources.
-Эта директория должна быть на уровень выше исполняемого (запускаемого) файла.
-Здесь находятся
-* Стандартные изображения
-* Стандартные музыка и звуки
-* Шрифты
+Ren-Engine - это движок для игр: Визуальных Новелл и RPG, но не только.  
+Принципы работы аналогичны Ren'Py, формат файлов - его же `rpy`.  
+Поддерживаются не все возможности, в то же время введены некоторые новые, для некоторой унификации и логичности
+изменено поведение в некоторых местах (например, в языке описания интерфейсов ScreenLang или в запуске модов).
 
-# Документация, уроки и примеры использования
-https://github.com/TrueCat17/Ren-Engine/wiki
+Впрочем, функции для Визуальных Новелл на базе Ren'Py реализованы почти полностью.
+
+Самая главная особенность движка - гораздо бОльшая производительность (примерно в 130 раз быстрее).  
+Также стоит отметить компактность (13 МБ против 100), скорость запуска, потребление памяти и отсутствие подвисаний.
+
+Информацию об использовании движка, о создании своих игр и ссылку на **демо** вы можете найти в документации на
+[wiki](https://github.com/TrueCat17/Ren-Engine/wiki) проекта.
+
+### Сборка
+Если вы по какой-то причине решили собрать движок самостоятельно, то инструкция для этого есть в `build/readme`.  
+Но перед этим нужно будет собрать ещё и 12 библиотек (см. `libs/readme`), от которых прямо или косвенно он зависит.  
+Скачивание всех исходников и их сборка автоматизированы в десяток команд, и в общей сложности занимают 20 минут.
+
+
+
+## \[en]
+
+Ren-Engine is a engine for games: Visual Novells, RPG, etc...   
+It is similar to Ren'Py, file format - Ren'Py's `rpy`.  
+Compability is not full, but there are some new opportunities, and something changed for unification and logicality:
+for example, language for description interface ScreenLang or starting of mods.
+
+But implemented almost all functions for Visual Novells based on Ren'Py.
+
+The most important feature of Ren-Engine - very high perfomance (x130 as to Ren'Py).  
+Also compactness (13 MB vs 100), speed of start, intake of memory and miss of hangs.
+
+Info to using Ren-Engine, about creation your games and link to **demo** you can find on
+[wiki](https://github.com/TrueCat17/Ren-Engine/wiki).  
+Unfortunately, parts of engine outside Visual Novells have unstable "api" now (before 1.0 release),
+so the documentation has no English translation now, but you can use translator.
+
+### Building
+If you for some reason decided to build engine by yourself, see `build/readme`.  
+But before you must build 12 libs (see `libs/readme`), that are direct or indirect dependences.  
+Downloading and building automated to ~10 commands and generally take 20 minutes.
