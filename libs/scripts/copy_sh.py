@@ -93,7 +93,7 @@ def set_platform():
 	
 	else:
 		platform = 'win32'
-		cc = 'gcc'
+		cc = 'i686-w64-mingw32-gcc'
 	
 	print('  platform  =', platform)
 	print('  compilier =', cc)
