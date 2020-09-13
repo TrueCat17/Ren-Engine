@@ -1,7 +1,8 @@
 ## Preparing
 
 For start, **if your OS is Windows**, you must download and install
-[MSYS2](https://repo.msys2.org/distrib/msys2-i686-latest.exe).  
+[MSYS2 32-bit](https://repo.msys2.org/distrib/msys2-i686-latest.exe).  
+Warning: don't use any 64-bit packages (with x86_64), only 32-bit (with i686).  
 After it, you must update package database in MSYS2's PACkage MANager:  
 `pacman -Syu`  
 and (if needed, close MSYS2 and run it again) update rest:  
@@ -14,7 +15,7 @@ You must have installed **packages**: `python3`, `git`, `nasm`, `autoconf`, `aut
 
 Examples:
 * MSYS2: `pacman -S python3 git nasm autoconf automake libtool make mingw-w64-i686-cmake mingw-w64-i686-gcc`  
-(not just cmake and gcc!)
+(not just cmake and gcc, only with i686!)
 * Debian-based OS: `apt-get install python3 git nasm autoconf automake libtool make cmake gcc g++`
 
 **If your OS is Linux**, you must also install:
