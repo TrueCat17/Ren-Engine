@@ -3,18 +3,19 @@
 For start, **if your OS is Windows**, you must download and install
 [MSYS2 32-bit](https://repo.msys2.org/distrib/msys2-i686-latest.exe).  
 Warning: don't use any 64-bit packages (with x86_64), only 32-bit (with i686).  
+Warning: use **shell** MSYS, not MinGW\*.  
 After it, you must update package database in MSYS2's PACkage MANager:  
 `pacman -Syu`  
-and (if needed, close MSYS2 and run it again) update rest:  
+and (if needed, close MSYS and run it again) update rest:  
 `pacman -Su`  
-If you have some errors with PGP keys, see [this page](https://www.msys2.org/news/#2020-06-29-new-packagers), fix problem and
+If you have some errors with PGP keys (or other problems), see [this page](https://www.msys2.org/news/#2020-06-29-new-packagers), fix problem and
 run prev 2 commands again.  
-Also you must open `%msys2_dir%/home/user/.bashrc`, add `PATH="/mingw32/bin:$PATH"` and restart MSYS2.
+Also you must open `%msys2_dir%/home/user/.bashrc`, add `PATH="/mingw32/bin:$PATH"` and restart MSYS.
 
 You must have installed **packages**: `python3`, `git`, `nasm`, `autoconf`, `automake`, `libtool`, `make`, `cmake`, `gcc`, `g++`.  
 
 Examples:
-* MSYS2: `pacman -S python3 git nasm autoconf automake libtool make mingw-w64-i686-cmake mingw-w64-i686-gcc`  
+* MSYS: `pacman -S python3 git nasm autoconf automake libtool make mingw-w64-i686-cmake mingw-w64-i686-gcc`  
 (not just cmake and gcc, only with i686!)
 * Debian-based OS: `apt-get install python3 git nasm autoconf automake libtool make cmake gcc g++`
 
@@ -27,7 +28,7 @@ Examples:
 
 ## Building
 
-1. Open console (MSYS2 for Windows) and change dir to `scripts`:
+1. Open shell (MSYS for Windows) and change dir to `scripts`:
 ```
 $ cd Ren-Engine/libs/scripts
 ```
