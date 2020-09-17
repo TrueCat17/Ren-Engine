@@ -1,0 +1,16 @@
+/build/*
+!/build/build.py
+!/build/readme*
+
+/libs/*
+!/libs/py_win32/
+!/libs/py_win32/*
+!/libs/scripts/
+!/libs/scripts/*
+!/libs/scripts/readme*
+
+/resources/log.txt
+/resources/mods/rpg_editor/cache/
+/resources/saves/*
+/resources/screenshots/*
+
