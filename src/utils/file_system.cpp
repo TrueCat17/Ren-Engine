@@ -38,6 +38,8 @@ std::string FileSystem::setCurrentPath(std::string path) {
 	return "Set current path to <" + path + "> failed\n" + ec.message();
 }
 
+
+
 bool FileSystem::exists(const std::string &path) {
 	return fs::exists(clear(path));
 }
@@ -47,6 +49,39 @@ bool FileSystem::isDirectory(const std::string &path) {
 uintmax_t FileSystem::getFileSize(const std::string &path) {
 	return fs::file_size(path);
 }
+
+
+
+void FileSystem::createDirectory(const std::string &path) {
+	fs::create_directory(path);
+}
+
+void FileSystem::remove(const std::string &path) {
+	std::error_code ec;
+	fs::remove_all(path, ec);
+	if (ec.value()) {
+		Utils::outMsg("FileSystem::remove", ec.message() + "\n  path: <" + path + ">");
+	}
+}
+
+void FileSystem::rename(const std::string &oldPath, const std::string &newPath) {
+	std::error_code ec;
+	fs::rename(oldPath, newPath, ec);
+	if (ec.value()) {
+		Utils::outMsg("FileSystem::rename", ec.message() + "\n  oldPath: <" + oldPath + ">\n  newPath: <" + newPath + ">");
+	}
+}
+
+
+
+std::string FileSystem::getParentDirectory(const std::string &path) {
+	return fs::path(clear(path)).lexically_normal().parent_path().string();
+}
+std::string FileSystem::getFileName(const std::string &path) {
+	return fs::path(clear(path)).lexically_normal().filename().string();
+}
+
+
 
 std::vector<std::string> FileSystem::getDirectories(const std::string &path) {
 	std::vector<std::string> res;
@@ -61,13 +96,7 @@ std::vector<std::string> FileSystem::getDirectories(const std::string &path) {
 	return res;
 }
 
-void FileSystem::createDirectory(const std::string &path) {
-	fs::create_directory(path);
-}
 
-std::string FileSystem::getParentDirectory(const std::string &path) {
-	return fs::path(clear(path)).lexically_normal().parent_path().string();
-}
 
 std::vector<std::string> FileSystem::getFiles(const std::string &path) {
 	std::vector<std::string> res;

@@ -17,6 +17,7 @@
 #include "renderer.h"
 
 #include "utils/algo.h"
+#include "utils/file_system.h"
 #include "utils/image_caches.h"
 #include "utils/math.h"
 #include "utils/scope_exit.h"
@@ -1384,7 +1385,7 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 
 	if (!now) {
 		std::ofstream os(path, std::ios_base::binary);
-		os.write(reinterpret_cast<const char*>(png1x1Black), 67);
+		os.write(reinterpret_cast<const char*>(png1x1Black), sizeof(png1x1Black));
 		os.close();
 
 		std::lock_guard g(preloadMutex);
@@ -1395,14 +1396,32 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 	const std::string widthStr = Algo::clear(width);
 	const std::string heightStr = Algo::clear(height);
 
-	const int w = Math::inBounds(widthStr == "None"  ? img->w : String::toInt(widthStr) , 1, 2400);
+	const int w = Math::inBounds(widthStr  == "None" ? img->w : String::toInt(widthStr),  1, 2400);
 	const int h = Math::inBounds(heightStr == "None" ? img->h : String::toInt(heightStr), 1, 1350);
 
-	const SDL_Rect from = {0, 0, img->w, img->h};
-	SDL_Rect to = {0, 0, w, h};
+	SurfacePtr saveImg;
+	if (w != img->w || h != img->h) {
+		saveImg = getNewNotClear(w, h);
+		SDL_BlitScaled(img.get(), nullptr, saveImg.get(), nullptr);
+	}else {
+		saveImg = img;
+	}
 
-	SurfacePtr saveImg = getNewNotClear(w, h);
-	SDL_BlitScaled(img.get(), &from, saveImg.get(), &to);
+	//allow unfinished image only with tmp name
 
-	IMG_SavePNG(saveImg.get(), path.c_str());
+	std::string parentDir = FileSystem::getParentDirectory(path);
+	std::string filename = FileSystem::getFileName(path);
+
+	std::string tmpPath;
+	int i = 0;
+	while (true) {
+		tmpPath = parentDir + "/_" + std::to_string(i++) + filename;
+		if (!FileSystem::exists(tmpPath)) break;
+	}
+
+	IMG_SavePNG(saveImg.get(), tmpPath.c_str());
+	if (FileSystem::exists(path)) {
+		FileSystem::remove(path);
+	}
+	FileSystem::rename(tmpPath, path);
 }

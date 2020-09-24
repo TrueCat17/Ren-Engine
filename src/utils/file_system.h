@@ -14,10 +14,15 @@ public:
 	static bool isDirectory(const std::string &path);
 	static uintmax_t getFileSize(const std::string &path);
 
-	static std::vector<std::string> getDirectories(const std::string &path);
 	static void createDirectory(const std::string &path);
+	static void remove(const std::string &path);
+	static void rename(const std::string &oldPath, const std::string &newPath);
 
 	static std::string getParentDirectory(const std::string &path);
+	static std::string getFileName(const std::string &path);
+
+	static std::vector<std::string> getDirectories(const std::string &path);
+
 	static std::vector<std::string> getFiles(const std::string &path);
 	static std::vector<std::string> getFilesRecursive(const std::string &path);
 };
