@@ -77,7 +77,8 @@ init -1000 python:
 					'size':   (self.xsize, self.ysize),
 					'anchor': (0, 0),
 					'crop':   (0, 0, 1.0, 1.0),
-					'alpha':   1
+					'alpha':   1,
+					'zorder':  self.get_zorder(),
 				}
 			
 			for i in xrange(len(self.objs)):
@@ -88,7 +89,8 @@ init -1000 python:
 					'size':    absolute(size),
 					'anchor': (0, 0),
 					'crop':   (0, 0, 1.0, 1.0),
-					'alpha':   1
+					'alpha':   1,
+					'zorder':  self.get_zorder(),
 				}
 			
 			return res

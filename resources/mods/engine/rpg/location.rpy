@@ -252,7 +252,8 @@ init -1002 python:
 				'pos':    (0, 0),
 				'anchor': (0, 0),
 				'crop':   (0, 0, 1.0, 1.0),
-				'alpha':   1
+				'alpha':   1,
+				'zorder':  self.get_zorder(),
 			}]
 		
 		def main(self):

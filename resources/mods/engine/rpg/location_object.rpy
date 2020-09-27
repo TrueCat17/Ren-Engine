@@ -116,16 +116,18 @@ init -1001 python:
 	
 	def get_usual_location_object_data(obj):
 		x, y = obj.x + obj.xoffset, obj.y + obj.yoffset
+		w, h = obj.xsize, obj.ysize
 		
-		obj_xanchor, obj_yanchor = obj.xanchor, obj.yanchor
+		obj_xanchor, obj_yanchor = get_absolute(obj.xanchor, w), get_absolute(obj.yanchor, h)
 		
 		return {
 			'image':   obj.main(),
-			'size':   (obj.xsize, obj.ysize),
+			'size':   (w, h),
 			'pos':    (absolute(x), absolute(y)),
 			'anchor': (obj_xanchor, obj_yanchor),
 			'crop':    obj.crop,
-			'alpha':   obj.alpha
+			'alpha':   obj.alpha,
+			'zorder':  obj.get_zorder(),
 		}
 	
 	
@@ -152,16 +154,35 @@ init -1001 python:
 		def get_zorder(self):
 			return self.y + self.yoffset
 		def get_draw_data(self):
+			res = []
 			main = get_usual_location_object_data(self)
-			res = [main]
+			x, y = main['pos']
+			w, h = main['size']
+			ystart = int(y - main['anchor'][1])
 			
-			characters = []
-			for character in self.on:
+			characters = [character for character in self.on if character]
+			characters.sort(key = lambda character: character.get_zorder())
+			
+			top = 0
+			for character in characters + [None]:
+				bottom = (character or self).get_zorder() - ystart
+				if bottom <= top:
+					break
+				
+				crop = (0, top, w, bottom - top)
+				
+				part = dict(main, crop=crop)
+				part['size'] = w, bottom - top
+				part['anchor'] = main['anchor'][0], 0
+				part['pos'] = x, ystart + top
+				part['zorder'] = ystart + bottom
+				res.append(part)
+				
+				top = bottom
+				
 				if character:
-					characters.append(character)
-			characters.sort(key = lambda character: character.y + character.yoffset)
-			res.extend([character.get_draw_data() for character in characters])
-			
+					res.append(character.get_draw_data())
+				
 			over_image = self.over()
 			if over_image:
 				res.append(dict(main, image=over_image))

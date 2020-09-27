@@ -164,6 +164,9 @@ init -1001 python:
 			self.animation = None
 			self.start_anim_time = None
 			self.end_wait_anim_time = None
+			
+			self.auto_behaviour = False
+			self.behaviours = None
 		
 		def __str__(self):
 			return str(self.name)
@@ -185,24 +188,22 @@ init -1001 python:
 		def get_draw_data(self):
 			return get_usual_location_object_data(self)
 		
+		def main(self):
+			if self.start_anim_time is not None:
+				return get_location_image(self.animation, self.animation.path, '', '', character_ext, False)
+			return get_location_image(self, self.directory, self.rpg_name, self.dress, character_ext, False)
+		
+		
 		def get_dress(self):
 			return self.dress
 		def set_dress(self, dress):
 			self.dress = dress
-		
-		def set_frame(self, frame):
-			self.frame = frame
 		
 		def get_direction(self):
 			return self.direction
 		def set_direction(self, direction):
 			if direction is not None:
 				self.direction = direction % character_max_direction
-		
-		def main(self):
-			if self.start_anim_time is not None:
-				return get_location_image(self.animation, self.animation.path, '', '', character_ext, False)
-			return get_location_image(self, self.directory, self.rpg_name, self.dress, character_ext, False)
 		
 		def get_pose(self):
 			return self.pose
@@ -214,6 +215,28 @@ init -1001 python:
 			else:
 				self.pose, self.move_kind = 'stance', 'stay'
 				out_msg('Character.set_pose', 'Unexpected pose <' + str(pose) + '>\n' + 'Expected "sit" or "stance"')
+		
+		
+		def set_frame(self, frame):
+			self.frame = frame
+		
+		def update_crop(self):
+			frame = self.frame
+			if self.start_anim_time is None:
+				if self.pose == 'sit':
+					frame = character_max_frame
+				elif self.move_kind == 'stay':
+					frame = character_max_frame - 1
+				else:
+					frame %= character_max_frame
+				
+				y = self.direction * self.ysize
+			else:
+				y = 0
+			x = frame * self.xsize
+			
+			self.crop = (x, y, self.xsize, self.ysize)
+		
 		
 		def sit_down(self, obj):
 			if not obj.sit_places:
@@ -263,23 +286,6 @@ init -1001 python:
 				self.x, self.y, self.direction = self.old_x, self.old_y, self.old_direction
 				self.old_direction = None
 		
-		def update_crop(self):
-			frame = self.frame
-			if self.start_anim_time is None:
-				if self.pose == 'sit':
-					frame = character_max_frame
-				elif self.move_kind == 'stay':
-					frame = character_max_frame - 1
-				else:
-					frame %= character_max_frame
-				
-				y = self.direction * self.ysize
-			else:
-				y = 0
-			x = frame * self.xsize
-			
-			self.crop = (x, y, self.xsize, self.ysize)
-		
 		
 		def allow_exit_destination(self, location_name, place_name = None):
 			location = locations.get(location_name, None)
@@ -313,6 +319,8 @@ init -1001 python:
 					self.allowed_exit_destinations = self.allowed_exit_destinations[:i] + self.allowed_exit_destinations[i+1:]
 				else:
 					i += 1
+		
+		
 		
 		def move_to_place(self, place_names, run = False, wait_time = -1, brute_force = False):
 			self.paths = []
@@ -467,6 +475,7 @@ init -1001 python:
 				return True
 			return self.moving_ended
 		
+		
 		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
 			if not self.animations.has_key(anim_name):
 				out_msg('start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
@@ -504,6 +513,45 @@ init -1001 python:
 			if self.repeat > 0:
 				return False
 			return time.time() - self.start_anim_time > self.animation.time
+		
+		
+		def auto(self, value):
+			self.auto_behaviour = bool(value)
+		
+		def behaviour(self):
+			if not self.auto_behaviour:
+				return
+			if not self.behaviours:
+				out_msg('Character.behaviour', 'Character <' + str(self) + 'has not behaviours')
+				return
+			
+			behaviours = []
+			chances_sum = 0
+			for key in self.behaviours.__dict__.keys():
+				behaviour = list(self.behaviours[key])
+				if type(behaviour) in (tuple, list):
+					if len(behaviour) != 2:
+						out_msg('Character.behaviour', 'Expected [chance, func], got ' + str(behaviour))
+					else:
+						chances_sum += behaviour[0]
+						behaviours.append(behaviour)
+			if not behaviour:
+				return
+			
+			for behaviour in behaviours:
+				behaviour[0] /= float(chances_sum)
+			
+			for i in xrange(len(behaviours) - 1):
+				behaviours[i+1][0] += behaviours[i]
+			behaviours[-1][0] = 1
+			
+			r = random.random()
+			for behaviour in behaviours:
+				if r < behaviour[0]:
+					params = behaviour[2] if len(behaviour) == 3 else []
+					behaviour[1](self, *params)
+					break
+		
 		
 		def update(self):
 			dtime = time.time() - self.show_time

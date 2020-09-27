@@ -209,8 +209,6 @@ screen location:
 				if obj.update:
 					obj.update()
 			
-			draw_location.objects.sort(key = lambda obj: obj.get_zorder())
-			
 			draw_location.update_pos()
 		
 		null:
@@ -232,6 +230,8 @@ screen location:
 							list_to_draw.append(data)
 					else:
 						list_to_draw.append(datas)
+				
+				list_to_draw.sort(key = lambda d: d['zorder'])
 			
 			for obj in list_to_draw:
 				image obj['image']:

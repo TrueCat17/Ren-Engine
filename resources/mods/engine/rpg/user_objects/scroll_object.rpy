@@ -54,7 +54,8 @@ init -1000 python:
 						'pos':    (xpos, ypos),
 						'anchor': (0, 0),
 						'crop':   (0, 0, 1.0, 1.0),
-						'alpha':   self.alpha
+						'alpha':   self.alpha,
+						'zorder':  self.get_zorder(),
 					})
 					
 					xpos += xsize

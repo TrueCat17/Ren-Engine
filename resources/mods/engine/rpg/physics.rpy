@@ -34,7 +34,7 @@ init python:
 				to_draw += [(x, y), im.matrix_color(obj_free, matrix)]
 		
 		for character in characters:
-			if near(character.x, character.y, 0, 0):
+			if not character.invisible and near(character.x, character.y, 0, 0):
 				to_draw += [(character.x - cs / 2, character.y - cs / 2), im.rect('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]

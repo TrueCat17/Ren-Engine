@@ -109,6 +109,14 @@ init -100000 python:
 		"""
 		t = float if type(start) is float or type(end) is float else int
 		return t(start + (end - start) * (1 - k if reverse else k))
+	
+	
+	def rects_intersects(ax, ay, aw, ah, bx, by, bw, bh):
+		if ax + aw < bx: return False
+		if ay + ah < by: return False
+		if bx + bw < ax: return False
+		if by + bh < ay: return False
+		return True
 
 
 init -1000000 python:
