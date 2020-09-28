@@ -63,6 +63,8 @@ void Text::updateRect(bool) {
 			setWidth(w);
 			setHeight(h);
 
+			tf->setWidth(w);
+			tf->setHeight(h);
 			tf->setAlign(textHAlign, textVAlign);
 		}
 	}

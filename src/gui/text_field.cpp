@@ -556,9 +556,6 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 		}
 	}
 
-	setWidth(this->maxWidth  <= 0 ? maxWidth : this->maxWidth);
-	setHeight(this->maxHeight <= 0 ? height : this->maxHeight);
-
 
 	double sinA = Math::getSin(getGlobalRotate());
 	double cosA = Math::getCos(getGlobalRotate());
