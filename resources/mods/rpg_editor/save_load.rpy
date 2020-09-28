@@ -1,9 +1,9 @@
 init -1000 python:
 	locations_path = 'images/locations/'
-
-	preview_path = 'mods/rpg_editor/cache/'
+	
+	preview_path = '../var/rpg_editor/cache/'
 	if not os.path.exists(preview_path):
-		os.mkdir(preview_path)
+		os.makedirs(preview_path)
 	
 	locations_file_path = 'mods/rpg_editor/results/locations.rpy'
 	location_objects_file_path = 'mods/rpg_editor/results/objects.rpy'
@@ -156,7 +156,7 @@ init python:
 		
 		
 		
-		location_objects_file = open(location_objects_file_path, 'r')
+		location_objects_file = open(location_objects_file_path, 'rb')
 		tmp = location_objects_file.readlines()
 		location_objects_file.close()
 		for i in xrange(len(tmp) - 1, -1, -1):

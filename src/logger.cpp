@@ -3,11 +3,16 @@
 #include <ctime>
 #include <fstream>
 
+#include "utils/file_system.h"
+
 
 static std::ofstream out;
 
 void Logger::init() {
-	out.open("log.txt");
+	if (!FileSystem::exists("../var")) {
+		FileSystem::createDirectory("../var");
+	}
+	out.open("../var/log.txt");
 
 	time_t seconds = std::time(nullptr);
 	tm *timeInfo = std::localtime(&seconds);

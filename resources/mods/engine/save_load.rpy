@@ -1,6 +1,6 @@
 # sl = save_load
 init -2 python:
-	save_dir = 'saves/'
+	save_dir = '../var/saves/'
 	
 	sl_cur_table = '0'
 	sl_cur_save  = '0'

@@ -42,7 +42,7 @@ static long frameTime = 16;
 static int modStartTime = 0;
 static bool canAutoSave = true;
 
-static const std::string savesPath = "saves";
+static const std::string savesPath = "../var/saves";
 
 
 static void _startMod(const std::string &dir, const std::string &loadPath = "");
@@ -253,7 +253,7 @@ void Game::save() {
 
 
 	{//save stack
-		std::ofstream stackFile(fullPath + "/stack");
+		std::ofstream stackFile(fullPath + "/stack", std::ios::binary);
 
 		std::vector<std::pair<std::string, std::string>> stackToSave = Scenario::getStackToSave();
 		if (stackToSave.empty()) {
@@ -267,7 +267,7 @@ void Game::save() {
 
 
 	{//save info
-		std::ofstream infoFile(fullPath + "/info");
+		std::ofstream infoFile(fullPath + "/info", std::ios::binary);
 
 		//mod-name
 		//fps hideMouse autosave
@@ -431,7 +431,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 
 void Game::makeScreenshot() {
-	static const std::string path = "screenshots";
+	static const std::string path = "../var/screenshots";
 
 	if (!FileSystem::exists(path)) {
 		FileSystem::createDirectory(path);

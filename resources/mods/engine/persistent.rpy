@@ -89,7 +89,7 @@ init -1002 python:
 
 
 init -1001 python:
-	persistent_path = 'saves/persistent'
+	persistent_path = '../var/persistent'
 	
 	try:
 		if (not os.path.exists(persistent_path)) or os.path.getsize(persistent_path) == 0:

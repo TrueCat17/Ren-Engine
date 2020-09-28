@@ -1396,8 +1396,8 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 	const std::string widthStr = Algo::clear(width);
 	const std::string heightStr = Algo::clear(height);
 
-	const int w = Math::inBounds(widthStr  == "None" ? img->w : String::toInt(widthStr),  1, 2400);
-	const int h = Math::inBounds(heightStr == "None" ? img->h : String::toInt(heightStr), 1, 1350);
+	const int w = Math::inBounds(widthStr  == "None" ? img->w : String::toInt(widthStr),  1, 2560);
+	const int h = Math::inBounds(heightStr == "None" ? img->h : String::toInt(heightStr), 1, 1440);
 
 	SurfacePtr saveImg;
 	if (w != img->w || h != img->h) {

@@ -53,12 +53,16 @@ uintmax_t FileSystem::getFileSize(const std::string &path) {
 
 
 void FileSystem::createDirectory(const std::string &path) {
-	fs::create_directory(path);
+	std::error_code ec;
+	fs::create_directory(clear(path), ec);
+	if (ec.value()) {
+		Utils::outMsg("FileSystem::createDirectory", ec.message() + "\n  path: <" + path + ">");
+	}
 }
 
 void FileSystem::remove(const std::string &path) {
 	std::error_code ec;
-	fs::remove_all(path, ec);
+	fs::remove_all(clear(path), ec);
 	if (ec.value()) {
 		Utils::outMsg("FileSystem::remove", ec.message() + "\n  path: <" + path + ">");
 	}
@@ -66,7 +70,7 @@ void FileSystem::remove(const std::string &path) {
 
 void FileSystem::rename(const std::string &oldPath, const std::string &newPath) {
 	std::error_code ec;
-	fs::rename(oldPath, newPath, ec);
+	fs::rename(clear(oldPath), clear(newPath), ec);
 	if (ec.value()) {
 		Utils::outMsg("FileSystem::rename", ec.message() + "\n  oldPath: <" + oldPath + ">\n  newPath: <" + newPath + ">");
 	}
