@@ -117,16 +117,16 @@ void Child::updatePos() {
 	double parentGlobalZoomX = parent ? parent->getGlobalZoomX() : 1;
 	double parentGlobalZoomY = parent ? parent->getGlobalZoomY() : 1;
 
-	xAnchor = int(xanchorPre * (xanchorPreIsDouble ? getWidth() : globalZoomX));
-	yAnchor = int(yanchorPre * (yanchorPreIsDouble ? getHeight() : globalZoomY));
+	xAnchor = int(std::floor(xanchorPre * (xanchorPreIsDouble ? getWidth() : globalZoomX)));
+	yAnchor = int(std::floor(yanchorPre * (yanchorPreIsDouble ? getHeight() : globalZoomY)));
 
 	if (!inHBox) {
-		int endXPos = int(xpos * (xposIsDouble ? parent->getWidth() : parentGlobalZoomX));
+		int endXPos = int(std::floor(xpos * (xposIsDouble ? parent->getWidth() : parentGlobalZoomX)));
 		int x = endXPos - xAnchor;
 		setX(x);
 	}
 	if (!inVBox) {
-		int endYPos = int(ypos * (yposIsDouble ? parent->getHeight() : parentGlobalZoomY));
+		int endYPos = int(std::floor(ypos * (yposIsDouble ? parent->getHeight() : parentGlobalZoomY)));
 		int y = endYPos - yAnchor;
 		setY(y);
 	}
