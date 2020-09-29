@@ -110,9 +110,16 @@ Parser::Parser(const std::string &dir) {
 		code.push_back("FILENAME " + fileName);
 		++countFiles;
 
+		bool start = true;
 		while (!is.eof()) {
 			++countLines;
 			std::getline(is, s);
+			if (start) {
+				start = false;
+				if (s.size() >= 3 && uint8_t(s[0]) == 239 && uint8_t(s[1]) == 187 && uint8_t(s[2]) == 191) {//utf8 with bom
+					s.erase(0, 3);
+				}
+			}
 
 			String::replaceAll(s, "\t", "    ");
 
