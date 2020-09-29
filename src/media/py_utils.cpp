@@ -313,7 +313,7 @@ void PyUtils::errorProcessing(const std::string &code) {
 	std::cout << out;
 	Logger::log(out);
 
-	Utils::outMsg("Python", "See details in resources/log.txt");
+	Utils::outMsg("Python", "See details in var/log.txt");
 }
 
 bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
