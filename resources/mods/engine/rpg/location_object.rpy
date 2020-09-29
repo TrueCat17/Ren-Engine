@@ -169,7 +169,12 @@ init -1001 python:
 				if bottom <= top:
 					break
 				
-				crop = (0, top, w, bottom - top)
+				crop = (
+					main['crop'][0],
+					main['crop'][1] + top,
+					main['crop'][2],
+					bottom - top
+				)
 				
 				part = dict(main, crop=crop)
 				part['size'] = w, bottom - top
