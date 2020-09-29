@@ -12,7 +12,7 @@ for c in scripts_path:
 	if c >= 'a' and c <= 'z': continue
 	if c >= 'A' and c <= 'Z': continue
 	if c >= '0' and c <= '9': continue
-	if c not in '-_/:':
+	if c not in '+-_/:':
 		print('Path contains bad symbol: ' + c)
 		os.sys.exit(1)
 

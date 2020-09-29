@@ -7,7 +7,8 @@
 !/libs/py_win32/*
 !/libs/scripts/
 !/libs/scripts/*
-!/libs/scripts/readme*
+/libs/scripts/*.txt
+!/libs/readme*
 
 /var/
 
