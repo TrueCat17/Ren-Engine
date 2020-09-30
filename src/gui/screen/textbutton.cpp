@@ -13,13 +13,6 @@
 TextButton::TextButton(Node* node, Screen *screen):
 	Text(node, screen)
 {
-	for (Node *child : node->children) {
-		if (child->command == "hover") {
-			hoverIsStd = false;
-			break;
-		}
-	}
-
 	auto onLeftClick = [this](DisplayObject*) {
 		const Node *activateSound = this->node->getProp("activate_sound");
 		if (activateSound) {
@@ -79,8 +72,21 @@ void TextButton::updateTexture(bool skipError) {
 	if (skipError && ground.empty()) return;
 
 	if (!surface || hover.empty() || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
-		if (prevGround != ground && (hoverIsStd || hover.empty())) {
-			hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__, "im.MatrixColor(r'" + ground + "', im.matrix.contrast(1.5))", true);
+		if (prevGround != ground && hover.empty()) {
+			const Node *style = node->getProp("style");
+			const std::string &styleName = style ? style->params : node->command;
+
+			PyObject *hoverObj = Style::getProp(styleName, "hover");
+			if (PyString_CheckExact(hoverObj)) {
+				hover = PyString_AS_STRING(hoverObj);
+				if (hover.empty()) {
+					hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__, "im.MatrixColor(r'" + ground + "', im.matrix.contrast(1.5))", true);
+				}
+			}else {
+				std::string type = hoverObj->ob_type->tp_name;
+				Utils::outMsg("TextButton::hover",
+				              "In style." + styleName + ".hover expected type str, got " + type);
+			}
 		}
 		prevGround = ground;
 		prevHover = hover;

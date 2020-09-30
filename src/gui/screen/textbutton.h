@@ -10,7 +10,6 @@ private:
 	std::string prevGround;
 	std::string prevHover;
 
-	bool hoverIsStd = true;
 	bool prevMouseOver = false;
 
 public:
