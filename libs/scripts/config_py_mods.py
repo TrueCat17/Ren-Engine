@@ -6,7 +6,11 @@ import shutil
 from config import *
 
 
-libs_on = ['math', '_struct', 'time', 'operator', '_random', '_collections', 'itertools', '_md5', '_sha', '_sha256', '_sha512', 'binascii', 'cStringIO', 'cPickle']
+libs_on = [
+	'math', '_struct', 'time', 'operator', '_random', '_collections', 'itertools',
+	'_md5', '_sha', '_sha256', '_sha512', 'binascii', 'cStringIO', 'cPickle',
+	'zlib', '_io', 'select', 'fcntl', '_socket', '_functools', 'array',
+]
 libs_off = ['pwd']
 
 for i in os.listdir(sources_path):
