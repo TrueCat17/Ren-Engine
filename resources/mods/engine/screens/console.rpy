@@ -1,6 +1,10 @@
 init python:
 	
 	console_font = 'Consola'
+	console_text_color = 0xFFFFFF
+	
+	console_background = im.rect('#000')
+	console_background_alpha = 0.15
 	
 	console_text_size = 20
 	
@@ -15,7 +19,7 @@ init python:
 	
 	console_is_spec     = lambda s: s in console_spec_symbols
 	console_is_not_spec = lambda s: s != ' ' and s not in console_spec_symbols
-	console_get_check = lambda s: console_is_spec if s in console_spec_symbols else console_is_not_spec
+	console_get_check   = lambda s: console_is_spec if s in console_spec_symbols else console_is_not_spec
 	
 	console_cursor = '{color=#FFFFFF}|{/color}'
 	console_cursor_x = 0
@@ -377,8 +381,8 @@ screen console:
 		
 		console_output = '\n'.join(persistent.console_text.split('\n')[-console_output_lines:])
 	
-	image 'images/bg/black.jpg':
-		alpha 0.15
+	image console_background:
+		alpha console_background_alpha
 		size (1.0, 1.0)
 	
 	vbox:
@@ -388,15 +392,17 @@ screen console:
 			null xsize 50
 			
 			text console_output:
-				font console_font
+				font      console_font
+				color     console_text_color
 				text_size console_text_size
-				xsize get_stage_width() - 50
+				xsize     get_stage_width() - 50
 		
 		hbox:
 			text ('...' if '\n' in console_input else '>>>'):
-				font console_font
+				font      console_font
+				color     console_text_color
 				text_size console_text_size
-				xsize 50
+				xsize     50
 			
 			python:
 				index = console_get_cursor_index()
@@ -404,7 +410,8 @@ screen console:
 				console_input_with_cursor = console_input[0:index] + alpha_cursor + console_input[index:]
 			
 			text console_input_with_cursor.replace(console_key_tag, '{{'):
-				font console_font
+				font      console_font
+				color     console_text_color
 				text_size console_text_size
-				xsize get_stage_width() - 50
+				xsize     get_stage_width() - 50
 
