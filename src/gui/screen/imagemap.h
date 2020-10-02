@@ -9,6 +9,9 @@ private:
 	std::string prevGroundPath;
 	std::string prevHoverPath;
 
+	bool groundIsStd = true;
+	bool hoverIsStd = true;
+
 public:
 	std::string groundPath;
 	std::string hoverPath;
