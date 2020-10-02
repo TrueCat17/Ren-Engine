@@ -12,6 +12,7 @@ screen hotkeys:
 		if not has_screen('prev_text') and not db_hide_interface:
 			key 'ESCAPE' action show_pause
 		
+		if get_current_mod() != 'main_menu':
+			key config.quick_save_key action quick_save
 		key config.quick_load_key action quick_load
-		key config.quick_save_key action quick_save
 
