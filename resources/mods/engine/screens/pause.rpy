@@ -19,17 +19,15 @@ init python:
 	pause_inited = False
 	def init_pause():
 		global pause_inited
-		global pause_button, pause_button_hover, pause_button_selected
+		global pause_button, pause_button_hover
 		
 		pause_inited = True
 		
 		pause_button          = im.MatrixColor(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(  0, 0.5, 1))
-		pause_button_hover    = im.MatrixColor(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(0.4, 0.8, 1))
-		pause_button_selected = im.MatrixColor(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(  1, 0.5, 0))
+		pause_button_hover    = im.MatrixColor(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(0.2, 0.6, 1))
 		
-		pause_button          = get_back_with_color(pause_button,          alpha = 0.5)
-		pause_button_hover    = get_back_with_color(pause_button_hover,    alpha = 0.2)
-		pause_button_selected = get_back_with_color(pause_button_selected, alpha = 0.5)
+		pause_button          = get_back_with_color(pause_button,       alpha = 0.5)
+		pause_button_hover    = get_back_with_color(pause_button_hover, alpha = 0.2)
 		
 		style.pause_button = Style(style.textbutton)
 		style.pause_button.ground = pause_button
