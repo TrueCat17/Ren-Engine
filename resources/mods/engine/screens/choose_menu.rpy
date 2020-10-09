@@ -14,7 +14,7 @@ screen choose_menu:
 		
 		for i in xrange(len(choose_menu_variants)):
 			if choose_menu_variants[i]:
-				textbutton choose_menu_variants[i] action Return(i):
+				textbutton _(choose_menu_variants[i]) action Return(i):
 					text_size 20
 					size (300, 35)
 			elif choose_menu_variants[i] is not None:

@@ -5,7 +5,6 @@
 #include <string>
 
 class Node;
-typedef struct _object PyObject;
 
 
 class Parser {
@@ -24,7 +23,6 @@ private:
 public:
 	static bool isEvent(const std::string &type);
 	static void getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isProp, bool &isEvent);
-	static PyObject* getMods();
 
 	Parser(const std::string &dir);
 	Node* parse();

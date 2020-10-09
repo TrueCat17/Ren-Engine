@@ -15,8 +15,6 @@ private:
 	size_t numLine;
 
 public:
-	static std::string loadPath;
-
 	static Node *getNewNode(const std::string &fileName, size_t numLine);
 	static void destroyAll();
 

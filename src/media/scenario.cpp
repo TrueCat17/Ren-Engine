@@ -12,6 +12,7 @@
 
 #include "media/music.h"
 #include "media/py_utils.h"
+#include "media/translation.h"
 
 #include "parser/node.h"
 
@@ -29,11 +30,13 @@ static std::map<std::string, Node*> declaredLabels;
 static void declareLabel(Node *labelNode) {
 	declaredLabels[labelNode->params] = labelNode;
 }
-static Node* getLabel(const std::string &name) {
+static Node* getLabel(const std::string &name, bool outError = true) {
 	auto it = declaredLabels.find(name);
 	if (it != declaredLabels.end()) return it->second;
 
-	Utils::outMsg("Scenario::getLabel", "Label <" + name + "> not found");
+	if (outError) {
+		Utils::outMsg("Scenario::getLabel", "Label <" + name + "> not found");
+	}
 	return nullptr;
 }
 static void markLabel(const std::string &fileName, size_t numLine, const std::string &label) {
@@ -44,9 +47,9 @@ static void markLabel(const std::string &fileName, size_t numLine, const std::st
 
 static std::vector<std::pair<Node*, size_t>> stack;
 
-static void restoreStack() {
+static void restoreStack(const std::string &loadPath) {
 	stack.clear();
-	if (Node::loadPath.empty()) {
+	if (loadPath.empty()) {
 		if (Game::hasLabel("start")) {
 			stack.push_back({getLabel("start"), 0});
 		}
@@ -57,7 +60,7 @@ static void restoreStack() {
 		return;
 	}
 
-	std::ifstream is(Node::loadPath + "/stack");
+	std::ifstream is(loadPath + "/stack");
 
 	Node *prevNode = nullptr;
 	size_t num = 0;
@@ -150,13 +153,13 @@ static void checkToSaveStack() {
 }
 
 
-static void restoreScreens() {
+static void restoreScreens(const std::string &loadPath) {
 	std::vector<std::string> startScreensVec;
-	if (!Node::loadPath.empty()) {
+	if (!loadPath.empty()) {
 		PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__,
-		              "load_global_vars('" + Node::loadPath + "/py_globals')");
+		              "load_global_vars('" + loadPath + "/py_globals')");
 
-		startScreensVec = Game::loadInfo(Node::loadPath);
+		startScreensVec = Game::loadInfo(loadPath);
 	}else {
 		std::lock_guard g(PyUtils::pyExecMutex);
 
@@ -178,7 +181,7 @@ static void restoreScreens() {
 				Utils::outMsg("Scenario::execute", "type(start_screens) is not list");
 			}
 		}else {
-			Utils::outMsg("Scenario::execute", "start_screens not defined");
+			Utils::outMsg("Scenario::execute", "start_screens is not defined");
 		}
 	}
 
@@ -200,7 +203,7 @@ void Scenario::jumpNext(const std::string &label, bool isCall) {
 }
 
 
-void Scenario::execute() {
+void Scenario::execute(const std::string &loadPath) {
 	long initingStartTime = Utils::getTimer();
 	size_t initNum = 0;
 
@@ -224,7 +227,7 @@ void Scenario::execute() {
 		return a->priority < b->priority;
 	});
 
-	restoreStack();
+	restoreStack(loadPath);
 	for (auto it = initBlocks.rbegin(); it < initBlocks.rend(); ++it) {
 		stack.push_back({*it, 0});
 	}
@@ -280,10 +283,13 @@ void Scenario::execute() {
 
 				++initNum;
 				if (initNum == initBlocks.size()) {
-					restoreScreens();
+					Translation::enable();
+					PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "_choose_lang()");
+
+					restoreScreens(loadPath);
 					initing = false;
 					Logger::logEvent("Mod Initing (" + std::to_string(initBlocks.size()) + " blocks)",
-					                 Utils::getTimer() - initingStartTime, true);
+					                 Utils::getTimer() - initingStartTime);
 
 					if (Game::hasLabel("start")) {
 						Node *start = getLabel("start");
@@ -509,25 +515,39 @@ void Scenario::execute() {
 		}
 
 		if (child->command == "text") {
-			size_t i = child->params.find_first_not_of(' ');
-			child->params.erase(0, i);
-
 			size_t startText = 0;
 			std::string nick;
 
 			if (child->params[0] != '"' && child->params[0] != '\'') {//Is character defined?
-				i = child->params.find(' ');
-				startText = i + 1;
+				size_t space = child->params.find(' ');
+				startText = child->params.find_first_not_of(' ', space);
 
-				nick = child->params.substr(0, i);
+				nick = child->params.substr(0, space);
 			}else {
 				nick = "narrator";
 			}
-			size_t endText = child->params.size();
-			std::string textCode = child->params.substr(startText, endText - startText);
+			std::string textCode = child->params.substr(startText);
 
-			PyUtils::exec(child->getFileName(), child->getNumLine(),
-			              "renpy.say(" + nick + ", " + textCode + ")");
+
+			std::string tmp = (startText ? nick : "") + " " + textCode + "\r\n";
+			std::string md5 = PyUtils::getMd5(tmp);
+
+			size_t i = stack.size() - 1;
+			while (stack[i].first->command != "label") {
+				--i;
+			}
+			std::string curLabel = stack[i].first->params;
+
+			std::string translateLabelName = Translation::getLang() + " " + curLabel + "_" + md5.substr(0, 8);
+			Node *translateLabel = getLabel(translateLabelName, false);
+			if (translateLabel) {
+				obj = translateLabel;
+				num = 0;
+				stack.push_back({obj, num});
+			}else {
+				PyUtils::exec(child->getFileName(), child->getNumLine(),
+				              "renpy.say(" + nick + ", " + textCode + ")");
+			}
 			continue;
 		}
 

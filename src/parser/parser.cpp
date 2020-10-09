@@ -7,6 +7,7 @@
 #include "logger.h"
 
 #include "media/py_utils.h"
+#include "media/translation.h"
 
 #include "parser/node.h"
 #include "parser/syntax_checker.h"
@@ -49,34 +50,6 @@ void Parser::getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isPr
 	isEvent = isProp && Parser::isEvent(type);
 }
 
-
-static const std::string modsPath = "mods/";
-PyObject* Parser::getMods() {
-	std::vector<std::pair<std::string, std::string>> res;
-
-	std::vector<std::string> dirs = FileSystem::getDirectories(modsPath);
-	for (std::string dir : dirs) {
-		if (!FileSystem::exists(dir + "/name")) continue;
-
-		std::ifstream nameFile(dir + "/name");
-		std::string modName;
-		std::getline(nameFile, modName);
-
-		dir.erase(0, modsPath.size());//lost only dirName, without "mods/"
-
-		res.push_back({modName, dir});
-	}
-	std::sort(res.begin(), res.end());
-
-	PyObject *pyRes = PyTuple_New(long(res.size()));
-	for (size_t i = 0; i < res.size(); ++i) {
-		PyObject *item = PyTuple_New(2);
-		PyTuple_SET_ITEM(item, 0, PyString_FromString(res[i].first.c_str()));
-		PyTuple_SET_ITEM(item, 1, PyString_FromString(res[i].second.c_str()));
-		PyTuple_SET_ITEM(pyRes, i, item);
-	}
-	return pyRes;
-}
 
 Parser::Parser(const std::string &dir) {
 	this->dir = dir;
@@ -200,7 +173,7 @@ Node* Parser::getMainNode() {
 
 	size_t start = 0;
 	size_t end = code.size();
-	std::string prevHeadWord = "None";
+	const std::string prevHeadWord = "None";
 	while (start < end) {
 		const std::string &headLine = code[start];
 		if (headLine.empty()) {
@@ -232,7 +205,6 @@ Node* Parser::getMainNode() {
 			              "File <" + fileName + ">\n"
 			              "Line: " + std::to_string(start - startFile));
 		}
-		prevHeadWord = headWord;
 
 		size_t nextChildStart = start + 1;
 		while (nextChildStart < code.size() && (code[nextChildStart].empty() || code[nextChildStart][0] == ' ')) {
@@ -240,7 +212,28 @@ Node* Parser::getMainNode() {
 		}
 
 		if (ok) {
-			const int superParent = headWord == "label" ? SuperParent::LABEL : headWord == "init" ? SuperParent::INIT : SuperParent::SCREEN;
+			int superParent;
+			if (headWord == "label") {
+				superParent = SuperParent::LABEL;
+			}else
+			if (headWord == "init") {
+				superParent = SuperParent::INIT;
+			}else
+			if (headWord == "screen") {
+				superParent = SuperParent::SCREEN;
+			}else {
+				size_t end = headLine.find_last_not_of(':');
+				end = headLine.find_last_not_of(' ', end) + 1;
+				size_t start = headLine.find_last_of(' ', end - 1) + 1;
+				std::string type = headLine.substr(start, end - start);
+
+				if (type == "strings") {
+					superParent = SuperParent::TL_STRS;
+				}else {
+					superParent = SuperParent::LABEL;
+				}
+			}
+
 			Node *node = getNode(start, nextChildStart, superParent, false);
 
 			if (node->command == "label" || node->command == "screen") {
@@ -367,7 +360,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 	if (isText) {
 		if (headLine.size() > 1 && headLine[0] == '$') {
-			Utils::outMsg("SyntaxChecker::check",
+			Utils::outMsg("Parser::getNode",
 			              "Do you mean <$ " + headLine.substr(1) + "> instead <" + headLine + ">?");
 			headLine = "'''" + headLine + "'''";
 		}
@@ -466,7 +459,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	}
 
 
-	if (String::startsWith(headLine, "init")) {
+	if (type == "init") {
 		if (String::endsWith(headLine, " python")) {
 			res->command = type = "init python";
 		}
@@ -479,7 +472,29 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		}
 	}else {
 		res->params = headLine.substr(startParams, endParams - startParams);
+		if (type == "translate") {
+			std::vector<std::string> words = Algo::getArgs(res->params);
+			if (words.size() != 2) {
+				Utils::outMsg("Parser::getNode", "<translate> expected 2 args, got args:\n  <" + res->params + ">");
+				words = {"None", "none_none"};
+			}
+			const std::string &lang = words[0];
+			const std::string &translateType = words[1];
+
+			Translation::addLang(lang);
+
+			if (translateType == "strings") {
+				res->command = type = "translate strings";
+				res->params = lang;
+			}else {
+				res->command = type = "label";
+				if (translateType.find('_') == size_t(-1)) {
+					Utils::outMsg("Parser::getNode", "Unknown type of translation <" + translateType + ">");
+				}
+			}
+		}
 	}
+
 
 	if (type == "python" || type == "init python") {
 		size_t i = start + 1;

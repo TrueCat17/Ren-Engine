@@ -5,6 +5,9 @@ init -997 python:
 	
 	config = renpy.config
 	
+	config.enable_language_autodetect = True
+	config.default_language = None
+	
 	config.quick_save_table = 'quick'
 	config.quick_save_name  = '0'
 	config.quick_load_key = 'L'

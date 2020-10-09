@@ -21,6 +21,7 @@
 #include "media/music.h"
 #include "media/py_utils.h"
 #include "media/scenario.h"
+#include "media/translation.h"
 
 #include "parser/parser.h"
 #include "parser/screen_node_utils.h"
@@ -414,6 +415,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Style::destroyAll();
 
 		PyUtils::init();
+		Translation::init();
 
 		ScreenNodeUtils::clear();
 
@@ -424,9 +426,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 	GV::mainExecNode = p.parse();
 
 	GV::inGame = true;
-
-	Node::loadPath = loadPath;
-	Scenario::execute();
+	Scenario::execute(loadPath);
 }
 
 

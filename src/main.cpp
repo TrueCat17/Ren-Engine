@@ -21,6 +21,7 @@
 #include "media/music.h"
 #include "media/py_utils.h"
 
+#include "parser/mods.h"
 #include "parser/syntax_checker.h"
 
 #include "utils/btn_rect.h"
@@ -208,6 +209,7 @@ static bool init() {
 	Math::init();
 	Logger::init();
 	Config::init();
+	Mods::init();
 
 	Utils::setThreadName(Config::get("window_title"));
 

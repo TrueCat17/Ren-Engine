@@ -7,7 +7,6 @@ init -1 python:
 	k = get_from_hard_config("window_w_div_h", float)
 	settings_resolutions = tuple((i, int(i/k)) for i in (640, 960, 1200, 1366, 1920))
 	
-	mods = get_mods()
 	settings_show_mods = False
 	
 	
@@ -80,7 +79,7 @@ screen settings:
 				xsize 1.0
 				spacing 10
 				
-				for name, dir_name in mods:
+				for name, dir_name in get_mods():
 					textbutton name:
 						xalign 0.5
 						action start_mod(dir_name)

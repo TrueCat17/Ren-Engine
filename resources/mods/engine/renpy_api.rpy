@@ -188,6 +188,14 @@ init -999 python:
 		@staticmethod
 		def get_all_labels():
 			return _get_all_labels()
+		
+		@staticmethod
+		def change_language(lang):
+			config.language = lang
+			_set_lang(str(lang))
+		@staticmethod
+		def known_languages():
+			return _known_languages()
 	
 	
 	

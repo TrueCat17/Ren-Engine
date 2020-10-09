@@ -10,6 +10,7 @@ struct SuperParent {
 	static const int INIT     = 1 << 1;
 	static const int LABEL    = 1 << 2;
 	static const int SCREEN   = 1 << 3;
+	static const int TL_STRS  = 1 << 4;
 };
 
 

@@ -151,7 +151,9 @@ set(SOURCES
 	media/py_utils/convert_to_py.cpp
 	media/py_utils/make_func.cpp
 	media/scenario.cpp
+	media/translation.cpp
 	
+	parser/mods.cpp
 	parser/node.cpp
 	parser/parser.cpp
 	parser/screen_node_utils.cpp

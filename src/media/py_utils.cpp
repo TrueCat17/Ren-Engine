@@ -14,7 +14,9 @@
 #include "image_manipulator.h"
 #include "music.h"
 #include "scenario.h"
+#include "translation.h"
 
+#include "parser/mods.h"
 #include "parser/parser.h"
 
 #include "utils/game.h"
@@ -107,7 +109,11 @@ void PyUtils::init() {
 	//clear
 	constObjects.clear();
 	clearPyWrappers();
-	Py_XDECREF(PyUtils::tuple1);
+	if (tuple1) {
+		PyTuple_SET_ITEM(tuple1, 0, nullptr);
+		Py_DECREF(PyUtils::tuple1);
+	}
+	Mods::clearList();
 	Py_Finalize();
 
 
@@ -147,7 +153,7 @@ void PyUtils::init() {
 	setGlobalFunc("ftoi", ftoi);
 
 	setGlobalFunc("get_current_mod", getCurrentMod);
-	setGlobalFunc("get_mods", Parser::getMods);
+	setGlobalFunc("get_mods", Mods::getList);
 	setGlobalFunc("_out_msg", Utils::outMsg);
 
 	setGlobalFunc("_register_channel", Music::registerChannel);
@@ -207,6 +213,10 @@ void PyUtils::init() {
 	setGlobalFunc("path_update_location", PathFinder::updateLocation);
 	setGlobalFunc("path_on_location", PathFinder::findPath);
 	setGlobalFunc("path_between_locations", PathFinder::findPathBetweenLocations);
+
+	setGlobalFunc("_set_lang", Translation::setLang);
+	setGlobalFunc("_known_languages", Translation::getKnownLanguages);
+	setGlobalFunc("_", Translation::get);
 }
 
 
@@ -339,6 +349,8 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 		if (c == '"'  && !q1 && prev != '\\') q2 = !q2;
 
 		if (!q1 && !q2) {
+			if (c == '_') return false;
+
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
 				if ((c == 'X' || c == 'x') && prev == '0') {
 					hex = true;
@@ -449,6 +461,32 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 		std::cout << "Python Compile Error:\n";
 		errorProcessing(code);
 	}
+
+	return res;
+}
+
+
+std::string PyUtils::getMd5(const std::string &str) {
+	PyObject *module = PyImport_AddModule("_md5");
+	PyObject *constructor = PyObject_GetAttrString(module, "new");
+
+	PyObject *noArgs = PyTuple_New(0);
+
+	PyObject *md5 = PyObject_Call(constructor, noArgs, nullptr);
+	PyObject *update = PyObject_GetAttrString(md5, "update");
+	PyObject *hexdigest = PyObject_GetAttrString(md5, "hexdigest");
+
+	PyObject *pyStr = PyString_FromStringAndSize(str.c_str(), long(str.size()));
+	PyTuple_SET_ITEM(tuple1, 0, pyStr);
+	PyObject_Call(update, tuple1, nullptr);
+	PyObject *pyRes = PyObject_Call(hexdigest, noArgs, nullptr);
+
+	std::string res = PyString_AS_STRING(pyRes);
+
+	Py_DECREF(md5);
+	Py_DECREF(pyStr);
+	Py_DECREF(pyRes);
+	Py_DECREF(noArgs);
 
 	return res;
 }

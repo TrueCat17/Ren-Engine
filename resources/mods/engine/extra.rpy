@@ -117,6 +117,13 @@ init -100000 python:
 		if bx + bw < ax: return False
 		if by + bh < ay: return False
 		return True
+	
+	
+	def get_md5(s):
+		import hashlib
+		md5 = hashlib.md5()
+		md5.update(s)
+		return md5.hexdigest()
 
 
 init -1000000 python:

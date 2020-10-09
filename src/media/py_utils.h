@@ -22,6 +22,8 @@ public:
 	static void errorProcessing(const std::string &code);
 
 	static void init();
+
+	static std::string getMd5(const std::string &str);
 };
 
 #endif // PYUTILS_H
