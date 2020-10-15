@@ -2,11 +2,18 @@
 
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 #include "utils/algo.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
+
+struct Param {
+	std::string name;
+	std::string value;
+	std::string comment;
+};
 
 static std::vector<Param> params;
 static bool initing = false;
@@ -15,6 +22,9 @@ static bool changed = false;
 
 static void setDefault();
 static void load();
+
+static const char *pathOrig = "./params.conf";
+static const char *pathUser = "../var/params.conf";
 
 
 void Config::init() {
@@ -32,7 +42,7 @@ std::string Config::get(const std::string &name) {
 		if (param.name == name) return param.value;
 	}
 
-	Utils::outMsg("Config::get", "Param <" + name + "> there is not");
+	Utils::outMsg("Config::get", "Unknown param <" + name + ">");
 	return "";
 }
 
@@ -59,7 +69,7 @@ void Config::set(const std::string &name, const std::string &value, const std::s
 	if (initing) {
 		params.push_back({name, value, comment});
 	}else {
-		Utils::outMsg("Config::set", "Param <" + name + "> there is not");
+		Utils::outMsg("Config::set", "Unknown param <" + name + ">");
 	}
 }
 
@@ -67,10 +77,10 @@ static void setDefault() {
 	Config::set("window_title", "Ren-Engine");
 	Config::set("window_icon", "None");
 
-	Config::set("window_x", "300");
-	Config::set("window_y", "70");
-	Config::set("window_width", "800");
-	Config::set("window_height", "600");
+	Config::set("window_x", "None");
+	Config::set("window_y", "None");
+	Config::set("window_width", "1200");
+	Config::set("window_height", "675");
 	Config::set("window_w_div_h", "1.777");
 	Config::set("window_fullscreen", "False");
 
@@ -86,16 +96,19 @@ static void setDefault() {
 	Config::set("max_fps", "30");
 
 	Config::set("max_size_textures_cache", "50");
-	Config::set("max_size_surfaces_cache", "200");
+	Config::set("max_size_surfaces_cache", "150");
 	Config::set("count_preload_commands", "3");
 }
 
 static void load() {
-	std::ifstream is("params.conf");
+	std::ifstream is(pathUser, std::ios::binary);
 	if (!is.is_open()) {
-		Utils::outMsg("Config::load", "Could not to load file <resources/params.conf>\n"
-		                              "Using default settings");
-		return;
+		is.open(pathOrig, std::ios::binary);
+		if (!is.is_open()) {
+			Utils::outMsg("Config::load", "Could not to load file <" + std::string(pathOrig) + ">\n"
+			                              "Using default settings");
+			return;
+		}
 	}
 
 	while (!is.eof()) {
@@ -120,19 +133,19 @@ static void load() {
 
 		if (line.empty()) continue;
 		if (line[0] == '#') {
-			Utils::outMsg("Config::load", "Comment at the begining of the line is invalid");
+			Utils::outMsg("Config::load", "Comment at the begining of line is invalid");
 			continue;
 		}
 
 		size_t indexAssign = line.find('=');
 		if (indexAssign == size_t(-1)) {
-			Utils::outMsg("Config::load", "In the line <" + line + "> there is no symbol '='");
+			Utils::outMsg("Config::load", "Expected symbol '=' in <" + line + ">");
 			continue;
 		}
 		if (indexComment == size_t(-1)) {
 			indexComment = line.size();
 		}else if (indexComment < indexAssign) {
-			Utils::outMsg("Config::load", "In the line <" + line + "> first symbol '=' is commented");
+			Utils::outMsg("Config::load", "First symbol '=' in <" + line + "> is commented");
 			continue;
 		}
 
@@ -178,7 +191,7 @@ void Config::save() {
 		}
 	}
 
-	std::ofstream os("params.conf");
+	std::ofstream os(pathUser, std::ios::binary);
 
 	for (const Param &param : params) {
 		const std::string &name = param.name;

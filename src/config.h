@@ -1,14 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <vector>
 #include <string>
-
-struct Param {
-	std::string name;
-	std::string value;
-	std::string comment;
-};
 
 class Config {
 public:

@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <string>
-#include <stdint.h>
 
 class FileSystem {
 public:
@@ -12,7 +11,7 @@ public:
 
 	static bool exists(const std::string &path);
 	static bool isDirectory(const std::string &path);
-	static uintmax_t getFileSize(const std::string &path);
+	static size_t getFileSize(const std::string &path);
 
 	static void createDirectory(const std::string &path);
 	static void remove(const std::string &path);

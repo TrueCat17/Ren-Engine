@@ -46,7 +46,7 @@ bool FileSystem::exists(const std::string &path) {
 bool FileSystem::isDirectory(const std::string &path) {
 	return fs::is_directory(clear(path));
 }
-uintmax_t FileSystem::getFileSize(const std::string &path) {
+size_t FileSystem::getFileSize(const std::string &path) {
 	return fs::file_size(path);
 }
 

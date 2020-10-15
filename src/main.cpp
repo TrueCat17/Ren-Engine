@@ -72,7 +72,7 @@ static void changeWindowSize(bool maximized) {
 		if (k < 0.1) {
 			k = 1.777;
 			Utils::outMsg("changeWindowSize",
-						  "Invalid <window_w_div_h> in <../resources/params.conf>:\n"
+			              "Invalid <window_w_div_h> in <params.conf>:\n"
 						  "<" + Config::get("window_w_div_h") + ">");
 		}
 
@@ -252,14 +252,24 @@ static bool init() {
 
 	GV::fullscreen = Config::get("window_fullscreen") == "True";
 
-	int x = String::toInt(Config::get("window_x"));
-	int y = String::toInt(Config::get("window_y"));
-	int w, h;
-
 	Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
 
-	GV::width = w = Math::inBounds(String::toInt(Config::get("window_width")), 640, 2400);
-	GV::height = h = Math::inBounds(String::toInt(Config::get("window_height")), 360, 1350);
+	GV::width = Math::inBounds(String::toInt(Config::get("window_width")), 640, 2560);
+	GV::height = Math::inBounds(String::toInt(Config::get("window_height")), 360, 1440);
+
+	std::string xStr = Config::get("window_x");
+	std::string yStr = Config::get("window_y");
+	int x, y;
+	if (xStr == "None") {
+		x = (GV::displayMode.w - GV::width) / 2;
+	}else {
+		x = String::toInt(xStr);
+	}
+	if (yStr == "None") {
+		y = (GV::displayMode.h - GV::height) / 2;
+	}else {
+		y = String::toInt(yStr);
+	}
 
 	const std::string windowTitle = Config::get("window_title");
 	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
@@ -270,6 +280,8 @@ static bool init() {
 	if (GV::fullscreen) {
 		SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}else{
+		int w = GV::width;
+		int h = GV::height;
 		changeWindowSize(false);
 
 		if (GV::width != w || GV::height != h) {
