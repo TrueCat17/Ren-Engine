@@ -59,7 +59,7 @@ Parser::Parser(const std::string &dir) {
 
 	std::vector<std::string> commonFiles = Utils::getFileNames("mods/common/");
 	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
-	std::vector<std::string> engineFiles = Utils::getFileNames("mods/engine/");
+	std::vector<std::string> engineFiles = Utils::getFileNames("../Ren-Engine/rpy/");
 	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
 	Logger::logEvent("Searching files (" + std::to_string(files.size()) + ")", Utils::getTimer() - searchStartTime);
 

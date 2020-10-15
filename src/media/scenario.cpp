@@ -529,7 +529,7 @@ void Scenario::execute(const std::string &loadPath) {
 			std::string textCode = child->params.substr(startText);
 
 
-			std::string tmp = (startText ? nick : "") + " " + textCode + "\r\n";
+			std::string tmp = (startText ? nick + " " : "") + textCode + "\r\n";
 			std::string md5 = PyUtils::getMd5(tmp);
 
 			size_t i = stack.size() - 1;

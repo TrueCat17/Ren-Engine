@@ -164,13 +164,13 @@ static void changeWindowSize(bool maximized) {
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
 #ifdef __WIN32__
-	Py_SetPythonHome(const_cast<char*>("./py_libs/"));
+	Py_SetPythonHome(const_cast<char*>("../Ren-Engine/py_libs/"));
 #else
 	if (!setlocale(LC_ALL, "C.UTF-8")) {
 		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
 	}
-	setenv("PYTHONPATH", "./py_libs/Lib/", 1);
-	setenv("PYTHONHOME", "./py_libs/Lib/", 1);
+	setenv("PYTHONPATH", "../Ren-Engine/py_libs/Lib/", 1);
+	setenv("PYTHONHOME", "../Ren-Engine/py_libs/Lib/", 1);
 #endif
 
 	if (newRoot.empty()) {
