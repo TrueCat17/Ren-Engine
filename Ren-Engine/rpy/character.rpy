@@ -172,7 +172,8 @@ init -1001 python:
 			return str(self.name)
 		
 		def __call__(self, text):
-			show_text(_(self.name), self.name_prefix, self.name_postfix, self.color,
+			name = None if self.name is None else _(self.name)
+			show_text(name, self.name_prefix, self.name_postfix, self.color,
 			          text, self.text_prefix, self.text_postfix, self.text_color)
 		
 		
