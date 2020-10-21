@@ -15,7 +15,7 @@ private:
 	size_t numLine;
 
 public:
-	static Node *getNewNode(const std::string &fileName, size_t numLine);
+	static Node* getNewNode(const std::string &fileName, size_t numLine);
 	static void destroyAll();
 
 	static size_t preloadImages(const Node *parent, size_t start, size_t count);

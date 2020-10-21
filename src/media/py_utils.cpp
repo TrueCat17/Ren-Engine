@@ -2,8 +2,6 @@
 #include "py_utils/make_func.h"
 #include "py_utils/absolute.h"
 
-#include <iostream>
-
 
 #include "gv.h"
 #include "logger.h"
@@ -37,7 +35,6 @@ static const std::string False = "False";
 static const std::string None = "None";
 
 
-PyObject* PyUtils::sysExcInfo = nullptr;
 PyObject* PyUtils::formatTraceback = nullptr;
 
 
@@ -121,11 +118,6 @@ void PyUtils::init() {
 
 	tuple1 = PyTuple_New(1);
 
-	PyObject *sysModule = PyImport_AddModule("sys");
-	PyObject *sysDict = PyModule_GetDict(sysModule);
-	sysExcInfo = PyDict_GetItemString(sysDict, "exc_info");
-	if (!sysExcInfo) throw std::runtime_error("sys.exc_info == nullptr");
-
 	PyObject *tracebackModule = PyImport_AddModule("traceback");
 	PyObject *tracebackDict = PyModule_GetDict(tracebackModule);
 	formatTraceback = PyDict_GetItemString(tracebackDict, "format_tb");
@@ -171,7 +163,6 @@ void PyUtils::init() {
 	setGlobalFunc("has_screen", Screen::hasScreen);
 	setGlobalFunc("_log_screen_code", Screen::logScreenCode);
 	setGlobalFunc("_SL_check_events", Screen::checkScreenEvents);
-	setGlobalFunc("_SL_error_processing", Screen::errorProcessing);
 
 	setGlobalFunc("start_mod", Game::startMod);
 	setGlobalFunc("get_mod_start_time", Game::getModStartTime);
@@ -258,10 +249,8 @@ void PyUtils::errorProcessing(const std::string &code) {
 
 	std::string traceback;
 	if (ptraceback && ptraceback != Py_None) {
-		PyObject *args = PyTuple_New(1);
-		PyTuple_SET_ITEM(args, 0, ptraceback);
-		PyObject *res = PyObject_Call(formatTraceback, args, nullptr);
-		Py_DECREF(args);
+		PyTuple_SET_ITEM(tuple1, 0, ptraceback);
+		PyObject *res = PyObject_Call(formatTraceback, tuple1, nullptr);
 
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
@@ -315,12 +304,11 @@ void PyUtils::errorProcessing(const std::string &code) {
 		"Python Error (" + typeStr + "):\n"
 		"\t" + valueStr + "\n" +
 
-	    std::string(traceback.empty() ? "" : "Traceback:\n" + traceback + "\n") +
+	    (traceback.empty() ? "" : "Traceback:\n" + traceback + "\n") +
 
 		"Code:\n" +
 		code + "\n\n";
 
-	std::cout << out;
 	Logger::log(out);
 
 	Utils::outMsg("Python", "See details in var/log.txt");
@@ -422,7 +410,6 @@ std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std
 			errorProcessing(code);
 		}
 	}else {
-		std::cout << "Python Compile Error:\n";
 		errorProcessing(code);
 	}
 
@@ -458,7 +445,6 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 			errorProcessing(code);
 		}
 	}else {
-		std::cout << "Python Compile Error:\n";
 		errorProcessing(code);
 	}
 

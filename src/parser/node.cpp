@@ -34,7 +34,7 @@ Node* Node::getNewNode(const std::string &fileName, size_t numLine) {
 }
 void Node::destroyAll() {
 	for (size_t i = 0; i < nodes.size(); ++i) {
-		const size_t size = i == nodes.size() - 1 ? (countNodes % NODES_IN_PART) : NODES_IN_PART;
+		const size_t size = (i == nodes.size() - 1) ? (countNodes % NODES_IN_PART) : NODES_IN_PART;
 
 		Node *array = nodes[i];
 		for (size_t j = 0; j < size; ++j) {

@@ -237,12 +237,10 @@ static void initChildCode(Node *child, std::string &res, const std::string &inde
 		if (childCommand != "$" && childCommand != "python") {
 			res += indent + "_SL_stack.append(_SL_last)\n";
 		}
-
-		res += indent + "try:\n";
 	}
 
 	for (const std::string &line : code) {
-		res += indent + "    " + line + '\n';
+		res += indent + line + '\n';
 	}
 
 	bool hasEnd = true;
@@ -257,12 +255,8 @@ static void initChildCode(Node *child, std::string &res, const std::string &inde
 		}
 	}
 	if (hasEnd) {
-		res += indent + "except:\n";
-		res += indent + "    _SL_error_processing()\n";
-
 		if (childCommand != "$" && childCommand != "python") {
-			res += indent + "finally:\n";
-			res += indent + "    _SL_last = _SL_stack.pop()\n";
+			res += indent + "_SL_last = _SL_stack.pop()\n";
 		}
 	}
 }
@@ -503,11 +497,9 @@ static std::string initCode(Node *node, const std::string& index) {
 	}
 
 
-	if (command == "screen") {
-		if (index.empty()) {
-			res += "\n"
-				   "_SL_check_events()\n";
-		}
+	if (isMainScreen) {
+		res += "\n"
+		       "_SL_check_events()\n";
 	}
 
 	return res;

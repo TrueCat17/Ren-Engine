@@ -289,7 +289,7 @@ void Scenario::execute(const std::string &loadPath) {
 					restoreScreens(loadPath);
 					initing = false;
 					Logger::logEvent("Mod Initing (" + std::to_string(initBlocks.size()) + " blocks)",
-					                 Utils::getTimer() - initingStartTime);
+					                 Utils::getTimer() - initingStartTime, true);
 
 					if (Game::hasLabel("start")) {
 						Node *start = getLabel("start");

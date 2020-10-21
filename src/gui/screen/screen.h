@@ -25,7 +25,6 @@ public:
 	static bool hasModal();
 
 	static void checkScreenEvents();
-	static void errorProcessing();
 
 	static void addToShow(const std::string &name);
 	static void addToHide(const std::string &name);

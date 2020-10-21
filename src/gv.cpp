@@ -1,7 +1,5 @@
 #include "gv.h"
 
-SDL_DisplayMode GV::displayMode;
-
 int GV::width;
 int GV::height;
 bool GV::fullscreen;
@@ -13,7 +11,8 @@ bool GV::exit = false;
 
 std::thread::id GV::messageThreadId;
 
-SDL_Window *GV::mainWindow;
+SDL_DisplayMode GV::displayMode;
+SDL_Window *GV::mainWindow = nullptr;
 
 Uint8 GV::keyBoardState[SDL_NUM_SCANCODES];
 

@@ -29,9 +29,9 @@ PyObject* convertFromPy<PyObject*>(PyObject *obj, const char*, size_t) {
 
 template<>
 bool convertFromPy<bool>(PyObject *obj, const char *funcName, size_t argIndex) {
-	if (PyBool_Check(obj))
+	if (PyBool_Check(obj)) {
 		return obj == Py_True;
-
+	}
 	pySetErrorType(funcName, argIndex, obj, "bool");
 }
 
@@ -85,13 +85,15 @@ MAKE_CONVERT_FROM_PY_TO_INT(double, "float")
 
 template<>
 const char* convertFromPy<const char*>(PyObject *obj, const char *funcName, size_t argIndex) {
-	if (PyString_CheckExact(obj))
+	if (PyString_CheckExact(obj)) {
 		return PyString_AS_STRING(obj);
+	}
 	pySetErrorType(funcName, argIndex, obj, "str");
 }
 template<>
 std::string convertFromPy<std::string>(PyObject *obj, const char *funcName, size_t argIndex) {
-	if (PyString_CheckExact(obj))
+	if (PyString_CheckExact(obj)) {
 		return PyString_AS_STRING(obj);
+	}
 	pySetErrorType(funcName, argIndex, obj, "str");
 }

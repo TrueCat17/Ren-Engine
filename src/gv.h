@@ -13,8 +13,6 @@ class Node;
 
 class GV {
 public:
-	static SDL_DisplayMode displayMode;
-
 	static int width;
 	static int height;
 	static bool fullscreen;
@@ -26,6 +24,7 @@ public:
 
 	static std::thread::id messageThreadId;
 
+	static SDL_DisplayMode displayMode;
 	static SDL_Window *mainWindow;
 
 	static Uint8 keyBoardState[SDL_NUM_SCANCODES];

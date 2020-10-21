@@ -252,26 +252,6 @@ void Screen::checkScreenEvents() {
 	}
 }
 
-void Screen::errorProcessing() {
-	if (!calcedScreen) return;
-
-	PyObject *excInfo = PyObject_CallObject(PyUtils::sysExcInfo, nullptr);
-
-	PyObject *ptype = PySequence_Fast_GET_ITEM(excInfo, 0);
-	PyObject *pvalue = PySequence_Fast_GET_ITEM(excInfo, 1);
-	PyObject *ptraceback = PySequence_Fast_GET_ITEM(excInfo, 2);
-
-	if (ptype)      Py_INCREF(ptype);
-	if (pvalue)     Py_INCREF(pvalue);
-	if (ptraceback) Py_INCREF(ptraceback);
-
-	Py_DECREF(excInfo);
-
-	PyErr_Restore(ptype, pvalue, ptraceback);
-
-	PyUtils::errorProcessing(calcedScreen->screenCode);
-}
-
 
 Screen::Screen(Node *node, Screen *screen):
 	Container(node, this, screen ? screen : this),

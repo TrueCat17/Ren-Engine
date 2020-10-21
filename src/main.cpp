@@ -1,7 +1,6 @@
 #include <iostream>
 #include <thread>
 #include <list>
-#include <float.h>
 
 #include <SDL2/SDL.h>
 #undef main //for cancel declare spec. start-func on Windows
@@ -38,7 +37,7 @@ static std::string getVersion() {
 	if (versionStr.empty()) {
 		std::string major = "0";
 		std::string minor = "9";
-		std::string micro = "2";
+		std::string micro = "3";
 
 		std::string date = __DATE__;
 
@@ -509,8 +508,6 @@ static void loop() {
 static void eventLoop() {
 	std::thread(loop).detach();
 
-	GV::messageThreadId = std::this_thread::get_id();
-
 	while (!GV::exit) {
 		while (Utils::realOutMsg()) {}
 
@@ -530,7 +527,7 @@ static void eventLoop() {
 	}
 }
 
-void destroy() {
+static void destroy() {
 	GV::exit = true;
 	GV::inGame = false;
 
@@ -549,7 +546,7 @@ void destroy() {
 }
 
 int main(int argc, char **argv) {
-	long initStartTime = Utils::getTimer();
+	GV::messageThreadId = std::this_thread::get_id();
 
 	std::string arg;
 	if (argc == 2) {
@@ -584,15 +581,15 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	if (init()) {
-		return 0;
-	}
-
 	{
+		long initStartTime = Utils::getTimer();
+		if (init()) {
+			return 0;
+		}
 		Logger::logEvent("Ren-Engine (version " + getVersion() + ") Initing", Utils::getTimer() - initStartTime);
 
-		const char *platform = SDL_GetPlatform();
-		Logger::log(std::string("OS: ") + platform);
+		std::string platform = SDL_GetPlatform();
+		Logger::log("OS: " + platform);
 
 		std::string driverInfo =
 		        std::string("Renderer: ") + Renderer::info.name + ", "

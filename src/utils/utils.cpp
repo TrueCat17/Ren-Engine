@@ -171,12 +171,14 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	message.id = nextId++;
 	message.isError = !err.empty();
 	message.str = msg;
+	{
+		std::lock_guard g(msgGuard);
+		messagesToOut.push_back(message);
+	}
 
-	messagesToOut.push_back(message);
 	if (GV::messageThreadId == std::this_thread::get_id()) {
 		while (Utils::realOutMsg()) {}
-	}else
-	if (GV::messageThreadId != std::thread::id()) {
+	}else {
 		while (true) {
 			sleep(10, false);
 
