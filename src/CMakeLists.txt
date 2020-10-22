@@ -53,7 +53,10 @@ endif()
 
 
 if ("${LTO}" STREQUAL "1")
-	set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -flto")
+	# disable, because LTO with <C++> is unstable
+	#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -flto")
+
+	# enable, because LTO with <C> is stable
 	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -flto")
 endif()
 
