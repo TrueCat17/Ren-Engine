@@ -212,15 +212,15 @@ init -1000 python:
 		lang = os.getenv('RE_LANG')
 		
 		if not lang:
-			lang = config.language
-		
-		if not lang:
-			if config.enable_language_autodetect:
-				locale, region = detect_user_locale()
-				lang = locale_to_language_function(locale, region)
+			if config.has_key('language'):
+				lang = config.language
 			else:
-				lang = config.default_language
-			config.language = lang
+				if config.enable_language_autodetect:
+					locale, region = detect_user_locale()
+					lang = locale_to_language_function(locale, region)
+				else:
+					lang = config.default_language
+				config.language = lang
 		
 		_set_lang(str(lang))
 
