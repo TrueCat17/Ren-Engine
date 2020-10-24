@@ -76,9 +76,6 @@ init python:
 		)
 		
 		
-		def sign(x):
-			return -1 if x < 0 else 1 if x > 0 else 0
-		
 		def to_zero(x):
 			return 0 if abs(x) < 1 else x + 1 if x < 0 else x - 1
 		

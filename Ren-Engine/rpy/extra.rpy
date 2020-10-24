@@ -70,6 +70,8 @@ init -100000 python:
 	def get_dist(x1, y1, x2, y2):
 		dx, dy = x1 - x2, y1 - y2
 		return math.sqrt(dx*dx + dy*dy)
+	def sign(x):
+		return -1 if x < 0 else 1 if x > 0 else 0
 	
 	def get_image_size(image):
 		return get_image_width(image), get_image_height(image)
