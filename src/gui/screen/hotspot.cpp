@@ -62,6 +62,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 	btnRect.init(this, onLeftClick, onRightClick);
 }
 
+void Hotspot::updatePos() {}
 void Hotspot::updateRect(bool) {}
 
 void Hotspot::checkEvents() {

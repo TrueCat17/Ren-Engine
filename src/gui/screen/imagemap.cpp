@@ -21,7 +21,7 @@ Imagemap::Imagemap(Node *node, Screen *screen):
 }
 
 void Imagemap::updateRect(bool) {
-	Container::updateRect();
+	Container::updateRect(false);
 
 	xsize = std::max(xsize, 0.0);
 	ysize = std::max(ysize, 0.0);

@@ -40,14 +40,24 @@ void Container::addChildAt(DisplayObject *child, size_t index) {
 }
 
 
-void Container::updateRect(bool) {
+void Container::updatePos() {
 	for (Child *child : screenChildren) {
 		if (child->enable) {
-			child->updateRect();
+			child->updatePos();
+		}
+	}
+	Child::updatePos();
+}
+
+void Container::updateRect(bool needUpdatePos) {
+	bool updateChildrenPos = needUpdatePos && !(hasHBox || hasVBox);
+	for (Child *child : screenChildren) {
+		if (child->enable) {
+			child->updateRect(updateChildrenPos);
 		}else
 		if (child->node->isScreenConst) {
 			child->enable = true;
-			child->updateRect();
+			child->updateRect(updateChildrenPos);
 		}
 	}
 	Child::updateRect(false);
@@ -110,7 +120,9 @@ void Container::updateRect(bool) {
 		setHeight(height);
 	}
 
-	updatePos();
+	if (needUpdatePos) {
+		updatePos();
+	}
 }
 
 

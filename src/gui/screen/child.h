@@ -19,8 +19,6 @@ protected:
 	bool inVBox = false;
 	bool inHBox = false;
 
-	void updatePos();
-
 public:
 	bool xposIsDouble       = false, yposIsDouble       = false;
 	bool xanchorPreIsDouble = false, yanchorPreIsDouble = false;
@@ -49,6 +47,7 @@ public:
 	Child(Node *node, Container *screenParent, Screen *screen);
 
 	void updateProps();
+	virtual void updatePos();
 	virtual void updateRect(bool needUpdatePos = true);
 
 	virtual void updateTexture(bool skipError = false);
