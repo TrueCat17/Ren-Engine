@@ -2,6 +2,7 @@ init python:
 	
 	console_font = 'Consola'
 	console_text_color = 0xFFFFFF
+	console_text_outlinecolor = 0
 	
 	console_background = im.rect('#000')
 	console_background_alpha = 0.15
@@ -319,7 +320,7 @@ init python:
 screen console_watching:
 	zorder 10001
 	
-	image im.Alpha('images/bg/black.jpg', 0.3):
+	image im.rect('#0006'):
 		align (1.0, 0.0)
 		size  (0.4, 0.3)
 		
@@ -392,17 +393,19 @@ screen console:
 			null xsize 50
 			
 			text console_output:
-				font      console_font
-				color     console_text_color
-				text_size console_text_size
-				xsize     get_stage_width() - 50
+				font         console_font
+				color        console_text_color
+				outlinecolor console_text_outlinecolor
+				text_size    console_text_size
+				xsize        get_stage_width() - 50
 		
 		hbox:
 			text ('...' if '\n' in console_input else '>>>'):
-				font      console_font
-				color     console_text_color
-				text_size console_text_size
-				xsize     50
+				font         console_font
+				color        console_text_color
+				outlinecolor console_text_outlinecolor
+				text_size    console_text_size
+				xsize        50
 			
 			python:
 				index = console_get_cursor_index()
@@ -410,8 +413,9 @@ screen console:
 				console_input_with_cursor = console_input[0:index] + alpha_cursor + console_input[index:]
 			
 			text console_input_with_cursor.replace(console_key_tag, '{{'):
-				font      console_font
-				color     console_text_color
-				text_size console_text_size
+				font         console_font
+				color        console_text_color
+				outlinecolor console_text_outlinecolor
+				text_size    console_text_size
 				xsize     get_stage_width() - 50
 
