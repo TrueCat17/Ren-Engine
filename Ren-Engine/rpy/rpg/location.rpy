@@ -97,8 +97,10 @@ init -1002 python:
 		end_location_ambience(cur_location)
 		ignore_prev_rpg_control()
 		
+		time_changing = times['next_name'] is not None
+		
 		global draw_location, location_start_time, location_was_show, cam_object
-		if draw_location is None or draw_location is cur_location:
+		if (draw_location is None) or (draw_location is cur_location and not time_changing):
 			location_start_time = 0
 			location_was_show = True
 			draw_location = cur_location

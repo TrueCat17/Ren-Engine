@@ -23,12 +23,7 @@ label rpg_update:
 			$ me.set_pose("stance")
 			window show
 			
-			$ action_name = {
-				'taking': 'взятие',
-				'using':  'использование',
-				'remove': 'выбрасывание',
-			}[inventory_action]
-			"При действии <" + action_name + "> на предмете пересекаются несколько активных квестов (" + str(len(cur_quests_labels)) + ")."
+			narrator (_("Several active quests intersect on action <%s> for item") % _(inventory_action)) + " (" + str(len(cur_quests_labels)) + ")."
 			
 			$ choose_menu_variants = [name for name, label in cur_quests_labels]
 			$ renpy.call_screen('choose_menu', 'choose_menu_result')
@@ -91,7 +86,7 @@ label rpg_update:
 	elif len(cur_quests_labels) > 1:
 		$ me.set_pose("stance")
 		window show
-		"В этом месте пересекаются несколько активных квестов (" + str(len(cur_quests_labels)) + ")."
+		narrator _("Several active quests intersect in this place") + " (" + str(len(cur_quests_labels)) + ")."
 		
 		$ choose_menu_variants = [name for name, label in cur_quests_labels]
 		$ renpy.call_screen('choose_menu', 'choose_menu_result')

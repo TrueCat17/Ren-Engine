@@ -19,7 +19,7 @@ screen load:
 		image load_background:
 			size (1.0, 1.0)
 			
-			text '{outlinecolor=0}Загрузка':
+			text ('{outlinecolor=0}' + _('Load')):
 				align (0.5, 0.02)
 				
 				color 0xFFFFFF
@@ -104,19 +104,19 @@ screen load:
 						
 						$ sl_cur_save_exists = sl_table_saves_exists.get(sl_cur_save, False)
 						
-						textbutton 'Загрузить игру':
+						textbutton _('Load game'):
 							alpha 1 if sl_cur_save_exists else 0.7
 							
 							mouse   sl_cur_save_exists
 							action (Function(load, sl_cur_table, sl_cur_save) if sl_cur_save_exists else None)
 						
-						textbutton 'Удалить':
+						textbutton _('Delete'):
 							alpha 1 if sl_cur_save_exists else 0.7
 							
 							mouse   sl_cur_save_exists
 							action (Function(sl_delete_save, sl_cur_table, sl_cur_save) if sl_cur_save_exists else None)
 			
-			textbutton 'Назад':
+			textbutton _('Return'):
 				align (0.95, 0.95)
 				action HideMenu('load')
 	

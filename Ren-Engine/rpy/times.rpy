@@ -12,12 +12,12 @@ init -1001 python:
 					'x': me.x,
 					'y': me.y,
 					'width': 0,
-					'height': 0
+					'height': 0,
 				}
 				set_location(cur_location.name, place)
 		
 		times[name] = {
-			'text':     kwargs.get('text',     'The ' + name + ' is coming'),
+			'text':     kwargs.get('text',     'The {} is coming'),
 			'sprite':   kwargs.get('sprite',   (255, 255, 255)),
 			'location': kwargs.get('location', (255, 255, 255))
 		}
@@ -34,7 +34,18 @@ init -1001 python:
 	def set_time_text(name, text):
 		times[name]['text'] = text
 	
+	
 	make_time('day') # def day_time
+	make_time('night', sprite=(160, 200, 210), location=(140, 180, 210)) # night_time
+	
+	
+	sunset_tint_sprite   = (240, 210, 255)
+	sunset_tint_location = (240, 210, 255)
+	
+	make_time('sunset',  sprite=sunset_tint_sprite, location=sunset_tint_location) # sunset_time
+	make_time('morning', sprite=sunset_tint_sprite, location=sunset_tint_location) # morning_time
+	make_time('evening', sprite=sunset_tint_sprite, location=sunset_tint_location) # evening_time
+	
 	
 	day_time()
-
+	

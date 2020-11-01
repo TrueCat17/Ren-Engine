@@ -690,6 +690,9 @@ init -1001 python:
 	
 	
 	def show_character(character, place, location = None, auto_change_location = True, hiding = True):
+		prev_character_location = character.location
+		prev_character_pos = character.x, character.y
+		
 		if location is None:
 			if cur_location is None:
 				out_msg('show_character', 'Current location is not defined, need to call set_location')
@@ -711,23 +714,31 @@ init -1001 python:
 			if not place:
 				out_msg('show_character', 'Place <' + place_name + '> not found in location <' + str(location.name) + '>')
 				return
+		place_pos = get_place_center(place)
+		is_old_place = prev_character_pos == place_pos
 		
 		character.show_time = time.time()
-		if character.location:
-			if hiding:
+		if prev_character_location:
+			if hiding and not is_old_place:
 				create_hiding_object(character)
 			else:
 				character.show_time = 0
-			character.location.objects.remove(character)
-		
-		character.old_direction = None
-		character.stand_up()
-		
+			
+			if not is_old_place:
+				prev_character_location.objects.remove(character)
+				location.objects.append(character)
+		else:
+			location.objects.append(character)
 		character.location = location
-		location.objects.append(character)
 		
-		character.x, character.y = get_place_center(place)
-		character.place_names = None
+		if prev_character_location is not location:
+			character.old_direction = None
+			character.stand_up()
+			is_old_place = False
+		
+		if not is_old_place:
+			character.x, character.y = place_pos
+			character.place_names = None
 	
 	def hide_character(character):
 		if character.location:

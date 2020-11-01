@@ -19,7 +19,7 @@ screen save:
 		image save_background:
 			size (1.0, 1.0)
 			
-			text '{outlinecolor=0}Сохранение':
+			text ('{outlinecolor=0}' + _('Save')):
 				align (0.5, 0.02)
 				
 				color 0xFFFFFF
@@ -102,16 +102,16 @@ screen save:
 						
 						$ sl_cur_save_exists = sl_table_saves_exists.get(sl_cur_save, False)
 						
-						textbutton 'Сохранить игру':
+						textbutton _('Save game'):
 							action Function(sl_save, sl_cur_table, sl_cur_save)
 						
-						textbutton 'Удалить':
+						textbutton _('Delete'):
 							alpha 1 if sl_cur_save_exists else 0.7
 							
 							mouse   sl_cur_save_exists
 							action (Function(sl_delete_save, sl_cur_table, sl_cur_save) if sl_cur_save_exists else None)
 			
-			textbutton 'Назад':
+			textbutton _('Return'):
 				align (0.95, 0.95)
 				action HideMenu('save')
 	

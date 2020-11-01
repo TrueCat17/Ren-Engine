@@ -129,10 +129,12 @@ screen location:
 				cam_object = me
 				loc__set_show_at_end = True
 				
-				if times['next_name']:
-					set_time_direct()
-				
 				start_location_ambience()
+			
+			if times['next_name']:
+				set_time_direct()
+				cam_object = me
+				loc__set_show_at_end = True
 		
 		cut_k = 0
 		if time.time() < location_cutscene_end:
@@ -256,7 +258,7 @@ screen location:
 			alpha loc__background_alpha
 		
 		if times['next_name'] is not None:
-			text times[times['next_name']]['text']:
+			text _(times[times['next_name']]['text']).format(_(times['next_name'])):
 				text_size 50
 				color 0xFFFFFF
 				align (0.5, 0.5)

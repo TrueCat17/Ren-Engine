@@ -102,9 +102,9 @@ screen pause:
 			align (0.5, 0.5)
 			spacing 5
 			
-			textbutton 'Продолжить'   style pause_button action pause_close_func
-			textbutton 'Загрузить'    style pause_button action ShowMenu('load')
-			textbutton 'Сохранить'    style pause_button action ShowMenu('save')
-			textbutton 'Настройки'    style pause_button action ShowMenu('settings')
-			textbutton 'Выход в меню' style pause_button action Function(start_mod, 'main_menu')
+			textbutton _('Continue')     style pause_button action pause_close_func
+			textbutton _('Load')         style pause_button action ShowMenu('load')
+			textbutton _('Save')         style pause_button action ShowMenu('save')
+			textbutton _('Settings')     style pause_button action ShowMenu('settings')
+			textbutton _('Exit to menu') style pause_button action Function(start_mod, 'main_menu')
 

@@ -128,12 +128,12 @@ screen inventory:
 						spacing 10
 						xalign 0.5
 						
-						textbutton 'Использовать':
+						textbutton _('Use'):
 							action inventory_do_action('using')
 							
 							color 0x00FF00
 							text_size 20
-						textbutton ('Выложить' if inventory_selected_object['remove_to_location'] else 'Выбросить'):
+						textbutton _('Lay out' if inventory_selected_object['remove_to_location'] else 'Throw away'):
 							action inventory_remove_selected
 							
 							color 0xFF0000
