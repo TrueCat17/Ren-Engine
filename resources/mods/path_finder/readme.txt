@@ -1,17 +1,16 @@
-[Общее]
-Отметьте на локациях те точки, которые необходимо посетить.
-Эти точки могут быть на разных локациях.
+[Common]
+Mark on locations points to visit.
 
-После того, как вы выбрали все необходимые точки, нажмите "Старт".
-После этого в начальную точку будет помещён персонаж, который через все промежуточные места дойдёт до конца.
+After press "Start".
+Character will go from start to end point across all in-between places.
 
 
 [brute_force]
-Параметр <brute_force> определяет, нужно ли пытаться искать между точками на одной локации более короткий путь через выходы из этой локации.
+Parameter <brute_force> define need to try to find the shortest path between points of one location through exit from it.
 
 
-[Выбор точки]
-Точка отмечается на доступном для передвижения (затенённом) месте локации.
-Для перехода к локации нужно щёлкнуть по ней на главном экране.
-Для выхода из локации в главный экран - нажать Esc.
-Перемещаться по локации можно с помощью клавиш WASD.
+[Point selection]
+You can mark point on aviable to moving (shaded) location place.
+You can select location on main screen.
+Use keys WASD for moving on location.
+Press <Esc> for exit from location screen to main screen.

@@ -1,87 +1,86 @@
-[Подготовка]
-Редактор предполагает, что установлено приемлемое разрешение (1200x675 и выше)
-Локации ищутся в resources/images/locations/
-Изображения локации (main, free и over) должны быть в папке локации (подробности в документации)
-Например, основное изображение локации flat должно лежать по пути resources/images/locations/flat/main.png
+[Preparing]
+Need screen resolution 1200x675 and more.
+Editor looking for locations in <resources/images/locations/>.
+Images of locations (main, free and over) must be in location directory (see documentation).
+For example, main image of location <flat> must be in <resources/images/locations/flat/main.png>.
 
-Файл с регистрацией локаций (если зарегистрированные уже есть) ожидается по пути result/locations.rpy относительно папки мода
-Файл с регистрацией объектов ожидается по пути result/objects.rpy
-Оба файла можно править вручную (а последний - нужно, т. к. редактор лишь расставляет объекты, но не регистрирует их)
-
-
-[Начало]
-Сначала отображается глобальное пространство, что-то вроде "вида сверху"
-
-Справа находится панель со списком локаций, с её помощью их можно добавлять (Add) или убирать (Del)
-Список можно мотать стрелками вверх/вниз на клавиатуре
-
-Локации здесь можно перемещать:
-	1. Навести курсор мыши на локацию
-	2. Нажать ЛКМ (левую кнопку мыши)
-	3. Переместить мышь
-	4. Отпустить ЛКМ после завершения перемещения
-Положение локаций относительно друг друга нужно лишь для удобства во время редактирования, оно не играет никакой роли в конечном итоге
-
-Клавишами W, A, S и D можно перемещать камеру
-Клавишами 9 и 0 - уменьшать и увеличивать масштаб
-
-Клик по локации - переход к редактированию этой локации
+File with registration of locations (if already there) waited in <result/locations.rpy> relatively editor directory.
+File with registration of objects waited in <result/objects.rpy>.
+You can edit this files in text editor (with objects - need, because editor only installs, but does not register objects).
 
 
-[Локация]
-Вкладка Props позволяет редактировать места и выходы
-	Вкладка Show:
-		Отображать ли изображения main, over и free и отображать ли [места, объекты и выходы]
+[Start]
+On start shows screen <global space>, locations with view from above.
+
+On right there is panel with locations list, you can <Add> or <Del> any location.
+This list can be rewinded with key-arrows up/down.
+
+You can move locations:
+	1. Hover mouse to location,
+	2. Press LMB (Left Mouse Button),
+	3. Move mouse,
+	4. Release LMB after end moving.
+Location position relatively others need only for ease edit, it is not important in game.
+
+Keys W, A, S and D moves camera.
+Keys 9 and 0 - down and up scale.
+
+Click on location - edit it.
+
+
+[Location]
+Tab <Properties> allows edit places and exits.
+	Tab <Show>:
+		Need to show or hide images [main, over and free] and [places, objects and exits].
 	
-	Для добавления нового места:
-		1. Клик по кнопке Add Place
-		2. Ввод названия места
-		3. Ok / Enter
+	For adding new place:
+		1. Click on <Add Place>,
+		2. Type place name,
+		3. Press <Ok> or <Enter>
 	
-	Если название места совпадает с названием какой-либо локации,
-		то оно автоматически становится переходом на эту локацию в место с названием текущей локации
-	Например:
-		Место street в локации flat будет вести к месту flat в локации street
-	Также такие места имеют свойство "Exit Side", которое означает положение выхода (красный) и входа (зелёный) и
-		может принимать значения up, left, right и down (есть соответствующие им кнопки)
+	If place name is name of any location,
+		the place becomes transition on it location, on place with name of current location.
+	For example:
+		Place <street> in location <flat> will transite to place <flat> on location <street>.
+	Also such places have property <Exit Side>, that mean position of exit (red) or input (green).
+		Aviable values: Up, Left, Right or Down.
 	
-	Ещё есть свойство "Rotate on Enter" - в какую сторону повернуть персонажа при входе в локацию в этом месте.
-	Обычно это не требуется: например, выйдя с правого края локации 1, игрок попадает в левый край локации 2.
-		Тогда этот параметр можно оставить в значении None (не поворачивать).
-	Но так бывает не всегда. Поэтому есть возможность также указать и to_forward (вперёд), to_left (влево), to_right (вправо) и to_back (назад).
+	Property <Rotate on Enter> is responsible for character rotation on enter to location in this place.
+	Usually it not need: for example, exit from right side of location-1 transite player to left side of location-2.
+		In this cases, the property takes default <None> (not to rotate).
+	But if need, you can set values <to_forward>, <to_left>, <to_right> or <to_back>.
 	
-	Если название места начинается с названия какого-либо объекта, после чего следует _pos, то этот объект буден поставлен в это место
-	Например:
-		bus будет поставлен в bus_pos
-		bench - в места bench_pos-1, bench_pos-2, ...
+	If place name starts with name of any object, and after stand "_pos", such object will be installed in this place.
+	For example:
+		bus will be installed in place "bus_pos",
+		bench - in places "bench_pos-1", "bench_pos-2", ...
 	
-	ReName Place служит для переименования выделенного места
-	Delete Place - для удаления
+	There are buttons for <ReName Place> and <Delete Place>.
 	
-	Для добавления нового выхода есть кнопка Add Exit
-	Выходы имеют доп. свойства:
-		To Loc. - в какую локацию ведёт выход
-		To Place - в какое место в указанной локации
-	Обычно вместо выходов переходы делаются через создание мест с именем локации, что объяснялось в предыдущем абзаце
-	Но создание именно конкретно выходов может быть оправданным, если между 2 локациями есть больше 1 перехода
-		или если нужен односторонний проход (без возможности вернуться в этом месте)
+	Use <Add Exit> for adding new exit.
+	Exits have extra properties:
+		To Loc. - to what location?
+		To Place - to what place of the location?
+	Usually instead exits transitions makes with places with location name (see above).
+	But direct creating of exit can be use, for example, for more than 1 transitions between 2 locations,
+		or if need one-sided transition without aviable to return.
 	
-	После создания новые места и выходы будут выделены
-	Для выделения другого места или выхода, необходимо кликнуть по ним на локации
+	After creating, new places and exits will selected.
+	For select other - click on it on location.
 	
-	Изменения свойств x, y, xsize (ширина) и ysize ("высота") у выделенной локации:
-		1. Клик по кнопке с именем свойства для выбора этого свойства
-		2. Изменение этого свойства кнопками +/- 1/10/100
+	Changing properties x, y, xsize (width) and ysize (height) for selected place or exit:
+		1. Click on button with property name to select the property,
+		2. Change value with buttons +/- 1/10/100
 
-Вкладка Objects показывает список зарегистрированных объектов
-	Она используется только для отображения объектов и их названий
-	Стрелками вверх/вниз на клавиатуре этот список можно мотать
+Tab <Objects> shows list of registered objects:
+	Use only for shows images and names.
+	Arrows up/down rewinds this list.
 
-Клавиши W, A, S, D, 9 и 0 работают точно так же
-Клавиша Esc (Escape) и кнопка Unselect сверху справа снимают выделение места, выхода или локации (последнее - возврат к "виду сверху")
+Keys W, A, S, D, 9 and 0 works as on global screen.
+Key Esc and button <Unselect> - pull off selection of place, exit or location (last - return to global screen).
 
 
-[Завершение]
-Всё автоматически сохраняется в ту же папку result
-Получившиеся в итоге файлы можно переносить в папку вашего rpg-мода
+[Ending]
+All changes will auto saved in directory <result>.
+Ready files can be moved to directory of your rpg-mod (game).
 

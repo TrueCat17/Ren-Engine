@@ -1,6 +1,7 @@
 init python:
 	style.menu = Style(style.textbutton)
 	style.menu.ground = im.circle('#080')
+	style.menu.hover = ''
 	style.menu.xsize = style.menu.ysize = 25
 
 screen menu:

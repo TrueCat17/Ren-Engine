@@ -7,7 +7,7 @@ init python:
 		global help_inited
 		help_inited = True
 		
-		f = open('mods/rpg_editor/readme.txt')
+		f = open(_('mods/rpg_editor/readme.txt'))
 		content = f.read().strip().replace('\t', '  ')
 		f.close()
 		
@@ -51,6 +51,7 @@ screen help:
 	
 	button:
 		ground im.rect('#000')
+		hover  im.rect('#000')
 		size (1.0, 1.0)
 		alpha 0.3
 		mouse False

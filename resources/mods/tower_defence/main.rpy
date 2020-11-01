@@ -28,7 +28,7 @@ init python:
 	def set_level(level):
 		global td_result
 		if level == len(td_levels):
-			td_result = '{color=#00FF00}WIN{/color}'
+			td_result = '{color=#00FF00}' + _('WIN')
 			return
 		
 		global td_level, td_pause, td_tanks_created, td_to_update_time, td_bullets
@@ -45,7 +45,7 @@ init python:
 			td_zoom = 1
 		
 		global td_result
-		td_result = '' if td_hp else '{color=#FF0000}FAIL{/color}'
+		td_result = '' if td_hp else '{color=#FF0000}' + _('FAIL')
 		
 		if td_pause or td_hp == 0:
 			td_last_update_time = 0
@@ -83,27 +83,24 @@ screen tower_defence:
 	image td_back:
 		anchor (0.5, 0.5)
 		pos    (0.5, 0.4)
-		size   (td_map_w * td_cell_size * td_zoom, td_map_h * td_cell_size * td_zoom)
+		size   (td_map_w * td_cell_size, td_map_h * td_cell_size)
+		zoom    td_zoom
 		
 		for obj in td_tanks:
 			image obj.image:
 				anchor (0.5, 0.5)
-				xpos int((obj.x + 0.5) * td_cell_size * td_zoom)
-				ypos int((obj.y + 0.5) * td_cell_size * td_zoom)
-				
-				xsize obj.size * td_zoom
-				ysize obj.size * td_zoom
-				
+				xpos int((obj.x + 0.5) * td_cell_size)
+				ypos int((obj.y + 0.5) * td_cell_size)
+				size   obj.size 
 				rotate obj.rotation
 		
 		for obj in td_bullets:
 			image obj.image:
 				anchor (0.5, 0.5)
-				xpos int((obj.x + 0.5) * td_cell_size * td_zoom)
-				ypos int((obj.y + 0.5) * td_cell_size * td_zoom)
+				xpos int((obj.x + 0.5) * td_cell_size)
+				ypos int((obj.y + 0.5) * td_cell_size)
 				
-				xsize obj.size * td_zoom
-				ysize obj.size * td_zoom
+				size obj.size
 		
 		$ td_to_delete_tower = None
 		for obj in td_towers:
@@ -112,12 +109,10 @@ screen tower_defence:
 				action SetVariable('td_to_delete_tower', obj)
 				
 				anchor (0.5, 0.5)
-				xpos int((obj.x + 0.5) * td_cell_size * td_zoom)
-				ypos int((obj.y + 0.5) * td_cell_size * td_zoom)
+				xpos int((obj.x + 0.5) * td_cell_size)
+				ypos int((obj.y + 0.5) * td_cell_size)
 				
-				xsize obj.size * td_zoom
-				ysize obj.size * td_zoom
-				
+				size   obj.size
 				rotate obj.rotation
 		python:
 			if td_to_delete_tower is not None:
@@ -127,7 +122,7 @@ screen tower_defence:
 		image im.Rect('#FB4'):
 			xpos 0
 			xanchor 1.0
-			size (td_cell_size * td_zoom, 1.0)
+			size (td_cell_size, 1.0)
 	
 	if td_result:
 		image im.Rect('333'):
@@ -147,12 +142,12 @@ screen tower_defence:
 			spacing 10
 			align (0.05, 0.5)
 			
-			textbutton 'ReStart':
+			textbutton _('Restart'):
 				xsize 100
 				yalign 0.5
 				action td_init
 			
-			textbutton ('Play' if td_pause else 'Pause'):
+			textbutton _('Play' if td_pause else 'Pause'):
 				xsize 100
 				yalign 0.5
 				action SetVariable('td_pause', not td_pause)
@@ -176,13 +171,13 @@ screen tower_defence:
 			spacing 10
 			align (0.95, 0.5)
 			
-			text ('Level: ' + str(td_level + 1)):
+			text (_('Level') + ': ' + str(td_level + 1)):
 				text_size 18
 				color 0
-			text ('Moneys: ' + str(td_moneys)):
+			text (_('Money') + ': ' + str(td_moneys)):
 				text_size 18
 				color 0xFF0000 if time.time() - td_alarm_moneys < 0.3 else 0xFFFF00
-			text ('HP: ' + str(td_hp)):
+			text (_('HP') + ': ' + str(td_hp)):
 				text_size 18
 				color 0x00FF00
 

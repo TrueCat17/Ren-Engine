@@ -1,12 +1,12 @@
 init python:
 	td_bullet_types = {
-		'usual': { 'color':td_tower_types['usual']['color'], 'speed':10, 'damage':7, 'frost':False },
-		'fast':  { 'color':td_tower_types['fast']['color'],  'speed':20, 'damage':3, 'frost':False },
+		'usual': { 'color':td_tower_types['usual']['color'], 'speed':10, 'damage':5, 'frost':False },
+		'fast':  { 'color':td_tower_types['fast']['color'],  'speed':20, 'damage':5, 'frost':False },
 		'frost': { 'color':td_tower_types['frost']['color'], 'speed':8,  'damage':4, 'frost':True  }
 	}
 	
 	td_bullet_image = 'mods/tower_defence/images/bullet.png'
-	td_bullet_image_bung = im.ReColor(td_bullet_image, 255, 127, 0)
+	td_bullet_image_bung = im.ReColor(td_bullet_image, 255, 128, 0)
 	
 	td_bullet_size = td_cell_size / 8
 	td_bullet_test_size = float(td_tank_size + td_bullet_size) / td_cell_size

@@ -1,5 +1,6 @@
 init -1 python:
 	td_levels = (
+		# type, count
 		('usual',  5),  # 1
 		('usual', 20),  # 2
 		('power', 15),  # 3

@@ -2,6 +2,9 @@ label start:
 	play music music_list['quiet'] fadein 3
 	scene bg room
 	
+	if config.language != 'russian':
+		"There is only russian text now."
+	
 	show rn happy with dspr
 	rn "Привет!"
 	show rn normal with dissolve

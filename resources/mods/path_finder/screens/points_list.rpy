@@ -60,10 +60,10 @@ init python:
 			if not me.move_to_place(points, 1, brute_force=brute_force):
 				me.move_to_place(None)
 				stop_moving()
-				set_out_text('Путь не найден')
+				set_out_text('Path not found')
 				return
 			dtime_ms = (time.time() - st) * 1000
-			set_out_text('Затрачено: ' + str(round(dtime_ms, 2)) + ' ms')
+			set_out_text(_('Spent') + ': ' + str(round(dtime_ms, 2)) + ' ms')
 			
 			if has_screen('all_locations'):
 				hide_screen('all_locations')
@@ -83,7 +83,7 @@ screen points_list:
 	
 	key 'P' action make_screenshot
 	
-	image im.Rect('#FFF'):
+	image im.rect('#FFF'):
 		xalign (0.0 if points_left else 1.0)
 		yalign 0.5
 		size (points_width, 0.7)
@@ -92,12 +92,12 @@ screen points_list:
 			ypos points_indent
 			spacing points_indent
 			
-			textbutton ('Поместить ' + ('справа' if points_left else 'слева')):
+			textbutton _('To right' if points_left else 'To left'):
 				xalign 0.5
 				text_size 20
 				action SetVariable('points_left', not points_left)
 			
-			text ("Ещё точек доступно: %s / %s" % (max_count_points - len(points), max_count_points)):
+			text ('Points aviable: %s / %s' % (max_count_points - len(points), max_count_points)):
 				color 0
 				text_align 'center'
 				xsize points_width
@@ -109,7 +109,7 @@ screen points_list:
 					location_name = point[0]
 					x, y = point[1]['x'], point[1]['y']
 				
-				image im.Rect('#F80'):
+				image im.rect('#F80'):
 					xpos points_indent
 					yanchor 0.5
 					size (points_width - 2 * points_indent, points_btn_height)
@@ -156,7 +156,7 @@ screen points_list:
 					yalign 0.5
 					text_size 20
 			
-			textbutton ('Стоп' if me.paths else 'Старт'):
+			textbutton _('Stop' if me.paths else 'Start'):
 				xalign 0.5
 				action stop_moving if me.paths else start_moving
 			

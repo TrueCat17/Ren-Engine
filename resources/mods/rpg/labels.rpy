@@ -17,7 +17,10 @@ label rpg_start:
 		me.set_pose("sit")
 	
 	window show
+	if config.language != 'russian':
+		"There is only russian text now."
 	"Я проснулся в икарусе."
+	
 	$ me.set_pose("stance")
 	pause 1
 	$ me.move_to_place("before_sit_place")

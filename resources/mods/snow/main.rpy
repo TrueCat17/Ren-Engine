@@ -72,7 +72,8 @@ screen snow:
 	$ update_snow()
 	
 	if image_render:
-		image tmp_image
+		image tmp_image:
+			size 1.0
 	else:
 		for x, y, dx, dy, sizes in objs:
 			image 'mods/snow/snow.png':
@@ -81,12 +82,12 @@ screen snow:
 				size sizes
 	
 	image im.Rect('#0004'):
-		size (300, 70)
+		size (350, 70)
 		align (0.5, 0.95)
 		
 		null:
 			align (0.5, 0.2)
-			xsize 250
+			xsize 300
 			
 			textbutton '<':
 				xalign 0.0
@@ -110,11 +111,11 @@ screen snow:
 		
 		null:
 			align (0.5, 0.8)
-			xsize 250
+			xsize 300
 			
-			text ('Render: ' + ('to image' if image_render else 'usual')):
+			text _('Render: ' + ('to image' if image_render else 'usual')):
 				xalign 0.0
-				size (200, 25)
+				size (250, 25)
 				text_size 20
 				text_valign 'center'
 				color 0x000000

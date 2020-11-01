@@ -121,7 +121,7 @@ screen ask_str:
 					size (100, 25)
 					text_size 20
 					action ask_ready
-				textbutton 'Cancel':
+				textbutton _('Cancel'):
 					size (100, 25)
 					text_size 20
 					action ask_exit

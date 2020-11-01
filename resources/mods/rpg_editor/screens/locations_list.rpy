@@ -4,7 +4,7 @@ init python:
 	locations_width = 300
 	
 	locations_indent = 10
-	locations_btn_height = 70
+	locations_btn_height = 90
 	locations_start_btn = 0
 	
 	def change_using_location(location):
@@ -47,20 +47,29 @@ screen locations_list:
 				image im.Rect(color):
 					size (locations_width - 50, locations_btn_height)
 					
-					image preview:
-						anchor (0.5, 0.5)
-						pos (locations_btn_height / 2, locations_btn_height / 2)
-						size (get_image_width(preview) / 2, get_image_height(preview) / 2)
-					
-					text (name + size):
-						color 0x404040
-						text_size 20
-						xpos locations_btn_height + locations_indent
+					hbox:
+						xpos locations_indent
 						yalign 0.5
-					
-					textbutton ('Del' if location.using else 'Add'):
-						size (50, 25)
-						text_size 20
-						align (0.95, 0.75)
-						action change_using_location(location)
+						spacing locations_indent
+						
+						null:
+							size 64
+							
+							image preview:
+								align 0.5
+								size (get_image_width(preview) / 2, get_image_height(preview) / 2)
+						
+						vbox:
+							yalign 0.5
+							spacing 5
+							
+							text (name + size):
+								color 0x404040
+								text_size 20
+								yalign 0.5
+							
+							textbutton _('Delete' if location.using else 'Add'):
+								size (100, 24)
+								text_size 18
+								action change_using_location(location)
 

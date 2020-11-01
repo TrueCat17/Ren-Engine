@@ -46,8 +46,8 @@ init python:
 	
 	register_location("radio_club", "images/locations/radio_club/", True, 310, 247)
 	register_place(   "radio_club", "before_computer", 185, 130, 2, 2)
-	register_place(   "radio_club", "clubs"              , 215, 207, 60, 20)
-	register_exit(    "radio_club", "clubs", "radio_club", 215, 227, 60, 20)
+	register_place(   "radio_club", "clubs"              , 215, 205, 60, 20)
+	register_exit(    "radio_club", "clubs", "radio_club", 215, 225, 60, 20)
 	
 	
 	

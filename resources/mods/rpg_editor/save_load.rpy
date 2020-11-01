@@ -1,6 +1,6 @@
 init -1000 python:
 	locations_path = 'images/locations/'
-	
+
 	preview_path = '../var/rpg_editor/cache/'
 	if not os.path.exists(preview_path):
 		os.makedirs(preview_path)

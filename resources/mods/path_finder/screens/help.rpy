@@ -7,7 +7,7 @@ init python:
 		global help_inited
 		help_inited = True
 		
-		f = open('mods/path_finder/readme.txt')
+		f = open(_('mods/path_finder/readme.txt'))
 		content = f.read().strip().replace('\t', '  ')
 		f.close()
 		
