@@ -508,6 +508,7 @@ static void loop() {
 static void eventLoop() {
 	std::thread(loop).detach();
 
+	GV::messageThreadId = std::this_thread::get_id();
 	while (!GV::exit) {
 		while (Utils::realOutMsg()) {}
 
@@ -546,8 +547,6 @@ static void destroy() {
 }
 
 int main(int argc, char **argv) {
-	GV::messageThreadId = std::this_thread::get_id();
-
 	std::string arg;
 	if (argc == 2) {
 		arg = argv[1];

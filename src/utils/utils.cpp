@@ -126,7 +126,7 @@ bool Utils::realOutMsg() {
 
 	static SDL_MessageBoxData data;
 	data.flags = msg.isError ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING;
-	data.window = GV::mainWindow;
+	data.window = GV::messageThreadId == std::this_thread::get_id() ? GV::mainWindow : nullptr;
 	data.title = "Message";
 	data.message = msg.str.c_str();
 	data.numbuttons = 2;
@@ -176,7 +176,7 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 		messagesToOut.push_back(message);
 	}
 
-	if (GV::messageThreadId == std::this_thread::get_id()) {
+	if (GV::messageThreadId == std::this_thread::get_id() || GV::messageThreadId == std::thread::id()) {
 		while (Utils::realOutMsg()) {}
 	}else {
 		while (true) {
