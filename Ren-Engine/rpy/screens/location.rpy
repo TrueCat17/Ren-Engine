@@ -257,12 +257,6 @@ screen location:
 			size (1.0, 1.0)
 			alpha loc__background_alpha
 		
-		if times['next_name'] is not None:
-			text _(times[times['next_name']]['text']).format(_(times['next_name'])):
-				text_size 50
-				color 0xFFFFFF
-				align (0.5, 0.5)
-		
 		python:
 			if loc__set_show_at_end:
 				loc__set_show_at_end = False
