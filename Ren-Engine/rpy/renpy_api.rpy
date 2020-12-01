@@ -191,8 +191,11 @@ init -999 python:
 		
 		@staticmethod
 		def change_language(lang):
+			if type(lang) is not str:
+				out_msg('renpy.change_language', 'Type of <lang> is not str')
+				return
 			config.language = lang
-			_set_lang(str(lang))
+			_set_lang(lang)
 		@staticmethod
 		def known_languages():
 			return _known_languages()

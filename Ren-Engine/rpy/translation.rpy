@@ -196,31 +196,33 @@ init -1000 python:
 			locale_name = normalize
 			if '.' in locale_name:
 				locale_name, _ = locale_name.split('.', 1)
-			language, region = locale_name.lower().split("_")
+			language, region = locale_name.lower().split('_')
 		return language, region
 	
 	def locale_to_language_function(locale, region):
         lang_name = locales.get(region)
         if lang_name is not None and lang_name in renpy.known_languages():
             return lang_name
-
+		
         lang_name = locales.get(locale)
         if lang_name is not None and lang_name in renpy.known_languages():
             return lang_name
 	
 	def _choose_lang():
 		lang = os.getenv('RE_LANG')
+		if lang not in renpy.known_languages():
+			lang = None
 		
 		if not lang:
-			if config.has_key('language'):
-				lang = config.language
-			else:
-				if config.enable_language_autodetect:
-					locale, region = detect_user_locale()
-					lang = locale_to_language_function(locale, region)
-				else:
-					lang = config.default_language
-				config.language = lang
+			lang = config.language
 		
+		if not lang:
+			locale, region = detect_user_locale()
+			lang = locale_to_language_function(locale, region)
+		
+		if not lang:
+			lang = config.default_language or 'english'
+		
+		config.language = lang
 		_set_lang(str(lang))
 

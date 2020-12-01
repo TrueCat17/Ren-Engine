@@ -7,8 +7,10 @@ init -1 python:
 	k = get_from_hard_config("window_w_div_h", float)
 	settings_resolutions = tuple((i, int(i/k)) for i in (640, 960, 1200, 1366, 1920))
 	
+	settings_langs = renpy.known_languages()
+	
 	settings_show_mods = False
-	settings_tab = 'Language'
+	settings_tab = 'Screen'
 	
 	settings_autosave_times = (0.5, 1, 2, 3, 5, 7, 10, 15, 0)
 	def settings_prev_autosave_time():
@@ -75,10 +77,11 @@ screen settings:
 			pos (settings_menu_xpos, 0.5)
 			spacing 10
 			
-			textbutton   'Language ' xsize settings_menu_size action SetVariable('settings_tab', 'Language')  # without translation!
-			textbutton _('Screen')   xsize settings_menu_size action SetVariable('settings_tab', 'Screen')
-			textbutton _('Sounds')   xsize settings_menu_size action SetVariable('settings_tab', 'Sounds')
-			textbutton _('Other')    xsize settings_menu_size action SetVariable('settings_tab', 'Other')
+			textbutton _('Screen')    xsize settings_menu_size action SetVariable('settings_tab', 'Screen')
+			textbutton _('Sounds')    xsize settings_menu_size action SetVariable('settings_tab', 'Sounds')
+			textbutton _('Other')     xsize settings_menu_size action SetVariable('settings_tab', 'Other')
+			if len(settings_langs) > 1:
+				textbutton 'Language' xsize settings_menu_size action SetVariable('settings_tab', 'Language')  # without translation!
 		
 		
 		vbox:
@@ -88,11 +91,7 @@ screen settings:
 			spacing 10
 			
 			
-			if settings_tab == 'Language':
-				for lang in renpy.known_languages():
-					textbutton (lang or config.default_language or 'default') xalign 0.5 xsize 150 action renpy.change_language(lang)
-			
-			elif settings_tab == 'Screen':
+			if settings_tab == 'Screen':
 				hbox:
 					xalign 0.5
 					spacing 15
@@ -228,6 +227,10 @@ screen settings:
 					text _('Usual moving - run'):
 						color 0
 						text_size 25
+			
+			elif settings_tab == 'Language':
+				for lang in settings_langs:
+					textbutton lang xalign 0.5 xsize 150 action renpy.change_language(lang)
 	
 	
 	textbutton _('Settings' if settings_show_mods else 'Mods'):

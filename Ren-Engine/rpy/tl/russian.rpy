@@ -122,22 +122,3 @@ translate russian strings:
 	old 'Several active quests intersect in this place'
 	new 'Несколько активных квестов пересекаются в этом месте'
 	
-	
-	# times
-	old 'The {} is coming'
-	new 'Наступает {}'
-	
-	old 'day'
-	new 'день'
-	
-	old 'evening'
-	new 'вечер'
-	
-	old 'night'
-	new 'ночь'
-	
-	old 'morning'
-	new 'утро'
-	
-	old 'sunset'
-	new 'вечер'

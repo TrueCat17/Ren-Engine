@@ -41,7 +41,7 @@ static void update() {
 void Translation::init() {
 	enabled = false;
 	curLang = "None";
-	langs = { curLang };
+	langs.clear();
 	map.clear();
 }
 void Translation::addLang(const std::string &lang) {
@@ -75,20 +75,17 @@ const std::string& Translation::get(const std::string &str) {
 }
 
 PyObject* Translation::getKnownLanguages() {
+	std::string defaultLang = PyUtils::exec("CPP_EMBED: translation.cpp", __LINE__, "config.default_language", true);
+
 	std::vector<std::string> vec(langs.begin(), langs.end());
+	if (defaultLang != "empty" && langs.find(defaultLang) == langs.end()) {
+		vec.push_back(defaultLang);
+	}
 	std::sort(vec.begin(), vec.end());
 
 	PyObject *res = PyTuple_New(long(vec.size()));
 	for (size_t i = 0; i < vec.size(); ++i) {
-		const std::string &lang = vec[i];
-		PyObject *pyLang;
-		if (lang == "None") {
-			pyLang = Py_None;
-			Py_INCREF(Py_None);
-		}else {
-			pyLang = PyString_FromStringAndSize(lang.c_str(), long(lang.size()));
-		}
-		PyTuple_SET_ITEM(res, i, pyLang);
+		PyTuple_SET_ITEM(res, i, PyString_FromString(vec[i].c_str()));
 	}
 	return res;
 }
