@@ -81,19 +81,19 @@ def set_pgo():
 	print('   * got final version')
 	
 	print('Choose PGO mode:')
-	print('0. Disabled')
+	print('0. Disable')
 	print('1. Generate')
 	print('2. Use')
 	
-	global pgo
 	while True:
-		mode = input('Input 1 for enable PGO: ')
+		mode = input('Input 1 or 2 for generate or use PGO: ')
 		if mode == '':
 			mode = '0'
 		if mode in ('0', '1', '2'):
 			break
 		print('Expected 0, 1 or 2')
 	
+	global pgo
 	pgo = ['', 'generate', 'use'][int(mode)]
 	print('  PGO:', pgo or 'disabled')
 	print()
