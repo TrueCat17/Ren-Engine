@@ -10,6 +10,7 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
+#include "utils/scope_exit.h"
 #include "utils/utils.h"
 
 
@@ -502,6 +503,9 @@ static uint8_t getFromMap(PointInt x, PointInt y) {
 	}
 	return uint8_t(-1);
 }
+static void setToMap(PointInt x, PointInt y, bool value) {
+	currentMap->content[y * currentMap->w + x] = value;
+}
 
 static const float sqrt2 = std::sqrt(2.0f);
 static PointNears getNears(Point *point, Point *end) {
@@ -539,7 +543,15 @@ static PointNears getNears(Point *point, Point *end) {
 	return res;
 }
 static void getPath(Point *start, Point *end) {
-	if (getFromMap(end->x, end->y) != 1) return;
+	uint8_t endValue = getFromMap(end->x, end->y);
+	if (endValue == uint8_t(-1)) return;
+
+	//make end point free and return it back before exit
+	ScopeExit se([end, endValue]() {
+		setToMap(end->x, end->y, endValue);
+	});
+	setToMap(end->x, end->y, true);
+
 	if (start == end) {
 		PointInt x = std::min(PointInt(end->x * currentMap->scale), PointInt(currentMap->originalWidth - 1));
 		PointInt y = std::min(PointInt(end->y * currentMap->scale), PointInt(currentMap->originalHeight - 1));
@@ -747,9 +759,6 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		return PyTuple_New(0);
 	}
 
-	locationNodes.clear();
-	locationNodes.reserve(mipMaps.size() * 4);
-
 	//enable only needed places
 	for (auto [name, mipMap] : mipMaps) {
 		for (LocationPlace &place : mipMap->params.places) {
@@ -792,7 +801,8 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		for (LocationPlace &place : location->params.places) {
 			if (pyPlaceName == Py_None) {
 				place.enable = false;
-			}else if (place.name == PyString_AS_STRING(pyPlaceName)) {
+			}else
+			if (place.name == PyString_AS_STRING(pyPlaceName)) {
 				place.enable = false;
 				break;
 			}
@@ -804,6 +814,9 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		return PyTuple_New(0);
 	};
 	uint16_t errorNodeId = uint16_t(-3);//-1 - undefined, -2 - end, -3 - start
+
+	locationNodes.clear();
+	locationNodes.reserve(mipMaps.size() * 4);
 
 	//add needed places and exits to nodes
 	for (auto [name, mipMap] : mipMaps) {
@@ -928,12 +941,12 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 	//get result
 	path.clear();
-	uint16_t endId = endNode.id;
-	while (endId != uint16_t(-1) && locationNodes[endId].prevId != uint16_t(-1)) {
-		LocationNode &localEndNode = locationNodes[endId];
+	uint16_t lastId = endNode.id;
+	while (lastId != uint16_t(-1) && locationNodes[lastId].prevId != uint16_t(-1)) {
+		LocationNode &localEndNode = locationNodes[lastId];
 		uint16_t startId = localEndNode.prevId;
 		LocationNode &localStartNode = locationNodes[startId];
-		endId = localStartNode.prevId;
+		lastId = localStartNode.prevId;
 
 		bool pathIsConst = endNode.id != localEndNode.id && startNode.id != localStartNode.id;//const - from [in] to [out], else - tmp
 		auto &[subPath, cost] = findAndSavePath(localEndNode.mipMap, {localStartNode.x, localStartNode.y}, {localEndNode.x, localEndNode.y}, pathIsConst);
