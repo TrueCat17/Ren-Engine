@@ -147,6 +147,7 @@ init python:
 			console_cursor_x = console_input.index('\n') if '\n' in console_input else len(console_input)
 		else:
 			console_num_command = 0
+			console_cursor_x = console_cursor_y = 0
 			console_input = console_input_tmp
 	
 	def console_backspace():
