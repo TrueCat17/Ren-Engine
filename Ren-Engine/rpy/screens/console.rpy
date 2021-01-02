@@ -181,7 +181,7 @@ init python:
 		while cur_indent < len(cur) and cur[cur_indent] == ' ':
 			cur_indent += 1
 		
-		if cur.endswith(':'):
+		if cur.endswith(':') and console_cursor_x == len(cur):
 			lines.insert(console_cursor_y + 1, ' ' * (cur_indent + 4))
 			console_cursor_y += 1
 			console_cursor_x = cur_indent + 4
