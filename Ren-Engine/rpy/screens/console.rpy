@@ -205,14 +205,13 @@ init python:
 		try:
 			res = to_exec()
 		except Exception as e:
-			desc = e.args[0]
-			if len(e.args) > 1:
+		    if isinstance(e, SyntaxError):
 				file_name, line_num, symbol_num, error_line = e.args[1]
-				console_print('File <' + file_name + '>, line ' + str(line_num) + ': ' + desc + '\n' +
+				console_print('File <' + file_name + '>, line ' + str(line_num) + ': invalid syntax\n' +
 					          '  ' + error_line + '\n' +
 					          '  ' + ' ' * (symbol_num - 1) + '^')
 			else:
-				console_print("KeyError: " + str(desc))
+				console_print(e.__class__.__name__ + ': ' + str(e.args[0]))
 			res = None
 		return res
 	
@@ -264,17 +263,14 @@ init python:
 		
 		else:
 			code = command + ' ' + params
-			to_exec = None
 			try:
 				cmpl = compile(code, 'Console', 'eval')
-				to_exec = Function(eval, cmpl, globals(), globals())
 			except:
 				to_exec_for_compile = Function(compile, code, 'Console', 'exec')
 				cmpl = console_except_error(to_exec_for_compile)
-				if cmpl is not None:
-					to_exec = Function(eval, cmpl, globals(), globals())
 			
-			if to_exec is not None:
+			if cmpl is not None:
+				to_exec = Function(eval, cmpl, globals(), globals())
 				res = console_except_error(to_exec)
 				if res is not None:
 					if type(res) is str:
