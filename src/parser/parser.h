@@ -14,7 +14,6 @@ private:
 	std::string dir;
 	std::string fileName = "NO_FILE";
 	size_t startFile = 0;
-	size_t pythonIndent = size_t(-1);
 
 	size_t getNextStart(size_t start) const;
 

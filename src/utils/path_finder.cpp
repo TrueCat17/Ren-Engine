@@ -19,10 +19,6 @@ static const float EXIT_COST = 20;
 static uint32_t divCeil(uint32_t a, uint32_t b) {
 	return (a + b - 1) / b;
 }
-template <typename T>
-static T divRound(T a, T b) {
-	return (a + b / 2) / b;
-}
 
 
 struct Map {
@@ -543,13 +539,16 @@ static PointNears getNears(Point *point, Point *end) {
 	return res;
 }
 static void getPath(Point *start, Point *end) {
+	uint8_t startValue = getFromMap(start->x, start->y);
 	uint8_t endValue = getFromMap(end->x, end->y);
-	if (endValue == uint8_t(-1)) return;
+	if (startValue == uint8_t(-1) || endValue == uint8_t(-1)) return;
 
-	//make end point free and return it back before exit
-	ScopeExit se([end, endValue]() {
+	//make start/end points free and return it back before exit
+	ScopeExit se([start, end, startValue, endValue]() {
+		setToMap(start->x, start->y, startValue);
 		setToMap(end->x, end->y, endValue);
 	});
+	setToMap(start->x, start->y, true);
 	setToMap(end->x, end->y, true);
 
 	if (start == end) {
@@ -661,8 +660,8 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 			}
 
 			uint16_t scale = currentMap->scale;
-			Point *start = getNewPoint(divRound(xStart, scale), divRound(yStart, scale));
-			Point *end = getNewPoint(divRound(xEnd, scale), divRound(yEnd, scale));
+			Point *start = getNewPoint(xStart / scale, yStart / scale);
+			Point *end = getNewPoint(xEnd / scale, yEnd / scale);
 			getPath(start, end);
 
 			if (!path.empty()) {
@@ -701,8 +700,8 @@ static const std::pair<Path, float>& findAndSavePath(MipMap* mipMap, SimplePoint
 		preparePoints();
 
 		PointInt scale = currentMap->scale;
-		Point *startPoint = getNewPoint(divRound(start.x, scale), divRound(start.y, scale));
-		Point *endPoint = getNewPoint(divRound(end.x, scale), divRound(end.y, scale));
+		Point *startPoint = getNewPoint(start.x / scale, start.y / scale);
+		Point *endPoint = getNewPoint(end.x / scale, end.y / scale);
 		getPath(startPoint, endPoint);
 
 		if (!path.empty()) break;

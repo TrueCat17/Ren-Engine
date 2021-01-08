@@ -22,7 +22,8 @@
 
 
 static void checkPythonSyntax(Node *node) {
-	PyCodeObject *co = PyUtils::getCompileObject(node->params.c_str(), node->getFileName(), node->getNumLine());
+	size_t line = node->getNumLine() + (node->command != "$");
+	PyCodeObject *co = PyUtils::getCompileObject(node->params, node->getFileName(), line);
 	if (!co) {
 		PyUtils::errorProcessing(node->params);
 		node->params = "";
@@ -50,6 +51,25 @@ void Parser::getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isPr
 	isEvent = isProp && Parser::isEvent(type);
 }
 
+
+static void removeComment(std::string &s) {
+	if (s.find('#') == size_t(-1)) return;
+
+	bool q1 = false;
+	bool q2 = false;
+	for (size_t i = 0; i < s.size(); ++i) {
+		const char c = s[i];
+		if (c == '\'' && !q2) q1 = !q1;
+		if (c == '"'  && !q1) q2 = !q2;
+
+		if (!q1 && !q2) {
+			if (c == '#') {
+				s.erase(s.begin() + long(i), s.end());
+				break;
+			}
+		}
+	}
+}
 
 Parser::Parser(const std::string &dir) {
 	this->dir = dir;
@@ -83,6 +103,8 @@ Parser::Parser(const std::string &dir) {
 		code.push_back("FILENAME " + fileName);
 		++countFiles;
 
+		size_t pythonIndent = size_t(-1);
+
 		bool start = true;
 		while (!is.eof()) {
 			++countLines;
@@ -104,49 +126,39 @@ Parser::Parser(const std::string &dir) {
 			size_t n = s.find_last_not_of(' ');
 			s.erase(n + 1);
 
+			removeComment(s);
 			n = s.find_first_not_of(' ');
-			if (n <= pythonIndent) {
-				pythonIndent = String::endsWith(s, "python:") ? n : size_t(-1);
+			if (n == size_t(-1)) {
+				code.push_back({});
+				continue;
 			}
 
-			if (n != size_t(-1) && s[n] != '#') {
-				if (toPrevLine && n <= pythonIndent) {
-					s.erase(0, n);
 
-					for (size_t j = code.size() - 1; j != size_t(-1) ; --j) {
-						if (!code[j].empty()) {
-							code[j] += s;
-							break;
-						}
-					}
+			if (n <= pythonIndent) {
+				if (String::endsWith(s, "python:")) {
+					pythonIndent = n;
+					toPrevLine = false;
 				}else {
-					bool q1 = false;
-					bool q2 = false;
-					for (size_t i = n; i < s.size(); ++i) {
-						const char c = s[i];
-						if (c == '\'' && !q2) q1 = !q1;
-						if (c == '"'  && !q1) q2 = !q2;
+					pythonIndent = size_t(-1);
+				}
+			}
 
-						if (!q1 && !q2) {
-							if (c == '#') {
-								s.erase(s.begin() + long(i), s.end());
-								break;
-							}
-						}
+			if (toPrevLine && n <= pythonIndent) {//need move to prev line and not in python-block
+				s.erase(0, n);
+
+				for (size_t i = code.size() - 1; i != size_t(-1) ; --i) {
+					if (!code[i].empty()) {
+						code[i] += s;
+						break;
 					}
-					code.push_back(s);
 				}
 			}else {
-				code.push_back({});
+				code.push_back(s);
 			}
 
-			if (!s.empty()) {
-				const char last = s.back();
-
-				static const std::string opsStr = "(,+-*/=[{";
-				static const std::set<char> ops(opsStr.begin(), opsStr.end());
-				toPrevLine = ops.count(last);
-			}
+			static const std::string opsStr = "(,+-*/=[{";
+			static const std::set<char> ops(opsStr.begin(), opsStr.end());
+			toPrevLine = ops.count(s.back());
 		}
 	}
 
