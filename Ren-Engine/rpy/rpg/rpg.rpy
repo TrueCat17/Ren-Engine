@@ -46,7 +46,7 @@ label rpg_update:
 	python:
 		near_location_object = None
 		if exec_action:
-			near_location_object = get_near_location_object()
+			near_location_object = get_near_location_object_for_inventory()
 			if near_location_object is not None:
 				left = add_to_inventory(near_location_object.type, 1)
 				if left == 0:
@@ -63,9 +63,10 @@ label rpg_update:
 				stand_up = True
 				me.stand_up()
 			else:
-				obj = get_near_sit_object()
-				if obj:
+				objs = get_near_sit_objects()
+				if objs:
 					sit_down = True
+					obj, point = objs[0]
 					me.sit_down(obj)
 	
 	if (exec_action or sit_action) and renpy.has_label(cur_exec_label):

@@ -1,7 +1,7 @@
 init python:
 	
 	def get_map_free():
-		cs = character_xsize
+		cs = character_xsize / 2
 		def near(x, y, width, height):
 			return x - cs < me.x and me.x < x + width + cs and y - cs < me.y and me.y < y + height + cs
 		

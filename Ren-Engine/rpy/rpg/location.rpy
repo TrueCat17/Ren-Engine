@@ -116,9 +116,6 @@ init -1002 python:
 		show_character(me, cur_to_place, auto_change_location = False)
 		if prev_location_name is None:
 			me.show_time = 0
-		
-		if cur_to_place.has_key('to_side'):
-			me.set_direction(cur_to_place['to_side'])
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_to_place
@@ -315,6 +312,8 @@ init -1002 python:
 	
 	def get_place_center(place, align = (0.5, 0.5)):
 		x, y = place['x'], place['y']
+		if isinstance(place, Character):
+			return int(x), int(y)
 		
 		w = place['xsize'] if place.has_key('xsize') else 0
 		h = place['ysize'] if place.has_key('ysize') else 0

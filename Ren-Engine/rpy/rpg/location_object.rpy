@@ -75,7 +75,7 @@ init -1001 python:
 			out_msg('register_location_object_animation', 'Animation <' + str(anim_name) + '> of object <' + str(obj_name) + '> already exists')
 			return
 		
-		animation = animations[anim_name] = Object(
+		animations[anim_name] = Object(
 			directory    = directory,
 			main_image   = main_image,
 			free_image   = free_image,
@@ -95,23 +95,26 @@ init -1001 python:
 	def set_sit_place(obj_name, sit_places, over = None):
 		if not location_objects.has_key(obj_name):
 			out_msg('set_sit_place', 'Object <' + str(obj_name) + '> not registered')
-		else:
-			obj = location_objects[obj_name]
-			obj.on = [None] * len(sit_places)
-			obj.sit_places = sit_places
-			if over:
-				obj.animations[None].over_image = over
-			
-			for name, location in locations.iteritems():
-				for obj in location.objects:
-					if obj.type == obj_name:
-						for character in obj.on:
-							if character:
-								character.stand_up()
-						obj.on = [None] * len(sit_places)
-						obj.sit_places = sit_places
-						if over:
-							obj.animations[None].over_image = over
+			return
+		
+		obj = location_objects[obj_name]
+		obj.on = [None] * len(sit_places)
+		obj.sit_places = sit_places
+		if over:
+			obj.animations[None].over_image = over
+		
+		for name, location in locations.iteritems():
+			for obj in location.objects:
+				if obj.type != obj_name:
+					continue
+				
+				for character in obj.on:
+					if character:
+						character.stand_up()
+				obj.on = [None] * len(sit_places)
+				obj.sit_places = sit_places
+				if over:
+					obj.animations[None].over_image = over
 	
 	
 	def get_usual_location_object_data(obj):
@@ -339,7 +342,7 @@ init -1001 python:
 				continue
 			
 			dx, dy = obj.x - px, obj.y - py
-			dist = math.sqrt(dx * dx + dy * dy)
+			dist = dx * dx + dy * dy
 			res.append((dist, obj))
 		
 		res.sort(key = lambda (dist, obj): dist)
@@ -347,12 +350,14 @@ init -1001 python:
 			res = res[:count]
 		return [obj for dist, obj in res]
 	
-	def get_near_location_object(character = None):
+	def get_near_location_object_for_inventory(character = None):
 		character = character or me
+		x, y = character['x'], character['y']
+		
 		min_dist = character_radius * 5
 		res = None
 		
-		for i in cur_location.objects:
+		for i in character.location.objects:
 			if not isinstance(i, LocationObject):
 				continue
 			
@@ -360,31 +365,50 @@ init -1001 python:
 			if obj['max_in_inventory_cell'] <= 0:
 				continue
 			
-			dist = get_dist(i.x, i.y, character.x, character.y)
+			dx, dy = i.x - x, i.y - y
+			dist = dx * dx + dy * dy
 			if dist < min_dist:
 				min_dist = dist
 				res = i
 		return res
 	
-	def get_near_sit_object(character = None):
+	def get_near_sit_objects(character = None, max_dist = None):
 		character = character or me
-		min_dist = character_radius * 4
-		res = None
+		max_dist = max_dist or character_radius * 4
 		
-		for obj in cur_location.objects:
+		sides_dpos = {
+			to_left:    (-1, 0),
+			to_right:   (+1, 0),
+			to_back:    (0, -1),
+			to_forward: (0, +1),
+		}
+		
+		res = []
+		for obj in character.location.objects:
 			if not obj.sit_places:
 				continue
+			
+			min_dist = max_dist
+			near_point = None
 			
 			for i in xrange(len(obj.sit_places)):
 				if obj.on[i]:
 					continue
-				place_x, place_y, to_side = obj.sit_places[i]
+				px, py, to_side = obj.sit_places[i]
+				dx, dy = sides_dpos[to_side]
+				px = obj.x + px + dx * character_radius
+				py = obj.y - obj.ysize + py + dy * character_radius
 				
-				dist = get_dist(obj.x + place_x, obj.y - obj.ysize + place_y, character.x, character.y)
+				dist = get_dist(px, py, character.x, character.y)
 				if dist < min_dist:
 					min_dist = dist
-					res = obj
-		return res
+					near_point = px, py
+			
+			if near_point:
+				res.append((min_dist, obj, near_point))
+		
+		res.sort()
+		return [(obj, near_point) for min_dist, obj, near_point in res]
 	
 	
 	def remove_location_object(location_name, place, obj_name, count = 1):

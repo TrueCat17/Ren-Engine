@@ -207,7 +207,12 @@ screen location:
 					loc__direction = loc__directions[min_index]
 					me.set_direction(loc__direction)
 			
+			for character in characters:
+				character.update()
+			
 			for obj in draw_location.objects:
+				if isinstance(obj, Character):
+					continue
 				if obj.update:
 					obj.update()
 			

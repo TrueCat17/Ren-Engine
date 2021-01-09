@@ -31,7 +31,7 @@ init -1001 python:
 	def characters_moved():
 		if cur_location:
 			for obj in cur_location.objects:
-				if isinstance(obj, Character) and not obj.ended_move_waiting():
+				if isinstance(obj, Character) and not obj.get_auto() and not obj.ended_move_waiting():
 					return False
 		return True
 	can_exec_next_check_funcs.append(characters_moved)
@@ -165,8 +165,8 @@ init -1001 python:
 			self.start_anim_time = None
 			self.end_wait_anim_time = None
 			
-			self.auto_behaviour = False
-			self.behaviours = None
+			self.auto_actions = False
+			self.actions = None
 		
 		def __str__(self):
 			return str(self.name)
@@ -177,7 +177,7 @@ init -1001 python:
 			          text, self.text_prefix, self.text_postfix, self.text_color)
 		
 		
-		#rpg-funcs:
+		# rpg-funcs:
 		
 		def make_rpg(self, directory, rpg_name, start_dress):
 			self.directory = directory + ('' if directory.endswith('/') else '/')
@@ -205,6 +205,12 @@ init -1001 python:
 		def set_direction(self, direction):
 			if direction is not None:
 				self.direction = direction % character_max_direction
+		
+		def rotate_to(self, dx, dy):
+			if abs(dx) > abs(dy):
+				self.set_direction(to_left if dx < 0 else to_right)
+			else:
+				self.set_direction(to_forward if dy < 0 else to_back)
 		
 		def get_pose(self):
 			return self.pose
@@ -262,7 +268,7 @@ init -1001 python:
 			obj.on[place_index] = self
 			place_x, place_y, to_side = obj.sit_places[place_index]
 			
-			self.old_x, self.old_y, self.old_direction = self.x, self.y, self.direction
+			self.old_x, self.old_y = self.x, self.y
 			self.x, self.y = obj.x + place_x, obj.y - obj.ysize + place_y
 			self.invisible = True
 			self.set_direction(to_side)
@@ -283,9 +289,9 @@ init -1001 python:
 			if self.get_pose() == 'sit':
 				self.set_pose('stance')
 			
-			if self.old_direction:
-				self.x, self.y, self.direction = self.old_x, self.old_y, self.old_direction
-				self.old_direction = None
+			if self.old_x is not None and self.old_y is not None:
+				self.x, self.y = self.old_x, self.old_y
+				self.old_x, self.old_y = None, None
 		
 		
 		def allow_exit_destination(self, location_name, place_name = None):
@@ -333,7 +339,7 @@ init -1001 python:
 				return False
 			
 			if self.location is None:
-				out_msg('Character.move_to_place', 'Character.location is None')
+				out_msg('Character.move_to_place', str(self) + '.location is None')
 				return False
 			
 			if self is me:
@@ -390,7 +396,8 @@ init -1001 python:
 					place = place_elem
 				
 				to_x, to_y = get_place_center(place)
-				path = path_between_locations(from_location_name, from_x, from_y, location_name, to_x, to_y, banned, bool(brute_force))
+				
+				path = path_between_locations(from_location_name, int(from_x), int(from_y), location_name, int(to_x), int(to_y), banned, bool(brute_force))
 				if not path:
 					res = False
 					if from_location_name == location_name:
@@ -419,6 +426,9 @@ init -1001 python:
 			return res
 		
 		def move_to_end(self, only_skip_waiting = True):
+			if self.get_auto():
+				return
+			
 			if self.end_stop_time:
 				if self.end_stop_time > time.time():
 					self.prev_update_time -= self.end_stop_time - time.time()
@@ -516,50 +526,27 @@ init -1001 python:
 			return time.time() - self.start_anim_time > self.animation.time
 		
 		
-		def auto(self, value):
-			self.auto_behaviour = bool(value)
+		def get_auto(self):
+			return self.auto_actions
+		def set_auto(self, value):
+			if not value and self.actions:
+				self.actions.stop()
+			self.auto_actions = bool(value)
 		
-		def behaviour(self):
-			if not self.auto_behaviour:
-				return
-			if not self.behaviours:
-				out_msg('Character.behaviour', 'Character <' + str(self) + 'has not behaviours')
-				return
-			
-			behaviours = []
-			chances_sum = 0
-			for key in self.behaviours.__dict__.keys():
-				behaviour = list(self.behaviours[key])
-				if type(behaviour) in (tuple, list):
-					if len(behaviour) != 2:
-						out_msg('Character.behaviour', 'Expected [chance, func], got ' + str(behaviour))
-					else:
-						chances_sum += behaviour[0]
-						behaviours.append(behaviour)
-			if not behaviour:
-				return
-			
-			for behaviour in behaviours:
-				behaviour[0] /= float(chances_sum)
-			
-			for i in xrange(len(behaviours) - 1):
-				behaviours[i+1][0] += behaviours[i]
-			behaviours[-1][0] = 1
-			
-			r = random.random()
-			for behaviour in behaviours:
-				if r < behaviour[0]:
-					params = behaviour[2] if len(behaviour) == 3 else []
-					behaviour[1](self, *params)
-					break
+		def get_actions(self):
+			return self.actions
+		def set_actions(self, actions):
+			self.actions = actions and actions.copy(self)
+			return self.actions
 		
 		
 		def update(self):
-			dtime = time.time() - self.show_time
-			self.alpha = min(dtime / location_fade_time, 1)
-			
 			dtime = time.time() - self.prev_update_time
 			self.prev_update_time = time.time()
+			
+			if self.get_auto() and self.actions:
+				self.actions.update()
+			self.alpha = min((time.time() - self.show_time) / location_fade_time, 1)
 			
 			if self.start_anim_time is None:
 				self.set_frame(int(time.time() * self.fps))
@@ -626,15 +613,15 @@ init -1001 python:
 					first_step = self.point_index
 					continue
 				
-				dx = to_x - self.x
-				dy = to_y - self.y
+				dx, dy = to_x - self.x, to_y - self.y
 				if dx or dy:
+					# rotation
 					if not (dx and dy) or self.point_index == first_step: # not diagonal or first step
-						if abs(dx) > abs(dy):
-							self.set_direction(to_left if dx < 0 else to_right)
+						if abs(dx) + abs(dy) > 3: # not very short step
+							self.rotate_to(dx, dy)
+							self.update_crop()
 						else:
-							self.set_direction(to_forward if dy < 0 else to_back)
-						self.update_crop()
+							first_step += 2
 					
 					need_dist = math.sqrt(dx*dx + dy*dy)
 					need_time = need_dist / self.speed
@@ -675,9 +662,9 @@ init -1001 python:
 	def set_name(who, name):
 		g = globals()
 		if g.has_key(who):
-			g[who].name = name
+			g[who].name = str(name)
 		else:
-			out_msg('set_name', 'Character <' + who + '> not found')
+			out_msg('set_name', 'Character <' + str(who) + '> not found')
 	meet = set_name
 	
 	def make_names_unknown():
@@ -704,16 +691,17 @@ init -1001 python:
 				return
 			location = locations[location]
 		
-		if character is cam_object and auto_change_location:
-			set_location(location.name, place)
-			return
-		
 		if type(place) is str:
 			place_name = place
 			place = location.get_place(place)
 			if not place:
 				out_msg('show_character', 'Place <' + place_name + '> not found in location <' + str(location.name) + '>')
 				return
+		
+		if character is cam_object and auto_change_location:
+			set_location(location.name, place)
+			return
+		
 		place_pos = get_place_center(place)
 		is_old_place = prev_character_pos == place_pos
 		
@@ -721,6 +709,7 @@ init -1001 python:
 		if prev_character_location:
 			if hiding and not is_old_place:
 				create_hiding_object(character)
+				character.alpha = 0
 			else:
 				character.show_time = 0
 			
@@ -732,13 +721,14 @@ init -1001 python:
 		character.location = location
 		
 		if prev_character_location is not location:
-			character.old_direction = None
 			character.stand_up()
 			is_old_place = False
 		
 		if not is_old_place:
 			character.x, character.y = place_pos
-			character.place_names = None
+		
+		if place.has_key('to_side'):
+			character.set_direction(place['to_side'])
 	
 	def hide_character(character):
 		if character.location:
