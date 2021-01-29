@@ -674,6 +674,12 @@ init -1001 python:
 		for character in characters:
 			character.name = character.real_name
 	
+	def forget_character(character):
+		characters.remove(character)
+		if character.location:
+			character.location.objects.remove(character)
+			character.location = None
+	
 	
 	
 	def show_character(character, place, location = None, auto_change_location = True, hiding = True):
