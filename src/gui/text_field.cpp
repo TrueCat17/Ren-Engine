@@ -144,9 +144,13 @@ static SurfacePtr getImage(const std::string &path) {
 	return ImageManipulator::getImage(path);
 }
 static Uint32 getColor(std::string value) {
-	if (!value.empty() && value.front() == '#') {
+	if (String::startsWith(value, "#")) {
 		value.erase(0, 1);
+	}else
+	if (String::startsWith(value, "0x")) {
+		value.erase(0, 2);
 	}
+
 	if (value.size() > 6) {
 		Utils::outMsg("TextField::getColor", "Expected color (format RRGGBB), got <" + value + ">");
 		value.erase(6);
