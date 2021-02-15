@@ -659,6 +659,7 @@ init -1001 python:
 				x, y, side = self.x, self.y, self.direction
 				self.x, self.y, self.direction = xstart, ystart, side_start
 				show_character(self, {'x': x, 'y': y, 'to_side': side}, location_name)
+				self.alpha = min((time.time() - self.show_time) / location_fade_time, 1)
 	
 	
 	def set_name(who, name):
