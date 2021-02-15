@@ -9,7 +9,7 @@ init -1000 python:
 		black_color = 255 # r, g, b, a = 0, 0, 0, 255
 		
 		location_name = random.choice(location_names)
-		location = locations[location_name]
+		location = rpg_locations[location_name]
 		free = location.free()
 		
 		i = 0
@@ -28,7 +28,7 @@ init -1000 python:
 			
 			ok = True
 			for obj in location.objects:
-				if not isinstance(obj, LocationObject): continue
+				if not isinstance(obj, RpgLocationObject): continue
 				obj_free = obj.free()
 				if not obj_free: continue
 				
@@ -53,7 +53,7 @@ init -1000 python:
 			return 'end'
 		
 		actions = character.get_actions()
-		location_names = actions.interesting_places or locations.keys()
+		location_names = actions.interesting_places or rpg_locations.keys()
 		
 		for i in xrange(100):
 			res = rpg_random_free_point(location_names)
@@ -139,19 +139,19 @@ init -1000 python:
 	def rpg_action_near_location(character, state):
 		location_names = [exit.to_location_name for exit in character.location.exits]
 		character.get_actions().cur_action = rpg_action_other_place
-		return rpg_action_other_place(character, 'start', location_names)
+		return rpg_action_other_place(character, state, location_names)
 	
 	
 	def rpg_action_random_location(character, state):
-		location_names = locations.keys()
+		location_names = rpg_locations.keys()
 		character.get_actions().cur_action = rpg_action_other_place
-		return rpg_action_other_place(character, 'start', location_names)
+		return rpg_action_other_place(character, state, location_names)
 	
 	
 	def rpg_action_interesting_place(character, state):
 		location_names = character.get_actions().interesting_places
 		character.get_actions().cur_action = rpg_action_other_place
-		return rpg_action_other_place(character, 'start', location_names)
+		return rpg_action_other_place(character, state, location_names)
 	
 	
 	def rpg_action_look_around(character, state):
@@ -215,11 +215,11 @@ init -1000 python:
 				return 'end'
 			
 			location_name, place = home
-			if location_name not in locations:
+			if location_name not in rpg_locations:
 				out_msg('rpg_action_home', 'Location <' + str(location_name) + '> not registered')
 				return 'end'
 			
-			location = locations[location_name]
+			location = rpg_locations[location_name]
 			if type(place) is str:
 				place_name = place
 				place = location.get_place(place_name)
@@ -249,7 +249,6 @@ init -1000 python:
 			path_found = character.move_to_place([(location_name, place)])
 			if path_found:
 				return 'moving'
-			character.move_to_place(None)
 			return 'end'
 		
 		if state == 'moving':
@@ -309,7 +308,6 @@ init -1000 python:
 			
 			path_found = character.move_to_place([(friend.location.name, friend)])
 			if not path_found:
-				character.move_to_place(None)
 				return 'end'
 			
 			friend_actions = friend.get_actions()
@@ -318,7 +316,6 @@ init -1000 python:
 			
 			path_found = friend.move_to_place([(character.location.name, character)])
 			if not path_found:
-				character.move_to_place(None)
 				friend.move_to_place(None)
 				return 'end'
 			

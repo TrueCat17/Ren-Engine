@@ -3,10 +3,10 @@ init python:
 	def create_hiding_object(origin):
 		location = origin.location
 		if location:
-			obj = HidingObject(origin)
+			obj = RpgHidingObject(origin)
 			location.objects.append(obj)
 	
-	class HidingObject(Object):
+	class RpgHidingObject(Object):
 		def __init__(self, origin):
 			Object.__init__(self)
 			self.show_time = time.time()

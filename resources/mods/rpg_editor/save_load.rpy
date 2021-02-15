@@ -32,7 +32,7 @@ init python:
 		for name in locations_dirs:
 			path = locations_path + name
 			main = path + '/main.' + ext
-			if name not in locations:
+			if name not in rpg_locations:
 				register_location(name, path, False, get_image_width(main), get_image_height(main))
 				set_save_locations()
 			
@@ -42,7 +42,7 @@ init python:
 			file_time, preview_time = locations_times[name]			
 			if preview_time < file_time:
 				w, h = get_image_size(main)
-				location = locations[name]
+				location = rpg_locations[name]
 				
 				if location.xsize != w or location.ysize != h:
 					location.xsize, location.ysize = w, h
@@ -54,7 +54,7 @@ init python:
 		return preview_path + name + '.png?' + str(locations_times[name][1])
 	
 	def make_preview(name):
-		location = locations[name]
+		location = rpg_locations[name]
 		w, h = location.xsize, location.ysize
 		
 		if location.over():
@@ -81,10 +81,10 @@ init python:
 		
 		
 		tmp = ['init python:', '\t']
-		location_names = locations.keys()
+		location_names = rpg_locations.keys()
 		location_names.sort()
 		for location_name in location_names:
-			location = locations[location_name]
+			location = rpg_locations[location_name]
 			
 			location_name = '"' + location_name + '"'
 			path = '"' + location.directory + '"'
@@ -141,12 +141,12 @@ init python:
 		tmp += ['\t', '\t']
 		
 		for location_name in location_names:
-			location = locations[location_name]
+			location = rpg_locations[location_name]
 			if not location.using:
 				x = y = "None"
 			else:
 				x, y = str(int(location.x)), str(int(location.y))
-			tmp.append('\tlocations["' + location_name + '"].x, locations["' + location_name + '"].y = ' + x + ', ' + y)
+			tmp.append('\trpg_locations["' + location_name + '"].x, rpg_locations["' + location_name + '"].y = ' + x + ', ' + y)
 		
 		tmp.append('')
 		
@@ -173,10 +173,10 @@ init python:
 		tmp.append('\t')
 		
 		obj_names = location_objects.keys()
-		location_names = locations.keys()
+		location_names = rpg_locations.keys()
 		location_names.sort()
 		for location_name in location_names:
-			location = locations[location_name]
+			location = rpg_locations[location_name]
 			
 			added = False
 			places = location.places.keys()

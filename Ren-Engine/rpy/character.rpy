@@ -295,7 +295,7 @@ init -1001 python:
 		
 		
 		def allow_exit_destination(self, location_name, place_name = None):
-			location = locations.get(location_name, None)
+			location = rpg_locations.get(location_name, None)
 			if location is None:
 				out_msg('allow_exit_destination', 'Location <' + str(location_name) + '> is not registered')
 				return
@@ -311,7 +311,7 @@ init -1001 python:
 				self.allowed_exit_destinations.append((location_name, place_name))
 		
 		def disallow_exit_destination(location_name, place_name = None):
-			location = locations.get(location_name, None)
+			location = rpg_locations.get(location_name, None)
 			if location is None:
 				out_msg('disallow_exit_destination', 'Location <' + str(location_name) + '> is not registered')
 				return
@@ -382,7 +382,7 @@ init -1001 python:
 				else:
 					location_name = from_location_name
 				
-				location = locations.get(location_name, None)
+				location = rpg_locations.get(location_name, None)
 				if not location:
 					out_msg('Character.move_to_place', 'Location <' + str(location_name) + '> is not registered')
 					return False
@@ -455,7 +455,7 @@ init -1001 python:
 				if type(to_x) is str:
 					location_name, place = to_x, to_y
 					if type(place) is str:
-						place = locations[location_name].places[place]
+						place = rpg_locations[location_name].places[place]
 					if place.has_key('to_side') and place['to_side'] is not None:
 						to_side = place['to_side']
 					x, y = get_place_center(place)
@@ -536,6 +536,8 @@ init -1001 python:
 		def get_actions(self):
 			return self.actions
 		def set_actions(self, actions):
+			if self.actions:
+				self.actions.stop()
 			self.actions = actions and actions.copy(self)
 			return self.actions
 		
@@ -607,7 +609,7 @@ init -1001 python:
 				if type(to_x) is str:
 					location_name, place = to_x, to_y
 					if type(place) is str:
-						place = locations[location_name].places[place]
+						place = rpg_locations[location_name].places[place]
 					self.x, self.y = get_place_center(place)
 					self.point_index += 2
 					first_step = self.point_index
@@ -684,7 +686,7 @@ init -1001 python:
 	
 	def show_character(character, place, location = None, auto_change_location = True, hiding = True):
 		prev_character_location = character.location
-		prev_character_pos = character.x, character.y
+		prev_character_pos = get_place_center(character)
 		
 		if location is None:
 			if cur_location is None:
@@ -692,10 +694,10 @@ init -1001 python:
 				return
 			location = cur_location
 		elif type(location) is str:
-			if not locations.has_key(location):
+			if not rpg_locations.has_key(location):
 				out_msg('show_character', 'Location <' + location + '> not registered')
 				return
-			location = locations[location]
+			location = rpg_locations[location]
 		
 		if type(place) is str:
 			place_name = place
@@ -704,37 +706,31 @@ init -1001 python:
 				out_msg('show_character', 'Place <' + place_name + '> not found in location <' + str(location.name) + '>')
 				return
 		
-		if character is cam_object and auto_change_location:
+		location_disappearance = draw_location is not cur_location
+		if character is (cam_object if not location_disappearance else me) and auto_change_location:
 			set_location(location.name, place)
 			return
 		
 		place_pos = get_place_center(place)
-		is_old_place = prev_character_pos == place_pos
+		is_old_place = (prev_character_pos == place_pos) and (prev_character_location is location)
 		
-		character.show_time = time.time()
+		character.show_time = 0
 		if prev_character_location:
-			if hiding and not is_old_place:
-				create_hiding_object(character)
-				character.alpha = 0
-			else:
-				character.show_time = 0
-			
 			if not is_old_place:
+				character.show_time = time.time()
+				if hiding:
+					create_hiding_object(character)
 				prev_character_location.objects.remove(character)
 				location.objects.append(character)
 		else:
 			location.objects.append(character)
 		character.location = location
 		
-		if prev_character_location is not location:
-			character.stand_up()
-			is_old_place = False
-		
 		if not is_old_place:
+			character.stand_up()
 			character.x, character.y = place_pos
-		
-		if place.has_key('to_side'):
-			character.set_direction(place['to_side'])
+			if place.has_key('to_side'):
+				character.set_direction(place['to_side'])
 	
 	def hide_character(character):
 		if character.location:

@@ -29,7 +29,7 @@ screen locations_list:
 			spacing locations_indent
 			
 			python:
-				names = locations.keys()
+				names = rpg_locations.keys()
 				names.sort()
 				
 				locations_count_btns = (get_stage_height() - locations_indent) / (locations_btn_height + locations_indent)
@@ -39,7 +39,7 @@ screen locations_list:
 			
 			for name in names:
 				python:
-					location = locations[name]
+					location = rpg_locations[name]
 					color = '#0F0' if location.using else '#F80'
 					preview = get_preview(name)
 					size = '\n(' + str(location.xsize) + 'x' + str(location.ysize) + ')'

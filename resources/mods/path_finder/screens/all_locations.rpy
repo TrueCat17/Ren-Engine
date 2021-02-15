@@ -5,11 +5,11 @@ init python:
 	
 	locations_coords = {}
 	def save_locations_coords():
-		for name in locations:
-			locations_coords[name] = locations[name].x, locations[name].y
+		for name in rpg_locations:
+			locations_coords[name] = rpg_locations[name].x, rpg_locations[name].y
 	def restore_locations_coords():
-		for name in locations:
-			locations[name].x, locations[name].y = locations_coords[name]
+		for name in rpg_locations:
+			rpg_locations[name].x, rpg_locations[name].y = locations_coords[name]
 	
 	def select_location(location):
 		global selected_location_coords
@@ -57,7 +57,7 @@ screen all_locations:
 		xpos int(-common_cam_x * common_k)
 		ypos int(-common_cam_y * common_k)
 		
-		for name, location in locations.iteritems():
+		for name, location in rpg_locations.iteritems():
 			$ k = 128.0 / max(location.xsize, location.ysize)
 			
 			button:

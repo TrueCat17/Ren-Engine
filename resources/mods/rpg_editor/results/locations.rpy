@@ -51,8 +51,8 @@ init python:
 	
 	
 	
-	locations["clubs"].x, locations["clubs"].y = 433, 161
-	locations["enter"].x, locations["enter"].y = 312, 276
-	locations["ikarus"].x, locations["ikarus"].y = 173, 301
-	locations["radio_club"].x, locations["radio_club"].y = 390, 54
+	rpg_locations["clubs"].x, rpg_locations["clubs"].y = 433, 161
+	rpg_locations["enter"].x, rpg_locations["enter"].y = 312, 276
+	rpg_locations["ikarus"].x, rpg_locations["ikarus"].y = 173, 301
+	rpg_locations["radio_club"].x, rpg_locations["radio_club"].y = 390, 54
 

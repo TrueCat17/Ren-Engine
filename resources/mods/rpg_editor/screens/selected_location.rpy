@@ -17,7 +17,7 @@ screen selected_location:
 	key '0' action SetVariable('local_k', min(local_k + 0.25, 8.00))
 	
 	python:
-		selected_location = locations[selected_location_name]
+		selected_location = rpg_locations[selected_location_name]
 		
 		x, y = int(-local_cam_x * local_k), int(-local_cam_y * local_k)
 		w, h = int(selected_location.xsize * local_k), int(selected_location.ysize * local_k)
@@ -106,7 +106,7 @@ screen selected_location:
 			for i in xrange(len(selected_location.exits)):
 				python:
 					exit = selected_location.exits[i]
-					real_to = locations.has_key(exit.to_location_name) and locations[exit.to_location_name].places.has_key(exit.to_place_name)
+					real_to = rpg_locations.has_key(exit.to_location_name) and rpg_locations[exit.to_location_name].places.has_key(exit.to_place_name)
 					image = im.Rect('#BB0' if real_to else '#440')
 				
 				button:

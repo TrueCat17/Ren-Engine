@@ -62,7 +62,7 @@ screen all_locations:
 				mouse_moved = True
 			
 			if mouse_pos[0] < get_stage_width() - locations_width:
-				location = locations[drag_location_name]
+				location = rpg_locations[drag_location_name]
 				old_x, old_y = location.x, location.y
 				
 				new_x = (mouse_pos[0] - local_mouse_pos[0] - x) / common_k
@@ -75,20 +75,19 @@ screen all_locations:
 	null:
 		pos (x, y)
 		
-		for name in locations:
-			python:
-				location = locations[name]
-				preview = get_preview(name)
+		for name, location in rpg_locations.iteritems():
+			if not location.using:
+				continue
 			
-			if location.using:
-				button:
-					pos (int(location.x * common_k), int(location.y * common_k))
-					size (int(get_image_width(preview) * common_k), int(get_image_height(preview) * common_k))
-					
-					ground preview
-					hover preview
-					
-					action start_drag_location(name)
+			$ preview = get_preview(name)
+			button:
+				pos (int(location.x * common_k), int(location.y * common_k))
+				size (int(get_image_width(preview) * common_k), int(get_image_height(preview) * common_k))
+				
+				ground preview
+				hover preview
+				
+				action start_drag_location(name)
 	
 	use locations_list
 

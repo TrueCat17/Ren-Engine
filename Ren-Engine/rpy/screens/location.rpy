@@ -213,7 +213,7 @@ screen location:
 			for obj in draw_location.objects:
 				if isinstance(obj, Character):
 					continue
-				if obj.update:
+				if not isinstance(obj, Character) and obj.update:
 					obj.update()
 			
 			draw_location.update_pos()
@@ -233,8 +233,7 @@ screen location:
 					
 					datas = obj.get_draw_data()
 					if type(datas) in (tuple, list):
-						for data in datas:
-							list_to_draw.append(data)
+						list_to_draw.extend(datas)
 					else:
 						list_to_draw.append(datas)
 				

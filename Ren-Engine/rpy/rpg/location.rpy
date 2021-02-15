@@ -28,50 +28,49 @@ init -1002 python:
 	location_zoom = 1.0
 	
 	
-	locations = dict()
+	rpg_locations = {}
 	
 	def register_location(name, path_to_images, is_room, xsize, ysize):
-		if locations.has_key(name):
+		if rpg_locations.has_key(name):
 			out_msg('register_location', 'Location <' + name + '> already registered')
 		else:
-			location = Location(name, path_to_images, is_room, xsize, ysize)
-			locations[name] = location
+			rpg_locations[name] = RpgLocation(name, path_to_images, is_room, xsize, ysize)
 	
 	def register_place(location_name, place_name, x, y, xsize, ysize, to_side = None):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('register_place', 'Location <' + location_name + '> not registered')
 			return
 		
-		location = locations[location_name]
+		location = rpg_locations[location_name]
 		if location.get_place(place_name):
 			out_msg('register_place', 'Place <' + place_name + '> in location <' + self.name + '> already exists')
 			return
 		
-		place = Place(place_name, x, y, xsize, ysize, to_side)
+		place = RpgPlace(place_name, x, y, xsize, ysize, to_side)
 		location.add_place(place, place_name)
 		location.path_need_update = True
 	
 	def register_exit(location_name, to_location_name, to_place_name, x, y, xsize, ysize):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('register_exit', 'Location <' + location_name + '> not registered')
 			return
 		
-		location = locations[location_name]
-		exit = Exit(to_location_name, to_place_name, x, y, xsize, ysize)
+		location = rpg_locations[location_name]
+		exit = RpgExit(to_location_name, to_place_name, x, y, xsize, ysize)
 		location.add_exit(exit)
 		location.path_need_update = True
 	
 	
 	def set_location(location_name, place):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('set_location', 'Location <' + location_name + '> not registered')
 			return
 		
 		if type(place) is str:
-			if not locations[location_name].get_place(place):
+			if not rpg_locations[location_name].get_place(place):
 				out_msg('set_location', 'Place <' + place + '> in location <' + location_name + '> not found')
 				return
-			place = locations[location_name].get_place(place)
+			place = rpg_locations[location_name].get_place(place)
 		
 		if not has_screen('location'):
 			show_screen('location')
@@ -79,7 +78,7 @@ init -1002 python:
 		
 		global prev_location_name, cur_location, cur_location_name, cur_to_place
 		prev_location_name = cur_location_name
-		cur_location = locations[location_name]
+		cur_location = rpg_locations[location_name]
 		cur_location_name = location_name
 		cur_to_place = place
 		
@@ -129,7 +128,7 @@ init -1002 python:
 	
 	location_banned_exit_destinations = []
 	def ban_exit_destination(location_name, place_name = None):
-		location = locations.get(location_name, None)
+		location = rpg_locations.get(location_name, None)
 		if location is None:
 			out_msg('ban_exit_destination', 'Location <' + str(location_name) + '> is not registered')
 			return
@@ -145,7 +144,7 @@ init -1002 python:
 			location_banned_exit_destinations.append((location_name, place_name))
 	
 	def unban_exit_destination(location_name, place_name = None):
-		location = locations.get(location_name, None)
+		location = rpg_locations.get(location_name, None)
 		if location is None:
 			out_msg('unban_exit_destination', 'Location <' + str(location_name) + '> is not registered')
 			return
@@ -165,16 +164,16 @@ init -1002 python:
 	
 	def get_location_image(obj, directory, name, name_postfix, ext, is_free, need = True):
 		if obj.cache is None:
-			obj.cache = dict()
+			obj.cache = {}
 		
 		mode = times['current_name']
 		key = name, name_postfix, mode
 		if obj.cache.has_key(key):
 			return obj.cache[key]
 		
+		file_name = name
 		if name_postfix:
-			name_postfix = '_' + name_postfix
-		file_name = name + name_postfix
+			file_name += '_' + name_postfix
 		
 		path = directory + file_name + '_' + mode + '.' + ext
 		if not os.path.exists(path):
@@ -192,7 +191,7 @@ init -1002 python:
 		return path
 	
 	def set_location_scales(name, min_scale, count_scales):
-		if not locations.has_key(name):
+		if not rpg_locations.has_key(name):
 			out_msg('set_location_scales', 'Location <' + str(name) + '> is not registered')
 			return
 		
@@ -209,13 +208,13 @@ init -1002 python:
 			out_msg('set_location_scales', 'count_scales <= 0')
 			return
 		
-		location = locations[name]
+		location = rpg_locations[name]
 		location.min_scale = min_scale
 		location.count_scales = count_scales
 		location.path_need_update = True
 	
 	
-	class Location(Object):
+	class RpgLocation(Object):
 		def __init__(self, name, directory, is_room, xsize, ysize):
 			Object.__init__(self)
 			
@@ -225,12 +224,12 @@ init -1002 python:
 			self.is_room = is_room
 			self.xsize, self.ysize = xsize, ysize
 			
-			self.places = dict()
+			self.places = {}
 			self.exits = []
 			
 			self.objects = [self]
 			if self.over():
-				self.objects.append(LocationOver(self))
+				self.objects.append(RpgLocationOver(self))
 			
 			self.ambience_paths = None
 			self.ambience_volume = 1.0
@@ -240,7 +239,7 @@ init -1002 python:
 			self.count_scales = 2
 		
 		def __str__(self):
-			return '<Location ' + str(self.name) + '>'
+			return '<RpgLocation ' + str(self.name) + '>'
 		
 		def get_zorder(self):
 			return 0
@@ -281,7 +280,7 @@ init -1002 python:
 			self.x, self.y = get_camera_params(self)
 	
 	
-	class Place(Object):
+	class RpgPlace(Object):
 		def __init__(self, name, x, y, xsize, ysize, to_side):
 			Object.__init__(self)
 			self.name = name
@@ -290,12 +289,12 @@ init -1002 python:
 			self.to_side = to_side
 		
 		def __str__(self):
-			return '<Place ' + self.name + '>'
+			return '<RpgPlace ' + self.name + '>'
 		
 		def inside(self, x, y):
 			return self.x <= x and x <= self.x + self.xsize and self.y <= y and y <= self.y + self.ysize
 	
-	class Exit(Object):
+	class RpgExit(Object):
 		def __init__(self, to_location_name, to_place_name, x, y, xsize, ysize):
 			Object.__init__(self)
 			self.to_location_name = to_location_name
@@ -304,22 +303,26 @@ init -1002 python:
 			self.xsize, self.ysize = xsize, ysize
 		
 		def __str__(self):
-			return '<Exit to ' + self.to_location_name + ':' + self.to_place_name + '>'
+			return '<RpgExit to ' + self.to_location_name + ':' + self.to_place_name + '>'
 		
 		def inside(self, x, y):
 			return self.x <= x and x <= self.x + self.xsize and self.y <= y and y <= self.y + self.ysize
 	
 	
-	def get_place_center(place, align = (0.5, 0.5)):
+	def get_place_center(place, align = None):
 		x, y = place['x'], place['y']
-		if isinstance(place, Character):
-			return int(x), int(y)
 		
 		w = place['xsize'] if place.has_key('xsize') else 0
 		h = place['ysize'] if place.has_key('ysize') else 0
 		
 		xa = get_absolute(place['xanchor'], w) if place.has_key('xanchor') else 0
 		ya = get_absolute(place['yanchor'], h) if place.has_key('yanchor') else 0
+		
+		if align is None:
+			if isinstance(place, Character):
+				align = (place.xanchor, place.yanchor)
+			else:
+				align = (0.5, 0.5)
 		
 		return int(x - xa + align[0] * w), int(y - ya + align[1] * h)
 	
@@ -351,7 +354,7 @@ init -1002 python:
 			
 			if not was_out_exit:
 				return None
-			if not exec_action and locations[exit.to_location_name].is_room:
+			if not exec_action and rpg_locations[exit.to_location_name].is_room:
 				return None
 			
 			was_out_exit = False
@@ -380,7 +383,7 @@ init -1002 python:
 	
 	
 	def path_update_locations():
-		for name, location in locations.iteritems():
+		for name, location in rpg_locations.iteritems():
 			if not location.path_need_update: continue
 			location.path_need_update = False
 			
@@ -390,7 +393,7 @@ init -1002 python:
 			
 			objects = []
 			for obj in location.objects:
-				if not isinstance(obj, LocationObject): continue
+				if not isinstance(obj, RpgLocationObject): continue
 				
 				free_obj = obj.free()
 				if not free_obj: continue
@@ -412,7 +415,7 @@ init -1002 python:
 			path_update_location(name, free, character_radius, objects, places, exits, location.min_scale, location.count_scales)
 	
 	
-	class LocationOver(Object):
+	class RpgLocationOver(Object):
 		def __init__(self, location):
 			Object.__init__(self)
 			self.location = location

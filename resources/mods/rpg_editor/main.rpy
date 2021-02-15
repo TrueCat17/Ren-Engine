@@ -25,16 +25,14 @@ init 1 python:
 	
 	register_new_locations()
 	
-	for location_name in locations:
-		location = locations[location_name]
+	for location in rpg_locations.itervalues():
 		location.using = location.x is not None and location.y is not None
 		
-		for place_name in location.places:
-			place = location.places[place_name]
+		for place in location.places.itervalues():
 			px, py, pw, ph = place.x, place.y, place.xsize, place.ysize
 			
 			for exit in location.exits:
-				if exit.to_place_name != location_name:
+				if exit.to_place_name != location.name:
 					continue
 				
 				ex, ey, ew, eh = exit.x, exit.y, exit.xsize, exit.ysize

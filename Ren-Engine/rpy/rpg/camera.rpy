@@ -60,8 +60,8 @@ init -1003 python:
 		stage_width, stage_height = loc_zoom_prev_stage_size = get_stage_size()
 		
 		res = 1.0
-		for location_name in locations.keys():
-			location = locations[location_name]
+		for location_name in rpg_locations.keys():
+			location = rpg_locations[location_name]
 			if location.is_room:
 				zoom = min(stage_width / location.xsize, stage_height / location.ysize) # increase to width OR height
 			else:

@@ -17,7 +17,7 @@ init python:
 		default_location_ambience_volume = volume
 	
 	def set_location_ambience(location_name, paths, volume = 1.0):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('set_location_ambience', 'Location <' + location_name + '> not registered')
 			return
 		
@@ -26,7 +26,7 @@ init python:
 				None: paths
 			}
 		
-		location = locations[location_name]
+		location = rpg_locations[location_name]
 		location.ambience_paths = paths
 		location.ambience_volume = volume
 	

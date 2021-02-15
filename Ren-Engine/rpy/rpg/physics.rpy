@@ -23,7 +23,7 @@ init python:
 		
 		for obj in objs:
 			obj_free = obj.free() if callable(obj.free) else None
-			if obj_free is None or isinstance(obj, Location):
+			if obj_free is None or isinstance(obj, RpgLocation):
 				continue
 			if obj.frames > 1:
 				obj_free = im.crop(obj_free, obj.crop)

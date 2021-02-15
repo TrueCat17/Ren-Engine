@@ -57,7 +57,7 @@ init python:
 		y = ((get_stage_height() - h) / 2 - selected_location_y) / local_k
 		
 		register_place(selected_location.name, name, int(x), int(y), w, h)
-		if locations.has_key(name):
+		if rpg_locations.has_key(name):
 			selected_location.places[name].side_exit = 'down'
 		
 		set_save_locations()
@@ -72,7 +72,7 @@ init python:
 		del selected_location.places[selected_place_name]
 		selected_place_name = place.name = name
 		
-		if locations.has_key(name):
+		if rpg_locations.has_key(name):
 			set_exit_side()
 			if place.side_exit is None:
 				place.side_exit = 'down'
@@ -132,7 +132,7 @@ init python:
 		set_save_locations()
 	
 	def set_exit_side():
-		if not locations.has_key(selected_place_name):
+		if not rpg_locations.has_key(selected_place_name):
 			return
 		
 		place = selected_location.places[selected_place_name]
@@ -392,7 +392,7 @@ screen location_props:
 										text_size 15
 										action change_place_prop(+d)
 					
-					if locations.has_key(selected_place_name):
+					if rpg_locations.has_key(selected_place_name):
 						text (_('Exit side') + ':'):
 							color 0xFF0000
 							text_size 18

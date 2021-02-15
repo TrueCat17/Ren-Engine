@@ -9,7 +9,7 @@ init -1001 python:
 	def location_objects_animations_ended():
 		if cur_location:
 			for obj in cur_location.objects:
-				if not isinstance(obj, LocationObject):
+				if not isinstance(obj, RpgLocationObject):
 					continue
 				
 				animation = obj.animation
@@ -22,7 +22,7 @@ init -1001 python:
 	def location_objects_animations_to_end():
 		if cur_location:
 			for obj in cur_location.objects:
-				if not isinstance(obj, LocationObject):
+				if not isinstance(obj, RpgLocationObject):
 					continue
 				
 				animation = obj.animation
@@ -103,7 +103,7 @@ init -1001 python:
 		if over:
 			obj.animations[None].over_image = over
 		
-		for name, location in locations.iteritems():
+		for name, location in rpg_locations.iteritems():
 			for obj in location.objects:
 				if obj.type != obj_name:
 					continue
@@ -134,7 +134,7 @@ init -1001 python:
 		}
 	
 	
-	class LocationObject(Object):
+	class RpgLocationObject(Object):
 		def __init__(self, name, x, y):
 			Object.__init__(self, location_objects[name])
 			
@@ -152,7 +152,7 @@ init -1001 python:
 			self.update()
 		
 		def __str__(self):
-			return '<LocationObject ' + str(self.type) + '>'
+			return '<RpgLocationObject ' + str(self.type) + '>'
 		
 		def get_zorder(self):
 			return self.y + self.yoffset
@@ -277,10 +277,10 @@ init -1001 python:
 	
 	
 	def add_location_object(location_name, place, obj_name, **kwargs):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('add_location_object', 'Location <' + location_name + '> not registered')
 			return
-		location = locations[location_name]
+		location = rpg_locations[location_name]
 		
 		if type(place) is str:
 			tmp_place = location.get_place(place)
@@ -292,14 +292,14 @@ init -1001 python:
 			px, py = place.x, place.y
 		elif place:
 			px, py = place['x'], place['y'] - 1
-			if isinstance(place, (dict, Place)):
+			if isinstance(place, (dict, RpgPlace)):
 				pw = place['xsize'] if place.has_key('xsize') else 0
 				ph = place['ysize'] if place.has_key('ysize') else 0
 			else:
 				pw = ph = 0
 		
 		if location_objects.has_key(obj_name):
-			instance = LocationObject(obj_name, px + pw / 2, py + ph / 2)
+			instance = RpgLocationObject(obj_name, px + pw / 2, py + ph / 2)
 		elif str(type(obj_name)) == "<type 'classobj'>":
 			instance = obj_name(px, py, pw, ph, **kwargs)
 		else:
@@ -316,10 +316,10 @@ init -1001 python:
 	
 	
 	def get_location_objects(location_name, place, obj_type, count = -1):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('get_location_objects', 'Location <' + location_name + '> not registered')
 			return
-		location = locations[location_name]
+		location = rpg_locations[location_name]
 		
 		if type(place) is str:
 			tmp_place = location.get_place(place)
@@ -335,7 +335,7 @@ init -1001 python:
 		
 		res = []
 		for obj in location.objects:
-			if not isinstance(obj, LocationObject):
+			if not isinstance(obj, RpgLocationObject):
 				continue
 			
 			if obj_type is not None and obj_type != obj.type:
@@ -358,7 +358,7 @@ init -1001 python:
 		res = None
 		
 		for i in character.location.objects:
-			if not isinstance(i, LocationObject):
+			if not isinstance(i, RpgLocationObject):
 				continue
 			
 			obj = location_objects[i.type]
@@ -412,10 +412,10 @@ init -1001 python:
 	
 	
 	def remove_location_object(location_name, place, obj_name, count = 1):
-		if not locations.has_key(location_name):
+		if not rpg_locations.has_key(location_name):
 			out_msg('remove_location_object', 'Location <' + location_name + '> not registered')
 			return
-		location = locations[location_name]
+		location = rpg_locations[location_name]
 		
 		if place is None:
 			px = py = 0

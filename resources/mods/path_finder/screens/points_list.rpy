@@ -29,7 +29,7 @@ init python:
 			if alpha != 255:
 				return
 		for obj in draw_location.objects:
-			if not isinstance(obj, Location) and obj.free:
+			if not isinstance(obj, RpgLocation) and obj.free:
 				obj_x = int(obj.x + obj.xoffset - get_absolute(obj.xanchor, obj.xsize))
 				obj_y = int(obj.y + obj.yoffset - get_absolute(obj.yanchor, obj.ysize))
 				if x < obj_x or y < obj_y or x >= obj_x + obj.xsize or y >= obj_y + obj.ysize: continue
