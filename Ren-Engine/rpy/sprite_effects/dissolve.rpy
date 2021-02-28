@@ -4,7 +4,7 @@ init -9000 python:
 		def __init__(self, t, spr = None):
 			Object.__init__(self)
 			
-			self.start_time = time.time()
+			self.start_time = get_game_time()
 			self.time = max(t, 0.001)
 			
 			self.sprite = spr
@@ -164,8 +164,7 @@ init -9000 python:
 					self.set_data_list()
 					self.sprite.update_data_size()
 			
-			now = time.time()
-			dtime = now - self.start_time
+			dtime = get_game_time() - self.start_time
 			
 			alpha = in_bounds(dtime / self.time, 0.0, 1.0)
 			anti_alpha = 1 - alpha

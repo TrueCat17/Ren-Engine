@@ -5,7 +5,7 @@ init -9000 python:
 			Object.__init__(self)
 			
 			self.prop, self.dist, self.time_one, self.time_all = prop, dist, time_one, time_all
-			self.start_time = time.time()
+			self.start_time = get_game_time()
 		
 		def copy(self, spr = None):
 			screen.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
@@ -16,10 +16,9 @@ init -9000 python:
 		
 		
 		def update(self):
-			now = time.time()
-			dtime = now - self.start_time
+			dtime = get_game_time() - self.start_time
 			
-			if dtime > self.time_all:
+			if dtime >= self.time_all:
 				screen.new_data[self.prop] = 0
 				screen.remove_effect()
 			else:

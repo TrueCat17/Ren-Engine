@@ -3,7 +3,7 @@ init -1002 python:
 	location_ext = 'png'
 	
 	
-	location_start_time = 0
+	location_start_time = -100
 	location_fade_time = 0.5
 	
 	
@@ -14,7 +14,7 @@ init -1002 python:
 	
 	def location_show():
 		global location_start_time
-		location_start_time = time.time() - location_fade_time * 2
+		location_start_time = get_game_time() - location_fade_time * 2
 	can_exec_next_skip_funcs.append(location_show)
 	
 	
@@ -100,13 +100,13 @@ init -1002 python:
 		
 		global draw_location, location_start_time, location_was_show, cam_object
 		if (draw_location is None) or (draw_location is cur_location and not time_changing):
-			location_start_time = 0
+			location_start_time = -100
 			location_was_show = True
 			draw_location = cur_location
 			cam_object = me
 			start_location_ambience()
 		else:
-			location_start_time = time.time()
+			location_start_time = get_game_time()
 			location_was_show = False
 			
 			x, y = get_place_center(cam_object)
@@ -114,7 +114,7 @@ init -1002 python:
 		
 		show_character(me, cur_to_place, auto_change_location = False)
 		if prev_location_name is None:
-			me.show_time = 0
+			me.show_time = -100
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_to_place

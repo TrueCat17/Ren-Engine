@@ -101,7 +101,7 @@ void Mouse::setCanHide(bool value) {
 }
 
 
-static long lastAction = Utils::getTimer();
+static double lastAction = Utils::getTimer();
 void Mouse::setLastAction() {
 	lastAction = Utils::getTimer();
 }
@@ -109,10 +109,8 @@ void Mouse::checkCursorVisible() {
 	bool show = true;
 	if (canHided) {
 		const double timeToHide = String::toDouble(Config::get("mouse_hide_time"));
-
 		if (timeToHide > 0) {
-			const double time = (Utils::getTimer() - lastAction) / 1000.0;
-			show = time < timeToHide;
+			show = Utils::getTimer() - lastAction < timeToHide;
 		}
 	}
 	SDL_ShowCursor(show);

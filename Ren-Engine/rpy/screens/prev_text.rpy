@@ -16,13 +16,13 @@ init python:
 	
 	def prev_text_show():
 		global pt_showed_time, pt_hided_time
-		pt_showed_time = time.time()
+		pt_showed_time = get_game_time()
 		pt_hided_time = 0
 		show_screen('prev_text')
 	
 	def prev_text_close():
 		global pt_hided_time
-		pt_hided_time = time.time()
+		pt_hided_time = get_game_time()
 
 
 screen prev_text:
@@ -40,7 +40,7 @@ screen prev_text:
 	
 	
 	python:
-		dtime = time.time() - pt_showed_time
+		dtime = get_game_time() - pt_showed_time
 		x = int(-pt_xsize * get_stage_width() * (pt_appearance_time - dtime) / pt_appearance_time)
 		if x > 0:
 			x = 0
@@ -50,7 +50,7 @@ screen prev_text:
 		y = int(-slider_v_get_value('prev_text') * (pt_viewport_content_height - pt_ysize * get_stage_height()))
 		
 		if pt_hided_time:
-			dtime = time.time() - pt_hided_time
+			dtime = get_game_time() - pt_hided_time
 			alpha = (pt_disappearance_time - dtime) / pt_disappearance_time
 			if alpha <= 0:
 				renpy.hide_screen('prev_text')

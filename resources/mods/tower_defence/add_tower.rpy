@@ -2,7 +2,7 @@ init python:
 	def add_tower(tower_type):
 		global td_alarm_moneys
 		if td_moneys < td_tower_types[tower_type]['cost']:
-			td_alarm_moneys = time.time()
+			td_alarm_moneys = get_game_time()
 			return
 		
 		global selected_tower_type

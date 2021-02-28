@@ -139,7 +139,7 @@ label start:
 	show rn happy at center with dissolve
 	rn "Полагаю, вопрос <Сколько будет 123 * 24?> достаточно сложен, чтобы показать меню именно на его примере."
 	$ right = False
-	$ start_answer = time.time()
+	$ start_answer = get_game_time()
 	menu:
 		"12324":
 			pass
@@ -153,7 +153,7 @@ label start:
 			pass
 	
 	if right:
-		$ spent_answer = time.time() - start_answer
+		$ spent_answer = get_game_time() - start_answer
 		
 		show rn serious with dissolve
 		rn "Ты справился за " + str(int(spent_answer)) + " секунд."

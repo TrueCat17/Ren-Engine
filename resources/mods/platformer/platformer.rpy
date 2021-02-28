@@ -4,7 +4,7 @@ init -1000 python:
 		global main_text, main_text_color, main_text_end_time
 		main_text = text
 		main_text_color = color
-		main_text_end_time = time.time() + msg_time
+		main_text_end_time = get_game_time() + msg_time
 	msg('', 0, -1)
 	
 	extra_text_vars = []
@@ -48,7 +48,7 @@ screen platformer:
 			size (int(cell_size * 0.8), int(cell_size * 1.6))
 			crop  me.crop
 	
-	if time.time() < main_text_end_time:
+	if get_game_time() < main_text_end_time:
 		text main_text:
 			color main_text_color
 			text_size 30

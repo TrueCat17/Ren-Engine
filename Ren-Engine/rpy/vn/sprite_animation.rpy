@@ -72,7 +72,7 @@ init -9000 python:
 		
 		
 		def update(self):
-			now = time.time()
+			now = get_game_time()
 			if now < self.end_pause_time:
 				return
 			
@@ -135,7 +135,7 @@ init -9000 python:
 					
 					if command == 'pause':
 						if len(args) == 2:
-							self.end_pause_time = time.time() + float(args[1])
+							self.end_pause_time = get_game_time() + float(args[1])
 						else:
 							out_msg('SpriteAnimation.update', 'pause expected 1 argument: time\n' + action)
 						return
@@ -179,7 +179,7 @@ init -9000 python:
 										self.data.contains = []
 										self.data.image = evaled
 								elif isinstance(evaled, (int, float, long)):
-									self.end_pause_time = time.time() + float(evaled)
+									self.end_pause_time = get_game_time() + float(evaled)
 									return
 								else:
 									out_msg('SpriteAnimation.update', 'Unknown command:\n' + action)
@@ -192,8 +192,8 @@ init -9000 python:
 											out_msg('SpriteAnimation.update', desc)
 										else:
 											self.change_func = evaled
-											self.start_changing_time = time.time()
-											self.end_changing_time = time.time() + float(args[1])
+											self.start_changing_time = get_game_time()
+											self.end_changing_time = get_game_time() + float(args[1])
 											self.save_change_params(args[2:])
 										return
 									else:
@@ -257,8 +257,7 @@ init -9000 python:
 				self.change_props.append((names, old_value, new_value))
 		
 		def update_changing(self):
-			now = time.time()
-			dtime = now - self.start_changing_time
+			dtime = get_game_time() - self.start_changing_time
 			all_time = max(self.end_changing_time - self.start_changing_time, 0.001)
 			
 			t = in_bounds(dtime / all_time, 0.0, 1.0)

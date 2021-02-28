@@ -71,7 +71,7 @@ init -1000 python:
 		sit_start_time = actions.sit_start_time or 0
 		
 		if state == 'start':
-			if time.time() - sit_start_time < 10:
+			if get_game_time() - sit_start_time < 10:
 				return 'end'
 			
 			objs = get_near_sit_objects(character, 1e9)
@@ -81,7 +81,7 @@ init -1000 python:
 						if random.random() < 0.2:
 							return 'end'
 						continue
-					actions.sit_start_time = time.time()
+					actions.sit_start_time = get_game_time()
 					return 'sitting'
 				
 				to_x, to_y = point
@@ -97,7 +97,7 @@ init -1000 python:
 			return 'moving'
 		
 		if state == 'sitting':
-			if time.time() - sit_start_time > 3:
+			if get_game_time() - sit_start_time > 3:
 				return 'end'
 			return 'sitting'
 		
@@ -160,7 +160,7 @@ init -1000 python:
 		if state == 'start':
 			rotation = character.get_direction()
 			actions.rotation = rotation
-			actions.rotation_start_time = time.time()
+			actions.rotation_start_time = get_game_time()
 			actions.rotation_time = random.random() * 1.1 + 0.4
 			
 			if random.random() < 0.25:
@@ -181,7 +181,7 @@ init -1000 python:
 			
 			right, left = rotations[actions.rotation]
 			
-			dtime = time.time() - actions.rotation_start_time
+			dtime = get_game_time() - actions.rotation_start_time
 			rotation_time = actions.rotation_time
 			
 			if dtime < rotation_time:
@@ -229,19 +229,19 @@ init -1000 python:
 		
 		
 		if state == 'start':
-			if 0 < time.time() - (actions.home_end_time or 0) < 15:
+			if 0 < get_game_time() - (actions.home_end_time or 0) < 15:
 				return 'end'
 			
 			if not home_is_fake_location:
 				if character.location.name == home:
-					actions.home_end_time = time.time() + 2
+					actions.home_end_time = get_game_time() + 2
 					actions.old_rotation = character.get_direction()
 					return 'home_walking'
 				return rpg_action_other_place(character, 'start', home)
 			
 			
 			if character.location is location and (character.x, character.y) == get_place_center(place):
-				actions.home_end_time = time.time() + 5
+				actions.home_end_time = get_game_time() + 5
 				actions.old_rotation = character.get_direction()
 				hide_character(character)
 				return 'home_walking'
@@ -260,7 +260,7 @@ init -1000 python:
 			if not character.ended_move_waiting():
 				return 'home_walking'
 			
-			if time.time() < actions.home_end_time:
+			if get_game_time() < actions.home_end_time:
 				if character.location:
 					rpg_action_other_place(character, 'start')
 				return 'home_walking'
@@ -288,7 +288,7 @@ init -1000 python:
 		friend = actions.friend
 		
 		if state == 'start':
-			if not friend and time.time() - (actions.to_friend_end_time or 0) < 2:
+			if not friend and get_game_time() - (actions.to_friend_end_time or 0) < 2:
 				return 'end'
 			
 			if not friend:
@@ -320,13 +320,13 @@ init -1000 python:
 				return 'end'
 			
 			actions.friend = friend
-			actions.to_friend_start_time = time.time()
+			actions.to_friend_start_time = get_game_time()
 			
 			if friend_actions:
 				friend_actions.cur_action = rpg_action_to_friend
 				friend_actions.state = 'moving'
 				friend_actions.friend = character
-				friend_actions.to_friend_start_time = time.time()
+				friend_actions.to_friend_start_time = get_game_time()
 			
 			return 'moving'
 		
@@ -340,7 +340,7 @@ init -1000 python:
 				friend.move_to_place(None)
 				friend.rotate_to(character.x - friend.x, character.y - friend.y)
 				
-				actions.to_friend_end_time = time.time() + 3
+				actions.to_friend_end_time = get_game_time() + 3
 				return 'conversation'
 			
 			if same_location:
@@ -352,13 +352,13 @@ init -1000 python:
 					update_time = 2.0
 			else:
 				update_time = 4.0
-			if random.random() < 1.0 / (get_fps() * 10) or time.time() - actions.to_friend_start_time > update_time:
+			if random.random() < 1.0 / (get_fps() * 10) or get_game_time() - actions.to_friend_start_time > update_time:
 				return 'start'
 			
 			return 'moving'
 		
 		if state == 'conversation':
-			if actions.to_friend_end_time < time.time():
+			if actions.to_friend_end_time < get_game_time():
 				return 'end'
 			return 'conversation'
 		

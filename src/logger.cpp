@@ -27,8 +27,8 @@ void Logger::log(const std::string &str) {
 	out << str << '\n';
 	out.flush();
 }
-void Logger::logEvent(const std::string &event, long time, bool lastInGroup) {
-	out << event << ": " << time << " ms\n";
+void Logger::logEvent(const std::string &event, double time, bool lastInGroup) {
+	out << event << ": " << int(time * 1000) << " ms\n";
 	if (lastInGroup) {
 		out << "\n\n";
 	}

@@ -107,7 +107,7 @@ void Key::checkEvents() {
 			return false;
 		};
 		if (inFirstDown || keyPressed(scancode)) {
-			const double dTime = (GV::frameStartTime - lastDown) / 1000.0;
+			const double dTime = GV::frameStartTime - lastDown;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
 			if (dTime >= delay || !lastDown) {

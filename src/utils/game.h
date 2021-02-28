@@ -43,12 +43,15 @@ public:
 
 	static void setMaxFps(long fps);
 
-	static long getFrameTime();
+	static double getFrameTime();
 	static long getFps();
 	static void setFps(long fps);
 
 	static void setStageSize(int width, int height);
 	static void setFullscreen(bool value);
+
+	static double getLastTick();
+	static double getGameTime();
 };
 
 #endif // GAME_H

@@ -19,7 +19,6 @@ init -1000 python:
 			self.cx, self.cy = 0, 0
 			self.dx = kwargs.get('dx', 0.01)
 			self.dy = kwargs.get('dy', 0.01)
-			self.prev_update_time = time.time()
 		
 		def __str__(self):
 			return '<ScrollObject ' + self.type + '>'
@@ -28,8 +27,7 @@ init -1000 python:
 			self.dx, self.dy = dx, dy
 		
 		def update(self):
-			dtime = time.time() - self.prev_update_time
-			self.prev_update_time = time.time()
+			dtime = get_last_tick()
 			
 			self.cx += self.dx * dtime
 			self.cy += self.dy * dtime

@@ -22,6 +22,9 @@ public:
 	static bool inGame;
 	static bool exit;
 
+	static bool beforeFirstFrame;
+	static bool firstFrame;
+
 	static std::thread::id messageThreadId;
 
 	static SDL_DisplayMode displayMode;
@@ -31,8 +34,10 @@ public:
 
 	static Group *screens;
 
-	static long frameStartTime;
 	static std::mutex updateMutex;
+	static double prevFrameStartTime;
+	static double frameStartTime;
+	static double gameTime;
 
 	static std::mutex mutexForSmartPtr;
 

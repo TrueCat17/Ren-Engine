@@ -7,7 +7,7 @@ init -1000 python:
 	
 	fps_time_array = []
 	def get_last_fps():
-		cur_time = time.time()
+		cur_time = get_game_time()
 		
 		global fps_time_array
 		fps_time_array.append(cur_time)

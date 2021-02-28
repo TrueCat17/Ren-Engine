@@ -26,14 +26,11 @@ init -1000 python:
 			
 			self.objs = []
 			self.set_count(kwargs.get('count', 50))
-			
-			self.prev_update_time = time.time()
 		
 		def __str__(self):
 			return '<ParticleFactory ' + self.type + '>'
 		
 		def set_count(self, count):
-			rand_int = random.randint
 			def rand_float(min, max):
 				return random.random() * (max - min) + min
 			
@@ -44,7 +41,7 @@ init -1000 python:
 				self.objs.extend([None] * (count - old_count))
 				
 				for i in xrange(count - old_count):
-					x, y = rand_int(0, self.xsize), rand_int(0, self.ysize)
+					x, y = rand_float(0, self.xsize), rand_float(0, self.ysize)
 					dx, dy = rand_float(self.min_dx, self.max_dx), rand_float(self.min_dy, self.max_dy)
 					size = rand_float(self.min_size, self.max_size)
 					
@@ -54,14 +51,13 @@ init -1000 python:
 			self.dx, self.dy = dx, dy
 		
 		def update(self):
-			dtime = time.time() - self.prev_update_time
-			self.prev_update_time = time.time()
+			dtime = get_last_tick()
 			
 			w, h = self.xsize, self.ysize
 			x, y, dx, dy = 0, 1, 2, 3
 			for obj in self.objs:
-				obj[x] = (obj[x] + obj[dx] * k) % w
-				obj[y] = (obj[y] + obj[dy] * k) % h
+				obj[x] = (obj[x] + obj[dx] * dtime) % w
+				obj[y] = (obj[y] + obj[dy] * dtime) % h
 		
 		def get_zorder(self):
 			return self.zorder

@@ -74,7 +74,7 @@ static void removeComment(std::string &s) {
 Parser::Parser(const std::string &dir) {
 	this->dir = dir;
 
-	long searchStartTime = Utils::getTimer();
+	double searchStartTime = Utils::getTimer();
 	std::vector<std::string> files = Utils::getFileNames(dir);
 
 	std::vector<std::string> commonFiles = Utils::getFileNames("mods/common/");
@@ -89,7 +89,7 @@ Parser::Parser(const std::string &dir) {
 		}
 	}
 
-	long readStartTime = Utils::getTimer();
+	double readStartTime = Utils::getTimer();
 	int countFiles = 0;
 	int countLines = 0;
 
@@ -167,7 +167,7 @@ Parser::Parser(const std::string &dir) {
 }
 
 Node* Parser::parse() {
-	long parsingStartTime = Utils::getTimer();
+	double parsingStartTime = Utils::getTimer();
 	Node *res = getMainNode();
 	Logger::logEvent("Parsing", Utils::getTimer() - parsingStartTime);
 

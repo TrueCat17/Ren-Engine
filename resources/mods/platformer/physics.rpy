@@ -40,7 +40,7 @@ init python:
 			if left: # and right
 				me.set_direction(to_back)
 		else:
-			speed = (me_xspeed_run if shift_is_down else me_xspeed) * cell_size
+			speed = (me_xspeed if shift_is_down else me_xspeed_run) * cell_size
 			
 			if left:
 				me_vx -= speed * physics_step
@@ -163,8 +163,8 @@ init python:
 		me.x = xcell * cell_size + x
 		me.y = ycell * cell_size + y
 		
-		moving_dtime = time.time() - last_stay_time
-		fps = character_run_fps if shift_is_down else character_walk_fps
+		moving_dtime = get_game_time() - last_stay_time
+		fps = character_walk_fps if shift_is_down else character_run_fps
 		me.set_frame(int(moving_dtime * fps))
 		
 		me.update_crop()

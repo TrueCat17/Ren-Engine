@@ -30,13 +30,13 @@ init -1 python:
 				return
 			
 			for tank in tg_tanks_players:
-				if tank.team == self.team or time.time() - tank.start_time < tg_tanks_NO_DAMAGE:
+				if tank.team == self.team or get_game_time() - tank.start_time < tg_tanks_NO_DAMAGE:
 					continue
 				
 				dx, dy = abs(to_x - tank.x), abs(to_y - tank.y)
 				if dx <= 1 and dy <= 1:
 					self.need_to_delete = True
-					tank.last_action_time = time.time()
+					tank.last_action_time = get_game_time()
 					
 					if tank.hp > 0:
 						tank.hp -= 1

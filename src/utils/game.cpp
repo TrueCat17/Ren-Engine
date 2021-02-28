@@ -38,7 +38,7 @@
 static long maxFps = 60;
 
 static long fps = 60;
-static long frameTime = 16;
+static double frameTime = 1.0 / 60;
 
 static int modStartTime = 0;
 static bool canAutoSave = true;
@@ -105,6 +105,9 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	std::string modName;
 	std::getline(is, modName);
 
+	std::getline(is, tmp);
+	GV::gameTime = String::toDouble(tmp);
+
 	{
 		long fps;
 		bool hideMouse, autosave;
@@ -118,7 +121,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 		}else {
 			fps = String::toInt(tmpVec[0]);
 			if (fps == 0) {
-				fps = 60;
+				fps = maxFps;
 			}else
 			if (fps > maxFps) {
 				fps = maxFps;
@@ -181,17 +184,16 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 			continue;
 		}
 
-		uint32_t numLine = uint32_t(String::toInt(tmpVec[0]));
+		size_t numLine = size_t(String::toInt(tmpVec[0]));
 		const std::string &channel = tmpVec[1];
-		int fadeIn = String::toInt(tmpVec[2]);
-		int fadeOut = String::toInt(tmpVec[3]);
-		int64_t pos = int64_t(String::toDouble(tmpVec[4]));
+		double fadeIn = String::toDouble(tmpVec[2]);
+		double fadeOut = String::toDouble(tmpVec[3]);
+		double pos = String::toDouble(tmpVec[4]);
 
 		Music::play(channel + " '" + url + "'", fileName, numLine);
 		Music *music = nullptr;
 		for (Music *i : Music::getMusics()) {
-			const Channel *c = i->getChannel();
-			if (c && c->name == channel) {
+			if (i->getChannel()->name == channel) {
 				music = i;
 				break;
 			}
@@ -199,7 +201,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 
 		if (music) {
 			music->setFadeIn(fadeIn);
-			if (fadeOut) {
+			if (fadeOut > 0) {
 				music->setFadeOut(fadeOut);
 			}
 			music->setPos(pos);
@@ -273,6 +275,7 @@ void Game::save() {
 		//mod-name
 		//fps hideMouse autosave
 		infoFile << GV::mainExecNode->params << '\n'
+		         << GV::gameTime << '\n'
 		         << Game::getFps() << ' '
 		         << (Mouse::getCanHide() ? "True" : "False") << ' '
 		         << (Game::getCanAutoSave() ? "True" : "False") << "\n\n";
@@ -324,7 +327,7 @@ void Game::save() {
 		}
 		infoFile << '\n';
 
-		const std::map<std::string, double> mixerVolumes = Music::getMixerVolumes();
+		const std::map<std::string, double> &mixerVolumes = Music::getMixerVolumes();
 		infoFile << mixerVolumes.size() << '\n';
 		for (auto &p : mixerVolumes) {
 			infoFile << p.first << ' ' << p.second << '\n';
@@ -340,7 +343,7 @@ void Game::save() {
 
 		{
 			while (Renderer::needToRender) {
-				Utils::sleep(1);
+				Utils::sleep(0.001);
 			}
 
 			std::lock_guard g(Renderer::toRenderMutex);
@@ -373,7 +376,7 @@ static std::mutex modMutex;
 static void _startMod(const std::string &dir, const std::string &loadPath) {
 	Utils::setThreadName("scenario");
 
-	long waitingStartTime = Utils::getTimer();
+	double waitingStartTime = Utils::getTimer();
 
 	GV::inGame = false;
 
@@ -388,7 +391,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
 
-		long clearStartTime = Utils::getTimer();
+		double clearStartTime = Utils::getTimer();
 		Music::clear();
 
 		Utils::clearImages();
@@ -425,6 +428,8 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 	Parser p("mods/" + dir);
 	GV::mainExecNode = p.parse();
 
+	GV::gameTime = 0;
+	GV::beforeFirstFrame = true;
 	GV::inGame = true;
 	Scenario::execute(loadPath);
 }
@@ -439,7 +444,7 @@ void Game::makeScreenshot() {
 
 	{
 		while (Renderer::needToRender) {
-			Utils::sleep(1);
+			Utils::sleep(0.001);
 		}
 
 		std::lock_guard g(Renderer::toRenderMutex);
@@ -559,7 +564,7 @@ void Game::setMaxFps(long fps) {
 	maxFps = Math::inBounds(fps, 1, 60);
 }
 
-long Game::getFrameTime() {
+double Game::getFrameTime() {
 	return frameTime;
 }
 long Game::getFps() {
@@ -569,7 +574,7 @@ void Game::setFps(long newFps) {
 	newFps = Math::inBounds(newFps, 1, maxFps);
 
 	fps = newFps;
-	frameTime = 1000 / newFps;
+	frameTime = 1 / double(newFps);
 }
 
 void Game::setStageSize(int width, int height) {
@@ -613,4 +618,15 @@ void Game::setFullscreen(bool value) {
 
 	Renderer::needToUpdateViewPort = true;
 	SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP * value);
+}
+
+double Game::getLastTick() {
+	if (!GV::beforeFirstFrame && !GV::firstFrame) {
+		return GV::frameStartTime - GV::prevFrameStartTime;
+	}
+	return 0;
+}
+
+double Game::getGameTime() {
+	return GV::gameTime;
 }

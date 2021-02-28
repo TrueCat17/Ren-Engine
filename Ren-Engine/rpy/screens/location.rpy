@@ -4,7 +4,7 @@ init python:
 	
 	draw_location = None
 	
-	loc__max_time = time.time() * 2
+	loc__max_time = 1e9
 	
 	
 	rpg_control = False
@@ -48,12 +48,12 @@ init python:
 		global loc__prev_time
 		
 		if me.pose != 'stance' or not get_rpg_control():
-			loc__prev_time = time.time()
+			loc__prev_time = get_game_time()
 			return
 		
 		if dx == 0 and dy == 0:
 			me.move_kind = 'stay'
-			loc__prev_time = time.time()
+			loc__prev_time = get_game_time()
 			return
 		
 		if dx and dy:
@@ -64,8 +64,8 @@ init python:
 		me.move_kind =                  'run' if loc__shift_is_down else 'walk'
 		character_speed = character_run_speed if loc__shift_is_down else character_walk_speed
 		
-		dtime = time.time() - loc__prev_time
-		loc__prev_time = time.time()
+		dtime = get_game_time() - loc__prev_time
+		loc__prev_time = get_game_time()
 		
 		dx *= character_speed * dtime
 		dy *= character_speed * dtime
@@ -89,16 +89,16 @@ init python:
 	def location_cutscene_on(t = 1.0, align = 'center', zoom = 1.2, obj = None):
 		global location_cutscene_state, location_cutscene_start, location_cutscene_end
 		location_cutscene_state = 'on'
-		location_cutscene_start = time.time()
-		location_cutscene_end = time.time() + max(t, 0.001)
+		location_cutscene_start = get_game_time()
+		location_cutscene_end = location_cutscene_start + max(t, 0)
 		
 		cam_to(obj or cam_object, t, align, zoom)
 	
 	def location_cutscene_off(t = 1.0, align = 'center', zoom = 1.0, obj = None):
 		global location_cutscene_state, location_cutscene_start, location_cutscene_end
 		location_cutscene_state = 'off'
-		location_cutscene_start = time.time()
-		location_cutscene_end = time.time() + max(t, 0.001)
+		location_cutscene_start = get_game_time()
+		location_cutscene_end = location_cutscene_start + max(t, 0)
 		
 		cam_to(obj or cam_object, t, align, zoom)
 
@@ -107,7 +107,7 @@ screen location:
 	zorder -4
 	
 	python:
-		dtime = time.time() - location_start_time
+		dtime = get_game_time() - location_start_time
 		
 		# fade, back.alpha: 0 -> 1
 		if dtime < location_fade_time:
@@ -137,8 +137,8 @@ screen location:
 				loc__set_show_at_end = True
 		
 		cut_k = 0
-		if time.time() < location_cutscene_end:
-			cut_k = get_k_between(location_cutscene_start, location_cutscene_end, time.time(), location_cutscene_state == 'off')
+		if get_game_time() < location_cutscene_end:
+			cut_k = get_k_between(location_cutscene_start, location_cutscene_end, get_game_time(), location_cutscene_state == 'off')
 		elif location_cutscene_state == 'off':
 			location_cutscene_state = None
 		else:
@@ -191,13 +191,13 @@ screen location:
 			
 			if get_rpg_control() and me.get_pose() == 'stance':
 				if loc__left and not loc__prev_left:
-					loc__left_time = time.time()
+					loc__left_time = get_game_time()
 				if loc__right and not loc__prev_right:
-					loc__right_time = time.time()
+					loc__right_time = get_game_time()
 				if loc__up and not loc__prev_up:
-					loc__up_time = time.time()
+					loc__up_time = get_game_time()
 				if loc__down and not loc__prev_down:
-					loc__down_time = time.time()
+					loc__down_time = get_game_time()
 				
 				min_index = loc__get_min(loc__left_time  if loc__left  else loc__max_time,
 				                         loc__right_time if loc__right else loc__max_time,

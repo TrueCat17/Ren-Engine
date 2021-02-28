@@ -120,7 +120,7 @@ init -1000 python:
 		
 		# new text
 		if name is not None:
-			db_start_time = time.time()
+			db_start_time = get_game_time()
 			
 			db_name_text = name_prefix + name + name_postfix
 			db_name_color = name_color
@@ -133,7 +133,7 @@ init -1000 python:
 		
 		# continuation of prev text
 		else:
-			db_start_time = time.time() - len_unicode(db_voice_text) / float(renpy.config.text_cps)
+			db_start_time = get_game_time() - len_unicode(db_voice_text) / float(renpy.config.text_cps)
 			
 			db_voice_full_text += text
 			if not db_voice_text_after_pause:
@@ -154,7 +154,7 @@ init -1000 python:
 		db_voice_size = get_stage_width() - (db_prev_btn_size + db_next_btn_size + 20), int(max(80, 0.2 * get_stage_height()))
 		
 		if db_voice_text != db_voice_full_text:
-			symbols_to_render = int((time.time() - db_start_time) * renpy.config.text_cps)
+			symbols_to_render = int((get_game_time() - db_start_time) * renpy.config.text_cps)
 			
 			prev_index = None
 			index = 0
@@ -171,8 +171,8 @@ init -1000 python:
 			global db_pause_after_text, db_pause_end
 			if db_pause_after_text != 0:
 				if db_pause_end == 0:
-					db_pause_end = time.time() + db_pause_after_text
-				elif db_pause_end < time.time():
+					db_pause_end = get_game_time() + db_pause_after_text
+				elif db_pause_end < get_game_time():
 					db_pause_after_text = 0
 					db_pause_end = 0
 					show_text(None, '', '', 0, db_voice_text_after_pause, '', db_last_text_postfix, db_voice_color)
@@ -190,8 +190,8 @@ init -1000 python:
 		
 		global db_pause_end, db_dialogue, db_name_text, db_voice_text, db_voice_full_text, db_read
 		
-		if db_pause_end > time.time():
-			db_pause_end = time.time()
+		if db_pause_end > get_game_time():
+			db_pause_end = get_game_time()
 			return
 		
 		if db_voice_text == db_voice_full_text:

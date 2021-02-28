@@ -26,7 +26,7 @@ static const size_t MAX_PART_COUNT = 5;
 
 static std::mutex musicMutex;
 
-static long startUpdateTime = 0;
+static double startUpdateTime = 0;
 
 static std::map<std::string, double> mixerVolumes;
 
@@ -113,8 +113,8 @@ void Music::loop() {
 				}
 			}
 		}
-		const long spend = Utils::getTimer() - startUpdateTime;
-		Utils::sleep(10 - spend, false);
+		const double spend = Utils::getTimer() - startUpdateTime;
+		Utils::sleep(0.010 - spend, false);
 	}
 }
 
@@ -219,7 +219,7 @@ void Music::play(const std::string &desc,
 	std::string url = PyUtils::exec(fileName, numLine, args[1], true);
 	String::replaceAll(url, "\\", "/");
 
-	long fadeIn = 0;
+	double fadeIn = 0;
 	if (args.size() > 2) {
 		if (args[2] != "fadein") {
 			Utils::outMsg("Music::play",
@@ -232,7 +232,7 @@ void Music::play(const std::string &desc,
 			              "Fadein value expected number, got <" + args[3] + ">\n\n" + place);
 			return;
 		}
-		fadeIn = long(String::toDouble(fadeInStr) * 1000);
+		fadeIn = String::toDouble(fadeInStr);
 	}
 
 	std::lock_guard g(musicMutex);
@@ -291,7 +291,7 @@ void Music::stop(const std::string &desc,
 		return;
 	}
 
-	long fadeOut = 0;
+	double fadeOut = 0;
 	if (args.size() > 1) {
 		if (args[1] != "fadeout") {
 			Utils::outMsg("Music::stop",
@@ -304,7 +304,7 @@ void Music::stop(const std::string &desc,
 			              "Fadeout value expected number, got <" + args[2] + ">\n\n" + place);
 			return;
 		}
-		fadeOut = long(String::toDouble(fadeOutStr) * 1000);
+		fadeOut = String::toDouble(fadeOutStr);
 	}
 
 	std::lock_guard g(musicMutex);
@@ -331,11 +331,11 @@ const std::map<std::string, double>& Music::getMixerVolumes() {
 
 
 
-Music::Music(const std::string &url, Channel *channel, long fadeIn,
+Music::Music(const std::string &url, Channel *channel, double fadeIn,
              const std::string &fileName, size_t numLine, const std::string &place):
 	url(url),
 	channel(channel),
-	startFadeInTime(Utils::getTimer()),
+    startFadeInTime(Utils::getTimer()),
 	fadeIn(fadeIn),
 	fileName(fileName),
 	numLine(numLine),
@@ -380,10 +380,10 @@ bool Music::initCodec() {
 		if (error == AVERROR(ENOENT)) {
 			Utils::outMsg("Music::initCodec: avformat_open_input",
 			              "File <" + url + "> not found\n\n" + place);
-			return true;
+		}else {
+			Utils::outMsg("Music::initCodec: avformat_open_input",
+			              "Could not to open input stream in file <" + url + ">\n\n" + place);
 		}
-		Utils::outMsg("Music::initCodec: avformat_open_input",
-		              "Could not to open input stream in file <" + url + ">\n\n" + place);
 		return true;
 	}
 	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
@@ -504,23 +504,23 @@ void Music::loadNextParts(size_t count) {
 }
 
 int Music::getVolume() const {
-	int max = int(SDL_MIX_MAXVOLUME * channel->volume * mixerVolumes[channel->mixer]);
+	double max = SDL_MIX_MAXVOLUME * channel->volume * mixerVolumes[channel->mixer];
 
 	//fadeIn
-	if (fadeIn && (startFadeInTime + fadeIn > startUpdateTime)) {
-		return max * int(startUpdateTime - startFadeInTime) / fadeIn;
+	if (fadeIn > 0 && startFadeInTime + fadeIn > startUpdateTime) {
+		return int(max * (startUpdateTime - startFadeInTime) / fadeIn);
 	}
 
 	//fadeOut
-	if (fadeOut && startFadeOutTime + fadeOut > startUpdateTime) {
-		return max - max * int(startUpdateTime - startFadeOutTime) / fadeOut;
+	if (fadeOut > 0 && startFadeOutTime + fadeOut > startUpdateTime) {
+		return int(max - max * (startUpdateTime - startFadeOutTime) / fadeOut);
 	}
 
 	//usual
-	return max;
+	return int(max);
 }
 bool Music::isEnded() const {
-	return ended || (startFadeOutTime && (startFadeOutTime + fadeOut < startUpdateTime));
+	return ended || (startFadeOutTime > 0 && startFadeOutTime + fadeOut < startUpdateTime);
 }
 
 
@@ -538,31 +538,35 @@ size_t Music::getNumLine() const {
 }
 
 
-long Music::getFadeIn() const {
-	return std::max(fadeIn + startFadeInTime - startUpdateTime, 0l);
+double Music::getFadeIn() const {
+	return std::max(fadeIn + startFadeInTime - startUpdateTime, 0.0);
 }
-long Music::getFadeOut() const {
-	return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0l);
+double Music::getFadeOut() const {
+	return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0.0);
 }
-int64_t Music::getPos() const {
-	return lastFramePts;
+double Music::getPos() const {
+	auto k = formatCtx->streams[audioStream]->time_base;
+	return double(lastFramePts) * k.num / k.den;
 }
 
-void Music::setFadeIn(long v) {
+void Music::setFadeIn(double v) {
 	fadeIn = v;
 	startFadeInTime = startUpdateTime;
 }
-void Music::setFadeOut(long v) {
+void Music::setFadeOut(double v) {
 	fadeOut = v;
 	startFadeOutTime = startUpdateTime;
 }
-void Music::setPos(int64_t pos) {
+void Music::setPos(double sec) {
 	std::lock_guard g(musicMutex);
 
 	audioPos = buffer;
 	audioLen = 0;
 
-	if (av_seek_frame(formatCtx, audioStream, pos, AVSEEK_FLAG_FRAME) < 0) {
+	auto k = formatCtx->streams[audioStream]->time_base;
+	int64_t ts = int64_t(sec / k.num * k.den);
+
+	if (av_seek_frame(formatCtx, audioStream, ts, AVSEEK_FLAG_ANY) < 0) {
 		Utils::outMsg("Music::setPos", "Could not to rewind file <" + url + ">");
 	}else {
 		loadNextParts(MIN_PART_COUNT);

@@ -101,6 +101,8 @@ init -100000 python:
 		0, 100, 70, True  -> 0.7
 		10, 20, 18, False -> 0.2
 		"""
+		if start == end:
+			return 0 if reverse else 1
 		r = float(value - start) / (end - start)
 		return in_bounds(1 - r if reverse else r, 0.0, 1.0)
 	

@@ -51,13 +51,7 @@ init python:
 			td_last_update_time = 0
 			return
 		
-		if td_last_update_time:
-			if time.time() - td_last_update_time < 0.5:
-				td_to_update_time += time.time() - td_last_update_time
-			else:
-				td_to_update_time = 0
-		td_last_update_time = time.time()
-		
+		td_to_update_time += get_last_tick()
 		while td_to_update_time > td_frame_time:
 			td_to_update_time -= td_frame_time
 			
@@ -176,7 +170,7 @@ screen tower_defence:
 				color 0
 			text (_('Money') + ': ' + str(td_moneys)):
 				text_size 18
-				color 0xFF0000 if time.time() - td_alarm_moneys < 0.3 else 0xFFFF00
+				color 0xFF0000 if get_game_time() - td_alarm_moneys < 0.3 else 0xFFFF00
 			text (_('HP') + ': ' + str(td_hp)):
 				text_size 18
 				color 0x00FF00

@@ -3,7 +3,7 @@ init -1003 python:
 	cam_object = None
 	cam_object_old = None
 	cam_object_start_moving = 0.0
-	cam_object_end_moving = 1.0
+	cam_object_end_moving = 0.0
 	cam_object_align = (0.5, 0.5)
 	cam_object_align_old = (0.5, 0.5)
 	cam_object_zoom = 1.0
@@ -29,8 +29,8 @@ init -1003 python:
 		global cam_object_old, cam_object_start_moving, cam_object_end_moving
 		if cam_object is not None:
 			cam_object_old = old
-			cam_object_start_moving = time.time()
-			cam_object_end_moving = time.time() + max(moving_time, 0.001)
+			cam_object_start_moving = get_game_time()
+			cam_object_end_moving = cam_object_start_moving + max(moving_time, 0)
 		
 		if align is not None:
 			global cam_object_align, cam_object_align_old
@@ -74,13 +74,13 @@ init -1003 python:
 	
 	
 	def get_camera_params(location):
-		k = get_k_between(cam_object_start_moving, cam_object_end_moving, time.time())
-		if cam_object_end_moving < time.time():
+		k = get_k_between(cam_object_start_moving, cam_object_end_moving, get_game_time())
+		if cam_object_end_moving <= get_game_time():
 			global cam_object_align_old, cam_object_zoom_old
 			cam_object_align_old = cam_object_align
 			cam_object_zoom_old = cam_object_zoom
 		
-		if cam_object_old is None or cam_object is None or cam_object_end_moving < time.time():
+		if cam_object_old is None or cam_object is None or cam_object_end_moving < get_game_time():
 			if cam_object is None:
 				cam_object_x, cam_object_y = 0, 0
 			else:
@@ -141,12 +141,12 @@ init -1003 python:
 	
 	
 	def cam_object_moved():
-		return cam_object_end_moving < time.time()
+		return cam_object_end_moving <= get_game_time()
 	can_exec_next_check_funcs.append(cam_object_moved)
 	
 	def cam_object_move():
 		global cam_object_start_moving, location_cutscene_start, cam_object_end_moving, location_cutscene_end
 		cam_object_start_moving = location_cutscene_start = 0.0
-		cam_object_end_moving = location_cutscene_end = 1.0
+		cam_object_end_moving = location_cutscene_end = 0.0
 	can_exec_next_skip_funcs.append(cam_object_move)
 

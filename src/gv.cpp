@@ -9,6 +9,9 @@ bool GV::minimized = false;
 bool GV::inGame = false;
 bool GV::exit = false;
 
+bool GV::beforeFirstFrame = false;
+bool GV::firstFrame = false;
+
 std::thread::id GV::messageThreadId;
 
 SDL_DisplayMode GV::displayMode;
@@ -18,8 +21,10 @@ Uint8 GV::keyBoardState[SDL_NUM_SCANCODES];
 
 Group *GV::screens = nullptr;
 
-long GV::frameStartTime = 0;
 std::mutex GV::updateMutex;
+double GV::prevFrameStartTime = 0;
+double GV::frameStartTime = 0;
+double GV::gameTime = 0;
 
 std::mutex GV::mutexForSmartPtr;
 

@@ -70,28 +70,25 @@ std::vector<std::string> Utils::getFileNames(const std::string &path) {
 	return FileSystem::getFilesRecursive(path);
 }
 
-long Utils::getTimer() {
+double Utils::getTimer() {
 	static auto startTime = std::chrono::system_clock::now();
 
 	auto now = std::chrono::system_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
-	return duration.count();
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now - startTime);
+	return double(duration.count()) / 1e9;
 }
-void Utils::sleep(long ms, bool checkInGame) {
-	const long MIN_SLEEP = Game::getFrameTime();
+void Utils::sleep(double sec, bool checkInGame) {
+	const double MIN_SLEEP = Game::getFrameTime();
 
-	while ((GV::inGame || !checkInGame) && ms >= MIN_SLEEP) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(MIN_SLEEP));
-		ms -= MIN_SLEEP;
+	while ((GV::inGame || !checkInGame) && sec >= MIN_SLEEP) {
+		std::this_thread::sleep_for(std::chrono::nanoseconds(size_t(MIN_SLEEP * 1e9)));
+		sec -= MIN_SLEEP;
 	}
-	if (ms <= 0) return;
+	if (sec <= 0) return;
 
 	if (GV::inGame || !checkInGame) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+		std::this_thread::sleep_for(std::chrono::nanoseconds(size_t(sec * 1e9)));
 	}
-}
-void Utils::sleepMicroSeconds(long ms) {
-	std::this_thread::sleep_for(std::chrono::microseconds(ms));
 }
 
 
@@ -180,7 +177,7 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 		while (Utils::realOutMsg()) {}
 	}else {
 		while (true) {
-			sleep(10, false);
+			sleep(0.010, false);
 
 			std::lock_guard g(msgGuard);
 			if (!Algo::in(message, messagesToOut)) break;

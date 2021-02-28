@@ -14,7 +14,7 @@ init -1001 python:
 				
 				animation = obj.animation
 				if animation.start_frame != animation.end_frame and obj.repeat >= 0:
-					if animation.time > 0 and time.time() - obj.animation_start_time < animation.time:
+					if animation.time > 0 and get_game_time() - obj.animation_start_time < animation.time:
 						return False
 		return True
 	can_exec_next_check_funcs.append(location_objects_animations_ended)
@@ -27,7 +27,7 @@ init -1001 python:
 				
 				animation = obj.animation
 				if animation.start_frame != animation.end_frame and obj.repeat >= 0 and animation.time > 0:
-					obj.animation_start_time = time.time() - obj.animation.time
+					obj.animation_start_time = get_game_time() - obj.animation.time
 					obj.repeat = 0
 	can_exec_next_skip_funcs.append(location_objects_animations_to_end)
 	
@@ -229,7 +229,7 @@ init -1001 python:
 			if not self.set_animation(anim_name):
 				return
 			
-			self.animation_start_time = time.time()
+			self.animation_start_time = get_game_time()
 			self.repeat = int(repeat)
 		
 		def remove_animation(self):
@@ -238,12 +238,12 @@ init -1001 python:
 		def update(self):
 			animation = self.animation
 			
-			dtime = time.time() - self.animation_start_time
+			dtime = get_game_time() - self.animation_start_time
 			time_k = 1
 			if animation.time > 0:
 				if dtime > animation.time:
 					if self.repeat:
-						self.animation_start_time = time.time()
+						self.animation_start_time = get_game_time()
 						time_k = 0
 					if self.repeat > 0:
 						self.repeat -= 1

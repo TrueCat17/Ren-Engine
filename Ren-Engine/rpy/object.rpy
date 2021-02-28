@@ -66,11 +66,11 @@ init -100000 python:
 		def __eq__(self, other):
 			return self is other
 		
-		def get_props(self):
+		def get_props(self, get_list = False):
 			keys = self.__dict__.keys()
 			keys.remove('in_persistent')
 			
-			return ' '.join(keys)
+			return keys if get_list else ' '.join(keys)
 		
 		
 		# for pickle

@@ -208,6 +208,9 @@ void PyUtils::init() {
 	setGlobalFunc("_set_lang", Translation::setLang);
 	setGlobalFunc("_known_languages", Translation::getKnownLanguages);
 	setGlobalFunc("_", Translation::get);
+
+	setGlobalFunc("get_last_tick", Game::getLastTick);
+	setGlobalFunc("get_game_time", Game::getGameTime);
 }
 
 

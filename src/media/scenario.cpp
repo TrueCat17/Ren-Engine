@@ -204,7 +204,7 @@ void Scenario::jumpNext(const std::string &label, bool isCall) {
 
 
 void Scenario::execute(const std::string &loadPath) {
-	long initingStartTime = Utils::getTimer();
+	double initingStartTime = Utils::getTimer();
 	size_t initNum = 0;
 
 	ScopeExit se([]() {
@@ -287,7 +287,6 @@ void Scenario::execute(const std::string &loadPath) {
 					PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "_choose_lang()");
 
 					restoreScreens(loadPath);
-					initing = false;
 					Logger::logEvent("Mod Initing (" + std::to_string(initBlocks.size()) + " blocks)",
 					                 Utils::getTimer() - initingStartTime, true);
 
@@ -295,6 +294,9 @@ void Scenario::execute(const std::string &loadPath) {
 						Node *start = getLabel("start");
 						markLabel(start->getFileName(), start->getNumLine(), "start");
 					}
+
+					initing = false;
+					GV::beforeFirstFrame = false;
 				}
 			}else
 
@@ -472,7 +474,7 @@ void Scenario::execute(const std::string &loadPath) {
 			const size_t numLine = child->getNumLine() + (child->command != "$");
 
 			PyUtils::exec(child->getFileName(), numLine, child->params);
-			Utils::sleepMicroSeconds(50);
+			Utils::sleep(1e-3 / 20);
 			continue;
 		}
 

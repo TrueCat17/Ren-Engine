@@ -51,11 +51,11 @@ init -1002 python:
 		class TmpClass: pass
 		tmp_instance = TmpClass()
 		
-		simple_types = (type(None), bool, int, float, long, str, tuple)
-		safe_types = (list, set, dict, type(TmpClass), type(tmp_instance))
+		simple_types = (type(None), bool, int, long, float, absolute, str)
+		safe_types = (list, tuple, set, dict, type(tmp_instance))
 		
 		persistent_values = []
-		for prop in persistent.get_props():
+		for prop in persistent.get_props(get_list=True):
 			o = persistent[prop]
 			if type(o) not in simple_types:
 				persistent_values.append(o)

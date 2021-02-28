@@ -139,10 +139,10 @@ static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
 
 
 
-static std::map<SurfacePtr, std::pair<long, TexturePtr>> textures;
+static std::map<SurfacePtr, std::pair<double, TexturePtr>> textures;
 
 static std::recursive_mutex surfaceMutex;
-static std::map<std::string, std::pair<long, SurfacePtr>> surfaces;
+static std::map<std::string, std::pair<double, SurfacePtr>> surfaces;
 
 
 static void trimTexturesCache(const SurfacePtr &last) {
@@ -155,7 +155,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//in MegaBytes
 	size_t cacheSize = size_t(last->h * last->pitch);
 
-	typedef std::map<SurfacePtr, std::pair<long, TexturePtr>>::const_iterator Iter;
+	typedef std::map<SurfacePtr, std::pair<double, TexturePtr>>::const_iterator Iter;
 
 	for (Iter it = textures.begin(); it != textures.end(); ++it) {
 		const SurfacePtr &surface = it->first;
@@ -174,7 +174,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 		{}
 
 		const SurfacePtr& surface() const { return iter->first; }
-		long time() const { return iter->second.first; }
+		double time() const { return iter->second.first; }
 		const TexturePtr& texture() const { return iter->second.second; }
 	};
 
@@ -216,7 +216,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 TexturePtr ImageCaches::getTexture(SDL_Renderer *renderer, const SurfacePtr &surface) {
 	if (!surface) return nullptr;
 
-	auto it = textures.find(surface);
+	auto it = textures.find(surface); 
 	if (it != textures.end()) {
 		it->second.first = Utils::getTimer();
 		return it->second.second;
@@ -241,7 +241,7 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_surfaces_cache"))) * (1 << 20);
 	size_t cacheSize = size_t(last->h * last->pitch);
 
-	typedef std::map<std::string, std::pair<long, SurfacePtr>>::const_iterator Iter;
+	typedef std::map<std::string, std::pair<double, SurfacePtr>>::const_iterator Iter;
 
 	std::map<SDL_Surface*, int> countSurfaces;
 	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
@@ -263,7 +263,7 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 		{}
 
 		const std::string &path() const { return iter->first; }
-		long time() const { return iter->second.first; }
+		double time() const { return iter->second.first; }
 		const SurfacePtr& surface() const { return iter->second.second; }
 	};
 

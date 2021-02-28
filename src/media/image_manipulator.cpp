@@ -119,7 +119,7 @@ void preloadThread() {
 	while (!GV::exit) {
 		if (toSaveImages.empty()) {
 			if (toLoadImages.empty()) {
-				Utils::sleep(5, false);
+				Utils::sleep(0.005, false);
 			}else {
 				std::string desc;
 				{
@@ -167,7 +167,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 			}
 		}
 		if (in) {
-			Utils::sleep(10);
+			Utils::sleep(0.010);
 		}
 	}
 

@@ -61,9 +61,7 @@ init python:
 	def tg_tanks_set_level(level):
 		global tg_tanks_player, tg_tanks_players, tg_tanks_bullets
 		global tg_tanks_walls, tg_color_field
-		global tg_tanks_level, tg_width, tg_height, tg_tanks_start_level_time
-		
-		tg_tanks_start_level_time = time.time()
+		global tg_tanks_level, tg_width, tg_height
 		
 		tg_tanks_player = None
 		tg_tanks_players = []

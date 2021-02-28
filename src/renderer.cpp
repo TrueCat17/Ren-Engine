@@ -335,7 +335,7 @@ SurfacePtr Renderer::getScaled(const SurfacePtr &src, int width, int height) {
 
 	scaled = false;
 	while (!scaled) {
-		Utils::sleep(1);
+		Utils::sleep(0.001);
 	}
 	toScaleSurface.reset();
 
@@ -397,7 +397,7 @@ void Renderer::needMakeScreenshot() {
 }
 SurfacePtr Renderer::getScreenshot() {
 	while (!screenshoted) {
-		Utils::sleep(1);
+		Utils::sleep(0.001);
 	}
 	return screenshot;
 }
@@ -434,7 +434,7 @@ static void loop() {
 		}
 
 		if (!Renderer::needToRender || GV::minimized) {
-			Utils::sleep(1, false);
+			Utils::sleep(0.001, false);
 			continue;
 		}
 
@@ -689,7 +689,7 @@ bool Renderer::init() {
 
 	std::thread(initImpl, &inited, &error).detach();
 	while (!inited) {
-		Utils::sleep(1, false);
+		Utils::sleep(0.001, false);
 	}
 
 	return error;

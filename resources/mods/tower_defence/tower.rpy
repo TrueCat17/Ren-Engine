@@ -47,8 +47,8 @@ init python:
 			
 			self.rotation = 0
 			
-			self.last_shut = 0
 			self.shut_time = 1.0 / self.speed
+			self.last_shut = -self.shut_time
 		
 		def update(self):
 			tank = self.get_near_tank()
@@ -61,10 +61,10 @@ init python:
 			
 			self.rotation = math.atan2(dy, dx) * 180 / math.pi + 90
 			
-			if self.last_shut and time.time() - self.last_shut < self.shut_time:
+			if get_game_time() - self.last_shut < self.shut_time:
 				return
 			
-			self.last_shut = time.time()
+			self.last_shut = get_game_time()
 			
 			bullet = Bullet(self.x, self.y, dx / dist, dy / dist, self.tower_type)
 			td_bullets.append(bullet)

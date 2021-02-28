@@ -25,8 +25,8 @@ init python:
 				
 				x = rand_int(0, width)
 				y = rand_int(0, height)
-				dx = rand_float(-0.12, 0.12) * size
-				dy = rand_float( 0.15, 0.40) * size
+				dx = rand_float(-7, 7) * size
+				dy = rand_float(10, 25) * size
 				
 				sizes = (size, size)
 				
@@ -34,10 +34,7 @@ init python:
 				objs.append(obj)
 	
 	def update_snow():
-		global prev_time_update, tmp_image
-		
-		k = (time.time() - prev_time_update) * 60
-		prev_time_update = time.time()
+		k = get_last_tick()
 		
 		width, height = get_stage_size()
 		x, y, dx, dy, sizes = 0, 1, 2, 3, 4
@@ -55,6 +52,7 @@ init python:
 				tmp_image_args.extend(
 					((obj[x], obj[y]), img_cache[obj[sizes]])
 				)
+			global tmp_image
 			tmp_image = im.composite(*tmp_image_args)
 		else:
 			for obj in objs:
@@ -62,7 +60,6 @@ init python:
 				obj[y] = (obj[y] + obj[dy] * k) % height
 	
 	set_count(4000)
-	prev_time_update = time.time()
 
 
 screen snow:

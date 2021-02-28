@@ -17,16 +17,10 @@ init python:
 	def update():
 		global last_stay_time
 		if not left and not right:
-			last_stay_time = time.time()
+			last_stay_time = get_game_time()
 		
-		global prev_update_time, update_dtime
-		if prev_update_time:
-			if time.time() - prev_update_time < 0.5:
-				update_dtime += time.time() - prev_update_time
-			else:
-				update_dtime = 0
-		prev_update_time = time.time()
-		
+		global update_dtime
+		update_dtime += get_last_tick()
 		while update_dtime > physics_step:
 			update_dtime -= physics_step
 			

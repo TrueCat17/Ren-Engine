@@ -7,7 +7,7 @@ init -9000 python:
 			if in_time is None:
 				in_time = out_time
 			
-			self.start_time = time.time()
+			self.start_time = get_game_time()
 			self.out_time   = max(out_time , 0.001)
 			self.hold_time  = max(hold_time, 0.001)
 			self.in_time    = max(in_time  , 0.001)
@@ -43,8 +43,7 @@ init -9000 python:
 				screen.new_data.alpha = 0
 				screen.new_data.image = im.Rect(self.color, 1, 1)
 			
-			now = time.time()
-			dtime = now - self.start_time
+			dtime = get_game_time() - self.start_time
 			
 			if dtime < self.out_time + self.hold_time:
 				screen.new_data.alpha = in_bounds(dtime / self.out_time, 0.0, 1.0)

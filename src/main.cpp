@@ -308,7 +308,6 @@ static bool init() {
 }
 
 
-static long lastFrameStartTime = Utils::getTimer();
 static std::list<SDL_Event> events;
 static std::mutex eventMutex;
 
@@ -321,14 +320,16 @@ static void loop() {
 
 	while (true) {
 		while (!GV::inGame && !GV::exit) {
-			Utils::sleep(10, false);
+			Utils::sleep(0.010, false);
 		}
 		if (GV::exit) return;
 
 
 		GV::updateMutex.lock();
 
-		lastFrameStartTime = Utils::getTimer();
+		GV::prevFrameStartTime = GV::frameStartTime;
+		GV::frameStartTime = Utils::getTimer();
+		GV::gameTime += Game::getLastTick();
 
 		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;
@@ -466,12 +467,11 @@ static void loop() {
 		}
 		mouseOutPrevDown = mouseOutDown;
 
-		GV::frameStartTime = Utils::getTimer();
 		GUI::update();
 
 		if (!GV::minimized) {
 			while (Renderer::needToRender) {
-				Utils::sleep(1);
+				Utils::sleep(0.001);
 			}
 			{
 				std::lock_guard g(Renderer::toRenderMutex);
@@ -498,10 +498,14 @@ static void loop() {
 
 		GV::updateMutex.unlock();
 
-		const long spent = Utils::getTimer() - lastFrameStartTime;
-		const long timeToSleep = Game::getFrameTime() - spent;
+		const double spent = Utils::getTimer() - GV::frameStartTime;
+		const double timeToSleep = Game::getFrameTime() - spent;
 //		std::cout << spent << ' ' << timeToSleep << '\n';
 		Utils::sleep(timeToSleep);
+
+		if (!GV::beforeFirstFrame) {
+			GV::firstFrame = false;
+		}
 	}
 }
 
@@ -512,7 +516,7 @@ static void eventLoop() {
 	while (!GV::exit) {
 		while (Utils::realOutMsg()) {}
 
-		Utils::sleep(10, false);
+		Utils::sleep(0.010, false);
 
 		std::lock_guard g(eventMutex);
 
@@ -532,14 +536,14 @@ static void destroy() {
 	GV::exit = true;
 	GV::inGame = false;
 
-	long toSleep = Game::getFrameTime() + 3;
+	double toSleep = Game::getFrameTime() + 0.003;
 
 	SDL_Event event;
-	while (toSleep) {
+	while (toSleep > 0) {
 		while (SDL_PollEvent(&event)) {}
 
-		Utils::sleep(1, false);
-		--toSleep;
+		Utils::sleep(0.001, false);
+		toSleep -= 0.001;
 	}
 
 	SDL_CloseAudio();
@@ -547,7 +551,7 @@ static void destroy() {
 }
 
 int main(int argc, char **argv) {
-	std::string arg;
+	std::string arg = "";
 	if (argc == 2) {
 		arg = argv[1];
 	}else if (argc > 2) {
@@ -581,7 +585,7 @@ int main(int argc, char **argv) {
 	}
 
 	{
-		long initStartTime = Utils::getTimer();
+		double initStartTime = Utils::getTimer();
 		if (init()) {
 			return 0;
 		}

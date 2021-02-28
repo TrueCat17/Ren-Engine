@@ -39,18 +39,18 @@ init python:
 	
 	def show_pause():
 		global pause_showed_time, pause_start_hided_time, pause_before_fps
-		if not has_screen('pause') and time.time() - pause_hided_time > pause_rotate_time + pause_disappearance_time:
-			pause_showed_time = time.time()
+		if not has_screen('pause') and get_game_time() - pause_hided_time > pause_rotate_time + pause_disappearance_time:
+			pause_showed_time = get_game_time()
 			pause_start_hided_time = 0
 			pause_before_fps = get_fps()
 			set_fps(pause_fps)
 			show_screen('pause')
 	def pause_close_func():
 		global pause_start_hided_time
-		a = time.time() - pause_start_hided_time > pause_rotate_time + pause_disappearance_time
-		b = time.time() - pause_showed_time > pause_appearance_time
+		a = get_game_time() - pause_start_hided_time > pause_rotate_time + pause_disappearance_time
+		b = get_game_time() - pause_showed_time > pause_appearance_time
 		if a and b:
-			pause_start_hided_time = time.time()
+			pause_start_hided_time = get_game_time()
 
 
 screen pause:
@@ -64,26 +64,26 @@ screen pause:
 		if not pause_inited:
 			init_pause()
 		
-		if time.time() - pause_showed_time > pause_appearance_time:
+		if get_game_time() - pause_showed_time > pause_appearance_time:
 			pause_y = 0
 			if pause_start_hided_time:
-				if time.time() - pause_start_hided_time < pause_rotate_time:
-					pause_rotate = pause_hide_rotate * (time.time() - pause_start_hided_time) / pause_rotate_time
+				if get_game_time() - pause_start_hided_time < pause_rotate_time:
+					pause_rotate = pause_hide_rotate * (get_game_time() - pause_start_hided_time) / pause_rotate_time
 				else:
 					pause_rotate = pause_hide_rotate
-					pause_x = pause_y = (time.time() - pause_start_hided_time - pause_rotate_time) / pause_disappearance_time
+					pause_x = pause_y = (get_game_time() - pause_start_hided_time - pause_rotate_time) / pause_disappearance_time
 					
 					if pause_x >= 1:
 						pause_x, pause_y = 0, 0
 						pause_rotate = 0
 						
 						pause_start_hided_time = 0
-						pause_hided_time = time.time()
+						pause_hided_time = get_game_time()
 						
 						set_fps(pause_before_fps)
 						hide_screen('pause')
 		else:
-			pause_y = float(time.time() - pause_showed_time - pause_appearance_time) / pause_appearance_time
+			pause_y = float(get_game_time() - pause_showed_time - pause_appearance_time) / pause_appearance_time
 	
 	xpos   pause_x
 	ypos   pause_y

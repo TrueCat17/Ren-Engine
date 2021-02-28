@@ -311,7 +311,7 @@ init python:
 		global console_showed_time
 		if not has_screen('console'):
 			show_screen('console')
-			console_showed_time = time.time()
+			console_showed_time = get_game_time()
 
 
 screen console_watching:
@@ -342,7 +342,7 @@ screen console:
 	
 	$ db_skip_tab = False
 	
-	key 'ESCAPE' action [Hide('console'), SetVariable('pause_hided_time', time.time())]
+	key 'ESCAPE' action [Hide('console'), SetVariable('pause_hided_time', get_game_time())]
 	
 	$ console_ctrl  = False
 	key 'LEFT CTRL'   action SetVariable('console_ctrl', True) first_delay 0
@@ -353,7 +353,7 @@ screen console:
 	
 	key 'SPACE' action console_add(' ')
 	
-	if time.time() - console_showed_time > 0.333:
+	if get_game_time() - console_showed_time > 0.333:
 		for key in console_keys:
 			key key action console_add(key)
 	
@@ -406,7 +406,7 @@ screen console:
 			
 			python:
 				index = console_get_cursor_index()
-				alpha_cursor = '{alpha=' + str(1 if time.time() % 2 < 1 else 0) + '}' + console_cursor + '{/alpha}'
+				alpha_cursor = '{alpha=' + str(1 if get_game_time() % 2 < 1 else 0) + '}' + console_cursor + '{/alpha}'
 				console_input_with_cursor = console_input[0:index] + alpha_cursor + console_input[index:]
 			
 			text console_input_with_cursor.replace(console_key_tag, '{{'):

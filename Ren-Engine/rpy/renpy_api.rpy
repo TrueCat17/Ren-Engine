@@ -3,10 +3,10 @@ init -999 python:
 	pause_end = 0
 	def pause(sec = None):
 		global pause_end
-		pause_end = time.time() + (1e9 if sec is None else sec)
+		pause_end = get_game_time() + (1e9 if sec is None else sec)
 	
 	def pause_ended():
-		return pause_end < time.time()
+		return pause_end <= get_game_time()
 	can_exec_next_check_funcs.append(pause_ended)
 	
 	def pause_to_end():

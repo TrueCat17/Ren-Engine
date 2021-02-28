@@ -4,7 +4,7 @@ init -9000 python:
 		def __init__(self, mask, t = 1.0, ramp = 5, reverse = False, spr = None):
 			Object.__init__(self)
 			
-			self.start_time = time.time()
+			self.start_time = get_game_time()
 			self.mask = mask
 			self.time = max(t, 0.001)
 			self.ramp = max(ramp, 1)
@@ -19,8 +19,7 @@ init -9000 python:
 			return res
 		
 		def update(self):
-			now = time.time()
-			dtime = now - self.start_time
+			dtime = get_game_time() - self.start_time
 			
 			def upd_spr_data(data, k_time, mask, ramp, reverse, hiding):
 				if not data.image:

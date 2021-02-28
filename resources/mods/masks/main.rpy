@@ -6,8 +6,6 @@ init python:
 	mask_images = os.listdir(mask_dir)
 	mask_images.sort()
 	
-	mask_start_time = time.time()
-	
 	mask_cmp_desks = (
 		('l', '<'),
 		('g', '>'),
@@ -21,13 +19,14 @@ init python:
 	step = 5
 	duration = 1.0
 	
+	mask_start_time = get_game_time()
 	def restart_mask():
 		global mask_start_time
-		mask_start_time = time.time()
+		mask_start_time = get_game_time()
 
 screen masks:
 	python:
-		mask_value = in_bounds((time.time() - mask_start_time) * 255 / duration, 0, 255)
+		mask_value = in_bounds((get_game_time() - mask_start_time) * 255 / duration, 0, 255)
 		if mask_value != 255:
 			mask_value = int(mask_value / step) * step
 		

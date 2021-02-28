@@ -39,7 +39,7 @@ init -1001 python:
 	def characters_to_end():
 		if cur_location:
 			for obj in cur_location.objects:
-				if isinstance(obj, Character):
+				if isinstance(obj, Character) and not obj.get_auto() and not obj.ended_move_waiting():
 					obj.move_to_end()
 	can_exec_next_skip_funcs.append(characters_to_end)
 	
@@ -142,7 +142,7 @@ init -1001 python:
 			self.move_kind = 'stay'    #  'stay'  | 'walk' | 'run'
 			self.fps = character_walk_fps
 			
-			self.prev_update_time = time.time()
+			self.prev_update_time = get_game_time()
 			self.moving_ended = True
 			
 			self.x, self.y = 0, 0
@@ -417,185 +417,22 @@ init -1001 python:
 			for prop in ('fps', 'speed', 'acceleration'):
 				self[prop] = g['character_' + self.move_kind + '_' + prop] # for example: self.fps = character_run_fps
 			
-			self.prev_update_time = time.time()
+			self.prev_update_time = get_game_time()
 			if wait_time >= 0:
-				self.end_stop_time = time.time() + wait_time
+				self.end_stop_time = self.prev_update_time + wait_time
 			else:
 				self.end_stop_time = None
 			
 			return res
 		
-		def move_to_end(self, only_skip_waiting = True):
-			if self.get_auto():
-				return
-			
-			if self.end_stop_time:
-				if self.end_stop_time > time.time():
-					self.prev_update_time -= self.end_stop_time - time.time()
-					self.end_stop_time = time.time()
-				if only_skip_waiting:
-					return
-			
-			if not self.paths or type(self.paths[-1]) is int: # cycled path
-				return
-			
-			self.moving_ended = True
-			path = self.paths[-1]
-			self.paths = []
-			
-			# calc end location, x, y and rotation:
-			location_name, place = None, None
-			to_side = None
-			x, y = self.x, self.y
-			first_step = 0
-			
-			for i in xrange(len(path) / 2):
-				to_x, to_y = path[i * 2], path[i * 2 + 1]
-				
-				if type(to_x) is str:
-					location_name, place = to_x, to_y
-					if type(place) is str:
-						place = rpg_locations[location_name].places[place]
-					if place.has_key('to_side') and place['to_side'] is not None:
-						to_side = place['to_side']
-					x, y = get_place_center(place)
-					first_step = i + 1
-					continue
-				
-				dx, dy = to_x - x, to_y - y
-				x, y = to_x, to_y
-				if dx == 0 and dy == 0: continue
-				
-				if not (dx and dy) or i == first_step: # not diagonal or first step
-					if abs(dx) > abs(dy):
-						to_side = to_left if dx < 0 else to_right
-					else:
-						to_side = to_forward if dy < 0 else to_back
-			
-			
-			if self.location.name == location_name or location_name is None:
-				self.x, self.y = x, y
-				self.set_direction(to_side)
-			else:
-				show_character(self, {'x': x, 'y': y, 'to_side': to_side}, location_name)
-		
-		def ended_move_waiting(self):
-			if self.end_stop_time:
-				return self.end_stop_time < time.time()
-			if self.paths and type(self.paths[-1]) is int: # cycled path
-				return True
-			return self.moving_ended
-		
-		
-		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
-			if not self.animations.has_key(anim_name):
-				out_msg('start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
-				return
-			
-			animation = self.animation = self.animations[anim_name]
-			animation.first_update = True
-			
-			self.xoffset, self.yoffset = animation.xoffset, animation.yoffset
-			
-			self.start_anim_time = time.time()
-			self.repeat = int(repeat)
-			
-			if wait_time >= 0:
-				self.end_wait_anim_time = time.time() + wait_time
-			else:
-				self.end_wait_anim_time = None
-		
-		def remove_animation(self):
-			self.start_anim_time = None
-			self.end_wait_anim_time = None
-			self.xoffset, self.yoffset = 0, 0
-			self.xsize, self.ysize = character_xsize, character_ysize
-		
-		def anim_to_end(self):
-			if self.start_anim_time:
-				self.start_anim_time = 0
-		
-		def ended_anim_waiting(self):
-			if self.repeat < 0 or self.start_anim_time is None:
-				return True
-			if self.end_wait_anim_time is not None and self.end_wait_anim_time < time.time():
-				return True
-			
-			if self.repeat > 0:
-				return False
-			return time.time() - self.start_anim_time > self.animation.time
-		
-		
-		def get_auto(self):
-			return self.auto_actions
-		def set_auto(self, value):
-			if not value and self.actions:
-				self.actions.stop()
-			self.auto_actions = bool(value)
-		
-		def get_actions(self):
-			return self.actions
-		def set_actions(self, actions):
-			if self.actions:
-				self.actions.stop()
-			self.actions = actions and actions.copy(self)
-			return self.actions
-		
-		
-		def update(self):
-			dtime = time.time() - self.prev_update_time
-			self.prev_update_time = time.time()
-			
-			if self.get_auto() and self.actions:
-				self.actions.update()
-			self.alpha = min((time.time() - self.show_time) / location_fade_time, 1)
-			
-			if self.start_anim_time is None:
-				self.set_frame(int(time.time() * self.fps))
-			else:
-				animation = self.animation
-				anim_dtime = time.time() - self.start_anim_time
-				
-				time_k = 1
-				if animation.time > 0:
-					if anim_dtime > animation.time:
-						if self.repeat:
-							self.start_anim_time = time.time()
-							time_k = 0
-						if self.repeat > 0:
-							self.repeat -= 1
-					else:
-						time_k = anim_dtime / animation.time
-				
-				if animation.first_update:
-					animation.first_update = False
-					
-					if not animation.loaded:
-						animation.loaded = True
-						animation.xsize, animation.ysize = get_image_size(self.main())
-						animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
-					
-					self.xsize, self.ysize = animation.xsize, animation.ysize
-				
-				start_frame = animation.start_frame
-				end_frame = animation.end_frame
-				if end_frame < start_frame:
-					frame = start_frame - int((start_frame - end_frame + 1) * time_k)
-					frame = in_bounds(frame, end_frame, start_frame)
-				else:
-					frame = start_frame + int((end_frame - start_frame + 1) * time_k)
-					frame = in_bounds(frame, start_frame, end_frame)
-				
-				self.set_frame(frame)
-			
-			self.update_crop()
-			
-			if self.pose == 'sit' or self.move_kind == 'stay':
-				return
+		def update_moving(self, dtime):
 			if not self.paths:
 				self.move_kind = 'stay'
 				self.moving_ended = True
 				return
+			
+			if dtime is None:
+				dtime = 1000
 			
 			xstart, ystart, side_start = self.x, self.y, self.direction
 			
@@ -644,7 +481,11 @@ init -1001 python:
 					self.paths_index += 1
 					if self.paths_index == len(self.paths):
 						self.paths = []
-						self.x, self.y = to_x, to_y
+						self.move_kind = 'stay'
+						self.moving_ended = True
+						
+						self.prev_update_time = get_game_time()
+						dtime = 0
 						break
 					
 					path = self.paths[self.paths_index]
@@ -659,7 +500,132 @@ init -1001 python:
 				x, y, side = self.x, self.y, self.direction
 				self.x, self.y, self.direction = xstart, ystart, side_start
 				show_character(self, {'x': x, 'y': y, 'to_side': side}, location_name)
-				self.alpha = min((time.time() - self.show_time) / location_fade_time, 1)
+		
+		def move_to_end(self):
+			if self.end_stop_time and self.end_stop_time > get_game_time():
+				dtime = (get_game_time() - self.prev_update_time) + (self.end_stop_time - get_game_time())
+			else:
+				dtime = None
+			
+			self.end_stop_time = None
+			self.update_moving(dtime)
+		
+		def ended_move_waiting(self):
+			if self.end_stop_time:
+				return self.end_stop_time <= get_game_time()
+			if self.paths and type(self.paths[-1]) is int: # cycled path
+				return True
+			return self.moving_ended
+		
+		
+		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
+			if not self.animations.has_key(anim_name):
+				out_msg('start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
+				return
+			
+			animation = self.animation = self.animations[anim_name]
+			animation.first_update = True
+			
+			self.xoffset, self.yoffset = animation.xoffset, animation.yoffset
+			
+			self.start_anim_time = get_game_time()
+			self.repeat = int(repeat)
+			
+			if wait_time >= 0:
+				self.end_wait_anim_time = get_game_time() + wait_time
+			else:
+				self.end_wait_anim_time = None
+		
+		def remove_animation(self):
+			self.start_anim_time = None
+			self.end_wait_anim_time = None
+			self.xoffset, self.yoffset = 0, 0
+			self.xsize, self.ysize = character_xsize, character_ysize
+		
+		def anim_to_end(self):
+			self.remove_animation()
+		
+		def ended_anim_waiting(self):
+			if self.start_anim_time is None:
+				return True
+			if self.end_wait_anim_time is not None and self.end_wait_anim_time < get_game_time():
+				return True
+			
+			if self.repeat < 0:
+				return True
+			if self.repeat > 0:
+				return False
+			return self.start_anim_time + self.animation.time <= get_game_time()
+		
+		
+		def get_auto(self):
+			return self.auto_actions
+		def set_auto(self, value):
+			if not value and self.actions:
+				self.actions.stop()
+			self.auto_actions = bool(value)
+		
+		def get_actions(self):
+			return self.actions
+		def set_actions(self, actions):
+			if self.actions:
+				self.actions.stop()
+			self.actions = actions and actions.copy(self)
+			return self.actions
+		
+		
+		def update(self):
+			dtime = get_game_time() - self.prev_update_time
+			self.prev_update_time = get_game_time()
+			
+			if self.get_auto() and self.actions:
+				self.actions.update()
+			self.alpha = min((get_game_time() - self.show_time) / location_fade_time, 1)
+			
+			if self.start_anim_time is None:
+				self.set_frame(int(get_game_time() * self.fps))
+			else:
+				animation = self.animation
+				anim_dtime = get_game_time() - self.start_anim_time
+				
+				time_k = 1
+				if animation.time > 0:
+					if anim_dtime > animation.time:
+						if self.repeat:
+							self.start_anim_time = get_game_time()
+							time_k = 0
+						if self.repeat > 0:
+							self.repeat -= 1
+					else:
+						time_k = anim_dtime / animation.time
+				
+				if animation.first_update:
+					animation.first_update = False
+					
+					if not animation.loaded:
+						animation.loaded = True
+						animation.xsize, animation.ysize = get_image_size(self.main())
+						animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
+					
+					self.xsize, self.ysize = animation.xsize, animation.ysize
+				
+				start_frame = animation.start_frame
+				end_frame = animation.end_frame
+				if end_frame < start_frame:
+					frame = start_frame - int((start_frame - end_frame + 1) * time_k)
+					frame = in_bounds(frame, end_frame, start_frame)
+				else:
+					frame = start_frame + int((end_frame - start_frame + 1) * time_k)
+					frame = in_bounds(frame, start_frame, end_frame)
+				
+				self.set_frame(frame)
+			
+			self.update_crop()
+			
+			if self.pose == 'sit' or self.move_kind == 'stay':
+				return
+			
+			self.update_moving(dtime)
 	
 	
 	def set_name(who, name):
@@ -715,10 +681,10 @@ init -1001 python:
 		place_pos = get_place_center(place)
 		is_old_place = (prev_character_pos == place_pos) and (prev_character_location is location)
 		
-		character.show_time = 0
+		character.show_time = -100
 		if prev_character_location:
 			if not is_old_place:
-				character.show_time = time.time()
+				character.show_time = get_game_time()
 				if hiding:
 					create_hiding_object(character)
 				prev_character_location.objects.remove(character)

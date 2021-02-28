@@ -59,7 +59,7 @@ init -1 python:
 	class Tank:
 		last_shot_time = 0
 		last_step_time = 0
-		last_action_time = time.time()
+		last_action_time = get_game_time()
 		
 		need_to_delete = False
 		need_to_forward = False
@@ -71,7 +71,7 @@ init -1 python:
 			self.x, self.y, self.team = x, y, team
 			self.to_x, self.to_y = x, y
 			self.is_bot = True
-			self.start_time = time.time()
+			self.start_time = get_game_time()
 			
 			self.rotation = 'left' if x > tg_width / 2 else 'right'
 			self.dx = -1 if self.rotation == 'left' else 1
@@ -94,8 +94,8 @@ init -1 python:
 			if self.is_bot:
 				self.update_bot()
 			
-			if self.hp != self.max_hp and time.time() - self.last_action_time > tg_tanks_WAIT_FOR_HP_START:
-				self.last_action_time = time.time() - tg_tanks_WAIT_FOR_HP_START + tg_tanks_WAIT_FOR_HP_NEXT
+			if self.hp != self.max_hp and get_game_time() - self.last_action_time > tg_tanks_WAIT_FOR_HP_START:
+				self.last_action_time = get_game_time() - tg_tanks_WAIT_FOR_HP_START + tg_tanks_WAIT_FOR_HP_NEXT
 				self.hp += 1
 			
 			if self.need_to_fire:
@@ -290,16 +290,16 @@ init -1 python:
 			return dx, dy
 		
 		def fire(self):
-			self.last_shot_time = time.time()
-			self.last_action_time = time.time()
+			self.last_shot_time = get_game_time()
+			self.last_action_time = get_game_time()
 			
 			bullet = Bullet(self.team, self.x, self.y, self.dx, self.dy)
 			tg_tanks_bullets.append(bullet)
 		
 		def to_forward(self):
 			if self.can_move():
-				self.last_step_time = time.time()
-				self.last_action_time = time.time()
+				self.last_step_time = get_game_time()
+				self.last_action_time = get_game_time()
 				
 				self.to_x = (self.x + self.dx) % tg_width
 				self.to_y = (self.y + self.dy) % tg_height

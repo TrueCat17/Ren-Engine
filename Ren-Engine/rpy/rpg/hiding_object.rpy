@@ -9,7 +9,7 @@ init python:
 	class RpgHidingObject(Object):
 		def __init__(self, origin):
 			Object.__init__(self)
-			self.show_time = time.time()
+			self.show_time = get_game_time()
 			
 			self.x, self.y = origin.x, origin.y
 			self.xoffset, self.yoffset = origin.xoffset, origin.yoffset
@@ -34,7 +34,7 @@ init python:
 			return None
 		
 		def update(self):
-			dtime = time.time() - self.show_time
+			dtime = get_game_time() - self.show_time
 			self.alpha = 1 - dtime / location_fade_time
 			if self.alpha < 0:
 				self.location.objects.remove(self)
