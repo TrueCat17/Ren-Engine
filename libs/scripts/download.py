@@ -21,11 +21,11 @@ urls = {
 	'ffmpeg':     'https://ffmpeg.org/releases/ffmpeg-4.3.tar.gz',
 	'zlib':       'https://www.zlib.net/zlib-1.2.11.tar.gz',
 	'brotli':     'https://github.com/google/brotli.git',
-	'freetype':   'https://download.savannah.gnu.org/releases/freetype/freetype-2.10.2.tar.gz',
+	'freetype':   'https://download.savannah.gnu.org/releases/freetype/freetype-2.10.4.tar.gz',
 	'jpeg':       'https://www.ijg.org/files/jpegsrc.v9d.tar.gz',
 	'libpng':     'https://github.com/glennrp/libpng.git',
 	'libwebp':    'https://github.com/webmproject/libwebp.git',
-	'SDL2':       'https://www.libsdl.org/release/SDL2-2.0.12.zip',
+	'SDL2':       'https://www.libsdl.org/release/SDL2-2.0.14.zip',
 	'SDL2_image': 'https://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.5.zip',
 	'SDL2_ttf':   'https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-2.0.15.zip',
 }
