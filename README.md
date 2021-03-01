@@ -14,7 +14,10 @@ Ren-Engine - это движок для игр: Визуальных Новел�
 Самая главная особенность движка - гораздо бОльшая производительность (примерно в 130 раз быстрее).  
 Также стоит отметить компактность (13 МБ против 100), скорость запуска, потребление памяти и отсутствие подвисаний.
 
-Информацию об использовании движка, о создании своих игр и ссылку на **демо** вы можете найти в документации на
+[Отсюда](https://drive.google.com/open?id=1TUzhBevm2dRokaPw19rMbAauXFzuxjLh)
+можно скачать **демку** движка.
+
+Информацию про использование движка и создание своих игр вы можете найти в документации на
 [wiki](https://github.com/TrueCat17/Ren-Engine/wiki) проекта.
 
 #### Сборка
@@ -36,7 +39,10 @@ But implemented almost all functions for Visual Novells based on Ren'Py.
 The most important feature of Ren-Engine - very high perfomance (x130 as to Ren'Py).  
 Also compactness (13 MB vs 100), speed of start, intake of memory and miss of hangs.
 
-Info to using Ren-Engine, about creation your games and link to **demo** you can find on
+[Here](https://drive.google.com/open?id=1TUzhBevm2dRokaPw19rMbAauXFzuxjLh)
+you can download **demo**.
+
+Info to using Ren-Engine and creating your own games you can find on
 [wiki](https://github.com/TrueCat17/Ren-Engine/wiki).  
 Unfortunately, parts of engine outside Visual Novells have unstable "api" now (before 1.0 release),
 so the documentation has no English translation now, but you can use translator.
