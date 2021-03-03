@@ -682,9 +682,11 @@ init -1001 python:
 		is_old_place = (prev_character_pos == place_pos) and (prev_character_location is location)
 		
 		character.show_time = -100
+		character.alpha = 1
 		if prev_character_location:
 			if not is_old_place:
 				character.show_time = get_game_time()
+				character.alpha = 0
 				if hiding:
 					create_hiding_object(character)
 				prev_character_location.objects.remove(character)
