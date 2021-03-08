@@ -161,7 +161,8 @@ static void fastRenderOne(const RenderStruct *obj) {
 
 	const bool check = checkOpenGlErrors;
 
-	if (obj->angle) {
+	bool needRotate = !Math::floatsAreEq(obj->angle, 0);
+	if (needRotate) {
 		int dX = obj->dstRect.x + obj->center.x;
 		int dY = obj->dstRect.y + obj->center.y;
 
@@ -173,7 +174,7 @@ static void fastRenderOne(const RenderStruct *obj) {
 		if (check) {
 			checkErrors("glTranslated");
 		}
-		glRotated(obj->angle, 0, 0, 1);
+		glRotatef(obj->angle, 0, 0, 1);
 		if (check) {
 			checkErrors("glRotated");
 		}
@@ -183,13 +184,13 @@ static void fastRenderOne(const RenderStruct *obj) {
 		}
 	}
 
-	float w = obj->surface->w;
-	float h = obj->surface->h;
+	float w = float(obj->surface->w);
+	float h = float(obj->surface->h);
 
-	float texMinX = obj->srcRect.x / w;
-	float texMinY = obj->srcRect.y / h;
-	float texMaxX = (obj->srcRect.x + obj->srcRect.w) / w;
-	float texMaxY = (obj->srcRect.y + obj->srcRect.h) / h;
+	float texMinX = float(obj->srcRect.x) / w;
+	float texMinY = float(obj->srcRect.y) / h;
+	float texMaxX = float(obj->srcRect.x + obj->srcRect.w) / w;
+	float texMaxY = float(obj->srcRect.y + obj->srcRect.h) / h;
 
 	int vertMinX = obj->dstRect.x;
 	int vertMinY = obj->dstRect.y;
@@ -206,7 +207,7 @@ static void fastRenderOne(const RenderStruct *obj) {
 		checkErrors("glBegin(GL_QUADS)/glTexCoord2f/glVertex2i/glEnd");
 	}
 
-	if (obj->angle) {
+	if (needRotate) {
 		glPopMatrix();
 		if (check) {
 			checkErrors("glPopMatrix");
@@ -222,16 +223,16 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 	float *texPtr = texBuffer;
 	int *vertexPtr = vertexBuffer;
 
-	float w = startObj->surface->w;
-	float h = startObj->surface->h;
+	float w = float(startObj->surface->w);
+	float h = float(startObj->surface->h);
 
 	const RenderStruct *obj = startObj;
 	const RenderStruct *endObj = startObj + count;
 	while (obj != endObj) {
-		float texMinX = obj->srcRect.x / w;
-		float texMinY = obj->srcRect.y / h;
-		float texMaxX = (obj->srcRect.x + obj->srcRect.w) / w;
-		float texMaxY = (obj->srcRect.y + obj->srcRect.h) / h;
+		float texMinX = float(obj->srcRect.x) / w;
+		float texMinY = float(obj->srcRect.y) / h;
+		float texMaxX = float(obj->srcRect.x + obj->srcRect.w) / w;
+		float texMaxY = float(obj->srcRect.y + obj->srcRect.h) / h;
 
 		texPtr[0] = texMinX;
 		texPtr[1] = texMinY;
@@ -257,14 +258,14 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 		vertexPtr[6] = vertMaxX;
 		vertexPtr[7] = vertMinY;
 
-		if (obj->angle) {
-			const double sinA = Math::getSin(obj->angle);
-			const double cosA = Math::getCos(obj->angle);
+		if (!Math::floatsAreEq(obj->angle, 0)) {
+			const float sinA = Math::getSin(int(obj->angle));
+			const float cosA = Math::getCos(int(obj->angle));
 			const SDL_Point center = {vertMinX + obj->center.x, vertMinY + obj->center.y};
 
 			auto rotate = [&](SDL_Point *a) {
-				int x = a->x - center.x;
-				int y = a->y - center.y;
+				float x = float(a->x - center.x);
+				float y = float(a->y - center.y);
 
 				a->x = int(x * cosA - y * sinA) + center.x;
 				a->y = int(x * sinA + y * cosA) + center.y;
@@ -557,7 +558,7 @@ static void loop() {
 				if (SDL_RenderCopyEx(renderer, texture.get(),
 				                     &rs.srcRect,
 				                     &rs.dstRect,
-				                     rs.angle,
+				                     double(rs.angle),
 				                     &rs.center,
 				                     SDL_FLIP_NONE))
 				{

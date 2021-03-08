@@ -13,9 +13,9 @@ struct TextStyle {
 
 	TTF_Font *font = nullptr;
 	std::string fontName;
-	double fontSize = 0;
+	float fontSize = 0;
 
-	double alpha = 1.0;
+	float alpha = 1.0;
 	Uint32 color = 0;
 
 	Uint8 fontStyle = 0;//TTF_STYLE_NORMAL
@@ -56,7 +56,7 @@ public:
 	const std::string& getVAlign() const { return vAlign; }
 	void setAlign(std::string hAlign = "left", std::string vAlign = "top");
 
-	void setFont(std::string fontName, double fontSize);
+	void setFont(std::string fontName, float fontSize);
 	void setText(const std::string &text);
 
 	virtual bool checkAlpha(int x, int y) const;

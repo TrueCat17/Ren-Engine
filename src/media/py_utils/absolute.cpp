@@ -34,7 +34,7 @@ absolute_new(PyTypeObject *, PyObject *args, PyObject *kwds) {
 			val = PyFloat_AS_DOUBLE(x);
 		}else
 		if (PyInt_CheckExact(x)) {
-			val = PyInt_AS_LONG(x);
+			val = double(PyInt_AS_LONG(x));
 		}else
 		if (PyLong_CheckExact(x)) {
 			val = PyLong_AsDouble(x);
@@ -94,7 +94,7 @@ static PyMethodDef methods[] = {
 if (PyAbsolute_CheckExact(obj) || PyFloat_CheckExact(obj)) { \
 	dbl = PyFloat_AS_DOUBLE(obj); \
 }else if (PyInt_CheckExact(obj)) { \
-	dbl = PyInt_AS_LONG(obj); \
+	dbl = double(PyInt_AS_LONG(obj)); \
 }else if (PyLong_CheckExact(obj)) { \
 	dbl = PyLong_AsDouble(obj); \
 }else { \

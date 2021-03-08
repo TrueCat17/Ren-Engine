@@ -15,11 +15,11 @@ protected:
 	int globalX = 0;
 	int globalY = 0;
 
-	int globalRotate = 0;
-	double globalAlpha = 1;
+	float globalRotate = 0;
+	float globalAlpha = 1;
 
-	double globalZoomX = 1;
-	double globalZoomY = 1;
+	float globalZoomX = 1;
+	float globalZoomY = 1;
 
 	bool globalClipping = false;
 
@@ -28,23 +28,23 @@ public:
 	static void disableAll();
 	static void destroyAll();
 
-	static void pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clipping,
+	static void pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha, bool clipping,
 	                         const SDL_Rect &clipRect, const SDL_Rect &srcRect, const SDL_Rect &dstRect, const SDL_Point center);
 
 	bool clipping = false;
 	bool enable = true;
 
 	SDL_Rect crop = {0, 0, 0, 0};
-	double alpha = 1;
+	float alpha = 1;
 
-	int rotate = 0;
+	float rotate = 0;
 
 	//center for rotation
 	int xAnchor = 0;
 	int yAnchor = 0;
 
-	double xzoom = 1;
-	double yzoom = 1;
+	float xzoom = 1;
+	float yzoom = 1;
 
 	SurfacePtr surface = nullptr;
 
@@ -58,23 +58,21 @@ public:
 
 	int getGlobalX() const { return globalX; }
 	int getGlobalY() const { return globalY; }
-	double getGlobalZoomX() const { return globalZoomX; }
-	double getGlobalZoomY() const { return globalZoomY; }
-	int getGlobalRotate() const { return globalRotate; }
-	double getGlobalAlpha() const { return globalAlpha; }
+	float getGlobalZoomX() const { return globalZoomX; }
+	float getGlobalZoomY() const { return globalZoomY; }
+	float getGlobalRotate() const { return globalRotate; }
+	float getGlobalAlpha() const { return globalAlpha; }
 	virtual void updateGlobal();
 
 	int getX() const { return rect.x; }
 	int getY() const { return rect.y; }
 	int getWidth() const { return rect.w; }
 	int getHeight() const { return rect.h; }
-	double getAlpha() const { return alpha; }
 
 	void setX(int value) { rect.x = value; }
 	void setY(int value) { rect.y = value; }
 	void setWidth(int value) { rect.w = value; }
 	void setHeight(int value) { rect.h = value; }
-	void setAlpha(double value) { alpha = value; }
 
 	virtual bool checkAlpha(int x, int y) const;
 	virtual void draw() const;

@@ -5,6 +5,7 @@
 #include "screen.h"
 
 #include "media/py_utils.h"
+#include "utils/math.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -110,7 +111,7 @@ void Key::checkEvents() {
 			const double dTime = GV::frameStartTime - lastDown;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 
-			if (dTime >= delay || !lastDown) {
+			if (dTime >= delay || Math::doublesAreEq(lastDown, 0.0)) {
 				if (!inFirstDown) {
 					wasFirstDelay = true;
 				}

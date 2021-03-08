@@ -67,7 +67,7 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 		Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 		return;
 	}
-	if (style.alpha * 255 < 1.0) return;
+	if (style.alpha * 255 < 1) return;
 
 	SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
 
@@ -114,10 +114,10 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 
 	if (style.enableOutline) {
 		SDL_BlitSurface(surfaceText, nullptr, tmpSurface.get(), nullptr);
-		SDL_SetSurfaceAlphaMod(tmpSurface.get(), Uint8(std::min(style.alpha * 255, 255.0)));
+		SDL_SetSurfaceAlphaMod(tmpSurface.get(), Uint8(std::min<float>(style.alpha * 255, 255)));
 		SDL_BlitSurface(tmpSurface.get(), nullptr, surface, &rect);
 	}else {
-		SDL_SetSurfaceAlphaMod(surfaceText, Uint8(std::min(style.alpha * 255, 255.0)));
+		SDL_SetSurfaceAlphaMod(surfaceText, Uint8(std::min<float>(style.alpha * 255, 255)));
 		SDL_BlitSurface(surfaceText, nullptr, surface, &rect);
 	}
 	SDL_FreeSurface(surfaceText);
@@ -243,15 +243,15 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			}
 			style.tag = tag;
 
-			auto apply = [](double &prop, std::string &value) {
+			auto apply = [](float &prop, std::string &value) {
 				if (value[0] == '*') {
 					value.erase(0, 1);
-					prop *= String::toDouble(value);
+					prop *= float(String::toDouble(value));
 				}else {
 					if (value[0] == '+' || value[0] == '-') {
-						prop += String::toDouble(value);
+						prop += float(String::toDouble(value));
 					}else {
-						prop = String::toDouble(value);
+						prop = float(String::toDouble(value));
 					}
 				}
 			};
@@ -295,7 +295,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 				}else {
 
 					*h = int(style.fontSize);
-					*w = int(style.fontSize * image->w / image->h);
+					*w = int(style.fontSize * float(image->w) / float(image->h));
 					if (!onlySize && !invisible) {
 						SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
 						SDL_SetSurfaceAlphaMod(image.get(), Uint8(Math::inBounds(style.alpha * 255, 0, 255)));
@@ -329,7 +329,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 	return i + 1;
 }
 
-void TextField::setFont(std::string fontName, double fontSize) {
+void TextField::setFont(std::string fontName, float fontSize) {
 	mainStyle.fontSize = fontSize;
 	mainStyle.fontName = fontName.empty() ? defaultFontName : fontName;
 	updateFont(mainStyle);
@@ -561,12 +561,12 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 	}
 
 
-	double sinA = Math::getSin(getGlobalRotate());
-	double cosA = Math::getCos(getGlobalRotate());
+	float sinA = Math::getSin(int(getGlobalRotate()));
+	float cosA = Math::getCos(int(getGlobalRotate()));
 
 	for (size_t i = 0; i < rects.size(); ++i) {
-		int x = rects[i].x;
-		int y = rects[i].y;
+		float x = float(rects[i].x);
+		float y = float(rects[i].y);
 
 		int rotX = int(x * cosA - y * sinA);
 		int rotY = int(x * sinA + y * cosA);

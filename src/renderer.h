@@ -9,7 +9,7 @@
 
 struct RenderStruct {
 	SurfacePtr surface;
-	int angle;
+	float angle;
 	Uint8 alpha;
 
 	bool clip;

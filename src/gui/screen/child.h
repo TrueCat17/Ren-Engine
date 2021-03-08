@@ -20,19 +20,19 @@ protected:
 	bool inHBox = false;
 
 public:
-	bool xposIsDouble       = false, yposIsDouble       = false;
-	bool xanchorPreIsDouble = false, yanchorPreIsDouble = false;
-	bool xsizeIsDouble      = false, ysizeIsDouble      = false;
+	bool xposIsFloat       = false, yposIsFloat       = false;
+	bool xanchorPreIsFloat = false, yanchorPreIsFloat = false;
+	bool xsizeIsFloat      = false, ysizeIsFloat      = false;
 
-	bool xcropIsDouble = false, ycropIsDouble = false,
-		 wcropIsDouble = false, hcropIsDouble = false;
+	bool xcropIsFloat = false, ycropIsFloat = false,
+	     wcropIsFloat = false, hcropIsFloat = false;
 
-	double xpos       = 0, ypos       = 0;
-	double xanchorPre = 0, yanchorPre = 0;
-	double xsize      = 0, ysize      = 0;
+	float xpos       = 0, ypos       = 0;
+	float xanchorPre = 0, yanchorPre = 0;
+	float xsize      = 0, ysize      = 0;
 
-	double xcrop = 0, ycrop = 0,
-		   wcrop = 0, hcrop = 0;
+	float xcrop = 0, ycrop = 0,
+	      wcrop = 0, hcrop = 0;
 
 	std::string first_param;
 

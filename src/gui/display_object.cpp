@@ -18,8 +18,8 @@ DisplayObject::DisplayObject() {
 void DisplayObject::updateGlobal() {
 	int parentXAnchor, parentYAnchor;
 	int parentGlobalX, parentGlobalY;
-	int parentGlobalRotate;
-	double parentGlobalAlpha;
+	float parentGlobalRotate;
+	float parentGlobalAlpha;
 	if (parent) {
 		parentXAnchor = parent->xAnchor;
 		parentYAnchor = parent->yAnchor;
@@ -29,16 +29,17 @@ void DisplayObject::updateGlobal() {
 		parentGlobalAlpha = parent->getGlobalAlpha();
 	}else {
 		parentXAnchor = parentYAnchor = 0;
-		parentGlobalX = parentGlobalY = parentGlobalRotate = 0;
+		parentGlobalX = parentGlobalY = 0;
+		parentGlobalRotate = 0;
 		parentGlobalAlpha = 1;
 	}
 
 
-	int x = int(rect.x + xAnchor - parentXAnchor);
-	int y = int(rect.y + yAnchor - parentYAnchor);
+	float x = float(rect.x + xAnchor - parentXAnchor);
+	float y = float(rect.y + yAnchor - parentYAnchor);
 
-	double sinA = Math::getSin(parentGlobalRotate);
-	double cosA = Math::getCos(parentGlobalRotate);
+	float sinA = Math::getSin(int(parentGlobalRotate));
+	float cosA = Math::getCos(int(parentGlobalRotate));
 
 	int rotX = int(x * cosA - y * sinA);
 	int rotY = int(x * sinA + y * cosA);
@@ -130,10 +131,10 @@ void DisplayObject::destroyAll() {
 }
 
 
-void DisplayObject::pushToRender(const SurfacePtr &surface, int angle, Uint8 alpha, bool clip, const SDL_Rect &clipRect,
+void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha, bool clip, const SDL_Rect &clipRect,
     const SDL_Rect &srcRect, const SDL_Rect &dstRect, const SDL_Point center)
 {
-	if (clip && angle) {
+	if (clip && !Math::floatsAreEq(angle, 0)) {
 		Utils::outMsg("DisplayObject::pushToRender", "Clipped object can't rotate");
 	}
 

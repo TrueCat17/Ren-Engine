@@ -25,8 +25,8 @@ void Text::updateRect(bool) {
 	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
 	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
 
-	int width  = int(xsize * (xsizeIsDouble ? GV::width  : 1) * globalZoomX);
-	int height = int(ysize * (ysizeIsDouble ? GV::height : 1) * globalZoomY);
+	int width  = int(xsize * float(xsizeIsFloat ? GV::width  : 1) * globalZoomX);
+	int height = int(ysize * float(ysizeIsFloat ? GV::height : 1) * globalZoomY);
 
 	if (first_param.empty() && prevText.empty()) {
 		setWidth(width);
@@ -41,7 +41,7 @@ void Text::updateRect(bool) {
 			needUpdate = true;
 		}
 
-		if (tf->mainStyle.fontName != font || !Math::doublesAreEq(tf->mainStyle.fontSize, text_size * globalZoomY)) {
+		if (tf->mainStyle.fontName != font || !Math::floatsAreEq(tf->mainStyle.fontSize, text_size * globalZoomY)) {
 			tf->setFont(font, text_size * globalZoomY);
 			needUpdate = true;
 		}
@@ -77,10 +77,10 @@ void Text::updateRect(bool) {
 }
 
 void Text::updateGlobal() {
-	int prevGlobalRotate = getGlobalRotate();
+	float prevGlobalRotate = getGlobalRotate();
 	Child::updateGlobal();
 
-	if (!prevText.empty() && prevGlobalRotate != getGlobalRotate()) {
+	if (!prevText.empty() && !Math::floatsAreEq(prevGlobalRotate, getGlobalRotate())) {
 		tf->setAlign(tf->getHAlign(), tf->getVAlign());
 	}
 }

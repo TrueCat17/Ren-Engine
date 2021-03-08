@@ -74,15 +74,15 @@ void Hotspot::checkEvents() {
 	int parentWidth = imageMap->getWidth();
 	int parentHeight = imageMap->getHeight();
 	if (ground && parentWidth && parentHeight) {
-		scaleX = double(parentWidth) / ground->w;
-		scaleY = double(parentHeight) / ground->h;
+		scaleX = float(parentWidth) / float(ground->w);
+		scaleY = float(parentHeight) / float(ground->h);
 	}
 
-	setX(int(xcrop * (xcropIsDouble ? GV::width  : 1) * scaleX));
-	setY(int(ycrop * (ycropIsDouble ? GV::height : 1) * scaleY));
+	setX(int(xcrop * float(xcropIsFloat ? GV::width  : 1) * scaleX));
+	setY(int(ycrop * float(ycropIsFloat ? GV::height : 1) * scaleY));
 
-	setWidth( int(wcrop * (wcropIsDouble ? GV::width  : 1) * scaleX));
-	setHeight(int(hcrop * (hcropIsDouble ? GV::height : 1) * scaleY));
+	setWidth( int(wcrop * float(wcropIsFloat ? GV::width  : 1) * scaleX));
+	setHeight(int(hcrop * float(hcropIsFloat ? GV::height : 1) * scaleY));
 
 
 	const std::string *styleName = nullptr;

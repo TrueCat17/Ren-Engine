@@ -4,8 +4,8 @@
 class Math {
 public:
 	static void init();
-	static double getSin(int angle);
-	static double getCos(int angle);
+	static float getSin(int angle);
+	static float getCos(int angle);
 
 	static bool floatsAreEq(float a, float b);
 	static bool doublesAreEq(double a, double b);

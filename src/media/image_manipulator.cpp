@@ -813,12 +813,12 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	const int w = std::max(int(img->w * zoom), 1);
 	const int h = std::max(int(img->h * zoom), 1);
 
-	auto abs = [](double d) { return d < 0 ? -d : d; };
+	auto abs = [](float d) { return d < 0 ? -d : d; };
 
-	const double absSin = abs(Math::getSin(angle));
-	const double absCos = abs(Math::getCos(angle));
-	const int resW = int(w * absCos + h * absSin);
-	const int resH = int(w * absSin + h * absCos);
+	const float absSin = abs(Math::getSin(angle));
+	const float absCos = abs(Math::getCos(angle));
+	const int resW = int(float(w) * absCos + float(h) * absSin);
+	const int resH = int(float(w) * absSin + float(h) * absCos);
 
 	const SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
 
@@ -1307,7 +1307,7 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 	const int maxDX = std::max(cX, w - 1 - cX);
 	const int maxDY = std::max(cY, h - 1 - cY);
 	const float maxDist = std::sqrt(float(maxDX * maxDX + maxDY * maxDY));
-	const float distK = std::sqrt(dist / maxDist) / 2;
+	const float distK = std::sqrt(float(dist) / maxDist) / 2;
 
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
@@ -1320,18 +1320,18 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 			Uint16 r, g, b, a;
 			r = g = b = a = 0;
 
-			const float dX = (cX - x) * distK;
-			const float dY = (cY - y) * distK;
-			const int d = int(std::sqrt(dX * dX + dY * dY));
+			const float dX = float(cX - x) * distK;
+			const float dY = float(cY - y) * distK;
+			const float d = std::trunc(std::sqrt(dX * dX + dY * dY));
 
-			if (d) {
+			if (d > 0) {
 				const float dx = dX / d;
 				const float dy = dY / d;
 
-				float ix = x;
-				float iy = y;
-				for (int i = 0; i < d; ++i) {
-					const Uint8 *pixel = pixels + size_t(iy * pitch + ix * 4);
+				float ix = float(x);
+				float iy = float(y);
+				for (int i = 0; i < int(d); ++i) {
+					const Uint8 *pixel = pixels + int(iy) * pitch + int(ix) * 4;
 					ix += dx;
 					iy += dy;
 

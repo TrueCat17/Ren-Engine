@@ -547,14 +547,15 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 
 #define updateCondition(isFloat, var, prop) \
 	isFloat = PyFloat_CheckExact(prop); \
+	typedef decltype(var) DT; \
 	if (isFloat || PyAbsolute_CheckExact(prop)) { \
-		var = PyFloat_AS_DOUBLE(prop); \
+	    var = DT(PyFloat_AS_DOUBLE(prop)); \
 	}else \
 	if (PyInt_CheckExact(prop)) { \
-		var = PyInt_AS_LONG(prop); \
+	    var = DT(PyInt_AS_LONG(prop)); \
 	}else \
 	if (PyLong_CheckExact(prop)) { \
-		var = PyLong_AsDouble(prop); \
+	    var = DT(PyLong_AsDouble(prop)); \
 	}
 
 
@@ -584,32 +585,32 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	} \
 }
 
-#define makeUpdateFuncWithIsDouble(propName) \
+#define makeUpdateFuncWithIsFloat(propName) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	updateCondition(obj->propName##IsDouble, obj->propName, prop) \
+	updateCondition(obj->propName##IsFloat, obj->propName, prop) \
 	else { \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
 }
 
-#define makeUpdateCommonFuncWithOptionalIsDouble(propName, xIsDouble, yIsDouble) \
+#define makeUpdateCommonFuncWithOptionalIsFloat(propName, xIsFloat, yIsFloat) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
 	bool tmpBool; \
 	bool isNumber = true; \
 	[[maybe_unused]] bool unusedBool; \
-	double value = 0; \
+	float value = 0; \
 	updateCondition(tmpBool, value, prop) \
 	else { \
 		isNumber = false; \
 	} \
 	\
 	if (isNumber) { \
-		xIsDouble = tmpBool; yIsDouble = tmpBool; \
+	    xIsFloat = tmpBool; yIsFloat = tmpBool; \
 		obj->x##propName = obj->y##propName = value; \
 		return; \
 	} \
@@ -628,20 +629,20 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0); \
 	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1); \
 	\
-	updateCondition(xIsDouble, obj->x##propName, x) \
+	updateCondition(xIsFloat, obj->x##propName, x) \
 	else { \
 		std::string type = x->ob_type->tp_name; \
 		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
-	updateCondition(yIsDouble, obj->y##propName, y) \
+	updateCondition(yIsFloat, obj->y##propName, y) \
 	else { \
 		std::string type = y->ob_type->tp_name; \
 		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
 }
 
-#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithOptionalIsDouble(propName, obj->x##propName##IsDouble, obj->y##propName##IsDouble)
-#define makeUpdateCommonFuncWithoutIsDouble(propName) makeUpdateCommonFuncWithOptionalIsDouble(propName, unusedBool, unusedBool)
+#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, obj->x##propName##IsFloat, obj->y##propName##IsFloat)
+#define makeUpdateCommonFuncWithoutIsFloat(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, unusedBool, unusedBool)
 
 
 #define makeUpdateFuncWithAlign(x_or_y) \
@@ -649,13 +650,13 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
 	bool isFloat; \
-	double value = 0; \
+	float value = 0; \
 	updateCondition(isFloat, value, prop) \
 	else { \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
-	obj->x_or_y##posIsDouble = obj->x_or_y##anchorPreIsDouble = isFloat; \
+	obj->x_or_y##posIsFloat = obj->x_or_y##anchorPreIsFloat = isFloat; \
 	obj->x_or_y##pos = obj->x_or_y##anchorPre = value; \
 }
 
@@ -664,14 +665,14 @@ static void update_align(Child *obj, size_t propIndex) {
 
 	bool isFloat;
 	bool isNumber = true;
-	double value = 0;
+	float value = 0;
 	updateCondition(isFloat, value, prop)
 	else {
 		isNumber = false;
 	}
 
 	if (isNumber) {
-		obj->xposIsDouble = obj->xanchorPreIsDouble = obj->yposIsDouble = obj->yanchorPreIsDouble = isFloat;
+		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = isFloat;
 		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = value;
 		return;
 	}
@@ -695,7 +696,7 @@ static void update_align(Child *obj, size_t propIndex) {
 		std::string type = x->ob_type->tp_name;
 		outError(obj, "align", propIndex, "At xalign-prop expected types float, absolute, int or long, got " + type);
 	}
-	obj->xposIsDouble = obj->xanchorPreIsDouble = isFloat;
+	obj->xposIsFloat = obj->xanchorPreIsFloat = isFloat;
 	obj->xpos = obj->xanchorPre = value;
 
 	updateCondition(isFloat, value, y)
@@ -703,7 +704,7 @@ static void update_align(Child *obj, size_t propIndex) {
 		std::string type = y->ob_type->tp_name;
 		outError(obj, "align", propIndex, "At yalign-prop expected types float, absolute, int or long, got " + type);
 	}
-	obj->yposIsDouble = obj->yanchorPreIsDouble = isFloat;
+	obj->yposIsFloat = obj->yanchorPreIsFloat = isFloat;
 	obj->ypos = obj->yanchorPre = value;
 }
 
@@ -739,25 +740,25 @@ static void update_crop(Child *obj, size_t propIndex) {
 	PyObject *w = PySequence_Fast_GET_ITEM(prop, 2);
 	PyObject *h = PySequence_Fast_GET_ITEM(prop, 3);
 
-	updateCondition(obj->xcropIsDouble, obj->xcrop, x)
+	updateCondition(obj->xcropIsFloat, obj->xcrop, x)
 	else {
 		std::string type = x->ob_type->tp_name;
 		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
-	updateCondition(obj->ycropIsDouble, obj->ycrop, y)
+	updateCondition(obj->ycropIsFloat, obj->ycrop, y)
 	else {
 		std::string type = y->ob_type->tp_name;
 		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
-	updateCondition(obj->wcropIsDouble, obj->wcrop, w)
+	updateCondition(obj->wcropIsFloat, obj->wcrop, w)
 	else {
 		std::string type = w->ob_type->tp_name;
 		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
-	updateCondition(obj->hcropIsDouble, obj->hcrop, h)
+	updateCondition(obj->hcropIsFloat, obj->hcrop, h)
 	else {
 		std::string type = h->ob_type->tp_name;
 		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, absolute, int or long, got " + type);
@@ -802,7 +803,7 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 		} \
 	}else \
 	if (PyLong_CheckExact(prop)) { \
-		double d = PyLong_AsDouble(prop); \
+	    double d = PyLong_AsDouble(prop); \
 		if (d < 0 || d > 0xFFFFFF) { \
 			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
 		}else { \
@@ -840,14 +841,14 @@ makeUpdateFunc(alpha)
 makeUpdateFunc(rotate)
 makeUpdateFuncWithBool(Child, clipping, clipping)
 
-makeUpdateFuncWithIsDouble(xpos)
-makeUpdateFuncWithIsDouble(ypos)
+makeUpdateFuncWithIsFloat(xpos)
+makeUpdateFuncWithIsFloat(ypos)
 
-makeUpdateFuncWithIsDouble(xanchorPre)
-makeUpdateFuncWithIsDouble(yanchorPre)
+makeUpdateFuncWithIsFloat(xanchorPre)
+makeUpdateFuncWithIsFloat(yanchorPre)
 
-makeUpdateFuncWithIsDouble(xsize)
-makeUpdateFuncWithIsDouble(ysize)
+makeUpdateFuncWithIsFloat(xsize)
+makeUpdateFuncWithIsFloat(ysize)
 
 makeUpdateFuncType(Child, xzoom)
 makeUpdateFuncType(Child, yzoom)
@@ -855,7 +856,7 @@ makeUpdateFuncType(Child, yzoom)
 makeUpdateCommonFunc(pos)
 makeUpdateCommonFunc(anchorPre)
 makeUpdateCommonFunc(size)
-makeUpdateCommonFuncWithoutIsDouble(zoom)
+makeUpdateCommonFuncWithoutIsFloat(zoom)
 
 makeUpdateFuncWithAlign(x)
 makeUpdateFuncWithAlign(y)
@@ -969,20 +970,17 @@ static void initUpdateFuncs(Node *node) {
 }
 
 ScreenUpdateFunc ScreenNodeUtils::getUpdateFunc(const std::string &type, std::string propName) {
-	ScreenUpdateFunc res = nullptr;
-
 	if (propName == "ground" || propName == "hover" || propName == "mouse") {
 		propName += "_" + (type == "button" ? "textbutton" : type);
 	}
 
 	auto it = mapScreenFuncs.find(propName);
 	if (it != mapScreenFuncs.end()) {
-		res = it->second;
-	}else {
-		Utils::outMsg("ScreenNodeUtils::getUpdateFunc", "Func <" + propName + "> not found");
+		return it->second;
 	}
 
-	return res;
+	Utils::outMsg("ScreenNodeUtils::getUpdateFunc", "Func <" + propName + "> not found");
+	return nullptr;
 }
 
 

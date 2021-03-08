@@ -73,8 +73,8 @@ void TextButton::updateRect(bool) {
 	Child::updateRect(false);
 	Text::updateRect();
 
-	xsize = std::max(xsize, 0.0);
-	ysize = std::max(ysize, 0.0);
+	xsize = std::max<float>(xsize, 0);
+	ysize = std::max<float>(ysize, 0);
 }
 
 void TextButton::updateTexture(bool skipError) {

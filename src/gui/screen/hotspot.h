@@ -8,8 +8,8 @@
 
 class Hotspot: public Child {
 private:
-	double scaleX = 1;
-	double scaleY = 1;
+	float scaleX = 1;
+	float scaleY = 1;
 
 	bool prevMouseOver = false;
 
