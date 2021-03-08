@@ -28,21 +28,17 @@ init python:
 				dx = rand_float(-7, 7) * size
 				dy = rand_float(10, 25) * size
 				
-				sizes = (size, size)
-				
-				obj = [x, y, dx, dy, sizes]
+				obj = [x, y, dx, dy, size]
 				objs.append(obj)
 	
 	def update_snow():
 		k = get_last_tick()
 		
 		width, height = get_stage_size()
-		x, y, dx, dy, sizes = 0, 1, 2, 3, 4
+		x, y, dx, dy, size = 0, 1, 2, 3, 4
 		
 		if image_render:
-			img_cache = {}
-			for i in xrange(2, 11):
-				img_cache[(i, i)] = im.scale('mods/snow/snow.png', i, i)
+			img_cache = [im.scale('mods/snow/snow.png', i, i) for i in xrange(11)]
 			
 			tmp_image_args = [(width, height)]
 			for obj in objs:
@@ -50,7 +46,7 @@ init python:
 				obj[y] = (obj[y] + obj[dy] * k) % height
 				
 				tmp_image_args.extend(
-					((obj[x], obj[y]), img_cache[obj[sizes]])
+					((obj[x], obj[y]), img_cache[obj[size]])
 				)
 			global tmp_image
 			tmp_image = im.composite(*tmp_image_args)
@@ -64,7 +60,7 @@ init python:
 
 screen snow:
 	image 'images/bg/bus_stop.jpg':
-		size (1.0, 1.0)
+		size 1.0
 	
 	$ update_snow()
 	
@@ -72,11 +68,11 @@ screen snow:
 		image tmp_image:
 			size 1.0
 	else:
-		for x, y, dx, dy, sizes in objs:
+		for x, y, dx, dy, size in objs:
 			image 'mods/snow/snow.png':
 				xpos ftoi(x)
 				ypos ftoi(y)
-				size sizes
+				size size
 	
 	image im.Rect('#0004'):
 		size (350, 70)
@@ -89,7 +85,7 @@ screen snow:
 			textbutton '<':
 				xalign 0.0
 				text_size 20
-				size (25, 25)
+				size 25
 				action set_count(max(0, len(objs) - 100))
 			
 			text str(len(objs)):
@@ -103,7 +99,7 @@ screen snow:
 			textbutton '>':
 				xalign 1.0
 				text_size 20
-				size (25, 25)
+				size 25
 				action set_count(min(len(objs) + 100, 20000))
 		
 		null:
@@ -119,7 +115,7 @@ screen snow:
 			
 			textbutton '%':
 				xalign 1.0
-				size (25, 25)
+				size 25
 				text_size 20
 				action SetVariable('image_render', not image_render)
 
