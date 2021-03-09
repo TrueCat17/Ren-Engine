@@ -145,6 +145,8 @@ init -1001 python:
 			self.prev_update_time = get_game_time()
 			self.moving_ended = True
 			
+			self.frame_time_offset = random.random() * 10
+			
 			self.x, self.y = 0, 0
 			self.xoffset, self.yoffset = 0, 0
 			
@@ -583,7 +585,7 @@ init -1001 python:
 			self.alpha = min((get_game_time() - self.show_time) / location_fade_time, 1)
 			
 			if self.start_anim_time is None:
-				self.set_frame(int(get_game_time() * self.fps))
+				self.set_frame(int((get_game_time() + self.frame_time_offset) * self.fps))
 			else:
 				animation = self.animation
 				anim_dtime = get_game_time() - self.start_anim_time
