@@ -124,17 +124,17 @@ screen location:
 				if loc__background_alpha:
 					loc__background_alpha = 0.0
 			
-			if draw_location is not cur_location:
+			if times['next_name']:
+				set_time_direct()
+				cam_object = me
+				loc__set_show_at_end = True
+			
+			if not location_was_show:
 				draw_location = cur_location
 				cam_object = me
 				loc__set_show_at_end = True
 				
 				start_location_ambience()
-			
-			if times['next_name']:
-				set_time_direct()
-				cam_object = me
-				loc__set_show_at_end = True
 		
 		cut_k = 0
 		if get_game_time() < location_cutscene_end:
