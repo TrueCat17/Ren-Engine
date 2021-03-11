@@ -708,8 +708,8 @@ static const std::pair<Path, float>& findAndSavePath(MipMap* mipMap, SimplePoint
 	}
 
 	float cost;
-	if (path.size()) {
-		cost = 0;
+	if (!path.empty()) {
+		cost = calcDist(start.x, start.y, path[0].x, path[0].y);
 		for (size_t i = 0; i < path.size() - 1; ++i) {
 			cost += calcDist(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
 		}
