@@ -17,7 +17,7 @@ Ren-Engine - это движок для игр: Визуальных Новел�
 [Отсюда](https://drive.google.com/open?id=1TUzhBevm2dRokaPw19rMbAauXFzuxjLh)
 можно скачать **демку** движка.  
 [Отсюда](https://drive.google.com/file/d/1f7fbKDHxvXlO6R2Gy__r4M44ZiTt1rZR/view)
-- **лаунчер** для создания ваших проектов и управления ими.
+\- **лаунчер** для создания ваших проектов и управления ими.
 
 Информацию про использование движка и создание своих игр вы можете найти в документации на
 [wiki](https://github.com/TrueCat17/Ren-Engine/wiki)
@@ -45,7 +45,7 @@ Also compactness (13 MB vs 100), speed of start, intake of memory and miss of ha
 [Here](https://drive.google.com/open?id=1TUzhBevm2dRokaPw19rMbAauXFzuxjLh)
 you can download **demo**.  
 [Here](https://drive.google.com/file/d/1f7fbKDHxvXlO6R2Gy__r4M44ZiTt1rZR/view)
-- **launcher** for creating and managing your projects.
+\- **launcher** for creating and managing your projects.
 
 Info to using Ren-Engine and creating your own games you can find on
 [wiki](https://github.com/TrueCat17/Ren-Engine/wiki).  
