@@ -7,6 +7,7 @@ init -1000 python:
 			return None
 		
 		black_color = 255 # r, g, b, a = 0, 0, 0, 255
+		cr = character_radius
 		
 		location_name = random.choice(location_names)
 		location = rpg_locations[location_name]
@@ -29,17 +30,14 @@ init -1000 python:
 			ok = True
 			for obj in location.objects:
 				if not isinstance(obj, RpgLocationObject): continue
-				obj_free = obj.free()
-				if not obj_free: continue
+				if not obj.free(): continue
 				
 				w, h = obj.xsize, obj.ysize
 				obj_xanchor, obj_yanchor = get_absolute(obj.xanchor, w), get_absolute(obj.yanchor, h)
 				obj_x, obj_y = int(obj.x + obj.xoffset - obj_xanchor), int(obj.y + obj.yoffset - obj_yanchor)
 				
 				dx, dy = x - obj_x, y - obj_y
-				if dx < 0 or dy < 0 or dx >= w or dy >= h: continue
-				
-				if get_image_pixel(obj_free, dx, dy) == black_color:
+				if dx >= -cr and dy >= -cr and dx < w + cr and dy < h + cr:
 					ok = False
 					break
 		
