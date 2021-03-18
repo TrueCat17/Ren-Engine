@@ -331,7 +331,12 @@ init -1001 python:
 		
 		
 		
-		def move_to_place(self, place_names, run = False, wait_time = -1, brute_force = False):
+		def move_to_place(self, place_name, run = False, wait_time = -1, brute_force = False):
+			place_names = [place_name] if place_name else None
+			return self.move_to_places(place_names, run, wait_time, brute_force)
+		
+		
+		def move_to_places(self, place_names, run = False, wait_time = -1, brute_force = False):
 			self.paths = []
 			self.paths_index = 0
 			self.point_index = 0
@@ -341,7 +346,7 @@ init -1001 python:
 				return False
 			
 			if self.location is None:
-				out_msg('Character.move_to_place', str(self) + '.location is None')
+				out_msg('Character.move_to_places', str(self) + '.location is None')
 				return False
 			
 			if self is me:
@@ -352,8 +357,6 @@ init -1001 python:
 			
 			if isinstance(place_names, tuple):
 				place_names = list(place_names)
-			elif not isinstance(place_names, list):
-				place_names = [place_names]
 			
 			last = place_names[-1]
 			if type(last) is int:
@@ -386,13 +389,13 @@ init -1001 python:
 				
 				location = rpg_locations.get(location_name, None)
 				if not location:
-					out_msg('Character.move_to_place', 'Location <' + str(location_name) + '> is not registered')
+					out_msg('Character.move_to_places', 'Location <' + str(location_name) + '> is not registered')
 					return False
 				
 				if type(place_elem) is str:
 					place = location.places.get(place_elem, None)
 					if place is None:
-						out_msg('Character.move_to_place', 'Place <' + str(place_elem) + '> in location <' + location_name + '> not found')
+						out_msg('Character.move_to_places', 'Place <' + str(place_elem) + '> in location <' + location_name + '> not found')
 						return False
 				else:
 					place = place_elem

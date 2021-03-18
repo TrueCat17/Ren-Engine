@@ -120,7 +120,7 @@ init -1000 python:
 				if not res: continue
 				
 				location_name, x, y = res
-				path_found = character.move_to_place([(location_name, {'x': x, 'y': y})])
+				path_found = character.move_to_place([location_name, {'x': x, 'y': y}])
 				if path_found:
 					return 'moving'
 			
@@ -246,7 +246,7 @@ init -1000 python:
 				hide_character(character)
 				return 'home_walking'
 			
-			path_found = character.move_to_place([(location_name, place)])
+			path_found = character.move_to_place([location_name, place])
 			if path_found:
 				return 'moving'
 			return 'end'
@@ -306,7 +306,7 @@ init -1000 python:
 					return 'end'
 				friend = random.choice(friends)
 			
-			path_found = character.move_to_place([(friend.location.name, friend)])
+			path_found = character.move_to_place([friend.location.name, friend])
 			if not path_found:
 				return 'end'
 			
@@ -314,7 +314,7 @@ init -1000 python:
 			if friend_actions and friend_actions.cur_action is not rpg_action_to_friend:
 				friend_actions.stop()
 			
-			path_found = friend.move_to_place([(character.location.name, character)])
+			path_found = friend.move_to_place([character.location.name, character])
 			if not path_found:
 				friend.move_to_place(None)
 				return 'end'
