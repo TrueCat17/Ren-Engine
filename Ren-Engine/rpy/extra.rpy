@@ -23,24 +23,17 @@ init -998 python:
 
 
 init -1000000 python:
-	def get_numline(depth):
-		frame = sys._getframe()
-		while depth:
-			depth -= 1
-			frame = frame.f_back
-		return frame.f_lineno
-	def get_filename(depth):
-		frame = sys._getframe()
-		while depth:
-			depth -= 1
-			frame = frame.f_back
-		return frame.f_code.co_filename
 	def get_file_and_line(depth):
 		frame = sys._getframe()
 		while depth:
 			depth -= 1
 			frame = frame.f_back
 		return frame.f_code.co_filename, frame.f_lineno
+	
+	def get_filename(depth):
+		return get_file_and_line(depth + 1)[0]
+	def get_numline(depth):
+		return get_file_and_line(depth + 1)[1]
 	
 	def get_stack(depth):
 		stack = traceback.format_stack()
@@ -128,6 +121,27 @@ init -100000 python:
 		md5 = hashlib.md5()
 		md5.update(s)
 		return md5.hexdigest()
+	
+	
+	def get_glob_labels(name):
+		if renpy.has_label(name):
+			return [name]
+		
+		cache = get_glob_labels.__dict__
+		regexps = cache.get('regexps', None)
+		if regexps is None:
+			regexps = cache['regexps'] = []
+			
+			labels = [label for label in renpy.get_all_labels() if ('*' in label) or ('?' in label)]
+			labels.sort(key = lambda s: (-len(s), s))
+			
+			import re
+			for label in labels:
+				regexp_text = re.escape(label).replace(r'\?', '.').replace(r'\*', '.*?')
+				regexp = re.compile('^' + regexp_text + '$')
+				regexps.append((label, regexp))
+		
+		return [label for (label, regexp) in regexps if regexp.match(name)]
 
 
 init -1000000 python:

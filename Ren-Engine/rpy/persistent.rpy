@@ -6,35 +6,23 @@ init -1002 python:
 				out_msg('Persistent, load_object', 'File <' + path + '> is not exists or empty')
 			else:
 				tmp_file = open(path, 'rb')
-				
-				persistent_updates = True
 				res = pickle.load(tmp_file)
-				persistent_updates = False
-				
 				tmp_file.close()
 			return res
 		except:
-			persistent_updates = False
 			out_msg('Persistent, load_object', 'Error on loading object from file <' + path + '>')
 			raise
 	
 	def save_object(path, obj):
-		global persistent_updates
-		
 		try:
 			dirname = os.path.dirname(path)
 			if dirname and not os.path.isdir(dirname):
 				os.mkdir(dirname)
 			
 			tmp_file = open(path, 'wb')
-			
-			persistent_updates = True
 			pickle.dump(obj, tmp_file)
-			persistent_updates = False
-			
 			tmp_file.close()
 		except:
-			persistent_updates = False
 			out_msg('Persistent, save_object', 'Error on saving object to file <' + path + '>')
 			raise
 	
@@ -95,17 +83,13 @@ init -1001 python:
 		if (not os.path.exists(persistent_path)) or os.path.getsize(persistent_path) == 0:
 			persistent = Object()
 		else:
-			persistent_updates = True
 			persistent = load_object(persistent_path)
-			persistent_updates = False
 	except:
-		persistent_updates = False
 		persistent = Object()
 		raise
 
 
 init -1000 python:
-	persistent_updates = False
 	persistent.in_persistent = True
 	
 	if not persistent.has_attr('config'):

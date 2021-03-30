@@ -1,6 +1,4 @@
 init -100000 python:
-	persistent_updates = False
-	
 	class Object:
 		def __init__(self, obj = None, **kwords):
 			self.in_persistent = False
@@ -19,7 +17,7 @@ init -100000 python:
 		def __getattr__(self, attr):
 			if self.__dict__.has_key(attr):
 				return self.__dict__[attr]
-			if persistent_updates:
+			if attr.startswith('__'):
 				raise AttributeError(attr)
 			return None
 		
@@ -63,8 +61,8 @@ init -100000 python:
 		def __nonzero__(self):
 			return True
 		
-		def __eq__(self, other):
-			return self is other
+		def __cmp__(self, other):
+			return id(self) - id(other)
 		
 		def get_props(self, get_list = False):
 			keys = self.__dict__.keys()

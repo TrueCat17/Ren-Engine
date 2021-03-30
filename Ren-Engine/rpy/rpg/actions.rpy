@@ -113,6 +113,7 @@ init -1000 python:
 			if not isinstance(location_names, (tuple, list)):
 				location_names = [location_names]
 			
+			st = time.time()
 			for i in xrange(3):
 				res = rpg_random_free_point(location_names)
 				if not res: continue
@@ -121,6 +122,8 @@ init -1000 python:
 				path_found = character.move_to_place([location_name, {'x': x, 'y': y}])
 				if path_found:
 					return 'moving'
+				
+				if time.time() - st > 0.015: break
 			
 			return 'end'
 		
@@ -286,7 +289,7 @@ init -1000 python:
 		friend = actions.friend
 		
 		if state == 'start':
-			if not friend and get_game_time() - (actions.to_friend_end_time or 0) < 2:
+			if not friend and get_game_time() - (actions.to_friend_end_time or -2) < 2:
 				return 'end'
 			
 			if not friend:
@@ -304,8 +307,9 @@ init -1000 python:
 					return 'end'
 				friend = random.choice(friends)
 			
+			st = time.time()
 			path_found = character.move_to_place([friend.location.name, friend])
-			if not path_found:
+			if not path_found or time.time() - st > 0.030:
 				return 'end'
 			
 			friend_actions = friend.get_actions()
@@ -342,15 +346,18 @@ init -1000 python:
 				return 'conversation'
 			
 			if same_location:
-				if dist < 150:
+				if dist < 100:
 					update_time = 0.25
-				elif dist < 400:
+				elif dist < 200:
 					update_time = 0.5
+				elif dist < 400:
+					update_time = 1.0
 				else:
-					update_time = 2.0
+					update_time = 3.0
 			else:
-				update_time = 4.0
-			if random.random() < 1.0 / (get_fps() * 10) or get_game_time() - actions.to_friend_start_time > update_time:
+				update_time = 10.0
+			
+			if get_game_time() - actions.to_friend_start_time > update_time:
 				return 'start'
 			
 			return 'moving'
@@ -444,12 +451,12 @@ init -1000 python:
 	def get_std_rpg_actions():
 		actions = (
 			('spawn',              0),
-			('sit',               30),
-			('other_place',       10),
+			('sit',               70),
+			('other_place',       40),
 			('near_location',     10),
 			('random_location',   10),
 			('interesting_place', 20),
-			('look_around',       20),
+			('look_around',       40),
 			('home',              10, 50),
 			('to_friend',         20, 40),
 		)

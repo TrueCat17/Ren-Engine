@@ -79,6 +79,29 @@ init python:
 			me.move_kind = 'stay'
 	
 	
+	def loc__process_sit_action():
+		if me.get_pose() == 'sit':
+			me.stand_up()
+			rpg_events.add('stand_up')
+		else:
+			objs = get_near_sit_objects()
+			if objs:
+				obj, point = objs[0]
+				me.sit_down(obj)
+				rpg_events.add('sit_down')
+	
+	def loc__process_action():
+		obj = get_near_location_object_for_inventory()
+		if obj is not None:
+			left = add_to_inventory(obj.type, 1)
+			if left == 0:
+				remove_location_object(cur_location_name, me, obj.type, 1)
+				inventory_add_event('taking', obj.type)
+		else:
+			rpg_events.add('action')
+	
+	
+	
 	location_cutscene_back = im.Rect('#111')
 	location_cutscene_size = 0.15
 	
@@ -101,6 +124,22 @@ init python:
 		location_cutscene_end = location_cutscene_start + max(t, 0)
 		
 		cam_to(obj or cam_object, t, align, zoom)
+	
+	def loc__calculate_cut_params():
+		global location_cutscene_state, location_cutscene_up, location_cutscene_down
+		
+		cut_k = 0
+		if get_game_time() < location_cutscene_end:
+			cut_k = get_k_between(location_cutscene_start, location_cutscene_end, get_game_time(), location_cutscene_state == 'off')
+		elif location_cutscene_state == 'off':
+			location_cutscene_state = None
+		else:
+			cut_k = 1.0
+		
+		if location_cutscene_state:
+			location_cutscene_up = location_cutscene_down = int(location_cutscene_size * cut_k * get_stage_height())
+		else:
+			location_cutscene_up = location_cutscene_down = 0
 
 
 screen location:
@@ -136,29 +175,30 @@ screen location:
 				
 				start_location_ambience()
 		
-		cut_k = 0
-		if get_game_time() < location_cutscene_end:
-			cut_k = get_k_between(location_cutscene_start, location_cutscene_end, get_game_time(), location_cutscene_state == 'off')
-		elif location_cutscene_state == 'off':
-			location_cutscene_state = None
-		else:
-			cut_k = 1.0
-		
-		if location_cutscene_state:
-			location_cutscene_up = location_cutscene_down = int(location_cutscene_size * cut_k * get_stage_height())
-		else:
-			location_cutscene_up = location_cutscene_down = 0
+		loc__calculate_cut_params()
 	
 	if draw_location:
+		key 'I' action show_inventory
+		
 		python:
 			loc__shift_is_down = False
 			
 			loc__prev_left, loc__prev_right, loc__prev_up, loc__prev_down = loc__left, loc__right, loc__up, loc__down
 			loc__left = loc__right = loc__up = loc__down = False
+			
+			if rpg_event_processing:
+				rpg_events.clear()
 		
 		if get_rpg_control() and location_showed():
-			key 'z' action SetVariable('sit_action', True)
-			key 'e' action SetVariable('exec_action', True)
+			$ loc__sit_action = False
+			key 'z' action SetVariable('loc__sit_action', True)
+			if loc__sit_action:
+				$ loc__process_sit_action()
+			
+			$ loc__action = False
+			key 'e' action SetVariable('loc__action', True)
+			if loc__action:
+				$ loc__process_action()
 			
 			key 'LEFT SHIFT'  action SetVariable('loc__shift_is_down', True) first_delay 0
 			key 'RIGHT SHIFT' action SetVariable('loc__shift_is_down', True) first_delay 0
@@ -206,6 +246,17 @@ screen location:
 				if (loc__left, loc__right, loc__up, loc__down)[min_index]:
 					loc__direction = loc__directions[min_index]
 					me.set_direction(loc__direction)
+			
+			if get_rpg_control() and (loc__character_dx or loc__character_dy or 'action' in rpg_events):
+				cur_exit = get_location_exit()
+				if cur_exit:
+					set_location(cur_exit.to_location_name, cur_exit.to_place_name)
+					cur_place_name = None
+				
+				prev_place_name = cur_place_name
+				cur_place_name = get_location_place()
+				if cur_place_name and cur_place_name != prev_place_name:
+					rpg_events.add('enter')
 			
 			for character in characters:
 				character.update()

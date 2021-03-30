@@ -35,7 +35,7 @@ init python:
 		
 		for character in characters:
 			if not character.invisible and near(character.x, character.y, 0, 0):
-				to_draw += [(character.x - cs / 2, character.y - cs / 2), im.rect('#FFF', cs, cs)]
+				to_draw += [(int(character.x - cs / 2), int(character.y - cs / 2)), im.rect('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]
 			return location_free

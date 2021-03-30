@@ -116,9 +116,4 @@ translate russian strings:
 	old 'remove'
 	new 'выбрасывание'
 	
-	old 'Several active quests intersect on action <%s> for item'
-	new 'Несколько активных квестов пересекаются на действии <%s> для предмета'
-	
-	old 'Several active quests intersect in this place'
-	new 'Несколько активных квестов пересекаются в этом месте'
-	
+

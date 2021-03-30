@@ -147,13 +147,19 @@ init -999 python:
 		
 		@staticmethod
 		def has_label(label):
-			return _has_label(label)
+			return (type(label) is str) and _has_label(label)
 		@staticmethod
 		def jump(label):
-			_jump_next(label, False)
+			if renpy.has_label(label):
+				_jump_next(label, False)
+			else:
+				out_msg('renpy.jump', 'Label <' + str(label) + '> not found')
 		@staticmethod
 		def call(label):
-			_jump_next(label, True)
+			if renpy.has_label(label):
+				_jump_next(label, True)
+			else:
+				out_msg('renpy.call', 'Label <' + str(label) + '> not found')
 		
 		@staticmethod
 		def show_screen(name):

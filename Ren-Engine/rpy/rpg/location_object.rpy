@@ -168,7 +168,7 @@ init -1001 python:
 			
 			top = 0
 			for character in characters + [None]:
-				bottom = (character or self).get_zorder() - ystart
+				bottom = absolute((character or self).get_zorder() - ystart)
 				if bottom <= top:
 					break
 				

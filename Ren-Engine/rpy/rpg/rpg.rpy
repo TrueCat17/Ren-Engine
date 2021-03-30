@@ -1,6 +1,23 @@
-init python:
-	def default_get_place_label():
-		return cur_location_name + '__' + (cur_place_name or 'unknown')
+init -1000 python:
+	rpg_event_processing = False
+	
+	def get_place_labels():
+		quests = get_started_quests()
+		usual_label = cur_location_name + '__' + (cur_place_name or 'unknown')
+		
+		res = []
+		for quest in quests:
+			res.extend(get_glob_labels(quest + '__' + usual_label))
+		res.extend(get_glob_labels(usual_label))
+		return res
+	
+	def get_unique_place_labels(labels):
+		res = []
+		for label in labels:
+			if label not in res and label and renpy.has_label(label):
+				res.append(label)
+		return res
+
 
 label rpg_loop:
 	while True:
@@ -12,98 +29,58 @@ label rpg_update:
 	if not get_rpg_control():
 		return
 	
-	if inventory_action is not None:
-		$ cur_quests_labels = quest_get_object_labels(inventory_action, inventory_action_object['name'])
-		
-		$ me.move_kind = 'stay'
-		$ set_rpg_control(False)
-		if len(cur_quests_labels) == 1:
-			call expression cur_quests_labels[0][1]
-		elif len(cur_quests_labels) > 1:
-			$ me.set_pose("stance")
-			window show
-			
-			narrator (_("Several active quests intersect on action <%s> for item") % _(inventory_action)) + " (" + str(len(cur_quests_labels)) + ")."
-			
-			$ choose_menu_variants = [name for name, label in cur_quests_labels]
-			$ renpy.call_screen('choose_menu', 'choose_menu_result')
-			
-			window hide
-			$ name, label = cur_quests_labels[choose_menu_result]
-			call expression label
-		$ set_rpg_control(True)
-		
-		$ inventory_action = None
-	
 	python:
-		exit = get_location_exit()
-		if exit:
-			set_location(exit.to_location_name, exit.to_place_name)
+		if rpg_events:
+			rpg_event_processing = True
 			
-			if renpy.has_label('on__' + cur_location_name):
-				renpy.call('on__' + cur_location_name)
+			rpg_cur_labels = get_unique_place_labels(get_place_labels())
+			rpg_processing_events, rpg_events = rpg_events, set()
+		else:
+			rpg_processing_events = None
+		
+		if cur_exit and renpy.has_label('on__' + cur_location_name):
+			renpy.call('on__' + cur_location_name)
 	
-	python:
-		near_location_object = None
-		if exec_action:
-			near_location_object = get_near_location_object_for_inventory()
-			if near_location_object is not None:
-				left = add_to_inventory(near_location_object.type, 1)
-				if left == 0:
-					remove_location_object(cur_location_name, me, near_location_object.type, 1)
-					inventory_do_action('taking', location_objects[near_location_object.type])
+	while rpg_processing_events:
+		python:
+			rpg_event = rpg_processing_events.pop()
+			rpg_event_object = None
+			if type(rpg_event) in (tuple, list):
+				rpg_event, rpg_event_object = rpg_event
+			
+			rpg_event__no_enter = rpg_event == 'no_enter'
+			if rpg_event__no_enter:
+				for rpg_event_exit in cur_location.exits:
+					if rpg_event_exit.inside(me.x, me.y):
+						cur_location_name = rpg_event_exit.to_location_name
+						cur_place_name = rpg_event_exit.to_place_name
+						
+						rpg_usual_labels = rpg_cur_labels
+						rpg_cur_labels = get_unique_place_labels(get_place_labels())
+						break
 				else:
-					near_location_object = None
+					rpg_event_exit = None
+		if rpg_event__no_enter and not rpg_event_exit:
+			continue
 		
-		cur_place_name = get_location_place() if near_location_object is None else None
-		cur_exec_label = cur_location_name + '__' + (cur_place_name or 'unknown')
+		$ rpg_event_label_index = 0
+		while rpg_event_label_index < len(rpg_cur_labels):
+			python:
+				rpg_cur_label = rpg_cur_labels[rpg_event_label_index]
+				rpg_event_label_index += 1
+			
+				rpg_event_stop = True
+				renpy.call(rpg_cur_label)
+			if rpg_event_stop:
+				break
 		
-		if sit_action:
-			if me.get_pose() == 'sit':
-				stand_up = True
-				me.stand_up()
-			else:
-				objs = get_near_sit_objects()
-				if objs:
-					sit_down = True
-					obj, point = objs[0]
-					me.sit_down(obj)
-	
-	if (exec_action or sit_action) and renpy.has_label(cur_exec_label):
-		call expression cur_exec_label
-	else:
-		$ cur_label = globals().get('get_place_label', default_get_place_label)()
-		if renpy.has_label(cur_label):
-			call expression cur_label
+		python:
+			if rpg_event__no_enter:
+				cur_location_name = cur_location.name
+				cur_place_name = get_location_place()
+				rpg_cur_labels = rpg_usual_labels
 	
 	python:
-		cur_quests_labels = quest_get_labels(cur_location_name, cur_place_name)
-		if cur_quests_labels:
-			save_rpg_control()
-			set_rpg_control(False)
+		rpg_event = rpg_event_object = None
+		rpg_event_processing = False
 	
-	if len(cur_quests_labels) == 1:
-		call expression cur_quests_labels[0][1]
-	elif len(cur_quests_labels) > 1:
-		$ me.set_pose("stance")
-		window show
-		narrator _("Several active quests intersect in this place") + " (" + str(len(cur_quests_labels)) + ")."
-		
-		$ choose_menu_variants = [name for name, label in cur_quests_labels]
-		$ renpy.call_screen('choose_menu', 'choose_menu_result')
-		
-		""
-		$ name, label = cur_quests_labels[choose_menu_result]
-		call expression label
-		
-		window hide
-	
-	python:
-		return_prev_rpg_control()
-		
-		sit_action = False
-		sit_down = False
-		stand_up = False
-		
-		exec_action = False
-

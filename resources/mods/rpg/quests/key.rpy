@@ -5,29 +5,34 @@ label key__start:
 	"Думаю, лучше его подобрать, пока кто-нибудь его не запнул в траву."
 	"[Для этого нужно подойти к ключу и взять его в инвентарь, нажав E (англ.).]"
 	"[Нажав I, можно открыть/закрыть инвентарь.]"
+	window hide
 
 label key__end:
 	"Квест <Ключ> завершён."
-
-label key__on__taking__key:
-	window show
-	"Я подобрал ключ."
-	"Интересно, что же мне теперь с ним делать?"
 	window hide
 
-label key__on__remove__key:
-	window show
-	"Быть может, не стоит возится с этим ключём?"
-	"Мало ли каких скелетов в потайных шкафах он может наоткрывать..."
+label key__*:
+	if rpg_event_object != 'key':
+		return
+	
+	if rpg_event == 'taking':
+		"Я подобрал ключ."
+		"Интересно, что же мне теперь с ним делать?"
+	
+	if rpg_event == 'using':
+		"И что я могу открыть этим ключом?"
+	
+	if rpg_event == 'remove':
+		"Быть может, не стоит возится с этим ключём?"
+		"Мало ли каких скелетов в потайных шкафах он может наоткрывать..."
+	
 	window hide
 
-label key__on__radio_club__clubs:
+label key__radio_club*:
 	if has_in_inventory("key", 1):
 		$ set_rpg_control(False)
 		$ location_cutscene_on()
 		$ me.set_direction(to_forward)
-		
-		window show
 		
 		me "Я тут рядом проходил."
 		$ sh.set_direction(to_back)
@@ -44,6 +49,7 @@ label key__on__radio_club__clubs:
 		sh "Да положи где-нибудь на столе, я отнесу потом."
 		sh "Спасибо, что принёс его."
 		me "Да пустяки."
+		window hide
 		
 		$ sh.set_direction(to_forward)
 		
@@ -52,7 +58,6 @@ label key__on__radio_club__clubs:
 			if last_keys == 0:
 				quest_end('key')
 		
-		window hide
 		$ location_cutscene_off()
 		$ set_rpg_control(True)
 

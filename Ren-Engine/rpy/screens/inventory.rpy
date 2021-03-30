@@ -1,18 +1,9 @@
-init python:
-	inventory_row = min(10, inventory_size)
-	inventory_full_rows = int(inventory_size / inventory_row)
-	inventory_last_row = inventory_size % inventory_row
-	
-	inventory_visible = False
-	
+init -101 python:
 	inventory_background = im.Rect('#FED')
 	inventory_cell_usual = gui + 'save_load/hover.png'
 	inventory_cell_selected = gui + 'save_load/selected.png'
 	inventory_cell_size = 50
 	inventory_cell_spacing = 10
-	
-	inventory_xsize = (inventory_cell_size + inventory_cell_spacing) * inventory_row + inventory_cell_spacing
-	inventory_ysize = (inventory_cell_size + inventory_cell_spacing) * (inventory_full_rows + (1 if inventory_last_row else 0)) + inventory_cell_spacing + 100
 	
 	inventory_selected = [0, 0]
 	
@@ -63,12 +54,8 @@ init python:
 		obj = location_objects[element[0]]
 		return obj
 	
-	inventory_action = None
-	inventory_action_object = None
-	def inventory_do_action(action, obj = None):
-		global inventory_action, inventory_action_object
-		inventory_action = action
-		inventory_action_object = obj or inventory_get_selected_object()
+	def inventory_add_event(event, obj):
+		rpg_events.add((event, obj))
 	
 	def inventory_remove_selected():
 		row, column = inventory_selected
@@ -77,9 +64,9 @@ init python:
 		if element is None:
 			return
 		
-		inventory_do_action('remove')
-		
 		obj_name = element[0]
+		inventory_add_event('remove', obj_name)
+		
 		obj = location_objects[obj_name]
 		if obj['remove_to_location']:
 			add_location_object(cur_location.name, me, obj_name)
@@ -87,65 +74,76 @@ init python:
 		element[1] -= 1
 		if element[1] == 0:
 			inventory[index] = None
+	
+	def show_inventory():
+		init_inventory()
+		show_screen('inventory')
 
 
 screen inventory:
-	key 'I' action SetVariable('inventory_visible', not(inventory_visible))
+	modal True
 	
-	if inventory_visible and draw_location:
-		image inventory_background:
-			size (inventory_xsize, inventory_ysize)
-			align (0.5, 0.5)
+	key 'ESCAPE' action HideScreen('inventory')
+	
+	button:
+		ground 'images/bg/black.jpg'
+		hover  'images/bg/black.jpg'
+		mouse  False
+		alpha  0.3
+		size   1.0
+		action HideScreen('inventory')
+	
+	image inventory_background:
+		size (inventory_xsize, inventory_ysize)
+		align (0.5, 0.5)
+		
+		vbox:
+			spacing inventory_cell_spacing
+			xalign 0.5
+			ypos inventory_cell_spacing
 			
-			vbox:
-				spacing inventory_cell_spacing
-				xalign 0.5
-				ypos inventory_cell_spacing
-				
-				for i in xrange(inventory_full_rows):
-					hbox:
-						spacing inventory_cell_spacing
-						
-						for j in xrange(inventory_row):
-							button:
-								size (inventory_cell_size, inventory_cell_size)
-								
-								ground inventory_get_cell_image(i, j)
-								action inventory_select(i, j)
-				if inventory_last_row:
-					for j in xrange(inventory_last_row):
+			for i in xrange(inventory_full_rows):
+				hbox:
+					spacing inventory_cell_spacing
+					
+					for j in xrange(inventory_row):
 						button:
 							size (inventory_cell_size, inventory_cell_size)
 							
-							ground inventory_get_cell_image(inventory_full_rows, j)
-							action inventory_select(inventory_full_rows, j)
-				
-				null ysize 30
-				
-				$ inventory_selected_object = inventory_get_selected_object()
-				if inventory_selected_object:
-					hbox:
-						spacing 10
-						xalign 0.5
+							ground inventory_get_cell_image(i, j)
+							action inventory_select(i, j)
+			if inventory_last_row:
+				for j in xrange(inventory_last_row):
+					button:
+						size (inventory_cell_size, inventory_cell_size)
 						
-						textbutton _('Use'):
-							action inventory_do_action('using')
-							
-							color 0x00FF00
-							text_size 20
-						textbutton _('Lay out' if inventory_selected_object['remove_to_location'] else 'Throw away'):
-							action inventory_remove_selected
-							
-							color 0xFF0000
-							text_size 20
+						ground inventory_get_cell_image(inventory_full_rows, j)
+						action inventory_select(inventory_full_rows, j)
 			
-			if not inventory_inited:
-				$ init_inventory()
-			button:
-				pos    (inventory_xsize + 10 + inventory_close_size / 2, -10 - inventory_close_size / 2)
-				anchor (0.5, 0.5)
-				size   (inventory_close_size, inventory_close_size)
-				
-				ground inventory_close
-				action SetVariable('inventory_visible', False)
+			null ysize 30
+			
+			$ inventory_selected_object = inventory_get_selected_object()
+			if inventory_selected_object:
+				hbox:
+					spacing 10
+					xalign 0.5
+					
+					textbutton _('Use'):
+						action inventory_add_event('using', inventory_selected_object.name)
+						
+						color 0x00FF00
+						text_size 20
+					textbutton _('Lay out' if inventory_selected_object['remove_to_location'] else 'Throw away'):
+						action inventory_remove_selected
+						
+						color 0xFF0000
+						text_size 20
+		
+		button:
+			pos    (inventory_xsize + 10 + inventory_close_size / 2, -10 - inventory_close_size / 2)
+			anchor (0.5, 0.5)
+			size   (inventory_close_size, inventory_close_size)
+			
+			ground inventory_close
+			action HideScreen('inventory')
 

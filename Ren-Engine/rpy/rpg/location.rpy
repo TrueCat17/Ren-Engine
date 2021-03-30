@@ -21,6 +21,7 @@ init -1002 python:
 	prev_location_name = None
 	cur_location = None
 	cur_location_name = None
+	cur_exit = None
 	cur_place_name = None
 	cur_to_place = None
 	
@@ -74,7 +75,6 @@ init -1002 python:
 		
 		if not has_screen('location'):
 			show_screen('location')
-			show_screen('inventory')
 		
 		global prev_location_name, cur_location, cur_location_name, cur_to_place
 		prev_location_name = cur_location_name
@@ -115,6 +115,13 @@ init -1002 python:
 		show_character(me, cur_to_place, auto_change_location = False)
 		if prev_location_name is None:
 			me.show_time = -100
+		
+		for exit in cur_location.exits:
+			if exit.inside(me.x, me.y):
+				break
+		else:
+			global was_out_exit
+			was_out_exit = True
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_to_place
@@ -326,18 +333,15 @@ init -1002 python:
 		
 		return int(x - xa + align[0] * w), int(y - ya + align[1] * h)
 	
-	sit_action = False
-	sit_down = False
-	stand_up = False
+	rpg_event = None
+	rpg_event_object = None
+	rpg_events = set()
 	
-	exec_action = False
 	was_out_exit = False
-	was_out_place = False
-	
 	def get_location_exit():
-		global was_out_exit, was_out_place
+		global was_out_exit
 		
-		if not exec_action and cur_location.is_room:
+		if 'action' not in rpg_events and cur_location.is_room:
 			was_out_exit = True
 			return None
 		
@@ -345,40 +349,30 @@ init -1002 python:
 			if not exit.inside(me.x, me.y):
 				continue
 			
+			if rpg_locations[exit.to_location_name].is_room:
+				if 'action' not in rpg_events:
+					return None
+				rpg_events.remove('action')
+			
 			destination = (exit.to_location_name, exit.to_place_name)
 			if destination in location_banned_exit_destinations and destination not in me.allowed_exit_destinations:
-				continue
-			
-			if globals().has_key('can_exit_to') and not can_exit_to(exit.to_location_name, exit.to_place_name):
+				rpg_events.add('no_enter')
 				continue
 			
 			if not was_out_exit:
 				return None
-			if not exec_action and rpg_locations[exit.to_location_name].is_room:
-				return None
 			
 			was_out_exit = False
-			was_out_place = True
 			return exit
 		
 		was_out_exit = True
 		return None
 	
 	def get_location_place():
-		global exec_action, was_out_place
-		
 		for place_name in cur_location.places.keys():
 			place = cur_location.places[place_name]
 			if place.inside(me.x, me.y):
-				if was_out_place:
-					exec_action = False
-				if exec_action or was_out_place:
-					was_out_place = False
-					return place_name
-				return None
-		else:
-			was_out_place = True
-		
+				return place_name
 		return None
 	
 	
