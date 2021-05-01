@@ -341,20 +341,32 @@ static std::string initCode(Node *node, const std::string& index) {
 
 	if (command == "continue" || command == "break") {
 		Node *t = node->parent;
+		int extraDepth = 0;
 		while (t->command != "for" && t->command != "while") {
 			t = t->parent;
+			++extraDepth;
 		}
 		std::string id = std::to_string(t->id);
+
+		res = "# " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
 
 		if (command == "break" &&
 		    t->childNum + 1 < t->parent->children.size() &&
 		    t->parent->children[t->childNum + 1]->command == "else")
 		{
-			res = "_SL_break" + id + " = True\n";
+			res += "_SL_break" + id + " = True\n";
+		}
+		std::string removeStackTop;
+		if (extraDepth) {
+			for (int i = 0; i < extraDepth - 1; ++i) {
+				removeStackTop += "_SL_stack.pop()\n";
+			}
+			removeStackTop += "_SL_last = _SL_stack.pop()\n";
 		}
 
 		res += "_SL_counter" + id + " += " + std::to_string(maxScreenChild(t) + 1) + "\n" +
-		       command + " # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
+		       removeStackTop +
+		       command + "\n";
 		return res;
 	}
 
