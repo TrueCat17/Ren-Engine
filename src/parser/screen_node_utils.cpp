@@ -578,6 +578,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	[[maybe_unused]] bool tmpBool; \
 	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
 	else { \
+	    static_cast<Type*>(obj)->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
@@ -592,6 +593,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyBool_Check(prop)) { \
 		static_cast<Type*>(obj)->propName = prop == Py_True; \
 	}else { \
+	    static_cast<Type*>(obj)->propName = false; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
 	} \
@@ -603,6 +605,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(obj->propName##IsFloat, obj->propName, prop) \
 	else { \
+	    obj->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
@@ -622,17 +625,21 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	} \
 	\
 	if (isNumber) { \
-	    xIsFloat = tmpBool; yIsFloat = tmpBool; \
+	    xIsFloat = yIsFloat = tmpBool; \
 		obj->x##propName = obj->y##propName = value; \
 		return; \
 	} \
 	\
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) { \
+	    xIsFloat = yIsFloat = false; \
+	    obj->x##propName = obj->y##propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type); \
 		return; \
 	} \
 	if (Py_SIZE(prop) != 2) { \
+	    xIsFloat = yIsFloat = false; \
+	    obj->x##propName = obj->y##propName = 0; \
 		std::string size = std::to_string(Py_SIZE(prop)); \
 		outError(obj, #propName, propIndex, "Expected sequence with size == 2, got " + size); \
 		return; \
@@ -643,11 +650,15 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(xIsFloat, obj->x##propName, x) \
 	else { \
+	    xIsFloat = false; \
+	    obj->x##propName = 0; \
 		std::string type = x->ob_type->tp_name; \
 		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
 	updateCondition(yIsFloat, obj->y##propName, y) \
 	else { \
+	    yIsFloat = false; \
+	    obj->y##propName = 0; \
 		std::string type = y->ob_type->tp_name; \
 		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
@@ -665,6 +676,8 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	float value = 0; \
 	updateCondition(isFloat, value, prop) \
 	else { \
+	    isFloat = false; \
+	    value = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
@@ -690,11 +703,15 @@ static void update_align(Child *obj, size_t propIndex) {
 	}
 
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
+		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = false;
+		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = 0;
 		std::string type = prop->ob_type->tp_name;
 		outError(obj, "align", propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type);
 		return;
 	}
 	if (Py_SIZE(prop) != 2) {
+		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = false;
+		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = 0;
 		std::string size = std::to_string(Py_SIZE(prop));
 		outError(obj, "align", propIndex, "Expected sequence with size == 2, got " + size);
 		return;
@@ -705,6 +722,8 @@ static void update_align(Child *obj, size_t propIndex) {
 
 	updateCondition(isFloat, value, x)
 	else {
+		isFloat = false;
+		value = 0;
 		std::string type = x->ob_type->tp_name;
 		outError(obj, "align", propIndex, "At xalign-prop expected types float, absolute, int or long, got " + type);
 	}
@@ -713,6 +732,8 @@ static void update_align(Child *obj, size_t propIndex) {
 
 	updateCondition(isFloat, value, y)
 	else {
+		isFloat = false;
+		value = 0;
 		std::string type = y->ob_type->tp_name;
 		outError(obj, "align", propIndex, "At yalign-prop expected types float, absolute, int or long, got " + type);
 	}
@@ -727,6 +748,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyString_CheckExact(prop)) { \
 		static_cast<Type*>(obj)->propName = PyString_AS_STRING(prop); \
 	}else { \
+	    static_cast<Type*>(obj)->propName = ""; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type str, got " + type); \
 	} \
@@ -737,11 +759,15 @@ static void update_crop(Child *obj, size_t propIndex) {
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
 
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
+		obj->xcropIsFloat = obj->ycropIsFloat = obj->wcropIsFloat = obj->hcropIsFloat = false;
+		obj->xcrop = obj->ycrop = obj->wcrop = obj->hcrop = 0;
 		std::string type = prop->ob_type->tp_name;
 		outError(obj, "crop", propIndex, "Expected types tuple or list, got " + type);
 		return;
 	}
 	if (Py_SIZE(prop) != 4) {
+		obj->xcropIsFloat = obj->ycropIsFloat = obj->wcropIsFloat = obj->hcropIsFloat = false;
+		obj->xcrop = obj->ycrop = obj->wcrop = obj->hcrop = 0;
 		std::string size = std::to_string(Py_SIZE(prop));
 		outError(obj, "crop", propIndex, "Expected sequence with size == 4, got " + size);
 		return;
@@ -754,24 +780,32 @@ static void update_crop(Child *obj, size_t propIndex) {
 
 	updateCondition(obj->xcropIsFloat, obj->xcrop, x)
 	else {
+		obj->xcropIsFloat = false;
+		obj->xcrop = 0;
 		std::string type = x->ob_type->tp_name;
 		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
 	updateCondition(obj->ycropIsFloat, obj->ycrop, y)
 	else {
+		obj->ycropIsFloat = false;
+		obj->ycrop = 0;
 		std::string type = y->ob_type->tp_name;
 		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
 	updateCondition(obj->wcropIsFloat, obj->wcrop, w)
 	else {
+		obj->wcropIsFloat = false;
+		obj->wcrop = 0;
 		std::string type = w->ob_type->tp_name;
 		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, absolute, int or long, got " + type);
 	}
 
 	updateCondition(obj->hcropIsFloat, obj->hcrop, h)
 	else {
+		obj->hcropIsFloat = false;
+		obj->hcrop = 0;
 		std::string type = h->ob_type->tp_name;
 		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, absolute, int or long, got " + type);
 	}
@@ -795,6 +829,7 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 			text->needUpdate = true; \
 		} \
 	}else { \
+	    fontStyle &= ~mask; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected bool, got " + type); \
 	} \
@@ -846,7 +881,19 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 				style.color = v; \
 			} \
 		} \
-	} \
+	}else { \
+	    if constexpr (isOutline) { \
+	        if (style.enableOutline) { \
+	            style.enableOutline = false; \
+	            text->needUpdate = true; \
+	        } \
+	    }else { \
+	        if (style.color) { \
+	            style.color = 0; \
+	            text->needUpdate = true; \
+	        } \
+	    } \
+	}\
 }
 
 makeUpdateFunc(alpha)
