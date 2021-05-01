@@ -60,11 +60,9 @@ screen selected_location:
 				objs = []
 				places = []
 				
-				for place_name in selected_location.places:
-					place = selected_location.places[place_name]
-					
-					if '_pos' in place_name:
-						obj_name = place_name[0:place_name.index('_pos')]
+				for place in selected_location.places.itervalues():
+					if '_pos' in place.name:
+						obj_name = place.name[0:place.name.index('_pos')]
 						if location_objects.has_key(obj_name):
 							obj = location_objects[obj_name]
 							main_frame = obj['animations'][None]
@@ -74,13 +72,21 @@ screen selected_location:
 							y = place.y + place.ysize / 2
 							objs.append((obj_image, x, y))
 					
-					if place.side_exit is None:
+					if place.to_location_name is None:
 						image = im.Rect('#0B0')
 					else:
-						x, y, w, h, exit_x, exit_y, exit_w, exit_h = get_place_coords(place)
-						image = im.Composite((place.xsize, place.ysize),
-								             (   x  ,    y  ), im.Rect('#0B0', w, h),
-								             (exit_x, exit_y), im.Rect('#B00', exit_w, exit_h))
+						to_loc = rpg_locations.get(place.to_location_name, None)
+						if to_loc and to_loc.places.has_key(place.to_place_name):
+							if place.exit_side:
+								x, y, w, h = place.get_rect(of_exit = False)
+								ex, ey, ew, eh = place.get_rect(of_exit = True)
+								image = im.Composite((place.xsize, place.ysize),
+									                 (x  - place.x, y  - place.y), im.Rect('#FF0',  w,  h),
+									                 (ex - place.x, ey - place.y), im.Rect('#B00', ew, eh))
+							else:
+								image = im.Rect('#B00')
+						else:
+							image = im.Rect('#F00')
 					
 					places.append((place, image))
 				
@@ -95,26 +101,10 @@ screen selected_location:
 			for place, image in places:
 				button:
 					ground image
-					action [SetVariable('selected_place_name', place.name), SetVariable('selected_exit_num', None)]
+					action SetVariable('selected_place_name', place.name)
 					
 					pos  (int(place.x * local_k), int(place.y * local_k))
 					size (max(int(place.xsize * local_k), 3), max(int(place.ysize * local_k), 3))
-					
-					alpha 0.5
-		
-		if not persistent.hide_exits:
-			for i in xrange(len(selected_location.exits)):
-				python:
-					exit = selected_location.exits[i]
-					real_to = rpg_locations.has_key(exit.to_location_name) and rpg_locations[exit.to_location_name].places.has_key(exit.to_place_name)
-					image = im.Rect('#BB0' if real_to else '#440')
-				
-				button:
-					ground image
-					action [SetVariable('selected_exit_num', i), SetVariable('selected_place_name', None)]
-					
-					pos  (int(exit.x * local_k),     int(exit.y * local_k))
-					size (int(exit.xsize * local_k), int(exit.ysize * local_k))
 					
 					alpha 0.5
 	

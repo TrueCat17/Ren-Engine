@@ -21,7 +21,7 @@ label rpg_start:
 		"There is only russian text now."
 	"Я проснулся в икарусе."
 	
-	$ me.set_pose("stance")
+	$ me.set_pose("stay")
 	pause 1
 	$ me.move_to_place("before_sit_place")
 	$ me.move_to_place("before_sit_place-2")

@@ -68,8 +68,8 @@ translate russian strings:
 	old 'Down'
 	new 'Снизу'
 	
-	old 'Rotate on enter'
-	new 'Поворот при входе'
+	old 'Rotate on exit'
+	new 'Поворот при выходе'
 	
 	old 'To forward'
 	new 'Вперёд'

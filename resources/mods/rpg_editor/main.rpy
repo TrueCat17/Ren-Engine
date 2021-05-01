@@ -22,41 +22,7 @@ init 1 python:
 		
 		return im.rect('#888')
 	
-	
 	register_new_locations()
-	
-	for location in rpg_locations.itervalues():
-		location.using = location.x is not None and location.y is not None
-		
-		for place in location.places.itervalues():
-			px, py, pw, ph = place.x, place.y, place.xsize, place.ysize
-			
-			for exit in location.exits:
-				if exit.to_place_name != location.name:
-					continue
-				
-				ex, ey, ew, eh = exit.x, exit.y, exit.xsize, exit.ysize
-				
-				if px == ex and pw == ew:
-					if py + ph == ey:
-						place.side_exit = 'down'
-					elif ey + eh == py:
-						place.side_exit = 'up'
-						place.y -= eh
-					if place.side_exit:
-						place.ysize += eh
-						location.exits.remove(exit)
-						break
-				if py == ey and ph == eh:
-					if px + pw == ex:
-						place.side_exit = 'right'
-					elif ex + ew == px:
-						place.side_exit = 'left'
-						place.x -= ew
-					if place.side_exit:
-						place.xsize += ew
-						location.exits.remove(exit)
-						break
 
 
 label start:

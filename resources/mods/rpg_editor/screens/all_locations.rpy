@@ -35,7 +35,7 @@ init python:
 
 screen all_locations:
 	image im.rect('#444'):
-		size (1.0, 1.0)
+		size 1.0
 	
 	key 'w' action [AddVariable('common_cam_y', -common_speed), AddVariable('start_y', -common_speed)]
 	key 'a' action [AddVariable('common_cam_x', -common_speed), AddVariable('start_x', -common_speed)]
@@ -76,7 +76,7 @@ screen all_locations:
 		pos (x, y)
 		
 		for name, location in rpg_locations.iteritems():
-			if not location.using:
+			if location.x is None:
 				continue
 			
 			$ preview = get_preview(name)

@@ -5,7 +5,6 @@ init python:
 	objects_btn_size = 70
 	objects_start_btn = 0
 	
-	selected_exit_num = None
 	selected_place_name = None
 	selected_place_prop = 'x'
 	
@@ -31,9 +30,9 @@ init python:
 	
 	
 	def unselect():
-		global selected_place_name, selected_exit_num
-		if selected_place_name or selected_exit_num is not None:
-			selected_place_name = selected_exit_num = None
+		global selected_place_name
+		if selected_place_name:
+			selected_place_name = None
 		else:
 			hide_screen('selected_location')
 			show_screen('all_locations')
@@ -48,17 +47,19 @@ init python:
 		if not check_place(name):
 			return
 		
-		global selected_place_name, selected_exit_num
+		global selected_place_name
 		selected_place_name = name
-		selected_exit_num = None
 		
 		w, h = 100, 100
 		x = ((get_stage_width() - props_width - w) / 2 - selected_location_x) / local_k
 		y = ((get_stage_height() - h) / 2 - selected_location_y) / local_k
 		
 		register_place(selected_location.name, name, int(x), int(y), w, h)
-		if rpg_locations.has_key(name):
-			selected_location.places[name].side_exit = 'down'
+		
+		if name in rpg_locations:
+			place = selected_location.places[name]
+			place.to_location_name = name
+			place.to_place_name = selected_location.name
 		
 		set_save_locations()
 	
@@ -72,51 +73,32 @@ init python:
 		del selected_location.places[selected_place_name]
 		selected_place_name = place.name = name
 		
-		if rpg_locations.has_key(name):
-			set_exit_side()
-			if place.side_exit is None:
-				place.side_exit = 'down'
-		elif place.has_key('side_exit'):
-			del place.side_exit
+		if name in rpg_locations:
+			place = selected_location.places[name]
+			place.to_location_name = name
+			place.to_place_name = selected_location.name
+		
 		set_save_locations()
 	
 	def del_place():
 		global selected_place_name
 		del selected_location.places[selected_place_name]
 		selected_place_name = None
-		
 		set_save_locations()
 	
-	def add_exit():
-		global selected_exit_num, selected_place_name
-		selected_exit_num = len(selected_location.exits)
-		selected_place_name = None
-		
-		w, h = 100, 100
-		x = ((get_stage_width() - props_width - w) / 2 - selected_location_x) / local_k
-		y = ((get_stage_height() - h) / 2 - selected_location_y) / local_k
-		
-		register_exit(selected_location.name, '%to_location_name%', '%to_place_name%', int(x), int(y), w, h)
-		set_save_locations()
-	
-	def del_exit():
-		global selected_exit_num
-		selected_location.exits = selected_location.exits[0:selected_exit_num] + selected_location.exits[selected_exit_num+1:]
-		selected_exit_num = None
-		
-		set_save_locations()
 	
 	def rename_to_loc(to_location_name):
-		exit = selected_location.exits[selected_exit_num]
-		exit.to_location_name = to_location_name
+		place = selected_location.places[selected_place_name]
+		place.to_location_name = to_location_name
+		set_save_locations()
 	def rename_to_place(to_place_name):
-		exit = selected_location.exits[selected_exit_num]
-		exit.to_place_name = to_place_name
+		place = selected_location.places[selected_place_name]
+		place.to_place_name = to_place_name
+		set_save_locations()
 	
 	
 	def change_place_prop(d):
-		is_place = selected_exit_num is None
-		place = selected_location.places[selected_place_name] if is_place else selected_location.exits[selected_exit_num]
+		place = selected_location.places[selected_place_name]
 		
 		if selected_place_prop == 'x':
 			place.x = in_bounds(place.x + d, -700, selected_location.xsize + 700)
@@ -127,44 +109,7 @@ init python:
 		else: # ysize
 			place.ysize = in_bounds(place.ysize + d, 2, in_bounds(selected_location.ysize - place.y, 1, 700))
 		
-		if is_place:
-			set_exit_side()
 		set_save_locations()
-	
-	def set_exit_side():
-		if not rpg_locations.has_key(selected_place_name):
-			return
-		
-		place = selected_location.places[selected_place_name]
-		
-		cx, cy = place.x + place.xsize / 2, place.y + place.ysize / 2
-		acx, acy = selected_location.xsize - cx, selected_location.ysize - cy
-		
-		dists = (cx, cy, acx, acy)
-		m = min(dists)
-		if m < 100:
-			place.side_exit = ('left', 'up', 'right', 'down')[dists.index(m)]
-			set_save_locations()
-	
-	def get_place_coords(place):
-		x, y, w, h = 0, 0, place.xsize, place.ysize
-		side_exit = place.side_exit
-		
-		if side_exit in ('left', 'right'):
-			exit_y, exit_w, exit_h = 0, w / 2, h
-			w -= exit_w
-			if side_exit == 'left':
-				exit_x, x = 0, exit_w
-			else:
-				exit_x = w
-		else:
-			exit_x, exit_w, exit_h = 0, w, h / 2
-			h -= exit_h
-			if side_exit == 'up':
-				exit_y, y = 0, exit_h
-			else:
-				exit_y = h
-		return x, y, w, h, exit_x, exit_y, exit_w, exit_h
 
 
 screen location_props:
@@ -185,7 +130,7 @@ screen location_props:
 			ypos 5
 			spacing 5
 			
-			textbutton _('Unselect ' + ('place' if selected_place_name else 'location' if selected_exit_num is None else 'exit')):
+			textbutton _('Unselect ' + ('place' if selected_place_name else 'location')):
 				xalign 0.5
 				size (200, 40)
 				text_size 20
@@ -245,116 +190,176 @@ screen location_props:
 			else:
 				image im.Rect('#FFF'):
 					xalign 0.5
-					size (100, 130)
+					size (200, 60)
 					
 					text (_('Show') + ':'):
-						color 0x00FF00
+						color 0
 						text_size 20
-						xalign 0.1
-						ypos 5
+						pos 5
 					
-					vbox:
-						align (0.4, 0.5)
-						spacing 3
+					hbox:
+						pos (0.1, 0.4)
 						
-						null ysize 20
-						
+						button:
+							size (16, 16)
+							
+							ground (checkbox_no if persistent.hide_main else checkbox_yes)
+							action SetDict(persistent, 'hide_main', not persistent.hide_main)
+						null xsize 10
+						text 'Main':
+							color 0
+							yalign 0.5
+							text_size 14
+					
+					if selected_location.over():
 						hbox:
+							pos (0.1, 0.7)
+							
 							button:
 								size (16, 16)
 								
-								ground (checkbox_no if persistent.hide_main else checkbox_yes)
-								action SetDict(persistent, 'hide_main', not persistent.hide_main)
+								ground (checkbox_no if persistent.hide_over else checkbox_yes)
+								action SetDict(persistent, 'hide_over', not persistent.hide_over)
 							null xsize 10
-							text 'Main':
+							text 'Over':
+								color 0
+								yalign 0.5
+								text_size 14
+					
+					if selected_location.free():
+						hbox:
+							pos (0.5, 0.4)
+							
+							button:
+								size (16, 16)
+								
+								ground (checkbox_yes if persistent.show_free else checkbox_no)
+								action SetDict(persistent, 'show_free', not persistent.show_free)
+							null xsize 10
+							text 'Free':
+								color 0
+								yalign 0.5
+								text_size 14
+					
+					if selected_location.places:
+						hbox:
+							pos (0.5, 0.7)
+							
+							button:
+								size (16, 16)
+								
+								ground (checkbox_no if persistent.hide_places else checkbox_yes)
+								action SetDict(persistent, 'hide_places', not persistent.hide_places)
+							null xsize 10
+							text (_('Places') + ' (' + str(len(selected_location.places)) + ')'):
 								color 0
 								yalign 0.5
 								text_size 14
 						
-						if selected_location.over():
-							hbox:
-								button:
-									size (16, 16)
-									
-									ground (checkbox_no if persistent.hide_over else checkbox_yes)
-									action SetDict(persistent, 'hide_over', not persistent.hide_over)
-								null xsize 10
-								text 'Over':
-									color 0
-									yalign 0.5
-									text_size 14
-						
-						if selected_location.free():
-							hbox:
-								button:
-									size (16, 16)
-									
-									ground (checkbox_yes if persistent.show_free else checkbox_no)
-									action SetDict(persistent, 'show_free', not persistent.show_free)
-								null xsize 10
-								text 'Free':
-									color 0
-									yalign 0.5
-									text_size 14
-						
-						if selected_location.places:
-							hbox:
-								button:
-									size (16, 16)
-									
-									ground (checkbox_no if persistent.hide_places else checkbox_yes)
-									action SetDict(persistent, 'hide_places', not persistent.hide_places)
-								null xsize 10
-								text (_('Places') + ' (' + str(len(selected_location.places)) + ')'):
-									color 0
-									yalign 0.5
-									text_size 14
-						
-						if selected_location.exits:
-							hbox:
-								button:
-									size (16, 16)
-									
-									ground (checkbox_no if persistent.hide_exits else checkbox_yes)
-									action SetDict(persistent, 'hide_exits', not persistent.hide_exits)
-								null xsize 10
-								text (_('Exits') + ' (' + str(len(selected_location.exits)) + ')'):
-									color 0
-									yalign 0.5
-									text_size 14
 				
-				
-				if selected_place_name is None and selected_exit_num is None:
+				if selected_place_name is None:
 					textbutton (_('Add') + ' ' + _('Place')):
 						style prop_btn
 						action ask_str(add_place)
-					textbutton (_('Add') + ' ' + _('Exit')):
-						style prop_btn
-						action add_exit
 				else:
-					python:
-						is_place = selected_exit_num is None
-						place = selected_location.places[selected_place_name] if is_place else selected_location.exits[selected_exit_num]
+					$ place = selected_location.places[selected_place_name]
 					
-					if is_place:
-						textbutton (_('Rename') + ' ' + _('Place')):
-							style prop_btn
-							action ask_str(rename_place, selected_place_name)
-						textbutton (_('Delete') + ' ' + _('Place')):
-							style prop_btn
-							action del_place
-					else:
-						textbutton (_('To location') + ': ' + place.to_location_name):
-							style prop_btn
-							text_size 15
-							action ask_str(rename_to_loc, place.to_location_name)
-						textbutton (_('To place') + ': ' + place.to_place_name):
-							style prop_btn
-							text_size 15
-							action ask_str(rename_to_place, place.to_place_name)
-						textbutton (_('Delete') + ' ' + _('Exit')):
-							style prop_btn
-							action del_exit
+					textbutton (_('Rename') + ' ' + _('Place')):
+						style prop_btn
+						action ask_str(rename_place, selected_place_name)
+					textbutton (_('Delete') + ' ' + _('Place')):
+						style prop_btn
+						action del_place
+					textbutton (_('To location') + ': ' + (place.to_location_name or '')):
+						style prop_btn
+						text_size 15
+						color 0xFFFFFF if not place.to_location_name or rpg_locations.has_key(place.to_location_name) else 0xFF0000
+						action ask_str(rename_to_loc, place.to_location_name or '')
+					
+					
+					if place.to_location_name:
+						vbox:
+							spacing 3
+							xalign 0.5
+							
+							textbutton (_('To place') + ': ' + (place.to_place_name or '')):
+								style prop_btn
+								text_size 15
+								color 0xFFFFFF if rpg_locations.has_key(place.to_location_name) and rpg_locations[place.to_location_name].get_place(place.to_place_name) else 0xFF0000
+								action ask_str(rename_to_place, place.to_place_name or '')
+							
+							null ysize 1
+							
+							text (_('Exit side') + ':'):
+								color 0x0000FF
+								text_size 22
+								xalign 0.5
+							
+							textbutton _('Up'):
+								style rotate_btn
+								ground (selected_prop if place.exit_side == 'up' else not_selected_prop)
+								xalign 0.5
+								action [SetDict(place, 'exit_side', 'up'), set_save_locations]
+							
+							hbox:
+								spacing 3
+								xalign 0.5
+								
+								textbutton _('Left'):
+									style rotate_btn
+									ground (selected_prop if place.exit_side == 'left' else not_selected_prop)
+									action [SetDict(place, 'exit_side', 'left'), set_save_locations]
+								textbutton _('None'):
+									style rotate_btn
+									ground (selected_prop if place.exit_side == None else not_selected_prop)
+									action [SetDict(place, 'exit_side', None), set_save_locations]
+								textbutton _('Right'):
+									style rotate_btn
+									ground (selected_prop if place.exit_side == 'right' else not_selected_prop)
+									action [SetDict(place, 'exit_side', 'right'), set_save_locations]
+							
+							textbutton _('Down'):
+								style rotate_btn
+								ground (selected_prop if place.exit_side == 'down' else not_selected_prop)
+								xalign 0.5
+								action [SetDict(place, 'exit_side', 'down'), set_save_locations]
+							
+							null ysize 1
+							
+							text (_('Rotate on exit') + ':'):
+								color 0xFF0000
+								text_size 22
+								xalign 0.5
+							
+							textbutton _('To forward'):
+								style rotate_btn
+								ground (selected_prop if place.to_side == to_forward else not_selected_prop)
+								xalign 0.5
+								action [SetDict(place, 'to_side', to_forward), set_save_locations]
+							
+							hbox:
+								spacing 3
+								xalign 0.5
+								
+								textbutton _('To left'):
+									style rotate_btn
+									ground (selected_prop if place.to_side == to_left else not_selected_prop)
+									action [SetDict(place, 'to_side', to_left), set_save_locations]
+								textbutton _('None'):
+									style rotate_btn
+									ground (selected_prop if place.to_side == None else not_selected_prop)
+									action [SetDict(place, 'to_side', None), set_save_locations]
+								textbutton _('To right'):
+									style rotate_btn
+									ground (selected_prop if place.to_side == to_right else not_selected_prop)
+									action [SetDict(place, 'to_side', to_right), set_save_locations]
+							
+							textbutton _('To back'):
+								style rotate_btn
+								ground (selected_prop if place.to_side == to_back else not_selected_prop)
+								xalign 0.5
+								action [SetDict(place, 'to_side', to_back), set_save_locations]
+
 					
 					null ysize 10
 					
@@ -363,7 +368,7 @@ screen location_props:
 						spacing 5
 						
 						vbox:
-							spacing 5
+							spacing 3
 							
 							for prop in 'x y xsize ysize'.split(' '):
 								textbutton (prop + ': ' + str(place[prop])):
@@ -381,7 +386,7 @@ screen location_props:
 							
 							for d in (1, 10, 100):
 								hbox:
-									spacing 5
+									spacing 3
 									
 									textbutton ('-' + str(d)):
 										size (50, 20)
@@ -391,70 +396,4 @@ screen location_props:
 										size (50, 20)
 										text_size 15
 										action change_place_prop(+d)
-					
-					if rpg_locations.has_key(selected_place_name):
-						text (_('Exit side') + ':'):
-							color 0xFF0000
-							text_size 18
-							bold True
-						
-						textbutton _('Up'):
-							style rotate_btn
-							ground (selected_prop if place.side_exit == 'up' else not_selected_prop)
-							xalign 0.5
-							action [SetDict(place, 'side_exit', 'up'), set_save_locations]
-						
-						hbox:
-							spacing 5
-							xalign 0.5
-							
-							textbutton _('Left'):
-								style rotate_btn
-								ground (selected_prop if place.side_exit == 'left' else not_selected_prop)
-								action [SetDict(place, 'side_exit', 'left'), set_save_locations]
-							textbutton _('Right'):
-								style rotate_btn
-								ground (selected_prop if place.side_exit == 'right' else not_selected_prop)
-								action [SetDict(place, 'side_exit', 'right'), set_save_locations]
-						
-						textbutton _('Down'):
-							style rotate_btn
-							ground (selected_prop if place.side_exit == 'down' else not_selected_prop)
-							xalign 0.5
-							action [SetDict(place, 'side_exit', 'down'), set_save_locations]
-					
-					if is_place:
-						text (_('Rotate on enter') + ':'):
-							color 0x0000FF
-							text_size 18
-							bold True
-						
-						textbutton _('To forward'):
-							style rotate_btn
-							ground (selected_prop if place.to_side == to_forward else not_selected_prop)
-							xalign 0.5
-							action [SetDict(place, 'to_side', to_forward), set_save_locations]
-						
-						hbox:
-							spacing 5
-							xalign 0.5
-							
-							textbutton _('To left'):
-								style rotate_btn
-								ground (selected_prop if place.to_side == to_left else not_selected_prop)
-								action [SetDict(place, 'to_side', to_left), set_save_locations]
-							textbutton _('None'):
-								style rotate_btn
-								ground (selected_prop if place.to_side == None else not_selected_prop)
-								action [SetDict(place, 'to_side', None), set_save_locations]
-							textbutton _('To right'):
-								style rotate_btn
-								ground (selected_prop if place.to_side == to_right else not_selected_prop)
-								action [SetDict(place, 'to_side', to_right), set_save_locations]
-						
-						textbutton _('To back'):
-							style rotate_btn
-							ground (selected_prop if place.to_side == to_back else not_selected_prop)
-							xalign 0.5
-							action [SetDict(place, 'to_side', to_back), set_save_locations]
 

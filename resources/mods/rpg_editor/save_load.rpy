@@ -72,12 +72,20 @@ init python:
 	
 	def save():
 		place_indent = ' ' * (len('location') - len('place'))
-		exit_indent = ' ' * (len('location') - len('exit'))
 		
-		def get_to_side(place):
-			if place.to_side is None:
-				return ''
-			return ', ' + ['to_back', 'to_left', 'to_right', 'to_forward'][place.to_side]
+		def get_place_to(place):
+			if place.exit_side:
+				exit_side = '"' + place.exit_side + '"'
+			else:
+				exit_side = "None"
+			
+			to_loc = place.to_location_name or ''
+			to_place = place.to_place_name or ''
+			res = '%s, "%s", "%s"' % (exit_side, to_loc, to_place)
+			if place.to_side:
+				to_side = ['to_back', 'to_left', 'to_right', 'to_forward'][place.to_side]
+				res += ', ' + to_side
+			return ', to=[' + res + ']'
 		
 		
 		tmp = ['init python:', '\t']
@@ -97,44 +105,21 @@ init python:
 			places.sort()
 			for place_name in places:
 				place = location.places[place_name]
-				if place.side_exit is not None:
+				if place.to_location_name:
 					continue
 				
 				place_name = '"' + place_name + '"'
-				
-				to_side = get_to_side(place)
 				place_args = [location_name, place_name] + map(str, [place.x, place.y, place.xsize, place.ysize])
-				tmp.append('\tregister_place(' + place_indent + ', '.join(place_args) + to_side + ')')
+				tmp.append('\tregister_place(' + place_indent + ', '.join(place_args) + ')')
 			
 			for place_name in places:
 				place = location.places[place_name]
-				if place.side_exit is None:
+				if not place.to_location_name:
 					continue
 				
 				place_name = '"' + place_name + '"'
-				
-				px, py = place.x, place.y
-				x, y, w, h, exit_x, exit_y, exit_w, exit_h = get_place_coords(place)
-				to_side = get_to_side(place)
-				
-				x += px
-				y += py
-				exit_x += px
-				exit_y += py
-				
-				in_place_indent = ' ' * (len(', ') + len(location_name))
-				place_args = [location_name, place_name + in_place_indent] + map(str, [x, y, w, h])
-				exit_args  = [location_name, place_name, location_name   ] + map(str, [exit_x, exit_y, exit_w, exit_h])
-				tmp.append('\tregister_place(' + place_indent + ', '.join(place_args) + to_side + ')')
-				tmp.append('\tregister_exit(' +  exit_indent  + ', '.join(exit_args)  + ')')
-			
-			for exit in location.exits:
-				to_location_name = '"' + exit.to_location_name + '"'
-				to_place_name = '"' + exit.to_place_name + '"'
-				x, y = str(exit.x), str(exit.y)
-				w, h = str(exit.xsize), str(exit.ysize)
-				
-				tmp.append('\tregister_exit(' + ', '.join([location_name, to_location_name, to_place_name, x, y, w, h]) + ')')
+				place_args = [location_name, place_name] + map(str, [place.x, place.y, place.xsize, place.ysize])
+				tmp.append('\tregister_place(' + place_indent + ', '.join(place_args) + get_place_to(place) + ')')
 			
 			tmp.append('\t')
 		
@@ -142,7 +127,7 @@ init python:
 		
 		for location_name in location_names:
 			location = rpg_locations[location_name]
-			if not location.using:
+			if location.x is None:
 				x = y = "None"
 			else:
 				x, y = str(int(location.x)), str(int(location.y))
@@ -160,21 +145,20 @@ init python:
 		tmp = location_objects_file.readlines()
 		location_objects_file.close()
 		for i in xrange(len(tmp) - 1, -1, -1):
-			if tmp[i].startswith('\tregister_location_object'):
-				s = 0
-				while i < len(tmp):
-					line = tmp[i]
-					i += 1
-					s += line.count('(') - line.count(')')
-					if s == 0:
-						break
-				break
+			if not tmp[i].startswith('\tregister_location_object'): continue
+			
+			s = 0
+			while i < len(tmp):
+				line = tmp[i]
+				i += 1
+				s += line.count('(') - line.count(')')
+				if s == 0:
+					break
+			break
 		tmp = map(lambda s: '\t' if s == '\t\n' else s.rstrip(), tmp[0:i])
 		tmp.append('\t')
 		
 		obj_names = location_objects.keys()
-		location_names = rpg_locations.keys()
-		location_names.sort()
 		for location_name in location_names:
 			location = rpg_locations[location_name]
 			
@@ -182,12 +166,14 @@ init python:
 			places = location.places.keys()
 			places.sort()
 			for place_name in places:
-				if '_pos' in place_name:
-					obj_name = place_name[0:place_name.index('_pos')]
-					if obj_name in obj_names:
-						added = True
-						args = map(lambda s: '"' + s + '"', [location_name, place_name, obj_name])
-						tmp.append('\tadd_location_object(' + ', '.join(args) + ')')
+				if '_pos' not in place_name: continue
+				
+				obj_name = place_name[0:place_name.index('_pos')]
+				if obj_name not in obj_names: continue
+				
+				added = True
+				args = map(lambda s: '"' + s + '"', [location_name, place_name, obj_name])
+				tmp.append('\tadd_location_object(' + ', '.join(args) + ')')
 			
 			if added:
 				tmp.append('\t')
