@@ -293,6 +293,8 @@ screen location:
 				list_to_draw.sort(key = lambda d: d['zorder'])
 			
 			for obj in list_to_draw:
+				if not obj['image']:
+					continue
 				image obj['image']:
 					pos    obj['pos']
 					anchor obj['anchor']
