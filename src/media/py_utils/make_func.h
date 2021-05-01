@@ -87,7 +87,7 @@ private:
 				typedFunc(convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(args, Indexes), wrapper.name, Indexes)...);
 				Py_RETURN_NONE;
 			}else {
-				Ret res = typedFunc(convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(args, Indexes), wrapper.name, Indexes)...);
+				typename remove_rc<Ret>::type res = typedFunc(convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(args, Indexes), wrapper.name, Indexes)...);
 				return convertToPy(res);
 			}
 		}catch (PyConvertError&) {
