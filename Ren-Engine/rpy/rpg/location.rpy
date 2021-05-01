@@ -5,6 +5,7 @@ init -1002 python:
 	
 	location_start_time = -100
 	location_fade_time = 0.5
+	location_time_without_control = 0.33
 	
 	
 	location_was_show = True
@@ -18,12 +19,11 @@ init -1002 python:
 	can_exec_next_skip_funcs.append(location_show)
 	
 	
-	prev_location_name = None
 	cur_location = None
 	cur_location_name = None
 	cur_exit = None
+	cur_place = None
 	cur_place_name = None
-	cur_to_place = None
 	
 	
 	location_zoom = 1.0
@@ -37,7 +37,7 @@ init -1002 python:
 		else:
 			rpg_locations[name] = RpgLocation(name, path_to_images, is_room, xsize, ysize)
 	
-	def register_place(location_name, place_name, x, y, xsize, ysize, to_side = None):
+	def register_place(location_name, place_name, x, y, xsize, ysize, to = None):
 		if not rpg_locations.has_key(location_name):
 			out_msg('register_place', 'Location <' + location_name + '> not registered')
 			return
@@ -47,18 +47,22 @@ init -1002 python:
 			out_msg('register_place', 'Place <' + place_name + '> in location <' + self.name + '> already exists')
 			return
 		
-		place = RpgPlace(place_name, x, y, xsize, ysize, to_side)
-		location.add_place(place, place_name)
-		location.path_need_update = True
-	
-	def register_exit(location_name, to_location_name, to_place_name, x, y, xsize, ysize):
-		if not rpg_locations.has_key(location_name):
-			out_msg('register_exit', 'Location <' + location_name + '> not registered')
-			return
 		
-		location = rpg_locations[location_name]
-		exit = RpgExit(to_location_name, to_place_name, x, y, xsize, ysize)
-		location.add_exit(exit)
+		if to is not None:
+			if type(to) not in (list, tuple):
+				out_msg('register_place', '<to> must be None, list or tuple')
+				to = None
+			else:
+				if len(to) == 3:
+					to = to[0], to[1], to[2], None
+				if len(to) != 4:
+					out_msg('register_place', 'Expects <to> = None, (exit_side, to_location_name, to_place_name) or (exit_side, to_location_name, to_place_name, to_side)')
+					to = None
+		if not to:
+			to = None, None, None, None
+		
+		place = RpgPlace(place_name, x, y, xsize, ysize, to)
+		location.add_place(place, place_name)
 		location.path_need_update = True
 	
 	
@@ -76,11 +80,12 @@ init -1002 python:
 		if not has_screen('location'):
 			show_screen('location')
 		
-		global prev_location_name, cur_location, cur_location_name, cur_to_place
+		global cur_location, cur_location_name, cur_place, cur_place_name
 		prev_location_name = cur_location_name
 		cur_location = rpg_locations[location_name]
 		cur_location_name = location_name
-		cur_to_place = place
+		cur_place = place
+		cur_place_name = place['name'] if place.has_key('name') else None
 		
 		main = cur_location.main()
 		real_width, real_height = get_image_size(main)
@@ -112,61 +117,57 @@ init -1002 python:
 			x, y = get_place_center(cam_object)
 			cam_object = {'x': x, 'y': y}
 		
-		show_character(me, cur_to_place, auto_change_location = False)
+		show_character(me, place, auto_change_location = False)
 		if prev_location_name is None:
 			me.show_time = -100
 		
-		for exit in cur_location.exits:
-			if exit.inside(me.x, me.y):
+		for place in cur_location.places.itervalues():
+			if place.inside(me.x, me.y):
 				break
 		else:
 			global was_out_exit
 			was_out_exit = True
 	
 	def hide_location():
-		global cur_location, cur_location_name, cur_to_place
+		global cur_location, cur_location_name, cur_place, cur_place_name
 		cur_location = cur_location_name = None
-		cur_to_place = None
+		cur_place = cur_place_name = None
 		
 		global draw_location
 		draw_location = None
 		end_location_ambience(None)
 	
 	
-	location_banned_exit_destinations = []
-	def ban_exit_destination(location_name, place_name = None):
+	location_banned_exits = set()
+	def ban_exit(location_name, place_name = None):
 		location = rpg_locations.get(location_name, None)
 		if location is None:
-			out_msg('ban_exit_destination', 'Location <' + str(location_name) + '> is not registered')
+			out_msg('ban_exit', 'Location <' + str(location_name) + '> is not registered')
 			return
 		
 		if place_name is not None:
 			if location.places.has_key(place_name):
-				location_banned_exit_destinations.append((location_name, place_name))
+				location_banned_exits.add((location_name, place_name))
 			else:
-				out_msg('ban_exit_destination', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
+				out_msg('ban_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
 			return
 		
 		for place_name in location.places:
-			location_banned_exit_destinations.append((location_name, place_name))
+			location_banned_exits.add((location_name, place_name))
 	
-	def unban_exit_destination(location_name, place_name = None):
+	def unban_exit(location_name, place_name = None):
 		location = rpg_locations.get(location_name, None)
 		if location is None:
-			out_msg('unban_exit_destination', 'Location <' + str(location_name) + '> is not registered')
+			out_msg('unban_exit', 'Location <' + str(location_name) + '> is not registered')
 			return
 		if place_name is not None and not location.places.has_key(place_name):
-			out_msg('unban_exit_destination', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
+			out_msg('unban_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
 			return
 		
-		global location_banned_exit_destinations
-		i = 0
-		while i < len(location_banned_exit_destinations):
-			tmp_loc, tmp_place = location_banned_exit_destinations[i]
+		tmp_banned_exits = set(location_banned_exits)
+		for tmp_loc, tmp_place in tmp_banned_exits:
 			if tmp_loc == location_name and (tmp_place == place_name or place_name is None):
-				location_banned_exit_destinations = location_banned_exit_destinations[:i] + location_banned_exit_destinations[i+1:]
-			else:
-				i += 1
+				location_banned_exits.remove((tmp_loc, tmp_place))
 	
 	
 	def get_location_image(obj, directory, name, name_postfix, ext, is_free, need = True):
@@ -232,7 +233,6 @@ init -1002 python:
 			self.xsize, self.ysize = xsize, ysize
 			
 			self.places = {}
-			self.exits = []
 			
 			self.objects = [self]
 			if self.over():
@@ -279,59 +279,69 @@ init -1002 python:
 		def get_place(self, place_name):
 			return self.places.get(place_name, None)
 		
-		def add_exit(self, exit):
-			self.exits.append(exit)
-		
 		
 		def update_pos(self):
 			self.x, self.y = get_camera_params(self)
 	
 	
 	class RpgPlace(Object):
-		def __init__(self, name, x, y, xsize, ysize, to_side):
+		def __init__(self, name, x, y, xsize, ysize, to):
 			Object.__init__(self)
 			self.name = name
 			self.x, self.y = x, y
 			self.xsize, self.ysize = xsize, ysize
-			self.to_side = to_side
+			self.exit_side, self.to_location_name, self.to_place_name, self.to_side = to
 		
 		def __str__(self):
 			return '<RpgPlace ' + self.name + '>'
 		
+		def get_rect(self, of_exit = False):
+			x, y, w, h = self.x, self.y, self.xsize, self.ysize
+			w2, h2 = w / 2, h / 2
+			
+			side = self.exit_side
+			if not side:
+				return x, y, w, h
+			
+			if not of_exit:
+				if   side == 'up':    side = 'down'
+				elif side == 'down':  side = 'up'
+				elif side == 'left':  side = 'right'
+				elif side == 'right': side = 'left'
+			
+			if side == 'up':    return (x, y, w, h2)
+			if side == 'down':  return (x, y + h2, w, h2)
+			if side == 'left':  return (x, y, w2, h)
+			if side == 'right': return (x + w2, y, w2, h)
+		
 		def inside(self, x, y):
-			return self.x <= x and x <= self.x + self.xsize and self.y <= y and y <= self.y + self.ysize
-	
-	class RpgExit(Object):
-		def __init__(self, to_location_name, to_place_name, x, y, xsize, ysize):
-			Object.__init__(self)
-			self.to_location_name = to_location_name
-			self.to_place_name = to_place_name
-			self.x, self.y = x, y
-			self.xsize, self.ysize = xsize, ysize
+			return self.x <= x and x < self.x + self.xsize and self.y <= y and y < self.y + self.ysize
 		
-		def __str__(self):
-			return '<RpgExit to ' + self.to_location_name + ':' + self.to_place_name + '>'
-		
-		def inside(self, x, y):
-			return self.x <= x and x <= self.x + self.xsize and self.y <= y and y <= self.y + self.ysize
+		def inside_exit(self, px, py):
+			if not self.to_location_name: return False
+			
+			x, y, w, h = self.get_rect(of_exit = True)
+			return x <= px and px < x + w and y <= py and py < y + h
 	
 	
-	def get_place_center(place, align = None):
-		x, y = place['x'], place['y']
-		
-		w = place['xsize'] if place.has_key('xsize') else 0
-		h = place['ysize'] if place.has_key('ysize') else 0
+	def get_place_center(place, anchor = None):
+		if isinstance(place, RpgPlace):
+			x, y, w, h = place.get_rect(of_exit = False)
+		else:
+			x, y = place['x'], place['y']
+			w = place['xsize'] if place.has_key('xsize') else 0
+			h = place['ysize'] if place.has_key('ysize') else 0
 		
 		xa = get_absolute(place['xanchor'], w) if place.has_key('xanchor') else 0
 		ya = get_absolute(place['yanchor'], h) if place.has_key('yanchor') else 0
 		
-		if align is None:
+		if anchor is None:
 			if isinstance(place, Character):
-				align = (place.xanchor, place.yanchor)
+				anchor = (xa, ya)
 			else:
-				align = (0.5, 0.5)
+				anchor = (0.5, 0.5)
 		
-		return int(x - xa + align[0] * w), int(y - ya + align[1] * h)
+		return int(x - xa + get_absolute(anchor[0], w)), int(y - ya + get_absolute(anchor[1], h))
 	
 	rpg_event = None
 	rpg_event_object = None
@@ -345,17 +355,17 @@ init -1002 python:
 			was_out_exit = True
 			return None
 		
-		for exit in cur_location.exits:
-			if not exit.inside(me.x, me.y):
+		for place in cur_location.places.itervalues():
+			if not place.inside_exit(me.x, me.y):
 				continue
 			
-			if rpg_locations[exit.to_location_name].is_room:
+			if cur_location.is_room or rpg_locations[place.to_location_name].is_room:
 				if 'action' not in rpg_events:
 					return None
 				rpg_events.remove('action')
 			
-			destination = (exit.to_location_name, exit.to_place_name)
-			if destination in location_banned_exit_destinations and destination not in me.allowed_exit_destinations:
+			loc_place = (cur_location.name, place.name)
+			if loc_place in location_banned_exits and loc_place not in me.allowed_exits:
 				rpg_events.add('no_enter')
 				continue
 			
@@ -363,21 +373,23 @@ init -1002 python:
 				return None
 			
 			was_out_exit = False
-			return exit
+			return place
 		
 		was_out_exit = True
 		return None
 	
-	def get_location_place():
-		for place_name in cur_location.places.keys():
-			place = cur_location.places[place_name]
-			if place.inside(me.x, me.y):
-				return place_name
+	def get_location_place(character = None):
+		ch = character or me
+		location = ch.location
+		
+		for place in location.places.itervalues():
+			if place.inside(ch.x, ch.y):
+				return place
 		return None
 	
 	
 	def path_update_locations():
-		for name, location in rpg_locations.iteritems():
+		for location in rpg_locations.itervalues():
 			if not location.path_need_update: continue
 			location.path_need_update = False
 			
@@ -397,16 +409,11 @@ init -1002 python:
 				objects.extend((free_obj, x, y))
 			
 			places = []
-			for place_name, place in location.places.iteritems():
-				x, y = get_place_center(place)
-				places.extend((place_name, x, y))
+			for place in location.places.itervalues():
+				x, y = int(place.x + place.xsize / 2), int(place.y + place.ysize / 2)
+				places.extend((place.name, x, y, place.to_location_name or '', place.to_place_name or ''))
 			
-			exits = []
-			for exit in location.exits:
-				x, y = get_place_center(exit)
-				exits.extend((exit.to_location_name, exit.to_place_name, x, y))
-			
-			path_update_location(name, free, character_radius, objects, places, exits, location.min_scale, location.count_scales)
+			path_update_location(location.name, free, character_radius, objects, places, location.min_scale, location.count_scales)
 	
 	
 	class RpgLocationOver(Object):

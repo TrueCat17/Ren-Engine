@@ -282,6 +282,10 @@ init -1001 python:
 			return
 		location = rpg_locations[location_name]
 		
+		if place is None:
+			out_msg('add_location_object', 'Unexpected place <None>')
+			return
+		
 		if type(place) is str:
 			tmp_place = location.get_place(place)
 			if not tmp_place:
@@ -290,7 +294,7 @@ init -1001 python:
 			place = tmp_place
 			pw, ph = place.xsize, place.ysize
 			px, py = place.x, place.y
-		elif place:
+		else:
 			px, py = place['x'], place['y'] - 1
 			if isinstance(place, (dict, RpgPlace)):
 				pw = place['xsize'] if place.has_key('xsize') else 0
@@ -354,7 +358,7 @@ init -1001 python:
 		character = character or me
 		x, y = character['x'], character['y']
 		
-		min_dist = character_radius * 5
+		min_dist = character_radius * 3
 		res = None
 		
 		for i in character.location.objects:
@@ -365,8 +369,7 @@ init -1001 python:
 			if obj['max_in_inventory_cell'] <= 0:
 				continue
 			
-			dx, dy = i.x - x, i.y - y
-			dist = dx * dx + dy * dy
+			dist = get_dist(i.x, i.y, x, y)
 			if dist < min_dist:
 				min_dist = dist
 				res = i

@@ -3,9 +3,10 @@ init -101 python:
 	inventory_cell_usual = gui + 'save_load/hover.png'
 	inventory_cell_selected = gui + 'save_load/selected.png'
 	inventory_cell_size = 50
+	inventory_cell_text_size = 16
 	inventory_cell_spacing = 10
 	
-	inventory_selected = [0, 0]
+	inventory_selected = 0
 	
 	
 	inventory_close_size = 25
@@ -16,17 +17,15 @@ init -101 python:
 		inventory_close = get_back_with_color(gui + 'menu/pause/close.png')
 	
 	
-	def inventory_get_cell_image(row, column):
-		hover = inventory_cell_selected if inventory_selected == [row, column] else inventory_cell_usual
+	def inventory_get_cell_image(index):
+		hover = inventory_cell_selected if inventory_selected == index else inventory_cell_usual
 		hover = im.Scale(hover, inventory_cell_size, inventory_cell_size)
 		hover = get_back_with_color(hover)
 		
-		index = row * inventory_row + column
-		element = inventory[index]
-		if element is None:
+		obj_name, obj_count = inventory[index]
+		if not obj_name:
 			return hover
 		
-		obj_name = element[0]
 		obj = location_objects[obj_name]
 		main_frame = obj['animations'][None]
 		image = main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext
@@ -40,31 +39,25 @@ init -101 python:
 			(x, y), im.Scale(image, w, h),
 			(0, 0), hover)
 	
-	def inventory_select(row, column):
+	def inventory_select(index):
 		global inventory_selected
-		inventory_selected = [row, column]
+		inventory_selected = index
 	
 	def inventory_get_selected_object():
-		row, column = inventory_selected
-		index = row * inventory_row + column
-		element = inventory[index]
-		if element is None:
+		obj_name, obj_count = inventory[inventory_selected]
+		if not obj_name:
 			return None
 		
-		obj = location_objects[element[0]]
+		obj = location_objects[obj_name]
 		return obj
 	
 	def inventory_add_event(event, obj):
 		rpg_events.add((event, obj))
 	
 	def inventory_remove_selected():
-		row, column = inventory_selected
-		index = row * inventory_row + column
-		element = inventory[index]
-		if element is None:
-			return
+		element = inventory[inventory_selected]
+		obj_name, obj_count = element
 		
-		obj_name = element[0]
 		inventory_add_event('remove', obj_name)
 		
 		obj = location_objects[obj_name]
@@ -73,7 +66,7 @@ init -101 python:
 		
 		element[1] -= 1
 		if element[1] == 0:
-			inventory[index] = None
+			inventory[inventory_selected] = ['', 0]
 	
 	def show_inventory():
 		init_inventory()
@@ -102,25 +95,29 @@ screen inventory:
 			xalign 0.5
 			ypos inventory_cell_spacing
 			
-			for i in xrange(inventory_full_rows):
+			for i in xrange(inventory_full_rows + 1):
 				hbox:
 					spacing inventory_cell_spacing
+					xalign 0.5
 					
-					for j in xrange(inventory_row):
-						button:
-							size (inventory_cell_size, inventory_cell_size)
-							
-							ground inventory_get_cell_image(i, j)
-							action inventory_select(i, j)
-			if inventory_last_row:
-				for j in xrange(inventory_last_row):
-					button:
-						size (inventory_cell_size, inventory_cell_size)
+					for j in xrange(inventory_row if i != inventory_full_rows else inventory_last_row):
+						$ index = i * inventory_row + j
 						
-						ground inventory_get_cell_image(inventory_full_rows, j)
-						action inventory_select(inventory_full_rows, j)
-			
-			null ysize 30
+						vbox:
+							button:
+								size inventory_cell_size
+								
+								ground inventory_get_cell_image(index)
+								action inventory_select(index)
+							
+							null ysize 2
+							
+							$ name, count = inventory[index]
+							text (str(count) if name else ' '):
+								xalign 0.5
+								text_size inventory_cell_text_size
+								color 0xFFFFFF
+								outlinecolor 0x000000
 			
 			$ inventory_selected_object = inventory_get_selected_object()
 			if inventory_selected_object:
@@ -141,8 +138,8 @@ screen inventory:
 		
 		button:
 			pos    (inventory_xsize + 10 + inventory_close_size / 2, -10 - inventory_close_size / 2)
-			anchor (0.5, 0.5)
-			size   (inventory_close_size, inventory_close_size)
+			anchor 0.5
+			size   inventory_close_size
 			
 			ground inventory_close
 			action HideScreen('inventory')

@@ -48,21 +48,6 @@ label rpg_update:
 			if type(rpg_event) in (tuple, list):
 				rpg_event, rpg_event_object = rpg_event
 			
-			rpg_event__no_enter = rpg_event == 'no_enter'
-			if rpg_event__no_enter:
-				for rpg_event_exit in cur_location.exits:
-					if rpg_event_exit.inside(me.x, me.y):
-						cur_location_name = rpg_event_exit.to_location_name
-						cur_place_name = rpg_event_exit.to_place_name
-						
-						rpg_usual_labels = rpg_cur_labels
-						rpg_cur_labels = get_unique_place_labels(get_place_labels())
-						break
-				else:
-					rpg_event_exit = None
-		if rpg_event__no_enter and not rpg_event_exit:
-			continue
-		
 		$ rpg_event_label_index = 0
 		while rpg_event_label_index < len(rpg_cur_labels):
 			python:
@@ -73,12 +58,6 @@ label rpg_update:
 				renpy.call(rpg_cur_label)
 			if rpg_event_stop:
 				break
-		
-		python:
-			if rpg_event__no_enter:
-				cur_location_name = cur_location.name
-				cur_place_name = get_location_place()
-				rpg_cur_labels = rpg_usual_labels
 	
 	python:
 		rpg_event = rpg_event_object = None

@@ -5,7 +5,8 @@ init -100 python:
 	def set_inventory_size(count):
 		global inventory_size, inventory
 		if inventory_size < count:
-			inventory += [None] * (count - inventory_size)
+			for i in xrange(count - inventory_size):
+				inventory.append(['', 0])
 		else:
 			reduce_inventory_size(inventory_size - count)
 		inventory_size = count
@@ -16,8 +17,10 @@ init -100 python:
 		inventory_last_row = inventory_size % inventory_row
 		
 		global inventory_xsize, inventory_ysize
-		inventory_xsize = (inventory_cell_size + inventory_cell_spacing) * inventory_row + inventory_cell_spacing
-		inventory_ysize = (inventory_cell_size + inventory_cell_spacing) * (inventory_full_rows + (1 if inventory_last_row else 0)) + inventory_cell_spacing + 100
+		xsize1 = inventory_cell_size + inventory_cell_spacing
+		ysize1 = inventory_cell_size + inventory_cell_text_size + inventory_cell_spacing
+		inventory_xsize = max(xsize1 * inventory_row + inventory_cell_spacing, 450)
+		inventory_ysize = ysize1 * (inventory_full_rows + (1 if inventory_last_row else 0)) + inventory_cell_spacing + 60
 	
 	set_inventory_size(30)
 	
@@ -29,21 +32,22 @@ init -100 python:
 		# for overflowed elements
 		for index in xrange(reduce_count):
 			element = inventory[new_size + index]
-			if element is None: continue
-			
 			obj_name, count = element
+			if not obj_name: continue
+			
 			obj = location_objects[obj_name]
 			max_count = obj['max_in_inventory_cell']
 			
 			# move to prev cells
-			for i in xrange(size):
-				if inventory[i] is None:
-					inventory[i] = inventory[index]
+			for i in xrange(new_size):
+				if not inventory[i][0]:
+					inventory[i] = inventory[new_size + index]
 					count = 0
-				
-				while max_count != inventory[i][1] and count != 0:
-					count -= 1
-					inventory[i][1] += 1
+					print inventory[i]
+				elif inventory[i][0] == obj_name:
+					while inventory[i][1] != max_count and count != 0:
+						inventory[i][1] += 1
+						count -= 1
 				
 				if count == 0: break
 			if count == 0: continue
@@ -67,19 +71,19 @@ init -100 python:
 			index = -1
 			for i in xrange(inventory_size):
 				element = inventory[i]
-				if element is not None and element[0] == obj_name and element[1] < obj['max_in_inventory_cell']:
+				if element[0] == obj_name and element[1] < obj['max_in_inventory_cell']:
 					index = i
 					break
 			else:
 				for i in xrange(inventory_size):
-					if inventory[i] is None:
+					if not inventory[i][0]:
 						index = i
 						break
 			
 			if index == -1:
 				break
 			
-			if inventory[index] is None:
+			if not inventory[index][0]:
 				inventory[index] = [obj_name, 0]
 			
 			element = inventory[index]
@@ -97,7 +101,7 @@ init -100 python:
 		
 		t = 0
 		for element in inventory:
-			if element and element[0] == obj_name:
+			if element[0] == obj_name:
 				t += element[1]
 				if t >= count:
 					return True
@@ -112,8 +116,7 @@ init -100 python:
 		while count > 0:
 			index = -1
 			for i in xrange(inventory_size):
-				element = inventory[i]
-				if element and element[0] == obj_name:
+				if inventory[i][0] == obj_name:
 					index = i
 					break
 			else:
@@ -122,9 +125,10 @@ init -100 python:
 			element = inventory[index]
 			if element[1] > count:
 				element[1] -= count
+				count = 0
 			else:
 				count -= element[1]
-				inventory[index] = None
+				inventory[index] = ['', 0]
 		
 		return count
 		

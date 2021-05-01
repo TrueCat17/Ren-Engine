@@ -14,7 +14,7 @@ init python:
 	def set_rpg_control(value):
 		global rpg_control
 		rpg_control = bool(value)
-		me.move_kind = 'stay'
+		me.set_pose('stay')
 	
 	prev_rpg_control = None
 	def save_rpg_control():
@@ -47,12 +47,12 @@ init python:
 	def loc__move_character(dx, dy):
 		global loc__prev_time
 		
-		if me.pose != 'stance' or not get_rpg_control():
+		if me.get_pose() == 'sit' or not get_rpg_control():
 			loc__prev_time = get_game_time()
 			return
 		
 		if dx == 0 and dy == 0:
-			me.move_kind = 'stay'
+			me.set_pose('stay')
 			loc__prev_time = get_game_time()
 			return
 		
@@ -61,7 +61,7 @@ init python:
 			dy /= 2 ** 0.5
 		
 		me.fps =            character_run_fps if loc__shift_is_down else character_walk_fps
-		me.move_kind =                  'run' if loc__shift_is_down else 'walk'
+		me.set_pose(                    'run' if loc__shift_is_down else 'walk'              )
 		character_speed = character_run_speed if loc__shift_is_down else character_walk_speed
 		
 		dtime = get_game_time() - loc__prev_time
@@ -76,7 +76,7 @@ init python:
 			me.x = me.to_x = to_x
 			me.y = me.to_y = to_y
 		else:
-			me.move_kind = 'stay'
+			me.set_pose('stay')
 	
 	
 	def loc__process_sit_action():
@@ -189,14 +189,14 @@ screen location:
 			if rpg_event_processing:
 				rpg_events.clear()
 		
-		if get_rpg_control() and location_showed():
+		if get_rpg_control() and location_showed() and (dtime - location_fade_time) > location_time_without_control:
 			$ loc__sit_action = False
-			key 'z' action SetVariable('loc__sit_action', True)
+			key 'z' delay 0.333 action SetVariable('loc__sit_action', True)
 			if loc__sit_action:
 				$ loc__process_sit_action()
 			
 			$ loc__action = False
-			key 'e' action SetVariable('loc__action', True)
+			key 'e' delay 0.333 action SetVariable('loc__action', True)
 			if loc__action:
 				$ loc__process_action()
 			
@@ -229,7 +229,7 @@ screen location:
 				loc__character_dy += 1
 			loc__move_character(loc__character_dx, loc__character_dy)
 			
-			if get_rpg_control() and me.get_pose() == 'stance':
+			if get_rpg_control() and me.get_pose() != 'sit':
 				if loc__left and not loc__prev_left:
 					loc__left_time = get_game_time()
 				if loc__right and not loc__prev_right:
@@ -251,10 +251,12 @@ screen location:
 				cur_exit = get_location_exit()
 				if cur_exit:
 					set_location(cur_exit.to_location_name, cur_exit.to_place_name)
+					me.set_direction(cur_exit.to_side)
 					cur_place_name = None
 				
 				prev_place_name = cur_place_name
-				cur_place_name = get_location_place()
+				cur_place = get_location_place()
+				cur_place_name = cur_place and cur_place.name
 				if cur_place_name and cur_place_name != prev_place_name:
 					rpg_events.add('enter')
 			

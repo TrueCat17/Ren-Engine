@@ -40,19 +40,14 @@ typedef std::vector<SimplePoint> Path;
 struct LocationPlace {
 	std::string name;
 	int x, y;
+	std::string toLocationName;
+	std::string toPlaceName;
 	bool enable;
 
 	bool operator==(const LocationPlace &o) const {
-		return name == o.name && x == o.x && y == o.y;
-	}
-};
-struct LocationExit {
-	std::string toLocationName;
-	std::string toPlaceName;
-	int x, y;
-
-	bool operator==(const LocationExit &o) const {
-		return toLocationName == o.toLocationName && toPlaceName == o.toPlaceName && x == o.x && y == o.y;
+		std::tuple a(  x,   y,   toLocationName,   toPlaceName);
+		std::tuple b(o.x, o.y, o.toLocationName, o.toPlaceName);
+		return a == b;
 	}
 };
 
@@ -60,14 +55,13 @@ struct MipMapParams {
 	std::string free;
 	std::vector<std::tuple<std::string, int, int>> objects;
 	std::vector<LocationPlace> places;
-	std::vector<LocationExit> exits;
 	uint8_t objectBorder;
 	uint8_t minScale;
 	uint8_t countScales;
 
 	bool operator==(const MipMapParams &o) const {
-		std::tuple a(  free,   objects,   places,   exits,   objectBorder,   minScale,   countScales);
-		std::tuple b(o.free, o.objects, o.places, o.exits, o.objectBorder, o.minScale, o.countScales);
+		std::tuple a(  free,   objects,   places,   objectBorder,   minScale,   countScales);
+		std::tuple b(o.free, o.objects, o.places, o.objectBorder, o.minScale, o.countScales);
 		return a == b;
 	}
 };
@@ -238,21 +232,20 @@ static void bitmapDraw(std::vector<bool> &map, int mapW, int mapH, const std::ve
 
 static std::vector<bool> freeMap;
 void PathFinder::updateLocation(const std::string &name, const std::string &freePath, uint8_t objectBorder,
-                                PyObject *objects, PyObject *places, PyObject *exits,
+                                PyObject *objects, PyObject *places,
                                 uint8_t minScale, uint8_t countScales)
 {
 	std::lock_guard g(pathFinderMutex);
 
-	if (!PyList_CheckExact(objects) || !PyList_CheckExact(places) || !PyList_CheckExact(exits)) {
-		Utils::outMsg("PathFinder::updateLocation", "Expects type of objects, places and exits is list");
+	if (!PyList_CheckExact(objects) || !PyList_CheckExact(places)) {
+		Utils::outMsg("PathFinder::updateLocation", "Expects type of objects and places is list");
 		return;
 	}
 
 	long countObjectElements = Py_SIZE(objects);
 	long countPlaceElements = Py_SIZE(places);
-	long countExitElements = Py_SIZE(exits);
-	if ((countObjectElements % 3) || (countPlaceElements % 3) || (countExitElements % 4)) {
-		Utils::outMsg("PathFinder::updateLocation", "Expects objects == [freeImage, x, y] * N, places == [name, x, y] * N, exits == [loc_name, place_name, x, y] * N");
+	if ((countObjectElements % 3) || (countPlaceElements % 5)) {
+		Utils::outMsg("PathFinder::updateLocation", "Expects objects == [freeImage, x, y] * N, places == [name, x, y, loc_name, to_place_name] * N");
 		return;
 	}
 
@@ -294,11 +287,13 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		params.objects.push_back({objectFreePath, startX, startY});
 	}
 
-	params.places.reserve(size_t(countPlaceElements) / 3);
-	for (long i = 0; i < countPlaceElements; i += 3) {
+	params.places.reserve(size_t(countPlaceElements) / 5);
+	for (long i = 0; i < countPlaceElements; i += 5) {
 		PyObject *pyName = PyList_GET_ITEM(places, i + 0);
 		PyObject *pyX = PyList_GET_ITEM(places, i + 1);
 		PyObject *pyY = PyList_GET_ITEM(places, i + 2);
+		PyObject *pyLocation = PyList_GET_ITEM(places, i + 3);
+		PyObject *pyPlace = PyList_GET_ITEM(places, i + 4);
 
 		if (!PyString_CheckExact(pyName) || !PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY)) {
 			Utils::outMsg("PathFinder::updateLocation", "Expects places == [str, int, int] * N");
@@ -308,28 +303,10 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		std::string name = PyString_AS_STRING(pyName);
 		int startX = int(PyInt_AS_LONG(pyX));
 		int startY = int(PyInt_AS_LONG(pyY));
-
-		params.places.push_back({name, startX, startY, false});
-	}
-
-	params.exits.reserve(size_t(countExitElements) / 4);
-	for (long i = 0; i < countExitElements; i += 4) {
-		PyObject *pyLocation = PyList_GET_ITEM(exits, i + 0);
-		PyObject *pyPlace = PyList_GET_ITEM(exits, i + 1);
-		PyObject *pyX = PyList_GET_ITEM(exits, i + 2);
-		PyObject *pyY = PyList_GET_ITEM(exits, i + 3);
-
-		if (!PyString_CheckExact(pyLocation) || !PyString_CheckExact(pyPlace) || !PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY)) {
-			Utils::outMsg("PathFinder::updateLocation", "Expects exits == [str, str, int, int] * N");
-			continue;
-		}
-
 		std::string location = PyString_AS_STRING(pyLocation);
 		std::string place = PyString_AS_STRING(pyPlace);
-		int startX = int(PyInt_AS_LONG(pyX));
-		int startY = int(PyInt_AS_LONG(pyY));
 
-		params.exits.push_back({location, place, startX, startY});
+		params.places.push_back({name, startX, startY, location, place, false});
 	}
 
 	params.objectBorder = objectBorder;
@@ -717,11 +694,14 @@ static const std::pair<Path, float>& findAndSavePath(MipMap* mipMap, SimplePoint
 		cost = -1;
 	}
 
+	Path reversePath(path.rbegin(), path.rend());
 	if (pathIsConst) {
+		mipMap->exitPaths[{end, start}] = {reversePath, cost};
 		return mipMap->exitPaths[{start, end}] = {path, cost};
-    }else {
-        return tmpPaths[{mipMap, start, end}] = {path, cost};
-    }
+	}else {
+		tmpPaths[{mipMap, end, start}] = {reversePath, cost};
+		return tmpPaths[{mipMap, start, end}] = {path, cost};
+	}
 }
 
 struct LocationNode {
@@ -732,15 +712,16 @@ struct LocationNode {
 
 	PointInt x, y;
 	float cost;
-	std::vector<std::pair<uint16_t, float>> destinations;
+
+	std::string placeName;
+	std::string toLocationName, toPlaceName;
 
 	MipMap *mipMap;
-	std::string placeName;                  //for places
-	std::string toLocationName, toPlaceName;//for exits
+	std::vector<std::pair<uint16_t, float>> destinations;
 };
 static std::vector<LocationNode> locationNodes;
 
-PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart, const std::string &endLocation, PointInt xEnd, PointInt yEnd, PyObject *bannedExitDestinations, bool bruteForce) {
+PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart, const std::string &endLocation, PointInt xEnd, PointInt yEnd, PyObject *bannedExits, bool bruteForce) {
 	if (!bruteForce && startLocation == endLocation) return PathFinder::findPath(startLocation, xStart, yStart, xEnd, yEnd, Py_None);
 
 	std::lock_guard g(pathFinderMutex);
@@ -753,8 +734,8 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		Utils::outMsg("PathFinder::findPathBetweenLocations", "Start or/and End point outside location");
 		return PyTuple_New(0);
 	}
-	if (!PyList_CheckExact(bannedExitDestinations)) {
-		Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects type(bannedExitDestinations) is list");
+	if (!PyList_CheckExact(bannedExits)) {
+		Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects type(bannedExits) is list");
 		return PyTuple_New(0);
 	}
 
@@ -765,12 +746,16 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		}
 	}
 	for (auto [name, mipMap] : mipMaps) {
-		for (LocationExit &exit : mipMap->params.exits) {
-			MipMap *toLoc = getLocation(exit.toLocationName);
+		for (LocationPlace &place : mipMap->params.places) {
+			if (place.toLocationName.empty()) continue;
 
-			for (LocationPlace &place : toLoc->params.places) {
-				if (place.name == exit.toPlaceName) {
-					place.enable = true;
+			place.enable = true;
+
+			MipMap *tmpLoc = getLocation(place.toLocationName);
+			if (!tmpLoc) continue;
+			for (LocationPlace &tmpPlace : tmpLoc->params.places) {
+				if (tmpPlace.name == place.toPlaceName) {
+					tmpPlace.enable = true;
 					break;
 				}
 			}
@@ -778,18 +763,18 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	}
 
 	//disable banned places
-	size_t s = size_t(Py_SIZE(bannedExitDestinations));
+	size_t s = size_t(Py_SIZE(bannedExits));
 	for (size_t i = 0; i < s; ++i) {
-		PyObject *elem = PyList_GET_ITEM(bannedExitDestinations, i);
+		PyObject *elem = PyList_GET_ITEM(bannedExits, i);
 		if (!PyTuple_CheckExact(elem) || Py_SIZE(elem) != 2) {
-			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects banned_exit_destinations[i] is tuple with len 2");
+			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] is tuple with len 2");
 			continue;
 		}
 
 		PyObject *pyLocationName = PyTuple_GET_ITEM(elem, 0);
 		PyObject *pyPlaceName = PyTuple_GET_ITEM(elem, 1);
 		if (!PyString_CheckExact(pyLocationName) || !PyString_CheckExact(pyPlaceName)) {
-			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects banned_exit_destination[i] == (str, str)");
+			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] == (str, str)");
 			continue;
 		}
 
@@ -798,9 +783,6 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		if (!location) continue;
 
 		for (LocationPlace &place : location->params.places) {
-			if (pyPlaceName == Py_None) {
-				place.enable = false;
-			}else
 			if (place.name == PyString_AS_STRING(pyPlaceName)) {
 				place.enable = false;
 				break;
@@ -834,25 +816,12 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 			node.x = x;
 			node.y = y;
 			node.cost = -1;
-			node.mipMap = mipMap;
+
 			node.placeName = place.name;
-		}
-		for (const LocationExit &exit : mipMap->params.exits) {
-			PointInt x = PointInt(std::min(exit.x, int(mipMap->originalWidth - 1)));
-			PointInt y = PointInt(std::min(exit.y, int(mipMap->originalHeight - 1)));
+			node.toLocationName = place.toLocationName;
+			node.toPlaceName = place.toPlaceName;
 
-			locationNodes.push_back({});
-			LocationNode &node = locationNodes.back();
-			node.id = uint16_t(locationNodes.size() - 1);
-			if (node.id == errorNodeId) return tooManyNodes();
-
-			node.changed = false;
-			node.x = x;
-			node.y = y;
-			node.cost = -1;
 			node.mipMap = mipMap;
-			node.toLocationName = exit.toLocationName;
-			node.toPlaceName = exit.toPlaceName;
 		}
 	}
 
@@ -875,37 +844,32 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	endNode.cost = -1;
 	endNode.mipMap = endMap;
 
-	auto nodeIsPlace = [&](const LocationNode& node) -> bool {
-		return node.toLocationName.empty() && node.id != endNode.id;
-	};
-
 	//link nodes
 	tmpPaths.clear();
 	for (LocationNode &node : locationNodes) {
 		SimplePoint from = {node.x, node.y};
 		MipMap *mipMap = node.mipMap;
 
-		if (nodeIsPlace(node)) {
-			node.destinations.reserve(mipMap->params.exits.size());
+		node.destinations.reserve(mipMap->params.places.size());
 
-			for (LocationNode &exitNode : locationNodes) {
-				if (exitNode.mipMap != node.mipMap) continue;
-				if (nodeIsPlace(exitNode)) continue;
+		for (LocationNode &exitNode : locationNodes) {
+			if (exitNode.mipMap != mipMap) continue;
+			if (exitNode.toLocationName.empty() && exitNode.id != endNode.id) continue;
 
-				SimplePoint to = {exitNode.x, exitNode.y};
-				bool pathIsConst = node.id != startNode.id && exitNode.id != endNode.id;//const - from [in] to [out], else - tmp
-				auto &[path, cost] = findAndSavePath(mipMap, from, to, pathIsConst);
+			SimplePoint to = {exitNode.x, exitNode.y};
+			bool pathIsConst = node.id != startNode.id && exitNode.id != endNode.id;//const - from [in] to [out], else - tmp
+			auto &[path, cost] = findAndSavePath(mipMap, from, to, pathIsConst);
 
-				if (!path.empty()) {
-					node.destinations.push_back({exitNode.id, cost});
-				}
+			if (!path.empty()) {
+				node.destinations.push_back({exitNode.id, cost});
 			}
-		}else {
-			for (LocationNode &tmpNode : locationNodes) {
-				if (node.toLocationName == tmpNode.mipMap->name && node.toPlaceName == tmpNode.placeName) {
-					node.destinations.push_back({tmpNode.id, EXIT_COST});
-					break;
-				}
+		}
+
+		if (node.toLocationName.empty()) continue;
+		for (LocationNode &tmpNode : locationNodes) {
+			if (node.toLocationName == tmpNode.mipMap->name && node.toPlaceName == tmpNode.placeName) {
+				node.destinations.push_back({tmpNode.id, EXIT_COST});
+				break;
 			}
 		}
 	}

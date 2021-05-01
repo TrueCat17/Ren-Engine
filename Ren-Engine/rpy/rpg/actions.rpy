@@ -138,7 +138,7 @@ init -1000 python:
 	
 	
 	def rpg_action_near_location(character, state):
-		location_names = [exit.to_location_name for exit in character.location.exits]
+		location_names = [place.to_location_name for place in character.location.places.itervalues() if place.to_location_name]
 		character.get_actions().cur_action = rpg_action_other_place
 		return rpg_action_other_place(character, state, location_names)
 	
@@ -453,7 +453,7 @@ init -1000 python:
 			('spawn',              0),
 			('sit',               70),
 			('other_place',       40),
-			('near_location',     10),
+			('near_location',     20),
 			('random_location',   10),
 			('interesting_place', 20),
 			('look_around',       40),
