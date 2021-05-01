@@ -29,26 +29,26 @@ Click on location - edit it.
 
 
 [Location]
-Tab <Properties> allows edit places and exits.
+Tab <Properties> allows edit places.
 	Tab <Show>:
-		Need to show or hide images [main, over and free] and [places, objects and exits].
+		Need to show or hide images [main, over and free] and [places and objects].
 	
 	For adding new place:
 		1. Click on <Add Place>,
 		2. Type place name,
 		3. Press <Ok> or <Enter>
 	
-	If place name is name of any location,
-		the place becomes transition on it location, on place with name of current location.
-	For example:
-		Place <street> in location <flat> will transite to place <flat> on location <street>.
-	Also such places have property <Exit Side>, that mean position of exit (red) or input (green).
-		Aviable values: Up, Left, Right or Down.
+	If place's property "To Location" defined, then this place is exit to defined location.
+	In this case, also need define property "To Place" in the location.
 	
-	Property <Rotate on Enter> is responsible for character rotation on enter to location in this place.
-	Usually it not need: for example, exit from right side of location-1 transite player to left side of location-2.
-		In this cases, the property takes default <None> (not to rotate).
-	But if need, you can set values <to_forward>, <to_left>, <to_right> or <to_back>.
+	Also such places have properties:
+		<Exit Side>, that define position of exit (red) or input (yellow).
+		Aviable values: Up, Left, Right, Down and None (all place is exit).
+	
+		<Rotate on Enter> is responsible for character rotation after transition.
+		Usually it not need: for example, exit from right side of location-1 transite player to left side of location-2.
+			In this cases, the property takes default <None> (not to rotate).
+		But if need, you can set values <To forward>, <To left>, <To right> or <To back>.
 	
 	If place name starts with name of any object, and after stand "_pos", such object will be installed in this place.
 	For example:
@@ -57,18 +57,10 @@ Tab <Properties> allows edit places and exits.
 	
 	There are buttons for <ReName Place> and <Delete Place>.
 	
-	Use <Add Exit> for adding new exit.
-	Exits have extra properties:
-		To Loc. - to what location?
-		To Place - to what place of the location?
-	Usually instead exits transitions makes with places with location name (see above).
-	But direct creating of exit can be use, for example, for more than 1 transitions between 2 locations,
-		or if need one-sided transition without aviable to return.
-	
-	After creating, new places and exits will selected.
+	After creating new place will selected.
 	For select other - click on it on location.
 	
-	Changing properties x, y, xsize (width) and ysize (height) for selected place or exit:
+	Changing properties x, y, xsize (width) and ysize (height) for selected place:
 		1. Click on button with property name to select the property,
 		2. Change value with buttons +/- 1/10/100
 
@@ -77,7 +69,7 @@ Tab <Objects> shows list of registered objects:
 	Arrows up/down rewinds this list.
 
 Keys W, A, S, D, 9 and 0 works as on global screen.
-Key Esc and button <Unselect> - pull off selection of place, exit or location (last - return to global screen).
+Key Esc and button <Unselect> - pull off selection of place or location (last - return to global screen).
 
 
 [Ending]

@@ -11,9 +11,6 @@ translate russian strings:
 	old 'Unselect place'
 	new 'Отменить выбор места'
 	
-	old 'Unselect exit'
-	new 'Отменить выбор выхода'
-	
 	old 'Unselect location'
 	new 'Отменить выбор локации'
 	
@@ -29,14 +26,8 @@ translate russian strings:
 	old 'Places'
 	new 'Места'
 	
-	old 'Exits'
-	new 'Выходы'
-	
 	old 'Place'
 	new 'Место'
-	
-	old 'Exit'
-	new 'Выход'
 	
 	old 'Add'
 	new 'Добавить'
