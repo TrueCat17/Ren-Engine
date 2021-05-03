@@ -14,7 +14,8 @@ init python:
 	def set_rpg_control(value):
 		global rpg_control
 		rpg_control = bool(value)
-		me.set_pose('stay')
+		if me.get_pose() in ('walk', 'run'):
+			me.set_pose('stay')
 	
 	prev_rpg_control = None
 	def save_rpg_control():
