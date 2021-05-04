@@ -216,6 +216,8 @@ init -1001 python:
 		def set_pose(self, pose):
 			expected = ('sit', 'stay', 'walk', 'run')
 			if pose in expected:
+				if pose != 'sit' and self.sit_object:
+					self.stand_up()
 				self.pose = pose
 			else:
 				self.pose = 'stay'
@@ -277,12 +279,15 @@ init -1001 python:
 			return True
 		
 		def stand_up(self):
-			if self.sit_object:
-				for i in xrange(len(self.sit_object.on)):
-					if self.sit_object.on[i] is self:
-						self.sit_object.on[i] = None
-						break
-				self.sit_object = None
+			sit_object = self.sit_object
+			if not sit_object:
+				return
+			
+			for i in xrange(len(sit_object.on)):
+				if sit_object.on[i] is self:
+					sit_object.on[i] = None
+					break
+			self.sit_object = None
 			
 			self.invisible = False
 			if self.get_pose() == 'sit':
