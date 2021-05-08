@@ -14,8 +14,10 @@ init -1000 python:
 	def get_unique_place_labels(labels):
 		res = []
 		for label in labels:
-			if label not in res and label and renpy.has_label(label):
-				res.append(label)
+			if not label or not renpy.has_label(label): continue
+			if label in res:
+				res.remove(label)
+			res.append(label)
 		return res
 
 

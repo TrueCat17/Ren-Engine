@@ -51,8 +51,8 @@ init -101 python:
 		obj = location_objects[obj_name]
 		return obj
 	
-	def inventory_add_event(event, obj):
-		rpg_events.add((event, obj))
+	def inventory_add_event(event, obj_name):
+		rpg_events.add((event, obj_name))
 	
 	def inventory_remove_selected():
 		element = inventory[inventory_selected]

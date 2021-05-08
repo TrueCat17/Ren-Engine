@@ -366,7 +366,7 @@ init -1002 python:
 			
 			loc_place = (cur_location.name, place.name)
 			if loc_place in location_banned_exits and loc_place not in me.allowed_exits:
-				rpg_events.add('no_enter')
+				rpg_events.add('no_exit')
 				continue
 			
 			if not was_out_exit:
