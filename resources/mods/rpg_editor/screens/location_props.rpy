@@ -173,7 +173,6 @@ screen location_props:
 							w, h = get_image_size(obj_image)
 							k = 64.0 / max(w, h)
 							w, h = int(w * k), int(h * k)
-							image = im.Scale(image, w, h)
 						
 						image obj_image:
 							anchor 0.5
