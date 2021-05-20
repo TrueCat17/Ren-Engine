@@ -17,7 +17,7 @@ init python:
 	register_place(   "clubs", "porch", 447, 1210, 2, 2)
 	register_place(   "clubs", "porch_cleft", 425, 1210, 2, 2)
 	register_place(   "clubs", "porch_left", 410, 1210, 2, 2)
-	register_place(   "clubs", "enter", 0, 1190, 40, 130, to=["left", "enter", "clubs"])
+	register_place(   "clubs", "enter", 0, 1190, 40, 130, to=["left", "enter", "clubs", to_back])
 	register_place(   "clubs", "radio_club", 390, 1120, 120, 30, to=["up", "radio_club", "clubs"])
 	
 	register_location("enter", "images/locations/enter/", False, 960, 992)
