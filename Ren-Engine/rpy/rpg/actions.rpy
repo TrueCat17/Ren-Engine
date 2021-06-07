@@ -105,7 +105,7 @@ init -1000 python:
 			return 'end'
 	
 	
-	def rpg_action_other_place(character, state, location_names = None):
+	def rpg_action_other_place(character, state, location_names = None, run = False):
 		actions = character.get_actions()
 		
 		if state == 'start':
@@ -119,7 +119,7 @@ init -1000 python:
 				if not res: continue
 				
 				location_name, x, y = res
-				path_found = character.move_to_place([location_name, {'x': x, 'y': y}])
+				path_found = character.move_to_place([location_name, {'x': x, 'y': y}], run=run)
 				if path_found:
 					return 'moving'
 				
@@ -382,8 +382,8 @@ init -1000 python:
 			self.funcs = {}
 			self.chances = {}
 			
-			self.allow = None
-			self.block = None
+			self.allow = []
+			self.block = []
 		
 		def copy(self, character):
 			res = RpgActions()
@@ -391,8 +391,8 @@ init -1000 python:
 			res.character = character
 			res.funcs = self.funcs.copy()
 			res.chances = self.chances.copy()
-			res.allow = self.allow and list(self.allow)
-			res.block = self.block and list(self.block)
+			res.allow = list(self.allow)
+			res.block = list(self.block)
 			return res
 		
 		def set_action(self, name, func, chance_min, chance_max = None):
@@ -411,23 +411,27 @@ init -1000 python:
 			if self.stopped():
 				self.random()
 		
-		def start(self, action_name):
+		def start(self, action_name, *args, **kwargs):
 			if self.allow and action_name not in self.allow: return
 			if self.block and action_name     in self.block: return
 			
 			self.stop()
-			self.cur_action = self.funcs[action_name]
+			if type(action_name) is str:
+				self.cur_action = self.funcs[action_name]
+			else:
+				self.cur_action = action_name
+			self.cur_args, self.cur_kwargs = args, kwargs
 			self.state = 'start'
 		
 		def stop(self):
 			if self.cur_action:
-				self.cur_action(self.character, 'end')
+				self.cur_action(self.character, 'end', *self.cur_args, **self.cur_kwargs)
 				self.cur_action = None
 		def stopped(self):
 			return self.cur_action is None
 		
 		def exec_action(self):
-			return self.cur_action(self.character, self.state)
+			return self.cur_action(self.character, self.state, *self.cur_args, **self.cur_kwargs)
 		
 		def random(self):
 			scores = 0

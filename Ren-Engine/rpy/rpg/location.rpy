@@ -66,7 +66,9 @@ init -1002 python:
 		location.path_need_update = True
 	
 	
-	def set_location(location_name, place):
+	def set_location(location_name, place, character = None):
+		character = character or me
+		
 		if not rpg_locations.has_key(location_name):
 			out_msg('set_location', 'Location <' + location_name + '> not registered')
 			return
@@ -81,7 +83,7 @@ init -1002 python:
 			show_screen('location')
 		
 		global cur_location, cur_location_name, cur_place, cur_place_name
-		prev_location_name = cur_location_name
+		prev_location = cur_location
 		cur_location = rpg_locations[location_name]
 		cur_location_name = location_name
 		cur_place = place
@@ -103,30 +105,30 @@ init -1002 python:
 		
 		time_changing = times['next_name'] is not None
 		
-		global draw_location, location_start_time, location_was_show, cam_object
+		global draw_location, location_start_time, location_was_show
 		if (draw_location is None) or (draw_location is cur_location and not time_changing):
 			location_start_time = -100
 			location_was_show = True
 			draw_location = cur_location
-			cam_object = me
+			cur_location.cam_object = prev_location.cam_object if prev_location else character
 			start_location_ambience()
 		else:
 			location_start_time = get_game_time()
 			location_was_show = False
-			
-			x, y = get_place_center(cam_object)
-			cam_object = {'x': x, 'y': y}
+			cur_location.cam_object = character
+		cur_location.cam_object_old = None
 		
-		show_character(me, place, auto_change_location = False)
-		if prev_location_name is None:
-			me.show_time = -100
+		show_character(character, place, auto_change_location = False)
+		if prev_location is None:
+			character.show_time = -100
 		
-		for place in cur_location.places.itervalues():
-			if place.inside(me.x, me.y):
-				break
-		else:
-			global was_out_exit
-			was_out_exit = True
+		if character is me:
+			for place in cur_location.places.itervalues():
+				if place.inside(me.x, me.y):
+					break
+			else:
+				global was_out_exit
+				was_out_exit = True
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_place, cur_place_name
@@ -244,6 +246,9 @@ init -1002 python:
 			self.path_need_update = True
 			self.min_scale = 8
 			self.count_scales = 2
+			
+			self.cam_object = None
+			self.cam_object_old = None
 		
 		def __str__(self):
 			return '<RpgLocation ' + str(self.name) + '>'

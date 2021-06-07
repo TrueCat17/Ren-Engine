@@ -200,6 +200,11 @@ init -1001 python:
 		def set_frame(self, frame):
 			self.crop = (int(frame) * self.xsize, 0, self.xsize, self.ysize)
 		
+		def update_location_paths(self):
+			self.update()
+			if self.location:
+				self.location.path_need_update = True
+		
 		def set_animation(self, anim_name):
 			if not self.animations.has_key(anim_name):
 				out_msg('set_animation', 'Animation <' + str(anim_name) + '> not found in object <' + str(self.type) + '>')
@@ -208,6 +213,9 @@ init -1001 python:
 			self.anim_name = anim_name
 			self.animation = self.animations[anim_name]
 			self.animation.first_update = True
+			
+			self.animation_start_time = get_game_time()
+			self.update_location_paths()
 			return True
 		
 		def main(self):
@@ -226,11 +234,8 @@ init -1001 python:
 			return res
 		
 		def start_animation(self, anim_name, repeat = 0):
-			if not self.set_animation(anim_name):
-				return
-			
-			self.animation_start_time = get_game_time()
-			self.repeat = int(repeat)
+			if self.set_animation(anim_name):
+				self.repeat = int(repeat)
 		
 		def remove_animation(self):
 			self.start_animation(None)

@@ -116,7 +116,7 @@ init python:
 		location_cutscene_start = get_game_time()
 		location_cutscene_end = location_cutscene_start + max(t, 0)
 		
-		cam_to(obj or cam_object, t, align, zoom)
+		cam_to(obj or cur_location.cam_object, t, align, zoom)
 	
 	def location_cutscene_off(t = 1.0, align = 'center', zoom = 1.0, obj = None):
 		global location_cutscene_state, location_cutscene_start, location_cutscene_end
@@ -124,7 +124,7 @@ init python:
 		location_cutscene_start = get_game_time()
 		location_cutscene_end = location_cutscene_start + max(t, 0)
 		
-		cam_to(obj or cam_object, t, align, zoom)
+		cam_to(obj or cur_location.cam_object, t, align, zoom)
 	
 	def loc__calculate_cut_params():
 		global location_cutscene_state, location_cutscene_up, location_cutscene_down
@@ -166,12 +166,10 @@ screen location:
 			
 			if times['next_name']:
 				set_time_direct()
-				cam_object = me
 				loc__set_show_at_end = True
 			
 			if not location_was_show:
 				draw_location = cur_location
-				cam_object = me
 				loc__set_show_at_end = True
 				
 				start_location_ambience()

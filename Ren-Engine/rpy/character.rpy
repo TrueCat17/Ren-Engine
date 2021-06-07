@@ -445,10 +445,14 @@ init -1001 python:
 					if place:
 						self.set_direction(place.to_side)
 					
-					location_name, place_name = to_x, to_y
-					place = rpg_locations[location_name].places[place_name]
+					location_name, place = to_x, to_y
+					if type(place) is str:
+						place = rpg_locations[location_name].places[place]
+					
 					coords_before_exit = self.x, self.y
-					self.x, self.y = place.x + place.xsize / 2, place.y + place.ysize / 2
+					w = place['xsize'] if place.has_key('xsize') else 0
+					h = place['ysize'] if place.has_key('ysize') else 0
+					self.x, self.y = place['x'] + w / 2, place['y'] + h / 2
 					first_step = self.point_index + 2
 					
 				else:
@@ -669,9 +673,8 @@ init -1001 python:
 				out_msg('show_character', 'Place <' + place_name + '> not found in location <' + str(location.name) + '>')
 				return
 		
-		location_disappearance = draw_location is not cur_location
-		if character is (cam_object if not location_disappearance else me) and auto_change_location:
-			set_location(location.name, place)
+		if cur_location and cur_location.cam_object is character and auto_change_location:
+			set_location(location.name, place, character)
 			return
 		
 		place_pos = get_place_center(place)
@@ -685,7 +688,9 @@ init -1001 python:
 			character.show_time = get_game_time()
 			character.alpha = 0
 			if hiding:
-				create_hiding_object(character)
+				obj = create_hiding_object(character)
+				if prev_character_location.cam_object is character:
+					prev_character_location.cam_object = obj
 			prev_character_location.objects.remove(character)
 			location.objects.append(character)
 		character.location = location

@@ -2,9 +2,12 @@ init python:
 	
 	def create_hiding_object(origin):
 		location = origin.location
-		if location:
-			obj = RpgHidingObject(origin)
-			location.objects.append(obj)
+		if not location:
+			return None
+		
+		obj = RpgHidingObject(origin)
+		location.objects.append(obj)
+		return obj
 	
 	class RpgHidingObject(Object):
 		def __init__(self, origin):
