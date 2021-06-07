@@ -547,8 +547,6 @@ static void getPath(Point *start, Point *end) {
 			}
 		}
 
-		if (openPoints.empty()) return;
-
 		auto it = openPoints.begin();
 		last = *it;
 		for (auto tmpIt = openPoints.begin() + 1; tmpIt != openPoints.end(); ++tmpIt) {
@@ -687,7 +685,8 @@ static const std::pair<Path, float>& findAndSavePath(MipMap* mipMap, SimplePoint
 
 	float cost;
 	if (!path.empty()) {
-		cost = calcDist(start.x, start.y, path[0].x, path[0].y);
+		auto [startX, startY] = path.back();
+		cost = calcDist(start.x, start.y, startX, startY);
 		for (size_t i = 0; i < path.size() - 1; ++i) {
 			cost += calcDist(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
 		}
@@ -710,6 +709,7 @@ struct LocationNode {
 
 	uint16_t prevId;
 	bool changed;
+	bool isExit;
 	bool isBannedExit;
 
 	PointInt x, y;
@@ -815,16 +815,28 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 			}
 
 			node.changed = false;
+			node.isExit = !place.toLocationName.empty();
 			node.isBannedExit = place.isBannedExit;
 			node.x = x;
 			node.y = y;
-			node.cost = -1;
+			node.cost = FLT_MAX;
 
 			node.placeName = place.name;
 			node.toLocationName = place.toLocationName;
 			node.toPlaceName = place.toPlaceName;
 
 			node.mipMap = mipMap;
+
+			if (node.isExit) {
+				locationNodes.push_back(node);
+				LocationNode &place = locationNodes.back();
+				place.id = uint16_t(locationNodes.size() - 1);
+				if (place.id == errorNodeId) {
+					Utils::outMsg("PathFinder::findPathBetweenLocations", "Too many nodes");
+					return PyTuple_New(0);
+				}
+				place.isExit = false;
+			}
 		}
 	}
 
@@ -832,57 +844,63 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	locationNodes.push_back({});
 	LocationNode &startNode = locationNodes.back();
 	startNode.id = uint16_t(locationNodes.size() - 1);
+	startNode.isExit = false;
 	startNode.x = xStart;
 	startNode.y = yStart;
+	startNode.cost = 0;
 	startNode.mipMap = startMap;
-	//other props - before searching
+	startNode.prevId = uint16_t(-1);
 
 	//add end point
 	locationNodes.push_back({});
 	LocationNode &endNode = locationNodes.back();
 	endNode.id = uint16_t(locationNodes.size() - 1);
 	endNode.changed = false;
+	endNode.isExit = false;
 	endNode.x = xEnd;
 	endNode.y = yEnd;
-	endNode.cost = -1;
+	endNode.cost = FLT_MAX;
 	endNode.mipMap = endMap;
+	endNode.prevId = uint16_t(-1);
 
 	//link nodes
 	tmpPaths.clear();
 	for (LocationNode &node : locationNodes) {
-		SimplePoint from = {node.x, node.y};
-		MipMap *mipMap = node.mipMap;
+		if (node.isExit) {
+			if (node.isBannedExit) continue;
 
-		node.destinations.reserve(mipMap->params.places.size());
+			for (LocationNode &tmpNode : locationNodes) {
+				if (tmpNode.isExit) continue;
 
-		for (LocationNode &exitNode : locationNodes) {
-			if (exitNode.mipMap != mipMap) continue;
-			if (exitNode.toLocationName.empty() && exitNode.id != endNode.id) continue;
-			if (exitNode.id == node.id) continue;
-
-			SimplePoint to = {exitNode.x, exitNode.y};
-			bool pathIsConst = node.id != startNode.id && exitNode.id != endNode.id;//const - from [in] to [out], else - tmp
-			auto &[path, cost] = findAndSavePath(mipMap, from, to, pathIsConst);
-
-			if (!path.empty()) {
-				node.destinations.push_back({exitNode.id, cost});
+				if (node.toLocationName == tmpNode.mipMap->name && node.toPlaceName == tmpNode.placeName) {
+					node.destinations.push_back({tmpNode.id, EXIT_COST});
+					break;
+				}
 			}
-		}
+		}else {
+			SimplePoint from = {node.x, node.y};
+			MipMap *mipMap = node.mipMap;
 
-		if (node.toLocationName.empty() || node.isBannedExit) continue;
-		for (LocationNode &tmpNode : locationNodes) {
-			if (node.toLocationName == tmpNode.mipMap->name && node.toPlaceName == tmpNode.placeName) {
-				node.destinations.push_back({tmpNode.id, EXIT_COST});
-				break;
+			node.destinations.reserve(mipMap->params.places.size());
+
+			for (LocationNode &exitNode : locationNodes) {
+				if (exitNode.mipMap != mipMap) continue;
+				if (!exitNode.isExit && exitNode.id != endNode.id) continue;
+				if (exitNode.toLocationName == node.toLocationName && exitNode.toPlaceName == node.toPlaceName) continue;
+
+				SimplePoint to = {exitNode.x, exitNode.y};
+				bool pathIsConst = node.id != startNode.id && exitNode.id != endNode.id;//const - from [in] to [out], else - tmp
+				auto &[path, cost] = findAndSavePath(mipMap, from, to, pathIsConst);
+
+				if (!path.empty()) {
+					node.destinations.push_back({exitNode.id, cost});
+				}
 			}
 		}
 	}
 
 	//search
 	startNode.changed = true;
-	startNode.cost = 0;
-	startNode.prevId = uint16_t(-1);
-	endNode.prevId = uint16_t(-1);
 
 	bool changed = true;
 	while (changed) {
@@ -895,7 +913,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 				LocationNode &destination = locationNodes[id];
 				float nextCost = node.cost + cost;
 
-				if (destination.cost < 0 || destination.cost > nextCost) {
+				if (destination.cost > nextCost) {
 					destination.cost = nextCost;
 					destination.prevId = node.id;
 					destination.changed = true;
