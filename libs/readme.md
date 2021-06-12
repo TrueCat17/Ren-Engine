@@ -21,7 +21,7 @@ Examples:
 
 **If your OS is Linux**, you must also install:
 * for audio subsystem: `libasound-dev libpulse-dev`
-* for window subsystem: `libdbus-1-dev libudev-dev libxrandr-dev libxcursor-dev libxxf86vm-dev`  
+* for window subsystem: `libdbus-1-dev libudev-dev libxrandr-dev libxcursor-dev libxxf86vm-dev libgl-dev`  
 (or just `xorg-dev`, but it is not only needed packages).
 
 ***
