@@ -289,7 +289,7 @@ init -1000 python:
 		friend = actions.friend
 		
 		if state == 'start':
-			if not friend and get_game_time() - (actions.to_friend_end_time or -2) < 2:
+			if not friend or not friend.location and get_game_time() - (actions.to_friend_end_time or -2) < 2:
 				return 'end'
 			
 			if not friend:
@@ -325,7 +325,7 @@ init -1000 python:
 			actions.to_friend_start_time = get_game_time()
 			
 			if friend_actions:
-				friend_actions.cur_action = rpg_action_to_friend
+				friend_actions.start(rpg_action_to_friend)
 				friend_actions.state = 'moving'
 				friend_actions.friend = character
 				friend_actions.to_friend_start_time = get_game_time()
@@ -422,6 +422,7 @@ init -1000 python:
 				self.cur_action = action_name
 			self.cur_args, self.cur_kwargs = args, kwargs
 			self.state = 'start'
+			self.character.set_auto(True)
 		
 		def stop(self):
 			if self.cur_action:
