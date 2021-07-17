@@ -94,6 +94,19 @@ static MipMap* getLocation(const std::string &name) {
 	}
 	return it->second;
 }
+static void makeOutsideMsg(const std::string &from, PointInt xStart, PointInt yStart, PointInt xEnd, PointInt yEnd,
+                           const MipMap *startMap, const MipMap *endMap)
+{
+	std::string startPoint = std::to_string(xStart) + ',' + std::to_string(yStart);
+	std::string endPoint = std::to_string(xEnd) + ',' + std::to_string(yEnd);
+	std::string startSize = std::to_string(startMap->originalWidth) + 'x' + std::to_string(startMap->originalHeight);
+	std::string endSize = endMap ? std::to_string(endMap->originalWidth) + 'x' + std::to_string(endMap->originalHeight) : "";
+
+	Utils::outMsg("PathFinder::" + from,
+	                "Start (" + startPoint + ") or/and End (" + endPoint + ") point outside\n" +
+	                "location (" + (endMap ? ("start=" + startSize + ", end=" + endSize) : startSize) + ")"
+	);
+}
 
 struct Point {
 	PointInt x, y;
@@ -546,6 +559,7 @@ static void getPath(Point *start, Point *end) {
 				insertPoint(openPoints, nears.array[i]);
 			}
 		}
+		if (openPoints.empty()) return;
 
 		auto it = openPoints.begin();
 		last = *it;
@@ -577,7 +591,7 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 	if (!mipMap) return PyTuple_New(0);
 
 	if (xStart >= mipMap->originalWidth || xEnd >= mipMap->originalWidth || yStart >= mipMap->originalHeight || yEnd >= mipMap->originalHeight) {
-		Utils::outMsg("PathFinder::findPath", "Start or/and End point outside location");
+		makeOutsideMsg("findPath", xStart, yStart, xEnd, yEnd, mipMap, nullptr);
 		return PyTuple_New(0);
 	}
 	if (objects != Py_None && !PyList_CheckExact(objects)) {
@@ -733,7 +747,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	if (!startMap || !endMap) return PyTuple_New(0);
 
 	if (xStart >= startMap->originalWidth || xEnd >= endMap->originalWidth || yStart >= startMap->originalHeight || yEnd >= endMap->originalHeight) {
-		Utils::outMsg("PathFinder::findPathBetweenLocations", "Start or/and End point outside location");
+		makeOutsideMsg("findPathBetweenLocations", xStart, yStart, xEnd, yEnd, startMap, endMap);
 		return PyTuple_New(0);
 	}
 	if (!PyList_CheckExact(bannedExits)) {
