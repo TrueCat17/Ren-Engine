@@ -9,13 +9,14 @@ init -2 python:
 	sl_saves_in_table = 12
 	
 	
-	sl_last_autosave = get_game_time()
+	sl_last_autosave = 0
 	def sl_check_autosave():
 		global sl_last_autosave
 		if get_can_autosave() and not has_screen('pause') and config.autosave > 0:
-			if get_game_time() - max(sl_last_autosave, get_mod_start_time()) > config.autosave:
+			if get_game_time() - sl_last_autosave > config.autosave:
 				sl_last_autosave = get_game_time()
 				sl_save('auto', '0')
+	signals.add('exit_frame', sl_check_autosave)
 	
 	
 	sl_inited = False

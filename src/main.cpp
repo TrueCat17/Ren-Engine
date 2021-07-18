@@ -481,9 +481,7 @@ static void loop() {
 				}
 				Renderer::needToRender = true;
 			}
-			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('sl_check_autosave') and sl_check_autosave()");
 		}
-		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('persistent_save') and persistent_save()");
 
 		Config::save();
 

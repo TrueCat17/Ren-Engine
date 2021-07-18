@@ -108,4 +108,6 @@ init -1000 python:
 		if persistent_need_save:
 			persistent_need_save = False
 			save_object(persistent_path, persistent)
+	
+	signals.add('exit_frame', persistent_save)
 
