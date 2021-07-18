@@ -15,11 +15,16 @@ init python:
 		
 		location_free = cur_location.free()
 		
-		to_draw = [(cur_location.xsize, cur_location.ysize)]
+		size = 64
+		half_size = size / 2 # > (character_radius + some_indent) * 2
+		start_x = int(round(me.x / half_size) - 1) * half_size
+		start_y = int(round(me.y / half_size) - 1) * half_size
+		
+		to_draw = [(size, size)]
 		if location_free:
-			to_draw += [(0, 0), location_free]
+			to_draw += [(-start_x, -start_y), location_free]
 		else:
-			to_draw += [(0, 0), im.rect('#000', cur_location.xsize, cur_location.ysize)]
+			to_draw += [(0, 0), im.rect('#000', size, size)]
 		
 		for obj in objs:
 			obj_free = obj.free() if callable(obj.free) else None
@@ -31,16 +36,15 @@ init python:
 			w, h = get_image_size(obj_free)
 			x, y = obj.x + obj.xoffset - get_absolute(obj.xanchor, w), obj.y + obj.yoffset - get_absolute(obj.yanchor, h)
 			if near(x, y, w, h):
-				to_draw += [(x, y), im.matrix_color(obj_free, matrix)]
+				to_draw += [(x - start_x, y - start_y), im.matrix_color(obj_free, matrix)]
 		
 		for character in characters:
 			if not character.invisible and near(character.x, character.y, 0, 0):
-				to_draw += [(int(character.x - cs / 2), int(character.y - cs / 2)), im.rect('#FFF', cs, cs)]
+				to_draw += [(int(character.x - cs / 2 - start_x), int(character.y - cs / 2 - start_y)), im.rect('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]
-			return location_free
-		return im.composite(*to_draw)
-	
+			return location_free, 0, 0
+		return im.composite(*to_draw), start_x, start_y
 	
 	def get_end_point(from_x, from_y, dx, dy):
 		to_x, to_y = from_x + dx, from_y + dy
@@ -50,9 +54,14 @@ init python:
 		if to_y < 0:                   to_y = 0
 		dx, dy = to_x - from_x, to_y - from_y
 		
-		free = get_map_free()
+		free, start_x, start_y = get_map_free()
 		if free is None or (dx == 0 and dy == 0):
 			return to_x, to_y
+		
+		from_x -= start_x
+		from_y -= start_y
+		to_x -= start_x
+		to_y -= start_y
 		
 		black_color = 255 # r, g, b, a = 0, 0, 0, 255
 		map_width, map_height = get_image_size(free)
@@ -172,5 +181,5 @@ init python:
 				x, y = x + dpoint[0], y + dpoint[1]
 				fx, fy = x + character_radius * forward[0], y + character_radius * forward[1]
 		
-		return x + dx, y + dy
+		return start_x + x + dx, start_y + y + dy
 
