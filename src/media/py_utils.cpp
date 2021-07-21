@@ -456,6 +456,8 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 
 
 std::string PyUtils::getMd5(const std::string &str) {
+	std::lock_guard g(pyExecMutex);
+
 	PyObject *module = PyImport_AddModule("_md5");
 	PyObject *constructor = PyObject_GetAttrString(module, "new");
 

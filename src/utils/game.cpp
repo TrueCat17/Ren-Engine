@@ -416,7 +416,10 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 		Style::destroyAll();
 
-		PyUtils::init();
+		{
+			std::lock_guard g(PyUtils::pyExecMutex);
+			PyUtils::init();
+		}
 		Translation::init();
 
 		ScreenNodeUtils::clear();
