@@ -245,7 +245,7 @@ init -1002 python:
 			
 			self.path_need_update = True
 			self.min_scale = 8
-			self.count_scales = 2
+			self.count_scales = 1 if is_room else 2 # more accuracy for small space
 			
 			self.cam_object = None
 			self.cam_object_old = None
