@@ -1,4 +1,38 @@
-init -1002 python:
+init -10002 python:
+	def pickable(obj):
+		try:
+			pickle.dumps(obj)
+			return True
+		except:
+			return False
+	
+	
+	def _pickle_method(method):
+    	func_name = method.im_func.__name__
+		obj = method.im_self
+		cls = method.im_class
+		return _unpickle_method, (func_name, obj, cls)
+	
+	def _unpickle_method(func_name, obj, cls):
+		if hasattr(cls, 'mro'):
+			for cls in cls.mro():
+				try:
+					func = cls.__dict__[func_name]
+					break
+				except KeyError:
+					pass
+		else:
+			func = cls.__dict__[func_name]
+		return func.__get__(obj, cls)
+	
+	def register_instancemethod_for_pickle():
+		from copy_reg import pickle
+		from types import MethodType
+		pickle(MethodType, _pickle_method, _unpickle_method)
+	register_instancemethod_for_pickle()
+
+
+init -10002 python:
 	def load_object(path):
 		try:
 			if (not os.path.exists(path)) or os.path.getsize(path) == 0:
@@ -20,7 +54,7 @@ init -1002 python:
 				os.mkdir(dirname)
 			
 			tmp_file = open(path, 'wb')
-			pickle.dump(obj, tmp_file)
+			pickle.dump(obj, tmp_file, protocol=pickle.HIGHEST_PROTOCOL)
 			tmp_file.close()
 		except:
 			out_msg('Persistent, save_object', 'Error on saving object to file <' + path + '>')
@@ -36,11 +70,12 @@ init -1002 python:
 		g = globals()
 		obj = dict()
 		
-		class TmpClass: pass
+		class TmpClass:
+			def method(self): pass
 		tmp_instance = TmpClass()
 		
 		simple_types = (type(None), bool, int, long, float, absolute, str)
-		safe_types = (list, tuple, set, dict, type(tmp_instance))
+		safe_types = (list, tuple, set, dict, type(tmp_instance), type(tmp_instance.method))
 		
 		persistent_values = []
 		for prop in persistent.get_props(get_list=True):
