@@ -5,6 +5,10 @@ init -10001 python:
 			self.funcs = {}
 		
 		def add(self, event, function, priority = 0):
+			if not pickable(function):
+				out_msg('Signals.add', 'Function <' + str(function) + '> is not pickable')
+				return
+			
 			if event not in self.funcs:
 				self.funcs[event] = []
 			self.funcs[event].append([priority, function])
@@ -23,8 +27,8 @@ init -10001 python:
 				if not function: continue # removed
 				try:
 					function(*args, **kwargs)
-				except Exception as e:
-					out_msg('Signals.send, event=' + str(event) + ', function=' + str(function), str(e))
+				except:
+					out_msg('Signals.send, event=' + str(event) + ', function=' + str(function))
 			
 			i = 0
 			while i < len(funcs):

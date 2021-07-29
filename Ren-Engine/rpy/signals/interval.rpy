@@ -4,6 +4,10 @@ init -10000 python:
 	_interval_funcs = []
 	
 	def set_interval(function, time_sec):
+		if not pickable(function):
+			out_msg('Signals.add', 'Function <' + str(function) + '> is not pickable')
+			return
+		
 		if not callable(function):
 			out_msg('set_interval', '<' + str(function) + '> is not callable')
 			return 0
@@ -32,8 +36,8 @@ init -10000 python:
 				before_exec_time = interval_time
 				try:
 					function()
-				except Exception as e:
-					out_msg('exec_intervals, id=' + str(id) + ', function=' + str(function), str(e))
+				except:
+					out_msg('exec_intervals, id=' + str(id) + ', function=' + str(function))
 			interval_obj[3] = before_exec_time
 		
 		i = 0

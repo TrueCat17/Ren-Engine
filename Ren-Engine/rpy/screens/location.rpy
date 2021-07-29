@@ -84,12 +84,14 @@ init python:
 		if me.get_pose() == 'sit':
 			me.stand_up()
 			rpg_events.add('stand_up')
+			signals.send('rpg-stand_up')
 		else:
 			objs = get_near_sit_objects()
 			if objs:
 				obj, point = objs[0]
 				me.sit_down(obj)
 				rpg_events.add('sit_down')
+				signals.send('rpg-sit_down')
 	
 	def loc__process_action():
 		obj = get_near_location_object_for_inventory()
@@ -100,6 +102,8 @@ init python:
 				inventory_add_event('taking', obj.type)
 		else:
 			rpg_events.add('action')
+			if not get_location_exit():
+				signals.send('action')
 	
 	
 	
@@ -247,7 +251,7 @@ screen location:
 					me.set_direction(loc__direction)
 			
 			if get_rpg_control() and (loc__character_dx or loc__character_dy or 'action' in rpg_events):
-				cur_exit = get_location_exit()
+				cur_exit = get_location_exit(read_only=False)
 				if cur_exit:
 					set_location(cur_exit.to_location_name, cur_exit.to_place_name)
 					me.set_direction(cur_exit.to_side)
@@ -258,6 +262,7 @@ screen location:
 				cur_place_name = cur_place and cur_place.name
 				if cur_place_name and cur_place_name != prev_place_name:
 					rpg_events.add('enter')
+					signals.send('rpg-place')
 			
 			for character in characters:
 				character.update()

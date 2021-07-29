@@ -89,6 +89,9 @@ init -1002 python:
 		cur_place = place
 		cur_place_name = place['name'] if place.has_key('name') else None
 		
+		if prev_location:
+			signals.send('rpg-location')
+		
 		main = cur_location.main()
 		real_width, real_height = get_image_size(main)
 		reg_width, reg_height = cur_location.xsize, cur_location.ysize
@@ -353,11 +356,12 @@ init -1002 python:
 	rpg_events = set()
 	
 	was_out_exit = False
-	def get_location_exit():
+	def get_location_exit(read_only = True):
 		global was_out_exit
 		
 		if 'action' not in rpg_events and cur_location.is_room:
-			was_out_exit = True
+			if not read_only:
+				was_out_exit = True
 			return None
 		
 		for place in cur_location.places.itervalues():
@@ -367,20 +371,25 @@ init -1002 python:
 			if cur_location.is_room or rpg_locations[place.to_location_name].is_room:
 				if 'action' not in rpg_events:
 					return None
-				rpg_events.remove('action')
+				if not read_only:
+					rpg_events.remove('action')
 			
 			loc_place = (cur_location.name, place.name)
 			if loc_place in location_banned_exits and loc_place not in me.allowed_exits:
-				rpg_events.add('no_exit')
+				if not read_only:
+					rpg_events.add('no_exit')
+					signals.send('no_exit')
 				continue
 			
 			if not was_out_exit:
 				return None
 			
-			was_out_exit = False
+			if not read_only:
+				was_out_exit = False
 			return place
 		
-		was_out_exit = True
+		if not read_only:
+			was_out_exit = True
 		return None
 	
 	def get_location_place(character = None):

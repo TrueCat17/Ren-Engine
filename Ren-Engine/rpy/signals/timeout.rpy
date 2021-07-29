@@ -4,6 +4,10 @@ init -10000 python:
 	_timeout_funcs = []
 	
 	def set_timeout(function, time_sec):
+		if not pickable(function):
+			out_msg('Signals.add', 'Function <' + str(function) + '> is not pickable')
+			return
+		
 		if not callable(function):
 			out_msg('set_timeout', '<' + str(function) + '> is not callable')
 			return 0
@@ -32,8 +36,8 @@ init -10000 python:
 				timeout_obj[1] = None # clear
 				try:
 					function()
-				except Exception as e:
-					out_msg('exec_timeouts, id=' + str(id) + ', function=' + str(function), str(e))
+				except:
+					out_msg('exec_timeouts, id=' + str(id) + ', function=' + str(function))
 		
 		i = 0
 		while i < len(_timeout_funcs):

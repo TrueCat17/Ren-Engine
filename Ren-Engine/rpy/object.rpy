@@ -14,6 +14,9 @@ init -100000 python:
 		def has_attr(self, attr):
 			return self.__dict__.has_key(attr)
 		
+		def get(self, attr, default_value = None):
+			return self.__dict__.get(attr, default_value)
+		
 		def __getattr__(self, attr):
 			if self.__dict__.has_key(attr):
 				return self.__dict__[attr]
