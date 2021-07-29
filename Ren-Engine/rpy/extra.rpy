@@ -23,6 +23,31 @@ init -998 python:
 
 
 init -1000000 python:
+	def build_object(name):
+		"""
+		name__prop -> name.prop
+		name__sub1__sub2__prop -> name.sub1.sub2.prop
+		"""
+		g = globals()
+		
+		start_str = name + '__'
+		for prop_name in g.keys():
+			if not prop_name.startswith(start_str): continue
+			orig_name = prop_name
+			
+			subs = prop_name.split('__')
+			prop_name, subs = subs[-1], subs[:-1]
+			
+			tmp_obj = g
+			for sub in subs:
+				if not tmp_obj.has_key(sub):
+					tmp_obj[sub] = Object()
+				tmp_obj = tmp_obj[sub]
+			
+			tmp_obj[prop_name] = g[orig_name]
+
+
+init -1000000 python:
 	def get_file_and_line(depth):
 		frame = sys._getframe()
 		while depth:
@@ -81,8 +106,14 @@ init -100000 python:
 		_load(str(table), str(num))
 	
 	def out_msg(msg, err = ''):
-		stack = get_stack(1)
-		err = str(err) + '\n\nStack:\n'
+		err = str(err)
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		if exc_traceback:
+			stack = traceback.format_tb(exc_traceback)
+			err += '\n\nException (type=' + type(exc_value).__name__ + '): ' + str(exc_value)
+		else:
+			stack = get_stack(1)
+		err += '\n\nStack:\n'
 		for frame in stack:
 			err += frame
 		
