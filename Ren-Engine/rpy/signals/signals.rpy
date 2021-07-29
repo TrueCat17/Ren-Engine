@@ -25,6 +25,8 @@ init -10001 python:
 			
 			for priority, function in funcs:
 				if not function: continue # removed
+				
+				self.event = event
 				try:
 					function(*args, **kwargs)
 				except:
