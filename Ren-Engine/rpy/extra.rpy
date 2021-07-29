@@ -18,8 +18,8 @@ init -998 python:
 	bar_ground = gui + 'std/bar/ground.png'
 	bar_hover  = gui + 'std/bar/hover.png'
 	
-	vbar_ground = im.Rotozoom(bar_ground, 90, 1)
-	vbar_hover  = im.Rotozoom(bar_hover , 90, 1)
+	vbar_ground = im.rotozoom(bar_ground, 90, 1)
+	vbar_hover  = im.rotozoom(bar_hover , 90, 1)
 
 
 init -1000000 python:

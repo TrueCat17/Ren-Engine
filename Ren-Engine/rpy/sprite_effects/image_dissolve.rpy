@@ -28,21 +28,21 @@ init -9000 python:
 				
 				if hiding:
 					reverse = not reverse
-					mask = im.MatrixColor(mask, im.matrix.invert())
+					mask = im.matrix_color(mask, im.matrix.invert())
 				
 				sw, sh = get_stage_size()
 				w = min(get_absolute(data.xsize, sw), get_image_width(data.image))
 				h = min(get_absolute(data.ysize, sh), get_image_height(data.image))
 				
-				image = im.RendererScale(data.image, w, h)
-				mask = im.Scale(mask, w, h)
+				image = im.renderer_scale(data.image, w, h)
+				mask = im.scale(mask, w, h)
 				
 				value = in_bounds(int(k_time * 255), 0, 255)
 				if reverse:
 					value = 255 - value
 				if value != 255:
 					value = int(value / ramp) * ramp
-				data.res_image = im.Mask(image, mask, value, 'r', 'le', 'a', 1)
+				data.res_image = im.mask(image, mask, value, 'r', 'le', 'a', 1)
 			
 			new_data, old_data = self.sprite.new_data, self.sprite.old_data
 			

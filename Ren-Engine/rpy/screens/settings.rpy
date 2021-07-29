@@ -2,7 +2,7 @@ init -1 python:
 	settings_background = gui + 'menu/main/back.png'
 	
 	settings_usual_btn = style.textbutton.ground
-	settings_selected_btn = im.MatrixColor(settings_usual_btn, im.matrix.contrast(2.0))
+	settings_selected_btn = im.matrix_color(settings_usual_btn, im.matrix.contrast(2.0))
 	
 	k = get_from_hard_config("window_w_div_h", float)
 	settings_resolutions = tuple((i, int(i/k)) for i in (640, 960, 1200, 1366, 1920))
@@ -141,7 +141,7 @@ screen settings:
 						textbutton '-':
 							size (25, 25)
 							action renpy.music.add_mixer_volume(-0.1, mixer)
-						image im.Bar(config[mixer + '_volume']):
+						image im.bar(config[mixer + '_volume']):
 							size (min(300, get_stage_width() / 3), 25)
 						textbutton '+':
 							size (25, 25)
@@ -171,7 +171,7 @@ screen settings:
 					textbutton '-':
 						size (25, 25)
 						action settings_add_text_cps(-20)
-					image im.Bar(((config.text_cps % 100000) - 20) / 200.0):
+					image im.bar(((config.text_cps % 100000) - 20) / 200.0):
 						size (300, 25)
 					textbutton '+':
 						size (25, 25)

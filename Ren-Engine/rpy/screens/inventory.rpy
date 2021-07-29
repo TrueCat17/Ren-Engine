@@ -1,5 +1,5 @@
 init -101 python:
-	inventory_background = im.Rect('#FED')
+	inventory_background = im.rect('#FED')
 	inventory_cell_usual = gui + 'save_load/hover.png'
 	inventory_cell_selected = gui + 'save_load/selected.png'
 	inventory_cell_size = 50
@@ -19,7 +19,7 @@ init -101 python:
 	
 	def inventory_get_cell_image(index):
 		hover = inventory_cell_selected if inventory_selected == index else inventory_cell_usual
-		hover = im.Scale(hover, inventory_cell_size, inventory_cell_size)
+		hover = im.scale(hover, inventory_cell_size, inventory_cell_size)
 		hover = get_back_with_color(hover)
 		
 		obj_name, obj_count = inventory[index]
@@ -35,8 +35,8 @@ init -101 python:
 		w, h = int(w / k), int(h / k)
 		x, y = (inventory_cell_size - w) / 2, (inventory_cell_size - h) / 2
 		
-		return im.Composite((inventory_cell_size, inventory_cell_size),
-			(x, y), im.Scale(image, w, h),
+		return im.composite((inventory_cell_size, inventory_cell_size),
+			(x, y), im.scale(image, w, h),
 			(0, 0), hover)
 	
 	def inventory_select(index):

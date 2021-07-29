@@ -41,7 +41,7 @@ init -9000 python:
 				self.inited = True
 				
 				screen.new_data.alpha = 0
-				screen.new_data.image = im.Rect(self.color, 1, 1)
+				screen.new_data.image = im.rect(self.color, 1, 1)
 			
 			dtime = get_game_time() - self.start_time
 			

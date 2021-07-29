@@ -81,7 +81,7 @@ screen slider_v:
 				tmp_length = get_absolute(slider_v_cur['length'], get_stage_height())
 				tmp_scroll = get_absolute(slider_v_cur['page_length'], get_stage_height()) / float(tmp_length)
 				
-				tmp_image = im.Bar(
+				tmp_image = im.bar(
 					slider_v_cur['value'] * (1 - tmp_scroll) + tmp_scroll,
 					slider_v_cur['value'] * (1 - tmp_scroll),
 					vertical = True, ground = slider_v_cur['ground'], hover = slider_v_cur['hover'])

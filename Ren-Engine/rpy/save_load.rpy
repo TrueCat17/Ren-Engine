@@ -60,7 +60,7 @@ init -2 python:
 			screenshot = os.path.join(save_dir, table, save, 'screenshot.png')
 			screenshot += "?" + str(os.path.getmtime(screenshot))
 			w, h = get_image_size(screenshot)
-			return im.Composite((w, h), (0, 0), screenshot, (0, 0), im.Scale(over, w, h))
+			return im.composite((w, h), (0, 0), screenshot, (0, 0), im.scale(over, w, h))
 		
 		return over
 	

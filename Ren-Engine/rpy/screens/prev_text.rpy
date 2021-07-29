@@ -1,5 +1,5 @@
 init python:
-	pt_background = im.Rect('#181818BB')
+	pt_background = im.rect('#181818BB')
 	
 	pt_spacing = 5
 	pt_x_indent = 20

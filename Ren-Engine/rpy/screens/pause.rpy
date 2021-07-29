@@ -23,8 +23,8 @@ init python:
 		
 		pause_inited = True
 		
-		pause_button          = im.MatrixColor(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(  0, 0.5, 1))
-		pause_button_hover    = im.MatrixColor(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(0.2, 0.6, 1))
+		pause_button          = im.matrix_color(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(  0, 0.5, 1))
+		pause_button_hover    = im.matrix_color(gui + 'menu/pause/button.png', im.matrix.invert() * im.matrix.tint(0.2, 0.6, 1))
 		
 		pause_button          = get_back_with_color(pause_button,       alpha = 0.5)
 		pause_button_hover    = get_back_with_color(pause_button_hover, alpha = 0.2)

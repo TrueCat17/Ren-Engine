@@ -122,28 +122,28 @@ init -9000 python:
 									prop = crop[i]
 									if (prop > 0 and prop < 1) or (prop == 1.0 and type(prop) is float):
 										crop[i] = get_absolute(prop, image_ysize if i % 2 else image_xsize)
-								image = im.Crop(image, crop)
+								image = im.crop(image, crop)
 								image_xsize, image_ysize = crop[2] - crop[0], crop[3] - crop[1]
 							
 							if (res_xsize, res_ysize) != (image_xsize, image_ysize):
-								image = im.RendererScale(image, res_xsize, res_ysize)
+								image = im.renderer_scale(image, res_xsize, res_ysize)
 							
 							if data.real_alpha < 1:
-								image = im.Alpha(image, data.real_alpha)
+								image = im.alpha(image, data.real_alpha)
 							
 							rotate = int(data.real_rotate) % 360
 							if rotate:
-								image = im.Rotozoom(image, -rotate, 1)
+								image = im.rotozoom(image, -rotate, 1)
 							
 							_xmin, _ymin, _xmax, _ymax = get_rect(data)
 							args.append((_xmin - xmin, _ymin - ymin))
 							args.append(image)
 					
-					new_image = im.Composite(*new_args)
-					old_image = im.Composite(*old_args)
+					new_image = im.composite(*new_args)
+					old_image = im.composite(*old_args)
 					
 					common_data = SpriteAnimationData(self.sprite, [], [], [])
-					common_data.image = im.Mask(new_image, old_image, 1, 'a', 'ge', 'a', 1)
+					common_data.image = im.mask(new_image, old_image, 1, 'a', 'ge', 'a', 1)
 					common_data.xpos, common_data.ypos = xmin, ymin
 					common_data.xsize, common_data.ysize = width, height
 					

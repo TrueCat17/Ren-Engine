@@ -107,7 +107,7 @@ init python:
 	
 	
 	
-	location_cutscene_back = im.Rect('#111')
+	location_cutscene_back = im.rect('#111')
 	location_cutscene_size = 0.15
 	
 	location_cutscene_state = None # None | 'on' | 'off'
