@@ -72,7 +72,7 @@ init -2 python:
 		if sl_datetimes_cache.has_key(utc):
 			res = sl_datetimes_cache[utc]
 		else:
-			dt = time.gmtime(utc)
+			dt = time.localtime(utc)
 			
 			data = (str(i) for i in (dt.tm_mday, dt.tm_mon, dt.tm_year % 100, dt.tm_hour, dt.tm_min))
 			data = tuple(i if len(i) == 2 else '0' + i for i in data)
