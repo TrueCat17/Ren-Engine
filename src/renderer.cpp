@@ -434,7 +434,7 @@ static void loop() {
 			continue;
 		}
 
-		if (!Renderer::needToRender || GV::minimized) {
+		if (screenshoted && (!Renderer::needToRender || GV::minimized)) {
 			Utils::sleep(0.001, false);
 			continue;
 		}
