@@ -142,6 +142,9 @@ init python:
 		
 		
 		
+		if not location_objects:
+			return
+		
 		location_objects_file = open(location_objects_file_path, 'rb')
 		tmp = location_objects_file.readlines()
 		location_objects_file.close()
