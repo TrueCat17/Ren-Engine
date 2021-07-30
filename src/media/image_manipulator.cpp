@@ -167,7 +167,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 			}
 		}
 		if (in) {
-			Utils::sleep(0.010);
+			Utils::sleep(0.005);
 		}
 	}
 
@@ -426,10 +426,27 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 			return nullptr;
 		}
 
-		const int xOn = String::toInt(firstPosVec[0]);
-		const int yOn = String::toInt(firstPosVec[1]);
-		const int w = firstImg->w;
-		const int h = firstImg->h;
+		int xOn = String::toInt(firstPosVec[0]);
+		int yOn = String::toInt(firstPosVec[1]);
+		int w = firstImg->w;
+		int h = firstImg->h;
+
+		int xFrom = 0;
+		int yFrom = 0;
+
+		if (xOn < 0) {
+			w += xOn;
+			xFrom = -xOn;
+			xOn = 0;
+		}
+		if (yOn < 0) {
+			h += yOn;
+			yFrom = -yOn;
+			yOn = 0;
+		}
+		if (w > resW - xOn) w = resW - xOn;
+		if (h > resH - yOn) h = resH - yOn;
+
 
 		if (yOn > 0) {
 			::memset(resPixels, 0, size_t(yOn * resPitch));//up
@@ -440,8 +457,9 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		const int right = res->pitch - (left + center);
 
 		//image - center
+		SDL_Rect from = {xFrom, yFrom, w, h};
 		SDL_Rect to = {xOn, yOn, w, h};
-		SDL_BlitScaled(firstImg.get(), nullptr, res.get(), &to);
+		SDL_BlitScaled(firstImg.get(), &from, res.get(), &to);
 
 		for (int y = yOn; y < yOn + h; ++y) {
 			if (left > 0) {
