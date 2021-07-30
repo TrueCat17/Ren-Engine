@@ -196,10 +196,14 @@ static void restoreScreens(const std::string &loadPath) {
 
 static std::string jumpNextLabel;
 static bool jumpNextIsCall;
+static std::string jumpNextFileName;
+static size_t jumpNextNumLine;
 
-void Scenario::jumpNext(const std::string &label, bool isCall) {
+void Scenario::jumpNext(const std::string &label, bool isCall, const std::string &fileName, size_t numLine) {
 	jumpNextLabel = label;
 	jumpNextIsCall = isCall;
+	jumpNextFileName = fileName;
+	jumpNextNumLine = numLine;
 }
 
 
@@ -253,6 +257,7 @@ void Scenario::execute(const std::string &loadPath) {
 			if (!jumpNextIsCall) {
 				stack.clear();
 			}
+			markLabel(jumpNextFileName, jumpNextNumLine, label);
 
 			obj = labelNode;
 			num = 0;
