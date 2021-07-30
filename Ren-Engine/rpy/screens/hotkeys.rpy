@@ -9,7 +9,7 @@ screen hotkeys:
 		if hotkeys_shift:
 			key 'o' action show_console
 		
-		if not has_screen('prev_text') and not db_hide_interface:
+		if not has_screen('prev_text') and not db.hide_interface:
 			key 'ESCAPE' action show_pause
 		
 		if get_current_mod() != 'main_menu':

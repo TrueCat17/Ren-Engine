@@ -45,8 +45,8 @@ screen prev_text:
 		if x > 0:
 			x = 0
 		
-		pt_viewport_content_height = len(db_prev_texts) * (db_text_size + pt_spacing) * 2 # 2 - extra space for wordwraps
-		slider_v_change('prev_text', length = pt_viewport_content_height, button_size = db_text_size)
+		pt_viewport_content_height = len(db.prev_texts) * (db.text_size + pt_spacing) * 2 # 2 - extra space for wordwraps
+		slider_v_change('prev_text', length = pt_viewport_content_height, button_size = db.text_size)
 		y = int(-slider_v_get_value('prev_text') * (pt_viewport_content_height - pt_ysize * get_stage_height()))
 		
 		if pt_hided_time:
@@ -68,17 +68,16 @@ screen prev_text:
 			ypos y
 			spacing pt_spacing
 			
-			for name_text, name_color, text, text_color in db_prev_texts:
-				python:
-					if name_text:
-						tmp_name = '{color=' + hex(name_color)[2:] + '}' + name_text + '{/color}: '
-					else:
-						tmp_name = ''
+			for name_text, name_color, text, text_color in db.prev_texts:
+				if name_text:
+					$ tmp_name = '{color=' + hex(name_color) + '}' + name_text + '{/color}: '
+				else:
+					$ tmp_name = ''
 				
 				text (tmp_name + text):
-					text_size db_text_size
+					text_size db.text_size
 					color text_color
-					xsize int(pt_xsize * get_stage_width()) - pt_x_indent * 2 - db_text_size
+					xsize int(pt_xsize * get_stage_width()) - pt_x_indent * 2 - db.text_size
 					xpos pt_x_indent
 		
 		null:

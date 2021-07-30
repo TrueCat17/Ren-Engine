@@ -5,8 +5,8 @@ init -10001 python:
 			self.funcs = {}
 		
 		def add(self, event, function, priority = 0):
-			if not pickable(function):
-				out_msg('Signals.add', 'Function <' + str(function) + '> is not pickable')
+			if not picklable(function):
+				out_msg('Signals.add', 'Function <' + str(function) + '> is not picklable')
 				return
 			
 			if event not in self.funcs:

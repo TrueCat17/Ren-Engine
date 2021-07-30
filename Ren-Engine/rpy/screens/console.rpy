@@ -340,7 +340,7 @@ screen console:
 	modal True
 	zorder 10002
 	
-	$ db_skip_tab = False
+	$ db.skip_tab = False
 	
 	key 'ESCAPE' action [Hide('console'), SetVariable('pause_hided_time', get_game_time())]
 	

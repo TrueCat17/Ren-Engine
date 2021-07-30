@@ -1,9 +1,17 @@
 init python:
 	
 	def get_map_free():
+		size = 64
+		half_size = size / 2 # > (character_radius + some_indent) * 2
+		start_x = int(round(me.x / half_size) - 1) * half_size
+		start_y = int(round(me.y / half_size) - 1) * half_size
+		
 		cs = character_xsize / 2
 		def near(x, y, width, height):
-			return x - cs < me.x and me.x < x + width + cs and y - cs < me.y and me.y < y + height + cs
+			return (
+				(x < me.x + cs and me.x - cs < x + width and y < me.y + cs and me.y - cs < y + height) and
+				(x < start_x + size and x + width >= start_x and y < start_y + size and y + height >= start_y)
+			)
 		
 		objs = [obj for obj in cur_location.objects if not isinstance(obj, Character)]
 		characters = [obj for obj in cur_location.objects if isinstance(obj, Character) and obj is not me]
@@ -14,11 +22,6 @@ init python:
 		matrix = im.matrix.invert() * matrix # invert colors before it
 		
 		location_free = cur_location.free()
-		
-		size = 64
-		half_size = size / 2 # > (character_radius + some_indent) * 2
-		start_x = int(round(me.x / half_size) - 1) * half_size
-		start_y = int(round(me.y / half_size) - 1) * half_size
 		
 		to_draw = [(size, size)]
 		if location_free:

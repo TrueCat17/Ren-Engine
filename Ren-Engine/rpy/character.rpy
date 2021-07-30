@@ -172,8 +172,8 @@ init -1001 python:
 		
 		def __call__(self, text):
 			name = None if self.name is None else _(self.name)
-			show_text(name, self.name_prefix, self.name_postfix, self.color,
-			          text, self.text_prefix, self.text_postfix, self.text_color)
+			db.show_text(name, self.name_prefix, self.name_postfix, self.color,
+			             text, self.text_prefix, self.text_postfix, self.text_color)
 		
 		
 		# rpg-funcs:
@@ -578,6 +578,8 @@ init -1001 python:
 		
 		
 		def update(self):
+			self.x, self.y = float(self.x), float(self.y)
+			
 			dtime = get_game_time() - self.prev_update_time
 			self.prev_update_time = get_game_time()
 			

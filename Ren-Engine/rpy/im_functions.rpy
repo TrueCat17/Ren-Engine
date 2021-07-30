@@ -279,13 +279,24 @@ init -1001 python:
 	
 	
 	def im__rect(color, width = 1, height = 1):
+		res = 'images/bg/black.jpg'
 		r, g, b, a = renpy.easy.color(color)
-		m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
-		return im.scale(im.matrix_color('images/bg/black.jpg', m), width, height)
+		if (r, g, b, a) != (0, 0, 0, 255):
+			m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
+			res = im.matrix_color(res, m)
+		if get_image_size(res) != (width, height):
+			res = im.scale(res, width, height)
+		return res
 	def im__circle(color, width = 64, height = None):
+		height = height or width
+		res = 'images/bg/black_circle.png'
 		r, g, b, a = renpy.easy.color(color)
-		m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
-		return im.scale(im.matrix_color('images/bg/black_circle.png', m), width, height or width)
+		if (r, g, b, a) != (0, 0, 0, 255):
+			m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
+			res = im.matrix_color(res, m)
+		if get_image_size(res) != (width, height):
+			res = im.scale(res, width, height)
+		return res
 	
 	def im__bar(progress_end, progress_start = 0, vertical = False, ground = None, hover = None):
 		if ground is None:

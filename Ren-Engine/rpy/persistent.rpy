@@ -1,5 +1,5 @@
 init -10002 python:
-	def pickable(obj):
+	def picklable(obj):
 		try:
 			pickle.dumps(obj)
 			return True
@@ -26,9 +26,9 @@ init -10002 python:
 		return func.__get__(obj, cls)
 	
 	def register_instancemethod_for_pickle():
-		from copy_reg import pickle
-		from types import MethodType
-		pickle(MethodType, _pickle_method, _unpickle_method)
+		import copy_reg
+		import types
+		copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 	register_instancemethod_for_pickle()
 
 
@@ -74,27 +74,25 @@ init -10002 python:
 			def method(self): pass
 		tmp_instance = TmpClass()
 		
-		simple_types = (type(None), bool, int, long, float, absolute, str)
-		safe_types = (list, tuple, set, dict, type(tmp_instance), type(tmp_instance.method))
+		func_type = type(save_global_vars)
 		
-		persistent_values = []
-		for prop in persistent.get_props(get_list=True):
-			o = persistent[prop]
-			if type(o) not in simple_types:
-				persistent_values.append(o)
+		simple_types = (type(None), bool, int, long, float, absolute, str)
+		safe_types = (list, tuple, set, dict, type(tmp_instance), type(tmp_instance.method), func_type)
 		
 		for k in g.keys():
 			o = g[k]
+			t = type(o)
+			
+			if t is func_type:
+				# lambda is not picklable
+				if o.func_name == '<lambda>':
+					continue
+				# don't save just func names
+				if o.__module__ == '__main__' and o.func_name == k:
+					continue
 			
 			# don't save persistent
-			if o is persistent:
-				continue
-			in_persistent = False
-			for persistent_value in persistent_values:
-				if o is persistent_value:
-					in_persistent = True
-					break
-			if in_persistent:
+			if isinstance(o, Object) and o.in_persistent:
 				continue
 			
 			# renpy contains module <random>, modules can't saves
@@ -103,7 +101,6 @@ init -10002 python:
 			if o is renpy or o is console_to_watch or o is g:
 				continue
 			
-			t = type(o)
 			if t in simple_types or t in safe_types:
 				obj[k] = o
 		

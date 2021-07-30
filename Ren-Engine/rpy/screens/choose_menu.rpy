@@ -24,7 +24,7 @@ screen choose_menu:
 	vbox:
 		align (0.5, 0.99)
 		
-		null ysize int(db_text_size * 1.5) # name
+		null ysize int(db.text_size * 1.5) # name
 		
 		hbox:
 			spacing 5
@@ -32,19 +32,19 @@ screen choose_menu:
 			
 			button:
 				yalign 0.5
-				ground db_prev_btn
-				size   (db_prev_btn_size, db_prev_btn_size)
+				ground db.prev_btn
+				size   (db.prev_btn_size, db.prev_btn_size)
 				action prev_text_show
 			
-			null size db_voice_size # text
-			null size (db_next_btn_size, db_next_btn_size) # next
+			null size db.voice_size # text
+			null size (db.next_btn_size, db.next_btn_size) # next
 	
 	
 	button:
-		ground 	db_menu_btn
+		ground 	db.menu_btn
 
 		anchor (0.5, 0.5)
-		pos    (get_stage_width() - db_menu_btn_indent - db_menu_btn_size / 2, db_menu_btn_indent + db_menu_btn_size / 2)
-		size   (db_menu_btn_size, db_menu_btn_size)
+		pos    (get_stage_width() - db.menu_btn_indent - db.menu_btn_size / 2, db.menu_btn_indent + db.menu_btn_size / 2)
+		size   (db.menu_btn_size, db.menu_btn_size)
 		action show_pause
 
