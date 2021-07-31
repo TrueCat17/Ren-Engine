@@ -124,12 +124,12 @@ init -999 python:
 		return (type(label) is str) and _has_label(label)
 	def renpy__jump(label):
 		if renpy.has_label(label):
-			_jump_next(label, False)
+			_jump_next(label, False, get_filename(2), get_numline(2))
 		else:
 			out_msg('renpy.jump', 'Label <' + str(label) + '> not found')
 	def renpy__call(label):
 		if renpy.has_label(label):
-			_jump_next(label, True)
+			_jump_next(label, True, get_filename(2), get_numline(2))
 		else:
 			out_msg('renpy.call', 'Label <' + str(label) + '> not found')
 	
