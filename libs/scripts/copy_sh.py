@@ -40,7 +40,7 @@ def copy(cmd):
 		
 		content = content.replace('CC="gcc"', 'CC="' + cc + '"')
 		
-		if os.sys.platform not in ('win32', 'msys', 'msys2'):
+		if os.sys.platform not in ('win32', 'msys', 'msys2', 'cygwin'):
 			content = content.replace('--host=mingw32', '')
 			content = content.replace('--target-os=mingw32', '')
 		

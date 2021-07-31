@@ -13,6 +13,7 @@ export LDFLAGS="-lm -flto"
 	--enable-static \
 	--disable-shared \
 	\
+	--disable-joystick \
 	--disable-haptic \
 	--disable-sensor \
 	--disable-power \

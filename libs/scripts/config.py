@@ -1,7 +1,7 @@
 import os
 
 libs = ['Python', 'jemalloc', 'ffmpeg', 'zlib', 'brotli', 'freetype', 'jpeg', 'libpng', 'libwebp', 'SDL2', 'SDL2_image', 'SDL2_ttf']
-if os.sys.platform in ('win32', 'msys', 'msys2'):
+if os.sys.platform in ('win32', 'msys', 'msys2', 'cygwin'):
 	libs.remove('Python')
 	libs.remove('jemalloc')
 

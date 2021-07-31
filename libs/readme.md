@@ -100,7 +100,7 @@ You can edit to fix and run files `./conf.sh` and `./make.sh` in any lib.
 After it, don't forget to open `scripts/progress_list.txt` and to change status fixed lib to `configurated` or `maked`.  
 Also you can fix `scripts/%conf-or-make%/%lib%.sh` for `copy_sh.py`, that generates `*.sh`-files from this.
 
-Status any lib in `scripts/progress_list.txt` can set to next values:
+Status of any lib in `scripts/progress_list.txt` can set to next values:
 * `start` (need to download, probably using cache),
 * `downloaded` (need to configure - substep 1/2 of building),
 * `configurated` (need to make - substep 2/2 of building),
