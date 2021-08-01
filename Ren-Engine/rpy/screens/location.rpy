@@ -294,17 +294,18 @@ screen location:
 					else:
 						list_to_draw.append(datas)
 				
-				list_to_draw.sort(key = lambda d: d['zorder'])
+				list_to_draw.sort(key = lambda d: d.get('zorder', d['pos'][1]))
 			
 			for obj in list_to_draw:
 				if not obj['image']:
 					continue
 				image obj['image']:
 					pos    obj['pos']
-					anchor obj['anchor']
-					size   obj['size']
-					crop   obj['crop']
-					alpha  obj['alpha']
+					anchor obj.get('anchor', (0, 0))
+					size   obj.get('size', get_image_size(obj['image']))
+					crop   obj.get('crop', (0, 0, 1.0, 1.0))
+					alpha  obj.get('alpha', 1)
+					rotate obj.get('rotate', 0)
 		
 		image location_cutscene_back:
 			xsize 1.0
