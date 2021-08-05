@@ -47,6 +47,7 @@ public:
 	Child(Node *node, Container *screenParent, Screen *screen);
 
 	void updateProps();
+	virtual void updateZoom();
 	virtual void updatePos();
 	virtual void updateRect(bool needUpdatePos = true);
 

@@ -33,6 +33,7 @@ void GUI::update() {
 #if printTime
 		const double b = Utils::getTimer();
 #endif
+		scr->updateZoom();
 		scr->updateRect();
 		scr->updateGlobal();
 #if printTime

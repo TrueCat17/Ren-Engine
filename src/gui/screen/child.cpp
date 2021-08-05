@@ -113,6 +113,11 @@ void Child::updateProps() {
 	updateTexture();
 }
 
+void Child::updateZoom() {
+	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
+	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
+}
+
 void Child::updatePos() {
 	xAnchor = int(std::floor(xanchorPre * (xanchorPreIsFloat ? float(getWidth()) : globalZoomX)));
 	yAnchor = int(std::floor(yanchorPre * (yanchorPreIsFloat ? float(getHeight()) : globalZoomY)));
@@ -132,9 +137,6 @@ void Child::updatePos() {
 }
 
 void Child::updateRect(bool needUpdatePos) {
-	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
-	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
-
 	setWidth( int(xsize * float(xsizeIsFloat ? GV::width  : 1) * globalZoomX));
 	setHeight(int(ysize * float(ysizeIsFloat ? GV::height : 1) * globalZoomY));
 
