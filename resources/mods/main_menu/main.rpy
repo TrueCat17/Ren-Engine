@@ -3,7 +3,7 @@ init python:
 	set_can_mouse_hide(False)
 	set_can_autosave(False)
 	
-	db_hide_interface = True # for disable pause-menu in screen <hotkeys>
+	db.hide_interface = True # for disable pause-menu in screen <hotkeys>
 	start_screens = ['hotkeys', 'main_menu']
 	
 	back_path = gui + 'menu/main/back.png'
