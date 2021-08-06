@@ -133,27 +133,31 @@ static void changeWindowSize(bool maximized) {
 			y = (startH - h) / 2;
 		}
 
-		std::lock_guard g1(Renderer::toRenderMutex);
-		std::lock_guard g2(Renderer::renderMutex);
+		{
+			std::lock_guard g1(Renderer::toRenderMutex);
+			std::lock_guard g2(Renderer::renderMutex);
 
-		if (GV::screens) {
-			GV::screens->setX(x);
-			GV::screens->setY(y);
-			GV::screens->setWidth(w);
-			GV::screens->setHeight(h);
-			GV::screens->updateGlobal();
+			if (GV::screens) {
+				GV::screens->setX(x);
+				GV::screens->setY(y);
+				GV::screens->setWidth(w);
+				GV::screens->setHeight(h);
+				GV::screens->updateGlobal();
+			}
+
+			GV::width = w;
+			GV::height = h;
+			if (!GV::fullscreen) {
+				Config::set("window_width", std::to_string(w));
+				Config::set("window_height", std::to_string(h));
+			}
+			SDL_SetWindowSize(GV::mainWindow, w + x, h + y);
+
+			Renderer::needToRedraw = true;
+			Renderer::needToUpdateViewPort = true;
 		}
 
-		GV::width = w;
-		GV::height = h;
-		if (!GV::fullscreen) {
-			Config::set("window_width", std::to_string(w));
-			Config::set("window_height", std::to_string(h));
-		}
-		SDL_SetWindowSize(GV::mainWindow, w + x, h + y);
-
-		Renderer::needToRedraw = true;
-		Renderer::needToUpdateViewPort = true;
+		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('resized_stage')");
 	}
 
 	startWindowWidth = 0;
