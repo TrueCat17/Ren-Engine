@@ -49,6 +49,7 @@ static void show(const std::string &name) {
 	}
 
 	GV::screens->addChildAt(scr, GV::screens->children.size());
+	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('show_screen', '" + name + "')");
 }
 static void hide(const std::string &name) {
 	if (!GV::screens) return;
@@ -57,6 +58,7 @@ static void hide(const std::string &name) {
 		Screen *scr = static_cast<Screen*>(d);
 		if (scr->getName() == name) {
 			delete scr;
+			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('hide_screen', '" + name + "')");
 			return;
 		}
 	}

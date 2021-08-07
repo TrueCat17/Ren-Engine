@@ -249,6 +249,12 @@ Node* Parser::getMainNode() {
 			Node *node = getNode(start, nextChildStart, superParent, false);
 
 			if (node->command == "label" || node->command == "screen") {
+				if (node->params.find('\'') != size_t(-1) || node->params.find('"') != size_t(-1)) {
+					Utils::outMsg("Parser::getMainNode", "Name of " + node->command + " contains quote: <" + node->params + ">");
+					String::replaceAll(node->params, "'", "");
+					String::replaceAll(node->params, "\"", "");
+				}
+
 				for (Node *child : res->children) {
 					if (node->command == child->command && node->params == child->params) {
 						Logger::log("\nRedefinition " + node->command + " <" + node->params + ">:\n" +
