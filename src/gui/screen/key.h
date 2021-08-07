@@ -21,7 +21,6 @@ private:
 
 	std::string prevKeyName;
 	SDL_Keycode key = SDLK_UNKNOWN;
-	SDL_Scancode scancode = SDL_SCANCODE_UNKNOWN;
 
 public:
 	double keyDelay = 0.010;

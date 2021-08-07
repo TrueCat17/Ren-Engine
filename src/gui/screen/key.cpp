@@ -46,6 +46,8 @@ void Key::setToNotReact(const SDL_Keycode key) {
 	}
 }
 void Key::setFirstDownState(const SDL_Keycode key) {
+	GV::keyBoardState[key & ~SDLK_SCANCODE_MASK] = true;
+
 	for (Key *sk : screenKeys) {
 		if (sk->key == key && sk->isModal()) {
 			sk->lastDown = 0;
@@ -55,6 +57,8 @@ void Key::setFirstDownState(const SDL_Keycode key) {
 	}
 }
 void Key::setUpState(const SDL_Keycode key) {
+	GV::keyBoardState[key & ~SDLK_SCANCODE_MASK] = false;
+
 	if (key == SDLK_SPACE) {
 		notReactOnSpace = false;
 	}else
@@ -86,7 +90,6 @@ void Key::checkEvents() {
 
 		const int start = String::startsWith(first_param, "K_", true) ? 2 : 0;
 		key = SDL_GetKeyFromName(first_param.c_str() + start);
-		scancode = SDL_GetScancodeFromKey(key);
 
 		lastDown = 0;
 		prevIsDown = false;
@@ -102,12 +105,7 @@ void Key::checkEvents() {
 	}else {
 		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 
-		auto keyPressed = [](SDL_Scancode scancode) -> bool {
-			if (GV::keyBoardState[scancode]) return true;
-			if (scancode == SDL_SCANCODE_RETURN) return GV::keyBoardState[SDL_SCANCODE_KP_ENTER];
-			return false;
-		};
-		if (inFirstDown || keyPressed(scancode)) {
+		if (inFirstDown || GV::keyBoardState[key & ~SDLK_SCANCODE_MASK]) {
 			const double dTime = GV::frameStartTime - lastDown;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 

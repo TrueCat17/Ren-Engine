@@ -312,6 +312,28 @@ static bool init() {
 }
 
 
+static SDL_KeyCode numpadKeys[] = {SDLK_END,  SDLK_DOWN,  SDLK_PAGEDOWN, // 1, 2, 3
+                                   SDLK_LEFT, SDLK_SPACE, SDLK_RIGHT,    // 4, 5, 6
+                                   SDLK_HOME, SDLK_UP,    SDLK_PAGEUP};  // 7, 8, 9
+static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
+	SDL_Keycode key = ks.sym;
+	if (key == SDLK_KP_ENTER) {
+		key = SDLK_RETURN;
+	}else
+	if (key >= SDLK_KP_1 && key <= SDLK_KP_0) {
+		if (ks.mod & KMOD_NUM) {
+			if (key == SDLK_KP_0) {
+				key = SDLK_0;
+			}else {
+				key -= SDLK_KP_1 - SDLK_1;
+			}
+		}else {
+			key = numpadKeys[key - SDLK_KP_1];
+		}
+	}
+	return key;
+}
+
 static std::list<SDL_Event> events;
 static std::mutex eventMutex;
 
@@ -417,14 +439,9 @@ static void loop() {
 				}else
 
 				if (event.type == SDL_KEYDOWN) {
-					if (!GV::keyBoardState[event.key.keysym.scancode]) {
-						GV::keyBoardState[event.key.keysym.scancode] = true;
-
-						SDL_Keycode key = event.key.keysym.sym;
-						if (key == SDLK_KP_ENTER) {
-							key = SDLK_RETURN;
-						}
-
+					SDL_Keycode key = getKeyCode(event.key.keysym);
+					bool downed = GV::keyBoardState[key & ~SDLK_SCANCODE_MASK];
+					if (!downed) {
 						if (key == SDLK_RETURN || key == SDLK_SPACE) {
 							if (BtnRect::checkMouseClick(true, true)) {
 								Key::setToNotReact(key);
@@ -438,12 +455,7 @@ static void loop() {
 				}else
 
 				if (event.type == SDL_KEYUP) {
-					GV::keyBoardState[event.key.keysym.scancode] = false;
-
-					SDL_Keycode key = event.key.keysym.sym;
-					if (key == SDLK_KP_ENTER) {
-						key = SDLK_RETURN;
-					}
+					SDL_Keycode key = getKeyCode(event.key.keysym);
 					Key::setUpState(key);
 				}
 			}
