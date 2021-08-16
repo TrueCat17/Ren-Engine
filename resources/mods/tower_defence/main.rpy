@@ -6,7 +6,7 @@ init python:
 	td_zoom = 1
 	
 	td_result = ''
-	td_alarm_moneys = 0
+	td_alarm_moneys = -10
 	
 	
 	def td_init():
