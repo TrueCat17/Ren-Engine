@@ -22,15 +22,12 @@ Text::~Text() {
 void Text::updateRect(bool) {
 	tf->enable = true;
 
-	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
-	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
-
 	int width  = int(xsize * float(xsizeIsFloat ? GV::width  : 1) * globalZoomX);
 	int height = int(ysize * float(ysizeIsFloat ? GV::height : 1) * globalZoomY);
 
 	if (first_param.empty() && prevText.empty()) {
-		setWidth(width);
-		setHeight(height);
+		setWidth(std::max(width, 0));
+		setHeight(std::max(height, 0));
 	}else {
 		if (tf->maxWidth != width) {
 			tf->maxWidth = width;
@@ -45,6 +42,7 @@ void Text::updateRect(bool) {
 			tf->setFont(font, text_size * globalZoomY);
 			needUpdate = true;
 		}
+
 		if (first_param != prevText) {
 			prevText = first_param;
 			needUpdate = true;
@@ -54,10 +52,10 @@ void Text::updateRect(bool) {
 			tf->setText(first_param);
 		}
 
-		if (!first_param.empty() &&
-			(needUpdate || tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
-			 width != prevWidth || height != prevHeight))
-		{
+		if (needUpdate ||
+		    tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
+		    width != prevWidth || height != prevHeight
+		) {
 			int w = width  <= 0 ? tf->getWidth()  : width;
 			int h = height <= 0 ? tf->getHeight() : height;
 			setWidth(w);
@@ -66,12 +64,13 @@ void Text::updateRect(bool) {
 			tf->setWidth(w);
 			tf->setHeight(h);
 			tf->setAlign(textHAlign, textVAlign);
+
+			prevWidth = width;
+			prevHeight = height;
+
+			needUpdate = false;
 		}
 	}
-
-	needUpdate = false;
-	prevWidth = width;
-	prevHeight = height;
 
 	updatePos();
 }

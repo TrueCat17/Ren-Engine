@@ -518,7 +518,7 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 		Utils::outMsg("TextField::setAlign", "Unexpected hAlign: <" + hAlign + ">\n");
 		hAlign = "left";
 	}
-	if (vAlign != "top" && vAlign != "center" && vAlign != "down") {
+	if (vAlign != "top" && vAlign != "center" && vAlign != "bottom") {
 		Utils::outMsg("TextField::setAlign", "Unexpected vAlign: <" + vAlign + ">\n");
 		vAlign = "top";
 	}
@@ -533,7 +533,7 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 	int indentY = 0;
 	if (vAlign == "center") {
 		indentY = (getHeight() - height) / 2;
-	}else if (vAlign == "down") {
+	}else if (vAlign == "bottom") {
 		indentY = getHeight() - height;
 	}
 
@@ -598,18 +598,18 @@ bool TextField::checkAlpha(int x, int y) const {
 void TextField::draw() const {
 	if (!enable || globalAlpha <= 0) return;
 
+	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
+	SDL_Point center = { int(xAnchor), int(yAnchor) };
+
 	for (size_t i = 0; i < lineSurfaces.size(); ++i) {
 		SurfacePtr surface = lineSurfaces[i];
 		if (!surface) continue;
-
-		Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 
 		SDL_Rect dstRect = rects[i];
 		dstRect.x += globalX;
 		dstRect.y += globalY;
 
 		SDL_Rect srcRect = { 0, 0, surface->w, surface->h };
-		SDL_Point center = { int(xAnchor), int(yAnchor) };
 
 		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, srcRect, dstRect, center);
 	}

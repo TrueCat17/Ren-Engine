@@ -51,7 +51,7 @@ init -1001 python:
 	style.text.outlinecolor = None
 	style.text.font = 'Calibri'
 	style.text.text_align = 'left' 				# left | center | right
-	style.text.text_valign = 'top' 				# top  | center |  down
+	style.text.text_valign = 'top' 				#  top | center | bottom
 	style.text.bold = False
 	style.text.italic = False
 	style.text.underline = False
@@ -60,7 +60,7 @@ init -1001 python:
 	style.textbutton = Style(style.text)
 	style.textbutton.mouse = True
 	style.textbutton.text_align = 'center'		# left | center | right
-	style.textbutton.text_valign = 'center'		# top  | center |  down
+	style.textbutton.text_valign = 'center'		#  top | center | bottom
 	style.textbutton.xsize = 175
 	style.textbutton.ysize = 25
 	style.textbutton.text_size = 15

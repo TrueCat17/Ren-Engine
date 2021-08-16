@@ -617,7 +617,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	bool tmpBool; \
 	bool isNumber = true; \
-	[[maybe_unused]] bool unusedBool; \
+	[[maybe_unused]] bool unusedBoolX, unusedBoolY; \
 	float value = 0; \
 	updateCondition(tmpBool, value, prop) \
 	else { \
@@ -665,7 +665,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 }
 
 #define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, obj->x##propName##IsFloat, obj->y##propName##IsFloat)
-#define makeUpdateCommonFuncWithoutIsFloat(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, unusedBool, unusedBool)
+#define makeUpdateCommonFuncWithoutIsFloat(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, unusedBoolX, unusedBoolY)
 
 
 #define makeUpdateFuncWithAlign(x_or_y) \
