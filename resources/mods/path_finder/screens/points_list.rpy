@@ -70,10 +70,10 @@ init python:
 	
 	def stop_moving():
 		me.paths = None
-		if me.location:
+		prev_loc = me.location
+		if prev_loc:
 			hide_character(me)
-			global cam_object
-			cam_object = {'x': me.x, 'y': me.y}
+			prev_loc.cam_object = {'x': me.x, 'y': me.y}
 		else:
 			restore_locations_coords()
 
@@ -97,7 +97,7 @@ screen points_list:
 				text_size 20
 				action SetVariable('points_left', not points_left)
 			
-			text ('Points aviable: %s / %s' % (max_count_points - len(points), max_count_points)):
+			text (_('Points aviable: %s / %s') % (max_count_points - len(points), max_count_points)):
 				color 0
 				text_align 'center'
 				xsize points_width
@@ -160,7 +160,7 @@ screen points_list:
 				xalign 0.5
 				action stop_moving if me.paths else start_moving
 			
-			text out_text:
+			text (out_text or ' '):
 				color 0
 				xalign 0.5
 

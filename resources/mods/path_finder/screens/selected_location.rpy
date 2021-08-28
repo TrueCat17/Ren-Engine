@@ -1,6 +1,8 @@
 screen selected_location:
 	key 'ESCAPE' action unselect_location
 	
+	$ cam_object = draw_location.cam_object
+	
 	if me.paths:
 		key 'RETURN' action stop_moving
 		key 'SPACE'  action stop_moving
@@ -13,7 +15,7 @@ screen selected_location:
 		key 's' action SetDict(cam_object, 'y', in_bounds(cam_object['y'] + common_speed, 0, draw_location.ysize))
 		key 'd' action SetDict(cam_object, 'x', in_bounds(cam_object['x'] + common_speed, 0, draw_location.xsize))
 	
-		if draw_location and draw_location.free():
+		if draw_location.free():
 			image draw_location.free():
 				alpha 0.5
 				

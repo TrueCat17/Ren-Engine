@@ -36,8 +36,6 @@ init python:
 		show_screen('all_locations')
 		
 		stop_moving()
-		global draw_location
-		draw_location = None
 
 screen all_locations:
 	zorder -100

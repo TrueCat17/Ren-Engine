@@ -2,7 +2,7 @@ init 1 python:
 	set_can_mouse_hide(False)
 	set_can_autosave(False)
 	
-	db_hide_interface = True # for disable pause-menu in screen <hotkeys>
+	db.hide_interface = True # for disable pause-menu in screen <hotkeys>
 	start_screens = ['hotkeys', 'all_locations', 'menu']
 	
 	need_save_locations = False
