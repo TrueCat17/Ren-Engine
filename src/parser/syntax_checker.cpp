@@ -129,8 +129,9 @@ void SyntaxChecker::init() {
 	addBlockChildren("if, elif, else, for, while", screenElems + "imagemap, hotspot, " + "continue, break");
 
 	addBlockChildren("screen, vbox, hbox", "spacing");
-	addBlockChildren("screen, if, elif, else, for, while", screenProps);
-	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python");
+	addBlockChildren("screen", screenProps);
+	addBlockChildren("if, elif, else, for, while", "key");
+	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python, key");
 	addBlockChildren("screen" + screenElems, simpleProps);
 
 	addBlockChildren("text, textbutton", textProps);
