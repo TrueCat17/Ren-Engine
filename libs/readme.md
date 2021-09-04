@@ -44,7 +44,7 @@ Choose need actions for all libs:
 ```
 
 
-3. Download (~90 MB) and extract (~400 MB) sources:
+3. Download (~160 MB) and extract (~400 MB) sources:
 ```
 $ ./download.py
 ```

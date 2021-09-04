@@ -99,7 +99,7 @@ def set_platform():
 	print('  compilier =', cc)
 	print()
 	
-	if os.system('which ' + cc + ' > /dev/null'):
+	if os.system('command -v ' + cc + ' > /dev/null'):
 		print('Compilier <' + cc + '> not found')
 		os.sys.exit(1)
 

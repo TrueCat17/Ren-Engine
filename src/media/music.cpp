@@ -341,7 +341,7 @@ Music::Music(const std::string &url, Channel *channel, double fadeIn,
 	numLine(numLine),
     place(place),
 
-    packet((AVPacket *)av_malloc(sizeof(AVPacket))),
+    packet(av_packet_alloc()),
     frame(av_frame_alloc()),
 
     tmpBuffer((uint8_t *)av_malloc(PART_SIZE)),
@@ -352,29 +352,20 @@ Music::~Music() {
 	audioPos = nullptr;
 	audioLen = 0;
 
-	av_free(buffer);
-	av_free(tmpBuffer);
-	buffer = nullptr;
-	tmpBuffer = nullptr;
+	av_freep(&buffer);
+	av_freep(&tmpBuffer);
 
-	av_free(packet);
-	av_free(frame);
-	packet = nullptr;
-	frame = nullptr;
+	av_packet_free(&packet);
+	av_frame_free(&frame);
 
-	avcodec_close(codecCtx);
+	avcodec_free_context(&codecCtx);
 	avformat_close_input(&formatCtx);
-	codecCtx = nullptr;
-	formatCtx = nullptr;
 
 	swr_free(&auConvertCtx);
-	auConvertCtx = nullptr;
 }
 
 
 bool Music::initCodec() {
-	av_init_packet(packet);
-
 	formatCtx = avformat_alloc_context();
 	if (int error = avformat_open_input(&formatCtx, url.c_str(), nullptr, nullptr)) {
 		if (error == AVERROR(ENOENT)) {
@@ -392,8 +383,8 @@ bool Music::initCodec() {
 		return true;
 	}
 
-	for (size_t i = 0; i < formatCtx->nb_streams; ++i) {
-		if (formatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO){
+	for (uint32_t i = 0; i < formatCtx->nb_streams; ++i) {
+		if (formatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
 			audioStream = int(i);
 			break;
 		}

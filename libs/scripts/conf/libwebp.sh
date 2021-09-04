@@ -10,6 +10,7 @@ export LDFLAGS="-lm -flto -pthread"
 ./configure \
 	--disable-shared \
 	--enable-static \
+	--disable-sse4.1 \
 	\
 	--disable-gl \
 	--disable-sdl \
@@ -17,6 +18,11 @@ export LDFLAGS="-lm -flto -pthread"
 	--disable-jpeg \
 	--disable-tiff \
 	--disable-gif \
-	--disable-wic
+	--disable-wic \
+	\
+	--disable-libwebpmux \
+	--disable-libwebpdemux \
+	--disable-libwebpdecoder \
+	--disable-libwebpextras
 
 make clean

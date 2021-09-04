@@ -5,7 +5,7 @@ from config import *
 
 
 for prog in ('nasm', 'libtoolize', 'automake', 'autoconf', 'make'):
-	if os.system('which ' + prog + ' > /dev/null'):
+	if os.system('command -v ' + prog + ' > /dev/null'):
 		print('You must install <' + prog + '>')
 
 

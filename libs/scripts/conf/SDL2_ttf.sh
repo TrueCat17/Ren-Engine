@@ -15,6 +15,7 @@ export LIBS="-L$PWD/../000res/ -lfreetype -lbrotlidec-static -lbrotlicommon-stat
 	--enable-static \
 	--disable-shared \
 	--disable-sdltest \
+	--disable-freetypetest \
 	\
 	--with-sdl-prefix=$PWD/../000res \
 	--with-ft-prefix=$PWD/../000res

@@ -39,7 +39,6 @@ export LDFLAGS="-lm -flto"
 	\
 	--disable-video-x11-xinerama \
 	--disable-video-x11-xdbe \
-	--disable-input-tslib \
 	\
 	--disable-rpath \
 	--disable-render-d3d
