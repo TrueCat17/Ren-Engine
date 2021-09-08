@@ -317,6 +317,9 @@ static SDL_KeyCode numpadKeys[] = {SDLK_END,  SDLK_DOWN,  SDLK_PAGEDOWN, // 1, 2
                                    SDLK_HOME, SDLK_UP,    SDLK_PAGEUP};  // 7, 8, 9
 static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
 	SDL_Keycode key = ks.sym;
+	if (key == SDLK_MENU) {     //Because SDL converts name "Menu" to keycode SDLK_APPLICATION,
+		key = SDLK_APPLICATION; //but events contains keycode SDLK_MENU
+	}else
 	if (key == SDLK_KP_ENTER) {
 		key = SDLK_RETURN;
 	}else
