@@ -8,7 +8,7 @@ init -10002 python:
 	
 	
 	def _pickle_method(method):
-    	func_name = method.im_func.__name__
+		func_name = method.im_func.__name__
 		obj = method.im_self
 		cls = method.im_class
 		return _unpickle_method, (func_name, obj, cls)
@@ -16,11 +16,9 @@ init -10002 python:
 	def _unpickle_method(func_name, obj, cls):
 		if hasattr(cls, 'mro'):
 			for cls in cls.mro():
-				try:
+				if cls.__dict__.has_key(func_name):
 					func = cls.__dict__[func_name]
 					break
-				except KeyError:
-					pass
 		else:
 			func = cls.__dict__[func_name]
 		return func.__get__(obj, cls)
@@ -28,7 +26,7 @@ init -10002 python:
 	def register_instancemethod_for_pickle():
 		import copy_reg
 		import types
-		copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+		copy_reg.pickle(types.MethodType, _pickle_method)
 	register_instancemethod_for_pickle()
 
 
@@ -68,7 +66,7 @@ init -10002 python:
 	
 	def save_global_vars(path):
 		g = globals()
-		obj = dict()
+		obj = {}
 		
 		class TmpClass:
 			def method(self): pass
@@ -79,8 +77,7 @@ init -10002 python:
 		simple_types = (type(None), bool, int, long, float, absolute, str)
 		safe_types = (list, tuple, set, dict, type(tmp_instance), type(tmp_instance.method), func_type)
 		
-		for k in g.keys():
-			o = g[k]
+		for k, o in g.iteritems():
 			t = type(o)
 			
 			if t is func_type:
