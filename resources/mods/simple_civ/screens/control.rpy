@@ -102,7 +102,7 @@ screen control:
 								button:
 									ground get_back_with_color(unit.image)
 									size   control.unit_size
-									action [control.select_unit(unit), show_context_menu(control.selected_unit_menu_items)]
+									action [control.select_unit(unit), context_menu.show(control.selected_unit_menu_items)]
 				
 				hbox:
 					xalign 0.5

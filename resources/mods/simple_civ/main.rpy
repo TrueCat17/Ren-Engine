@@ -14,11 +14,11 @@ init 10 python:
 	
 	
 	sc_map.bounds = {
-		'food':  ( 3,  8),
+		'food':  ( 4,  8),
 		'wood':  ( 5, 20),
-		'stone': (10, 40),
-		'coal':  (10, 25),
-		'metal': ( 5, 20),
+		'stone': (15, 40),
+		'coal':  (10, 30),
+		'metal': ( 5, 15),
 	}
 	sc_map.chances = {
 		'food':    5,

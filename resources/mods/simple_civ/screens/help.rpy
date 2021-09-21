@@ -66,7 +66,7 @@ init python:
 		return res
 	
 	def help__init():
-		f = open('mods/simple_civ/' + _('readme.txt'))
+		f = open('mods/' + get_current_mod() + '/' + _('readme.txt'))
 		content = f.read().strip().replace('\t', '  ')
 		f.close()
 		
