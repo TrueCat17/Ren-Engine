@@ -61,6 +61,9 @@ void DisplayObject::updateGlobal() {
 		}
 	}else {
 		if (clipping) {
+			if (!Math::floatsAreEq(std::fmod(globalRotate, 360), 0)) {
+				Utils::outMsg("DisplayObject::updateGlobal", "Object with clipping can't be rotated");
+			}
 			globalClipping = true;
 			clipRect = { globalX, globalY, getWidth(), getHeight() };
 		}else {
@@ -134,10 +137,6 @@ void DisplayObject::destroyAll() {
 void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 alpha, bool clip, const SDL_Rect &clipRect,
     const SDL_Rect &srcRect, const SDL_Rect &dstRect, const SDL_Point center)
 {
-	if (clip && !Math::floatsAreEq(angle, 0)) {
-		Utils::outMsg("DisplayObject::pushToRender", "Clipped object can't rotate");
-	}
-
 	Renderer::renderData.push_back({
 	    surface, angle, alpha, clip,
 	    clipRect, srcRect, dstRect,
