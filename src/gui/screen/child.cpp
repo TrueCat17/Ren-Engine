@@ -1,13 +1,12 @@
 #include "child.h"
 
-#include "gv.h"
-
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
 #include "parser/syntax_checker.h"
 
 #include "media/py_utils.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 
@@ -137,8 +136,8 @@ void Child::updatePos() {
 }
 
 void Child::updateRect(bool needUpdatePos) {
-	setWidth( int(xsize * float(xsizeIsFloat ? GV::width  : 1) * globalZoomX));
-	setHeight(int(ysize * float(ysizeIsFloat ? GV::height : 1) * globalZoomY));
+	setWidth( int(xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX));
+	setHeight(int(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY));
 
 	if (surface) {
 		crop.x = int(xcrop * float(xcropIsFloat ? surface->w : 1));

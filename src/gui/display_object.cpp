@@ -1,10 +1,10 @@
 #include "display_object.h"
 
-#include "gv.h"
 #include "group.h"
 #include "renderer.h"
 
 #include "utils/math.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 
@@ -122,7 +122,7 @@ void DisplayObject::disableAll() {
 }
 
 void DisplayObject::destroyAll() {
-	GV::screens = nullptr;
+	Stage::screens = nullptr;
 
 	while (!objects.empty()) {
 		DisplayObject *obj = objects[0];
@@ -138,7 +138,7 @@ void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 a
 		Utils::outMsg("DisplayObject::pushToRender", "Clipped object can't rotate");
 	}
 
-	Renderer::toRender.push_back({
+	Renderer::renderData.push_back({
 	    surface, angle, alpha, clip,
 	    clipRect, srcRect, dstRect,
 	    center

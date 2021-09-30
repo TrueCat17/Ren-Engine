@@ -20,6 +20,7 @@
 #include "utils/game.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/stage.h"
 #include "utils/string.h"
 #include "utils/path_finder.h"
 #include "utils/utils.h"
@@ -46,7 +47,7 @@ std::recursive_mutex PyUtils::pyExecMutex;
 PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
 	std::tuple<const std::string&, const std::string&, size_t> refPyCode(code, fileName, numLine);
 
-	std::lock_guard g(PyUtils::pyExecMutex);
+	std::lock_guard g(pyExecMutex);
 
 	auto i = compiledObjects.find(refPyCode);
 	if (i != compiledObjects.end()) {
@@ -69,8 +70,8 @@ PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::stri
 
 static PyObject* getMouse() {
 	PyObject *res = PyTuple_New(2);
-	PyTuple_SET_ITEM(res, 0, PyInt_FromLong(Mouse::getX()));
-	PyTuple_SET_ITEM(res, 1, PyInt_FromLong(Mouse::getY()));
+	PyTuple_SET_ITEM(res, 0, PyInt_FromLong(Mouse::getX() - Stage::x));
+	PyTuple_SET_ITEM(res, 1, PyInt_FromLong(Mouse::getY() - Stage::y));
 	return res;
 }
 static PyObject* getLocalMouse() {
@@ -103,6 +104,8 @@ static std::string getCurrentMod() {
 }
 
 void PyUtils::init() {
+	std::lock_guard g(pyExecMutex);
+
 	//clear
 	constObjects.clear();
 	clearPyWrappers();
@@ -184,11 +187,11 @@ void PyUtils::init() {
 	setGlobalFunc("get_fps", Game::getFps);
 	setGlobalFunc("set_fps", Game::setFps);
 
-	setGlobalFunc("get_stage_width", Game::getStageWidth);
-	setGlobalFunc("get_stage_height", Game::getStageHeight);
+	setGlobalFunc("get_stage_width", Stage::getStageWidth);
+	setGlobalFunc("get_stage_height", Stage::getStageHeight);
 
-	setGlobalFunc("set_stage_size", Game::setStageSize);
-	setGlobalFunc("set_fullscreen", Game::setFullscreen);
+	setGlobalFunc("set_stage_size", Stage::setStageSize);
+	setGlobalFunc("set_fullscreen", Stage::setFullscreen);
 
 	setGlobalFunc("save_image", ImageManipulator::save);
 	setGlobalFunc("load_image", ImageManipulator::loadImage);

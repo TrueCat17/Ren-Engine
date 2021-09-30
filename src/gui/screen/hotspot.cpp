@@ -3,12 +3,11 @@
 #include "imagemap.h"
 #include "style.h"
 
-#include "gv.h"
-
 #include "media/music.h"
 #include "media/py_utils.h"
 
 #include "utils/math.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 
@@ -78,11 +77,11 @@ void Hotspot::checkEvents() {
 		scaleY = float(parentHeight) / float(ground->h);
 	}
 
-	setX(int(xcrop * float(xcropIsFloat ? GV::width  : 1) * scaleX));
-	setY(int(ycrop * float(ycropIsFloat ? GV::height : 1) * scaleY));
+	setX(int(xcrop * float(xcropIsFloat ? Stage::width  : 1) * scaleX));
+	setY(int(ycrop * float(ycropIsFloat ? Stage::height : 1) * scaleY));
 
-	setWidth( int(wcrop * float(wcropIsFloat ? GV::width  : 1) * scaleX));
-	setHeight(int(hcrop * float(hcropIsFloat ? GV::height : 1) * scaleY));
+	setWidth( int(wcrop * float(wcropIsFloat ? Stage::width  : 1) * scaleX));
+	setHeight(int(hcrop * float(hcropIsFloat ? Stage::height : 1) * scaleY));
 
 
 	const std::string *styleName = nullptr;

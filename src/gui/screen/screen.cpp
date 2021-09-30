@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <map>
 
-#include "gv.h"
 #include "logger.h"
 #include "media/py_utils.h"
 #include "parser/screen_node_utils.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 
@@ -24,8 +24,8 @@ Node* Screen::getDeclared(const std::string &name) {
 	return it != declared.end() ? it->second : nullptr;
 }
 Screen* Screen::getMain(const std::string &name) {
-	if (GV::screens) {
-		for (DisplayObject *d : GV::screens->children) {
+	if (Stage::screens) {
+		for (DisplayObject *d : Stage::screens->children) {
 			Screen *scr = static_cast<Screen*>(d);
 			if (scr->name == name) {
 				return scr;
@@ -48,13 +48,13 @@ static void show(const std::string &name) {
 		scr = new Screen(node, nullptr);
 	}
 
-	GV::screens->addChildAt(scr, GV::screens->children.size());
+	Stage::screens->addChildAt(scr, Stage::screens->children.size());
 	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('show_screen', '" + name + "')");
 }
 static void hide(const std::string &name) {
-	if (!GV::screens) return;
+	if (!Stage::screens) return;
 
-	for (DisplayObject *d : GV::screens->children) {
+	for (DisplayObject *d : Stage::screens->children) {
 		Screen *scr = static_cast<Screen*>(d);
 		if (scr->getName() == name) {
 			delete scr;
@@ -141,10 +141,10 @@ bool Screen::hasModal() {
 }
 
 void Screen::updateScreens() {
-	if (!GV::screens) return;
+	if (!Stage::screens) return;
 
 	_hasModal = false;
-	for (DisplayObject *d : GV::screens->children) {
+	for (DisplayObject *d : Stage::screens->children) {
 		const Screen *s = static_cast<Screen*>(d);
 		if (s->modal) {
 			_hasModal = true;
@@ -157,7 +157,7 @@ void Screen::updateScreens() {
 		const Screen *sB = static_cast<Screen*>(b);
 		return sA->zorder < sB->zorder;
 	};
-	std::sort(GV::screens->children.begin(), GV::screens->children.end(), zOrderCmp);
+	std::sort(Stage::screens->children.begin(), Stage::screens->children.end(), zOrderCmp);
 }
 
 

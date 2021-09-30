@@ -22,6 +22,7 @@
 #include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/game.h"
+#include "utils/stage.h"
 #include "utils/string.h"
 
 
@@ -123,7 +124,7 @@ bool Utils::realOutMsg() {
 
 	static SDL_MessageBoxData data;
 	data.flags = msg.isError ? SDL_MESSAGEBOX_ERROR : SDL_MESSAGEBOX_WARNING;
-	data.window = GV::messageThreadId == std::this_thread::get_id() ? GV::mainWindow : nullptr;
+	data.window = GV::messageThreadId == std::this_thread::get_id() ? Stage::window : nullptr;
 	data.title = "Message";
 	data.message = msg.str.c_str();
 	data.numbuttons = 2;

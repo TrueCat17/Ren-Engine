@@ -5,6 +5,9 @@
 
 #include "utils/image_typedefs.h"
 
+
+typedef struct SDL_Renderer SDL_Renderer;
+
 class ImageCaches {
 public:
 	static SurfacePtr getThereIsSurfaceOrNull(const std::string &path, bool formatRGBA32 = true);

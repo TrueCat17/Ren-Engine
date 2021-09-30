@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 2.8.12)
 
 project(Ren-Engine)
 
@@ -170,6 +170,7 @@ set(SOURCES
 	utils/math.cpp
 	utils/mouse.cpp
 	utils/path_finder.cpp
+	utils/stage.cpp
 	utils/string.cpp
 	utils/utils.cpp
 )

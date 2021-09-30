@@ -29,9 +29,6 @@ public:
 	static bool hasLabel(const std::string &label);
 	static PyObject* getAllLabels();
 
-	static int getStageWidth();
-	static int getStageHeight();
-
 	static int getImageWidth(const std::string &image);
 	static int getImageHeight(const std::string &image);
 
@@ -46,9 +43,6 @@ public:
 	static double getFrameTime();
 	static long getFps();
 	static void setFps(long fps);
-
-	static void setStageSize(int width, int height);
-	static void setFullscreen(bool value);
 
 	static double getLastTick();
 	static double getGameTime();

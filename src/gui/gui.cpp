@@ -8,6 +8,7 @@
 #endif
 
 #include "gui/screen/screen.h"
+#include "utils/stage.h"
 
 
 void GUI::update() {
@@ -19,11 +20,11 @@ void GUI::update() {
 	Screen::updateScreens();
 
 	DisplayObject::disableAll();
-	GV::screens->enable = true;
+	Stage::screens->enable = true;
 
 	PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('enter_frame')");
 
-	for (DisplayObject *child : GV::screens->children) {
+	for (DisplayObject *child : Stage::screens->children) {
 		Screen *scr = static_cast<Screen*>(child);
 #if printTime
 		std::cout << "update <" << scr->getName() << ">:\n";

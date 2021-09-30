@@ -1,10 +1,9 @@
 #include "text.h"
 
-#include "gv.h"
-
 #include "gui/text_field.h"
 
 #include "utils/math.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 Text::Text(Node *node, Screen *screen):
@@ -22,8 +21,8 @@ Text::~Text() {
 void Text::updateRect(bool) {
 	tf->enable = true;
 
-	int width  = int(xsize * float(xsizeIsFloat ? GV::width  : 1) * globalZoomX);
-	int height = int(ysize * float(ysizeIsFloat ? GV::height : 1) * globalZoomY);
+	int width  = int(xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX);
+	int height = int(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY);
 
 	if (first_param.empty() && prevText.empty()) {
 		setWidth(std::max(width, 0));

@@ -31,6 +31,7 @@
 #include "utils/math.h"
 #include "utils/mouse.h"
 #include "utils/string.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 
@@ -281,7 +282,7 @@ void Game::save() {
 
 		//screens
 		std::vector<const Screen*> mainScreens;
-		for (const DisplayObject *d : GV::screens->children) {
+		for (const DisplayObject *d : Stage::screens->children) {
 			const Screen* s = static_cast<const Screen*>(d);
 
 			static const std::set<std::string> noSaveScreens = {"pause", "load", "save"};
@@ -345,11 +346,11 @@ void Game::save() {
 				Utils::sleep(0.001);
 			}
 
-			std::lock_guard g(Renderer::toRenderMutex);
+			std::lock_guard g(Renderer::RenderDataMutex);
 
-			Renderer::toRender.clear();
-			if (GV::screens) {
-				GV::screens->draw();
+			Renderer::renderData.clear();
+			if (Stage::screens) {
+				Stage::screens->draw();
 			}
 
 			Renderer::needMakeScreenshot();
@@ -396,30 +397,20 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Utils::clearImages();
 		Node::destroyAll();
 
-		int x, y;
-		if (GV::screens) {
-			x = GV::screens->getX();
-			y = GV::screens->getY();
-		}else {
-			x = y = 0;
-		}
-
 		Screen::clear();
 		DisplayObject::destroyAll();
 
-		GV::screens = new Group();
-		GV::screens->setX(x);
-		GV::screens->setY(y);
-		GV::screens->setWidth(GV::width);
-		GV::screens->setHeight(GV::height);
-		GV::screens->updateGlobal();
+		Stage::screens = new Group();
+		Stage::screens->setX(Stage::x);
+		Stage::screens->setY(Stage::y);
+		Stage::screens->setWidth(Stage::width);
+		Stage::screens->setHeight(Stage::height);
+		Stage::screens->updateGlobal();
 
 		Style::destroyAll();
 
-		{
-			std::lock_guard g(PyUtils::pyExecMutex);
-			PyUtils::init();
-		}
+		PyUtils::init();
+
 		Translation::init();
 
 		ScreenNodeUtils::clear();
@@ -449,11 +440,11 @@ void Game::makeScreenshot() {
 			Utils::sleep(0.001);
 		}
 
-		std::lock_guard g(Renderer::toRenderMutex);
+		std::lock_guard g(Renderer::RenderDataMutex);
 
-		Renderer::toRender.clear();
-		if (GV::screens) {
-			GV::screens->draw();
+		Renderer::renderData.clear();
+		if (Stage::screens) {
+			Stage::screens->draw();
 		}
 
 		Renderer::needMakeScreenshot();
@@ -508,13 +499,6 @@ PyObject* Game::getAllLabels() {
 }
 
 
-int Game::getStageWidth() {
-	return GV::width;
-}
-int Game::getStageHeight() {
-	return GV::height;
-}
-
 int Game::getImageWidth(const std::string &image) {
 	SurfacePtr surface = ImageManipulator::getImage(image, false);
 	if (surface) {
@@ -561,7 +545,6 @@ PyObject* Game::getArgs(const std::string &str) {
 }
 
 
-
 void Game::setMaxFps(long fps) {
 	maxFps = Math::inBounds(fps, 1, 60);
 }
@@ -579,48 +562,6 @@ void Game::setFps(long newFps) {
 	frameTime = 1 / double(newFps);
 }
 
-void Game::setStageSize(int width, int height) {
-	if (GV::minimized) return;
-
-	std::lock_guard g1(Renderer::toRenderMutex);
-	std::lock_guard g2(Renderer::renderMutex);
-
-	bool fullscreen = GV::fullscreen;
-	if (fullscreen) {
-		GV::fullscreen = false;
-		Config::set("window_fullscreen", "False");
-
-		SDL_SetWindowFullscreen(GV::mainWindow, 0);
-	}
-
-	SDL_RestoreWindow(GV::mainWindow);
-	SDL_Event eventRestored;
-	eventRestored.type = SDL_WINDOWEVENT;
-	eventRestored.window.event = SDL_WINDOWEVENT_RESTORED;
-	if (SDL_PushEvent(&eventRestored) < 0) {
-		Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
-	}
-
-	SDL_SetWindowSize(GV::mainWindow, width, height);
-	SDL_Event eventResized;
-	eventResized.type = SDL_WINDOWEVENT;
-	eventResized.window.event = SDL_WINDOWEVENT_RESIZED;
-	if (SDL_PushEvent(&eventResized) < 0) {
-		Utils::outMsg("setStageSize, SDL_PushEvent", SDL_GetError());
-	}
-}
-void Game::setFullscreen(bool value) {
-	if (GV::minimized) return;
-
-	GV::fullscreen = value;
-	Config::set("window_fullscreen", value ? "True" : "False");
-
-	std::lock_guard g1(Renderer::toRenderMutex);
-	std::lock_guard g2(Renderer::renderMutex);
-
-	Renderer::needToUpdateViewPort = true;
-	SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP * value);
-}
 
 double Game::getLastTick() {
 	if (!GV::beforeFirstFrame && !GV::firstFrame) {

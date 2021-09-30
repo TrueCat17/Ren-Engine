@@ -4,21 +4,15 @@
 #include <mutex>
 #include <thread>
 
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_scancode.h>
 
 
-class Group;
 class Node;
 
 
 class GV {
 public:
-	static int width;
-	static int height;
-	static bool fullscreen;
-
 	static int numUpdate;
-	static bool minimized;
 	static bool inGame;
 	static bool exit;
 
@@ -27,12 +21,7 @@ public:
 
 	static std::thread::id messageThreadId;
 
-	static SDL_DisplayMode displayMode;
-	static SDL_Window *mainWindow;
-
 	static Uint8 keyBoardState[SDL_NUM_SCANCODES];
-
-	static Group *screens;
 
 	static std::mutex updateMutex;
 	static double prevFrameStartTime;

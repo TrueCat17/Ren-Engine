@@ -23,6 +23,8 @@ struct RenderStruct {
 	bool operator==(const RenderStruct &o) const;
 };
 
+typedef struct SDL_RendererInfo SDL_RendererInfo;
+
 class Renderer {
 public:
 	static bool needToRender;
@@ -31,8 +33,8 @@ public:
 
 	static std::mutex renderMutex;
 
-	static std::mutex toRenderMutex;
-	static std::vector<RenderStruct> toRender;
+	static std::mutex RenderDataMutex;
+	static std::vector<RenderStruct> renderData;
 
 	static SDL_RendererInfo info;
 	static bool init();

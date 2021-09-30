@@ -29,6 +29,7 @@
 #include "utils/image_caches.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/stage.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -53,116 +54,7 @@ static std::string getVersion() {
 	return versionStr;
 }
 
-//before windowSize-changes
-static int startWindowWidth = 0;
-static int startWindowHeight = 0;
 
-static void changeWindowSize(bool maximized) {
-	int startW, startH;
-	SDL_GetWindowSize(GV::mainWindow, &startW, &startH);
-
-	int dX = startW - startWindowWidth;
-	int dY = startH - startWindowHeight;
-	if (dX || dY) {
-		int w = startW;
-		int h = startH;
-
-		double k = String::toDouble(Config::get("window_w_div_h"));
-		if (k < 0.1) {
-			k = 1.777;
-			Utils::outMsg("changeWindowSize",
-			              "Invalid <window_w_div_h> in <params.conf>:\n"
-						  "<" + Config::get("window_w_div_h") + ">");
-		}
-
-		if (maximized) {//can only scale down
-			if (double(w) / h > k) {
-				w = int(h * k);
-			}else {
-				h = int(w / k);
-			}
-		}else {
-			SDL_Rect usableBounds;
-
-			if (GV::fullscreen) {
-				SDL_DisplayMode displayMode;
-				SDL_GetWindowDisplayMode(GV::mainWindow, &displayMode);
-				usableBounds = {0, 0, displayMode.w, displayMode.h};
-			}else {
-				int index = SDL_GetWindowDisplayIndex(GV::mainWindow);
-				if (index == -1) {
-					Utils::outMsg("changeWindowSize, SDL_GetWindowDisplayIndex", SDL_GetError());
-					index = 0;
-				}
-				SDL_GetDisplayUsableBounds(index, &usableBounds);
-
-				int wTop, wLeft, wBottom, wRight;
-				SDL_GetWindowBordersSize(GV::mainWindow, &wTop, &wLeft, &wBottom, &wRight);
-
-				usableBounds.w -= wLeft + wRight;
-				usableBounds.h -= wTop + wBottom;
-			}
-
-			if (abs(dX) >= abs(dY)) {
-				h = int(w / k);
-			}else {
-				w = int(h * k);
-			}
-
-			const int MIN_W = 640;
-			if (w < MIN_W || h < MIN_W / k) {
-				w = MIN_W;
-				h = int(MIN_W / k);
-			}
-			if (w > usableBounds.w) {
-				w = usableBounds.w;
-				h = int(w / k);
-			}
-			if (h > usableBounds.h) {
-				h = usableBounds.h;
-				w = int(h * k);
-			}
-		}
-		if (w == startW && w == GV::width && h == startH && h == GV::height) return;
-
-
-		int x = 0;
-		int y = 0;
-		if (maximized || GV::fullscreen) {
-			x = (startW - w) / 2;
-			y = (startH - h) / 2;
-		}
-
-		{
-			std::lock_guard g1(Renderer::toRenderMutex);
-			std::lock_guard g2(Renderer::renderMutex);
-
-			if (GV::screens) {
-				GV::screens->setX(x);
-				GV::screens->setY(y);
-				GV::screens->setWidth(w);
-				GV::screens->setHeight(h);
-				GV::screens->updateGlobal();
-			}
-
-			GV::width = w;
-			GV::height = h;
-			if (!GV::fullscreen) {
-				Config::set("window_width", std::to_string(w));
-				Config::set("window_height", std::to_string(h));
-			}
-			SDL_SetWindowSize(GV::mainWindow, w + x, h + y);
-
-			Renderer::needToRedraw = true;
-			Renderer::needToUpdateViewPort = true;
-		}
-
-		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('resized_stage')");
-	}
-
-	startWindowWidth = 0;
-	startWindowHeight = 0;
-}
 
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
@@ -209,6 +101,8 @@ static std::string setDir(std::string newRoot) {
 }
 
 static bool init() {
+	GV::messageThreadId = std::this_thread::get_id();
+
 	Math::init();
 	Logger::init();
 	Config::init();
@@ -238,7 +132,8 @@ static bool init() {
 		return true;
 	}
 
-	if (SDL_GetDesktopDisplayMode(0, &GV::displayMode)) {
+	SDL_DisplayMode displayMode;
+	if (SDL_GetDesktopDisplayMode(0, &displayMode)) {
 		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
 		return true;
 	}
@@ -253,50 +148,44 @@ static bool init() {
 	Game::setMaxFps(fps);
 
 
-	GV::fullscreen = Config::get("window_fullscreen") == "True";
+	Stage::fullscreen = Config::get("window_fullscreen") == "True";
 
 	Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
 
-	GV::width = Math::inBounds(String::toInt(Config::get("window_width")), 640, 2560);
-	GV::height = Math::inBounds(String::toInt(Config::get("window_height")), 360, 1440);
+	Stage::width = Math::inBounds(String::toInt(Config::get("window_width")), Stage::MIN_WIDTH, Stage::getMaxWidth());
+	Stage::height = Math::inBounds(String::toInt(Config::get("window_height")), Stage::MIN_HEIGHT, Stage::getMaxHeight());
 
 	std::string xStr = Config::get("window_x");
 	std::string yStr = Config::get("window_y");
 	int x, y;
 	if (xStr == "None") {
-		x = (GV::displayMode.w - GV::width) / 2;
+		x = (displayMode.w - Stage::width) / 2;
 	}else {
 		x = String::toInt(xStr);
 	}
 	if (yStr == "None") {
-		y = (GV::displayMode.h - GV::height) / 2;
+		y = (displayMode.h - Stage::height) / 2;
 	}else {
 		y = String::toInt(yStr);
 	}
 
 	const std::string windowTitle = Config::get("window_title");
-	GV::mainWindow = SDL_CreateWindow(windowTitle.c_str(), x, y, GV::width, GV::height, flags);
-	if (!GV::mainWindow) {
+	Stage::window = SDL_CreateWindow(windowTitle.c_str(), x, y, Stage::width, Stage::height, flags);
+	if (!Stage::window) {
 		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
 		return true;
 	}
-	if (GV::fullscreen) {
-		SDL_SetWindowFullscreen(GV::mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-	}else{
-		int w = GV::width;
-		int h = GV::height;
-		changeWindowSize(false);
-
-		if (GV::width != w || GV::height != h) {
-			SDL_SetWindowSize(GV::mainWindow, GV::width, GV::height);
-		}
+	if (Stage::fullscreen) {
+		SDL_SetWindowFullscreen(Stage::window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 	}
+	Stage::needResize = true;
+	Stage::changeWindowSize();
 
 	const std::string iconPath = Config::get("window_icon");
 	if (!iconPath.empty() && iconPath != "None") {
 		SurfacePtr icon = ImageCaches::getSurface(iconPath);
 		if (icon) {
-			SDL_SetWindowIcon(GV::mainWindow, icon.get());
+			SDL_SetWindowIcon(Stage::window, icon.get());
 		}
 	}
 
@@ -343,9 +232,16 @@ static std::mutex eventMutex;
 static void loop() {
 	Utils::setThreadName("loop");
 
-	bool maximazed = false;
 	bool mouseOut = false;
 	bool mouseOutPrevDown = false;
+	int startWindowWidth = 0;
+	int startWindowHeight = 0;
+
+	//unmaximized = restored + resized
+	//but this events can be not in one frame (or even in nears)
+	double resizedTime = -1;
+	double restoredTime = -1;
+	double maxTimeForUnmaximized = 0.1;
 
 	while (true) {
 		while (!GV::inGame && !GV::exit) {
@@ -381,25 +277,29 @@ static void loop() {
 				}
 
 				if (event.type == SDL_WINDOWEVENT) {
-					if (event.window.event == SDL_WINDOWEVENT_EXPOSED || event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
+					int type = event.window.event;
+
+					if (type == SDL_WINDOWEVENT_EXPOSED || type == SDL_WINDOWEVENT_FOCUS_GAINED) {
 						Renderer::needToRedraw = true;
-						GV::minimized = false;
+						Stage::minimized = false;
 					}else
-					if (event.window.event == SDL_WINDOWEVENT_ENTER) {
+					if (type == SDL_WINDOWEVENT_ENTER) {
 						mouseOut = false;
 					}else
-					if (event.window.event == SDL_WINDOWEVENT_LEAVE) {
+					if (type == SDL_WINDOWEVENT_LEAVE) {
 						mouseOut = true;
 					}else
 
-					if (event.window.event == SDL_WINDOWEVENT_MOVED) {
+					if (type == SDL_WINDOWEVENT_MOVED) {
 						int x, y;
-						SDL_GetWindowPosition(GV::mainWindow, &x, &y);
+						SDL_GetWindowPosition(Stage::window, &x, &y);
 						if (x || y) {//if x and y are 0 - then probably it error, ignore
-							int leftBorderSize;
-							int captionHeight;
-							SDL_GetWindowBordersSize(GV::mainWindow, &captionHeight, &leftBorderSize, nullptr, nullptr);
-
+							int leftBorderSize = 0;
+							int captionHeight = 0;
+#ifdef __LINUX__
+							//fix for SDL_GetWindowPosition on linux (x11? wm?)
+							SDL_GetWindowBordersSize(Stage::window, &captionHeight, &leftBorderSize, nullptr, nullptr);
+#endif
 							x = std::max(x - leftBorderSize, 1);
 							y = std::max(y - captionHeight, 1);
 
@@ -408,19 +308,24 @@ static void loop() {
 						}
 					}else
 
-					if (event.window.event == SDL_WINDOWEVENT_MAXIMIZED) {
-						maximazed = true;
+					if (type == SDL_WINDOWEVENT_MINIMIZED) {
+						Stage::minimized = true;
 					}else
-					if (event.window.event == SDL_WINDOWEVENT_RESTORED) {
-						maximazed = false;
-						GV::minimized = false;
-					}else
-					if (event.window.event == SDL_WINDOWEVENT_MINIMIZED) {
-						GV::minimized = true;
+					if (type == SDL_WINDOWEVENT_MAXIMIZED || type == SDL_WINDOWEVENT_RESTORED) {
+						Renderer::needToRedraw = true;
+						Stage::minimized = false;
+						if (type == SDL_WINDOWEVENT_MAXIMIZED) {
+							Stage::needResize = true;
+							Stage::maximized = true;
+							resizeWithoutMouseDown = true;
+						}else {
+							restoredTime = Utils::getTimer();
+						}
 					}else
 
-					if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-						if (!GV::minimized && !startWindowWidth && !startWindowHeight) {
+					if (type == SDL_WINDOWEVENT_RESIZED || type == SDL_WINDOWEVENT_SIZE_CHANGED) {
+						resizedTime = Utils::getTimer();
+						if (!Stage::fullscreen && !startWindowWidth && !startWindowHeight) {
 							resizeWithoutMouseDown = true;
 						}
 					}
@@ -463,8 +368,11 @@ static void loop() {
 				}
 			}
 		}
-		if (GV::minimized) {
-			resizeWithoutMouseDown = false;
+
+		if (!Stage::fullscreen && Utils::getTimer() - std::min(restoredTime, resizedTime) < maxTimeForUnmaximized ) {
+			restoredTime = resizedTime = -1;
+			Stage::needResize = true;
+			Stage::maximized = false;
 		}
 
 		Mouse::checkCursorVisible();
@@ -476,30 +384,30 @@ static void loop() {
 
 		if (resizeWithoutMouseDown || !(mouseWasDown || mouseWasUp)) {
 			if (resizeWithoutMouseDown ||
-				(mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight)
+			    (mouseOutPrevDown && !mouseOutDown && startWindowWidth && startWindowHeight)
 			) {
-				changeWindowSize(maximazed);
+				Stage::changeWindowSize(0, 0, startWindowWidth, startWindowHeight);
+				startWindowWidth = startWindowHeight = 0;
 			}
 			if (mouseOutDown && !mouseOutPrevDown) {
-				SDL_GetWindowSize(GV::mainWindow, &startWindowWidth, &startWindowHeight);
+				SDL_GetWindowSize(Stage::window, &startWindowWidth, &startWindowHeight);
 			}
 		}
 		mouseOutPrevDown = mouseOutDown;
 
 		GUI::update();
 
-		if (!GV::minimized) {
+		if (!Stage::minimized) {
 			while (Renderer::needToRender) {
-				Utils::sleep(0.001);
+				Utils::sleep(0.001, false);
 			}
-			{
-				std::lock_guard g(Renderer::toRenderMutex);
-				Renderer::toRender.clear();
-				if (GV::screens) {
-					GV::screens->draw();
-				}
-				Renderer::needToRender = true;
+
+			std::lock_guard g(Renderer::RenderDataMutex);
+			Renderer::renderData.clear();
+			if (Stage::screens) {
+				Stage::screens->draw();
 			}
+			Renderer::needToRender = true;
 		}
 
 		Config::save();
@@ -529,13 +437,14 @@ static void loop() {
 static void eventLoop() {
 	std::thread(loop).detach();
 
-	GV::messageThreadId = std::this_thread::get_id();
 	while (!GV::exit) {
 		while (Utils::realOutMsg()) {}
+		Stage::applyChanges();
 
 		Utils::sleep(0.010, false);
 
-		std::lock_guard g(eventMutex);
+		std::lock_guard g1(eventMutex);
+		std::lock_guard g2(Renderer::renderMutex);//SDL can change window size inside SDL_PollEvent
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
