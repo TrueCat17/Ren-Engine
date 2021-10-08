@@ -5,11 +5,11 @@ init -10000 python:
 	
 	def set_timeout(function, time_sec):
 		if not picklable(function):
-			out_msg('Signals.add', 'Function <' + str(function) + '> is not picklable')
-			return
+			out_msg('set_timeout', 'Function <%s> is not picklable' % function)
+			return 0
 		
 		if not callable(function):
-			out_msg('set_timeout', '<' + str(function) + '> is not callable')
+			out_msg('set_timeout', '<%s> is not callable' % function)
 			return 0
 		global _timeout_id
 		_timeout_id += 1
@@ -18,7 +18,7 @@ init -10000 python:
 	
 	def clear_timeout(id):
 		if id <= 0:
-			out_msg('clear_timeout', 'Invalid id <' + str(id) + '>')
+			out_msg('clear_timeout', 'Invalid id <%s>' % id)
 			return
 		i = 0
 		while i < len(_timeout_funcs):
@@ -37,7 +37,7 @@ init -10000 python:
 				try:
 					function()
 				except:
-					out_msg('exec_timeouts, id=' + str(id) + ', function=' + str(function))
+					out_msg('exec_timeouts', 'Id=%s, Function=%s' % (id, function))
 		
 		i = 0
 		while i < len(_timeout_funcs):
