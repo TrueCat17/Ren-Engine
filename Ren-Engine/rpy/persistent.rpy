@@ -1,5 +1,23 @@
 init -10002 python:
 	def picklable(obj):
+		class TmpClass:
+			def method(self): pass
+		tmp_instance = TmpClass()
+		
+		func_type = type(picklable)
+		
+		simple_types = (type(None), bool, int, long, float, absolute, str)
+		safe_types = (type(tmp_instance), type(tmp_instance.method), func_type)
+		
+		t = type(obj)
+		if t in simple_types or t in safe_types:
+			return True
+		if t in (list, tuple, set, dict):
+			for v in obj:
+				if not picklable(v):
+					return False
+			return True
+		
 		try:
 			pickle.dumps(obj)
 			return True
@@ -139,4 +157,3 @@ init -1000 python:
 			save_object(persistent_path, persistent)
 	
 	signals.add('exit_frame', persistent_save)
-
