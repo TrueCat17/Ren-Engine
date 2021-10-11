@@ -87,12 +87,12 @@ ${building_production}
 
 Workers are needed to carry out daily work.
 They move into districts after their construction.
-Each sitizen give +1 to science.
+Each sitizen gives +1 to science.
 Each worker - also +1 (and take 1 food unit).
 Each worker of College - also +4.
 
 Builders are needed for the construction of roads and buildings.
-They can train a new builder in district.
+They can train a new builders in districts.
 Builders don't require separate resources for their basic upkeep.
 
 Soldiers are needed to protect existing and conquer new territories.
