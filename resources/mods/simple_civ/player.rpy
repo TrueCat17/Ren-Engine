@@ -77,9 +77,10 @@ init -900 python:
 				if cell.building in ('storage', 'district'): continue
 				near_storage_level = 0
 				for storage_cell in storage_cells:
-					dist = abs(storage_cell.x - cell.x) + abs(storage_cell.y - cell.y)
-					if dist <= self.max_storage_dist and storage_cell.building_level > near_storage_level:
-						near_storage_level = storage_cell.building_level
+					if near_storage_level >= storage_cell.building_level: continue
+					if abs(storage_cell.x - cell.x) + abs(storage_cell.y - cell.y) > self.max_storage_dist: continue
+					if not sc_map.has_road(storage_cell.x, storage_cell.y, cell.x, cell.y): continue
+					near_storage_level = storage_cell.enabled_level
 				cell.enabled_level = min(near_storage_level, cell.building_level)
 			
 			# production
