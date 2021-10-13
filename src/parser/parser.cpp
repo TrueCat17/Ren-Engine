@@ -25,7 +25,6 @@ static void checkPythonSyntax(Node *node) {
 	size_t line = node->getNumLine() + (node->command != "$");
 	PyCodeObject *co = PyUtils::getCompileObject(node->params, node->getFileName(), line);
 	if (!co) {
-		PyUtils::errorProcessing(node->params);
 		node->params = "";
 	}
 }

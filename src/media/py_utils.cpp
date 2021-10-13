@@ -62,6 +62,9 @@ PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::stri
 
 	PyObject *t = Py_CompileStringFlags(indentCode.c_str(), fileName.c_str(), Py_file_input, nullptr);
 	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
+	if (!co) {
+		PyUtils::errorProcessing(code);
+	}
 
 	compiledObjects[refPyCode] = co;
 	return co;
