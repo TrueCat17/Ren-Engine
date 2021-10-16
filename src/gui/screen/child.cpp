@@ -70,6 +70,8 @@ void Child::updateProps() {
 			if (child->command == "style" || child->command == "pass") continue;
 
 			PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
+			if (!res) continue;
+
 			PyTuple_SET_ITEM(props, 0, res);
 
 			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);

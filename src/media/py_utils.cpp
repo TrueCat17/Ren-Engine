@@ -418,8 +418,6 @@ std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std
 		}else {
 			errorProcessing(code);
 		}
-	}else {
-		errorProcessing(code);
 	}
 
 	return res;
@@ -453,8 +451,6 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 		}else {
 			errorProcessing(code);
 		}
-	}else {
-		errorProcessing(code);
 	}
 
 	return res;
