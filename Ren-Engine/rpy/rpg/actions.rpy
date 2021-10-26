@@ -73,6 +73,7 @@ init -1000 python:
 				return 'end'
 			
 			objs = get_near_sit_objects(character, 1e9)
+			st = time.time()
 			for obj, point in objs:
 				if point == (character.x, character.y):
 					if not character.sit_down(obj):
@@ -86,6 +87,8 @@ init -1000 python:
 				path_found = character.move_to_place({'x': to_x, 'y': to_y})
 				if path_found:
 					return 'moving'
+				if time.time() - st > 0.015:
+					break
 			
 			return 'end'
 		
