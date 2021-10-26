@@ -2,6 +2,7 @@ init -1001 python:
 	
 	location_object_ext = 'png'
 	
+	std_sit_dist = 50
 	
 	location_objects = dict()
 	
@@ -382,7 +383,7 @@ init -1001 python:
 	
 	def get_near_sit_objects(character = None, max_dist = None):
 		character = character or me
-		max_dist = max_dist or character_radius * 4
+		max_dist = max_dist or std_sit_dist
 		
 		sides_dpos = {
 			to_left:    (-1, 0),
