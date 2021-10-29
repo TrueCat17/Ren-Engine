@@ -1,5 +1,11 @@
 # Ren-Engine
 
+## \[links]
+
+* [Discord](discord.gg/DBagjrCWVp),
+* [Telegram](t.me/ren_engine),
+* [VK](vk.com/ren_engine).
+
 
 
 ## \[ru]
