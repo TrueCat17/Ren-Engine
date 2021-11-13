@@ -507,10 +507,10 @@ init -1001 python:
 		def move_to_end(self):
 			if self.end_stop_time and self.end_stop_time > get_game_time():
 				dtime = (get_game_time() - self.prev_update_time) + (self.end_stop_time - get_game_time())
+				self.end_stop_time = get_game_time()
 			else:
 				dtime = 1000
 			
-			self.end_stop_time = None
 			self.update_moving(dtime)
 		
 		def ended_move_waiting(self):
