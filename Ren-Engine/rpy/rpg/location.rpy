@@ -113,17 +113,20 @@ init -1002 python:
 			location_start_time = -100
 			location_was_show = True
 			draw_location = cur_location
-			cur_location.cam_object = prev_location.cam_object if prev_location else character
+			cam_object = prev_location.cam_object if prev_location else character
 			start_location_ambience()
 		else:
 			location_start_time = get_game_time()
 			location_was_show = False
-			cur_location.cam_object = character
-		cur_location.cam_object_old = None
+			cam_object = character
 		
 		show_character(character, place, auto_change_location = False)
 		if prev_location is None:
 			character.show_time = -100
+		
+		# after show_character, because cur_loc.cam_object mb changed (if draw_loc is cur_loc)
+		cur_location.cam_object = cam_object
+		cur_location.cam_object_old = None
 		
 		if character is me:
 			for place in cur_location.places.itervalues():
