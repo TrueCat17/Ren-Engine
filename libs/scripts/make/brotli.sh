@@ -2,7 +2,7 @@
 set -e
 
 cd ./out
-cmake --build . --config Release --target install -j4
+cmake --build . --config Release --target install -j 4
 
 cd ./installed/lib
 cp ./libbrotlicommon-static.a ../../../../000res
