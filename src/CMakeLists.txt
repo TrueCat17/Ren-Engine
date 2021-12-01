@@ -92,10 +92,6 @@ if (PLATFORM STREQUAL "win32")
 		ws2_32 # for avformat
 	)
 else()
-	# to downgrade glibc-version
-	set_property(SOURCE glibc_ver.cpp APPEND_STRING PROPERTY COMPILE_FLAGS " -fno-lto")
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,-wrap=exp2,-wrap=exp,-wrap=pow,-wrap=log,-wrap=exp2f,-wrap=expf,-wrap=powf,-wrap=logf,-wrap=fcntl,-wrap=fcntl64")
-
 	link_libraries(
 		python2.7 dl util
 		GL
@@ -122,8 +118,6 @@ include_directories(.)
 
 set(SOURCES
 	
-	glibc_ver.cpp
-
 	main.cpp
 	config.cpp
 	gv.cpp
