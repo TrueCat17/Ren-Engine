@@ -290,10 +290,15 @@ init -1000 python:
 	def rpg_action_to_friend(character, state):
 		actions = character.get_actions()
 		friend = actions.friend
+		no_start_friend = friend is None
 		
 		if state == 'start':
-			if not friend or not friend.location and get_game_time() - (actions.to_friend_end_time or -2) < 2:
-				return 'end'
+			if friend:
+				if not friend.location:
+					return 'end'
+			else:
+				if get_game_time() - (actions.to_friend_end_time or -2) < 2:
+					return 'end'
 			
 			if not friend:
 				friends = []
@@ -310,28 +315,28 @@ init -1000 python:
 					return 'end'
 				friend = random.choice(friends)
 			
-			st = time.time()
 			path_found = character.move_to_place([friend.location.name, friend])
-			if not path_found or time.time() - st > 0.030:
-				return 'end'
-			
-			friend_actions = friend.get_actions()
-			if friend_actions and friend_actions.cur_action is not rpg_action_to_friend:
-				friend_actions.stop()
-			
-			path_found = friend.move_to_place([character.location.name, character])
 			if not path_found:
-				friend.move_to_place(None)
 				return 'end'
 			
 			actions.friend = friend
 			actions.to_friend_start_time = get_game_time()
 			
-			if friend_actions:
-				friend_actions.start(rpg_action_to_friend)
-				friend_actions.state = 'moving'
-				friend_actions.friend = character
-				friend_actions.to_friend_start_time = get_game_time()
+			if no_start_friend:
+				friend_actions = friend.get_actions()
+				if friend_actions and friend_actions.cur_action is not rpg_action_to_friend:
+					friend_actions.stop()
+				
+				path_found = friend.move_to_place([character.location.name, character])
+				if not path_found:
+					friend.move_to_place(None)
+					return 'end'
+				
+				if friend_actions:
+					friend_actions.start(rpg_action_to_friend)
+					friend_actions.state = 'moving'
+					friend_actions.friend = character
+					friend_actions.to_friend_start_time = get_game_time()
 			
 			return 'moving'
 		
