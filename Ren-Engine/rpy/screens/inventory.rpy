@@ -53,7 +53,7 @@ init -101 python:
 	
 	def inventory_add_event(event, obj_name):
 		rpg_events.add((event, obj_name))
-		signals.send('rpg-' + event, obj_name)
+		signals.send('inventory-' + event, obj_name)
 	
 	def inventory_remove_selected():
 		element = inventory[inventory_selected]

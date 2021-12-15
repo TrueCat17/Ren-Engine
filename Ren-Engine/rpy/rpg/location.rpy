@@ -381,7 +381,7 @@ init -1002 python:
 			if loc_place in location_banned_exits and loc_place not in me.allowed_exits:
 				if not read_only:
 					rpg_events.add('no_exit')
-					signals.send('no_exit')
+					signals.send('rpg-no_exit')
 				continue
 			
 			if not was_out_exit:

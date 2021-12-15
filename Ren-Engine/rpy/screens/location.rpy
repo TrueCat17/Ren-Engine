@@ -103,7 +103,7 @@ init python:
 		else:
 			rpg_events.add('action')
 			if not get_location_exit():
-				signals.send('action')
+				signals.send('rpg-action')
 	
 	
 	
