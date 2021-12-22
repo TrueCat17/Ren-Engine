@@ -56,6 +56,7 @@ init -1 python:
 					else:
 						if isinstance(unit, Worker) and unit.work_cell is cell:
 							unit.work_cell = None
+							cell.workers.remove(unit)
 						i += 1
 				if cell is self.player.main_storage_cell:
 					self.player.main_storage_cell = None
