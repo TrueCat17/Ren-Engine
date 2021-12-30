@@ -629,6 +629,11 @@ init -1001 python:
 				self.update_moving(dtime)
 			self.update_crop()
 	
+	def get_name(who):
+		g = globals()
+		if g.has_key(who):
+			return g[who].name
+		out_msg('get_name', 'Character <' + str(who) + '> not found')
 	
 	def set_name(who, name):
 		g = globals()
