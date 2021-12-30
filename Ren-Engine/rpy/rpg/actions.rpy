@@ -290,6 +290,13 @@ init -1000 python:
 	def rpg_action_to_friend(character, state):
 		actions = character.get_actions()
 		friend = actions.friend
+		if friend:
+			# check for changed friend action
+			friend_actions = friend.get_actions()
+			if not friend_actions: return 'end'
+			if friend_actions.cur_action is not rpg_action_to_friend: return 'end'
+			if friend_actions.friend is not character: return 'end'
+		
 		no_start_friend = friend is None
 		
 		if state == 'start':
