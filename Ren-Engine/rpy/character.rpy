@@ -564,9 +564,10 @@ init -1001 python:
 		def get_auto(self):
 			return self.auto_actions
 		def set_auto(self, value):
-			if not value and self.actions:
-				self.actions.stop()
+			old_value = self.auto_actions
 			self.auto_actions = bool(value)
+			if not value and old_value and self.actions:
+				self.actions.stop()
 		
 		def get_actions(self):
 			return self.actions

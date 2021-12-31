@@ -389,6 +389,56 @@ init -1000 python:
 				friend.get_actions().stop()
 			return 'end'
 	
+	def rpg_action_follow(character, state, to):
+		actions = character.get_actions()
+		
+		same_location = character.location is to.location
+		dist = get_dist(character.x, character.y, to.x, to.y)
+		min_dist = 50 # stop
+		max_dist = 150 # run
+		
+		if state == 'start':
+			if same_location and dist < min_dist:
+				character.move_to_place(None)
+				character.rotate_to(to.x - character.x, to.y - character.y)
+				return 'start'
+			if actions.follow_start_time and get_game_time() - actions.follow_start_time < 0.25:
+				return 'start'
+			actions.follow_start_time = get_game_time()
+			
+			run = dist > max_dist
+			path_found = character.move_to_place([to.location.name, to], run=run)
+			if path_found:
+				return 'moving'
+			character.move_to_place(None)
+			return 'start'
+		
+		if state == 'moving':
+			if not same_location or dist < min_dist:
+				return 'start'
+			
+			if same_location:
+				if dist < 100:
+					update_time = 0.25
+				elif dist < 200:
+					update_time = 0.5
+				elif dist < 400:
+					update_time = 1.0
+				else:
+					update_time = 2.0
+			else:
+				update_time = 2.0
+			
+			if get_game_time() - actions.follow_start_time > update_time:
+				return 'start'
+			
+			return 'moving'
+		
+		if state == 'end':
+			character.move_to_place(None)
+			actions.follow_start_time = None
+			return 'end'
+	
 	
 	class RpgActions(Object):
 		def __init__(self):
@@ -423,7 +473,7 @@ init -1000 python:
 				if self.state == 'end':
 					self.stop()
 			
-			if self.stopped():
+			if self.stopped() and self.character.get_auto():
 				self.random()
 		
 		def start(self, action_name, *args, **kwargs):
@@ -471,6 +521,7 @@ init -1000 python:
 	def get_std_rpg_actions():
 		actions = (
 			('spawn',              0),
+			('follow',             0),
 			('sit',               70),
 			('other_place',       40),
 			('near_location',     20),
