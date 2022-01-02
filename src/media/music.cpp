@@ -59,7 +59,7 @@ static void startMusic() {
 	wantedSpec.format = AUDIO_S16SYS;
 	wantedSpec.channels = 2;
 	wantedSpec.silence = 0;
-	wantedSpec.samples = 0;
+	wantedSpec.samples = 4096;
 	wantedSpec.callback = fillAudio;
 
 	if (SDL_OpenAudio(&wantedSpec, nullptr)) {
