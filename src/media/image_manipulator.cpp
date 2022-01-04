@@ -1394,6 +1394,132 @@ void ImageManipulator::save(const std::string &imageStr, const std::string &path
 	saveSurface(img, path, width, height, true);
 }
 
+template<bool isRGBA>
+static Uint32 getPixelValue(const Uint8 *pixel) {
+	Uint32 res;
+	if constexpr (isRGBA) {
+		if (pixel[Ashift / 8]) {
+			res = *(Uint32*)pixel;
+		}else {
+			res = 0;
+		}
+	}else {
+		Uint8 *res8 = (Uint8*)(&res);
+		res8[Rshift / 8] = pixel[Rshift / 8];
+		res8[Gshift / 8] = pixel[Gshift / 8];
+		res8[Bshift / 8] = pixel[Bshift / 8];
+		res8[Ashift / 8] = 255;
+	}
+
+	return res;
+}
+template<bool isRGBA>
+static void imageToPalette(std::map<Uint32, Uint32> &colors, int h, const Uint8* imgPixels, int imgPitch, Uint8* resPixels, int resPitch) {
+	constexpr int pixelSize = isRGBA ? 4 : 3;
+	for (int y = 0; y < h; ++y) {
+		const Uint8 *src = imgPixels + y * imgPitch;
+		Uint8 *dst = resPixels + y * resPitch;
+		Uint8 *dstEnd = dst + resPitch;
+		while (dst < dstEnd) {
+			Uint32 color = getPixelValue<isRGBA>(src);
+
+			Uint32 index;
+			auto it = colors.find(color);
+			if (it != colors.end()) {
+				index = it->second;
+			}else {
+				index = colors.size();
+				colors[color] = index;
+				if (index == 256) return;
+			}
+			*dst = index;
+
+			dst += 1;
+			src += pixelSize;
+		}
+	}
+}
+
+static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
+	if (img->format->BytesPerPixel == 1) return img;//optimized
+
+	bool isRGBA = false;
+	Uint32 format = img->format->format;
+	if (format == SDL_PIXELFORMAT_RGBA32) {
+		isRGBA = true;
+	}else {
+		if (format != SDL_PIXELFORMAT_RGB24) {
+			return img;//unusual format, no optimizations
+		}
+	}
+
+	const int w = img->w;
+	const int h = img->h;
+	const int imgPitch = img->pitch;
+	const Uint8 *imgPixels = (const Uint8*)img->pixels;
+
+
+	Uint32 resFormat = SDL_PIXELFORMAT_INDEX8;
+	int resPitch = w * SDL_BITSPERPIXEL(resFormat) / 8;
+	resPitch = (resPitch + 3) & ~3;//align to 4
+	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
+
+	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat),
+	               SDL_FreeSurface);
+	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
+	res->flags &= Uint32(~SDL_PREALLOC);
+
+
+	std::map<Uint32, Uint32> colors;
+	if (isRGBA) {
+		imageToPalette<true>(colors, h, imgPixels, imgPitch, resPixels, resPitch);
+	}else {
+		imageToPalette<false>(colors, h, imgPixels, imgPitch, resPixels, resPitch);
+	}
+	if (colors.size() <= 256) {
+		Uint32 colorKey;
+		bool hasColorKey = (format == SDL_PIXELFORMAT_RGB24) && SDL_HasColorKey(img.get());
+		if (hasColorKey) {
+			SDL_GetColorKey(img.get(), &colorKey);
+		}
+
+		SDL_Palette *palette = res->format->palette;
+		for (const auto &pair : colors) {
+			Uint32 color = pair.first;
+			Uint32 index = pair.second;
+			if (hasColorKey && color == colorKey) {
+				color = 0;
+			}
+
+			Uint8 *color8 = (Uint8*)(&color);
+			SDL_Color sdlColor;
+			sdlColor.r = color8[Rshift / 8];
+			sdlColor.g = color8[Gshift / 8];
+			sdlColor.b = color8[Bshift / 8];
+			sdlColor.a = color8[Ashift / 8];
+			palette->colors[index] = sdlColor;
+		}
+
+		return res;
+	}
+
+	if (!isRGBA) return img;//no optimizations
+
+	//check rgba -> rgb:
+	for (int y = 0; y < h; ++y) {
+		const Uint8 *src = imgPixels + y * imgPitch;
+		const Uint8 *srcEnd = src + imgPitch;
+		for (const Uint8 *pixel = src; src < srcEnd; src += 4) {
+			if (pixel[Ashift / 8] != 255) return img;//no optimizations
+		}
+	}
+
+	res = ImageManipulator::getNewNotClear(w, h, SDL_PIXELFORMAT_RGB24);
+	SDL_BlitSurface(img.get(), nullptr, res.get(), nullptr);
+
+	return res;
+}
+
 //67 bytes
 static Uint8 png1x1Black[] = {
     137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 55, 110, 249, 36, 0, 0, 0, 10, 73, 68, 65, 84, 8, 215, 99, 96, 0, 0, 0, 2, 0, 1, 226, 33, 188, 51, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
@@ -1417,27 +1543,35 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 	const int w = Math::inBounds(widthStr  == "None" ? img->w : String::toInt(widthStr),  1, 2560);
 	const int h = Math::inBounds(heightStr == "None" ? img->h : String::toInt(heightStr), 1, 1440);
 
-	SurfacePtr saveImg;
+	SurfacePtr resizedImg;
 	if (w != img->w || h != img->h) {
-		saveImg = getNewNotClear(w, h);
-		SDL_BlitScaled(img.get(), nullptr, saveImg.get(), nullptr);
+		resizedImg = getNewNotClear(w, h);
+		SDL_BlitScaled(img.get(), nullptr, resizedImg.get(), nullptr);
 	}else {
-		saveImg = img;
+		resizedImg = img;
 	}
+	SurfacePtr imgToSave = optimizeSurfaceFormat(resizedImg);
 
 	//allow unfinished image only with tmp name
 
 	std::string parentDir = FileSystem::getParentDirectory(path);
 	std::string filename = FileSystem::getFileName(path);
 
+	if (String::endsWith(parentDir, "\\")) {
+		parentDir.pop_back();
+	}
+	if (!parentDir.empty() && !String::endsWith(parentDir, "/")) {
+		parentDir.push_back('/');
+	}
+
 	std::string tmpPath;
 	int i = 0;
 	while (true) {
-		tmpPath = parentDir + "/_" + std::to_string(i++) + filename;
+		tmpPath = parentDir + "_" + std::to_string(i++) + filename;
 		if (!FileSystem::exists(tmpPath)) break;
 	}
 
-	IMG_SavePNG(saveImg.get(), tmpPath.c_str());
+	IMG_SavePNG(imgToSave.get(), tmpPath.c_str());
 	if (FileSystem::exists(path)) {
 		FileSystem::remove(path);
 	}

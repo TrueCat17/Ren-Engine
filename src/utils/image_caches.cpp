@@ -36,10 +36,6 @@ static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
 	const int newPitch = newSurface->pitch;
 	Uint8 *newPixels = (Uint8*)newSurface->pixels;
 
-	Uint32 colorKey;
-	bool hasColorKey = SDL_GetColorKey(surface.get(), &colorKey) == 0;
-	SDL_ClearError();//if has not color key
-
 	const SDL_Palette *palette = surface->format->palette;
 	if (palette) {
 		for (int y = 0; y < h; ++y) {
@@ -75,7 +71,7 @@ static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
 
 				dst += 16;
 			}
-			for (int i = 0; i < surface->w % 4; ++i) {
+			for (int i = 0; i < w % 4; ++i) {
 				const SDL_Color &color = palette->colors[*src++];
 
 				dst[Rshift / 8] = color.r;
@@ -86,7 +82,8 @@ static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
 				dst += 4;
 			}
 		}
-	}else
+	}else {
+		bool hasColorKey = SDL_HasColorKey(surface.get()) == SDL_TRUE;
 		if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
 			for (int y = 0; y < surface->h; ++y) {
 				const Uint8 *src = pixels + y * pitch;
@@ -117,7 +114,7 @@ static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
 					src += 12;
 					dst += 16;
 				}
-				for (int i = 0; i < surface->w % 4; ++i) {
+				for (int i = 0; i < w % 4; ++i) {
 					dst[Rshift / 8] = src[Rshift / 8];
 					dst[Gshift / 8] = src[Gshift / 8];
 					dst[Bshift / 8] = src[Bshift / 8];
@@ -133,6 +130,7 @@ static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
 			}
 			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
 		}
+	}
 
 	return newSurface;
 }

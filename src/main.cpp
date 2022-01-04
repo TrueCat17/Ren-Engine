@@ -62,7 +62,10 @@ static std::string setDir(std::string newRoot) {
 	Py_SetPythonHome(const_cast<char*>("../Ren-Engine/py_libs/"));
 #else
 	if (!setlocale(LC_ALL, "C.UTF-8")) {
-		Utils::outMsg("main", "Fail on set locale <C.UTF-8>");
+		printf("Fail on set locale <C.UTF-8>\n");
+		if (!setlocale(LC_ALL, "en_US.UTF-8")) {
+			printf("Fail on set locale <en_US.UTF-8>\n");
+		}
 	}
 	setenv("PYTHONPATH", "../Ren-Engine/py_libs/Lib/", 1);
 	setenv("PYTHONHOME", "../Ren-Engine/py_libs/Lib/", 1);
