@@ -306,6 +306,7 @@ init -10 python:
 	sc_map.zoom = 1.5
 	
 	sc_map.image_dir = 'mods/' + get_current_mod() + '/images/'
+	sc_map.image_list = os.listdir(sc_map.image_dir)
 	sc_map.image_size = get_image_height(sc_map.image_dir + 'food.png')
 	
 	sc_map.count_players = 1
@@ -320,3 +321,9 @@ init -10 python:
 		cell = control.selected_cell
 		sc_map.move(cell.x, cell.y, False)
 	signals.add('resized_stage', on_resize)
+	
+	def preload_images():
+		for i in sc_map.image_list:
+			load_image(sc_map.image_dir + i)
+	preload_images()
+	set_interval(preload_images, 10) # disallow to unload from image cache
