@@ -1484,6 +1484,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 		}
 
 		SDL_Palette *palette = res->format->palette;
+		palette->ncolors = int(colors.size());
 		for (const auto &pair : colors) {
 			Uint32 color = pair.first;
 			Uint32 index = pair.second;
