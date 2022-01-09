@@ -152,10 +152,10 @@ static void bitmapMake(const SurfacePtr &surface) {
 		}else {
 			SDL_Color *colors = surface->format->palette->colors;
 
-			Uint32 key;
-			bool hasColorKey = SDL_GetColorKey(surface.get(), &key) == 0;
-			SDL_ClearError();//if has not color key
-			if (hasColorKey) {
+			if (SDL_HasColorKey(surface.get())) {
+				Uint32 key;
+				SDL_GetColorKey(surface.get(), &key);
+
 				SDL_Color &color = colors[key];
 				color.r = color.g = color.b = color.a = 0;
 			}

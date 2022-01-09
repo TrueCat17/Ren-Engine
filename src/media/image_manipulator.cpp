@@ -523,7 +523,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 			Uint8 *dst = resPixels + (y + yOn) * resPitch + xOn * 4;
 
 			const Uint8 *dstEnd = dst + w * 4;
-			for (; dst < dstEnd; src += 4, dst += 4) {
+			while (dst < dstEnd) {
 				const Uint16 srcA = src[Ashift / 8];
 				if (srcA == 255) {
 					*(Uint32*)dst = *(const Uint32*)src;
@@ -552,6 +552,9 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 						dst[Ashift / 8] = Uint8(outA);
 					}
 				}
+
+				src += 4;
+				dst += 4;
 			}
 		};
 
@@ -1390,7 +1393,7 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 
 
 void ImageManipulator::save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height) {
-	SurfacePtr img = getImage(imageStr);
+	SurfacePtr img = getImage(imageStr, false);
 	saveSurface(img, path, width, height, true);
 }
 
@@ -1414,28 +1417,45 @@ static Uint32 getPixelValue(const Uint8 *pixel) {
 	return res;
 }
 template<bool isRGBA>
-static void imageToPalette(std::map<Uint32, Uint32> &colors, int h, const Uint8* imgPixels, int imgPitch, Uint8* resPixels, int resPitch) {
+static void imageToPalette(std::map<Uint32, Uint32> &colors, int w, int h, const Uint8* imgPixels, int imgPitch, Uint8* resPixels, int resPitch) {
 	constexpr int pixelSize = isRGBA ? 4 : 3;
-	for (int y = 0; y < h; ++y) {
-		const Uint8 *src = imgPixels + y * imgPitch;
-		Uint8 *dst = resPixels + y * resPitch;
-		Uint8 *dstEnd = dst + resPitch;
-		while (dst < dstEnd) {
-			Uint32 color = getPixelValue<isRGBA>(src);
 
-			Uint32 index;
-			auto it = colors.find(color);
-			if (it != colors.end()) {
-				index = it->second;
-			}else {
-				index = colors.size();
-				colors[color] = index;
-				if (index == 256) return;
+	//2 passes to set transparent colors at the begining of the palette (optimization of saving png in palette-mode)
+	for (bool transparent : {true, false}) {
+		std::map<Uint32, Uint32> localColors;
+		ScopeExit se([&]() {
+			colors.insert(localColors.begin(), localColors.end());
+		});
+
+		for (int y = 0; y < h; ++y) {
+			const Uint8 *src = imgPixels + y * imgPitch;
+			Uint8 *dst = resPixels + y * resPitch;
+			Uint8 *dstEnd = dst + w;
+			while (dst < dstEnd) {
+				ScopeExit se2([&]() {
+					dst += 1;
+					src += pixelSize;
+				});
+
+				Uint32 color = getPixelValue<isRGBA>(src);
+				Uint8 *color8 = (Uint8*)(&color);
+				if (transparent) {
+					if (color8[Ashift / 8] == 255) continue;
+				}else {
+					if (color8[Ashift / 8] != 255) continue;
+				}
+
+				Uint32 index;
+				auto it = localColors.find(color);
+				if (it != localColors.end()) {
+					index = it->second;
+				}else {
+					index = colors.size() + localColors.size();
+					localColors[color] = index;
+					if (index == 256) return;
+				}
+				*dst = index;
 			}
-			*dst = index;
-
-			dst += 1;
-			src += pixelSize;
 		}
 	}
 }
@@ -1472,9 +1492,9 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 
 	std::map<Uint32, Uint32> colors;
 	if (isRGBA) {
-		imageToPalette<true>(colors, h, imgPixels, imgPitch, resPixels, resPitch);
+		imageToPalette<true>(colors, w, h, imgPixels, imgPitch, resPixels, resPitch);
 	}else {
-		imageToPalette<false>(colors, h, imgPixels, imgPitch, resPixels, resPitch);
+		imageToPalette<false>(colors, w, h, imgPixels, imgPitch, resPixels, resPitch);
 	}
 	if (colors.size() <= 256) {
 		Uint32 colorKey;
@@ -1493,12 +1513,11 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 			}
 
 			Uint8 *color8 = (Uint8*)(&color);
-			SDL_Color sdlColor;
+			SDL_Color &sdlColor = palette->colors[index];
 			sdlColor.r = color8[Rshift / 8];
 			sdlColor.g = color8[Gshift / 8];
 			sdlColor.b = color8[Bshift / 8];
 			sdlColor.a = color8[Ashift / 8];
-			palette->colors[index] = sdlColor;
 		}
 
 		return res;
@@ -1510,8 +1529,9 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	for (int y = 0; y < h; ++y) {
 		const Uint8 *src = imgPixels + y * imgPitch;
 		const Uint8 *srcEnd = src + imgPitch;
-		for (const Uint8 *pixel = src; src < srcEnd; src += 4) {
-			if (pixel[Ashift / 8] != 255) return img;//no optimizations
+		while (src < srcEnd) {
+			if (src[Ashift / 8] != 255) return img;//no optimizations
+			src += 4;
 		}
 	}
 

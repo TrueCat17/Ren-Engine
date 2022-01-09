@@ -385,12 +385,14 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 	}
 
 	SDL_Palette *palette = res->format->palette;
-	Uint32 colorKey;
-	bool hasColorKey = SDL_GetColorKey(res.get(), &colorKey) == 0;
-	SDL_ClearError();//if has not color key
-	if (palette && hasColorKey) {
-		SDL_Color &color = palette->colors[colorKey];
-		color.r = color.g = color.b = color.a = 0;
+	if (palette) {
+		if (SDL_HasColorKey(res.get())) {
+			Uint32 colorKey;
+			SDL_GetColorKey(res.get(), &colorKey);
+
+			SDL_Color &color = palette->colors[colorKey];
+			color.r = color.g = color.b = color.a = 0;
+		}
 	}
 
 	if (unusualFormat(res)) {
