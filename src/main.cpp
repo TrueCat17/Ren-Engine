@@ -38,7 +38,7 @@ static std::string getVersion() {
 	if (versionStr.empty()) {
 		std::string major = "0";
 		std::string minor = "9";
-		std::string micro = "4";
+		std::string micro = "5";
 
 		std::string date = __DATE__;
 

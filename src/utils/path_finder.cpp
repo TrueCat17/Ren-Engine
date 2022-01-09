@@ -542,9 +542,11 @@ static void getPath(Point *start, Point *end) {
 	setToMap(start->x, start->y, true);
 	setToMap(end->x, end->y, true);
 
+	uint8_t scale = currentMap->scale;
+
 	if (start == end) {
-		PointInt x = std::min(PointInt(end->x * currentMap->scale), PointInt(currentMap->originalWidth - 1));
-		PointInt y = std::min(PointInt(end->y * currentMap->scale), PointInt(currentMap->originalHeight - 1));
+		PointInt x = std::min(PointInt(end->x * scale), PointInt(currentMap->originalWidth - 1));
+		PointInt y = std::min(PointInt(end->y * scale), PointInt(currentMap->originalHeight - 1));
 		path.push_back({x, y});
 		return;
 	}
@@ -575,8 +577,8 @@ static void getPath(Point *start, Point *end) {
 	}
 
 	while (last != start) {
-		PointInt x = std::min(PointInt(last->x * currentMap->scale), PointInt(currentMap->originalWidth - 1));
-		PointInt y = std::min(PointInt(last->y * currentMap->scale), PointInt(currentMap->originalHeight - 1));
+		PointInt x = std::min(PointInt(last->x * scale + scale / 2), PointInt(currentMap->originalWidth - 1));
+		PointInt y = std::min(PointInt(last->y * scale + scale / 2), PointInt(currentMap->originalHeight - 1));
 		path.push_back({x, y});
 		last = last->parent;
 	}
@@ -655,6 +657,8 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 			getPath(start, end);
 
 			if (!path.empty()) {
+				path.back() = {xStart, yStart};
+				path.front() = {xEnd, yEnd};
 				path.front() = {xEnd, yEnd};
 				break;
 			}
@@ -954,8 +958,8 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		path.push_back({PointInt(-1), startId});
 	}
 	if (path.size() > 1) {
-		path[path.size() - 1] = {xStart, yStart};
-		path[0] = {xEnd, yEnd};
+		path.back() = {xStart, yStart};
+		path.front() = {xEnd, yEnd};
 	}
 
 	//set result
