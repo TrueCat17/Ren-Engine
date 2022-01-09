@@ -435,15 +435,15 @@ init -1001 python:
 			
 			path = self.paths[self.paths_index]
 			location_name, place = self.location.name, None
-			first_step = 0
 			
+			last_direction = self.get_direction()
 			while dtime > 0:
 				to_x, to_y = path[self.point_index], path[self.point_index + 1]
 				
 				if type(to_x) is str:
 					place = get_location_place(self)
 					if place:
-						self.set_direction(place.to_side)
+						last_direction = place.to_side
 					
 					location_name, place = to_x, to_y
 					if type(place) is str:
@@ -453,17 +453,16 @@ init -1001 python:
 					w = place['xsize'] if place.has_key('xsize') else 0
 					h = place['ysize'] if place.has_key('ysize') else 0
 					self.x, self.y = place['x'] + w / 2, place['y'] + h / 2
-					first_step = self.point_index + 2
 					
 				else:
 					dx, dy = to_x - self.x, to_y - self.y
 					if dx or dy:
 						# rotation
-						if not (dx and dy) or self.point_index == first_step: # not diagonal or first step
-							if abs(dx) + abs(dy) > 3: # not very short step
-								self.rotate_to(dx, dy)
-							else:
-								first_step += 2
+						if abs(dx) + abs(dy) > 3: # not very short step
+							dx_direction = to_left if dx < 0 else to_right
+							dy_direction = to_forward if dy < 0 else to_back
+							if last_direction not in ([dx_direction] if dx else []) + ([dy_direction] if dy else []):
+								last_direction = dx_direction if abs(dx) > abs(dy) else dy_direction
 						
 						need_dist = math.sqrt(dx*dx + dy*dy)
 						need_time = need_dist / self.speed
@@ -503,6 +502,7 @@ init -1001 python:
 				x, y = self.x, self.y
 				self.x, self.y = coords_before_exit
 				show_character(self, {'x': x, 'y': y}, location_name)
+			self.set_direction(last_direction)
 		
 		def move_to_end(self):
 			if self.end_stop_time and self.end_stop_time > get_game_time():
