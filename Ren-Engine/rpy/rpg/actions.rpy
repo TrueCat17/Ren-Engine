@@ -352,10 +352,10 @@ init -1000 python:
 			dist = get_dist(character.x, character.y, friend.x, friend.y)
 			if same_location and dist < character_radius * 3:
 				character.move_to_place(None)
-				character.rotate_to(friend.x - character.x, friend.y - character.y)
+				character.rotate_to(friend)
 				
 				friend.move_to_place(None)
-				friend.rotate_to(character.x - friend.x, character.y - friend.y)
+				friend.rotate_to(character)
 				
 				actions.to_friend_end_time = get_game_time() + 3
 				return 'conversation'
@@ -400,7 +400,7 @@ init -1000 python:
 		if state == 'start':
 			if same_location and dist < min_dist:
 				character.move_to_place(None)
-				character.rotate_to(to.x - character.x, to.y - character.y)
+				character.rotate_to(to)
 				return 'start'
 			if actions.follow_start_time and get_game_time() - actions.follow_start_time < 0.25:
 				return 'start'

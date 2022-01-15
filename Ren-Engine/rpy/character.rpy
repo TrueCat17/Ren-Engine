@@ -205,7 +205,9 @@ init -1001 python:
 			if direction is not None:
 				self.direction = direction % character_max_direction
 		
-		def rotate_to(self, dx, dy):
+		def rotate_to(self, obj):
+			x, y = get_place_center(obj)
+			dx, dy = x - self.x, y - self.y
 			if abs(dx) > abs(dy):
 				self.set_direction(to_left if dx < 0 else to_right)
 			else:
