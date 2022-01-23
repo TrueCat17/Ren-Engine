@@ -11,6 +11,8 @@ export LDFLAGS="-lm -flto"
 	--enable-static \
 	--disable-shared \
 	--disable-stats \
+	--disable-fill \
+	--disable-doc \
 	--disable-cxx
 
 make clean

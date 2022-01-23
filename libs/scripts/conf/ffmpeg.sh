@@ -15,6 +15,7 @@ export LDFLAGS="-lm -flto"
 	--disable-shared \
 	\
 	--disable-all \
+	--disable-network \
 	--enable-avcodec \
 	--enable-avformat \
 	--enable-swresample \

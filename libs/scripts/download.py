@@ -18,16 +18,16 @@ user_agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80
 urls = {
 	'Python':     'https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz',
 	'jemalloc':   'https://github.com/jemalloc/jemalloc.git',
-	'ffmpeg':     'https://ffmpeg.org/releases/ffmpeg-4.4.tar.gz',
+	'ffmpeg':     'https://ffmpeg.org/releases/ffmpeg-5.0.tar.gz',
 	'zlib':       'https://www.zlib.net/zlib-1.2.11.tar.gz',
 	'brotli':     'https://github.com/google/brotli.git',
-	'freetype':   'https://download.savannah.gnu.org/releases/freetype/freetype-2.10.4.tar.gz',
-	'jpeg':       'https://www.ijg.org/files/jpegsrc.v9d.tar.gz',
+	'freetype':   'https://download.savannah.gnu.org/releases/freetype/freetype-2.11.1.tar.gz',
+	'jpeg':       'https://www.ijg.org/files/jpegsrc.v9e.tar.gz',
 	'libpng':     'https://github.com/glennrp/libpng.git',
 	'libwebp':    'https://github.com/webmproject/libwebp.git',
-	'SDL2':       'https://www.libsdl.org/release/SDL2-2.0.16.zip',
-	'SDL2_image': 'https://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.5.zip',
-	'SDL2_ttf':   'https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-2.0.15.zip',
+	'SDL':        'https://github.com/libsdl-org/SDL.git',
+	'SDL_image':  'https://github.com/libsdl-org/SDL_image.git',
+	'SDL_ttf':    'https://github.com/libsdl-org/SDL_ttf.git',
 }
 
 
@@ -83,7 +83,7 @@ for i in range(len(progress_list)):
 			else:
 				print('  use cached')
 			
-			shutil.copytree(download_path + dirname, sources_path + dirname)
+			shutil.copytree(download_path + dirname, sources_path + dirname, ignore=shutil.ignore_patterns('.git'))
 			
 		else:
 			file_path = download_path + os.path.basename(url)

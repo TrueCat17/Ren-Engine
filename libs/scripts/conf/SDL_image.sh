@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SDL2_DIR="SDL2-2.0"
+SDL_DIR="SDL2-2.0"
 JPEG_DIR="jpeg-9c"
 LIBPNG_DIR="libpng-1.6.37"
 LIBWEBP_DIR="libwebp-1.0.3"
@@ -10,7 +10,7 @@ ZLIB_DIR="zlib-1.2.11" # for libpng in pkg-config
 
 export CC="gcc"
 export CFLAGS="-O2 -flto"
-export CPPFLAGS="-I$PWD/../$SDL2_DIR/include -I$PWD/../$JPEG_DIR -I$PWD/../$LIBPNG_DIR -I$PWD/../$LIBWEBP_DIR/src"
+export CPPFLAGS="-I$PWD/../$SDL_DIR/include -I$PWD/../$JPEG_DIR -I$PWD/../$LIBPNG_DIR -I$PWD/../$LIBWEBP_DIR/src"
 export LDFLAGS="-lm -pthread -flto -L$PWD/../000res"
 
 export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$PWD/../$LIBPNG_DIR:$PWD/../$ZLIB_DIR:$PWD/../$LIBWEBP_DIR/src"

@@ -28,6 +28,9 @@ Examples:
 
 ## Building
 
+0. Make sure you have 1.7 GB of free space.
+
+
 1. Open shell (MSYS for Windows) and change dir to `scripts`:
 ```
 $ cd Ren-Engine/libs/scripts
@@ -44,7 +47,7 @@ Choose need actions for all libs:
 ```
 
 
-3. Download (~160 MB) and extract (~400 MB) sources:
+3. Download (~330 MB) and extract (~510 MB) sources:
 ```
 $ ./download.py
 ```
@@ -56,6 +59,7 @@ This step uses cache (dir `download`) and copy (git) or extract (archives) downl
 $ ./check.py
 All libs exists.
 ```
+You can go back to prev step, if you see another message.  
 Usually, you must do steps 2, 3 and 4 only once.
 
 
@@ -63,14 +67,15 @@ Usually, you must do steps 2, 3 and 4 only once.
 ```
 $ ./copy_sh.py
 ```
-Here you can choose platform (x32 or x64, Linux only), enable/disable optimisations that makes building slower, etc...
+Here you can choose platform (x32 or x64, Linux only), enable/disable optimisations that makes building slower, etc...  
+For the first time, it is recommended not to use optimizations, just to check for errors.
 
 
 6. Build libs:
 ```
 $ ./build.py
 # ... building prev libs ...
-Build <SDL2_ttf>
+Build <SDL_ttf>
 ./conf.sh 1>conf_out.txt 2>conf_err.txt
 ./make.sh 1>make_out.txt 2>make_err.txt
 Ok!

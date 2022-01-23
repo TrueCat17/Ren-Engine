@@ -396,7 +396,7 @@ bool Music::initCodec() {
 	}
 
 	AVCodecParameters *codecPars = formatCtx->streams[audioStream]->codecpar;
-	AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
+	const AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
 	if (!codec) {
 		Utils::outMsg("Music::initCodec: avcodec_find_decoder",
 		              "Codec for file <" + url + "> not found\n\n" + place);
