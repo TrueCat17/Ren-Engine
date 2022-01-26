@@ -23,6 +23,9 @@ static const size_t PART_SIZE = (1 << 10) * 32;//32 Kb
 static const size_t MIN_PART_COUNT = 2;
 static const size_t MAX_PART_COUNT = 5;
 
+static const size_t SAMPLE_SIZE = 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
+static const size_t SAMPLES_PER_PART = PART_SIZE / SAMPLE_SIZE;
+
 
 static std::mutex musicMutex;
 
@@ -85,23 +88,9 @@ void Music::loop() {
 				if (GV::exit) return;
 
 				Music *music = musics[i];
-
 				if (!music->isEnded()) {
 					music->update();
 					continue;
-				}
-
-				if (music->channel->loop && music->ended) {//ended, not stopped
-					if (av_seek_frame(music->formatCtx, music->audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
-						Utils::outMsg("Music::loop",
-						              "Error on restart, play from:\n" + music->place);
-					}else {
-						music->ended = false;
-						music->audioPos = nullptr;
-						music->audioLen = 0;
-						music->loadNextParts(MIN_PART_COUNT);
-						continue;
-					}
 				}
 
 				musics.erase(musics.begin() + long(i));
@@ -261,7 +250,7 @@ void Music::play(const std::string &desc,
 			if (wasEmpty) {
 				startMusic();
 			}
-			music->loadNextParts(MIN_PART_COUNT);
+			music->update();
 			musics.push_back(music);
 		}
 		return;
@@ -435,12 +424,38 @@ bool Music::initCodec() {
 
 
 void Music::update() {
-	if (audioLen < Uint32(PART_SIZE * MIN_PART_COUNT)) {
-		loadNextParts(MAX_PART_COUNT);
+	if (audioLen >= PART_SIZE * MIN_PART_COUNT) return;
+
+	while (audioLen < PART_SIZE * MAX_PART_COUNT && !decoded) {
+		loadNextPart();
 	}
 }
-void Music::loadNextParts(size_t count) {
-	while (audioLen < PART_SIZE * count && !av_read_frame(formatCtx, packet)) {
+void Music::loadNextPart() {
+	while (true) {
+		int readError = av_read_frame(formatCtx, packet);
+		if (readError < 0) {
+			if (readError != AVERROR_EOF) {
+				Utils::outMsg("Music::loadNextPart: av_read_frame",
+				              "Could not to read frame from file <" + url + ">\n\n" + place);
+				continue;
+			}
+
+			if (!channel->loop) {
+				decoded = true;
+				return;
+			}
+
+			if (av_seek_frame(formatCtx, audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
+				Utils::outMsg("Music::loadNextPart",
+				              "Error on restart, play from:\n" + place);
+				return;
+			}
+			audioPos = nullptr;
+			audioLen = 0;
+			avcodec_flush_buffers(codecCtx);
+			continue;
+		}
+
 		if (packet->stream_index != audioStream) {
 			av_packet_unref(packet);
 			continue;
@@ -448,7 +463,7 @@ void Music::loadNextParts(size_t count) {
 
 		int sendError = avcodec_send_packet(codecCtx, packet);
 		if (sendError && sendError != AVERROR(EAGAIN)) {
-			Utils::outMsg("Music::loadNextParts: avcodec_send_packet",
+			Utils::outMsg("Music::loadNextPart: avcodec_send_packet",
 			              "Could not to send packet to codec of file <" + url + ">\n\n" + place);
 			return;
 		}
@@ -456,7 +471,7 @@ void Music::loadNextParts(size_t count) {
 		int reveiveError = !sendError ? avcodec_receive_frame(codecCtx, frame) : 0;
 		if (reveiveError && reveiveError != AVERROR(EAGAIN)) {
 			av_packet_unref(packet);
-			Utils::outMsg("Music::loadNextParts: avcodec_receive_frame",
+			Utils::outMsg("Music::loadNextPart: avcodec_receive_frame",
 			              "Could not to receive frame from codec of file <" + url + ">\n\n" + place);
 			return;
 		}
@@ -465,10 +480,10 @@ void Music::loadNextParts(size_t count) {
 		int countSamples = 0;
 		if (!sendError && !reveiveError) {
 			countSamples = swr_convert(auConvertCtx,
-									   &tmpBuffer, PART_SIZE,
+			                           &tmpBuffer, SAMPLES_PER_PART,
 			                           const_cast<const uint8_t**>(frame->data), frame->nb_samples);
 			if (countSamples < 0) {
-				Utils::outMsg("Music::loadNextParts: swr_convert",
+				Utils::outMsg("Music::loadNextPart: swr_convert",
 				              "Could not to convert frame of file <" + url + ">\n\n" + place);
 				av_packet_unref(packet);
 				av_frame_unref(frame);
@@ -479,7 +494,7 @@ void Music::loadNextParts(size_t count) {
 		if (audioPos && audioLen && audioPos != buffer) {
 			memmove(buffer, audioPos, audioLen);
 		}
-		Uint32 lastLen = Uint32(countSamples) * 2 * 2;//stereo (2 channels), 16 bits (2 bytes)
+		Uint32 lastLen = Uint32(countSamples) * SAMPLE_SIZE;
 		memcpy(buffer + audioLen, tmpBuffer, lastLen);
 
 		audioPos = buffer;
@@ -487,10 +502,7 @@ void Music::loadNextParts(size_t count) {
 
 		av_frame_unref(frame);
 		av_packet_unref(packet);
-	}
-
-	if (!audioLen) {
-		ended = true;
+		break;
 	}
 }
 
@@ -511,7 +523,7 @@ int Music::getVolume() const {
 	return int(max);
 }
 bool Music::isEnded() const {
-	return ended || (startFadeOutTime > 0 && startFadeOutTime + fadeOut < startUpdateTime);
+	return !audioLen || (startFadeOutTime > 0 && startFadeOutTime + fadeOut < startUpdateTime);
 }
 
 
@@ -560,6 +572,6 @@ void Music::setPos(double sec) {
 	if (av_seek_frame(formatCtx, audioStream, ts, AVSEEK_FLAG_ANY) < 0) {
 		Utils::outMsg("Music::setPos", "Could not to rewind file <" + url + ">");
 	}else {
-		loadNextParts(MIN_PART_COUNT);
+		update();
 	}
 }

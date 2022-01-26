@@ -37,7 +37,7 @@ private:
 	std::string url;
 	Channel *channel = nullptr;
 
-	bool ended = false;
+	bool decoded = false;
 
 	double startFadeInTime = 0;
 	double startFadeOutTime = 0;
@@ -68,7 +68,7 @@ private:
 
 	bool initCodec();
 	void update();
-	void loadNextParts(size_t count);
+	void loadNextPart();
 
 
 public:
