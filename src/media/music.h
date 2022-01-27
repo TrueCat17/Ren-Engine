@@ -29,6 +29,8 @@ struct SwrContext;
 struct AVPacket;
 struct AVFrame;
 
+typedef struct _object PyObject;
+
 class Music {
 private:
 	static void loop();
@@ -79,10 +81,22 @@ public:
 	                            const std::string &fileName, size_t numLine);
 	static bool hasChannel(const std::string &name);
 
-	static void setVolume(double volume, const std::string &channelName,
-	                      const std::string &fileName, size_t numLine);
+	static PyObject* getAudioLen(const std::string &url);
 	static void setMixerVolume(double volume, const std::string &mixer,
 	                           const std::string &fileName, size_t numLine);
+
+	static void setVolumeOnChannel(double volume, const std::string &channelName,
+	                               const std::string &fileName, size_t numLine);
+
+	static PyObject* getPosOnChannel(const std::string &channelName,
+	                                 const std::string &fileName, size_t numLine);
+	static void      setPosOnChannel(double sec, const std::string &channelName,
+	                                 const std::string &fileName, size_t numLine);
+
+	static PyObject* getPauseOnChannel(const std::string &channelName,
+	                                   const std::string &fileName, size_t numLine);
+	static void      setPauseOnChannel(bool value, const std::string &channelName,
+	                                   const std::string &fileName, size_t numLine);
 
 	static void play(const std::string &desc,
 	                 const std::string &fileName, size_t numLine);
@@ -96,6 +110,8 @@ public:
 
 	uint8_t *audioPos = nullptr;
 	uint32_t audioLen = 0;
+
+	bool paused = false;
 
 
 	int getVolume() const;

@@ -421,8 +421,9 @@ init -1002 python:
 				free_obj = obj.free()
 				if not free_obj: continue
 				
-				x = int(obj.x - get_absolute(obj.xanchor, obj.xsize) + obj.xoffset)
-				y = int(obj.y - get_absolute(obj.yanchor, obj.ysize) + obj.yoffset)
+				xsize, ysize = get_image_size(free_obj) # not obj.[x/y]size, mb size(free) != size(main)
+				x = int(obj.x - get_absolute(obj.xanchor, xsize) + obj.xoffset)
+				y = int(obj.y - get_absolute(obj.yanchor, ysize) + obj.yoffset)
 				objects.extend((free_obj, x, y))
 			
 			places = []

@@ -6,8 +6,7 @@
 void Group::updateGlobal() {
 	DisplayObject::updateGlobal();
 
-	for (size_t i = 0; i < children.size(); ++i) {
-		DisplayObject *child = children[i];
+	for (DisplayObject *child : children) {
 		if (child->enable) {
 			child->updateGlobal();
 		}
@@ -69,8 +68,7 @@ void Group::draw() const {
 
 	DisplayObject::draw();
 
-	for (size_t i = 0; i < children.size(); ++i) {
-		const DisplayObject *child = children[i];
+	for (const DisplayObject *child : children) {
 		child->draw();
 	}
 }

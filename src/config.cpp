@@ -105,7 +105,7 @@ static void load() {
 	if (!is.is_open()) {
 		is.open(pathOrig, std::ios::binary);
 		if (!is.is_open()) {
-			Utils::outMsg("Config::load", "Could not to load file <" + std::string(pathOrig) + ">\n"
+			Utils::outMsg("Config::load", "Failed to load file <" + std::string(pathOrig) + ">\n"
 			                              "Using default settings");
 			return;
 		}

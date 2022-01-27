@@ -18,7 +18,7 @@ static void update() {
 	Mods::clearList();
 
 	map.clear();
-	for (Node *node : GV::mainExecNode->children) {
+	for (const Node *node : GV::mainExecNode->children) {
 		if (node->command == "translate strings" && node->params == curLang) {
 			std::string prev = "new";
 			std::string prevValue;

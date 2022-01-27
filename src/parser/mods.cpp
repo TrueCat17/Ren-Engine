@@ -26,7 +26,7 @@ void Mods::init() {
 	mods.clear();
 
 	std::vector<std::string> dirs = FileSystem::getDirectories(modsPath);
-	for (std::string dir : dirs) {
+	for (const std::string &dir : dirs) {
 		if (!FileSystem::exists(dir + "/name")) continue;
 
 		Mod mod;
@@ -55,7 +55,7 @@ void Mods::init() {
 			mod.names[lang] = name;
 		}
 
-		if (mod.names.size()) {
+		if (!mod.names.empty()) {
 			mods.push_back(mod);
 		}
 	}

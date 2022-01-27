@@ -74,7 +74,7 @@ void Container::updateRect(bool needUpdatePos) {
 	if (!hasHBox) {
 		if (getWidth() <= 0) {
 			int width = 0;
-			for (DisplayObject *child : children) {
+			for (const DisplayObject *child : children) {
 				if (child->enable) {
 					width = max(width, child->getWidth());
 				}
@@ -102,7 +102,7 @@ void Container::updateRect(bool needUpdatePos) {
 	if (!hasVBox) {
 		if (getHeight() <= 0) {
 			int height = 0;
-			for (DisplayObject *child : children) {
+			for (const DisplayObject *child : children) {
 				if (child->enable) {
 					height = max(height, child->getHeight());
 				}

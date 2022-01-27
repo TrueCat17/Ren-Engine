@@ -141,7 +141,7 @@ static void checkToSaveStack() {
 	stackToSave.clear();
 	stackToSave.reserve(stack.size());
 
-	for (auto &[node, num] : stack) {
+	for (const auto &[node, num] : stack) {
 		if (node->command == "label") {
 			stackToSave.push_back({"label:" + node->params, std::to_string(num)});
 		}else {
@@ -380,8 +380,8 @@ void Scenario::execute(const std::string &loadPath) {
 			bool screenThereIs = Screen::getMain("choose_menu");
 			if (!screenThereIs) {
 				std::string variants;
-				for (size_t i = 0; i < child->children.size(); ++i) {
-					variants += child->children[i]->params + ", ";
+				for (const Node *node : child->children) {
+					variants += node->params + ", ";
 				}
 
 				PyUtils::exec(child->getFileName(), child->getNumLine(), "choose_menu_variants = (" + variants + ")");
@@ -427,8 +427,8 @@ void Scenario::execute(const std::string &loadPath) {
 			}
 
 			std::string argsStr = "[";
-			for (size_t i = 0; i < args.size(); ++i) {
-				argsStr += "'''" + args[i] + "''', ";
+			for (const std::string &arg : args) {
+				argsStr += "'''" + arg + "''', ";
 			}
 			argsStr += "]";
 

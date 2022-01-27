@@ -69,7 +69,7 @@ void Game::load(const std::string &table, const std::string &name) {
 
 	for (const std::string &path : {savesPath, tablePath, fullPath}) {
 		if (!FileSystem::exists(path)) {
-			Utils::outMsg("Could not to open save <" + table + "_" + name + ">\n"
+			Utils::outMsg("Failed to open save <" + table + "_" + name + ">\n"
 			              "Directory <" + path + "> not found");
 			return;
 		}
@@ -165,7 +165,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 		if (!Music::hasChannel(name)) {
 			Music::registerChannel(name, mixer, loop == "True", loadFile, 0);
 		}
-		Music::setVolume(volume, name, loadFile, 0);
+		Music::setVolumeOnChannel(volume, name, loadFile, 0);
 	}
 	std::getline(is, tmp);
 
@@ -179,8 +179,8 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 
 		std::getline(is, tmp);
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 5) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 5 args");
+		if (tmpVec.size() != 6) {
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 6 args");
 			continue;
 		}
 
@@ -189,6 +189,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 		double fadeIn = String::toDouble(tmpVec[2]);
 		double fadeOut = String::toDouble(tmpVec[3]);
 		double pos = String::toDouble(tmpVec[4]);
+		bool paused = tmpVec[5] == "True";
 
 		Music::play(channel + " '" + url + "'", fileName, numLine);
 		Music *music = nullptr;
@@ -205,6 +206,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 				music->setFadeOut(fadeOut);
 			}
 			music->setPos(pos);
+			music->paused = paused;
 		}else {
 			Utils::outMsg(loadFile,
 			              "Sound-file <" + url + "> not restored\n"
@@ -299,8 +301,7 @@ void Game::save() {
 		//music-channels
 		const std::vector<Channel*> &channels = Music::getChannels();
 		infoFile << channels.size() << '\n';
-		for (size_t i = 0; i < channels.size(); ++i) {
-			const Channel *channel = channels[i];
+		for (const Channel *channel : channels) {
 			infoFile << channel->name << ' '
 					 << channel->mixer << ' '
 					 << (channel->loop ? "True" : "False") << ' '
@@ -311,25 +312,24 @@ void Game::save() {
 		//music-files
 		const std::vector<Music*> &musics = Music::getMusics();
 		infoFile << musics.size() << '\n';
-		for (size_t i = 0; i < musics.size(); ++i) {
-			const Music *music = musics[i];
-
+		for (const Music *music : musics) {
 			std::string musicUrl = music->getUrl();
 			std::string musicFileName = music->getFileName();
 
 			infoFile << musicUrl << '\n'
-					 << musicFileName << '\n'
-					 << music->getNumLine() << ' '
-					 << music->getChannel()->name << ' '
-					 << music->getFadeIn() << ' '
-					 << music->getFadeOut() << ' '
-					 << music->getPos() << '\n';
+			         << musicFileName << '\n'
+			         << music->getNumLine() << ' '
+			         << music->getChannel()->name << ' '
+			         << music->getFadeIn() << ' '
+			         << music->getFadeOut() << ' '
+			         << music->getPos() << ' '
+			         << (music->paused ? "True" : "False") << '\n';
 		}
 		infoFile << '\n';
 
 		const std::map<std::string, double> &mixerVolumes = Music::getMixerVolumes();
 		infoFile << mixerVolumes.size() << '\n';
-		for (auto &p : mixerVolumes) {
+		for (const auto &p : mixerVolumes) {
 			infoFile << p.first << ' ' << p.second << '\n';
 		}
 		infoFile << '\n';
@@ -479,7 +479,7 @@ void Game::exitFromGame() {
 }
 
 bool Game::hasLabel(const std::string &label) {
-	for (Node *node : GV::mainExecNode->children) {
+	for (const Node *node : GV::mainExecNode->children) {
 		if (node->command == "label" && node->params == label) {
 			return true;
 		}
@@ -488,7 +488,7 @@ bool Game::hasLabel(const std::string &label) {
 }
 PyObject* Game::getAllLabels() {
 	PyObject *res = PyList_New(0);
-	for (Node *node : GV::mainExecNode->children) {
+	for (const Node *node : GV::mainExecNode->children) {
 		if (node->command == "label") {
 			PyObject *name = PyString_FromString(node->params.c_str());
 			PyList_Append(res, name);

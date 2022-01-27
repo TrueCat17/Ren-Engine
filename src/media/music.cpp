@@ -10,6 +10,8 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
+#include <Python.h>
+
 #include "gv.h"
 #include "media/py_utils.h"
 
@@ -37,14 +39,34 @@ static std::vector<Channel*> channels;
 static std::vector<Music*> musics;
 
 
+static Channel* findChannel(const std::string &name) {
+	for (Channel *channel : channels) {
+		if (channel->name == name) return channel;
+	}
+	return nullptr;
+}
+static Music* findMusic(const std::string &channelName, const std::string &from, const std::string &place) {
+	if (!Music::hasChannel(channelName)) {
+		Utils::outMsg(from, "Channel <" + channelName + "> not found\n\n" + place);
+		return nullptr;
+	}
+
+	for (Music *music : musics) {
+		if (music->getChannel()->name == channelName) return music;
+	}
+	return nullptr;
+}
+
+
+
 static void fillAudio(void *, Uint8 *stream, int globalLen) {
 	std::lock_guard g(musicMutex);
 
 	SDL_memset(stream, 0, size_t(globalLen));
 
-	for (size_t i = 0; i < musics.size(); ++i) {
-		Music *music = musics[i];
+	for (Music *music : musics) {
 		if (!music->audioPos || music->audioLen <= 0) continue;
+		if (music->paused) continue;
 
 		Uint32 len = Uint32(globalLen) > music->audioLen ? music->audioLen : Uint32(globalLen);
 
@@ -134,47 +156,51 @@ void Music::registerChannel(const std::string &name, const std::string &mixer, b
 {
 	std::lock_guard g(musicMutex);
 
-	for (size_t i = 0; i < channels.size(); ++i) {
-		Channel *channel = channels[i];
-		if (channel->name == name) {
-			const std::string place = "File <" + fileName + ">\n"
-			                          "Line " + std::to_string(numLine);
-			Utils::outMsg("Music::registerChannel",
-			              "Channel <" + name + "> already exists\n\n" + place);
-			return;
-		}
+	if (Music::hasChannel(name)) {
+		const std::string place = "File <" + fileName + ">\n"
+		                          "Line " + std::to_string(numLine);
+		Utils::outMsg("Music::registerChannel",
+		              "Channel <" + name + "> already exists\n\n" + place);
+		return;
 	}
 
-	Channel *t = new Channel(name, mixer, loop);
-	channels.push_back(t);
+	Channel *channel = new Channel(name, mixer, loop);
+	channels.push_back(channel);
 
 	if (mixerVolumes.find(mixer) == mixerVolumes.end()) {
 		mixerVolumes[mixer] = 1;
 	}
 }
 bool Music::hasChannel(const std::string &name) {
-	for (const Channel *channel : channels) {
-		if (channel->name == name) return true;
-	}
-	return false;
+	return findChannel(name);
 }
 
-
-void Music::setVolume(double volume, const std::string &channelName,
-                      const std::string &fileName, size_t numLine)
-{
-	for (Channel *channel : channels) {
-		if (channel->name == channelName) {
-			channel->volume = Math::inBounds(volume, 0, 1);
-			return;
+PyObject* Music::getAudioLen(const std::string &url) {
+	AVFormatContext* formatCtx = avformat_alloc_context();
+	if (int error = avformat_open_input(&formatCtx, url.c_str(), nullptr, nullptr)) {
+		if (error == AVERROR(ENOENT)) {
+			Utils::outMsg("Music::getAudioLen: avformat_open_input",
+			              "File <" + url + "> not found");
+		}else {
+			Utils::outMsg("Music::getAudioLen: avformat_open_input",
+			              "Failed to open input stream in file <" + url + ">");
 		}
+		Py_RETURN_NONE;
+	}
+	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
+		Utils::outMsg("Music::getAudioLen: avformat_find_stream_info",
+		              "Failed to read stream information in file <" + url + ">");
+		Py_RETURN_NONE;
 	}
 
-	const std::string place = "File <" + fileName + ">\n"
-	                          "Line " + std::to_string(numLine);
-	Utils::outMsg("Music::setVolume",
-	              "Channel <" + channelName + "> not found\n\n" + place);
+	double duration = formatCtx->duration / double(AV_TIME_BASE);
+	avformat_close_input(&formatCtx);
+	avformat_free_context(formatCtx);
+
+	PyObject *res = PyFloat_FromDouble(duration);
+	return res;
 }
+
 void Music::setMixerVolume(double volume, const std::string &mixer,
                            const std::string &fileName, size_t numLine)
 {
@@ -185,6 +211,74 @@ void Music::setMixerVolume(double volume, const std::string &mixer,
 		                          "Line " + std::to_string(numLine);
 		Utils::outMsg("Music::setMixerVolume",
 		              "Mixer <" + mixer + "> is not used by any channel now\n\n" + place);
+	}
+}
+
+void Music::setVolumeOnChannel(double volume, const std::string &channelName,
+                               const std::string &fileName, size_t numLine)
+{
+	Channel *channel = findChannel(channelName);
+	if (channel) {
+		channel->volume = Math::inBounds(volume, 0, 1);
+	}else {
+		const std::string place = "File <" + fileName + ">\n"
+		                          "Line " + std::to_string(numLine);
+		Utils::outMsg("Music::setVolumeOnChannel",
+		              "Channel <" + channelName + "> not found\n\n" + place);
+	}
+}
+
+
+
+PyObject* Music::getPosOnChannel(const std::string &channelName,
+                                 const std::string &fileName, size_t numLine)
+{
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
+	Music *music = findMusic(channelName, "Music::getPosOnChannel", place);
+	if (!music) {
+		Py_RETURN_NONE;
+	}
+
+	PyObject *res = PyFloat_FromDouble(music->getPos());
+	return res;
+}
+void Music::setPosOnChannel(double sec, const std::string &channelName,
+                            const std::string &fileName, size_t numLine)
+{
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
+	Music *music = findMusic(channelName, "Music::setPosOnChannel", place);
+	if (music) {
+		music->setPos(sec);
+	}
+}
+
+
+PyObject* Music::getPauseOnChannel(const std::string &channelName,
+                                   const std::string &fileName, size_t numLine)
+{
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
+	Music *music = findMusic(channelName, "Music::getPauseOnChannel", place);
+	if (music) {
+		if (music->paused) {
+			Py_RETURN_TRUE;
+		}else {
+			Py_RETURN_FALSE;
+		}
+	}
+
+	Py_RETURN_NONE;
+}
+void Music::setPauseOnChannel(bool value, const std::string &channelName,
+                              const std::string &fileName, size_t numLine)
+{
+	const std::string place = "File <" + fileName + ">\n"
+	                          "Line " + std::to_string(numLine);
+	Music *music = findMusic(channelName, "Music::setPauseOnChannel", place);
+	if (music) {
+		music->paused = value;
 	}
 }
 
@@ -238,9 +332,8 @@ void Music::play(const std::string &desc,
 		}
 	}
 
-	for (Channel *channel : channels) {
-		if (channel->name != channelName) continue;
-
+	Channel *channel = findChannel(channelName);
+	if (channel) {
 		Music *music = new Music(url, channel, fadeIn, fileName, numLine, place);
 		if (music->initCodec()){
 			delete music;
@@ -253,10 +346,9 @@ void Music::play(const std::string &desc,
 			music->update();
 			musics.push_back(music);
 		}
-		return;
+	}else {
+		Utils::outMsg("Music::play", "Channel <" + channelName + "> not found\n\n" + place);
 	}
-
-	Utils::outMsg("Music::play", "Channel <" + channelName + "> not found\n\n" + place);
 }
 
 void Music::stop(const std::string &desc,
@@ -271,12 +363,6 @@ void Music::stop(const std::string &desc,
 		              "Expected 1 or 3 arguments:\n"
 		              "channelName ['fadeout' time]\n"
 		              "Got: <" + desc + ">\n\n" + place);
-		return;
-	}
-
-	std::string channelName = Algo::clear(args[0]);
-	if (!hasChannel(channelName)) {
-		Utils::outMsg("Music::stop", "Channel <" + channelName + "> not found\n\n" + place);
 		return;
 	}
 
@@ -298,12 +384,11 @@ void Music::stop(const std::string &desc,
 
 	std::lock_guard g(musicMutex);
 
-	for (Music *music : musics) {
-		if (music->channel->name != channelName) continue;
-
+	std::string channelName = Algo::clear(args[0]);
+	Music *music = findMusic(channelName, "Music::stop", place);
+	if (music) {
 		music->fadeOut = fadeOut;
 		music->startFadeOutTime = Utils::getTimer();
-		return;
 	}
 }
 
@@ -362,13 +447,13 @@ bool Music::initCodec() {
 			              "File <" + url + "> not found\n\n" + place);
 		}else {
 			Utils::outMsg("Music::initCodec: avformat_open_input",
-			              "Could not to open input stream in file <" + url + ">\n\n" + place);
+			              "Failed to open input stream in file <" + url + ">\n\n" + place);
 		}
 		return true;
 	}
 	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
 		Utils::outMsg("Music::initCodec: avformat_find_stream_info",
-		              "Could not to found info about stream in file <" + url + ">\n\n" + place);
+		              "Failed to read stream information in file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -380,7 +465,7 @@ bool Music::initCodec() {
 	}
 	if (audioStream == -1) {
 		Utils::outMsg("Music::initCodec",
-		              "Could not to found audio-stream in file <" + url + ">\n\n" + place);
+		              "Failed to find audio-stream in file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -397,7 +482,7 @@ bool Music::initCodec() {
 
 	if (avcodec_open2(codecCtx, codec, nullptr)) {
 		Utils::outMsg("Music::initCodec: avcodec_open2",
-		              "Could not to open codec for file <" + url + ">\n\n" + place);
+		              "Failed to open codec for file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -409,12 +494,12 @@ bool Music::initCodec() {
 									  inChannelLayout, codecCtx->sample_fmt, codecCtx->sample_rate, 0, nullptr);
 	if (!auConvertCtx) {
 		Utils::outMsg("Music::initCodec: swr_alloc_set_opts",
-		              "Could not to create SwrContext for convert stream of file <" + url + ">\n\n" + place);
+		              "Failed to create SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
 	}
 	if (swr_init(auConvertCtx)) {
 		Utils::outMsg("Music::initCodec: swr_init",
-		              "Could not to init SwrContext for convert stream of file <" + url + ">\n\n" + place);
+		              "Failed to init SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
 	}
 
@@ -436,7 +521,7 @@ void Music::loadNextPart() {
 		if (readError < 0) {
 			if (readError != AVERROR_EOF) {
 				Utils::outMsg("Music::loadNextPart: av_read_frame",
-				              "Could not to read frame from file <" + url + ">\n\n" + place);
+				              "Failed to read frame from file <" + url + ">\n\n" + place);
 				continue;
 			}
 
@@ -464,7 +549,7 @@ void Music::loadNextPart() {
 		int sendError = avcodec_send_packet(codecCtx, packet);
 		if (sendError && sendError != AVERROR(EAGAIN)) {
 			Utils::outMsg("Music::loadNextPart: avcodec_send_packet",
-			              "Could not to send packet to codec of file <" + url + ">\n\n" + place);
+			              "Failed to send packet to codec of file <" + url + ">\n\n" + place);
 			return;
 		}
 
@@ -472,7 +557,7 @@ void Music::loadNextPart() {
 		if (reveiveError && reveiveError != AVERROR(EAGAIN)) {
 			av_packet_unref(packet);
 			Utils::outMsg("Music::loadNextPart: avcodec_receive_frame",
-			              "Could not to receive frame from codec of file <" + url + ">\n\n" + place);
+			              "Failed to receive frame from codec of file <" + url + ">\n\n" + place);
 			return;
 		}
 		lastFramePts = frame->pts;
@@ -484,7 +569,7 @@ void Music::loadNextPart() {
 			                           const_cast<const uint8_t**>(frame->data), frame->nb_samples);
 			if (countSamples < 0) {
 				Utils::outMsg("Music::loadNextPart: swr_convert",
-				              "Could not to convert frame of file <" + url + ">\n\n" + place);
+				              "Failed to convert frame of file <" + url + ">\n\n" + place);
 				av_packet_unref(packet);
 				av_frame_unref(frame);
 				return;
@@ -570,8 +655,9 @@ void Music::setPos(double sec) {
 	int64_t ts = int64_t(sec / k.num * k.den);
 
 	if (av_seek_frame(formatCtx, audioStream, ts, AVSEEK_FLAG_ANY) < 0) {
-		Utils::outMsg("Music::setPos", "Could not to rewind file <" + url + ">");
+		Utils::outMsg("Music::setPos", "Failed to rewind file <" + url + ">");
 	}else {
+		avcodec_flush_buffers(codecCtx);
 		update();
 	}
 }

@@ -33,7 +33,7 @@ void Child::updateProps() {
 			updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
 
 			std::string style = node->command;
-			for (Node *child : node->children) {
+			for (const Node *child : node->children) {
 				if (child->command == "style") {
 					style = child->params;
 					break;
@@ -56,7 +56,7 @@ void Child::updateProps() {
 
 		bool needAddChildren = false;
 		bool hasNotConstChild = false;
-		for (Node *child : node->children) {
+		for (const Node *child : node->children) {
 			if (!child->isScreenConst) {
 				if (!child->isScreenProp) {
 					hasNotConstChild = true;

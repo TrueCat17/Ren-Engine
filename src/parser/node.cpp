@@ -204,8 +204,8 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 	return count;
 }
 
-Node* Node::getProp(const std::string &name) const {
-	for (Node *child : children) {
+const Node* Node::getProp(const std::string &name) const {
+	for (const Node *child : children) {
 		if (child->command == name) {
 			return child;
 		}

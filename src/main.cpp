@@ -126,7 +126,7 @@ static bool init() {
 	}
 	if (scaleQuality != "0") {
 		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
-			Utils::outMsg("SDL_SetHint", "Could not to set scale quality");
+			Utils::outMsg("SDL_SetHint", "Failed to set scale quality");
 		}
 	}
 

@@ -50,10 +50,10 @@ TTF_Font* getFont(const std::string &name, int size) {
 	}
 
 	if (name != defaultFontName) {
-		Utils::outMsg("getFont", "Could not load font <" + name + ">.\nTry to load default font.");
+		Utils::outMsg("getFont", "Failed to load font <" + name + ">.\nTry to load default font.");
 		res = getFont(defaultFontName, size);
 	}else {
-		Utils::outMsg("getFont", "Could not load default font <" + defaultFontName + ">.\nText will not be displayed.");
+		Utils::outMsg("getFont", "Failed to load default font <" + defaultFontName + ">.\nText will not be displayed.");
 		res = nullptr;
 	}
 	return fonts[t] = res;
@@ -290,7 +290,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 				SurfacePtr image = getImage(value);
 				if (!image) {
 					if (!onlySize) {
-						Utils::outMsg("TextField::makeStep", "Could not to load image <" + value + ">");
+						Utils::outMsg("TextField::makeStep", "Failed to load image <" + value + ">");
 					}
 				}else {
 
@@ -544,19 +544,19 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 
 	rects = lineRects;
 	if (hAlign == "left") {
-		for (size_t i = 0; i < rects.size(); ++i) {
-			rects[i].x = 0;
-			rects[i].y += indentY;
+		for (SDL_Rect &rect : rects) {
+			rect.x = 0;
+			rect.y += indentY;
 		}
 	}else {
 		bool isCenter = hAlign == "center";
-		for (size_t i = 0; i < rects.size(); ++i) {
+		for (SDL_Rect &rect : rects) {
 			if (isCenter) {
-				rects[i].x = (maxWidth - rects[i].w) / 2;
+				rect.x = (maxWidth - rect.w) / 2;
 			}else {
-				rects[i].x = maxWidth - rects[i].w;
+				rect.x = maxWidth - rect.w;
 			}
-			rects[i].y += indentY;
+			rect.y += indentY;
 		}
 	}
 
@@ -564,15 +564,15 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 	float sinA = Math::getSin(int(getGlobalRotate()));
 	float cosA = Math::getCos(int(getGlobalRotate()));
 
-	for (size_t i = 0; i < rects.size(); ++i) {
-		float x = float(rects[i].x);
-		float y = float(rects[i].y);
+	for (SDL_Rect &rect : rects) {
+		float x = float(rect.x);
+		float y = float(rect.y);
 
 		int rotX = int(x * cosA - y * sinA);
 		int rotY = int(x * sinA + y * cosA);
 
-		rects[i].x = rotX;
-		rects[i].y = rotY;
+		rect.x = rotX;
+		rect.y = rotY;
 	}
 }
 

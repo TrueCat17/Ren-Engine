@@ -144,8 +144,8 @@ void Screen::updateScreens() {
 	if (!Stage::screens) return;
 
 	_hasModal = false;
-	for (DisplayObject *d : Stage::screens->children) {
-		const Screen *s = static_cast<Screen*>(d);
+	for (const DisplayObject *d : Stage::screens->children) {
+		const Screen *s = static_cast<const Screen*>(d);
 		if (s->modal) {
 			_hasModal = true;
 			break;

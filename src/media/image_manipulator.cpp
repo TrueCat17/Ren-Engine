@@ -368,7 +368,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		SurfacePtr image = ImageManipulator::getImage(imagePath);
 
 		if (!image) {
-			Utils::outMsg("ImageManipulator::composite", "Could not to get image <" + imagePath + ">");
+			Utils::outMsg("ImageManipulator::composite", "Failed to get image <" + imagePath + ">");
 			return image;
 		}
 
@@ -414,7 +414,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 	SurfacePtr firstImg = firstImgStr.empty() ? nullptr : ImageManipulator::getImage(firstImgStr);
 	if (!firstImg) {
 		if (args.size() > 2) {
-			Utils::outMsg("ImageManipulator::composite", "Could not to get image <" + firstImgStr + ">");
+			Utils::outMsg("ImageManipulator::composite", "Failed to get image <" + firstImgStr + ">");
 		}
 		::memset(resPixels, 0, size_t(resH * resPitch));
 	}else {
@@ -488,7 +488,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		const std::string imgStr = Algo::clear(args[i + 1]);
 		SurfacePtr img = ImageManipulator::getImage(imgStr);
 		if (!img) {
-			Utils::outMsg("ImageManipulator::composite", "Could not to get image <" + imgStr + ">");
+			Utils::outMsg("ImageManipulator::composite", "Failed to get image <" + imgStr + ">");
 			continue;
 		}
 
@@ -1561,8 +1561,8 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 	const std::string widthStr = Algo::clear(width);
 	const std::string heightStr = Algo::clear(height);
 
-	const int w = Math::inBounds(widthStr  == "None" ? img->w : String::toInt(widthStr),  1, 2560);
-	const int h = Math::inBounds(heightStr == "None" ? img->h : String::toInt(heightStr), 1, 1440);
+	const int w = std::max(1, widthStr  == "None" ? img->w : String::toInt(widthStr));
+	const int h = std::max(1, heightStr == "None" ? img->h : String::toInt(heightStr));
 
 	SurfacePtr resizedImg;
 	if (w != img->w || h != img->h) {

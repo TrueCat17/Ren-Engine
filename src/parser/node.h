@@ -44,7 +44,7 @@ public:
 	PyObject* getPyList() const;
 	std::vector<std::string> getImageChildren() const;
 
-	Node* getProp(const std::string &name) const;
+	const Node *getProp(const std::string &name) const;
 
 	const std::string& getFileName() const { return fileName; }
 	size_t getNumLine() const { return numLine; }

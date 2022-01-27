@@ -156,8 +156,13 @@ void PyUtils::init() {
 
 	setGlobalFunc("_register_channel", Music::registerChannel);
 	setGlobalFunc("_has_channel", Music::hasChannel);
-	setGlobalFunc("_set_volume", Music::setVolume);
+	setGlobalFunc("_get_audio_len", Music::getAudioLen);
 	setGlobalFunc("_set_mixer_volume", Music::setMixerVolume);
+	setGlobalFunc("_set_volume_on_channel", Music::setVolumeOnChannel);
+	setGlobalFunc("_get_pos_on_channel", Music::getPosOnChannel);
+	setGlobalFunc("_set_pos_on_channel", Music::setPosOnChannel);
+	setGlobalFunc("_get_pause_on_channel", Music::getPauseOnChannel);
+	setGlobalFunc("_set_pause_on_channel", Music::setPauseOnChannel);
 	setGlobalFunc("_play", Music::play);
 	setGlobalFunc("_stop", Music::stop);
 

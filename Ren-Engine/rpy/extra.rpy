@@ -50,6 +50,7 @@ init -1000000 python:
 init -1000000 python:
 	def get_file_and_line(depth):
 		frame = sys._getframe()
+		frame = frame.f_back
 		while depth:
 			depth -= 1
 			frame = frame.f_back

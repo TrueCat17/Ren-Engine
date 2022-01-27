@@ -10,7 +10,7 @@
 Imagemap::Imagemap(Node *node, Screen *screen):
 	Container(node, this, screen)
 {
-	for (Node *child : node->children) {
+	for (const Node *child : node->children) {
 		if (child->command == "ground") {
 			groundIsStd = false;
 		}else

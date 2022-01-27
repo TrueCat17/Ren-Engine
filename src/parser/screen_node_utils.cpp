@@ -455,8 +455,7 @@ static std::string initCode(Node *node, const std::string& index) {
 	size_t maxChildNum = maxScreenChild(node);
 
 	//props before first obj
-	for (size_t i = 0; i < node->children.size(); ++i) {
-		Node *child = node->children[i];
+	for (Node *child : node->children) {
 		if (child->isScreenConst) continue;
 		if (!child->isScreenProp) break;
 
@@ -480,7 +479,7 @@ static std::string initCode(Node *node, const std::string& index) {
 		res.back() = ')';
 
 		empty = true;
-		for (Node *child : node->children) {
+		for (const Node *child : node->children) {
 			if (child->command == "$" || child->command == "python" ||
 				child->command == "continue" || child->command == "break")
 			{
@@ -524,7 +523,7 @@ static std::string initCode(Node *node, const std::string& index) {
 
 static void outError(Child *obj, const std::string &propName, size_t propIndex, const std::string &expected) {
 	if (!obj->wasInited()) {
-		for (Node *child : obj->node->children) {
+		for (const Node *child : obj->node->children) {
 			if (child->isScreenProp && child->command == propName) {
 				std::string desc = expected + '\n' +
 				                   child->getPlace();
@@ -534,7 +533,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 		}
 	}
 
-	for (Node *child : obj->node->children) {
+	for (const Node *child : obj->node->children) {
 		if (child->isScreenProp && child->screenNum == propIndex) {
 			std::string desc = expected + '\n';
 
@@ -542,7 +541,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 				desc += child->getPlace();
 			}else {
 				std::string style = obj->node->command;
-				for (Node *child : obj->node->children) {
+				for (const Node *child : obj->node->children) {
 					if (child->command == "style") {
 						style = child->params;
 						break;
@@ -1017,7 +1016,7 @@ static void initUpdateFuncs(Node *node) {
 	if (maxScreenNum != size_t(-1)) {
 		vec = new std::vector<ScreenUpdateFunc>(maxScreenNum + 1, nullptr);
 
-		for (Node *child : node->children) {
+		for (const Node *child : node->children) {
 			if (!child->isScreenProp || child->isScreenConst || child->isScreenEvent) continue;
 
 			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);

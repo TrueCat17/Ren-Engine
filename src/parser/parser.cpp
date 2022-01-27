@@ -254,7 +254,7 @@ Node* Parser::getMainNode() {
 					String::replaceAll(node->params, "\"", "");
 				}
 
-				for (Node *child : res->children) {
+				for (const Node *child : res->children) {
 					if (node->command == child->command && node->params == child->params) {
 						Logger::log("\nRedefinition " + node->command + " <" + node->params + ">:\n" +
 						            node->getPlace() + "\n" +

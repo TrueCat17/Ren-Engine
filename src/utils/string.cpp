@@ -83,7 +83,7 @@ double String::toDouble(const std::string &str) {
 	char *end;
 	double res = strtod(str.c_str(), &end);
 	if (end != str.c_str() + str.size()) {
-		Utils::outMsg("String::toDouble", "Could not to convert <" + str + "> to double");
+		Utils::outMsg("String::toDouble", "Failed to convert <" + str + "> to double");
 	}
 
 	return res;

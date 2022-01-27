@@ -82,7 +82,7 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 	std::map<std::string, SyntaxPart> children = syntaxIt->second;
 	std::set<std::string> tmp;
 
-	for (auto &[name, _] : children) {
+	for (const auto &[name, _] : children) {
 		bool isFakeComp, isProp, isEvent;
 		Parser::getIsFakeOrIsProp(name, isFakeComp, isProp, isEvent);
 

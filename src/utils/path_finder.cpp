@@ -10,8 +10,43 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
+#include "utils/file_system.h"
 #include "utils/scope_exit.h"
 #include "utils/utils.h"
+
+
+//only for debug
+[[maybe_unused]]
+static void saveMap(std::vector<bool> map, int w, int h, const std::string &name, int scale) {
+	Uint32 resFormat = SDL_PIXELFORMAT_INDEX8;
+	int resPitch = w * SDL_BITSPERPIXEL(resFormat) / 8;
+	resPitch = (resPitch + 3) & ~3;//align to 4
+	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
+
+	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat),
+	               SDL_FreeSurface);
+	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
+	res->flags &= Uint32(~SDL_PREALLOC);
+
+	SDL_Palette *palette = res->format->palette;
+	palette->ncolors = 2;
+	palette->colors[0] = {0, 0, 0, 0};
+	palette->colors[1] = {0, 0, 0, 255};
+
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			bool free = map[y * w + x];
+			resPixels[y * resPitch + x] = free;
+		}
+	}
+
+	std::string dir = "../var/maps/";
+	if (!FileSystem::exists(dir)) {
+		FileSystem::createDirectory(dir);
+	}
+	ImageManipulator::saveSurface(res, dir + name + "-" + std::to_string(scale) + ".png", "None", "None", true);
+}
+
 
 
 static const float EXIT_COST = 20;
@@ -187,35 +222,34 @@ static void bitmapMake(const SurfacePtr &surface) {
 
 static std::vector<bool> bitmapBorderObject;
 static void bitmapAddBorders(size_t radius) {
-	size_t w = widthBitmapObject + radius * 2;
-	size_t h = heightBitmapObject + radius * 2;
+	int wOrig = int(widthBitmapObject);
+	int r = int(radius);
+
+	int w = int(widthBitmapObject + radius * 2);
+	int h = int(heightBitmapObject);
 	bitmapBorderObject.reserve(w * h);
 	bitmapBorderObject.assign(w * h, false);
 
-	for (size_t y = 0; y < h; ++y) {
-		size_t line = y * w;
+	for (int y = 0; y < h; ++y) {
+		int line = y * w;
+		int lineOrig = y * wOrig;
 
-		size_t yOrig = y - radius;
-		size_t lineOrig = yOrig * widthBitmapObject;
+		for (int x = 0; x < w; ++x) {
+			int xOrig = x - radius;
 
-		for (size_t x = 0; x < w; ++x) {
-			size_t xOrig = x - radius;
-
-			if (xOrig < widthBitmapObject && yOrig < heightBitmapObject) {
+			if (x >= r && xOrig < wOrig && 0) {
 				bool free = bitmapObject[lineOrig + xOrig];
 				if (!free) continue;
 			}
 
-			bool free = true;
-			if (yOrig < heightBitmapObject) {
-				size_t xMin = xOrig > radius ? xOrig - radius : 0;
-				size_t xMax = std::min(xOrig + radius + 1, widthBitmapObject);
+			int xMin = std::max(xOrig - r, 0);
+			int xMax = std::min(xOrig + r + 1, wOrig);
 
-				for (size_t i = xMin; i < xMax; ++i) {
-					if (!bitmapObject[lineOrig + i]) {
-						free = false;
-						break;
-					}
+			bool free = true;
+			for (int i = xMin; i < xMax; ++i) {
+				if (!bitmapObject[lineOrig + i]) {
+					free = false;
+					break;
 				}
 			}
 			if (free) {
@@ -225,18 +259,24 @@ static void bitmapAddBorders(size_t radius) {
 	}
 }
 
-static void bitmapDraw(std::vector<bool> &map, int mapW, int mapH, const std::vector<bool> &object, int objX, int objY, int objW, int objH) {
+static void bitmapDraw(std::vector<bool> &map, int mapW, int mapH,
+                       const std::vector<bool> &object, int objX, int objY, int objW, int objH)
+{
 	int startX = std::max(objX, 0);
 	int endX = std::min(objX + objW, mapW);
 	int startY = std::max(objY, 0);
 	int endY = std::min(objY + objH, mapH);
 
 	for (int y = startY; y < endY; ++y) {
+		int line = y * mapW;
+
 		int origY = y - startY;
+		int origLine = origY * objW;
+
 		for (int x = startX; x < endX; ++x) {
 			int origX = x - startX;
-			if (!object[size_t(origY * objW + origX)]) {
-				map[size_t(y * mapW + x)] = false;
+			if (!object[size_t(origLine + origX)]) {
+				map[size_t(line + x)] = false;
 			}
 		}
 	}
@@ -343,7 +383,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 	bitmapMake<true>(free);
 	freeMap.swap(bitmapObject);
 
-	for (auto obj : params.objects) {
+	for (const auto &obj : params.objects) {
 		const std::string &objectFreePath = std::get<0>(obj);
 		int startX = std::get<1>(obj);
 		int startY = std::get<2>(obj);
@@ -358,7 +398,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		bitmapDraw(
 		    freeMap, free->w, free->h,
 		    objectBorder ? bitmapBorderObject : bitmapObject,
-		    startX - objectBorder, startY - objectBorder, objectFree->w + 2 * objectBorder, objectFree->h + 2 * objectBorder
+		    startX - objectBorder, startY, objectFree->w + 2 * objectBorder, objectFree->h
 		);
 	}
 
@@ -463,7 +503,7 @@ static float calcDist(PointInt x1, PointInt y1, PointInt x2, PointInt y2) {
 static Point* getNewPoint(PointInt x, PointInt y, float costFromStart = 0, Point *parent = nullptr, Point *end = nullptr) {
 	Point *res = &mapPoints[currentMap->w * y + x];
 
-	for (auto *vec : {&openPoints, &closePoints}) {
+	for (const auto *vec : {&openPoints, &closePoints}) {
 		if (containsPoint(vec, res)) {
 			if (costFromStart < res->costFromStart) {
 				res->costFromStart = costFromStart;
@@ -586,13 +626,17 @@ static void getPath(Point *start, Point *end) {
 
 
 static Map tmpMap;
-PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, PointInt yStart, PointInt xEnd, PointInt yEnd, PyObject* objects) {
+PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, PointInt yStart,
+                               PointInt xEnd, PointInt yEnd, PyObject* objects)
+{
 	std::lock_guard g(pathFinderMutex);
 
 	MipMap *mipMap = getLocation(location);
 	if (!mipMap) return PyTuple_New(0);
 
-	if (xStart >= mipMap->originalWidth || xEnd >= mipMap->originalWidth || yStart >= mipMap->originalHeight || yEnd >= mipMap->originalHeight) {
+	if (xStart >= mipMap->originalWidth || xEnd >= mipMap->originalWidth ||
+	    yStart >= mipMap->originalHeight || yEnd >= mipMap->originalHeight)
+	{
 		makeOutsideMsg("findPath", xStart, yStart, xEnd, yEnd, mipMap, nullptr);
 		return PyTuple_New(0);
 	}
@@ -621,15 +665,20 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 			currentMap = mipMap->scales[i];
 			preparePoints();
 
+			uint16_t scale = currentMap->scale;
+
 			if (countObjectElements) {
+				tmpMap = *currentMap;//copy
 				currentMap = &tmpMap;
 
 				for (long j = 0; j < countObjectElements; j += 4) {
-					PyObject *pyX = PyList_GET_ITEM(objects, i + 0);
-					PyObject *pyY = PyList_GET_ITEM(objects, i + 1);
-					PyObject *pyW = PyList_GET_ITEM(objects, i + 2);
-					PyObject *pyH = PyList_GET_ITEM(objects, i + 3);
-					if (!PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY) || !PyInt_CheckExact(pyW) || !PyInt_CheckExact(pyH)) {
+					PyObject *pyX = PyList_GET_ITEM(objects, j + 0);
+					PyObject *pyY = PyList_GET_ITEM(objects, j + 1);
+					PyObject *pyW = PyList_GET_ITEM(objects, j + 2);
+					PyObject *pyH = PyList_GET_ITEM(objects, j + 3);
+					if (!PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY) ||
+					    !PyInt_CheckExact(pyW) || !PyInt_CheckExact(pyH))
+					{
 						Utils::outMsg("PathFinder::findPath", "Expects type(objects[i]) is int");
 						continue;
 					}
@@ -638,27 +687,25 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 					long w = PyInt_AS_LONG(pyW);
 					long h = PyInt_AS_LONG(pyH);
 
-					long startX = x / tmpMap.scale;
-					long startY = y / tmpMap.scale;
-					long endX = std::min((x + w) / tmpMap.scale, long(tmpMap.w - 1));
-					long endY = std::min((y + h) / tmpMap.scale, long(tmpMap.h - 1));
+					long startX = x / scale;
+					long startY = y / scale;
+					long endX = std::min((x + w) / scale, long(tmpMap.w - 1));
+					long endY = std::min((y + h) / scale, long(tmpMap.h - 1));
 
 					for (long y = startY; y <= endY; ++y) {
-						for (long x = startX; x <= endX; ++x) {
-							tmpMap.content[uint32_t(y * tmpMap.w + x)] = 1;
-						}
+						long startIndex = y * tmpMap.w + startX;
+						long endIndex = y * tmpMap.w + endX;
+						std::fill(tmpMap.content.begin() + startIndex, tmpMap.content.begin() + endIndex, false);
 					}
 				}
 			}
 
-			uint16_t scale = currentMap->scale;
 			Point *start = getNewPoint(xStart / scale, yStart / scale);
 			Point *end = getNewPoint(xEnd / scale, yEnd / scale);
 			getPath(start, end);
 
 			if (!path.empty()) {
 				path.back() = {xStart, yStart};
-				path.front() = {xEnd, yEnd};
 				path.front() = {xEnd, yEnd};
 				break;
 			}
@@ -741,8 +788,13 @@ struct LocationNode {
 };
 static std::vector<LocationNode> locationNodes;
 
-PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart, const std::string &endLocation, PointInt xEnd, PointInt yEnd, PyObject *bannedExits, bool bruteForce) {
-	if (!bruteForce && startLocation == endLocation) return PathFinder::findPath(startLocation, xStart, yStart, xEnd, yEnd, Py_None);
+PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart,
+                                               const std::string &endLocation, PointInt xEnd, PointInt yEnd,
+                                               PyObject *bannedExits, bool bruteForce)
+{
+	if (!bruteForce && startLocation == endLocation) {
+		return PathFinder::findPath(startLocation, xStart, yStart, xEnd, yEnd, Py_None);
+	}
 
 	std::lock_guard g(pathFinderMutex);
 
@@ -750,7 +802,9 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	MipMap *endMap = getLocation(endLocation);
 	if (!startMap || !endMap) return PyTuple_New(0);
 
-	if (xStart >= startMap->originalWidth || xEnd >= endMap->originalWidth || yStart >= startMap->originalHeight || yEnd >= endMap->originalHeight) {
+	if (xStart >= startMap->originalWidth || xEnd >= endMap->originalWidth ||
+	    yStart >= startMap->originalHeight || yEnd >= endMap->originalHeight)
+	{
 		makeOutsideMsg("findPathBetweenLocations", xStart, yStart, xEnd, yEnd, startMap, endMap);
 		return PyTuple_New(0);
 	}
@@ -817,7 +871,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	locationNodes.reserve(mipMaps.size() * 4);
 
 	//add needed places and exits to nodes
-	for (auto [name, mipMap] : mipMaps) {
+	for (const auto &[name, mipMap] : mipMaps) {
 		for (const LocationPlace &place : mipMap->params.places) {
 			if (!place.enable) continue;
 
@@ -887,7 +941,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		if (node.isExit) {
 			if (node.isBannedExit) continue;
 
-			for (LocationNode &tmpNode : locationNodes) {
+			for (const LocationNode &tmpNode : locationNodes) {
 				if (tmpNode.isExit) continue;
 
 				if (node.toLocationName == tmpNode.mipMap->name && node.toPlaceName == tmpNode.placeName) {
@@ -901,7 +955,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 			node.destinations.reserve(mipMap->params.places.size());
 
-			for (LocationNode &exitNode : locationNodes) {
+			for (const LocationNode &exitNode : locationNodes) {
 				if (exitNode.mipMap != mipMap) continue;
 				if (!exitNode.isExit && exitNode.id != endNode.id) continue;
 				if (exitNode.toLocationName == node.toLocationName && exitNode.toPlaceName == node.toPlaceName) continue;

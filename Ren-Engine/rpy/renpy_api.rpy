@@ -19,6 +19,36 @@ init -999 python:
 		_register_channel(name, mixer, loop, file_name, num_line)
 	renpy__music__has_channel = _has_channel
 	
+	def renpy__music__get_audio_len(url):
+		return _get_audio_len(url)
+	def renpy__music__get_mixer_volume(mixer):
+		return config.get(mixer + '_volume', None)
+	def renpy__music__set_mixer_volume(vol, mixer, depth = 0):
+		vol = in_bounds(round(vol, 2), 0.0, 1.0)
+		config[mixer + '_volume'] = vol
+		file_name, num_line = get_file_and_line(depth + 1)
+		_set_mixer_volume(vol, mixer, file_name, num_line)
+	def renpy__music__add_mixer_volume(d, mixer):
+		renpy.music.set_mixer_volume(config[mixer + '_volume'] + d, mixer, depth=1)
+	
+	def renpy__music__set_volume(vol, channel, depth = 0):
+		file_name, num_line = get_file_and_line(depth + 1)
+		_set_volume_on_channel(in_bounds(vol, 0, 1), channel, file_name, num_line)
+	
+	def renpy__music__get_pos(channel = 'music', depth = 0):
+		file_name, num_line = get_file_and_line(depth + 1)
+		return _get_pos_on_channel(channel, file_name, num_line)
+	def renpy__music__set_pos(sec, channel = 'music', depth = 0):
+		file_name, num_line = get_file_and_line(depth + 1)
+		return _set_pos_on_channel(sec, channel, file_name, num_line)
+	
+	def renpy__music__get_pause(channel = 'music', depth = 0):
+		file_name, num_line = get_file_and_line(depth + 1)
+		return _get_pause_on_channel(channel, file_name, num_line)
+	def renpy__music__set_pause(value, channel = 'music', depth = 0):
+		file_name, num_line = get_file_and_line(depth + 1)
+		return _set_pause_on_channel(value, channel, file_name, num_line)
+	
 	def renpy__music__play(music_urls, channel, depth = 0, **kwargs):
 		fadein = kwargs.get('fadein', 0)
 		music_url = music_urls if isinstance(music_urls, str) else music_urls[0]
@@ -28,17 +58,6 @@ init -999 python:
 		fadeout = kwargs.get('fadeout', 0)
 		file_name, num_line = get_file_and_line(depth + 1)
 		_stop(channel + ' fadeout ' + str(float(fadeout)), file_name, num_line)
-	
-	def renpy__music__set_volume(vol, channel, depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		_set_volume(in_bounds(vol, 0, 1), channel, file_name, num_line)
-	def renpy__music__set_mixer_volume(vol, mixer, depth = 0):
-		vol = in_bounds(round(vol, 2), 0.0, 1.0)
-		config[mixer + '_volume'] = vol
-		file_name, num_line = get_file_and_line(depth + 1)
-		_set_mixer_volume(vol, mixer, file_name, num_line)
-	def renpy__music__add_mixer_volume(d, mixer):
-		renpy.music.set_mixer_volume(config[mixer + '_volume'] + d, mixer)
 	
 	
 	def renpy__easy__color(c):
@@ -124,12 +143,14 @@ init -999 python:
 		return (type(label) is str) and _has_label(label)
 	def renpy__jump(label):
 		if renpy.has_label(label):
-			_jump_next(label, False, get_filename(2), get_numline(2))
+			file_name, num_line = get_file_and_line(1)
+			_jump_next(label, False, file_name, num_line)
 		else:
 			out_msg('renpy.jump', 'Label <' + str(label) + '> not found')
 	def renpy__call(label):
 		if renpy.has_label(label):
-			_jump_next(label, True, get_filename(2), get_numline(2))
+			file_name, num_line = get_file_and_line(1)
+			_jump_next(label, True, file_name, num_line)
 		else:
 			out_msg('renpy.call', 'Label <' + str(label) + '> not found')
 	
