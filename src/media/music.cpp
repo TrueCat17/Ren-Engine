@@ -540,9 +540,12 @@ void Music::loadNextPart() {
 				              "Error on restart, play from:\n" + place);
 				return;
 			}
-			audioPos = nullptr;
-			audioLen = 0;
-			avcodec_flush_buffers(codecCtx);
+
+			avcodec_close(codecCtx);
+			AVCodecParameters *codecPars = formatCtx->streams[audioStream]->codecpar;
+			const AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
+			avcodec_open2(codecCtx, codec, nullptr);
+
 			continue;
 		}
 
@@ -662,7 +665,11 @@ void Music::setPos(double sec) {
 	if (av_seek_frame(formatCtx, audioStream, ts, AVSEEK_FLAG_ANY) < 0) {
 		Utils::outMsg("Music::setPos", "Failed to rewind file <" + url + ">");
 	}else {
-		avcodec_flush_buffers(codecCtx);
+		avcodec_close(codecCtx);
+		AVCodecParameters *codecPars = formatCtx->streams[audioStream]->codecpar;
+		const AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
+		avcodec_open2(codecCtx, codec, nullptr);
+
 		update();
 	}
 }
