@@ -258,18 +258,23 @@ void Music::setPosOnChannel(double sec, const std::string &channelName,
 PyObject* Music::getPauseOnChannel(const std::string &channelName,
                                    const std::string &fileName, size_t numLine)
 {
+	PyObject *res;
+
 	const std::string place = "File <" + fileName + ">\n"
 	                          "Line " + std::to_string(numLine);
 	Music *music = findMusic(channelName, "Music::getPauseOnChannel", place);
 	if (music) {
 		if (music->paused) {
-			Py_RETURN_TRUE;
+			res = Py_True;
 		}else {
-			Py_RETURN_FALSE;
+			res = Py_False;
 		}
+	}else {
+		res = Py_None;
 	}
 
-	Py_RETURN_NONE;
+	Py_INCREF(res);
+	return res;
 }
 void Music::setPauseOnChannel(bool value, const std::string &channelName,
                               const std::string &fileName, size_t numLine)
