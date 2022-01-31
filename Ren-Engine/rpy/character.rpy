@@ -220,6 +220,10 @@ init -1001 python:
 			if pose in expected:
 				if pose != 'sit' and self.sit_object:
 					self.stand_up()
+				if pose in ('walk', 'run'):
+					g = globals()
+					for prop in ('fps', 'speed', 'acceleration'):
+						self[prop] = g['character_' + pose + '_' + prop] # for example: self.fps = character_run_fps
 				self.pose = pose
 			else:
 				self.pose = 'stay'
@@ -412,11 +416,7 @@ init -1001 python:
 			
 			self.moving_ended = False
 			
-			pose = 'run' if run else 'walk'
-			self.set_pose(pose)
-			g = globals()
-			for prop in ('fps', 'speed', 'acceleration'):
-				self[prop] = g['character_' + pose + '_' + prop] # for example: self.fps = character_run_fps
+			self.set_pose('run' if run else 'walk')
 			
 			self.prev_update_time = get_game_time()
 			if wait_time >= 0:
