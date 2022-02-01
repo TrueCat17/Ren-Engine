@@ -55,8 +55,8 @@ init -10 python:
 			player = Player(is_ai = i>0)
 			sc_map.players.append(player)
 			
-			start_x = random.randint(0, sc_map.xsize - 1)
-			start_y = random.randint(0, sc_map.ysize - 1)
+			start_x = random.randint(sc_map.xsize / 8, sc_map.xsize * 7 / 8)
+			start_y = random.randint(sc_map.ysize / 8, sc_map.ysize * 7 / 8)
 			for _ in xrange(sc_map.count_start_builders):
 				player.add_builder(start_x, start_y)
 			
