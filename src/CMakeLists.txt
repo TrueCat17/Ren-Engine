@@ -116,58 +116,14 @@ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 
 include_directories(.)
 
-set(SOURCES
-	
-	main.cpp
-	config.cpp
-	gv.cpp
-	logger.cpp
-	renderer.cpp
-	
-	gui/gui.cpp
-	gui/display_object.cpp
-	gui/group.cpp
-	gui/text_field.cpp
-	
-	gui/screen/child.cpp
-	gui/screen/container.cpp
-	gui/screen/hotspot.cpp
-	gui/screen/image.cpp
-	gui/screen/imagemap.cpp
-	gui/screen/key.cpp
-	gui/screen/screen.cpp
-	gui/screen/style.cpp
-	gui/screen/text.cpp
-	gui/screen/textbutton.cpp
-	
-	media/image_manipulator.cpp
-	media/music.cpp
-	media/py_utils.cpp
-	media/py_utils/absolute.cpp
-	media/py_utils/convert_from_py.cpp
-	media/py_utils/convert_to_py.cpp
-	media/py_utils/make_func.cpp
-	media/scenario.cpp
-	media/translation.cpp
-	
-	parser/mods.cpp
-	parser/node.cpp
-	parser/parser.cpp
-	parser/screen_node_utils.cpp
-	parser/syntax_checker.cpp
-	
-	utils/algo.cpp
-	utils/btn_rect.cpp
-	utils/file_system.cpp
-	utils/game.cpp
-	utils/image_caches.cpp
-	utils/math.cpp
-	utils/mouse.cpp
-	utils/path_finder.cpp
-	utils/stage.cpp
-	utils/string.cpp
-	utils/utils.cpp
+file(GLOB SOURCES
+	"*.cpp"
+	"gui/*.cpp"
+	"gui/screen/*.cpp"
+	"media/*.cpp"
+	"media/py_utils/*.cpp"
+	"parser/*.cpp"
+	"utils/*.cpp"
 )
-
 
 add_executable(${PROJECT_NAME} ${SOURCES})
