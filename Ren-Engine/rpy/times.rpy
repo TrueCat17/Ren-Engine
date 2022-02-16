@@ -3,18 +3,14 @@ init -1001 python:
 	times = {}
 	
 	def change_time(name):
+		if times.get('current_name') == name: return
+		
 		times['next_name'] = name
 		
 		if not has_screen('location') or not times.has_key('current_name') or not cur_location:
 			set_time_direct()
 		else:
-			place = {
-				'x': me.x,
-				'y': me.y,
-				'width': 0,
-				'height': 0,
-			}
-			set_location(cur_location.name, place)
+			set_location(cur_location.name, me)
 	
 	def make_time(name, **kwargs):
 		globals()[name + '_time'] = Function(change_time, name)
