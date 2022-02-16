@@ -21,52 +21,62 @@ init -1 python:
 		
 		def exec_task(self, task, *args):
 			cell = sc_map.map[self.y][self.x]
+			player = self.player
 			
 			if task == 'build':
 				for resource, count in building_cost['%s-%s' % tuple(args)].iteritems():
-					if self.player[resource] < count:
+					if player[resource] < count:
 						info.set_msg('Not enough resources', resource)
 						return
 				for resource, count in building_cost['%s-%s' % tuple(args)].iteritems():
-					self.player[resource] -= count
+					player[resource] -= count
 				
 				if cell.road_level == 0:
 					cell.road_level = 1
-					self.player.road_cells.append(cell)
+					player.road_cells.append(cell)
 				if args[0] != 'road':
 					prev_building_level = cell.building_level
 					cell.building, cell.building_level = args
 					if prev_building_level == 0:
-						self.player.building_cells.append(cell)
+						player.building_cells.append(cell)
 					
 					if cell.building == 'district':
-						self.player.add_worker(self.x, self.y)
-					elif not self.player.main_storage_cell and cell.building == 'storage':
-						self.player.main_storage_cell = cell
+						player.add_worker(self.x, self.y)
+					elif not player.main_storage_cell and cell.building == 'storage':
+						player.main_storage_cell = cell
 				
 			elif task == 'unbuild':
 				cell.building = None
 				cell.building_level = 0
-				self.player.building_cells.remove(cell)
+				player.building_cells.remove(cell)
 				i = 0
-				while i != len(self.player.units):
-					unit = self.player.units[i]
-					if isinstance(unit, Worker) and (unit.x, unit.y) == (self.x, self.y):
-						self.player.units.pop(i)
+				while i != len(player.units):
+					unit = player.units[i]
+					if not isinstance(unit, Worker):
+						i += 1
+						continue
+					work_cell = unit.work_cell
+					
+					if unit.x == self.x and unit.y == self.y:
+						player.units.pop(i)
+						if work_cell:
+							work_cell.workers.remove(unit)
 					else:
-						if isinstance(unit, Worker) and unit.work_cell is cell:
+						if work_cell is cell:
 							unit.work_cell = None
 							cell.workers.remove(unit)
 						i += 1
-				if cell is self.player.main_storage_cell:
-					self.player.main_storage_cell = None
-					for building_cell in self.player.building_cells:
+				
+				if cell is player.main_storage_cell:
+					for building_cell in player.building_cells:
 						if building_cell.building == 'storage':
-							self.player.main_storage_cell = building_cell
+							player.main_storage_cell = building_cell
 							break
+					else:
+						player.main_storage_cell = None
 			
 			elif task == 'train':
-				new_builder = self.player.add_builder(self.x, self.y)
+				new_builder = player.add_builder(self.x, self.y)
 				new_builder.turns = 0
 			
 			else:
