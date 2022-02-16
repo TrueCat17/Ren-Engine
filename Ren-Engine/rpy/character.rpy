@@ -381,8 +381,19 @@ init -1001 python:
 					self.paths.append((place_elem % len(place_names) + 1))
 					break
 				
+				pdx = pdy = 0
 				if isinstance(place_elem, (list, tuple)):
-					location_name, place_elem = place_elem
+					if len(place_elem) == 2:
+						location_name, place_elem = place_elem
+					elif len(place_elem) == 3:
+						location_name, place_elem, offset = place_elem
+						if isinstance(offset, (list, tuple)) and len(offset) == 2 and type(offset[0]) is int and type(offset[1]) is int:
+							pdx, pdy = offset
+						else:
+							out_msg('Character.move_to_places', 'Expected tuple or list with 2 ints in offset of place: <' + str(place_elem) + '>')
+					else:
+						out_msg('Character.move_to_places', 'Expected tuple or list with len 2 or 3, got <' + str(place_elem) + '>')
+						return False
 				else:
 					location_name = from_location_name
 				
@@ -400,6 +411,8 @@ init -1001 python:
 					place = place_elem
 				
 				to_x, to_y = get_place_center(place)
+				to_x += pdx
+				to_y += pdy
 				
 				path = path_between_locations(from_location_name, int(from_x), int(from_y), location_name, int(to_x), int(to_y), banned, bool(brute_force))
 				if not path:
