@@ -398,7 +398,7 @@ init -1000 python:
 		max_dist = 150 # run
 		
 		if state == 'start':
-			if same_location and dist < min_dist:
+			if same_location and dist <= min_dist:
 				character.move_to_place(None)
 				character.rotate_to(to)
 				return 'start'
@@ -414,7 +414,7 @@ init -1000 python:
 			return 'start'
 		
 		if state == 'moving':
-			if not same_location or dist < min_dist:
+			if not same_location or dist <= min_dist:
 				return 'start'
 			
 			if same_location:
@@ -433,6 +433,14 @@ init -1000 python:
 				return 'start'
 			
 			return 'moving'
+		
+		if state == 'rewind':
+			path_found = character.move_to_place([to.location.name, to])
+			if not path_found:
+				return 'start'
+			while character.location is not to.location or get_dist(character.x, character.y, to.x, to.y) > max_dist:
+				character.update_moving(0.05)
+			return 'start'
 		
 		if state == 'end':
 			character.move_to_place(None)
@@ -467,8 +475,10 @@ init -1000 python:
 		def get_names(self):
 			return self.funcs.keys()
 		
-		def update(self):
+		def update(self, state = None):
 			if not self.stopped():
+				if state is not None:
+					self.state = state
 				self.state = self.exec_action()
 				if self.state == 'end':
 					self.stop()
