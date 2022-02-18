@@ -446,8 +446,6 @@ init -1001 python:
 				self.moving_ended = True
 				return
 			
-			xstart, ystart = self.x, self.y
-			
 			path = self.paths[self.paths_index]
 			location_name, place = self.location.name, None
 			
@@ -465,9 +463,7 @@ init -1001 python:
 						place = rpg_locations[location_name].places[place]
 					
 					coords_before_exit = self.x, self.y
-					w = place['xsize'] if place.has_key('xsize') else 0
-					h = place['ysize'] if place.has_key('ysize') else 0
-					self.x, self.y = place['x'] + w / 2, place['y'] + h / 2
+					self.x, self.y = get_place_center(place)
 					
 				else:
 					dx, dy = to_x - self.x, to_y - self.y
@@ -520,6 +516,7 @@ init -1001 python:
 				x, y = self.x, self.y
 				self.x, self.y = coords_before_exit
 				show_character(self, {'x': x, 'y': y}, location_name)
+				print self, self.location.name
 			self.set_direction(last_direction)
 		
 		def move_to_end(self):
