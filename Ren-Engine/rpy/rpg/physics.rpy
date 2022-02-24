@@ -1,10 +1,14 @@
 init python:
 	
 	def get_map_free():
+		location_free = cur_location.free()
+		
 		size = 64
 		half_size = size / 2 # > (character_radius + some_indent) * 2
-		start_x = int(round(me.x / half_size) - 1) * half_size
-		start_y = int(round(me.y / half_size) - 1) * half_size
+		me_x = in_bounds(me.x, 0, get_image_width(location_free) - 1)
+		me_y = in_bounds(me.y, 0, get_image_height(location_free) - 1)
+		start_x = int(round(me_x / half_size) - 1) * half_size
+		start_y = int(round(me_y / half_size) - 1) * half_size
 		
 		cs = character_xsize / 2
 		def near(x, y, width, height):
@@ -20,8 +24,6 @@ init python:
 		matrix = im.matrix.identity()
 		matrix[4] = matrix[9] = matrix[14] = -253.9/255.0
 		matrix = im.matrix.invert() * matrix # invert colors before it
-		
-		location_free = cur_location.free()
 		
 		to_draw = [(size, size)]
 		if location_free:

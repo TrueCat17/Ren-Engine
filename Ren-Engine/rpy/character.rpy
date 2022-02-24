@@ -674,7 +674,7 @@ init -1001 python:
 	
 	
 	
-	def show_character(character, place, location = None, auto_change_location = True, hiding = True):
+	def show_character(character, place = None, location = None, auto_change_location = True, hiding = True):
 		prev_character_location = character.location
 		prev_character_pos = get_place_center(character)
 		
@@ -689,6 +689,7 @@ init -1001 python:
 				return
 			location = rpg_locations[location]
 		
+		place = place or character
 		if type(place) is str:
 			place_name = place
 			place = location.get_place(place)

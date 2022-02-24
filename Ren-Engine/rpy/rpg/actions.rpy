@@ -434,11 +434,12 @@ init -1000 python:
 			
 			return 'moving'
 		
-		if state == 'rewind':
+		if state == 'rewind_to_min' or state == 'rewind_to_max':
 			path_found = character.move_to_place([to.location.name, to])
 			if not path_found:
 				return 'start'
-			while character.location is not to.location or get_dist(character.x, character.y, to.x, to.y) > max_dist:
+			need_dist = min_dist if 'min' in state else max_dist
+			while character.location is not to.location or get_dist(character.x, character.y, to.x, to.y) > need_dist:
 				character.update_moving(0.05)
 			return 'start'
 		
