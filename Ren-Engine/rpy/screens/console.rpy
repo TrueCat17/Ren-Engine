@@ -60,21 +60,38 @@ init python:
 	
 	def console_add(s):
 		global console_cursor_x, console_cursor_y, console_input, console_input_tmp
-		if console_ctrl and s == 'd':
-			lines = console_input.split('\n')
-			lines = lines[0:console_cursor_y] + lines[console_cursor_y+1:]
-			console_cursor_x = 0
-			console_cursor_y = min(console_cursor_y, len(lines) - 1)
-			console_input = '\n'.join(lines)
-		else:
-			if console_shift and not s.isspace():
-				s = console_keys_shift[console_keys.index(s)]
-			if s == '{':
-				s = console_key_tag
-			
-			index = console_get_cursor_index()
-			console_input = console_input[0:index] + s + console_input[index:]
-			console_cursor_right()
+		if console_ctrl:
+			if s == 'c':
+				set_clipboard_text(console_input)
+				return
+			if s == 'v':
+				s = get_clipboard_text()
+				s = s.replace('\t', '    ')
+				lines = s.split('\n')
+				i = 0
+				while i < len(lines):
+					if not lines[i] or lines[i].isspace():
+						lines.pop(i)
+					else:
+						i += 1
+				s = '\n'.join(lines)
+			if s == 'd':
+				lines = console_input.split('\n')
+				lines = lines[0:console_cursor_y] + lines[console_cursor_y+1:]
+				console_cursor_x = 0
+				console_cursor_y = min(console_cursor_y, len(lines) - 1)
+				console_input = '\n'.join(lines)
+				return
+		
+		if console_shift and s in console_keys:
+			s = console_keys_shift[console_keys.index(s)]
+		if s == '{':
+			s = console_key_tag
+		
+		index = console_get_cursor_index()
+		console_input = console_input[0:index] + s + console_input[index:]
+		index += len(s)
+		console_set_cursor_index(index)
 		
 		if not console_num_command:
 			console_input_tmp = console_input
@@ -145,7 +162,7 @@ init python:
 			console_input = persistent.console_commands[-console_num_command]
 			console_cursor_y = 0
 			console_cursor_x = console_input.index('\n') if '\n' in console_input else len(console_input)
-		else:
+		elif console_input != console_input_tmp:
 			console_num_command = 0
 			console_cursor_x = console_cursor_y = 0
 			console_input = console_input_tmp
