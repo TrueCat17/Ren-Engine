@@ -1,4 +1,5 @@
 init 1 python:
+	set_fps(30)
 	set_can_mouse_hide(False)
 	set_can_autosave(False)
 	
@@ -6,8 +7,14 @@ init 1 python:
 	start_screens = ['hotkeys', 'all_locations', 'menu']
 	
 	need_save_locations = False
-	save_counter = 0
 	set_save_locations = SetVariable('need_save_locations', True)
+	
+	def check_need_save_location():
+		global need_save_locations
+		if need_save_locations:
+			need_save_locations = False
+			save()
+	set_interval(check_need_save_location, 1)
 	
 	
 	def get_image_or_similar(path):
@@ -23,15 +30,3 @@ init 1 python:
 		return im.rect('#888')
 	
 	register_new_locations()
-
-
-label start:
-	while True:
-		python:
-			save_counter += 1
-			if save_counter % 10 == 0 and need_save_locations:
-				need_save_locations = False
-				save()
-		
-		pause 0.1
-
