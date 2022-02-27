@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_clipboard.h>
 
 #include "gv.h"
 #include "logger.h"
@@ -56,6 +57,27 @@ void Utils::setThreadName(std::string name) {
 		outMsg("pthread_setname_np", "Error on set process name <" + name + ">");
 	}
 #endif
+}
+
+std::string Utils::getClipboardText() {
+	const char *tmp = SDL_GetClipboardText();
+	std::string res = tmp;
+	SDL_free((void*)tmp);
+	if (res.empty()) {
+		std::string error = SDL_GetError();
+		if (!error.empty()) {
+			Utils::outMsg("Utils::getClipboardText", error);
+		}
+	}
+	return res;
+}
+
+bool Utils::setClipboardText(const std::string &text) {
+	if (SDL_SetClipboardText(text.c_str()) < 0) {
+		Utils::outMsg("Utils::setClipboardText", SDL_GetError());
+		return false;
+	}
+	return true;
 }
 
 std::vector<std::string> Utils::getFileNames(const std::string &path) {

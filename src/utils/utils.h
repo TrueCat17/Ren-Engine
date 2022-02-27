@@ -14,6 +14,9 @@ class Utils {
 public:
 	static void setThreadName(std::string name);
 
+	static std::string getClipboardText();
+	static bool setClipboardText(const std::string &text);
+
 	static std::vector<std::string> getFileNames(const std::string &path);
 
 	static double getTimer();

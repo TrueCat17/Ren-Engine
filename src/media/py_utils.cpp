@@ -222,6 +222,9 @@ void PyUtils::init() {
 
 	setGlobalFunc("get_last_tick", Game::getLastTick);
 	setGlobalFunc("get_game_time", Game::getGameTime);
+
+	setGlobalFunc("get_clipboard_text", Utils::getClipboardText);
+	setGlobalFunc("set_clipboard_text", Utils::setClipboardText);
 }
 
 
