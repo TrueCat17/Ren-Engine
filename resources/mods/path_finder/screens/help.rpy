@@ -41,6 +41,7 @@ screen help:
 	
 	button:
 		ground im.rect('#000')
+		hover  im.rect('#000')
 		size (1.0, 1.0)
 		alpha 0.3
 		mouse False
