@@ -51,9 +51,10 @@ init -999 python:
 	
 	def renpy__music__play(music_urls, channel, depth = 0, **kwargs):
 		fadein = kwargs.get('fadein', 0)
+		relative_volume=kwargs.get('relative_volume', 1.0)
 		music_url = music_urls if isinstance(music_urls, str) else music_urls[0]
 		file_name, num_line = get_file_and_line(depth + 1)
-		_play(channel + ' "' + music_url + '" fadein ' + str(float(fadein)), file_name, num_line)
+		_play(channel + ' "%s" fadein %s volume %s' % (music_url, fadein, relative_volume), file_name, num_line)
 	def renpy__music__stop(channel, depth = 0, **kwargs):
 		fadeout = kwargs.get('fadeout', 0)
 		file_name, num_line = get_file_and_line(depth + 1)

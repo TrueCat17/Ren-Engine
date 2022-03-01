@@ -46,6 +46,7 @@ private:
 
 	double fadeIn = 0;
 	double fadeOut = 0;
+	double relativeVolume;
 	int64_t lastFramePts = 0;
 
 	std::string fileName;
@@ -65,7 +66,8 @@ private:
 	uint8_t *buffer;
 
 
-	Music(const std::string &url, Channel *channel, double fadeIn, const std::string &fileName, size_t numLine, const std::string &place);
+	Music(const std::string &url, Channel *channel, double fadeIn, double volume,
+	      const std::string &fileName, size_t numLine, const std::string &place);
 	~Music();
 
 	bool initCodec();
@@ -124,10 +126,12 @@ public:
 
 	double getFadeIn() const;
 	double getFadeOut() const;
+	double getRelativeVolume() const;
 	double getPos() const;
 
 	void setFadeIn(double v);
 	void setFadeOut(double v);
+	void setRelativeVolume(double v);
 	void setPos(double sec);
 };
 

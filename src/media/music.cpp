@@ -295,10 +295,10 @@ void Music::play(const std::string &desc,
 	                          "Line " + std::to_string(numLine) + ": <" + desc + ">";
 
 	std::vector<std::string> args = Algo::getArgs(desc);
-	if (args.size() != 2 && args.size() != 4) {
+	if (args.size() % 2) {
 		Utils::outMsg("Music::play",
-		              "Expected 2 or 4 arguments:\n"
-		              "channelName fileName ['fadein' time]\n"
+		              "Expected even number of arguments:\n"
+		              "channelName fileName ['fadein' time] ['volume' value]\n"
 		              "Got: <" + desc + ">\n\n" + place);
 		return;
 	}
@@ -308,19 +308,33 @@ void Music::play(const std::string &desc,
 	String::replaceAll(url, "\\", "/");
 
 	double fadeIn = 0;
-	if (args.size() > 2) {
-		if (args[2] != "fadein") {
+	double volume = 1;
+	for (size_t i = 2; i < args.size(); i += 2) {
+		const std::string &name = args[i];
+		const std::string &valueCode = args[i + 1];
+		if (name != "fadein" && name != "volume") {
 			Utils::outMsg("Music::play",
-			              "3 argument must be <fadein>\n\n" + place);
+			              "Expected <fadein> or <volume>, got <" + name + ">\n\n" + place);
 			return;
 		}
-		std::string fadeInStr = PyUtils::exec(fileName, numLine, args[3], true);
-		if (!String::isNumber(fadeInStr)) {
+		std::string valueStr = PyUtils::exec(fileName, numLine, valueCode, true);
+		if (!String::isNumber(valueStr)) {
 			Utils::outMsg("Music::play",
-			              "Fadein value expected number, got <" + args[3] + ">\n\n" + place);
+			              "Expected number, got <" + valueStr + ">\n\n" + place);
 			return;
 		}
-		fadeIn = String::toDouble(fadeInStr);
+
+		double res = String::toDouble(valueStr);
+		if (name == "fadein") {
+			fadeIn = res;
+		}else {
+			volume = res;
+			if (volume < 0 || volume > 1) {
+				Utils::outMsg("Music::play",
+				              "Expected volume between 0 and 1, got <" + valueStr + ">\n\n" + place);
+				volume = Math::inBounds(volume, 0, 1);
+			}
+		}
 	}
 
 	std::lock_guard g(musicMutex);
@@ -339,7 +353,7 @@ void Music::play(const std::string &desc,
 
 	Channel *channel = findChannel(channelName);
 	if (channel) {
-		Music *music = new Music(url, channel, fadeIn, fileName, numLine, place);
+		Music *music = new Music(url, channel, fadeIn, volume, fileName, numLine, place);
 		if (music->initCodec()){
 			delete music;
 		}else {
@@ -410,14 +424,15 @@ const std::map<std::string, double>& Music::getMixerVolumes() {
 
 
 
-Music::Music(const std::string &url, Channel *channel, double fadeIn,
+Music::Music(const std::string &url, Channel *channel, double fadeIn, double volume,
              const std::string &fileName, size_t numLine, const std::string &place):
-	url(url),
-	channel(channel),
+    url(url),
+    channel(channel),
     startFadeInTime(Utils::getTimer()),
-	fadeIn(fadeIn),
-	fileName(fileName),
-	numLine(numLine),
+    fadeIn(fadeIn),
+    relativeVolume(volume),
+    fileName(fileName),
+    numLine(numLine),
     place(place),
 
     packet(av_packet_alloc()),
@@ -600,7 +615,7 @@ void Music::loadNextPart() {
 }
 
 int Music::getVolume() const {
-	double max = SDL_MIX_MAXVOLUME * channel->volume * mixerVolumes[channel->mixer];
+	double max = SDL_MIX_MAXVOLUME * relativeVolume * channel->volume * mixerVolumes[channel->mixer];
 
 	//fadeIn
 	if (fadeIn > 0 && startFadeInTime + fadeIn > startUpdateTime) {
@@ -640,6 +655,9 @@ double Music::getFadeIn() const {
 double Music::getFadeOut() const {
 	return std::max(fadeOut + startFadeOutTime - startUpdateTime, 0.0);
 }
+double Music::getRelativeVolume() const {
+	return relativeVolume;
+}
 double Music::getPos() const {
 	auto k = formatCtx->streams[audioStream]->time_base;
 	return double(lastFramePts) * k.num / k.den;
@@ -652,6 +670,9 @@ void Music::setFadeIn(double v) {
 void Music::setFadeOut(double v) {
 	fadeOut = v;
 	startFadeOutTime = startUpdateTime;
+}
+void Music::setRelativeVolume(double v) {
+	relativeVolume = v;
 }
 void Music::setPos(double sec) {
 	std::lock_guard g(musicMutex);

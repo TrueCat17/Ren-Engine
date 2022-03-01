@@ -179,8 +179,8 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 
 		std::getline(is, tmp);
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 6) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 6 args");
+		if (tmpVec.size() != 7) {
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 7 args");
 			continue;
 		}
 
@@ -188,8 +188,9 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 		const std::string &channel = tmpVec[1];
 		double fadeIn = String::toDouble(tmpVec[2]);
 		double fadeOut = String::toDouble(tmpVec[3]);
-		double pos = String::toDouble(tmpVec[4]);
-		bool paused = tmpVec[5] == "True";
+		double relativeVolume = String::toDouble(tmpVec[4]);
+		double pos = String::toDouble(tmpVec[5]);
+		bool paused = tmpVec[6] == "True";
 
 		Music::play(channel + " '" + url + "'", fileName, numLine);
 		Music *music = nullptr;
@@ -205,6 +206,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 			if (fadeOut > 0) {
 				music->setFadeOut(fadeOut);
 			}
+			music->setRelativeVolume(relativeVolume);
 			music->setPos(pos);
 			music->paused = paused;
 		}else {
@@ -322,6 +324,7 @@ void Game::save() {
 			         << music->getChannel()->name << ' '
 			         << music->getFadeIn() << ' '
 			         << music->getFadeOut() << ' '
+			         << music->getRelativeVolume() << ' '
 			         << music->getPos() << ' '
 			         << (music->paused ? "True" : "False") << '\n';
 		}
