@@ -243,8 +243,12 @@ init -1001 python:
 		
 		def update(self):
 			animation = self.animation
-			
 			dtime = get_game_time() - self.animation_start_time
+			
+			if has_screen('pause') and not animation.first_update:
+				self.animation_start_time += dtime
+				return
+			
 			time_k = 1
 			if animation.time > 0:
 				if dtime > animation.time:

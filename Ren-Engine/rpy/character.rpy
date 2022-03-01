@@ -516,7 +516,6 @@ init -1001 python:
 				x, y = self.x, self.y
 				self.x, self.y = coords_before_exit
 				show_character(self, {'x': x, 'y': y}, location_name)
-				print self, self.location.name
 			self.set_direction(last_direction)
 		
 		def move_to_end(self):
@@ -598,6 +597,8 @@ init -1001 python:
 			
 			dtime = get_game_time() - self.prev_update_time
 			self.prev_update_time = get_game_time()
+			if has_screen('pause'):
+				return
 			
 			if self.get_auto() and self.actions:
 				self.actions.update()

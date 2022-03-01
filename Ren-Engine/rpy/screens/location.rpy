@@ -270,7 +270,7 @@ screen location:
 			for obj in draw_location.objects:
 				if isinstance(obj, Character):
 					continue
-				if not isinstance(obj, Character) and obj.update:
+				if obj.update:
 					obj.update()
 			
 			draw_location.update_pos()

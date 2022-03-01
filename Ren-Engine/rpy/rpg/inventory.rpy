@@ -43,7 +43,6 @@ init -100 python:
 				if not inventory[i][0]:
 					inventory[i] = inventory[new_size + index]
 					count = 0
-					print inventory[i]
 				elif inventory[i][0] == obj_name:
 					while inventory[i][1] != max_count and count != 0:
 						inventory[i][1] += 1
