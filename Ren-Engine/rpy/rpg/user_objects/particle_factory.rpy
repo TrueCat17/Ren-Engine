@@ -59,9 +59,6 @@ init -1000 python:
 				obj[x] = (obj[x] + obj[dx] * dtime) % w
 				obj[y] = (obj[y] + obj[dy] * dtime) % h
 		
-		def get_zorder(self):
-			return self.zorder
-		
 		def get_draw_data(self):
 			back = 1 if self.background else 0
 			res = [None] * (back + len(self.objs))
@@ -71,10 +68,7 @@ init -1000 python:
 					'image':   self.background,
 					'pos':    (self.xpos, self.ypos),
 					'size':   (self.xsize, self.ysize),
-					'anchor': (0, 0),
-					'crop':   (0, 0, 1.0, 1.0),
-					'alpha':   1,
-					'zorder':  self.get_zorder(),
+					'zorder':  self.zorder,
 				}
 			
 			for i in xrange(len(self.objs)):
@@ -83,10 +77,7 @@ init -1000 python:
 					'image':   self.image,
 					'pos':    (absolute(self.xpos + x), absolute(self.ypos + y)),
 					'size':    absolute(size),
-					'anchor': (0, 0),
-					'crop':   (0, 0, 1.0, 1.0),
-					'alpha':   1,
-					'zorder':  self.get_zorder(),
+					'zorder':  self.zorder,
 				}
 			
 			return res

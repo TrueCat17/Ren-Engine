@@ -37,6 +37,11 @@ init -10000 python:
 	def SetVariable(var_name, value):
 		return SetDict(None, var_name, value)
 	
+	def Jump(label):
+		return Function(renpy.jump, label)
+	def Call(label):
+		return Function(renpy.call, label)
+	
 	def Play(file_name, channel):
 		return Function(renpy.play, file_name, channel)
 	def Stop(channel):
