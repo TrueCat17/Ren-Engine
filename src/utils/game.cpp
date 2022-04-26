@@ -404,10 +404,10 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		DisplayObject::destroyAll();
 
 		Stage::screens = new Group();
-		Stage::screens->setX(Stage::x);
-		Stage::screens->setY(Stage::y);
-		Stage::screens->setWidth(Stage::width);
-		Stage::screens->setHeight(Stage::height);
+		Stage::screens->setX(float(Stage::x));
+		Stage::screens->setY(float(Stage::y));
+		Stage::screens->setWidth(float(Stage::width));
+		Stage::screens->setHeight(float(Stage::height));
 		Stage::screens->updateGlobal();
 
 		Style::destroyAll();
@@ -521,14 +521,14 @@ int Game::getImageHeight(const std::string &image) {
 
 Uint32 Game::getImagePixel(const std::string &image, int x, int y) {
 	SurfacePtr surface = ImageManipulator::getImage(image, false);
-	if (surface) {
-		SDL_Rect draw = {x, y, surface->w, surface->h};
-		SDL_Rect crop = {0, 0, surface->w, surface->h};
-		Uint32 pixel = Utils::getPixel(surface, draw, crop);
-		return pixel;
+	if (!surface) {
+		Utils::outMsg("Game::getImagePixel", "surface == nullptr");
+		return 0;
 	}
-	Utils::outMsg("Game::getImagePixel", "surface == nullptr");
-	return 0;
+	SDL_Rect draw = { x, y, surface->w, surface->h };
+	SDL_Rect crop = { 0, 0, surface->w, surface->h };
+	Uint32 pixel = Utils::getPixel(surface, draw, crop);
+	return pixel;
 }
 
 

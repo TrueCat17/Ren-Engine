@@ -193,7 +193,7 @@ PyObject* Music::getAudioLen(const std::string &url) {
 		Py_RETURN_NONE;
 	}
 
-	double duration = formatCtx->duration / double(AV_TIME_BASE);
+	double duration = double(formatCtx->duration) / double(AV_TIME_BASE);
 	avformat_close_input(&formatCtx);
 	avformat_free_context(formatCtx);
 

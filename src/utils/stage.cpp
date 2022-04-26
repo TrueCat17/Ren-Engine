@@ -171,10 +171,10 @@ void Stage::applyChanges() {
 	}
 
 	if (Stage::screens) {
-		Stage::screens->setX(Stage::x);
-		Stage::screens->setY(Stage::y);
-		Stage::screens->setWidth(Stage::width);
-		Stage::screens->setHeight(Stage::height);
+		Stage::screens->setX(float(Stage::x));
+		Stage::screens->setY(float(Stage::y));
+		Stage::screens->setWidth(float(Stage::width));
+		Stage::screens->setHeight(float(Stage::height));
 		Stage::screens->updateGlobal();
 	}
 

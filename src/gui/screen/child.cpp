@@ -120,26 +120,26 @@ void Child::updateZoom() {
 }
 
 void Child::updatePos() {
-	xAnchor = int(std::floor(xanchorPre * (xanchorPreIsFloat ? float(getWidth()) : globalZoomX)));
-	yAnchor = int(std::floor(yanchorPre * (yanchorPreIsFloat ? float(getHeight()) : globalZoomY)));
+	xAnchor = xanchorPre * (xanchorPreIsFloat ? getWidth() : globalZoomX);
+	yAnchor = yanchorPre * (yanchorPreIsFloat ? getHeight() : globalZoomY);
 
 	if (!inHBox) {
 		float parentGlobalZoomX = parent ? parent->getGlobalZoomX() : 1;
-		int endXPos = int(std::floor(xpos * (xposIsFloat ? float(parent->getWidth()) : parentGlobalZoomX)));
-		int x = endXPos - xAnchor;
+		float endXPos = xpos * (xposIsFloat ? parent->getWidth() : parentGlobalZoomX);
+		float x = endXPos - xAnchor;
 		setX(x);
 	}
 	if (!inVBox) {
 		float parentGlobalZoomY = parent ? parent->getGlobalZoomY() : 1;
-		int endYPos = int(std::floor(ypos * (yposIsFloat ? float(parent->getHeight()) : parentGlobalZoomY)));
-		int y = endYPos - yAnchor;
+		float endYPos = ypos * (yposIsFloat ? parent->getHeight() : parentGlobalZoomY);
+		float y = endYPos - yAnchor;
 		setY(y);
 	}
 }
 
 void Child::updateRect(bool needUpdatePos) {
-	setWidth( int(xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX));
-	setHeight(int(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY));
+	setWidth( xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX);
+	setHeight(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY);
 
 	if (surface) {
 		crop.x = int(xcrop * float(xcropIsFloat ? surface->w : 1));

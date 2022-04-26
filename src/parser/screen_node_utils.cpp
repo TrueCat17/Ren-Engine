@@ -818,17 +818,17 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	auto oldFontStyle = fontStyle; \
 	\
 	if (prop == Py_True) { \
-		fontStyle |= mask; \
+	    fontStyle |= Uint8(mask); \
 		if (fontStyle != oldFontStyle) { \
 			text->needUpdate = true; \
 		} \
 	}else if (prop == Py_False) { \
-		fontStyle &= ~mask; \
+	    fontStyle &= Uint8(~mask); \
 		if (fontStyle != oldFontStyle) { \
 			text->needUpdate = true; \
 		} \
 	}else { \
-	    fontStyle &= ~mask; \
+	    fontStyle &= Uint8(~mask); \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected bool, got " + type); \
 	} \

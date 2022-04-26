@@ -16,8 +16,8 @@ DisplayObject::DisplayObject() {
 }
 
 void DisplayObject::updateGlobal() {
-	int parentXAnchor, parentYAnchor;
-	int parentGlobalX, parentGlobalY;
+	float parentXAnchor, parentYAnchor;
+	float parentGlobalX, parentGlobalY;
 	float parentGlobalRotate;
 	float parentGlobalAlpha;
 	if (parent) {
@@ -35,17 +35,17 @@ void DisplayObject::updateGlobal() {
 	}
 
 
-	float x = float(rect.x + xAnchor - parentXAnchor);
-	float y = float(rect.y + yAnchor - parentYAnchor);
+	float x = rect.x + xAnchor - parentXAnchor;
+	float y = rect.y + yAnchor - parentYAnchor;
 
 	float sinA = Math::getSin(int(parentGlobalRotate));
 	float cosA = Math::getCos(int(parentGlobalRotate));
 
-	int rotX = int(x * cosA - y * sinA);
-	int rotY = int(x * sinA + y * cosA);
+	float rotX = x * cosA - y * sinA;
+	float rotY = x * sinA + y * cosA;
 
-	globalX = int(parentGlobalX + parentXAnchor + rotX - xAnchor);
-	globalY = int(parentGlobalY + parentYAnchor + rotY - yAnchor);
+	globalX = parentGlobalX + parentXAnchor + rotX - xAnchor;
+	globalY = parentGlobalY + parentYAnchor + rotY - yAnchor;
 	globalRotate = parentGlobalRotate + rotate;
 	globalAlpha = parentGlobalAlpha * alpha;
 
@@ -61,7 +61,7 @@ void DisplayObject::updateGlobal() {
 		}
 	}else {
 		if (clipping) {
-			if (!Math::floatsAreEq(std::fmod(globalRotate, 360), 0)) {
+			if (!Math::floatsAreEq(std::fmod(globalRotate, float(360)), 0)) {
 				Utils::outMsg("DisplayObject::updateGlobal", "Object with clipping can't be rotated");
 			}
 			globalClipping = true;
@@ -75,17 +75,20 @@ void DisplayObject::updateGlobal() {
 bool DisplayObject::checkAlpha(int x, int y) const {
 	if (!enable || globalAlpha <= 0 || !surface) return false;
 
+	float fx = float(x);
+	float fy = float(y);
+
 	if (globalClipping) {
-		if (x + globalX < clipRect.x ||
-		    y + globalY < clipRect.y ||
-		    x + globalX >= clipRect.x + clipRect.w ||
-		    y + globalY >= clipRect.y + clipRect.h
+		if (fx + globalX < clipRect.x ||
+		    fy + globalY < clipRect.y ||
+		    fx + globalX >= clipRect.x + clipRect.w ||
+		    fy + globalY >= clipRect.y + clipRect.h
 		) return false;
 	}
 
-	if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) return false;
+	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return false;
 
-	SDL_Rect rect = { x, y, getWidth(), getHeight() };
+	SDL_Rect rect = { x, y, int(getWidth()), int(getHeight()) };
 	Uint32 color = Utils::getPixel(surface, rect, crop);
 	Uint8 alpha = color & 255;
 	return alpha > 0;
@@ -95,10 +98,11 @@ void DisplayObject::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
-	SDL_Rect dstRect = { globalX, globalY, rect.w, rect.h };
-	SDL_Point center = { xAnchor, yAnchor };
+	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
+	SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, rect.w, rect.h, false);
+	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, crop, dstRect, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, crop, dstIRect, center);
 }
 
 DisplayObject::~DisplayObject() {
@@ -142,4 +146,21 @@ void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 a
 	    clipRect, srcRect, dstRect,
 	    center
 	});
+}
+
+
+SDL_Rect DisplayObject::buildIntRect(float x, float y, float w, float h, bool exactSize) {
+	SDL_Rect res;
+	res.x = int(x);
+	res.y = int(y);
+
+	if (exactSize) {
+		res.w = int(w);
+		res.h = int(h);
+	}else {
+		res.w = int(x + w) - res.x;
+		res.h = int(y + h) - res.y;
+	}
+
+	return res;
 }

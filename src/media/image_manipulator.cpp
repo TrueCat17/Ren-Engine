@@ -546,9 +546,9 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 						const Uint8 dstG = dst[Gshift / 8];
 						const Uint8 dstB = dst[Bshift / 8];
 
-						dst[Rshift / 8] = (srcR * sA + dstR * dA + 128) / 256;
-						dst[Gshift / 8] = (srcG * sA + dstG * dA + 128) / 256;
-						dst[Bshift / 8] = (srcB * sA + dstB * dA + 128) / 256;
+						dst[Rshift / 8] = Uint8((srcR * sA + dstR * dA + 128) / 256);
+						dst[Gshift / 8] = Uint8((srcG * sA + dstG * dA + 128) / 256);
+						dst[Bshift / 8] = Uint8((srcB * sA + dstB * dA + 128) / 256);
 						dst[Ashift / 8] = Uint8(outA);
 					}
 				}
@@ -779,10 +779,10 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 		const Uint8 *dstEnd = dst + imgPitch;
 		while (dst != dstEnd) {
 			if (src[Ashift / 8]) {
-				dst[Rshift / 8] = src[Rshift / 8] * r / 256;
-				dst[Gshift / 8] = src[Gshift / 8] * g / 256;
-				dst[Bshift / 8] = src[Bshift / 8] * b / 256;
-				dst[Ashift / 8] = src[Ashift / 8] * a / 256;
+				dst[Rshift / 8] = Uint8(src[Rshift / 8] * r / 256);
+				dst[Gshift / 8] = Uint8(src[Gshift / 8] * g / 256);
+				dst[Bshift / 8] = Uint8(src[Bshift / 8] * b / 256);
+				dst[Ashift / 8] = Uint8(src[Ashift / 8] * a / 256);
 			}else {
 				*(Uint32*)dst = 0;
 			}
@@ -1450,11 +1450,11 @@ static void imageToPalette(std::map<Uint32, Uint32> &colors, int w, int h, const
 				if (it != localColors.end()) {
 					index = it->second;
 				}else {
-					index = colors.size() + localColors.size();
+					index = Uint32(colors.size() + localColors.size());
 					localColors[color] = index;
 					if (index == 256) return;
 				}
-				*dst = index;
+				*dst = Uint8(index);
 			}
 		}
 	}
@@ -1480,7 +1480,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 
 
 	Uint32 resFormat = SDL_PIXELFORMAT_INDEX8;
-	int resPitch = w * SDL_BITSPERPIXEL(resFormat) / 8;
+	int resPitch = w * int(SDL_BITSPERPIXEL(resFormat)) / 8;
 	resPitch = (resPitch + 3) & ~3;//align to 4
 	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
 

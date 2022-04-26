@@ -1,23 +1,5 @@
 #include "renderer.h"
 
-bool operator==(const SDL_Rect &a, const SDL_Rect &b) {
-	return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
-}
-bool operator!=(const SDL_Rect &a, const SDL_Rect &b) {
-	return !(a == b);
-}
-
-static
-bool operator==(const SDL_Point &a, const SDL_Point &b) {
-	return a.x == b.x && a.y == b.y;
-}
-
-bool RenderStruct::operator==(const RenderStruct &o) const {
-	auto a = std::tie(  surface,   angle,   alpha,   clip,   clipRect,   srcRect,   dstRect,   center);
-	auto b = std::tie(o.surface, o.angle, o.alpha, o.clip, o.clipRect, o.srcRect, o.dstRect, o.center);
-	return a == b;
-}
-
 
 #include <thread>
 #include <map>
@@ -38,6 +20,33 @@ bool RenderStruct::operator==(const RenderStruct &o) const {
 #include "utils/image_caches.h"
 #include "utils/stage.h"
 #include "utils/utils.h"
+
+
+bool operator==(const SDL_Rect &a, const SDL_Rect &b) {
+	return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+}
+bool operator!=(const SDL_Rect &a, const SDL_Rect &b) {
+	return !(a == b);
+}
+
+bool operator==(const SDL_FRect &a, const SDL_FRect &b) {
+	return Math::floatsAreEq(a.x, b.x) && Math::floatsAreEq(a.y, b.y) &&
+	       Math::floatsAreEq(a.w, b.w) && Math::floatsAreEq(a.h, b.h);
+}
+bool operator!=(const SDL_FRect &a, const SDL_FRect &b) {
+	return !(a == b);
+}
+
+bool operator==(const SDL_Point &a, const SDL_Point &b) {
+	return a.x == b.x && a.y == b.y;
+}
+
+bool RenderStruct::operator==(const RenderStruct &o) const {
+	auto a = std::tie(  surface,   angle,   alpha,   clip,   clipRect,   srcRect,   dstRect,   center);
+	auto b = std::tie(o.surface, o.angle, o.alpha, o.clip, o.clipRect, o.srcRect, o.dstRect, o.center);
+	return a == b;
+}
+
 
 
 typedef void (GLAPIENTRY *BLENDCOLOR_TYPE)(GLclampf, GLclampf, GLclampf, GLclampf);
@@ -139,7 +148,7 @@ static void setClipRect(const SDL_Rect *clipRect) {
 	if (clipRect) {
 		rect = *clipRect;
 	}else {
-		rect = {Stage::x, Stage::y, Stage::width, Stage::height};
+		rect = { Stage::x, Stage::y, Stage::width, Stage::height };
 	}
 
 	if (currentClipRect == rect) return;
@@ -168,10 +177,9 @@ static void disableClipRect() {
 }
 
 
+template<bool check>
 static void fastRenderOne(const RenderStruct *obj) {
 	if (!obj->alpha || !obj->srcRect.w || !obj->srcRect.h || !obj->dstRect.w || !obj->dstRect.h) return;
-
-	const bool check = checkOpenGlErrors;
 
 	int angle = int(obj->angle);
 	if (angle % 360) {
@@ -186,7 +194,7 @@ static void fastRenderOne(const RenderStruct *obj) {
 		if (check) {
 			checkErrors("glTranslated");
 		}
-		glRotatef(angle, 0, 0, 1);
+		glRotatef(obj->angle, 0, 0, 1);
 		if (check) {
 			checkErrors("glRotated");
 		}
@@ -228,6 +236,7 @@ static void fastRenderOne(const RenderStruct *obj) {
 }
 
 static const size_t MAX_RENDER_GROUP_SIZE = 1024;
+template<bool check>
 static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 	float texBuffer[MAX_RENDER_GROUP_SIZE * 8];
 	int vertexBuffer[MAX_RENDER_GROUP_SIZE * 8];
@@ -270,11 +279,11 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 		vertexPtr[6] = vertMaxX;
 		vertexPtr[7] = vertMinY;
 
-		int angle = int(obj->angle);
-		if (angle % 360) {
+		int angle = int(obj->angle) % 360;
+		if (angle) {
 			const float sinA = Math::getSin(angle);
 			const float cosA = Math::getCos(angle);
-			const SDL_Point center = {vertMinX + obj->center.x, vertMinY + obj->center.y};
+			const SDL_Point center = { vertMinX + obj->center.x, vertMinY + obj->center.y };
 
 			auto rotate = [&](SDL_Point *a) {
 				float x = float(a->x - center.x);
@@ -294,22 +303,36 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 	}
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	checkErrors("glEnableClientState(GL_VERTEX_ARRAY)");
+	if (check) {
+		checkErrors("glEnableClientState(GL_VERTEX_ARRAY)");
+	}
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	checkErrors("glEnableClientState(GL_TEXTURE_COORD_ARRAY)");
+	if (check) {
+		checkErrors("glEnableClientState(GL_TEXTURE_COORD_ARRAY)");
+	}
 
 	glTexCoordPointer(2, GL_FLOAT, 0, texBuffer);
-	checkErrors("glTexCoordPointer");
+	if (check) {
+		checkErrors("glTexCoordPointer");
+	}
 	glVertexPointer(2, GL_INT, 0, vertexBuffer);
-	checkErrors("glVertexPointer");
+	if (check) {
+		checkErrors("glVertexPointer");
+	}
 
 	glDrawArrays(GL_QUADS, 0, int(count * 4));
-	checkErrors("glDrawArrays");
+	if (check) {
+		checkErrors("glDrawArrays");
+	}
 
 	glDisableClientState(GL_VERTEX_ARRAY);
-	checkErrors("glDisableClientState(GL_VERTEX_ARRAY)");
+	if (check) {
+		checkErrors("glDisableClientState(GL_VERTEX_ARRAY)");
+	}
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	checkErrors("glDisableClientState(GL_TEXTURE_COORD_ARRAY)");
+	if (check) {
+		checkErrors("glDisableClientState(GL_TEXTURE_COORD_ARRAY)");
+	}
 }
 
 static void fastRender(const RenderStruct *obj, size_t count) {
@@ -320,10 +343,18 @@ static void fastRender(const RenderStruct *obj, size_t count) {
 
 	if (count < 7) {
 		for (size_t i = 0; i < count; ++i) {
-			fastRenderOne(obj + i);
+			if (checkOpenGlErrors) {
+				fastRenderOne<true>(obj + i);
+			}else {
+				fastRenderOne<false>(obj + i);
+			}
 		}
 	}else {
-		fastRenderGroup(obj, count);
+		if (checkOpenGlErrors) {
+			fastRenderGroup<true>(obj, count);
+		}else {
+			fastRenderGroup<false>(obj, count);
+		}
 	}
 }
 
@@ -460,7 +491,7 @@ SurfacePtr Renderer::getScreenshot() {
 }
 
 static void readPixels() {
-	SDL_Rect rect = {Stage::x, Stage::y, Stage::width, Stage::height};
+	SDL_Rect rect = { Stage::x, Stage::y, Stage::width, Stage::height };
 
 	screenshot = ImageManipulator::getNewNotClear(rect.w, rect.h);
 	if (SDL_RenderReadPixels(renderer, &rect, SDL_PIXELFORMAT_RGBA32, screenshot->pixels, screenshot->pitch)) {
@@ -550,7 +581,7 @@ static void loop() {
 			bool prevIsOpaque = false;
 			Uint8 prevAlpha = 0;
 			bool prevClip = false;
-			SDL_Rect prevClipRect = {0, 0, 0, 0};
+			SDL_Rect prevClipRect = { 0, 0, 0, 0 };
 
 			size_t count = 0;
 			for (size_t i = 0; i < textures.size(); ++i) {
@@ -610,11 +641,11 @@ static void loop() {
 		if (Stage::screens) {
 			SDL_Rect empties[2];
 			if (Stage::x) {
-				empties[0] = {0, 0, Stage::x, Stage::height};
-				empties[1] = {Stage::x + Stage::width, 0, windowWidth - Stage::x - Stage::width, Stage::height};
+				empties[0] = { 0, 0, Stage::x, Stage::height };
+				empties[1] = { Stage::x + Stage::width, 0, windowWidth - Stage::x - Stage::width, Stage::height };
 			}else {
-				empties[0] = {0, 0, Stage::width, Stage::y};
-				empties[1] = {0, Stage::y + Stage::height, Stage::width, windowHeight - Stage::y - Stage::height};
+				empties[0] = { 0, 0, Stage::width, Stage::y };
+				empties[1] = { 0, Stage::y + Stage::height, Stage::width, windowHeight - Stage::y - Stage::height };
 			}
 
 			disableClipRect();

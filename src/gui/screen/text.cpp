@@ -25,8 +25,8 @@ void Text::updateRect(bool) {
 	int height = int(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY);
 
 	if (first_param.empty() && prevText.empty()) {
-		setWidth(std::max(width, 0));
-		setHeight(std::max(height, 0));
+		setWidth(float(std::max(width, 0)));
+		setHeight(float(std::max(height, 0)));
 	}else {
 		if (tf->maxWidth != width) {
 			tf->maxWidth = width;
@@ -55,8 +55,8 @@ void Text::updateRect(bool) {
 		    tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
 		    width != prevWidth || height != prevHeight
 		) {
-			int w = width  <= 0 ? tf->getWidth()  : width;
-			int h = height <= 0 ? tf->getHeight() : height;
+			float w = width  <= 0 ? tf->getWidth()  : float(width);
+			float h = height <= 0 ? tf->getHeight() : float(height);
 			setWidth(w);
 			setHeight(h);
 

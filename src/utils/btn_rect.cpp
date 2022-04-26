@@ -14,14 +14,14 @@ bool BtnRect::objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 			DisplayObject *child = obj->parent->children[i];
 			if (!child->enable) continue;
 
-			float x = float(mouseX - child->getGlobalX() - child->xAnchor);
-			float y = float(mouseY - child->getGlobalY() - child->yAnchor);
+			float x = float(mouseX) - child->getGlobalX() - child->xAnchor;
+			float y = float(mouseY) - child->getGlobalY() - child->yAnchor;
 
 			float sinA = Math::getSin(int(-child->getGlobalRotate()));
 			float cosA = Math::getCos(int(-child->getGlobalRotate()));
 
-			int rotX = int(x * cosA - y * sinA + float(child->xAnchor));
-			int rotY = int(x * sinA + y * cosA + float(child->yAnchor));
+			int rotX = int(x * cosA - y * sinA + child->xAnchor);
+			int rotY = int(x * sinA + y * cosA + child->yAnchor);
 
 			if (child->checkAlpha(rotX, rotY)) {
 				return false;
@@ -81,17 +81,17 @@ void BtnRect::checkMouseCursor() {
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
 
-		float x = float(mouseX - owner->getGlobalX() - owner->xAnchor);
-		float y = float(mouseY - owner->getGlobalY() - owner->yAnchor);
+		float x = float(mouseX) - owner->getGlobalX() - owner->xAnchor;
+		float y = float(mouseY) - owner->getGlobalY() - owner->yAnchor;
 
 		float sinA = Math::getSin(int(-owner->getGlobalRotate()));
 		float cosA = Math::getCos(int(-owner->getGlobalRotate()));
 
-		int rotX = int(x * cosA - y * sinA + float(owner->xAnchor));
-		int rotY = int(x * sinA + y * cosA + float(owner->yAnchor));
+		int rotX = int(x * cosA - y * sinA + owner->xAnchor);
+		int rotY = int(x * sinA + y * cosA + owner->yAnchor);
 
-		if (rotX > 0 && rotX < owner->getWidth() &&
-			rotY > 0 && rotY < owner->getHeight()
+		if (rotX >= 0 && rotX < int(owner->getWidth()) &&
+		    rotY >= 0 && rotY < int(owner->getHeight())
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
 			if (!objInTop(owner, mouseX, mouseY)) continue;
@@ -124,17 +124,17 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 		if (!owner || !owner->enable) continue;
 		if (withKeyboard && !btnRect->buttonMode) continue;
 
-		float x = float(mouseX - owner->getGlobalX() - owner->xAnchor);
-		float y = float(mouseY - owner->getGlobalY() - owner->yAnchor);
+		float x = float(mouseX) - owner->getGlobalX() - owner->xAnchor;
+		float y = float(mouseY) - owner->getGlobalY() - owner->yAnchor;
 
 		float sinA = Math::getSin(int(-owner->getGlobalRotate()));
 		float cosA = Math::getCos(int(-owner->getGlobalRotate()));
 
-		int rotX = int(x * cosA - y * sinA + float(owner->xAnchor));
-		int rotY = int(x * sinA + y * cosA + float(owner->yAnchor));
+		int rotX = int(x * cosA - y * sinA + owner->xAnchor);
+		int rotY = int(x * sinA + y * cosA + owner->yAnchor);
 
-		if (rotX > 0 && rotX < owner->getWidth() &&
-			rotY > 0 && rotY < owner->getHeight()
+		if (rotX >= 0 && rotX < int(owner->getWidth()) &&
+		    rotY >= 0 && rotY < int(owner->getHeight())
 		) {
 			if (!owner->checkAlpha(rotX, rotY)) continue;
 			if (!objInTop(owner, mouseX, mouseY)) continue;

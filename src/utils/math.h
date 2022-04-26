@@ -11,7 +11,9 @@ public:
 	static bool doublesAreEq(double a, double b);
 
 	template<typename T, typename MIN, typename MAX>
-	static T inBounds(T value, MIN min, MAX max) { return (value < T(min)) ? min : (value > T(max)) ? max : value; }
+	static T inBounds(T value, MIN min, MAX max) {
+		return (value < T(min)) ? T(min) : (value > T(max)) ? T(max) : value;
+	}
 };
 
 #endif // MATH_H

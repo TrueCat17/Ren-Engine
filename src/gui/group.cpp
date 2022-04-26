@@ -56,7 +56,7 @@ bool Group::checkAlpha(int x, int y) const {
 	}
 
 	for (const DisplayObject *child : children) {
-		if (child->checkAlpha(x - child->getX(), y - child->getY())) {
+		if (child->checkAlpha(x - int(child->getX()), y - int(child->getY()))) {
 			return true;
 		}
 	}

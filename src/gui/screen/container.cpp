@@ -69,60 +69,62 @@ void Container::updateRect(bool needUpdatePos) {
 	}
 	Child::updateRect(false);
 
-	using std::max;
-
 	if (!hasHBox) {
 		if (getWidth() <= 0) {
-			int width = 0;
+			float width = 0;
 			for (const DisplayObject *child : children) {
 				if (child->enable) {
-					width = max(width, child->getWidth());
+					width = std::max(width, child->getWidth());
 				}
 			}
 			setWidth(width);
 		}
 	}else {
-		int width = 0;
+		float globalSpacing = spacing * globalZoomX;
+
+		float width = 0;
 		for (DisplayObject *child : children) {
 			if (!child->enable) continue;
 
 			child->setX(width);
 
-			int w = child->getWidth();
+			float w = child->getWidth();
 			if (w > 0) {
-				width += w + spacing;
+				width += w + globalSpacing;
 			}
 		}
-		if (width) {
-			width -= spacing;
+		if (width > 0) {
+			width -= globalSpacing;
 		}
 		setWidth(width);
 	}
 
 	if (!hasVBox) {
 		if (getHeight() <= 0) {
-			int height = 0;
+			float height = 0;
 			for (const DisplayObject *child : children) {
 				if (child->enable) {
-					height = max(height, child->getHeight());
+					height = std::max(height, child->getHeight());
 				}
 			}
 			setHeight(height);
 		}
 	}else {
-		int height = 0;
+		float globalSpacing = spacing * globalZoomY;
+
+		float height = 0;
 		for (DisplayObject *child : children) {
 			if (!child->enable) continue;
 
 			child->setY(height);
 
-			int h = child->getHeight();
+			float h = child->getHeight();
 			if (h > 0) {
-				height += h + spacing;
+				height += h + globalSpacing;
 			}
 		}
-		if (height) {
-			height -= spacing;
+		if (height > 0) {
+			height -= globalSpacing;
 		}
 		setHeight(height);
 	}

@@ -19,7 +19,7 @@
 [[maybe_unused]]
 static void saveMap(std::vector<bool> map, int w, int h, const std::string &name, int scale) {
 	Uint32 resFormat = SDL_PIXELFORMAT_INDEX8;
-	int resPitch = w * SDL_BITSPERPIXEL(resFormat) / 8;
+	int resPitch = w * int(SDL_BITSPERPIXEL(resFormat)) / 8;
 	resPitch = (resPitch + 3) & ~3;//align to 4
 	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
 
@@ -35,7 +35,7 @@ static void saveMap(std::vector<bool> map, int w, int h, const std::string &name
 
 	for (int y = 0; y < h; ++y) {
 		for (int x = 0; x < w; ++x) {
-			bool free = map[y * w + x];
+			bool free = map[size_t(y * w + x)];
 			resPixels[y * resPitch + x] = free;
 		}
 	}
@@ -227,18 +227,18 @@ static void bitmapAddBorders(size_t radius) {
 
 	int w = int(widthBitmapObject + radius * 2);
 	int h = int(heightBitmapObject);
-	bitmapBorderObject.reserve(w * h);
-	bitmapBorderObject.assign(w * h, false);
+	bitmapBorderObject.reserve(size_t(w * h));
+	bitmapBorderObject.assign(size_t(w * h), false);
 
 	for (int y = 0; y < h; ++y) {
 		int line = y * w;
 		int lineOrig = y * wOrig;
 
 		for (int x = 0; x < w; ++x) {
-			int xOrig = x - radius;
+			int xOrig = x - r;
 
 			if (x >= r && xOrig < wOrig && 0) {
-				bool free = bitmapObject[lineOrig + xOrig];
+				bool free = bitmapObject[size_t(lineOrig + xOrig)];
 				if (!free) continue;
 			}
 
@@ -247,13 +247,13 @@ static void bitmapAddBorders(size_t radius) {
 
 			bool free = true;
 			for (int i = xMin; i < xMax; ++i) {
-				if (!bitmapObject[lineOrig + i]) {
+				if (!bitmapObject[size_t(lineOrig + i)]) {
 					free = false;
 					break;
 				}
 			}
 			if (free) {
-				bitmapBorderObject[line + x] = true;
+				bitmapBorderObject[size_t(line + x)] = true;
 			}
 		}
 	}

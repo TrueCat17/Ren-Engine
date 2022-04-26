@@ -24,7 +24,7 @@ static const int MAX_TEXT_SIZE = 72;
 static const std::string defaultFontName = "Arial";
 
 static std::map<std::string, TTF_Font*> fonts;
-TTF_Font* getFont(const std::string &name, int size) {
+static TTF_Font* getFont(const std::string &name, int size) {
 	size = Math::inBounds(size, MIN_TEXT_SIZE, MAX_TEXT_SIZE);
 	const std::string t = name + "|" + std::to_string(size);
 
@@ -339,8 +339,8 @@ static std::vector<TextStyle> startWordStackStyles, tmpStackStyles;
 void TextField::setText(const std::string &text) {
 	if (!mainStyle.font) return;
 
-	const int maxW = maxWidth  > 0 ? maxWidth  : 1e9;
-	const int maxH = maxHeight > 0 ? maxHeight : 1e9;
+	const int maxW = maxWidth  > 0 ? maxWidth  : int(1e9);
+	const int maxH = maxHeight > 0 ? maxHeight : int(1e9);
 
 	std::vector<TextStyle> stackStyles;
 	stackStyles.reserve(4);
@@ -475,8 +475,8 @@ void TextField::setText(const std::string &text) {
 	lines.swap(tmpLines);
 	lineRects.swap(tmpLineRects);
 
-	rect.w = std::max(maxWidth, maxLineWidth);
-	rect.h = currentHeight;
+	rect.w = float(std::max(maxWidth, maxLineWidth));
+	rect.h = float(currentHeight);
 
 	//draw with calced sizes
 	stackStyles.erase(stackStyles.begin() + 1, stackStyles.end());
@@ -532,9 +532,9 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 
 	int indentY = 0;
 	if (vAlign == "center") {
-		indentY = (getHeight() - height) / 2;
+		indentY = (int(getHeight()) - height) / 2;
 	}else if (vAlign == "bottom") {
-		indentY = getHeight() - height;
+		indentY = int(getHeight()) - height;
 	}
 
 	int maxWidth = this->maxWidth;
@@ -568,22 +568,22 @@ void TextField::setAlign(std::string hAlign, std::string vAlign) {
 		float x = float(rect.x);
 		float y = float(rect.y);
 
-		int rotX = int(x * cosA - y * sinA);
-		int rotY = int(x * sinA + y * cosA);
-
-		rect.x = rotX;
-		rect.y = rotY;
+		rect.x = int(x * cosA - y * sinA);
+		rect.y = int(x * sinA + y * cosA);
 	}
 }
 
 bool TextField::checkAlpha(int x, int y) const {
 	if (!enable || globalAlpha <= 0) return false;
 
+	float fx = float(x);
+	float fy = float(y);
+
 	if (globalClipping) {
-		if (x + globalX < clipRect.x ||
-		    y + globalY < clipRect.y ||
-		    x + globalX >= clipRect.x + clipRect.w ||
-		    y + globalY >= clipRect.y + clipRect.h
+		if (fx + globalX < clipRect.x ||
+		    fy + globalY < clipRect.y ||
+		    fx + globalX >= clipRect.x + clipRect.w ||
+		    fy + globalY >= clipRect.y + clipRect.h
 		) return false;
 	}
 
@@ -599,18 +599,18 @@ void TextField::draw() const {
 	if (!enable || globalAlpha <= 0) return;
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
+	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, true);
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
 	for (size_t i = 0; i < lineSurfaces.size(); ++i) {
 		SurfacePtr surface = lineSurfaces[i];
 		if (!surface) continue;
 
-		SDL_Rect dstRect = rects[i];
-		dstRect.x += globalX;
-		dstRect.y += globalY;
-
 		SDL_Rect srcRect = { 0, 0, surface->w, surface->h };
 
-		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, srcRect, dstRect, center);
+		const SDL_Rect &rect = rects[i];
+		SDL_Rect dstIRect = DisplayObject::buildIntRect(float(rect.x) + globalX, float(rect.y) + globalY, float(rect.w), float(rect.h), true);
+
+		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, srcRect, dstIRect, center);
 	}
 }

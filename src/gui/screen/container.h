@@ -8,7 +8,7 @@ public:
 	bool hasVBox = false;
 	bool hasHBox = false;
 
-	int spacing = 0;
+	float spacing = 0;
 
 	std::vector<Child*> screenChildren;
 

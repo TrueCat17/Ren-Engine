@@ -70,18 +70,18 @@ void Hotspot::checkEvents() {
 	SurfacePtr ground = imageMap->surface;
 	scaleX = 1;
 	scaleY = 1;
-	int parentWidth = imageMap->getWidth();
-	int parentHeight = imageMap->getHeight();
-	if (ground && parentWidth && parentHeight) {
-		scaleX = float(parentWidth) / float(ground->w);
-		scaleY = float(parentHeight) / float(ground->h);
+	float parentWidth = imageMap->getWidth();
+	float parentHeight = imageMap->getHeight();
+	if (ground && parentWidth > 0 && parentHeight > 0) {
+		scaleX = parentWidth / float(ground->w);
+		scaleY = parentHeight / float(ground->h);
 	}
 
-	setX(int(xcrop * float(xcropIsFloat ? Stage::width  : 1) * scaleX));
-	setY(int(ycrop * float(ycropIsFloat ? Stage::height : 1) * scaleY));
+	setX(xcrop * float(xcropIsFloat ? Stage::width  : 1) * scaleX);
+	setY(ycrop * float(ycropIsFloat ? Stage::height : 1) * scaleY);
 
-	setWidth( int(wcrop * float(wcropIsFloat ? Stage::width  : 1) * scaleX));
-	setHeight(int(hcrop * float(hcropIsFloat ? Stage::height : 1) * scaleY));
+	setWidth( wcrop * float(wcropIsFloat ? Stage::width  : 1) * scaleX);
+	setHeight(hcrop * float(hcropIsFloat ? Stage::height : 1) * scaleY);
 
 
 	const std::string *styleName = nullptr;
@@ -153,17 +153,20 @@ bool Hotspot::checkAlpha(int x, int y) const {
 	SurfacePtr hover = imageMap->hover;
 	if (!hover) return false;
 
+	float fx = float(x);
+	float fy = float(y);
+
 	if (globalClipping) {
-		if (x + globalX < clipRect.x ||
-		    y + globalY < clipRect.y ||
-		    x + globalX >= clipRect.x + clipRect.w ||
-		    y + globalY >= clipRect.y + clipRect.h
+		if (fx + globalX < clipRect.x ||
+		    fy + globalY < clipRect.y ||
+		    fx + globalX >= clipRect.x + clipRect.w ||
+		    fy + globalY >= clipRect.y + clipRect.h
 		) return false;
 	}
 
-	if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) return false;
+	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return false;
 
-	SDL_Rect rect = {x + getX(), y + getY(), imageMap->getWidth(), imageMap->getHeight()};
+	SDL_Rect rect = DisplayObject::buildIntRect(fx + getX(), fy + getY(), imageMap->getWidth(), imageMap->getHeight(), false);
 	Uint32 color = Utils::getPixel(hover, rect, imageMap->crop);
 	Uint8 alpha = color & 0xFF;
 	return alpha > 0;
@@ -173,10 +176,11 @@ void Hotspot::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
 	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
-	SDL_Rect to = { getGlobalX(), getGlobalY(), rect.w, rect.h };
+	SDL_Rect to = { int(getGlobalX()), int(getGlobalY()), int(rect.w), int(rect.h) };
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
+	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
 	SDL_Point center = { int(xAnchor), int(yAnchor) };
 
-	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipRect, from, to, center);
+	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, from, to, center);
 }
