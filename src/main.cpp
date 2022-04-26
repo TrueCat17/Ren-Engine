@@ -215,6 +215,9 @@ static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
 	if (key == SDLK_KP_ENTER) {
 		key = SDLK_RETURN;
 	}else
+	if (key == SDLK_KP_PERIOD) {
+		key = SDLK_DELETE;
+	}else
 	if (key >= SDLK_KP_1 && key <= SDLK_KP_0) {
 		if (ks.mod & KMOD_NUM) {
 			if (key == SDLK_KP_0) {
