@@ -16,17 +16,13 @@ init python:
 		else:
 			width, height = get_stage_size()
 			
-			rand_int = random.randint
-			def rand_float(min, max):
-				return random.random() * (max - min) + min
-			
 			for i in xrange(d):
-				size = rand_int(2, 10)
+				size = random.randint(2, 10)
 				
-				x = rand_int(0, width)
-				y = rand_int(0, height)
-				dx = rand_float(-7, 7) * size
-				dy = rand_float(10, 25) * size
+				x = random.randint(0, width)
+				y = random.randint(0, height)
+				dx = random.uniform(-7, 7) * size
+				dy = random.uniform(10, 25) * size
 				
 				obj = [x, y, dx, dy, size]
 				objs.append(obj)

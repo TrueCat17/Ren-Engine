@@ -31,9 +31,6 @@ init -1000 python:
 			return '<ParticleFactory ' + self.type + '>'
 		
 		def set_count(self, count):
-			def rand_float(min, max):
-				return random.random() * (max - min) + min
-			
 			old_count = len(self.objs)
 			if count <= old_count:
 				self.objs = self.objs[0:count]
@@ -41,9 +38,9 @@ init -1000 python:
 				self.objs.extend([None] * (count - old_count))
 				
 				for i in xrange(count - old_count):
-					x, y = rand_float(0, self.xsize), rand_float(0, self.ysize)
-					dx, dy = rand_float(self.min_dx, self.max_dx), rand_float(self.min_dy, self.max_dy)
-					size = rand_float(self.min_size, self.max_size)
+					x, y = random.uniform(0, self.xsize), random.uniform(0, self.ysize)
+					dx, dy = random.uniform(self.min_dx, self.max_dx), random.uniform(self.min_dy, self.max_dy)
+					size = random.uniform(self.min_size, self.max_size)
 					
 					self.objs[old_count + i] = [x, y, dx, dy, size]
 		
