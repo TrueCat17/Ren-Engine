@@ -7,6 +7,7 @@
 #include "logger.h"
 #include "config.h"
 
+#include "gui/gui.h"
 #include "gui/screen/screen.h"
 
 #include "image_manipulator.h"
@@ -225,6 +226,8 @@ void PyUtils::init() {
 
 	setGlobalFunc("get_clipboard_text", Utils::getClipboardText);
 	setGlobalFunc("set_clipboard_text", Utils::setClipboardText);
+
+	setGlobalFunc("get_screen_times", GUI::getScreenTimes);
 }
 
 

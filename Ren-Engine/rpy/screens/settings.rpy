@@ -208,10 +208,10 @@ screen settings:
 					spacing 15
 					
 					button:
-						ground (checkbox_yes if config.fps_meter else checkbox_no)
-						action SetDict(config, 'fps_meter', not config.fps_meter)
+						ground (checkbox_yes if config.debug_screen_visible_mode else checkbox_no)
+						action debug_screen.toggle_fps
 						size (25, 25)
-					text _('Show FPS'):
+					text (_('Show FPS') + ' (F3)'):
 						color 0
 						text_size 25
 				

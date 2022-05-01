@@ -3,6 +3,8 @@ screen hotkeys:
 		key 'p' action make_screenshot
 		key 'F11' action set_fullscreen(not get_from_hard_config('window_fullscreen', bool))
 		
+		key 'F3' action debug_screen.next_visible_mode
+		
 		$ hotkeys_shift = False
 		key 'LEFT SHIFT'  action SetVariable('hotkeys_shift', True) first_delay 0
 		key 'RIGHT SHIFT' action SetVariable('hotkeys_shift', True) first_delay 0

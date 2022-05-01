@@ -1,6 +1,6 @@
 init -997 python:
 	
-	start_screens = ['hotkeys', 'dialogue_box', 'fps_meter']
+	start_screens = ['hotkeys', 'dialogue_box', 'debug_screen']
 	
 	
 	config = renpy.config
@@ -21,9 +21,6 @@ init -997 python:
 	
 	if config.autosave is None:
 		config.autosave = 60 # time, in sec.
-	
-	if config.fps_meter is None:
-		config.fps_meter = False
 	
 	if config.shift_is_run is None:
 		config.shift_is_run = False # If True, usual moving is walking, with shift - running

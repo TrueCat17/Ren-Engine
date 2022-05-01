@@ -116,4 +116,14 @@ translate russian strings:
 	old 'remove'
 	new 'выбрасывание'
 	
+	
+	# debug_screen
+	old 'Mean (second)'
+	new 'Среднее (сек.)'
+	
+	old 'Max (second)'
+	new 'Макс. (сек.)'
+	
+	old 'Last Frame'
+	new 'Последний кадр'
 
