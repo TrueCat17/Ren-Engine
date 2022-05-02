@@ -89,7 +89,8 @@ init -1002 python:
 		cur_place = place
 		cur_place_name = place['name'] if place.has_key('name') else None
 		
-		signals.send('rpg-location')
+		if prev_location != cur_location:
+			signals.send('rpg-location')
 		
 		main = cur_location.main()
 		real_width, real_height = get_image_size(main)
