@@ -67,7 +67,7 @@ void Child::updateProps() {
 				needAddChildren = true;
 				continue;
 			}
-			if (child->command == "style" || child->command == "pass") continue;
+			if (child->command == "style" || child->command == "has" || child->command == "pass") continue;
 
 			PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
 			if (!res) continue;
