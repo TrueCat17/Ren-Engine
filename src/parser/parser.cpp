@@ -377,9 +377,12 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 	if (isText) {
 		if (headLine.size() > 1 && headLine[0] == '$') {
+			res->command = "$";
+			res->params = headLine.substr(1);
 			Utils::outMsg("Parser::getNode",
-			              "Do you mean <$ " + headLine.substr(1) + "> instead <" + headLine + ">?");
-			headLine = "'''" + headLine + "'''";
+			              "Do you mean <$ " + headLine.substr(1) + "> instead <" + headLine + ">?\n\n" +
+			              res->getPlace());
+			return res;
 		}
 
 		res->command = "text";
@@ -395,6 +398,14 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			              "String <" + headLine + ">\n\n" +
 			              res->getPlace());
 			headLine.erase(headLine.size() - 1);
+		}
+		std::string copy = headLine + '\n';
+		if (String::firstNotInQuotes(copy, '\n') == size_t(-1)) {
+			Utils::outMsg("Parser::getNode",
+			              "Not closed quote in <" + headLine + ">\n\n" +
+			              res->getPlace());
+			res->command = "pass";
+			return res;
 		}
 	}else {
 		if (headLine.back() != ':') {
