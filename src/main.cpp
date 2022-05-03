@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <list>
 
@@ -482,35 +483,65 @@ static void destroy() {
 	SDL_Quit();
 }
 
-int main(int argc, char **argv) {
-	std::string arg = "";
-	if (argc == 2) {
-		arg = argv[1];
-	}else if (argc > 2) {
-		Utils::outMsg("main", "Expected max 1 arg, get: " + std::to_string(argc - 1));
-		return 0;
+static bool argsProcessing(int argc, char **argv, std::string &resources) {
+	if (argc > 2) {
+		Utils::outMsg("argsProcessing", "Expected max 1 arg, got: " + std::to_string(argc - 1));
+		return true;
 	}
 
+	if (argc == 2) {
+		resources = argv[1];
+	}else { //for more comfort debug
+		std::string path = FileSystem::getCurrentPath();
+		String::replaceAll(path, "\\", "/");
+		if (!String::endsWith(path, "/")) {
+			path += "/";
+		}
+		path += "../path_to_resources.txt";
+
+		if (FileSystem::exists(path)) {
+			std::ifstream is(path);
+			while (!is.eof() && resources.empty()) {
+				std::getline(is, resources);
+			}
+			if (!FileSystem::isDirectory(resources)) {
+				std::cout << "Path of resources is not a directory or does not exist\n"
+				             "Path: " << resources << '\n';
+				return true;
+			}
+		}
+	}
+
+
 	for (const char *i : {"--help", "-help", "-h", "h", "/?", "?"}) {
-		if (arg == i) {
+		if (resources == i) {
 			std::cout << "Ren-Engine is fast analog of Ren'Py\n"
-						 "Usage:\n"
-						 "  ./Ren-Engine [resources_dir=../resources/]\n"
-						 "  ./Ren-Engine --help    - show this help and exit\n"
-						 "  ./Ren-Engine --version - show version and exit\n"
+			             "Usage:\n"
+			             "  ./Ren-Engine [resources_dir=../resources/]\n"
+			             "  ./Ren-Engine --help    - show this help and exit\n"
+			             "  ./Ren-Engine --version - show version and exit\n"
 			             "Github: https://github.com/TrueCat17/Ren-Engine\n"
 			             "Wiki:   https://github.com/TrueCat17/Ren-Engine/wiki\n";
-			return 0;
+			return true;
 		}
 	}
 	for (const char *i : {"--version", "-version", "-ver", "-v", "v"}) {
-		if (arg == i) {
+		if (resources == i) {
 			std::cout << "Ren-Engine " << getVersion() << '\n';
-			return 0;
+			return true;
 		}
 	}
 
-	const std::string errMsg = setDir(arg);
+	return false;
+}
+
+int main(int argc, char **argv) {
+	std::string resources;
+	if (argsProcessing(argc, argv, resources)) {
+		return 0;
+	}
+
+	const std::string errMsg = setDir(resources);
 	if (!errMsg.empty()) {
 		Utils::outMsg("setDir", errMsg);
 		return 0;
