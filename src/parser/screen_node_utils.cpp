@@ -522,8 +522,18 @@ static std::string initCode(Node *node, const std::string& index) {
 
 
 static void outError(Child *obj, const std::string &propName, size_t propIndex, const std::string &expected) {
+	Node *node = obj->node;
+	if (node->command == "use") {
+		node = Screen::getDeclared(node->params);
+		if (!node) {
+			Utils::outMsg("ScreenNodeUtils::outError", "Error on out error: screen <" + obj->node->params + "> not found (?)");
+			Utils::outMsg(propName, expected);
+			return;
+		}
+	}
+
 	if (!obj->wasInited()) {
-		for (const Node *child : obj->node->children) {
+		for (const Node *child : node->children) {
 			if (child->isScreenProp && child->command == propName) {
 				std::string desc = expected + '\n' +
 				                   child->getPlace();
@@ -533,15 +543,15 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 		}
 	}
 
-	for (const Node *child : obj->node->children) {
+	for (const Node *child : node->children) {
 		if (child->isScreenProp && child->screenNum == propIndex) {
 			std::string desc = expected + '\n';
 
 			if (child->command == propName) {
 				desc += child->getPlace();
 			}else {
-				std::string style = obj->node->command;
-				for (const Node *child : obj->node->children) {
+				std::string style = node->command;
+				for (const Node *child : node->children) {
 					if (child->command == "style") {
 						style = child->params;
 						break;
