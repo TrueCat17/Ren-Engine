@@ -217,26 +217,29 @@ init -10 python:
 		
 		if sc_map.mark_unloaded:
 			player = sc_map.player
-			workers = [unit for unit in player.units if isinstance(unit, Worker)]
+			image = im.rect('#FF0')
+			size = sc_map.image_size * zoom
+			int_size = int(size)
 			
 			for building_cell in player.building_cells:
 				mark = False
-				if building_cell.building == 'district':
-					for worker in workers:
-						if worker.x == building_cell.x and worker.y == building_cell.y and not worker.work_cell:
+				building = building_cell.building
+				if building == 'district':
+					for worker in building_cell.workers:
+						if not worker.work_cell:
 							mark = True
 							break
-				elif building_cell.building == 'storage':
+				elif building == 'storage':
 					mark = building_cell.enabled_level == 0
-				elif building_cell.building:
+				elif building:
 					mark = building_cell.enabled_level != len(building_cell.workers) or building_cell.enabled_level != building_cell.building_level
 				
 				if mark:
 					res.append({
-						'image': im.rect('#FF0'),
-						'xpos': int(building_cell.x * sc_map.image_size * zoom + x),
-						'ypos': int(building_cell.y * sc_map.image_size * zoom + y),
-						'size': int(sc_map.image_size * zoom),
+						'image': image,
+						'xpos': int(building_cell.x * size + x),
+						'ypos': int(building_cell.y * size + y),
+						'size': int_size,
 						'alpha': cell_alpha,
 					})
 		
@@ -283,8 +286,6 @@ init -10 python:
 	
 	
 	def sc_map__next_step():
-		control.step += 1
-		
 		sc_map.player.calc_changing_resources()
 		for resource in info.resources:
 			if sc_map.player[resource] + sc_map.player['change_' + resource] < 0:
@@ -293,6 +294,8 @@ init -10 python:
 		
 		for player in sc_map.players:
 			player.update()
+		
+		control.step += 1
 		
 		cell = control.selected_cell
 		control.select_cell(cell.x, cell.y)

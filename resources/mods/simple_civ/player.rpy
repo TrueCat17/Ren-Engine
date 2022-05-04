@@ -44,6 +44,8 @@ init -900 python:
 		def add_worker(self, x, y):
 			worker = Worker(self, x, y)
 			self.units.append(worker)
+			cell = sc_map.map[y][x]
+			cell.workers.append(worker)
 			return worker
 		
 		def calc_changing_resources(self):
