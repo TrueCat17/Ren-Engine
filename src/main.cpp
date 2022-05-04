@@ -492,7 +492,17 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 	if (argc == 2) {
 		resources = argv[1];
 	}else { //for more comfort debug
-		std::string path = FileSystem::getCurrentPath();
+		std::string path;
+		char *charsPathUTF8 = SDL_GetBasePath();
+		if (charsPathUTF8) {
+			path = charsPathUTF8;
+			SDL_free(charsPathUTF8);
+		}else {
+			std::cout << "argsProcessing, SDL_GetBasePath:\n" <<
+			             SDL_GetError() << '\n';
+			path = FileSystem::getCurrentPath();
+		}
+
 		String::replaceAll(path, "\\", "/");
 		if (!String::endsWith(path, "/")) {
 			path += "/";
@@ -513,7 +523,7 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 	}
 
 
-	for (const char *i : {"--help", "-help", "-h", "h", "/?", "?"}) {
+	for (const char *i : { "--help", "-help", "-h", "h", "/?", "?" }) {
 		if (resources == i) {
 			std::cout << "Ren-Engine is fast analog of Ren'Py\n"
 			             "Usage:\n"
@@ -525,7 +535,7 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 			return true;
 		}
 	}
-	for (const char *i : {"--version", "-version", "-ver", "-v", "v"}) {
+	for (const char *i : { "--version", "-version", "-ver", "-v", "v" }) {
 		if (resources == i) {
 			std::cout << "Ren-Engine " << getVersion() << '\n';
 			return true;
