@@ -3,7 +3,7 @@ init 10 python:
 	set_can_mouse_hide(False)
 	
 	db.hide_interface = True
-	start_screens = ['hotkeys', 'fps_meter', 'map', 'control', 'info']
+	start_screens = ['hotkeys', 'debug_screen', 'map', 'control', 'info']
 	
 	style.btn = Style(style.textbutton)
 	style.btn.ground = im.rect('#08F')
