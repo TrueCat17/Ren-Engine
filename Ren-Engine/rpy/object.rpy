@@ -65,7 +65,12 @@ init -100000 python:
 			return True
 		
 		def __cmp__(self, other):
-			return id(self) - id(other)
+			# not `return id(self) - id(other)`
+			#   because __cmp__ must return int
+			#   but ptr_diff is unsigned int, mb int overflow and returning long (that error)
+			if self is other: return 0
+			if id(self) < id(other): return -1
+			return 1
 		
 		def get_props(self, get_list = False):
 			keys = self.__dict__.keys()
