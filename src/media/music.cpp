@@ -506,14 +506,17 @@ bool Music::initCodec() {
 		return true;
 	}
 
-	int64_t outChannelLayout = AV_CH_LAYOUT_STEREO;
-	AVSampleFormat outSampleFmt = AV_SAMPLE_FMT_S16;
-	int64_t inChannelLayout = av_get_default_channel_layout(codecCtx->channels);
+	AVChannelLayout in, out;
+	av_channel_layout_default(&in, codecCtx->ch_layout.nb_channels);
+	av_channel_layout_default(&out, 2); //2 = stereo
 
-	auConvertCtx = swr_alloc_set_opts(nullptr, outChannelLayout, outSampleFmt, 44100,
-									  inChannelLayout, codecCtx->sample_fmt, codecCtx->sample_rate, 0, nullptr);
-	if (!auConvertCtx) {
-		Utils::outMsg("Music::initCodec: swr_alloc_set_opts",
+	auConvertCtx = nullptr;
+	if (swr_alloc_set_opts2(&auConvertCtx,
+	                        &out, AV_SAMPLE_FMT_S16, 44100,
+	                        &in, codecCtx->sample_fmt, codecCtx->sample_rate,
+	                        0, nullptr))
+	{
+		Utils::outMsg("Music::initCodec: swr_alloc_set_opts2",
 		              "Failed to create SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
 	}

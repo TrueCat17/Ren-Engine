@@ -253,7 +253,8 @@ Node* Parser::getMainNode() {
 					String::replaceAll(node->params, "'", "");
 					String::replaceAll(node->params, "\"", "");
 				}
-
+			}
+			if (node->command == "label") {
 				for (const Node *child : res->children) {
 					if (node->command == child->command && node->params == child->params) {
 						Logger::log("\nRedefinition " + node->command + " <" + node->params + ">:\n" +

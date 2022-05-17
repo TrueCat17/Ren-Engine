@@ -271,6 +271,7 @@ void PyUtils::errorProcessing(const std::string &code) {
 	if (ptraceback && ptraceback != Py_None) {
 		PyTuple_SET_ITEM(tuple1, 0, ptraceback);
 		PyObject *res = PyObject_Call(formatTraceback, tuple1, nullptr);
+		PyTuple_SET_ITEM(tuple1, 0, nullptr);
 
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
@@ -483,6 +484,7 @@ std::string PyUtils::getMd5(const std::string &str) {
 	PyObject *pyStr = PyString_FromStringAndSize(str.c_str(), long(str.size()));
 	PyTuple_SET_ITEM(tuple1, 0, pyStr);
 	PyObject_Call(update, tuple1, nullptr);
+	PyTuple_SET_ITEM(tuple1, 0, nullptr);
 	PyObject *pyRes = PyObject_Call(hexdigest, noArgs, nullptr);
 
 	std::string res = PyString_AS_STRING(pyRes);

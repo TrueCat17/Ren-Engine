@@ -1567,7 +1567,8 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 	SurfacePtr resizedImg;
 	if (w != img->w || h != img->h) {
 		resizedImg = getNewNotClear(w, h);
-		SDL_BlitScaled(img.get(), nullptr, resizedImg.get(), nullptr);
+		SurfacePtr imgNotPaletted = img->format->BitsPerPixel < 24 ? ImageCaches::convertToRGBA32(img) : img;
+		SDL_BlitScaled(imgNotPaletted.get(), nullptr, resizedImg.get(), nullptr);
 	}else {
 		resizedImg = img;
 	}
@@ -1578,15 +1579,8 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 	std::string parentDir = FileSystem::getParentDirectory(path);
 	std::string filename = FileSystem::getFileName(path);
 
-	if (String::endsWith(parentDir, "\\")) {
-		parentDir.pop_back();
-	}
-	if (!parentDir.empty() && !String::endsWith(parentDir, "/")) {
-		parentDir.push_back('/');
-	}
-
 	std::string tmpPath;
-	int i = 0;
+	size_t i = 0;
 	while (true) {
 		tmpPath = parentDir + "_" + std::to_string(i++) + filename;
 		if (!FileSystem::exists(tmpPath)) break;

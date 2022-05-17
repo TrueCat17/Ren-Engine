@@ -51,6 +51,7 @@ void Child::updateProps() {
 				if (func) {
 					func(this, 0);
 				}
+				PyTuple_SET_ITEM(props, 0, nullptr);
 			}
 		}
 

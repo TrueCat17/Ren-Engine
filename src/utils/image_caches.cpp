@@ -16,14 +16,7 @@
 #include "utils/utils.h"
 
 
-static bool unusualFormat(const SurfacePtr &surface) {
-	if (surface->format->palette) return false;
-	if (surface->format->format == SDL_PIXELFORMAT_RGBA32) return false;
-	if (surface->format->format == SDL_PIXELFORMAT_RGB24 && SDL_HasColorKey(surface.get()) == SDL_FALSE) return false;
-
-	return true;
-}
-static SurfacePtr convertToRGBA32(const SurfacePtr &surface) {
+SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
 	Uint32 format = surface->format->format;
 	if (format == SDL_PIXELFORMAT_RGBA32) return surface;
 
@@ -348,6 +341,13 @@ SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path, bool fo
 
 
 
+static bool unusualFormat(const SurfacePtr &surface) {
+	if (surface->format->palette) return false;
+	if (surface->format->format == SDL_PIXELFORMAT_RGBA32) return false;
+	if (surface->format->format == SDL_PIXELFORMAT_RGB24 && SDL_HasColorKey(surface.get()) == SDL_FALSE) return false;
+
+	return true;
+}
 
 SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 	std::lock_guard g(surfaceMutex);

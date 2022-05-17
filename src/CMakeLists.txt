@@ -13,14 +13,17 @@ endif()
 
 
 if (PLATFORM STREQUAL "win32")
+	set(OUTPUT_NAME "${PROJECT_NAME}")
 	set(CMAKE_CXX_COMPILER "i686-w64-mingw32-g++")
 	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/win32")
 
 elseif (PLATFORM STREQUAL "linux-i686")
+	set(OUTPUT_NAME "${PLATFORM}")
 	set(CMAKE_CXX_COMPILER "i686-linux-gnu-g++")
 	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/linux-i686")
 
 elseif(PLATFORM  STREQUAL "linux-x86_64")
+	set(OUTPUT_NAME "${PLATFORM}")
 	set(CMAKE_CXX_COMPILER "x86_64-linux-gnu-g++")
 	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/linux-x86_64")
 
@@ -79,7 +82,6 @@ link_libraries(
 	freetype
 	brotlidec-static
 	brotlicommon-static
-	z
 )
 
 if (PLATFORM STREQUAL "win32")
@@ -87,13 +89,18 @@ if (PLATFORM STREQUAL "win32")
 	
 	link_libraries(
 		:python27.dll
+		z
 		opengl32
 		winmm imm32 version setupapi # for SDL2
 		ws2_32 # for avformat
 	)
 else()
+	# for python dynamic module _ssl.so
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Xlinker --export-dynamic")
+
 	link_libraries(
 		python2.7 dl util
+		z # z after python, because python's zlibmodule uses libz
 		GL
 		jemalloc
 		c m
@@ -108,10 +115,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wno-register -Wall -Wextra -
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wconversion -Wsign-conversion -Wfloat-equal")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 
-#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
-#set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
 
 
 
@@ -127,4 +134,4 @@ file(GLOB SOURCES
 	"utils/*.cpp"
 )
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${OUTPUT_NAME} ${SOURCES})

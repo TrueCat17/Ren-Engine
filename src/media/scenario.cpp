@@ -522,21 +522,28 @@ void Scenario::execute(const std::string &loadPath) {
 		}
 
 		if (child->command == "text") {
-			size_t startText = 0;
-			std::string nick;
+			bool whoDefined = false;
+			std::string who;
+			std::string what;
 
 			if (child->params[0] != '"' && child->params[0] != '\'') {//Is character defined?
 				size_t space = child->params.find(' ');
-				startText = child->params.find_first_not_of(' ', space);
+				if (space != size_t(-1)) {
+					size_t startText = child->params.find_first_not_of(' ', space);
+					if (startText != size_t(-1)) {
+						what = child->params.substr(startText);
+					}
+				}
 
-				nick = child->params.substr(0, space);
+				who = child->params.substr(0, space);
+				whoDefined = true;
 			}else {
-				nick = "narrator";
+				who = "narrator";
+				what = child->params;
 			}
-			std::string textCode = child->params.substr(startText);
 
 
-			std::string tmp = (startText ? nick + " " : "") + textCode + "\r\n";
+			std::string tmp = (whoDefined ? who + " " : "") + what + "\r\n";
 			std::string md5 = PyUtils::getMd5(tmp);
 
 			size_t i = stack.size() - 1;
@@ -553,7 +560,7 @@ void Scenario::execute(const std::string &loadPath) {
 				stack.push_back({obj, num});
 			}else {
 				PyUtils::exec(child->getFileName(), child->getNumLine(),
-				              "renpy.say(" + nick + ", " + textCode + ")");
+				              "renpy.say(" + who + ", " + what + ")");
 			}
 			continue;
 		}

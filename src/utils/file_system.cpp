@@ -79,7 +79,16 @@ void FileSystem::rename(const std::string &oldPath, const std::string &newPath) 
 
 
 std::string FileSystem::getParentDirectory(const std::string &path) {
-	return fs::path(clear(path)).lexically_normal().parent_path().string();
+	std::string res = fs::path(clear(path)).lexically_normal().parent_path().string();
+
+	if (String::endsWith(res, "\\")) {
+		res.pop_back();
+	}
+	if (!res.empty() && !String::endsWith(res, "/")) {
+		res.push_back('/');
+	}
+
+	return res;
 }
 std::string FileSystem::getFileName(const std::string &path) {
 	return fs::path(clear(path)).lexically_normal().filename().string();

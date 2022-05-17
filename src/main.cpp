@@ -511,8 +511,12 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 
 		if (FileSystem::exists(path)) {
 			std::ifstream is(path);
-			while (!is.eof() && resources.empty()) {
-				std::getline(is, resources);
+			while (!is.eof()) {
+				std::string s;
+				std::getline(is, s);
+				if (!s.empty()) {
+					resources = s;
+				}
 			}
 			if (!FileSystem::isDirectory(resources)) {
 				std::cout << "Path of resources is not a directory or does not exist\n"
