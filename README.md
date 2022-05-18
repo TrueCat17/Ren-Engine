@@ -34,6 +34,17 @@ Ren-Engine - это движок для игр: Визуальных Новел�
 Но сначала нужно собрать 12 библиотек (см. `libs/readme`), от которых прямо или косвенно он зависит.  
 Скачивание всех исходников и их сборка автоматизированы в десяток команд, выполняющиеся за 20 минут.
 
+Скачивание этого репозитория:
+```
+git clone --depth=1 https://github.com/TrueCat17/Ren-Engine
+```
+Переход в проект:  
+`cd ./Ren-Engine/`  
+Скачивание зависимостей (`libs`):
+```
+git submodule update --init --depth=1
+```
+
 
 
 ## \[en]
@@ -60,5 +71,16 @@ so the documentation has no English translation now, but you can use translator.
 
 #### Building
 If you for some reason decided to build engine by yourself, see `build/readme`.  
-But before you must build 12 libs (see `libs/readme`), that are direct or indirect dependences.  
+But before you must build 12 libs (see `libs/readme`), that are direct or indirect dependencies.  
 Downloading and building automated to ~10 commands and generally take 20 minutes.
+
+Download this repository:
+```
+git clone --depth=1 https://github.com/TrueCat17/Ren-Engine
+```
+Enter to project directory:  
+`cd ./Ren-Engine/`  
+Download dependencies (`libs`):
+```
+git submodule update --init --depth=1
+```
