@@ -23,7 +23,7 @@ public:
 	static void init();
 
 	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
-	static void saveSurface(const SurfacePtr &image, const std::string &path, const std::string &width, const std::string &height, bool now = false);
+	static void saveSurface(const SurfacePtr &image, std::string path, const std::string &width, const std::string &height, bool now = false);
 
 	static SurfacePtr getNewNotClear(int w, int h, Uint32 format = SDL_PIXELFORMAT_UNKNOWN);
 

@@ -1545,7 +1545,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 static Uint8 png1x1Black[] = {
     137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 55, 110, 249, 36, 0, 0, 0, 10, 73, 68, 65, 84, 8, 215, 99, 96, 0, 0, 0, 2, 0, 1, 226, 33, 188, 51, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130
 };
-void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &path, const std::string &width, const std::string &height, bool now) {
+void ImageManipulator::saveSurface(const SurfacePtr &img, std::string path, const std::string &width, const std::string &height, bool now) {
 	if (!img) return;
 
 	if (!now) {
@@ -1556,6 +1556,30 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 		std::lock_guard g(preloadMutex);
 		toSaveImages.push_back({img, path, width, height});
 		return;
+	}
+
+	size_t doubleColonIndex = path.find("::");
+	int quality = 97;
+	if (doubleColonIndex != size_t(-1)) {
+		std::string qualityStr = path.substr(doubleColonIndex + std::strlen("::"));
+		int tmpQuality = String::toInt(qualityStr);
+		if (tmpQuality > 0) {
+			quality = std::min(tmpQuality, 100);
+		}
+		path.erase(doubleColonIndex);
+	}
+	bool isJPG = String::endsWith(path, ".jpg") || String::endsWith(path, ".jpeg");
+
+	//allow unfinished image only with tmp name
+
+	std::string parentDir = FileSystem::getParentDirectory(path);
+	std::string filename = FileSystem::getFileName(path);
+
+	std::string tmpPath;
+	size_t i = 0;
+	while (true) {
+		tmpPath = parentDir + "_" + std::to_string(i++) + filename;
+		if (!FileSystem::exists(tmpPath)) break;
 	}
 
 	const std::string widthStr = Algo::clear(width);
@@ -1570,23 +1594,33 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, const std::string &pat
 		SurfacePtr imgNotPaletted = img->format->BitsPerPixel < 24 ? ImageCaches::convertToRGBA32(img) : img;
 		SDL_BlitScaled(imgNotPaletted.get(), nullptr, resizedImg.get(), nullptr);
 	}else {
-		resizedImg = img;
-	}
-	SurfacePtr imgToSave = optimizeSurfaceFormat(resizedImg);
-
-	//allow unfinished image only with tmp name
-
-	std::string parentDir = FileSystem::getParentDirectory(path);
-	std::string filename = FileSystem::getFileName(path);
-
-	std::string tmpPath;
-	size_t i = 0;
-	while (true) {
-		tmpPath = parentDir + "_" + std::to_string(i++) + filename;
-		if (!FileSystem::exists(tmpPath)) break;
+		resizedImg = (isJPG && img->format->BitsPerPixel < 24) ? ImageCaches::convertToRGBA32(img) : img;
 	}
 
-	IMG_SavePNG(imgToSave.get(), tmpPath.c_str());
+	if (isJPG) {
+		SurfacePtr imgToSave;
+		if (resizedImg->format->BitsPerPixel == 24) { //RGB24
+			imgToSave = resizedImg;
+		}else {                                       //RGBA32
+			imgToSave = getNewNotClear(w, h);
+			SDL_FillRect(imgToSave.get(), nullptr, Uint32(0xFF << Ashift));//black
+
+			SDL_BlendMode old;
+			SDL_GetSurfaceBlendMode(resizedImg.get(), &old);
+			SDL_SetSurfaceBlendMode(resizedImg.get(), SDL_BLENDMODE_BLEND);
+			SDL_BlitSurface(resizedImg.get(), nullptr, imgToSave.get(), nullptr);
+			SDL_SetSurfaceBlendMode(resizedImg.get(), old);
+		}
+		if (IMG_SaveJPG(imgToSave.get(), tmpPath.c_str(), quality)) {
+			Utils::outMsg("ImageManipulator::saveSurface", IMG_GetError());
+		}
+	}else {
+		SurfacePtr imgToSave = optimizeSurfaceFormat(resizedImg);
+		if (IMG_SavePNG(imgToSave.get(), tmpPath.c_str())) {
+			Utils::outMsg("ImageManipulator::saveSurface", IMG_GetError());
+		}
+	}
+
 	if (FileSystem::exists(path)) {
 		FileSystem::remove(path);
 	}
