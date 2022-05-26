@@ -34,17 +34,27 @@ void Child::updateProps() {
 
 			std::string style = node->command;
 			for (const Node *child : node->children) {
+				if (child->command == "has") {
+					style = child->params;
+					break;
+				}
+			}
+			for (const Node *child : node->children) {
 				if (child->command == "style") {
 					style = child->params;
 					break;
 				}
 			}
+			bool defaultStyle = style == node->command;
 
 			const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
 
 			props = PyUtils::tuple1;
 			for (const std::string &prop : propNames) {
 				PyObject *res = Style::getProp(style, prop);
+				if (res == Py_None && !defaultStyle) {
+					res = Style::getProp(node->command, prop); // try find in default style
+				}
 				PyTuple_SET_ITEM(props, 0, res);
 
 				ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, prop);

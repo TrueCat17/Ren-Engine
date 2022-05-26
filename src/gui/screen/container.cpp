@@ -214,7 +214,7 @@ void Container::addChildrenFromNode() {
 		{
 			static const std::vector<std::string> propsVec = String::split(
 				"break, continue, $, python, "
-				"pass, "
+			    "pass, style, "
 				"has, first_param, spacing, "
 			    "xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, xzoom, yzoom, "
 			    "align, anchor, pos, size, zoom, crop, rotate, alpha, clipping, "
