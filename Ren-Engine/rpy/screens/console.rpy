@@ -359,7 +359,7 @@ screen console:
 	
 	$ db.skip_tab = False
 	
-	key 'ESCAPE' action [Hide('console'), SetVariable('pause_hided_time', get_game_time())]
+	key 'ESCAPE' action [Hide('console'), SetVariable('pause_screen.hided_time', get_game_time())]
 	
 	$ console_ctrl  = False
 	key 'LEFT CTRL'   action SetVariable('console_ctrl', True) first_delay 0
