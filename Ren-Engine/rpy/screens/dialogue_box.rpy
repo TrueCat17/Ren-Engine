@@ -172,6 +172,13 @@ init -1000 python:
 	db.skip_tab = False
 	db.mode = 'adv'
 	
+	db.last_alt_time = -1
+	db.last_shift_time = -1
+	db.press_ctrl_time = -1
+	db.ctrl = False
+	db.no_skip_time_alt_shift = 0.5
+	db.no_skip_time_ctrl = 0.33
+	
 	db.font = style.text.font
 	
 	db.name = gui + 'dialogue/name.png'
@@ -203,6 +210,12 @@ init -1000 python:
 	can_exec_next_check_funcs.append(db_read_func)
 	
 	
+	def db__disable_skipping_on_menu(screen_name):
+		if screen_name == 'choose_menu':
+			db.skip_tab = False
+	signals.add('show_screen', db__disable_skipping_on_menu)
+	
+	
 	
 	window_show = SetDict(db, 'visible', True)
 	window_hide = SetDict(db, 'visible', False)
@@ -229,17 +242,32 @@ screen dialogue_box:
 	if db.to_next:
 		$ db.skip_tab = False
 	
-	$ db.skip_ctrl = False
-	key 'LEFT CTRL'  action SetDict(db, 'skip_ctrl', True) first_delay 0
-	key 'RIGHT CTRL' action SetDict(db, 'skip_ctrl', True) first_delay 0
+	key 'LEFT SHIFT'  action SetDict(db, 'last_shift_time', get_game_time()) first_delay 0
+	key 'RIGHT SHIFT' action SetDict(db, 'last_shift_time', get_game_time()) first_delay 0
+	key 'LEFT ALT'    action SetDict(db, 'last_alt_time', get_game_time()) first_delay 0
+	key 'RIGHT ALT'   action SetDict(db, 'last_alt_time', get_game_time()) first_delay 0
+	
+	$ db.prev_ctrl = db.ctrl
+	$ db.ctrl = False
+	key 'LEFT CTRL'  action SetDict(db, 'ctrl', True) first_delay 0
+	key 'RIGHT CTRL' action SetDict(db, 'ctrl', True) first_delay 0
+	if db.ctrl and not db.prev_ctrl:
+		$ db.press_ctrl_time = get_game_time()
+	
 	if db.visible:
-		key 'TAB'    action  SetDict(db, 'skip_tab', not db.skip_tab)
+		key 'TAB' action SetDict(db, 'skip_tab', not db.skip_tab)
 	key 'ESCAPE' action [SetDict(db, 'skip_tab', False), SetDict(db, 'hide_interface', False)]
 	
 	python:
-		if db.skip_ctrl or db.skip_tab:
-			db.hide_interface = False
-			db.to_next = True
+		db.skip = False
+		if get_game_time() - max(db.last_shift_time, db.last_alt_time) > db.no_skip_time_alt_shift:
+			db.skip_ctrl = db.ctrl and get_game_time() - db.press_ctrl_time > db.no_skip_time_ctrl
+			if db.skip_ctrl or db.skip_tab:
+				db.hide_interface = False
+				db.skip = True
+				db.to_next = True
+		else:
+			db.skip_ctrl = db.skip_tab = False
 		
 		if db.to_next:
 			db.on_enter()
@@ -283,7 +311,7 @@ screen dialogue_box:
 							yalign 0.5
 							ground db.prev_btn
 							size   (db.prev_btn_size, db.prev_btn_size)
-							action prev_text_show
+							action prev_text.show
 						
 						image db.voice:
 							size db.voice_size
@@ -333,7 +361,7 @@ screen dialogue_box:
 							yalign 0.5
 							ground db.prev_btn
 							size   (db.prev_btn_size, db.prev_btn_size)
-							action prev_text_show
+							action prev_text.show
 						
 						null size db.voice_size
 						
@@ -343,7 +371,7 @@ screen dialogue_box:
 							size   (db.next_btn_size, db.next_btn_size)
 							action db.on_enter
 			
-			if db.skip_ctrl or db.skip_tab:
+			if db.skip:
 				text 'Skip Mode':
 					color 0xFFFFFF
 					text_size 30

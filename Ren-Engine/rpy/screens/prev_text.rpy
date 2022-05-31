@@ -1,72 +1,72 @@
 init python:
-	pt_background = im.rect('#181818BB')
-	
-	pt_spacing = 5
-	pt_x_indent = 20
-	pt_xsize = 0.75
-	pt_ysize = 0.95
-	
-	slider_v_init('prev_text', 0, pt_ysize)
-	
-	
-	pt_showed_time = 0
-	pt_hided_time = 0
-	pt_appearance_time = 0.4
-	pt_disappearance_time = 0.4
-	
-	def prev_text_show():
-		global pt_showed_time, pt_hided_time
-		pt_showed_time = get_game_time()
-		pt_hided_time = 0
+	def prev_text__show():
+		prev_text.showed_time = get_game_time()
+		prev_text.hided_time = 0
 		show_screen('prev_text')
 	
-	def prev_text_close():
-		global pt_hided_time
-		pt_hided_time = get_game_time()
+	def prev_text__close():
+		prev_text.hided_time = get_game_time()
+	
+	build_object('prev_text')
+	
+	prev_text.background = im.rect('#181818BB')
+	
+	prev_text.spacing = 5
+	prev_text.x_indent = 20
+	prev_text.xsize = 0.75
+	prev_text.ysize = 0.95
+	
+	slider_v_init('prev_text', 0, prev_text.ysize)
+	
+	
+	prev_text.showed_time = 0
+	prev_text.hided_time = 0
+	prev_text.appearance_time = 0.4
+	prev_text.disappearance_time = 0.4
 
 
 screen prev_text:
 	modal True
 	zorder 10000
 	
-	key 'ESCAPE' action prev_text_close
+	key 'ESCAPE' action prev_text.close
 	
 	button:
 		ground 'images/bg/black.jpg'
-		size (1.0, 1.0)
+		size  1.0
 		alpha 0.01
 		mouse False
-		action prev_text_close
+		action prev_text.close
 	
 	
 	python:
-		dtime = get_game_time() - pt_showed_time
-		x = int(-pt_xsize * get_stage_width() * (pt_appearance_time - dtime) / pt_appearance_time)
+		dtime = get_game_time() - prev_text.showed_time
+		x = int(-prev_text.xsize * get_stage_width() * (prev_text.appearance_time - dtime) / prev_text.appearance_time)
 		if x > 0:
 			x = 0
 		
-		pt_viewport_content_height = len(db.prev_texts) * (db.text_size + pt_spacing) * 2 # 2 - extra space for wordwraps
-		slider_v_change('prev_text', length = pt_viewport_content_height, button_size = db.text_size)
-		y = int(-slider_v_get_value('prev_text') * (pt_viewport_content_height - pt_ysize * get_stage_height()))
+		prev_text.viewport_content_height = len(db.prev_texts) * (db.text_size + prev_text.spacing) * 2 # 2 - extra space for wordwraps
+		slider_v_change('prev_text', length = prev_text.viewport_content_height, button_size = db.text_size)
+		y = int(-slider_v_get_value('prev_text') * (prev_text.viewport_content_height - prev_text.ysize * get_stage_height()))
 		
-		if pt_hided_time:
-			dtime = get_game_time() - pt_hided_time
-			alpha = (pt_disappearance_time - dtime) / pt_disappearance_time
+		if prev_text.hided_time:
+			dtime = get_game_time() - prev_text.hided_time
+			alpha = (prev_text.disappearance_time - dtime) / prev_text.disappearance_time
 			if alpha <= 0:
-				renpy.hide_screen('prev_text')
+				hide_screen('prev_text')
 		else:
 			alpha = 1
 	
-	image pt_background:
+	image prev_text.background:
 		clipping True
 		alpha alpha
 		xpos x
 		yalign 0.5
-		size (pt_xsize, pt_ysize)
+		size (prev_text.xsize, prev_text.ysize)
 		
 		vbox:
 			ypos y
-			spacing pt_spacing
+			spacing prev_text.spacing
 			
 			for name_text, name_color, text, text_color in db.prev_texts:
 				if name_text:
@@ -77,8 +77,8 @@ screen prev_text:
 				text (tmp_name + text):
 					text_size db.text_size
 					color text_color
-					xsize int(pt_xsize * get_stage_width()) - pt_x_indent * 2 - db.text_size
-					xpos pt_x_indent
+					xsize int(prev_text.xsize * get_stage_width()) - prev_text.x_indent * 2 - db.text_size
+					xpos prev_text.x_indent
 		
 		null:
 			align (0.99, 0.5)

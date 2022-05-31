@@ -5,7 +5,7 @@ screen choose_menu:
 	use hotkeys
 	
 	image 'images/bg/black.jpg':
-		size (1.0, 1.0)
+		size  1.0
 		alpha 0.05
 	
 	vbox:
@@ -14,9 +14,10 @@ screen choose_menu:
 		
 		for i in xrange(len(choose_menu_variants)):
 			if choose_menu_variants[i]:
-				textbutton _(choose_menu_variants[i]) action Return(i):
+				textbutton _(choose_menu_variants[i]):
 					text_size 20
 					size (300, 35)
+					action Return(i)
 			elif choose_menu_variants[i] is not None:
 				null ysize 35
 	
@@ -34,7 +35,7 @@ screen choose_menu:
 				yalign 0.5
 				ground db.prev_btn
 				size   (db.prev_btn_size, db.prev_btn_size)
-				action prev_text_show
+				action prev_text.show
 			
 			null size db.voice_size # text
 			null size (db.next_btn_size, db.next_btn_size) # next
@@ -42,9 +43,9 @@ screen choose_menu:
 	
 	button:
 		ground 	db.menu_btn
-
-		anchor (0.5, 0.5)
-		pos    (get_stage_width() - db.menu_btn_indent - db.menu_btn_size / 2, db.menu_btn_indent + db.menu_btn_size / 2)
-		size   (db.menu_btn_size, db.menu_btn_size)
+		
+		anchor 0.5
+		pos   (get_stage_width() - db.menu_btn_indent - db.menu_btn_size / 2, db.menu_btn_indent + db.menu_btn_size / 2)
+		size  (db.menu_btn_size, db.menu_btn_size)
 		action pause_screen.show
 
