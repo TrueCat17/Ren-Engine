@@ -259,9 +259,15 @@ static void loop() {
 
 		GV::updateMutex.lock();
 
-		GV::prevFrameStartTime = GV::frameStartTime;
-		GV::frameStartTime = Utils::getTimer();
-		GV::gameTime += Game::getLastTick();
+		{
+			std::lock_guard g(PyUtils::pyExecMutex);
+
+			GV::prevFrameStartTime = GV::frameStartTime;
+			GV::frameStartTime = Utils::getTimer();
+			GV::gameTime += Game::getLastTick();
+
+			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('enter_frame')");
+		}
 
 		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;
@@ -427,6 +433,8 @@ static void loop() {
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "need_screenshot = False");
 			Game::makeScreenshot();
 		}
+
+		PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('exit_frame')");
 
 		GV::updateMutex.unlock();
 

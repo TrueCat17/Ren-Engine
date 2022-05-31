@@ -34,9 +34,9 @@ void GUI::update() {
 	DisplayObject::disableAll();
 	Stage::screens->enable = true;
 
-	PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('enter_frame')");
+	std::lock_guard g(PyUtils::pyExecMutex);
+	PyObject *pyDict = PyDict_New();
 
-	std::map<std::string, double> dict;
 	for (DisplayObject *child : Stage::screens->children) {
 		double st = Utils::getTimer();
 
@@ -70,23 +70,14 @@ void GUI::update() {
 		             round(time1, time5) << '\n';
 #endif
 
-		dict[scr->getName()] = Utils::getTimer() - st;
+		const std::string &name = scr->getName();
+		double time = Utils::getTimer() - st;
+		PyDict_SetItemString(pyDict, name.c_str(), PyFloat_FromDouble(time));
 	}
 
-	{
-		std::lock_guard g(PyUtils::pyExecMutex);
-
-		PyObject *pyDict = PyDict_New();
-		for (auto [name, time] : dict) {
-			PyDict_SetItemString(pyDict, name.c_str(), PyFloat_FromDouble(time));
-		}
-
-		Py_XDECREF(screenTimes);
-		screenTimes = pyDict;
-	}
+	Py_XDECREF(screenTimes);
+	screenTimes = pyDict;
 
 	Screen::updateLists();
 	Screen::updateScreens();
-
-	PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('exit_frame')");
 }
