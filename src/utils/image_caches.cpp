@@ -378,6 +378,21 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 		}
 	}
 
+	if (String::startsWith(realPath, "images/bg/black.")) {
+		res.reset(SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32), SDL_FreeSurface);
+		if (!res) {
+			Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
+			return nullptr;
+		}
+		if (SDL_FillRect(res.get(), nullptr, SDL_MapRGBA(res->format, 0, 0, 0, 255))) {
+			Utils::outMsg("SDL_FillRect", SDL_GetError());
+			return nullptr;
+		}
+
+		setSurface(path, res);
+		return res;
+	}
+
 	res.reset(IMG_Load(realPath.c_str()), SDL_FreeSurface);
 	if (!res) {
 		Utils::outMsg("IMG_Load", IMG_GetError());
