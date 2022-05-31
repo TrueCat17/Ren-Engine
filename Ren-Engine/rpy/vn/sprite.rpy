@@ -35,8 +35,6 @@ init -9000 python:
 				return
 			
 			for data in self.data_list:
-				xsize = ysize = 0
-				
 				if data.xsize is not None:
 					xsize = get_absolute(data.xsize, get_stage_width())
 				else:

@@ -5,18 +5,19 @@ init -9000 python:
 			Object.__init__(self)
 			
 			self.prop, self.dist, self.time_one, self.time_all = prop, dist, time_one, time_all
-			self.start_time = get_game_time()
+			self.start_time = None
 		
-		def copy(self, spr = None):
+		def copy(self, spr):
 			screen.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
-			
-			if spr is screen:
-				return screen.effect
 			return None 
 		
 		
 		def update(self):
-			dtime = get_game_time() - self.start_time
+			if self.start_time is not None:
+				dtime = get_game_time() - self.start_time
+			else:
+				dtime = 0
+				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
 			
 			if dtime >= self.time_all:
 				screen.new_data[self.prop] = 0

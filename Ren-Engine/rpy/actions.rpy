@@ -57,5 +57,14 @@ init -10000 python:
 	def Language(lang):
 		return Function(renpy.change_language, lang)
 	
-	
 	# Return -> call_screen.rpy
+	
+	
+	class SetDictFuncRes(Object):
+		def __init__(self, obj, var_name, func):
+			Object.__init__(self)
+			self.obj, self.var_name, self.func = obj, var_name, func
+		def __call__(self):
+			obj = self.obj if self.obj is not None else globals()
+			obj[self.var_name] = self.func()
+	

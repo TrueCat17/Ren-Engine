@@ -25,8 +25,9 @@ init -9000 python:
 			self.show_at = SpriteAnimation(show_at, self)
 		
 		def update(self):
-			for at in (self.decl_at, self.at, self.show_at):
-				at.update()
+			self.decl_at.update()
+			self.at.update()
+			self.show_at.update()
 			
 			for spr in self.contains:
 				spr.update()

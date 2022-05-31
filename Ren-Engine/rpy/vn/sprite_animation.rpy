@@ -10,27 +10,22 @@ init -9000 python:
 		return 1.0 - math.cos(t * math.pi / 2.0)
 	
 	
-	atl_props = (
-		('xpos', 'ypos', 'pos'),
-		('xanchor', 'yanchor', 'anchor'),
-		('xalign', 'yalign', 'align'),
-		('xsize', 'ysize', 'size'),
-		('xzoom', 'yzoom', 'zoom'),
-		('xcrop', 'ycrop', 'xsizecrop', 'ysizecrop', 'crop'),
-		('alpha'),
-		('rotate')
-	)
+	atl_props = {
+		'simple': ('alpha', 'rotate'),
+		'xy': ('pos', 'anchor', 'align', 'size', 'zoom'),
+		'crop': ('xcrop', 'ycrop', 'xsizecrop', 'ysizecrop'),
+	}
 	
 	# alpha -> [alpha]
 	# xpos  -> [xpos]
 	#  pos  -> [xpos, ypos]
 	def get_atl_props(prop):
-		for props in atl_props:
-			if prop in props:
-				if len(props) == 1 or props[-1] != prop:
-					return [prop]
-				return props[0:-1]
-		return None
+		if prop in atl_props['simple'] or (prop[0] in 'xy' and prop[1:] in atl_props['xy']):
+			return (prop, )
+		if prop in atl_props['xy']:
+			return ('x' + prop, 'y' + prop)
+		return atl_props.get(prop, None)
+	
 	
 	def get_prop_names(prop):
 		props = get_atl_props(prop)

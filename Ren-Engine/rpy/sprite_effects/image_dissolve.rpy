@@ -4,7 +4,7 @@ init -9000 python:
 		def __init__(self, mask, t = 1.0, ramp = 5, reverse = False, spr = None):
 			Object.__init__(self)
 			
-			self.start_time = get_game_time()
+			self.start_time = None
 			self.mask = mask
 			self.time = max(t, 0.001)
 			self.ramp = max(ramp, 1)
@@ -19,7 +19,11 @@ init -9000 python:
 			return res
 		
 		def update(self):
-			dtime = get_game_time() - self.start_time
+			if self.start_time is not None:
+				dtime = get_game_time() - self.start_time
+			else:
+				dtime = 0
+				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
 			
 			def upd_spr_data(data, k_time, mask, ramp, reverse, hiding):
 				if not data.image:

@@ -7,28 +7,24 @@ init -9000 python:
 			if in_time is None:
 				in_time = out_time
 			
-			self.start_time = get_game_time()
+			self.start_time = None
 			self.out_time   = max(out_time , 0.001)
 			self.hold_time  = max(hold_time, 0.001)
 			self.in_time    = max(in_time  , 0.001)
 			
 			self.color = color
-			self.inited = False
 			self.after_middle = False
 			
 			self.sprite = spr
 		
-		def copy(self, spr = None):
+		def copy(self, spr):
 			screen.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, screen)
-			if spr is screen:
-				return screen.effect
+			screen.new_data.alpha = 0
+			screen.new_data.image = im.rect(self.color, 1, 1)
 			
-			if spr:
-				spr.data_list = (spr.old_data,) if spr.old_data else ()
-				res = Fade(self.out_time, self.hold_time, self.in_time, self.color, spr)
-				return res
-			
-			return None
+			spr.data_list = (spr.old_data,) if spr.old_data else ()
+			res = Fade(self.out_time, self.hold_time, self.in_time, self.color, spr)
+			return res
 		
 		def update(self):
 			if self.sprite is not screen:
@@ -36,14 +32,11 @@ init -9000 python:
 					self.sprite.remove_effect()
 				return
 			
-			
-			if not self.inited:
-				self.inited = True
-				
-				screen.new_data.alpha = 0
-				screen.new_data.image = im.rect(self.color, 1, 1)
-			
-			dtime = get_game_time() - self.start_time
+			if self.start_time is not None:
+				dtime = get_game_time() - self.start_time
+			else:
+				dtime = 0
+				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
 			
 			if dtime < self.out_time + self.hold_time:
 				screen.new_data.alpha = in_bounds(dtime / self.out_time, 0.0, 1.0)

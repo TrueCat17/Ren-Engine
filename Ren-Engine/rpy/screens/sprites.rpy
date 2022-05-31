@@ -58,7 +58,7 @@ init -1000 python:
 			show_screen('sprites')
 		
 		if len(params) == 0:
-			out_msg('show_sprite', 'List params is empty')
+			out_msg('show_sprite', 'List of params is empty')
 			return
 		
 		params_str = ' '.join(params)
@@ -74,7 +74,7 @@ init -1000 python:
 			else:
 				d[pname] = pvalue
 		if len(params) == 0:
-			out_msg('show_sprite', 'List params does not contain name of sprite\n' + params_str)
+			out_msg('show_sprite', 'List of params does not contain name of sprite\n' + params_str)
 			return
 		
 		for pname in pnames:
@@ -139,7 +139,7 @@ init -1000 python:
 	
 	def hide_sprite(params):
 		if len(params) == 0:
-			out_msg('hide_sprite', 'List params is empty')
+			out_msg('hide_sprite', 'List of params is empty')
 			return
 		
 		global sprites_list
@@ -196,18 +196,16 @@ screen sprites:
 	
 	$ sprites_images = get_sprites_datas()
 	
-	null:
-		pos    (screen.new_data.xpos,       screen.new_data.ypos)
-		anchor (screen.new_data.xanchor,    screen.new_data.yanchor)
-		size   (screen.new_data.real_ysize, screen.new_data.real_xsize)
-		
-		for tmp in sprites_images:
-			image tmp.image:
-				pos    tmp.pos
-				anchor tmp.anchor
-				size   tmp.size
-				zoom   tmp.zoom
-				crop   tmp.crop
-				alpha  tmp.alpha
-				rotate tmp.rotate
-
+	pos    (screen.new_data.xpos,       screen.new_data.ypos)
+	anchor (screen.new_data.xanchor,    screen.new_data.yanchor)
+	size   (screen.new_data.real_ysize, screen.new_data.real_xsize)
+	
+	for tmp in sprites_images:
+		image tmp.image:
+			pos    tmp.pos
+			anchor tmp.anchor
+			size   tmp.size
+			zoom   tmp.zoom
+			crop   tmp.crop
+			alpha  tmp.alpha
+			rotate tmp.rotate
