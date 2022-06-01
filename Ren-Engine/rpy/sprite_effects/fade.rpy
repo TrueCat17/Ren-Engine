@@ -21,6 +21,8 @@ init -9000 python:
 			screen.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, screen)
 			screen.new_data.alpha = 0
 			screen.new_data.image = im.rect(self.color, 1, 1)
+			if spr is screen:
+				return screen.effect
 			
 			spr.data_list = (spr.old_data,) if spr.old_data else ()
 			res = Fade(self.out_time, self.hold_time, self.in_time, self.color, spr)

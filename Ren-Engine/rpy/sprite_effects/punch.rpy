@@ -9,6 +9,8 @@ init -9000 python:
 		
 		def copy(self, spr):
 			screen.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
+			if spr is screen:
+				return screen.effect
 			return None 
 		
 		

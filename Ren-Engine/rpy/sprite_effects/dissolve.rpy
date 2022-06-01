@@ -4,7 +4,7 @@ init -9000 python:
 		def __init__(self, t, spr = None):
 			Object.__init__(self)
 			
-			self.start_time = get_game_time()
+			self.start_time = None
 			self.time = max(t, 0.001)
 			
 			self.sprite = spr
@@ -152,7 +152,6 @@ init -9000 python:
 			common_data.xpos, common_data.ypos = xmin, ymin
 			common_data.xsize, common_data.ysize = width, height
 			
-			self.start_time = None
 			self.sprite.data_list = (common_data, self.sprite.old_data, self.sprite.new_data)
 			self.state_num = sum(data.state_num for data in all_datas)
 		
