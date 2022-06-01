@@ -13,7 +13,7 @@ init -9000 python:
 	atl_props = {
 		'simple': ('alpha', 'rotate'),
 		'xy': ('pos', 'anchor', 'align', 'size', 'zoom'),
-		'crop': ('xcrop', 'ycrop', 'xsizecrop', 'ysizecrop'),
+		'crop': ['xcrop', 'ycrop', 'xsizecrop', 'ysizecrop'],
 	}
 	
 	# alpha -> [alpha]
@@ -21,9 +21,9 @@ init -9000 python:
 	#  pos  -> [xpos, ypos]
 	def get_atl_props(prop):
 		if prop in atl_props['simple'] or (prop[0] in 'xy' and prop[1:] in atl_props['xy']):
-			return (prop, )
+			return [prop]
 		if prop in atl_props['xy']:
-			return ('x' + prop, 'y' + prop)
+			return ['x' + prop, 'y' + prop]
 		return atl_props.get(prop, None)
 	
 	
