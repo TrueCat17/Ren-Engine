@@ -54,6 +54,9 @@ init -10000 python:
 	ShowMenu = ShowScreen = Show
 	HideMenu = HideScreen = Hide
 	
+	def Notify(msg):
+		return Function(notification.out, str(msg))
+	
 	def Language(lang):
 		return Function(renpy.change_language, lang)
 	
