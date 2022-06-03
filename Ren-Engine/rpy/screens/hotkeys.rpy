@@ -9,7 +9,7 @@ screen hotkeys:
 		key 'LEFT SHIFT'  action SetVariable('hotkeys_shift', True) first_delay 0
 		key 'RIGHT SHIFT' action SetVariable('hotkeys_shift', True) first_delay 0
 		if hotkeys_shift:
-			key 'o' action show_console
+			key 'o' action console.show
 		
 		if not has_screen('prev_text') and not db.hide_interface:
 			key 'ESCAPE' action pause_screen.show
