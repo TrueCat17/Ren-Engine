@@ -1,64 +1,51 @@
 init -1000 python:
 	
-	sprites_list = []
-	
-	screen = Sprite([], [], [], None)
-	screen.new_data.xsize, screen.new_data.ysize = 1.0, 1.0
-	screen.new_data.real_xsize, screen.new_data.real_ysize = 1.0, 1.0
-	screen.call_str = 'screen'
-	
-	scene = None
-	
-	
-	def sprites_effects_ended():
-		for spr in sprites_list:
+	def sprites__effects_ended():
+		for spr in sprites.list:
 			if spr.effect is not None:
 				return False
-		return screen.effect is None
-	can_exec_next_check_funcs.append(sprites_effects_ended)
+		return sprites.screen.effect is None
+	can_exec_next_check_funcs.append(sprites__effects_ended)
 	
-	def sprites_effects_to_end():
-		for spr in sprites_list:
+	def sprites__effects_to_end():
+		for spr in sprites.list:
 			spr.remove_effect()
-		screen.remove_effect()
-		remove_hiding_sprites()
-	can_exec_next_skip_funcs.append(sprites_effects_to_end)
+		sprites.screen.remove_effect()
+		sprites.remove_hiding()
+	can_exec_next_skip_funcs.append(sprites__effects_to_end)
 	
-	def remove_hiding_sprites():
-		for spr in list(sprites_list): # copy
+	def sprites__remove_hiding():
+		for spr in list(sprites.list): # copy
 			if spr.hiding:
-				sprites_list.remove(spr)
+				sprites.list.remove(spr)
 			else:
 				if spr.effect is not None:
 					spr.effect.for_not_hiding()
 	
 	
-	def set_scene(params, show_at):
-		global sprites_list, scene
-		
+	
+	def sprites__set_scene(params, show_at):
 		if len(params):
-			show_sprite(params, show_at, True)
+			sprites.show(params, show_at, True)
 			
-			if screen.effect or scene.effect:
-				for spr in sprites_list:	
-					if spr is not scene:
+			if sprites.screen.effect or sprites.scene.effect:
+				for spr in sprites.list:
+					if spr is not sprites.scene:
 						spr.old_data, spr.new_data = spr.new_data, None
 						spr.hiding = True
 			else:
-				sprites_list = [scene]
+				sprites.list = [sprites.scene]
 		else:
-			sprites_list = []
-			scene = None
+			sprites.list = []
+			sprites.scene = None
 	
 	
-	def show_sprite(params, show_at, is_scene = False):
-		global scene
-		
+	def sprites__show(params, show_at, is_scene = False):
 		if not has_screen('sprites'):
 			show_screen('sprites')
 		
 		if len(params) == 0:
-			out_msg('show_sprite', 'List of params is empty')
+			out_msg('sprites.show', 'List of params is empty')
 			return
 		
 		params_str = ' '.join(params)
@@ -70,11 +57,11 @@ init -1000 python:
 			pname, pvalue = params[-2], params[-1]
 			params = params[0:-2]
 			if d.has_key(pname):
-				out_msg('show_sprite', 'Param <' + pname + '> specified several times')
+				out_msg('sprites.show', 'Param <' + pname + '> specified several times')
 			else:
 				d[pname] = pvalue
 		if len(params) == 0:
-			out_msg('show_sprite', 'List of params does not contain name of sprite\n' + params_str)
+			out_msg('sprites.show', 'List of params does not contain name of sprite\n' + params_str)
 			return
 		
 		for pname in pnames:
@@ -88,14 +75,14 @@ init -1000 python:
 		
 		old_sprite = None
 		if is_scene:
-			index = len(sprites_list)
+			index = len(sprites.list)
 		else:
 			index = 0
-			while index < len(sprites_list):
-				spr = sprites_list[index]
+			while index < len(sprites.list):
+				spr = sprites.list[index]
 				if spr.as_name == d['as']:
 					old_sprite = spr
-					sprites_list.remove(spr)
+					sprites.list.remove(spr)
 					break
 				index += 1
 		
@@ -117,32 +104,30 @@ init -1000 python:
 		spr = Sprite(decl_at, at, show_at, old_sprite if effect else None)
 		spr.as_name = d['as']
 		spr.call_str = params_str
-		if is_scene or old_sprite is scene:
-			scene = spr
+		if is_scene or old_sprite is sprites.scene:
+			sprites.scene = spr
 		spr.set_effect(effect)
 		
 		
 		if d['behind'] is not None:
 			index = 0
-			while index < len(sprites_list):
-				if sprites_list[index].as_name == d['behind']:
+			while index < len(sprites.list):
+				if sprites.list[index].as_name == d['behind']:
 					break
 				index += 1
 			else:
-				out_msg('show_sprite', 'Sprite <' + d['behind'] + '> not found')
+				out_msg('sprites.show', 'Sprite <' + d['behind'] + '> not found')
 		
-		if scene in sprites_list:
-			index = max(index, sprites_list.index(scene) + 1)
+		if sprites.scene in sprites.list:
+			index = max(index, sprites.list.index(sprites.scene) + 1)
 		
-		sprites_list.insert(index, spr)
+		sprites.list.insert(index, spr)
 		persistent._seen_images[image_name] = True
 	
-	def hide_sprite(params):
+	def sprites__hide(params):
 		if len(params) == 0:
-			out_msg('hide_sprite', 'List of params is empty')
+			out_msg('sprites.hide', 'List of params is empty')
 			return
-		
-		global sprites_list
 		
 		name = params[0]
 		
@@ -156,8 +141,8 @@ init -1000 python:
 			out_msg('hide_sprite', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <' + str(params) + '>')
 			return
 		
-		for i in xrange(len(sprites_list)):
-			spr = sprites_list[i]
+		for i in xrange(len(sprites.list)):
+			spr = sprites.list[i]
 			if spr.as_name == name:
 				if effect is not None:
 					spr.old_data, spr.new_data = spr.new_data, None
@@ -165,14 +150,14 @@ init -1000 python:
 					spr.set_effect(effect)
 					spr.hiding = True
 				else:
-					sprites_list = sprites_list[0:i] + sprites_list[i+1:]
+					sprites.list = sprites.list[0:i] + sprites.list[i+1:]
 				break
 		else:
-			out_msg('hide_sprite', 'Sprite <' + name + '> not found')
+			out_msg('sprites.hide', 'Sprite <' + name + '> not found')
 	
-	def get_sprites_datas():
+	def sprites__get_datas():
 		res = []
-		for spr in sprites_list + [screen]: # new list, because in update something can be removed from sprites_list
+		for spr in sprites.list + [sprites.screen]: # new list, because in update something can be removed from sprites.list
 			spr.update()
 			
 			for spr_data in spr.data_list:
@@ -190,17 +175,30 @@ init -1000 python:
 						tmp.rotate =  data.real_rotate
 						res.append(tmp)
 		return res
+	
+	
+	build_object('sprites')
+	
+	sprites.list = []
+	
+	sprites.screen = Sprite([], [], [], None)
+	sprites.screen.new_data.xsize, sprites.screen.new_data.ysize = 1.0, 1.0
+	sprites.screen.new_data.real_xsize, sprites.screen.new_data.real_ysize = 1.0, 1.0
+	sprites.screen.call_str = 'screen'
+	
+	sprites.scene = None
+
 
 screen sprites:
 	zorder -3
 	
-	$ sprites_images = get_sprites_datas()
+	$ sprites.images = sprites.get_datas()
 	
-	pos    (screen.new_data.xpos,       screen.new_data.ypos)
-	anchor (screen.new_data.xanchor,    screen.new_data.yanchor)
-	size   (screen.new_data.real_ysize, screen.new_data.real_xsize)
+	pos    (sprites.screen.new_data.xpos,       sprites.screen.new_data.ypos)
+	anchor (sprites.screen.new_data.xanchor,    sprites.screen.new_data.yanchor)
+	size   (sprites.screen.new_data.real_ysize, sprites.screen.new_data.real_xsize)
 	
-	for tmp in sprites_images:
+	for tmp in sprites.images:
 		image tmp.image:
 			pos    tmp.pos
 			anchor tmp.anchor

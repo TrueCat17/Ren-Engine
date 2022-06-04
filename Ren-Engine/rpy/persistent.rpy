@@ -111,9 +111,9 @@ init -10002 python:
 				continue
 			
 			# renpy contains module <random>, modules can't saves
-			# console_to_watch contains code-objects, that can't saves and
+			# console.to_watch contains code-objects, that can't saves and
 			# reference to globals() can't saves too
-			if o is renpy or o is console_to_watch or o is g:
+			if o is renpy or o is console.to_watch or o is g:
 				continue
 			
 			if t in simple_types or t in safe_types:

@@ -231,11 +231,11 @@ init python:
 			args = get_args(params)
 			
 			if command == 'scene':
-				set_scene(args, [])
+				sprites.set_scene(args, [])
 			elif command == 'show':
-				show_sprite(args, [])
+				sprites.show(args, [])
 			elif command == 'hide':
-				hide_sprite(args)
+				sprites.hide(args)
 		
 		else:
 			code = command + ' ' + params

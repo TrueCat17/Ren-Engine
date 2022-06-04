@@ -403,7 +403,7 @@ void Scenario::execute(const std::string &loadPath) {
 		if (child->command == "scene" || child->command == "show" || child->command == "hide") {
 			std::string funcName;
 			if (child->command == "scene") {
-				funcName = "set_scene";
+				funcName = "sprites.set_scene";
 			}else {
 				if (String::startsWith(child->params, "screen ")) {
 					const std::string screenName = child->params.substr(strlen("screen "));
@@ -414,7 +414,7 @@ void Scenario::execute(const std::string &loadPath) {
 					}
 					continue;
 				}else {
-					funcName = child->command + "_sprite";
+					funcName = "sprites." + child->command;
 				}
 			}
 
@@ -637,7 +637,7 @@ void Scenario::execute(const std::string &loadPath) {
 
 		if (child->command == "with") {
 			const std::string &effectName = child->params;
-			const std::string code = "screen.set_effect(" + effectName + ")";
+			const std::string code = "sprites.screen.set_effect(" + effectName + ")";
 			PyUtils::exec(child->getFileName(), child->getNumLine(), code);
 			continue;
 		}

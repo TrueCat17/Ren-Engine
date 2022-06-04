@@ -50,7 +50,7 @@ init -9000 python:
 			
 			new_data, old_data = self.sprite.new_data, self.sprite.old_data
 			
-			if self.sprite is scene:
+			if self.sprite is sprites.scene:
 				if old_data:
 					old_data.res_image = old_data.image
 				if new_data:
@@ -58,7 +58,7 @@ init -9000 python:
 				
 				if dtime >= self.time:
 					self.sprite.remove_effect()
-					remove_hiding_sprites()
+					sprites.remove_hiding()
 			else:
 				if old_data:
 					upd_spr_data(old_data, dtime / self.time, self.mask, self.ramp, self.reverse, True)

@@ -18,19 +18,19 @@ init -9000 python:
 			self.sprite = spr
 		
 		def copy(self, spr):
-			screen.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, screen)
-			screen.new_data.alpha = 0
-			screen.new_data.image = im.rect(self.color, 1, 1)
-			if spr is screen:
-				return screen.effect
+			sprites.screen.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, sprites.screen)
+			sprites.screen.new_data.alpha = 0
+			sprites.screen.new_data.image = im.rect(self.color, 1, 1)
+			if spr is sprites.screen:
+				return sprites.screen.effect
 			
 			spr.data_list = (spr.old_data,) if spr.old_data else ()
 			res = Fade(self.out_time, self.hold_time, self.in_time, self.color, spr)
 			return res
 		
 		def update(self):
-			if self.sprite is not screen:
-				if screen.effect is None:
+			if self.sprite is not sprites.screen:
+				if sprites.screen.effect is None:
 					self.sprite.remove_effect()
 				return
 			
@@ -41,19 +41,19 @@ init -9000 python:
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
 			
 			if dtime < self.out_time + self.hold_time:
-				screen.new_data.alpha = in_bounds(dtime / self.out_time, 0.0, 1.0)
+				sprites.screen.new_data.alpha = in_bounds(dtime / self.out_time, 0.0, 1.0)
 			else:
 				if not self.after_middle:
 					self.after_middle = True
-					remove_hiding_sprites()
+					sprites.remove_hiding()
 				
-				screen.new_data.alpha = 1 - in_bounds((dtime - self.out_time - self.hold_time) / self.out_time, 0.0, 1.0)
-				if screen.new_data.alpha == 0:
-					screen.remove_effect()
+				sprites.screen.new_data.alpha = 1 - in_bounds((dtime - self.out_time - self.hold_time) / self.out_time, 0.0, 1.0)
+				if sprites.screen.new_data.alpha == 0:
+					sprites.screen.remove_effect()
 		
 		def remove(self):
-			screen.new_data.alpha = 0
-			screen.effect = None
+			sprites.screen.new_data.alpha = 0
+			sprites.screen.effect = None
 		
 		def for_not_hiding(self):
 			self.sprite.old_data = None

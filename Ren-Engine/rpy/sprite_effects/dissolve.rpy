@@ -70,7 +70,7 @@ init -9000 python:
 			new_datas = self.sprite.new_data.get_all_data() if self.sprite.new_data else ()
 			old_datas = self.sprite.old_data.get_all_data() if self.sprite.old_data else ()
 			
-			if self.sprite is scene:
+			if self.sprite is sprites.scene:
 				return
 			
 			make_common = False
@@ -186,7 +186,7 @@ init -9000 python:
 				self.sprite.remove_effect()
 		
 		def remove(self):
-			remove_hiding_sprites()
+			sprites.remove_hiding()
 		
 		def for_not_hiding(self):
 			if self.sprite.new_data:
