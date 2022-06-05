@@ -445,6 +445,34 @@ void Scenario::execute(const std::string &loadPath) {
 			continue;
 		}
 
+		if (child->command == "style") {
+			std::string name, parent;
+			std::vector<std::string> words = String::split(child->params, " ");
+			if (words.size() == 1) {
+				name = child->params;
+				parent = "default";
+			}else {
+				name = words[0];
+				if (words.size() != 3 || words[1] != "is") {
+					Utils::outMsg("Scenatio::execute",
+					              "Expected 'style name [is parent]', got: style " + child->params + "\n" +
+					              child->getPlace());
+					continue;
+				}
+				parent = words[2];
+			}
+
+			std::string code;
+			code += "if not style." + name + ":\n";
+			code += "    style." + name + " = Style(style." + parent + ")\n";
+			for (const Node* prop : child->children) {
+				code += "style." + name + "." + prop->command + " = " + prop->params + "\n";
+			}
+
+			PyUtils::exec(child->getFileName(), child->getNumLine(), code);
+			continue;
+		}
+
 
 
 		if (!child->children.empty()) {

@@ -117,7 +117,7 @@ void SyntaxChecker::init() {
 	const std::string conditions = ", if, elif if elif, else if elif for while, ";
 
 	addBlockChildren("main", "init, init---python, label, screen, translate, translate---strings");
-	addBlockChildren("init", "for, while, " + conditions + "$, python, image");
+	addBlockChildren("init", "for, while, " + conditions + "$, python, image, style");
 	mapSyntax["init python"] = {};
 	addBlockChildren("label, if, elif, else, for, while",
 		"pass, return, for, while" + conditions +
@@ -144,6 +144,8 @@ void SyntaxChecker::init() {
 	addBlockChildren("imagemap", "hotspot, for, while" + conditions + simpleProps);
 
 	setSuperParents("init, init python, translate, translate strings, label, screen", SuperParent::MAIN);
+	setSuperParents("style", SuperParent::INIT);
+
 	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem, pause", SuperParent::LABEL);
 	setSuperParents(screenElems + "imagemap, hotspot, for, ground, hover" +
 					screenProps + simpleProps + textProps + buttonProps +
@@ -156,7 +158,7 @@ void SyntaxChecker::init() {
 	setSuperParents("$, pass, break, continue, python, if, elif, else, while, image", ALL);
 }
 
-static const std::set<std::string> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel"});
+static const std::set<std::string> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel", "style"});
 bool SyntaxChecker::check(const std::string &parent, const std::string &child, const std::string &prevChild, const int superParent, bool &isText) {
 
 	if ((superParent == SuperParent::INIT || superParent == SuperParent::LABEL) &&
