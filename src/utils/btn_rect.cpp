@@ -6,9 +6,9 @@
 #include "utils/mouse.h"
 
 
-std::vector<BtnRect*> BtnRect::btnRects;
+static std::vector<BtnRect*> btnRects;
 
-bool BtnRect::objInTop(DisplayObject *obj, int mouseX, int mouseY) {
+static bool objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 	while (obj->parent && obj->parent->enable) {
 		for (size_t i = obj->parent->getChildIndex(obj) + 1; i < obj->parent->children.size(); ++i) {
 			DisplayObject *child = obj->parent->children[i];
@@ -39,14 +39,12 @@ BtnRect::BtnRect() {
 }
 
 void BtnRect::init(DisplayObject *owner,
-				   const std::function<void (DisplayObject*)> &onLeftClick,
-				   const std::function<void (DisplayObject*)> &onRightClick,
-				   bool buttonMode)
+                   const std::function<void (DisplayObject*)> &onLeftClick,
+                   const std::function<void (DisplayObject*)> &onRightClick)
 {
 	this->owner = owner;
 	_onLeftClick = onLeftClick;
 	_onRightClick = onRightClick;
-	this->buttonMode = buttonMode;
 }
 
 

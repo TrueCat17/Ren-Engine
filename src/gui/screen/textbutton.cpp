@@ -10,62 +10,58 @@
 #include "utils/utils.h"
 
 
-TextButton::TextButton(Node* node, Screen *screen):
-	Text(node, screen)
-{
-	for (const Node *child : node->children) {
-		if (child->command == "ground") {
-			groundIsStd = false;
-		}else
-		if (child->command == "hover") {
-			hoverIsStd = false;
+
+static void onLeftClick(DisplayObject* owner) {
+	const TextButton *button = static_cast<TextButton*>(owner);
+	const Node *node = button->node;
+	const StyleStruct *style = button->style;
+
+	const Node *activateSound = node->getProp("activate_sound");
+	if (activateSound) {
+		Music::play("button_click " + activateSound->params,
+		            activateSound->getFileName(), activateSound->getNumLine());
+	}else {
+		PyObject *activateSoundObj = Style::getProp(style, "activate_sound");
+
+		if (PyString_CheckExact(activateSoundObj)) {
+			const char *sound = PyString_AS_STRING(activateSoundObj);
+			Music::play("button_click '" + std::string(sound) + "'",
+			            node->getFileName(), node->getNumLine());
+		}else if (activateSoundObj != Py_None) {
+			std::string type = activateSoundObj->ob_type->tp_name;
+			Utils::outMsg("TextButton::onLeftClick",
+			              "In style." + style->name + ".activate_sound expected type str, got " + type);
 		}
 	}
 
-	auto onLeftClick = [this](DisplayObject*) {
-		const Node *activateSound = this->node->getProp("activate_sound");
-		if (activateSound) {
-			Music::play("button_click " + activateSound->params,
-						activateSound->getFileName(), activateSound->getNumLine());
-		}else {
-			const Node *style = this->node->getProp("style");
-			const std::string &styleName = style ? style->params : this->node->command;
-			PyObject *activateSoundObj = Style::getProp(styleName, "activate_sound");
+	const Node *action = node->getProp("action");
+	if (action) {
+		PyUtils::exec(action->getFileName(), action->getNumLine(),
+		              "exec_funcs(" + action->params + ")");
+	}else {
+		Style::execAction(node->getFileName(), node->getNumLine(), style, "action");
+	}
+}
 
-			if (PyString_CheckExact(activateSoundObj)) {
-				const char *sound = PyString_AS_STRING(activateSoundObj);
-				Music::play("button_click '" + std::string(sound) + "'",
-							this->getFileName(), this->getNumLine());
-			}else if (activateSoundObj != Py_None) {
-				std::string type = activateSoundObj->ob_type->tp_name;
-				Utils::outMsg("TextButton::onLeftClick",
-							  "In style." + styleName + ".activate_sound expected type str, got " + type);
-			}
-		}
+static void onRightClick(DisplayObject* owner) {
+	const TextButton *button = static_cast<TextButton*>(owner);
+	const Node *node = button->node;
+	const StyleStruct *style = button->style;
 
-		const Node *action = this->node->getProp("action");
-		if (action) {
-			PyUtils::exec(action->getFileName(), action->getNumLine(),
-						  "exec_funcs(" + action->params + ")");
-		}else {
-			const Node *style = this->node->getProp("style");
-			const std::string &styleName = style ? style->params : this->node->command;
-			PyUtils::exec(this->getFileName(), this->getNumLine(),
-						  "exec_funcs(style." + styleName + ".action)");
-		}
-	};
-	auto onRightClick = [this](DisplayObject*) {
-		const Node* alternate = this->node->getProp("alternate");
-		if (alternate) {
-			PyUtils::exec(alternate->getFileName(), alternate->getNumLine(),
-						  "exec_funcs(" + alternate->params + ")");
-		}else {
-			const Node *style = this->node->getProp("style");
-			const std::string &styleName = style ? style->params : this->node->command;
-			PyUtils::exec(this->getFileName(), this->getNumLine(),
-						  "exec_funcs(style." + styleName + ".alternate)");
-		}
-	};
+	const Node* alternate = node->getProp("alternate");
+	if (alternate) {
+		PyUtils::exec(alternate->getFileName(), alternate->getNumLine(),
+		              "exec_funcs(" + alternate->params + ")");
+	}else {
+		Style::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
+	}
+};
+
+
+
+TextButton::TextButton(Node* node, Screen *screen):
+	Text(node, screen)
+{
 	btnRect.init(this, onLeftClick, onRightClick);
 }
 
@@ -73,72 +69,35 @@ void TextButton::updateRect(bool) {
 	Child::updateRect(false);
 	Text::updateRect();
 
-	xsize = std::max<float>(xsize, 0);
-	ysize = std::max<float>(ysize, 0);
+	if (xsize < 0) { xsize = 0; }
+	if (ysize < 0) { ysize = 0; }
 }
 
 void TextButton::updateTexture(bool skipError) {
 	if (skipError && ground.empty()) return;
+	if (surface && prevGround == ground && prevHover == hover && prevMouseOver == btnRect.mouseOvered) return;
 
-	if (!surface || hover.empty() || prevGround != ground || prevHover != hover || prevMouseOver != btnRect.mouseOvered) {
-		if (prevGround != ground && (hoverIsStd || hover.empty())) {
-			std::string toConvert;
-
-			if (!groundIsStd) {
-				toConvert = ground;
-			}else {
-				const Node *style = node->getProp("style");
-				const std::string &styleName = style ? style->params : node->command;
-
-				PyObject *hoverObj = Style::getProp(styleName, "hover");
-				if (PyString_CheckExact(hoverObj)) {
-					hover = PyString_AS_STRING(hoverObj);
-					if (hover.empty()) {
-						PyObject *groundObj = Style::getProp(styleName, "ground");
-						if (PyString_CheckExact(groundObj)) {
-							toConvert = PyString_AS_STRING(groundObj);
-						}else {
-							std::string type = groundObj->ob_type->tp_name;
-							Utils::outMsg("TextButton::hover",
-							              "In style." + styleName + ".ground expected type str, got " + type);
-						}
-						toConvert = ground;
-					}
-				}else {
-					std::string type = hoverObj->ob_type->tp_name;
-					Utils::outMsg("TextButton::hover",
-					              "In style." + styleName + ".hover expected type str, got " + type);
-				}
-			}
-
-			if (!toConvert.empty()) {
-				hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__, "im.MatrixColor(r'" + toConvert + "', im.matrix.brightness(0.1))", true);
-			}
-		}
-		prevGround = ground;
-		prevHover = hover;
-
-		const std::string &path = !btnRect.mouseOvered ? ground : hover;
-		surface = ImageManipulator::getImage(path, false);
-
-		updateRect();
+	if (hover.empty() && (prevGround != ground || prevHover != hover)) {
+		hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__,
+		                      "im.MatrixColor(r'" + ground + "', im.matrix.brightness(0.1))", true);
 	}
+	prevGround = ground;
+	prevHover = hover;
+
+	const std::string &path = !btnRect.mouseOvered ? ground : hover;
+	surface = ImageManipulator::getImage(path, false);
+
+	updateRect();
 }
 
 void TextButton::checkEvents() {
-	const std::string *styleName = nullptr;
-	if (btnRect.mouseOvered != prevMouseOver) {
-		const Node *style = node->getProp("style");
-		styleName = style ? &style->params : &node->command;
-	}
-
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {
 			const Node *hoverSound = node->getProp("hover_sound");
 			if (hoverSound) {
 				Music::play("button_hover " + hoverSound->params, hoverSound->getFileName(), hoverSound->getNumLine());
 			}else {
-				PyObject *hoverSoundObj = Style::getProp(*styleName, "hover_sound");
+				PyObject *hoverSoundObj = Style::getProp(style, "hover_sound");
 
 				if (PyString_CheckExact(hoverSoundObj)) {
 					const char *sound = PyString_AS_STRING(hoverSoundObj);
@@ -147,7 +106,7 @@ void TextButton::checkEvents() {
 				}else if (hoverSoundObj != Py_None) {
 					std::string type = hoverSoundObj->ob_type->tp_name;
 					Utils::outMsg("TextButton::hovered",
-								  "In style." + *styleName + ".hover_sound expected type str, got " + type);
+					              "In style." + style->name + ".hover_sound expected type str, got " + type);
 				}
 			}
 
@@ -155,8 +114,7 @@ void TextButton::checkEvents() {
 			if (hovered) {
 				PyUtils::exec(hovered->getFileName(), hovered->getNumLine(), "exec_funcs(" + hovered->params + ")");
 			}else {
-				PyUtils::exec(getFileName(), getNumLine(),
-							  "exec_funcs(style." + *styleName + ".hovered)");
+				Style::execAction(getFileName(), getNumLine(), style, "hovered");
 			}
 		}
 	}else {
@@ -165,8 +123,7 @@ void TextButton::checkEvents() {
 			if (unhovered) {
 				PyUtils::exec(unhovered->getFileName(), unhovered->getNumLine(), "exec_funcs(" + unhovered->params + ")");
 			}else {
-				PyUtils::exec(getFileName(), getNumLine(),
-							  "exec_funcs(style." + *styleName + ".unhovered)");
+				Style::execAction(getFileName(), getNumLine(), style, "unhovered");
 			}
 		}
 	}

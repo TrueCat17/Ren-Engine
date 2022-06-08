@@ -6,6 +6,7 @@
 #include "parser/syntax_checker.h"
 
 #include "media/py_utils.h"
+#include "utils/scope_exit.h"
 #include "utils/stage.h"
 #include "utils/utils.h"
 
@@ -20,86 +21,84 @@ bool Child::isModal() const {
 	return !Screen::hasModal() || (screen && screen->modal);
 }
 
-void Child::updateProps() {
-	if (!inited) {
-		Node *prevNode = node;
-		PyObject *prevProps = props;
+void Child::updateStyle() {
+	Node *prevNode = node;
+	PyObject *prevProps = props;
+	ScopeExit se([this, prevProps, prevNode]() {
+		this->props = prevProps;
+		this->node = prevNode;
+	});
 
-		if (!isFakeContainer()) {
-			if (node->command == "use") {
-				node = Screen::getDeclared(node->params);
-			}
-
-			updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
-
-			std::string style = node->command;
-			for (const Node *child : node->children) {
-				if (child->command == "has") {
-					style = child->params;
-					break;
-				}
-			}
-			for (const Node *child : node->children) {
-				if (child->command == "style") {
-					style = child->params;
-					break;
-				}
-			}
-			bool defaultStyle = style == node->command;
-
-			const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
-
-			props = PyUtils::tuple1;
-			for (const std::string &prop : propNames) {
-				PyObject *res = Style::getProp(style, prop);
-				if (res == Py_None && !defaultStyle) {
-					res = Style::getProp(node->command, prop); // try find in default style
-				}
-				PyTuple_SET_ITEM(props, 0, res);
-
-				ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, prop);
-				if (func) {
-					func(this, 0);
-				}
-				PyTuple_SET_ITEM(props, 0, nullptr);
-			}
+	if (!isFakeContainer()) {
+		if (node->command == "use") {
+			node = Screen::getDeclared(node->params);
 		}
 
-		bool needAddChildren = false;
-		bool hasNotConstChild = false;
-		for (const Node *child : node->children) {
-			if (!child->isScreenConst) {
-				if (!child->isScreenProp) {
-					hasNotConstChild = true;
-				}
-				continue;
-			}
-			if (!child->isScreenProp) {
-				needAddChildren = true;
-				continue;
-			}
-			if (child->command == "style" || child->command == "has" || child->command == "pass") continue;
+		updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
 
-			PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
-			if (!res) continue;
+		if (!style) {
+			style = Style::getByNode(node);
+		}
 
+		const StyleStruct *defaultStyle = Style::getByName(node, node->command);
+		bool isDefaultStyle = style->pyStyle == defaultStyle->pyStyle;
+
+		const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
+
+		props = PyUtils::tuple1;
+		for (const std::string &prop : propNames) {
+			PyObject *res = Style::getProp(style, prop);
+			if (res == Py_None && !isDefaultStyle) {
+				res = Style::getProp(defaultStyle, prop);
+			}
 			PyTuple_SET_ITEM(props, 0, res);
 
-			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
+			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, prop);
 			if (func) {
 				func(this, 0);
 			}
+			PyTuple_SET_ITEM(props, 0, nullptr);
 		}
-		if (needAddChildren && !hasNotConstChild) {
-			static_cast<Container*>(this)->addChildrenFromNode();
+	}
+
+	bool needAddChildren = false;
+	bool hasNonConstChild = false;
+	for (const Node *child : node->children) {
+		if (!child->isScreenConst) {
+			if (!child->isScreenProp) {
+				hasNonConstChild = true;
+			}
+			continue;
 		}
+		if (!child->isScreenProp) {
+			needAddChildren = true;
+			continue;
+		}
+		if (child->command == "has" || child->command == "pass") continue;
 
-		updateRect();
-		updateTexture(true);
+		PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
+		if (!res) continue;
 
-		props = prevProps;
-		node = prevNode;
+		PyTuple_SET_ITEM(props, 0, res);
 
+		ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
+		if (func) {
+			func(this, 0);
+		}
+		PyTuple_SET_ITEM(props, 0, nullptr);
+	}
+	if (!inited && needAddChildren && !hasNonConstChild) {
+		static_cast<Container*>(this)->addChildrenFromNode();
+	}
+
+	updateRect();
+	updateTexture(true);
+}
+
+void Child::updateProps() {
+	if (!inited || prevStyle != style) {
+		updateStyle();
+		prevStyle = style;
 		inited = true;
 	}
 

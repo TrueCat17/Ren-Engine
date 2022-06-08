@@ -318,13 +318,13 @@ init python:
 	
 	console.ctrl = False
 	console.shift = False
-	
-	
-	style.console_text = Style(style.text)
-	style.console_text.font         = 'Consola'
-	style.console_text.color        = 0xFFFFFF
-	style.console_text.outlinecolor = 0
-	style.console_text.text_size    = 20
+
+init:
+	style console_text is text:
+		font         'Consola'
+		color        0xFFFFFF
+		outlinecolor 0
+		text_size    20
 
 
 screen console_watching:
@@ -403,13 +403,13 @@ screen console:
 		align (0.5, 1.0)
 		
 		text console.output:
-			style console_text
+			style 'console_text'
 			xpos  50
 			xsize get_stage_width() - 50
 		
 		hbox:
 			text ('...' if '\n' in console.input else '>>>'):
-				style console_text
+				style 'console_text'
 				xsize 50
 			
 			python:
@@ -418,6 +418,6 @@ screen console:
 				console.input_with_cursor = console.input[0:index] + alpha_cursor + console.input[index:]
 			
 			text console.input_with_cursor.replace(console.key_tag, '{{'):
-				style console_text
+				style 'console_text'
 				xsize get_stage_width() - 50
 

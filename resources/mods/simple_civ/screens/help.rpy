@@ -190,20 +190,20 @@ screen help:
 					
 					for name, text in help.groups[help.start_index : help.start_index + help.count_for_index[help.start_index]]:
 						textbutton name:
-							style btn
+							style 'btn'
 							xsize help.xsizes[name]
 							action [SetDict(help, 'text', text), slider_v_update(0)]
 				
 				if help.start_index != 0:
 					textbutton '<':
-						style  btn
+						style  'btn'
 						bold   True
 						xalign 0.1
 						xsize  style.btn.ysize
 						action SetDict(help, 'start_index', max(0, help.start_index - 1))
 				if help.start_index != help.max_index:
 					textbutton '>':
-						style  btn
+						style  'btn'
 						bold   True
 						xalign 0.9
 						xsize  style.btn.ysize

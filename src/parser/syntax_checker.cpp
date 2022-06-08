@@ -87,7 +87,7 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 		Parser::getIsFakeOrIsProp(name, isFakeComp, isProp, isEvent);
 
 		if (!isProp || isEvent ||
-			name == "has" || name == "pass" || name == "style" ||
+		    name == "has" || name == "pass" || name == "style" ||
 			name == "align" || name == "xalign" || name == "yalign"
 		) continue;
 

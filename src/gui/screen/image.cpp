@@ -10,8 +10,8 @@ Image::Image(Node *node, Screen *screen):
 void Image::updateRect(bool) {
 	Container::updateRect();
 
-	xsize = std::max<float>(xsize, 0);
-	ysize = std::max<float>(ysize, 0);
+	if (xsize < 0) { xsize = 0; }
+	if (ysize < 0) { ysize = 0; }
 }
 
 void Image::updateTexture(bool skipError) {

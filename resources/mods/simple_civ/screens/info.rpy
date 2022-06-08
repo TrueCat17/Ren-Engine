@@ -90,7 +90,7 @@ screen info:
 			spacing info.indent
 			
 			textbutton _('Research'):
-				style     btn
+				style     'btn'
 				xsize     info.btn_size
 				text_size info.text_size
 				hovered   info.set_msg('F2')
@@ -99,7 +99,7 @@ screen info:
 			key 'F2' action show_screen('research')
 			
 			textbutton _('Help'):
-				style     btn
+				style     'btn'
 				xsize     info.btn_size
 				text_size info.text_size
 				hovered   info.set_msg('F1')
@@ -108,7 +108,7 @@ screen info:
 			key 'F1' action help.show()
 			
 			textbutton _('Pause'):
-				style     btn
+				style     'btn'
 				xsize     info.btn_size
 				text_size info.text_size
-				action show_pause
+				action pause_screen.show

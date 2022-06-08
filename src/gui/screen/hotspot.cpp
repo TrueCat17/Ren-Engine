@@ -11,53 +11,56 @@
 #include "utils/utils.h"
 
 
+
+static void onLeftClick(DisplayObject* owner) {
+	const Hotspot *hotspot = static_cast<Hotspot*>(owner);
+	const Node *node = hotspot->node;
+	const StyleStruct *style = hotspot->style;
+
+	const Node *activateSound = node->getProp("activate_sound");
+	if (activateSound) {
+		Music::play("button_click " + activateSound->params,
+		            activateSound->getFileName(), activateSound->getNumLine());
+	}else {
+		PyObject *activateSoundObj = Style::getProp(style, "activate_sound");
+
+		if (PyString_CheckExact(activateSoundObj)) {
+			const char *sound = PyString_AS_STRING(activateSoundObj);
+			Music::play("button_click '" + std::string(sound) + "'",
+			            node->getFileName(), node->getNumLine());
+		}else if (activateSoundObj != Py_None) {
+			std::string type = activateSoundObj->ob_type->tp_name;
+			Utils::outMsg("Hotspot::onLeftClick",
+			              "In style." + style->name + ".activate_sound expected type str, got " + type);
+		}
+	}
+
+	const Node *action = node->getProp("action");
+	if (action) {
+		PyUtils::exec(action->getFileName(), action->getNumLine(),
+		              "exec_funcs(" + action->params + ")");
+	}else {
+		Style::execAction(node->getFileName(), node->getNumLine(), style, "action");
+	}
+};
+
+static void onRightClick(DisplayObject* owner) {
+	const Hotspot *hotspot = static_cast<Hotspot*>(owner);
+	const Node *node = hotspot->node;
+	const StyleStruct *style = hotspot->style;
+
+	const Node* alternate = node->getProp("alternate");
+	if (alternate) {
+		PyUtils::exec(alternate->getFileName(), alternate->getNumLine(),
+		              "exec_funcs(" + alternate->params + ")");
+	}else {
+		Style::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
+	}
+};
+
 Hotspot::Hotspot(Node *node, Screen *screen):
 	Child(node, nullptr, screen)
 {
-	auto onLeftClick = [this](DisplayObject*) {
-		const Node *activateSound = this->node->getProp("activate_sound");
-		if (activateSound) {
-			Music::play("button_click " + activateSound->params,
-						activateSound->getFileName(), activateSound->getNumLine());
-		}else {
-			const Node *style = this->node->getProp("style");
-			const std::string &styleName = style ? style->params : this->node->command;
-			PyObject *activateSoundObj = Style::getProp(styleName, "activate_sound");
-
-			if (PyString_CheckExact(activateSoundObj)) {
-				const char *sound = PyString_AS_STRING(activateSoundObj);
-				Music::play("button_click '" + std::string(sound) + "'",
-							this->getFileName(), this->getNumLine());
-			}else if (activateSoundObj != Py_None) {
-				std::string type = activateSoundObj->ob_type->tp_name;
-				Utils::outMsg("Hotspot::onLeftClick",
-							  "In style." + styleName + ".activate_sound expected type str, got " + type);
-			}
-		}
-
-		const Node *action = this->node->getProp("action");
-		if (action) {
-			PyUtils::exec(action->getFileName(), action->getNumLine(),
-						  "exec_funcs(" + action->params + ")");
-		}else {
-			const Node *style = this->node->getProp("style");
-			const std::string &styleName = style ? style->params : this->node->command;
-			PyUtils::exec(this->getFileName(), this->getNumLine(),
-						  "exec_funcs(style." + styleName + ".action)");
-		}
-	};
-	auto onRightClick = [this](DisplayObject*) {
-		const Node* alternate = this->node->getProp("alternate");
-		if (alternate) {
-			PyUtils::exec(alternate->getFileName(), alternate->getNumLine(),
-						  "exec_funcs(" + alternate->params + ")");
-		}else {
-			const Node *style = this->node->getProp("style");
-			const std::string &styleName = style ? style->params : this->node->command;
-			PyUtils::exec(this->getFileName(), this->getNumLine(),
-						  "exec_funcs(style." + styleName + ".alternate)");
-		}
-	};
 	btnRect.init(this, onLeftClick, onRightClick);
 }
 
@@ -84,12 +87,6 @@ void Hotspot::checkEvents() {
 	setHeight(hcrop * float(hcropIsFloat ? Stage::height : 1) * scaleY);
 
 
-	const std::string *styleName = nullptr;
-	if (btnRect.mouseOvered != prevMouseOver) {
-		const Node *style = node->getProp("style");
-		styleName = style ? &style->params : &node->command;
-	}
-
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {
 			const Node *hoverSound = node->getProp("hover_sound");
@@ -97,7 +94,7 @@ void Hotspot::checkEvents() {
 				Music::play("button_hover " + hoverSound->params,
 							hoverSound->getFileName(), hoverSound->getNumLine());
 			}else {
-				PyObject *hoverSoundObj = Style::getProp(*styleName, "hover_sound");
+				PyObject *hoverSoundObj = Style::getProp(style, "hover_sound");
 
 				if (PyString_CheckExact(hoverSoundObj)) {
 					const char *sound = PyString_AS_STRING(hoverSoundObj);
@@ -106,16 +103,16 @@ void Hotspot::checkEvents() {
 				}else if (hoverSoundObj != Py_None) {
 					std::string type = hoverSoundObj->ob_type->tp_name;
 					Utils::outMsg("Hotspot::hovered",
-								  "In style." + *styleName + ".hover_sound expected type str, got " + type);
+					              "In style." + style->name + ".hover_sound expected type str, got " + type);
 				}
 			}
 
 			const Node *hovered = node->getProp("hovered");
 			if (hovered) {
-				PyUtils::exec(hovered->getFileName(), hovered->getNumLine(), "exec_funcs(" + hovered->params + ")");
+				PyUtils::exec(hovered->getFileName(), hovered->getNumLine(),
+				              "exec_funcs(" + hovered->params + ")");
 			}else {
-				PyUtils::exec(getFileName(), getNumLine(),
-							  "exec_funcs(style." + *styleName + ".hovered)");
+				Style::execAction(node->getFileName(), node->getNumLine(), style, "hovered");
 			}
 		}
 
@@ -124,10 +121,10 @@ void Hotspot::checkEvents() {
 		if (prevMouseOver) {
 			const Node *unhovered = node->getProp("unhovered");
 			if (unhovered) {
-				PyUtils::exec(unhovered->getFileName(), unhovered->getNumLine(), "exec_funcs(" + unhovered->params + ")");
+				PyUtils::exec(unhovered->getFileName(), unhovered->getNumLine(),
+				              "exec_funcs(" + unhovered->params + ")");
 			}else {
-				PyUtils::exec(getFileName(), getNumLine(),
-							  "exec_funcs(style." + *styleName + ".unhovered)");
+				Style::execAction(node->getFileName(), node->getNumLine(), style, "unhovered");
 			}
 		}
 

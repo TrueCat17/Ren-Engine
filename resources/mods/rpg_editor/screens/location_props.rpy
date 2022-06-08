@@ -1,3 +1,14 @@
+init:
+	style prop_btn is textbutton:
+		xalign    0.5
+		size     (250, 26)
+		text_size 20
+	
+	style rotate_btn is textbutton:
+		size     (80, 22)
+		text_size 16
+		color     0
+
 init python:
 	props_width = 300
 	
@@ -14,19 +25,6 @@ init python:
 	not_selected_prop = im.Composite((100, 20),
 	                                 (0, 0), im.Rect('#888', 100, 20),
 	                                 (3, 3), im.Rect('#FFF',  94, 14))
-	
-	style.prop_btn = Style(style.textbutton)
-	style.prop_btn.xanchor = 0.5
-	style.prop_btn.xpos    = 0.5
-	style.prop_btn.xsize = 250
-	style.prop_btn.ysize = 26
-	style.prop_btn.text_size = 20
-	
-	style.rotate_btn = Style(style.textbutton)
-	style.rotate_btn.xsize = 80
-	style.rotate_btn.ysize = 22
-	style.rotate_btn.text_size = 16
-	style.rotate_btn.color = 0
 	
 	
 	def unselect():
@@ -258,19 +256,19 @@ screen location_props:
 				
 				if selected_place_name is None:
 					textbutton (_('Add') + ' ' + _('Place')):
-						style prop_btn
+						style 'prop_btn'
 						action ask_str(add_place)
 				else:
 					$ place = selected_location.places[selected_place_name]
 					
 					textbutton (_('Rename') + ' ' + _('Place')):
-						style prop_btn
+						style 'prop_btn'
 						action ask_str(rename_place, selected_place_name)
 					textbutton (_('Delete') + ' ' + _('Place')):
-						style prop_btn
+						style 'prop_btn'
 						action del_place
 					textbutton (_('To location') + ': ' + (place.to_location_name or '')):
-						style prop_btn
+						style 'prop_btn'
 						text_size 15
 						color 0xFFFFFF if not place.to_location_name or rpg_locations.has_key(place.to_location_name) else 0xFF0000
 						action ask_str(rename_to_loc, place.to_location_name or '')
@@ -282,7 +280,7 @@ screen location_props:
 							xalign 0.5
 							
 							textbutton (_('To place') + ': ' + (place.to_place_name or '')):
-								style prop_btn
+								style 'prop_btn'
 								text_size 15
 								color 0xFFFFFF if rpg_locations.has_key(place.to_location_name) and rpg_locations[place.to_location_name].get_place(place.to_place_name) else 0xFF0000
 								action ask_str(rename_to_place, place.to_place_name or '')
@@ -295,7 +293,7 @@ screen location_props:
 								xalign 0.5
 							
 							textbutton _('Up'):
-								style rotate_btn
+								style 'rotate_btn'
 								ground (selected_prop if place.exit_side == 'up' else not_selected_prop)
 								xalign 0.5
 								action [SetDict(place, 'exit_side', 'up'), set_save_locations]
@@ -305,20 +303,20 @@ screen location_props:
 								xalign 0.5
 								
 								textbutton _('Left'):
-									style rotate_btn
+									style 'rotate_btn'
 									ground (selected_prop if place.exit_side == 'left' else not_selected_prop)
 									action [SetDict(place, 'exit_side', 'left'), set_save_locations]
 								textbutton _('None'):
-									style rotate_btn
+									style 'rotate_btn'
 									ground (selected_prop if place.exit_side == None else not_selected_prop)
 									action [SetDict(place, 'exit_side', None), set_save_locations]
 								textbutton _('Right'):
-									style rotate_btn
+									style 'rotate_btn'
 									ground (selected_prop if place.exit_side == 'right' else not_selected_prop)
 									action [SetDict(place, 'exit_side', 'right'), set_save_locations]
 							
 							textbutton _('Down'):
-								style rotate_btn
+								style 'rotate_btn'
 								ground (selected_prop if place.exit_side == 'down' else not_selected_prop)
 								xalign 0.5
 								action [SetDict(place, 'exit_side', 'down'), set_save_locations]
@@ -331,7 +329,7 @@ screen location_props:
 								xalign 0.5
 							
 							textbutton _('To forward'):
-								style rotate_btn
+								style 'rotate_btn'
 								ground (selected_prop if place.to_side == to_forward else not_selected_prop)
 								xalign 0.5
 								action [SetDict(place, 'to_side', to_forward), set_save_locations]
@@ -341,20 +339,20 @@ screen location_props:
 								xalign 0.5
 								
 								textbutton _('To left'):
-									style rotate_btn
+									style 'rotate_btn'
 									ground (selected_prop if place.to_side == to_left else not_selected_prop)
 									action [SetDict(place, 'to_side', to_left), set_save_locations]
 								textbutton _('None'):
-									style rotate_btn
+									style 'rotate_btn'
 									ground (selected_prop if place.to_side == None else not_selected_prop)
 									action [SetDict(place, 'to_side', None), set_save_locations]
 								textbutton _('To right'):
-									style rotate_btn
+									style 'rotate_btn'
 									ground (selected_prop if place.to_side == to_right else not_selected_prop)
 									action [SetDict(place, 'to_side', to_right), set_save_locations]
 							
 							textbutton _('To back'):
-								style rotate_btn
+								style 'rotate_btn'
 								ground (selected_prop if place.to_side == to_back else not_selected_prop)
 								xalign 0.5
 								action [SetDict(place, 'to_side', to_back), set_save_locations]

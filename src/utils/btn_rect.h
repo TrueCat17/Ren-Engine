@@ -1,18 +1,12 @@
 #ifndef BTNRECT_H
 #define BTNRECT_H
 
-#include <vector>
 #include <functional>
 
 #include "gui/display_object.h"
 
 class BtnRect {
 private:
-	static std::vector<BtnRect*> btnRects;
-
-	static bool objInTop(DisplayObject *obj, int mouseX, int mouseY);
-
-
 	DisplayObject *owner = nullptr;
 
 	std::function<void (DisplayObject*)> _onLeftClick = nullptr;
@@ -34,8 +28,7 @@ public:
 
 	void init(DisplayObject *owner,
 			  const std::function<void (DisplayObject*)> &onLeftClick = nullptr,
-			  const std::function<void (DisplayObject*)> &onRightClick = nullptr,
-			  bool buttonMode = true);
+	          const std::function<void (DisplayObject*)> &onRightClick = nullptr);
 
 	DisplayObject* getOwner() const { return owner; }
 

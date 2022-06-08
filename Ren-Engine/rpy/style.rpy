@@ -1,4 +1,7 @@
-init -1001 python:
+init -1002 python:
+	
+	style = Object()
+	
 	
 	class Style(Object):
 		complex_props = ('pos', 'anchor', 'size', 'zoom', 'align', 'xalign', 'yalign')
@@ -67,70 +70,68 @@ init -1001 python:
 			else:
 				if self.has_key(attr):
 					Object.__delattr__(self, attr)
+
+
+init -1001:
+	style key:
+		first_delay 0.333
+		delay       0.01
 	
+	style default:
+		pos 0
+		anchor 0
+		size 1.0
+		zoom 1.0
+		spacing 0
+		crop (0.0, 0.0, 1.0, 1.0)
+		rotate 0
+		alpha 1
+		clipping False
 	
+	style screen:
+		modal False
+		zorder 0
 	
-	style = Object()
+	style vbox:
+		size 0
 	
-	style.key = Style()
-	style.key.first_delay = 0.333
-	style.key.delay = 0.01
+	style hbox is vbox
+	style null is vbox
 	
-	style.default = Style()
-	style.default.pos = 0
-	style.default.anchor = 0
-	style.default.size = 1.0
-	style.default.zoom = 1.0
-	style.default.spacing = 0
-	style.default.crop = (0.0, 0.0, 1.0, 1.0)
-	style.default.rotate = 0
-	style.default.alpha = 1
-	style.default.clipping = False
+	style image:
+		size 100
 	
-	style.screen = Style(style.default)
-	style.screen.modal = False
-	style.screen.zorder = 0
+	style text:
+		size -1
+		text_size 20
+		color 0xFFFFFF
+		outlinecolor None
+		font 'Calibri'
+		text_align 'left'    # left | center | right
+		text_valign 'top'    #  top | center | bottom
+		bold          False
+		italic        False
+		underline     False
+		strikethrough False
 	
-	style.vbox = Style(style.default)
-	style.vbox.size = 0
+	style textbutton is text:
+		mouse True
+		text_align  'center' # left | center | right
+		text_valign 'center' #  top | center | bottom
+		size (175, 25)
+		text_size 15
+		ground 'images/gui/std/btn/usual.png'
+		hover  'images/gui/std/btn/hover.png'
 	
-	style.hbox = Style(style.vbox)
-	style.null = Style(style.vbox)
+	style button:
+		mouse True
+		size (175, 25)
+		ground style.textbutton.ground
+		hover  style.textbutton.hover
 	
-	style.image = Style(style.default)
-	style.image.size = 100
+	style hotspot:
+		mouse True
 	
-	style.text = Style(style.default)
-	style.text.size = -1
-	style.text.text_size = 20
-	style.text.color = 0xFFFFFF
-	style.text.outlinecolor = None
-	style.text.font = 'Calibri'
-	style.text.text_align = 'left' 				# left | center | right
-	style.text.text_valign = 'top' 				#  top | center | bottom
-	style.text.bold = False
-	style.text.italic = False
-	style.text.underline = False
-	style.text.strikethrough = False
-	
-	style.textbutton = Style(style.text)
-	style.textbutton.mouse = True
-	style.textbutton.text_align = 'center'		# left | center | right
-	style.textbutton.text_valign = 'center'		#  top | center | bottom
-	style.textbutton.size = (175, 25)
-	style.textbutton.text_size = 15
-	style.textbutton.ground = 'images/gui/std/btn/usual.png'
-	style.textbutton.hover = 'images/gui/std/btn/hover.png'
-	
-	style.button = Style(style.default)
-	style.button.mouse = True
-	style.button.size = (175, 25)
-	style.button.ground = style.textbutton.ground
-	style.button.hover = style.textbutton.hover
-	
-	style.hotspot = Style(style.default)
-	style.hotspot.mouse = True
-	
-	style.imagemap = Style(style.default)
-	style.imagemap.ground = ''
-	style.imagemap.hover = ''
+	style imagemap:
+		ground ''
+		hover  ''

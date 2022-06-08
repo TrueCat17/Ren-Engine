@@ -8,9 +8,12 @@
 
 class Screen;
 class Container;
+struct StyleStruct;
 
 
 class Child: public Group {
+private:
+	void updateStyle();
 protected:
 	Screen *screen;
 
@@ -42,6 +45,9 @@ public:
 
 	const std::vector<ScreenUpdateFunc> *updateFuncs = nullptr;
 	PyObject *props = nullptr;
+
+	const StyleStruct *style = nullptr;
+	const StyleStruct *prevStyle = nullptr;
 
 
 	Child(Node *node, Container *screenParent, Screen *screen);

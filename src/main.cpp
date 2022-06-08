@@ -351,7 +351,7 @@ static void loop() {
 						if (left) {
 							mouseWasDown = true;
 						}
-						BtnRect::checkMouseClick(left);
+						BtnRect::checkMouseClick(left, false);
 					}
 				}else
 				if (event.type == SDL_MOUSEBUTTONUP) {

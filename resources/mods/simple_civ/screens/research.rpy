@@ -111,10 +111,10 @@ screen research:
 				for building in technology_names:
 					if technology_progress[building] < 4 and sc_map.player.science >= technology_costs[technology_progress[building] + 1]:
 						textbutton '+':
-							style btn
+							style 'btn'
 							xalign 0.5
 							size info.text_size
-							text_size info.text_size-2
+							text_size info.text_size - 2
 							color 0x00FF00
 							outlinecolor 0
 							action sc_map.player.explore(building)

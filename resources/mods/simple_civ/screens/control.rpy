@@ -33,7 +33,7 @@ screen control:
 				text_size control.text_size
 			
 			textbutton (_('Next')):
-				style btn
+				style 'btn'
 				align (1.0, 0.5)
 				xsize 100
 				text_size control.text_size
@@ -114,7 +114,7 @@ screen control:
 						key 'RIGHT' action control.next_unit
 					
 					textbutton '<':
-						style     btn
+						style     'btn'
 						bold      True
 						alpha     int(control.selected_unit_index > 0)
 						size      control.text_size
@@ -124,7 +124,7 @@ screen control:
 						color 0
 						text_size control.text_size
 					textbutton '>':
-						style     btn
+						style     'btn'
 						bold      True
 						alpha     int(control.selected_unit_index < len(control.selected_unit_array) - 1)
 						size      control.text_size

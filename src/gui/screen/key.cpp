@@ -5,6 +5,7 @@
 #include "gv.h"
 
 #include "screen.h"
+#include "style.h"
 
 #include "media/py_utils.h"
 #include "utils/math.h"
@@ -122,10 +123,7 @@ void Key::checkEvents() {
 				if (action) {
 					PyUtils::exec(action->getFileName(), action->getNumLine(), "exec_funcs(" + action->params + ")");
 				}else {
-					const Node *style = node->getProp("style");
-					const std::string &styleName = style ? style->params : node->command;
-					PyUtils::exec(getFileName(), getNumLine(),
-								  "exec_funcs(style." + styleName + ".action)");
+					Style::execAction(node->getFileName(), node->getNumLine(), style, "action");
 				}
 			}
 			prevIsDown = true;

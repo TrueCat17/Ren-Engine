@@ -83,10 +83,7 @@ static void initConsts(Node *node) {
 		if (node->isScreenEvent) {
 			node->parent->withScreenEvent = true;
 		}else {
-			node->isScreenConst =
-					command == "style" ||
-					command == "has" ||
-					PyUtils::isConstExpr(params);
+			node->isScreenConst = command == "has" || PyUtils::isConstExpr(params);
 		}
 		return;
 	}
@@ -905,6 +902,13 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	}\
 }
 
+#include "gui/screen/style.h"
+static void update_style(Child *obj, size_t propIndex) {
+	PyObject *style = PySequence_Fast_GET_ITEM(obj->props, propIndex);
+	obj->style = Style::getByNode(obj->node, style);
+}
+
+
 makeUpdateFunc(alpha)
 makeUpdateFunc(rotate)
 makeUpdateFuncWithBool(Child, clipping, clipping)
@@ -962,6 +966,7 @@ makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
 
 
 static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
+	{"style",             update_style},
 	{"alpha",             update_alpha},
 	{"rotate",            update_rotate},
 	{"clipping",          update_clipping},
