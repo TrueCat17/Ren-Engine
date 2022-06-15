@@ -49,7 +49,8 @@ static void show(const std::string &name) {
 	}
 
 	Stage::screens->addChildAt(scr, Stage::screens->children.size());
-	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('show_screen', '" + name + "')");
+	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
+	              "globals().has_key('signals') and signals.send('show_screen', '" + name + "')");
 }
 static void hide(const std::string &name) {
 	if (!Stage::screens) return;
@@ -58,7 +59,9 @@ static void hide(const std::string &name) {
 		Screen *scr = static_cast<Screen*>(d);
 		if (scr->getName() == name) {
 			delete scr;
-			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "globals().has_key('signals') and signals.send('hide_screen', '" + name + "')");
+			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
+			              "globals().has_key('signals') and signals.send('hide_screen', '" + name + "')\n"
+			              "del screen_vars['" + name + "']");
 			return;
 		}
 	}
@@ -93,8 +96,102 @@ void Screen::clear() {
 }
 
 
-void Screen::addToShow(const std::string &name) {
+static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kwargs) {
+	std::lock_guard g(PyUtils::pyExecMutex);
+
+	Node *node = Screen::getDeclared(name);
+	auto &vars = node->vars;
+	size_t countVars = vars.size();
+
+	std::string code =
+	        "if 'screen_vars' not in globals():\n"
+	        "    screen_vars = {}\n"
+	        "_SL_created_vars = False\n"
+	        "_SL_got_args = " + std::string((args && kwargs) ? "True" : "False") + "\n"
+	        "if ('" + name + "' not in screen_vars) or _SL_got_args:\n"
+	        "    screen_vars['" + name + "'] = Object()\n"
+	        "    _SL_created_vars = True\n"
+	        "screen = screen_vars['" + name + "']";
+	PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__, code);
+
+	PyObject *created_vars = PyDict_GetItemString(PyUtils::global, "_SL_created_vars");
+	if (created_vars == Py_False && (!args || !kwargs)) return; //create screen on loading
+
+	PyObject *screenVars = PyDict_GetItemString(PyUtils::global, "screen");
+
+	if (!args) args = Py_None;
+	if (!kwargs) kwargs = Py_None;
+
+	if (args != Py_None && !PyTuple_CheckExact(args) && !PyList_CheckExact(args)) {
+		Utils::outMsg("Screen::addToShow",
+		              "Expected type(args) is tuple or list, got <" + std::string(args->ob_type->tp_name) + ">");
+		return;
+	}
+	size_t argsSize = args == Py_None ? 0 : size_t(Py_SIZE(args));
+
+	if (kwargs != Py_None && !PyDict_CheckExact(kwargs)) {
+		Utils::outMsg("Screen::addToShow",
+		              "Expected type(kwargs) is dict, got <" + std::string(kwargs->ob_type->tp_name) + ">");
+		return;
+	}
+	size_t kwargsSize = kwargs == Py_None ? 0 : size_t(PyDict_Size(kwargs));
+
+	if (argsSize + kwargsSize > countVars) {
+		Utils::outMsg("Screen::addToShow",
+		              "Screen <" + name + "> takes only " + std::to_string(countVars) + " args\n"
+		              "Got " + std::to_string(argsSize) + " args and " + std::to_string(kwargsSize) + " kwargs");
+		return;
+	}
+
+	std::vector<std::string> argsWasSet;
+	argsWasSet.reserve(countVars);
+
+	for (size_t i = 0; i < argsSize; ++i) {
+		PyObject *elem = PySequence_Fast_GET_ITEM(args, i);
+
+		const std::string &varName = vars[i].first;
+		argsWasSet.push_back(varName);
+		PyObject_SetAttrString(screenVars, varName.c_str(), elem);
+	}
+
+	Py_ssize_t i = 0;
+	PyObject *key, *value;
+	while (PyDict_Next(kwargs, &i, &key, &value)) {
+		std::string varName = PyString_AS_STRING(key);
+		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) == argsWasSet.cend()) {
+			argsWasSet.push_back(varName);
+		}else {
+			Utils::outMsg("Screen::addToShow",
+			              "Keyworg <" + varName + "> argument repeated for screen <" + name + ">");
+		}
+
+		PyObject_SetAttrString(screenVars, varName.c_str(), value);
+	}
+
+	for (size_t i = 0; i < countVars; ++i) {
+		const auto &[varName, varDefaultCode] = vars[i];
+		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
+
+		if (varDefaultCode.empty()) {
+			Utils::outMsg("Screen::addToShow",
+			              "Arg <" + varName + "> was not set for screen <" + name + ">");
+		}else {
+			PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
+			              "screen." + varName + " = " + varDefaultCode);
+		}
+	}
+}
+
+void Screen::addToShow(const std::string &name, PyObject *args, PyObject *kwargs) {
 	std::lock_guard g(screenMutex);
+
+	Node *node = Screen::getDeclared(name);
+	if (!node) {
+		Utils::outMsg("Screen::addToShow", "No screen <" + name + ">");
+		return;
+	}
+
+	makeScreenVars(name, args, kwargs);
 
 	for (size_t i = 0; i < toHideList.size(); ++i) {
 		if (toHideList[i] == name) {

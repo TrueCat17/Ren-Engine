@@ -39,6 +39,9 @@ public:
 	std::string command;//$, play, image, show, ...
 	std::string params; //text to out, command to execute, condition to check, name for main/label/screen, ...
 
+	//for screen vars (args)
+	std::vector<std::pair<std::string, std::string>> vars;//elem = {varName, pyCodeForValue}
+
 	std::vector<Node*> children;
 
 	PyObject* getPyList() const;

@@ -155,6 +155,9 @@ init -999 python:
 		else:
 			out_msg('renpy.call', 'Label <' + str(label) + '> not found')
 	
+	def show_screen(name, *args, **kwargs):
+		return _show_screen(name, args, kwargs)
+	
 	renpy__show_screen = show_screen
 	renpy__hide_screen = hide_screen
 	renpy__has_screen = has_screen

@@ -19,6 +19,8 @@ public:
 	static bool startsWith(const std::string &str, const std::string &substr, bool skipSpaces = false);
 	static bool endsWith(const std::string &str, const std::string &substr);
 
+	static std::string strip(const std::string &s, char space = ' ');
+
 	static void deleteAll(std::string &str, const std::string &toRemove);
 	static void replaceAll(std::string &str, const std::string &from, const std::string &to);
 

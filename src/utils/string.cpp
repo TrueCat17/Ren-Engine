@@ -200,6 +200,17 @@ bool String::endsWith(const std::string &str, const std::string &substr) {
 	return true;
 }
 
+std::string String::strip(const std::string &s, char space) {
+	size_t start = s.find_first_not_of(space);
+	if (start == size_t(-1)) return {};
+	size_t end = s.find_last_not_of(space) + 1;
+
+	if (start || end != s.size()) {
+		return s.substr(start, end - start);
+	}
+	return s;
+}
+
 void String::deleteAll(std::string &str, const std::string &toRemove) {
 	size_t i;
 	while((i = str.find(toRemove)) != size_t(-1)) {

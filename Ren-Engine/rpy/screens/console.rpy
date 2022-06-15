@@ -181,11 +181,14 @@ init python:
 		try:
 			res = to_exec()
 		except Exception as e:
-		    if isinstance(e, SyntaxError):
+			if isinstance(e, SyntaxError):
 				file_name, line_num, symbol_num, error_line = e.args[1]
-				console.out('File <' + file_name + '>, line ' + str(line_num) + ': invalid syntax\n' +
-					        '  ' + error_line + '\n' +
-					        '  ' + ' ' * (symbol_num - 1) + '^')
+				msg = 'File <%s>, line %s: invalid syntax' % (file_name, line_num)
+				if error_line:
+					msg += '\n  ' + str(error_line)
+					if symbol_num:
+						msg += '\n  ' + ' ' * (symbol_num - 1) + '^'
+				console.out(msg)
 			else:
 				console.out(e.__class__.__name__ + ': ' + str(e.args[0]))
 			res = None

@@ -316,23 +316,99 @@ static void initScreenNode(Node *node) {
 	std::vector<Node*> toInsert;
 
 	const bool firstIsProp = compsWithFirstParam.count(node->command);
-	if (firstIsProp && node->command != "screen" && node->command != "use") {
-		if (args.empty()) {
-			Utils::outMsg("Parser::initScreenNode",
-			              "Invalid syntax\n"
-			              "Object <" + node->command + "> must have main parameter\n\n" +
-						  node->getPlace());
-			return;
+	if (firstIsProp) {
+		if (node->command != "screen" && node->command != "use") {
+			if (args.empty()) {
+				Utils::outMsg("Parser::initScreenNode",
+				              "Invalid syntax\n"
+				              "Object <" + node->command + "> must have main parameter\n\n" +
+				              node->getPlace());
+				return;
+			}
+
+			Node *firstParam = Node::getNewNode(node->getFileName(), node->getNumLine());
+			firstParam->parent = node;
+			firstParam->isScreenProp = true;
+			firstParam->command = (node->command == "hotspot") ? "crop" : "first_param";
+			firstParam->params = args[0];
+			toInsert.push_back(firstParam);
+
+			initScreenNode(firstParam);
+
+		}else {
+			size_t i = node->params.find('(');
+			if (i != size_t(-1)) {
+				std::string args = node->params.substr(i);
+				i = node->params.find_last_not_of(' ', i);
+				node->params.erase(i);
+				bool isValid = Algo::isLexicalValid(args);
+
+				if (!isValid) {
+					Utils::outMsg("Parser::initScreenNode",
+					              "Screen args is invalid\n\n" +
+					              node->getPlace());
+				}else {
+					args = Algo::clear(args);
+					std::vector<std::string> vec = Algo::getArgs(args, ',');
+					for (const std::string& arg : vec) {
+						std::string name, value;
+						i = arg.find('=');
+						if (i == size_t(-1)) {
+							name = String::strip(arg);
+							if (node->command == "use") {
+								value.swap(name);
+							}
+						}else {
+							name = String::strip(arg.substr(0, i));
+							value = String::strip(arg.substr(i + 1));
+						}
+
+						if (!name.empty()) {
+							if (!Algo::isValidPyName(name)) {
+								Utils::outMsg("Parser::initScreenNode",
+								              "Invalid name <" + name + ">\n\n" +
+								              node->getPlace());
+							}
+
+							if (std::find_if(
+							        node->vars.cbegin(),
+							        node->vars.cend(),
+							        [&name] (const std::pair<std::string, std::string> &p) -> bool { return p.first == name; }
+							) != node->vars.cend())
+							{
+								std::string error;
+								if (node->command == "screen") {
+									error = "Duplicate argument <" + name + "> in function definition";
+								}else {// node->command == "use"
+									error = "Keyworg <" + name + "> argument repeated";
+								}
+								Utils::outMsg("Parser::initScreenNode",
+								              error + "\n\n" +
+								              node->getPlace());
+							}
+						}
+						node->vars.push_back({ name, value });
+					}
+
+					// messages copypasted from same python2 errors
+					for (i = 0; !node->vars.empty() && i < node->vars.size() - 1; ++i) {
+						if (!node->vars[i].second.empty() && node->vars[i + 1].second.empty()) {
+							std::string error;
+							if (node->command == "screen") {
+								//example: screen screen_name(arg1 = None, arg2)
+								error = "Non-default argument follows default argument";
+							}else {// node->command == "use"
+								//example: use screen_name(arg2 = None, value1)
+								error = "Non-keyword arg after keyword arg";
+							}
+							Utils::outMsg("Parser::initScreenNode",
+							              error + "\n\n" +
+							              node->getPlace());
+						}
+					}
+				}
+			}
 		}
-
-		Node *firstParam = Node::getNewNode(node->getFileName(), node->getNumLine());
-		firstParam->parent = node;
-		firstParam->isScreenProp = true;
-		firstParam->command = (node->command == "hotspot") ? "crop" : "first_param";
-		firstParam->params = args[0];
-		toInsert.push_back(firstParam);
-
-		initScreenNode(firstParam);
 	}
 
 	for (size_t i = firstIsProp; i < args.size(); i += 2) {

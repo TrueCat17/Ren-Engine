@@ -170,7 +170,7 @@ void PyUtils::init() {
 	setGlobalFunc("image_was_registered", Utils::imageWasRegistered);
 	setGlobalFunc("get_image", Utils::getImageDeclAt);
 
-	setGlobalFunc("show_screen", Screen::addToShow);
+	setGlobalFunc("_show_screen", Screen::addToShow);
 	setGlobalFunc("hide_screen", Screen::addToHide);
 	setGlobalFunc("has_screen", Screen::hasScreen);
 	setGlobalFunc("_log_screen_code", Screen::logScreenCode);

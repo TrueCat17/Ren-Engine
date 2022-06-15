@@ -26,7 +26,7 @@ public:
 
 	static void checkScreenEvents();
 
-	static void addToShow(const std::string &name);
+	static void addToShow(const std::string &name, PyObject *args = nullptr, PyObject *kwargs = nullptr);
 	static void addToHide(const std::string &name);
 	static bool hasScreen(const std::string &name);
 

@@ -322,6 +322,70 @@ static std::string initCycleCode(Node *node) {
 	return res;
 }
 
+static std::string initUseCode(Node *node, const std::string &index) {
+	Node *screenNode = Screen::getDeclared(node->params);
+	if (!screenNode) return "";
+	if (screenNode->vars.size() < node->vars.size()) {
+		Utils::outMsg("ScreenNodeUtils::initUseCode",
+		              "Maximum " + std::to_string(screenNode->vars.size()) + " args expected"
+		              "for screen <" + node->params + ">, got " + std::to_string(node->vars.size()) + "\n\n" +
+		              node->getPlace());
+	}
+
+	std::string inner = initCode(screenNode, index);
+	std::string res =
+	        "_SL_screen_vars_stack.append(screen)\n"
+	        "screen = Object()\n";
+
+
+	std::vector<std::string> argsWasSet;
+	argsWasSet.reserve(node->vars.size());
+
+	for (size_t i = 0; i < node->vars.size(); ++i) {
+		auto &[varName, varCode] = node->vars[i];
+
+		const std::string *namePtr = &varName;
+		if (namePtr->empty() && i < screenNode->vars.size()) {
+			namePtr = &screenNode->vars[i].first;
+		}
+		const std::string &name = *namePtr;
+
+		if (!name.empty()) {
+			if (std::find_if(
+			        screenNode->vars.cbegin(),
+			        screenNode->vars.cend(),
+			        [&name] (const std::pair<std::string, std::string> &p) -> bool { return p.first == name; }
+			) == screenNode->vars.cend())
+			{
+				Utils::outMsg("ScreenNodeUtils::initUseCode",
+				              "No param <" + name + "> in screen <" + node->params + ">\n\n" +
+				              node->getPlace());
+			}else {
+				argsWasSet.push_back(name);
+				res += "screen." + name + " = " + varCode + "\n";
+			}
+		}
+	}
+
+	for (size_t i = 0; i < screenNode->vars.size(); ++i) {
+		auto &[varName, varCode] = screenNode->vars[i];
+		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
+
+		if (varCode.empty()) {
+			Utils::outMsg("ScreenNodeUtils::initUseCode",
+			              "No value for param <" + varName + "> in screen <" + node->params + ">\n\n" +
+			              node->getPlace());
+		}else {
+			res += "screen." + varName + " = " + varCode + "\n";
+		}
+	}
+
+	res += "\n" +
+	       inner + "\n\n" +
+	       "screen = _SL_screen_vars_stack.pop()";
+	return res;
+}
+
 static std::string initCode(Node *node, const std::string& index) {
 	const std::string &command = node->command;
 	const std::string &params = node->params;
@@ -329,10 +393,7 @@ static std::string initCode(Node *node, const std::string& index) {
 	std::string res;
 
 	if (command == "use") {
-		Node *screenNode = Screen::getDeclared(params);
-		if (!screenNode) return "";
-
-		res = initCode(screenNode, index);
+		res = initUseCode(node, index);
 		return res;
 	}
 
@@ -423,7 +484,9 @@ static std::string initCode(Node *node, const std::string& index) {
 
 	if (command == "screen") {
 		if (index.empty()) {
-			res = "_SL_stack = []\n\n";
+			res = "_SL_stack = []\n"
+			      "_SL_screen_vars_stack = []\n"
+			      "screen = screen_vars['" + params + "']\n\n";
 		}
 	}else
 	if (command == "if" || command == "elif" || command == "else") {

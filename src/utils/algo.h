@@ -21,10 +21,12 @@ public:
 	}
 
 	static size_t getStartArg(const std::string &args, size_t end, const char separator = ' ');
-	static size_t getEndArg(const std::string &args, size_t start, const char separator = ' ');
+	static size_t getEndArg(const std::string &args, size_t start, const char separator = ' ', bool *isValid = nullptr);
 	static std::string clear(std::string s);
 	static std::vector<std::string> getArgs(std::string args, const char separator = ' ');
 
+	static bool isLexicalValid(std::string s);
+	static bool isValidPyName(const std::string &s);
 };
 
 #endif // ALGO_H

@@ -215,7 +215,6 @@ screen settings:
 						color 0
 						text_size 25
 				
-				
 				hbox:
 					xalign 0.5
 					spacing 15
