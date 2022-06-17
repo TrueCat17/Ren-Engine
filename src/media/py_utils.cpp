@@ -37,7 +37,9 @@ static const std::string False = "False";
 static const std::string None = "None";
 
 
-PyObject* PyUtils::formatTraceback = nullptr;
+static PyObject* formatTraceback = nullptr;
+static PyObject* builtinDict = nullptr;
+static PyObject* builtinStr = nullptr;
 
 
 PyObject *PyUtils::global = nullptr;
@@ -94,9 +96,9 @@ static void setGlobalValue(const char *key, T t) {
 
 template<typename T>
 static void setGlobalFunc(const char *key, T t) {
-	PyObject *pyFunc = makeFuncImpl(key, t);
+	PyObject *pyFunc = makeFuncImpl(key, t, builtinStr);
 
-	PyDict_SetItemString(PyUtils::global, key, pyFunc);
+	PyDict_SetItemString(builtinDict, key, pyFunc);
 	--pyFunc->ob_refcnt;
 }
 
@@ -117,6 +119,7 @@ void PyUtils::init() {
 		PyTuple_SET_ITEM(tuple1, 0, nullptr);
 		Py_DECREF(PyUtils::tuple1);
 	}
+	Py_XDECREF(builtinStr);
 	Mods::clearList();
 	Py_Finalize();
 
@@ -124,12 +127,16 @@ void PyUtils::init() {
 	Py_Initialize();
 
 	tuple1 = PyTuple_New(1);
+	builtinStr = PyString_FromString("__builtin__");
 
 	PyObject *tracebackModule = PyImport_AddModule("traceback");
 	PyObject *tracebackDict = PyModule_GetDict(tracebackModule);
 	formatTraceback = PyDict_GetItemString(tracebackDict, "format_tb");
 	if (!formatTraceback) throw std::runtime_error("traceback.format_tb == nullptr");
 
+	PyObject *builtinModule = PyImport_AddModule("__builtin__");
+	builtinDict = PyModule_GetDict(builtinModule);
+	if (!builtinDict) throw std::runtime_error("__builtin__ == nullptr");
 
 	PyObject *main = PyImport_AddModule("__main__");
 	global = PyModule_GetDict(main);

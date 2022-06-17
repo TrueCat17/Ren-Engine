@@ -10,7 +10,6 @@ class PyUtils {
 public:
 	static PyObject *global;
 	static PyObject *tuple1;
-	static PyObject *formatTraceback;
 	static std::recursive_mutex pyExecMutex;
 
 

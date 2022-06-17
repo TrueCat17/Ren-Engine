@@ -96,16 +96,21 @@ private:
 	}
 };
 
+PyMethodDef* getMethodDef(const char* name);
 
 template<typename Ret, typename ...Args>
-PyObject* makeFuncImpl(const char *name, Ret(*func)(Args...)) {
+PyObject* makeFuncImpl(const char *name, Ret(*func)(Args...), PyObject *moduleName = nullptr) {
 	std::vector<PyWrapperBase> &pyWrappers = getPyWrappers();
 
 	PyWrapper<Ret, Args...> wrapper(name, func);
 	pyWrappers.push_back(wrapper);
 
-	static PyMethodDef tmp{"delegator", pyFuncDelegator, METH_VARARGS, nullptr};
-	return PyCFunction_NewEx(&tmp, PyInt_FromLong(long(pyWrappers.size() - 1)), nullptr);
+	PyMethodDef *methodDef = getMethodDef(name);
+	PyObject *res = PyCFunction_NewEx(methodDef, PyInt_FromLong(long(pyWrappers.size() - 1)), nullptr);
+	if (moduleName) {
+		PyObject_SetAttrString(res, "__module__", moduleName);
+	}
+	return res;
 }
 
 
