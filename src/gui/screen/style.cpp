@@ -11,20 +11,19 @@ StyleStruct::StyleStruct(PyObject *style, const std::string &name) {
 	this->pyStyle = style;
 	if (style == Py_None) return;
 
-	PyObject *names = PyObject_Dir(style);
-	if (!PyList_CheckExact(names)) {
-		Utils::outMsg("StyleStruct::StyleStruct", "dir(style.styleName) returned not a <list>");
+	PyObject *dict = PyObject_GetAttrString(style, "__dict__");
+	if (!dict || !PyDict_CheckExact(dict)) {
+		Utils::outMsg("StyleStruct::StyleStruct", "Expected type(obj.__dict__) is dict");
 		return;
 	}
 
-	size_t len = size_t(PyList_GET_SIZE(names));
-	for (size_t i = 0; i < len; ++i) {
-		PyObject *propName = PyList_GetItem(names, long(i));
-		if (!PyString_CheckExact(propName)) continue;
-
-		PyObject *propValue = PyObject_GetAttr(style, propName);
-		Py_INCREF(propValue);
-		props[PyString_AS_STRING(propName)] = propValue;
+	Py_ssize_t i = 0;
+	PyObject *key, *value;
+	while (PyDict_Next(dict, &i, &key, &value)) {
+		if (PyString_CheckExact(key)) {
+			Py_INCREF(value);
+			props[PyString_AS_STRING(key)] = value;
+		}
 	}
 }
 
