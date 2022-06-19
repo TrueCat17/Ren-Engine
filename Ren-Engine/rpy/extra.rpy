@@ -6,13 +6,17 @@ init -10000 python:
 
 
 init -998 python:
+	
+	checkbox_yes_orig = gui + 'std/checkbox/yes.png'
+	checkbox_no_orig  = gui + 'std/checkbox/no.png'
+	
 	checkboxes_inited = False
 	def init_checkboxes():
 		global checkboxes_inited, checkbox_yes, checkbox_no
 		checkboxes_inited = True
 		
-		checkbox_yes = get_back_with_color(gui + 'std/checkbox/yes.png')
-		checkbox_no  = get_back_with_color(gui + 'std/checkbox/no.png')
+		checkbox_yes = get_back_with_color(checkbox_yes_orig)
+		checkbox_no  = get_back_with_color(checkbox_no_orig)
 	
 	
 	bar_ground = gui + 'std/bar/ground.png'
@@ -174,6 +178,74 @@ init -100000 python:
 				regexps.append((label, regexp))
 		
 		return [label for (label, regexp) in regexps if regexp.match(name)]
+	
+	def interpolate_tag(tag, kwargs, in_recursion = False):
+		if type(tag) is not str or len(tag) < 3 or tag[0] != '[' or tag[-1] != ']':
+			out_msg('interpolate_tag', 'invalid tag <' + str(tag) + '>')
+			return tag
+		tag = tag[1:-1]
+		
+		ops = ''
+		i = tag.find('!')
+		if i != -1:
+			ops = tag[i+1:]
+			tag = tag[:i]
+		
+		for op in ops:
+			if op not in 'tiulc':
+				out_msg('interpolate_tag', 'invalid tag operator <' + op + '> in tag <' + tag + '>')
+		
+		tag = str(eval(tag, kwargs, {}))
+		
+		if 't' in ops:
+			tag = _(tag)
+			
+		if 'i' in ops and not in_recursion:
+			tag = interpolate_tags(tag, kwargs, in_recursion = True)
+		
+		if 'q' in ops:
+			tag = tag.replace('{', '{{')
+		if 'u' in ops:
+			tag = tag.upper()
+		if 'l' in ops:
+			tag = tag.lower()
+		if 'c' in ops:
+			tag = tag.title()
+		return tag
+	
+	def interpolate_tags(text, kwargs = None, in_recursion = False):
+		if kwargs is None:
+			kwargs = globals()
+		
+		i = 0
+		start = end = None
+		opened = 0
+		while i < len(text):
+			c = text[i]
+			
+			if c == '[':
+				if i < len(text) - 1 and text[i + 1] == '[':
+					text = text[:i] + text[i+1:]
+					i += 1
+					continue
+				else:
+					if opened == 0:
+						start = i
+					opened += 1
+			elif c == ']':
+				opened -= 1
+				if opened == 0:
+					end = i + 1
+					tag = text[start:end]
+					defined = interpolate_tag(tag, kwargs)
+					text = text[:start] + defined + text[end:]
+					i += len(defined) - len(tag)
+				elif opened < 0:
+					opened = 0
+			
+			i += 1
+		
+		return text
 
 
 init -1000000 python:

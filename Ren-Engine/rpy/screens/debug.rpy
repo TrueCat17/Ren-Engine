@@ -1,4 +1,4 @@
-init python:
+init -101 python:
 	def debug_screen__get_last_fps():
 		cur_time = get_game_time()
 		
@@ -21,11 +21,17 @@ init python:
 			debug_screen.fps_time_array = []
 	
 	
-	def debug_screen__toggle_fps():
-		if config.debug_screen_visible_mode:
-			config.debug_screen_visible_mode = 0
+	def debug_screen__toggle_fps(v = None):
+		if v is None:
+			if config.debug_screen_visible_mode:
+				config.debug_screen_visible_mode = 0
+			else:
+				config.debug_screen_visible_mode = 3
 		else:
-			config.debug_screen_visible_mode = 3
+			if type(v) is int:
+				config.debug_screen_visible_mode = v % 4
+			else:
+				config.debug_screen_visible_mode = 3 if v else 0
 	
 	def debug_screen__next_visible_mode():
 		config.debug_screen_visible_mode = (config.debug_screen_visible_mode + 1) % 4

@@ -1,10 +1,10 @@
 init -100000 python:
 	class Object:
-		def __init__(self, obj = None, **kwords):
+		def __init__(self, _obj = None, **kwords):
 			self.in_persistent = False
 			
-			if obj is not None:
-				for k, v in obj.__dict__.iteritems():
+			if _obj is not None:
+				for k, v in _obj.__dict__.iteritems():
 					self.__dict__[k] = v
 			for k, v in kwords.iteritems():
 				self.__dict__[k] = v
