@@ -60,7 +60,8 @@ static void onRightClick(DisplayObject* owner) {
 
 
 TextButton::TextButton(Node* node, Screen *screen):
-	Text(node, screen)
+    Text(node, screen),
+    hoverIsModifiedGround(node->getProp("ground") && !node->getProp("hover"))
 {
 	btnRect.init(this, onLeftClick, onRightClick);
 }
@@ -77,7 +78,7 @@ void TextButton::updateTexture(bool skipError) {
 	if (skipError && ground.empty()) return;
 	if (surface && prevGround == ground && prevHover == hover && prevMouseOver == btnRect.mouseOvered) return;
 
-	if (hover.empty() && (prevGround != ground || prevHover != hover)) {
+	if (hoverIsModifiedGround && prevGround != ground) {
 		hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__,
 		                      "im.MatrixColor(r'" + ground + "', im.matrix.brightness(0.1))", true);
 	}

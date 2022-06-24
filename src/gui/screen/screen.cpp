@@ -48,9 +48,9 @@ static void show(const std::string &name) {
 		scr = new Screen(node, nullptr);
 	}
 
-	Stage::screens->addChildAt(scr, Stage::screens->children.size());
 	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
 	              "globals().has_key('signals') and signals.send('show_screen', '" + name + "')");
+	Stage::screens->addChildAt(scr, Stage::screens->children.size());
 }
 static void hide(const std::string &name) {
 	if (!Stage::screens) return;

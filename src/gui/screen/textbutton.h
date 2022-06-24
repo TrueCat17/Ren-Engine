@@ -11,6 +11,7 @@ private:
 	std::string prevHover;
 
 	bool prevMouseOver = false;
+	const bool hoverIsModifiedGround;
 
 public:
 	std::string ground;
