@@ -91,9 +91,11 @@ static std::pair<int, int> fixWindowSize(int w, int h, int dX = 1, int dY = 1) {
 	}
 
 	if (Stage::maximized || Stage::fullscreen) {//can only scale down
-		if (double(w) / h > k) {
+		double curK = double(w) / h;
+		if (curK > k + 0.01) {
 			w = int(h * k);
-		}else {
+		}else
+		if (curK < k - 0.01) {
 			h = int(w / k);
 		}
 	}else {

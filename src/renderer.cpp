@@ -359,16 +359,22 @@ static void fastRender(const RenderStruct *obj, size_t count) {
 }
 
 static void updateViewport(int w, int h) {
-	glViewport(0, 0, w, h);
-	checkErrors("glViewport");
-	glMatrixMode(GL_PROJECTION);
-	checkErrors("glMatrixMode");
-	glLoadIdentity();
-	glOrtho(0, w, h, 0, 0.0, 1.0);
-	checkErrors("glOrtho");
-	glMatrixMode(GL_MODELVIEW);
-	checkErrors("glMatrixMode");
-	glLoadIdentity();
+	if (fastOpenGL) {
+		glViewport(0, 0, w, h);
+		checkErrors("glViewport");
+		glMatrixMode(GL_PROJECTION);
+		checkErrors("glMatrixMode");
+		glLoadIdentity();
+		glOrtho(0, w, h, 0, 0.0, 1.0);
+		checkErrors("glOrtho");
+		glMatrixMode(GL_MODELVIEW);
+		checkErrors("glMatrixMode");
+		glLoadIdentity();
+	}
+
+	if (SDL_RenderSetViewport(renderer, nullptr)) {
+		Utils::outMsg("SDL_RenderSetViewport", SDL_GetError());
+	}
 }
 
 
@@ -493,8 +499,8 @@ SurfacePtr Renderer::getScreenshot() {
 static void readPixels() {
 	SDL_Rect rect = { Stage::x, Stage::y, Stage::width, Stage::height };
 
-	screenshot = ImageManipulator::getNewNotClear(rect.w, rect.h);
-	if (SDL_RenderReadPixels(renderer, &rect, SDL_PIXELFORMAT_RGBA32, screenshot->pixels, screenshot->pitch)) {
+	screenshot = ImageManipulator::getNewNotClear(rect.w, rect.h, SDL_PIXELFORMAT_RGB24);
+	if (SDL_RenderReadPixels(renderer, &rect, SDL_PIXELFORMAT_RGB24, screenshot->pixels, screenshot->pitch)) {
 		Utils::outMsg("SDL_RenderReadPixels", SDL_GetError());
 	}
 }
@@ -553,15 +559,14 @@ static void loop() {
 			}
 		}
 
-		SDL_GetWindowSize(Stage::window, &windowWidth, &windowHeight);
-
 		if (fastOpenGL) {
 			checkErrors("Start");
+		}
 
-			if (Renderer::needToUpdateViewPort) {
-				Renderer::needToUpdateViewPort = false;
-				updateViewport(windowWidth, windowHeight);
-			}
+		SDL_GetWindowSize(Stage::window, &windowWidth, &windowHeight);
+		if (Renderer::needToUpdateViewPort) {
+			Renderer::needToUpdateViewPort = false;
+			updateViewport(windowWidth, windowHeight);
 		}
 		if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)) {
 			Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
