@@ -8,10 +8,6 @@
 
 class Key: public Child {
 private:
-	static bool notReactOnSpace;
-	static bool notReactOnEnter;
-	static std::vector<Key*> screenKeys;
-
 	double lastDown = 0;
 	int lastUpdate = -1;
 	bool prevIsDown = false;
@@ -23,12 +19,15 @@ private:
 	SDL_Keycode key = SDLK_UNKNOWN;
 
 public:
-	double keyDelay = 0.010;
-	double firstKeyDelay = 0.333;
+	static bool getPressed(const SDL_Keycode key);
+	static void setPressed(const SDL_Keycode key, bool value);
 
 	static void setToNotReact(const SDL_Keycode key);
 	static void setFirstDownState(const SDL_Keycode key);
 	static void setUpState(const SDL_Keycode key);
+
+	double keyDelay = 0.010;
+	double firstKeyDelay = 0.333;
 
 	Key(Node *node, Screen *screen);
 	~Key();

@@ -9,8 +9,6 @@ bool GV::firstFrame = false;
 
 std::thread::id GV::messageThreadId;
 
-Uint8 GV::keyBoardState[SDL_NUM_SCANCODES];
-
 std::mutex GV::updateMutex;
 double GV::prevFrameStartTime = 0;
 double GV::frameStartTime = 0;

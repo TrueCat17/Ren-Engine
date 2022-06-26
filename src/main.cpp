@@ -143,7 +143,8 @@ static bool init() {
 	}
 
 	for (size_t i = 0; i < SDL_NUM_SCANCODES; ++i) {
-		GV::keyBoardState[i] = false;
+		Key::setPressed(SDL_Keycode(i), false);
+		Key::setPressed(SDL_Keycode(i | SDLK_SCANCODE_MASK), false);
 	}
 	Mouse::init();
 
@@ -220,14 +221,14 @@ static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
 		key = SDLK_DELETE;
 	}else
 	if (key >= SDLK_KP_1 && key <= SDLK_KP_0) {
-		if (ks.mod & KMOD_NUM) {
-			if (key == SDLK_KP_0) {
-				key = SDLK_0;
-			}else {
-				key -= SDLK_KP_1 - SDLK_1;
-			}
+		if (key == SDLK_KP_0) {
+			key = SDLK_0;
 		}else {
-			key = numpadKeys[key - SDLK_KP_1];
+			if (ks.mod & KMOD_NUM) {
+				key -= SDLK_KP_1 - SDLK_1;
+			}else {
+				key = numpadKeys[key - SDLK_KP_1];
+			}
 		}
 	}
 	return key;
@@ -361,8 +362,7 @@ static void loop() {
 
 				if (event.type == SDL_KEYDOWN) {
 					SDL_Keycode key = getKeyCode(event.key.keysym);
-					bool downed = GV::keyBoardState[key & ~SDLK_SCANCODE_MASK];
-					if (!downed) {
+					if (!Key::getPressed(key)) {
 						if (key == SDLK_RETURN || key == SDLK_SPACE) {
 							if (BtnRect::checkMouseClick(true, true)) {
 								Key::setToNotReact(key);

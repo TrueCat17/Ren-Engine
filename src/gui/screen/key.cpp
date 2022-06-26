@@ -13,9 +13,23 @@
 #include "utils/utils.h"
 
 
-bool Key::notReactOnSpace = false;
-bool Key::notReactOnEnter = false;
-std::vector<Key*> Key::screenKeys;
+
+static Uint8 keycodes[SDL_NUM_SCANCODES];
+static Uint8 scancodes[SDL_NUM_SCANCODES];
+bool Key::getPressed(const SDL_Keycode key) {
+	Uint8 *array = key & SDLK_SCANCODE_MASK ? scancodes : keycodes;
+	return array[key & ~SDLK_SCANCODE_MASK];
+}
+void Key::setPressed(const SDL_Keycode key, bool value) {
+	Uint8 *array = key & SDLK_SCANCODE_MASK ? scancodes : keycodes;
+	array[key & ~SDLK_SCANCODE_MASK] = value;
+}
+
+
+
+static bool notReactOnSpace = false;
+static bool notReactOnEnter = false;
+static std::vector<Key*> screenKeys;
 
 Key::Key(Node *node, Screen *screen):
 	Child(node, nullptr, screen)
@@ -49,7 +63,7 @@ void Key::setToNotReact(const SDL_Keycode key) {
 	}
 }
 void Key::setFirstDownState(const SDL_Keycode key) {
-	GV::keyBoardState[key & ~SDLK_SCANCODE_MASK] = true;
+	Key::setPressed(key, true);
 
 	for (Key *sk : screenKeys) {
 		if (sk->key == key && sk->isModal()) {
@@ -60,7 +74,7 @@ void Key::setFirstDownState(const SDL_Keycode key) {
 	}
 }
 void Key::setUpState(const SDL_Keycode key) {
-	GV::keyBoardState[key & ~SDLK_SCANCODE_MASK] = false;
+	Key::setPressed(key, false);
 
 	if (key == SDLK_SPACE) {
 		notReactOnSpace = false;
@@ -108,7 +122,7 @@ void Key::checkEvents() {
 	}else {
 		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 
-		if (inFirstDown || GV::keyBoardState[key & ~SDLK_SCANCODE_MASK]) {
+		if (inFirstDown || Key::getPressed(key)) {
 			const double dTime = GV::frameStartTime - lastDown;
 			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
 

@@ -4,8 +4,6 @@
 #include <mutex>
 #include <thread>
 
-#include <SDL2/SDL_scancode.h>
-
 
 class Node;
 
@@ -20,8 +18,6 @@ public:
 	static bool firstFrame;
 
 	static std::thread::id messageThreadId;
-
-	static Uint8 keyBoardState[SDL_NUM_SCANCODES];
 
 	static std::mutex updateMutex;
 	static double prevFrameStartTime;
