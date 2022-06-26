@@ -35,7 +35,7 @@ screen choose_menu:
 				yalign 0.5
 				ground db.prev_btn
 				size   (db.prev_btn_size, db.prev_btn_size)
-				action prev_text.show
+				action history.show
 			
 			null size db.voice_size # text
 			null size (db.next_btn_size, db.next_btn_size) # next

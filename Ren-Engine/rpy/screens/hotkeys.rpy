@@ -81,8 +81,8 @@ init -901 python:
 	hotkeys.keypad_synonyms = ['KEYPAD +', 'KEYPAD -', 'KEYPAD *', 'KEYPAD /', 'KEYPAD =']
 	hotkeys.keys.extend(hotkeys.keypad_synonyms)
 	
-	hotkeys.shift_from = list("""`1234567890-=,./;'[]\\""")
-	hotkeys.shift_to   = list('''~!@#$%^&*()_+<>?:"{}|''')
+	hotkeys.shift_from = list("`1234567890-=,./;'[]\\")
+	hotkeys.shift_to   = list('~!@#$%^&*()_+<>?:"{}|')
 	hotkeys.keys.extend(hotkeys.shift_from)
 	
 	for i in xrange(len(hotkeys.keys)):

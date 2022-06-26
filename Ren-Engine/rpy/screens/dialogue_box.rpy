@@ -255,7 +255,7 @@ screen dialogue_box:
 		$ db.press_ctrl_time = get_game_time()
 	
 	if db.visible:
-		key 'TAB' action SetDict(db, 'skip_tab', not db.skip_tab)
+		key 'TAB' action ToggleDict(db, 'skip_tab')
 	
 	python:
 		db.skip = False
@@ -310,7 +310,7 @@ screen dialogue_box:
 							yalign 0.5
 							ground db.prev_btn
 							size   (db.prev_btn_size, db.prev_btn_size)
-							action prev_text.show
+							action ShowScreen('history')
 						
 						image db.voice:
 							size db.voice_size
@@ -327,6 +327,8 @@ screen dialogue_box:
 							ground db.next_btn
 							size   (db.next_btn_size, db.next_btn_size)
 							action db.on_enter
+					
+					use quick_menu
 			
 			
 			elif db.mode == 'nvl':
@@ -360,7 +362,7 @@ screen dialogue_box:
 							yalign 0.5
 							ground db.prev_btn
 							size   (db.prev_btn_size, db.prev_btn_size)
-							action prev_text.show
+							action ShowScreen('history')
 						
 						null size db.voice_size
 						
@@ -369,6 +371,8 @@ screen dialogue_box:
 							ground db.next_btn
 							size   (db.next_btn_size, db.next_btn_size)
 							action db.on_enter
+					
+					use quick_menu
 			
 			if db.skip:
 				text 'Skip Mode':

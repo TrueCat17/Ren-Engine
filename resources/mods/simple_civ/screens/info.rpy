@@ -111,4 +111,4 @@ screen info:
 				style     'btn'
 				xsize     info.btn_size
 				text_size info.text_size
-				action pause_screen.show
+				action pause_screen.show(ignore_checks=True)

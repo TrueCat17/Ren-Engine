@@ -111,6 +111,6 @@ screen pause:
 			textbutton _('Continue')     style 'pause_screen_button' action pause_screen.close
 			textbutton _('Load')         style 'pause_screen_button' action ShowMenu('load')
 			textbutton _('Save')         style 'pause_screen_button' action ShowMenu('save')
-			textbutton _('Settings')     style 'pause_screen_button' action ShowMenu('settings')
+			textbutton _('Preferences')  style 'pause_screen_button' action ShowMenu('preferences')
 			textbutton _('Exit to menu') style 'pause_screen_button' action Function(start_mod, 'main_menu')
 

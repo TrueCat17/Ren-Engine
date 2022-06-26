@@ -3,14 +3,14 @@ init python:
 	set_can_mouse_hide(False)
 	set_can_autosave(False)
 	
-	db.hide_interface = True # for disable pause-menu in screen <hotkeys>
+	pause_screen.disable = True
 	start_screens = ['hotkeys', 'main_menu']
 	
 	back_path = gui + 'menu/main/back.png'
 
 screen main_menu:
 	image back_path:
-		size (1.0, 1.0)
+		size 1.0
 	
 	vbox:
 		align (0.5, 0.25)
@@ -23,7 +23,7 @@ screen main_menu:
 		align 0.95
 		spacing 5
 		
-		textbutton _('Load')     xalign 0.5 action ShowMenu('load')
-		textbutton _('Settings') xalign 0.5 action ShowMenu('settings')
-		textbutton _('Exit')     xalign 0.5 action exit_from_game
+		textbutton _('Load')        xalign 0.5 action ShowMenu('load')
+		textbutton _('Preferences') xalign 0.5 action ShowMenu('preferences')
+		textbutton _('Exit')        xalign 0.5 action exit_from_game
 

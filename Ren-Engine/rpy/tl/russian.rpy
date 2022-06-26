@@ -1,13 +1,13 @@
 translate russian strings:
 	
-	# main, load, save, pause
+	# main, load, save, pause, quick_menu
 	old 'New game'
 	new 'Новая игра'
 	
 	old 'Load'
 	new 'Загрузить'
 	
-	old 'Settings'
+	old 'Preferences'
 	new 'Настройки'
 	
 	old 'Exit'
@@ -40,8 +40,23 @@ translate russian strings:
 	old 'Exit to menu'
 	new 'Выход в меню'
 	
+	old 'History'
+	new 'История'
 	
-	# settings
+	old 'Skip'
+	new 'Пропуск'
+	
+	old 'Q.Save'
+	new 'Б.Сохр'
+	
+	old 'Q.Load'
+	new 'Б.Загр'
+	
+	old 'Prefs'
+	new 'Опции'
+	
+	
+	# preferences
 	old 'Screen'
 	new 'Экран'
 	
