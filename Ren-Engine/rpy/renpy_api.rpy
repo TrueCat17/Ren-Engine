@@ -112,6 +112,7 @@ init -999 python:
 	
 	
 	renpy__config   = persistent.config
+	renpy__Keymap   = dict
 	renpy__random   = random # prop = module
 	renpy__absolute = absolute # prop = type
 	

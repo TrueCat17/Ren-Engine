@@ -1,4 +1,4 @@
-init -101 python:
+init -995 python:
 	def debug_screen__get_last_fps():
 		cur_time = get_game_time()
 		

@@ -256,7 +256,6 @@ screen dialogue_box:
 	
 	if db.visible:
 		key 'TAB' action SetDict(db, 'skip_tab', not db.skip_tab)
-	key 'ESCAPE' action [SetDict(db, 'skip_tab', False), SetDict(db, 'hide_interface', False)]
 	
 	python:
 		db.skip = False

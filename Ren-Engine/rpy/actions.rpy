@@ -3,7 +3,13 @@ init -10000 python:
 		if not isinstance(funcs, (list, tuple)):
 			funcs = [funcs]
 		for func in funcs:
-			if func is not None:
+			if func is None: continue
+			
+			if type(func) is str:
+				file_name, num_line = get_file_and_line(1)
+				compiled = compile('\n' * (num_line - 1) + func, file_name, 'exec')
+				eval(compiled)
+			else:
 				func()
 	
 	
@@ -12,10 +18,27 @@ init -10000 python:
 	
 	class Function(Object):
 		def __init__(self, func, *args, **kwargs):
-			Object.__init__(self)
-			self.func, self.args, self.kwargs = func, args, kwargs
+			Object.__init__(self, func = func, args = args, kwargs = kwargs)
 		def __call__(self):
 			return apply(self.func, self.args, self.kwargs)
+	
+	# for get value: Eval("2 + 3")() -> 5
+	class Eval(Object):
+		def __init__(self, code):
+			file_name, num_line = get_file_and_line(1)
+			compiled = compile('\n' * (num_line - 1) + code, file_name, 'eval')
+			Object.__init__(self, compiled = compiled)
+		def __call__(self):
+			return eval(self.compiled)
+	
+	# for exec code: Exec("v = f(2, 3)")() -> None
+	class Exec(Object):
+		def __init__(self, code):
+			file_name, num_line = get_file_and_line(1)
+			compiled = compile('\n' * (num_line - 1) + code, file_name, 'exec')
+			Object.__init__(self, compiled = compiled)
+		def __call__(self):
+			eval(self.compiled)
 	
 	
 	_undefined = object()
@@ -92,6 +115,11 @@ init -10000 python:
 		return Function(renpy.play, file_name, channel)
 	def Stop(channel):
 		return Function(renpy.stop, channel)
+	
+	def QuickLoad():
+		return Function(quick_load)
+	def QuickSave():
+		return Function(quick_save)
 	
 	def Show(name):
 		return Function(show_screen, name)

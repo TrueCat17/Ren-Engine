@@ -216,7 +216,7 @@ screen location:
 			key 's'     action SetVariable('loc__down',  True) first_delay 0
 		
 		python:
-			if not config.shift_is_run:
+			if config.default_moving_is_run:
 				loc__shift_is_down = not loc__shift_is_down
 			if not get_run_allow():
 				loc__shift_is_down = False

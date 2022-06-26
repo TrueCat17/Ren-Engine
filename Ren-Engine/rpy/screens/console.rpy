@@ -1,4 +1,4 @@
-init python:
+init -995 python:
 	def console__get_cursor_index():
 		lines = console.input.split('\n')
 		index = min(console.cursor_x, len(lines[console.cursor_y]))

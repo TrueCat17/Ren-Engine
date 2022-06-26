@@ -41,7 +41,8 @@ init -100 python:
 	
 	def settings__get_text_cps_on():
 		return config.text_cps > 100000
-	def settings__set_text_cps_on(v):
+	def settings__toggle_text_cps_on():
+		v = not Settings.get_text_cps_on()
 		config.text_cps = (100000 if v else 0) + (config.text_cps % 100000)
 	
 	build_object('settings')
@@ -93,7 +94,7 @@ init -100 python:
 	
 	
 	settings.content['Screen'] = [
-		[['bool', '["Fullscreen"!t] (F11)', Function(get_from_hard_config, 'window_fullscreen', bool), set_fullscreen]],
+		[['bool', '["Fullscreen"!t] (F11)', Function(get_from_hard_config, 'window_fullscreen', bool), toggle_fullscreen]],
 		None,
 		[['str', '["Resolution"!t]:', 20]],
 		[
@@ -118,7 +119,7 @@ init -100 python:
 		settings.content['Sounds'].append([mixer_text, mixer_bar])
 	
 	settings.content['Other'] = [
-		[['bool', '["Show all text at once"!t]', settings.get_text_cps_on, settings.set_text_cps_on]],
+		[['bool', '["Show all text at once"!t]', settings.get_text_cps_on, settings.toggle_text_cps_on]],
 		[['str', '["Text display speed"!t]', 20]],
 		[['bar', settings, 'get_text_cps', 20, 220, Function(settings.add_text_cps, -20), Function(settings.add_text_cps, +20)]],
 		None,
@@ -243,7 +244,7 @@ screen settings:
 									xsize  min(350, int(get_stage_width() * 0.6))
 									ysize  25
 									text_size 20
-									action elem[3](not value)
+									action elem[3]
 							
 							elif obj == 'btn':
 								python:

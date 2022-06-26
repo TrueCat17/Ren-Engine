@@ -76,7 +76,8 @@ init -100000 python:
 		if os.path.exists(path):
 			load(config.quick_save_table, config.quick_save_name)
 	def quick_save():
-		sl_save(config.quick_save_table, config.quick_save_name)
+		if get_current_mod() != 'main_menu':
+			sl_save(config.quick_save_table, config.quick_save_name)
 	
 	def make_screenshot(width = None, height = None):
 		global need_screenshot, screenshot_width, screenshot_height
@@ -100,6 +101,8 @@ init -100000 python:
 		return get_image_width(image), get_image_height(image)
 	def get_stage_size():
 		return get_stage_width(), get_stage_height()
+	def toggle_fullscreen():
+		set_fullscreen(not get_from_hard_config('window_fullscreen', bool))
 	
 	def get_from_hard_config(param, ret_type):
 		res = _get_from_hard_config(str(param))

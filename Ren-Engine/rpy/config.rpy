@@ -10,8 +10,6 @@ init -997 python:
 	
 	config.quick_save_table = 'quick'
 	config.quick_save_name  = '0'
-	config.quick_load_key = 'L'
-	config.quick_save_key = 'Q'
 	
 	config.count_prev_texts = 50
 	
@@ -22,8 +20,8 @@ init -997 python:
 	if config.autosave is None:
 		config.autosave = 60 # time, in sec.
 	
-	if config.shift_is_run is None:
-		config.shift_is_run = False # If True, usual moving is walking, with shift - running
+	if config.default_moving_is_run is None:
+		config.default_moving_is_run = True
 	
 	if config.max_location_zoom is None:
 		config.max_location_zoom = 2.5
