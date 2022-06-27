@@ -246,7 +246,7 @@ init -1001 python:
 			dtime = get_game_time() - self.animation_start_time
 			
 			if has_screen('pause') and not animation.first_update:
-				self.animation_start_time += dtime
+				self.animation_start_time += get_last_tick()
 				return
 			
 			time_k = 1
@@ -283,7 +283,11 @@ init -1001 python:
 			self.set_frame(frame)
 			
 			if self.user_function:
-				self.user_function(self)
+				funcs = self.user_function
+				if type(funcs) not in (list, tuple):
+					funcs = [funcs]
+				for func in funcs:
+					func(self)
 	
 	
 	def add_location_object(location_name, place, obj_name, **kwargs):
