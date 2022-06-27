@@ -97,8 +97,6 @@ void Screen::clear() {
 
 
 static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kwargs) {
-	std::lock_guard g(PyUtils::pyExecMutex);
-
 	Node *node = Screen::getDeclared(name);
 	auto &vars = node->vars;
 	size_t countVars = vars.size();
@@ -183,7 +181,10 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 }
 
 void Screen::addToShow(const std::string &name, PyObject *args, PyObject *kwargs) {
-	std::lock_guard g(screenMutex);
+	//pyExecMutex need for func makeScreenVars
+	//this order of locks need for no deadlocks
+	std::lock_guard g(PyUtils::pyExecMutex);
+	std::lock_guard g2(screenMutex);
 
 	Node *node = Screen::getDeclared(name);
 	if (!node) {
