@@ -20,6 +20,7 @@
 #include "media/image_manipulator.h"
 #include "media/music.h"
 #include "media/py_utils.h"
+#include "media/scenario.h"
 
 #include "parser/mods.h"
 #include "parser/syntax_checker.h"
@@ -252,7 +253,7 @@ static void loop() {
 	double maxTimeForUnmaximized = 0.1;
 
 	while (true) {
-		while (!GV::inGame && !GV::exit) {
+		while ((!GV::inGame || Scenario::initing) && !GV::exit) {
 			Utils::sleep(0.010, false);
 		}
 		if (GV::exit) return;

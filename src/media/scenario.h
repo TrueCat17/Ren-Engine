@@ -7,6 +7,9 @@
 
 class Scenario {
 public:
+	static bool initing;
+
+
 	static std::vector<std::pair<std::string, std::string>> getStackToSave();
 
 	static void execute(const std::string &loadPath);

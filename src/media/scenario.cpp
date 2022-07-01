@@ -25,6 +25,9 @@
 
 
 
+bool Scenario::initing = true;
+
+
 static std::map<std::string, Node*> declaredLabels;
 
 static void declareLabel(Node *labelNode) {
@@ -241,7 +244,6 @@ void Scenario::execute(const std::string &loadPath) {
 	Node *obj = elem.first;
 	size_t num = elem.second;
 
-	bool initing = true;
 	bool inWithBlock = false;
 
 	jumpNextLabel.clear();
