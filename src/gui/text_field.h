@@ -33,8 +33,8 @@ struct TextStyle {
 
 class TextField: public DisplayObject {
 private:
-	std::string hAlign = "left";
-	std::string vAlign = "top";
+	float hAlign = 0;
+	float vAlign = 0;
 
 	TextStyle prevMainStyle;
 	std::vector<std::string> lines;
@@ -43,7 +43,7 @@ private:
 	std::vector<SDL_Rect> rects;
 	std::vector<SurfacePtr> lineSurfaces;
 
-	void setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &stackStyles);
+	void setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack);
 
 public:
 	TextStyle mainStyle;
@@ -52,9 +52,9 @@ public:
 	int maxWidth  = -1;
 	int maxHeight = -1;
 
-	const std::string& getHAlign() const { return hAlign; }
-	const std::string& getVAlign() const { return vAlign; }
-	void setAlign(std::string hAlign = "left", std::string vAlign = "top");
+	float getHAlign() const { return hAlign; }
+	float getVAlign() const { return vAlign; }
+	void setAlign(float hAlign = 0, float vAlign = 0);
 
 	void setFont(std::string fontName, float fontSize);
 	void setText(const std::string &text);

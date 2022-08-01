@@ -35,6 +35,8 @@ public:
 
 	double zorder = 0;
 	bool modal = false;
+	bool ignore_modal = false;
+	bool save = true;
 
 	Screen(Node *node, Screen *screen);
 	virtual ~Screen() { destroyedScreenIsModal = hasModal() && modal; }

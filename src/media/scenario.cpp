@@ -25,7 +25,7 @@
 
 
 
-bool Scenario::initing = true;
+bool Scenario::initing;
 
 
 static std::map<std::string, Node*> declaredLabels;
@@ -59,7 +59,6 @@ static void restoreStack(const std::string &loadPath) {
 
 		Game::setFps(60);
 		Mouse::setCanHide(true);
-		Game::setCanAutoSave(true);
 		return;
 	}
 
@@ -212,6 +211,7 @@ void Scenario::jumpNext(const std::string &label, bool isCall, const std::string
 
 void Scenario::execute(const std::string &loadPath) {
 	double initingStartTime = Utils::getTimer();
+	initing = true;
 	size_t initNum = 0;
 
 	ScopeExit se([]() {
@@ -351,12 +351,12 @@ void Scenario::execute(const std::string &loadPath) {
 
 
 		if (obj->command == "menu") {
-			const std::string resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(), "int(choose_menu_result)", true);
+			const std::string resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(), "int(choice_menu_result)", true);
 			int res = String::toInt(resStr);
 
 			if (res < 0 || res >= int(obj->children.size())) {
 				Utils::outMsg("Scenario::execute",
-				              "choose_menu_result = " + resStr + ", min = 0, max = " + std::to_string(obj->children.size()) + "\n" +
+				              "choice_menu_result = " + resStr + ", min = 0, max = " + std::to_string(obj->children.size()) + "\n" +
 				              obj->getPlace());
 				res = 0;
 			}
@@ -379,15 +379,15 @@ void Scenario::execute(const std::string &loadPath) {
 				std::lock_guard g(GV::updateMutex);
 				Screen::updateLists();
 			}
-			bool screenThereIs = Screen::getMain("choose_menu");
+			bool screenThereIs = Screen::getMain("choice_menu");
 			if (!screenThereIs) {
 				std::string variants;
 				for (const Node *node : child->children) {
 					variants += node->params + ", ";
 				}
 
-				PyUtils::exec(child->getFileName(), child->getNumLine(), "choose_menu_variants = (" + variants + ")");
-				PyUtils::exec(child->getFileName(), child->getNumLine(), "renpy.call_screen('choose_menu', 'choose_menu_result')");
+				PyUtils::exec(child->getFileName(), child->getNumLine(), "choice_menu_variants = (" + variants + ")");
+				PyUtils::exec(child->getFileName(), child->getNumLine(), "renpy.call_screen('choice_menu', 'choice_menu_result')");
 			}
 
 			obj = child;

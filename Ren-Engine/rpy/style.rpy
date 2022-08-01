@@ -1,6 +1,11 @@
 init -1002 python:
 	
-	style = Object()
+	def style__get_default_hover(hover, ground, brightness = 0.1):
+		if hover:
+			return hover
+		return im.MatrixColor(ground, im.matrix.brightness(brightness))
+	
+	build_object('style')
 	
 	
 	class Style(Object):
@@ -60,7 +65,11 @@ init -1002 python:
 				for index, prop in enumerate(props):
 					self.__setattr__(prop, values[index])
 			else:
-				Object.__setattr__(self, attr, value)
+				if attr == 'properties':
+					for k, v in value.iteritems():
+						Object.__setattr__(self, k, v)
+				else:
+					Object.__setattr__(self, attr, value)
 		
 		def __delattr__(self, attr):
 			if attr in self.complex_props:
@@ -90,7 +99,9 @@ init -1001:
 	
 	style screen:
 		modal False
+		save  True
 		zorder 0
+		ignore_modal False
 	
 	style vbox:
 		size 0
@@ -120,7 +131,7 @@ init -1001:
 		text_valign 'center' #  top | center | bottom
 		size (175, 25)
 		text_size 15
-		ground 'images/gui/std/btn/usual.png'
+		ground 'images/gui/std/btn/ground.png'
 		hover  'images/gui/std/btn/hover.png'
 	
 	style button:

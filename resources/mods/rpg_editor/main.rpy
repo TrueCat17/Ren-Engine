@@ -1,7 +1,7 @@
 init 1 python:
 	set_fps(30)
 	set_can_mouse_hide(False)
-	set_can_autosave(False)
+	config.has_autosave = False
 	
 	pause_screen.disable = True
 	start_screens = ['hotkeys', 'all_locations', 'menu']

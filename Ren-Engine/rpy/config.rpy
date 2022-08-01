@@ -1,6 +1,6 @@
-init -997 python:
+init -1100 python:
 	
-	start_screens = ['hotkeys', 'dialogue_box', 'debug_screen']
+	start_screens = ['hotkeys', 'debug_screen', 'dialogue_box']
 	
 	
 	config = renpy.config
@@ -8,15 +8,15 @@ init -997 python:
 	config.enable_language_autodetect = True
 	config.default_language = 'english'
 	
-	config.quick_save_table = 'quick'
-	config.quick_save_name  = '0'
-	
-	config.count_prev_texts = 50
-	
 	# height calculate: width / get_from_hard_config("window_w_div_h", float)
-	config.save_screenshot_width = 480
+	config.thumbnail_width = 480
 	
 	
+	config.long_next_is_skipping = True
+	
+	config.has_quicksave = True
+	
+	config.has_autosave = True
 	if config.autosave is None:
 		config.autosave = 60 # time, in sec.
 	

@@ -1,4 +1,4 @@
-init -10001 python:
+init -100001 python:
 
 	class Signals:
 		def __init__(self):

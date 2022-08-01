@@ -4,7 +4,6 @@
 
 #include "utils/math.h"
 #include "utils/stage.h"
-#include "utils/utils.h"
 
 Text::Text(Node *node, Screen *screen):
     Child(node, nullptr, screen),
@@ -52,7 +51,8 @@ void Text::updateRect(bool) {
 		}
 
 		if (needUpdate ||
-		    tf->getHAlign() != textHAlign || tf->getVAlign() != textVAlign ||
+		    !Math::floatsAreEq(tf->getHAlign(), textHAlign) ||
+		    !Math::floatsAreEq(tf->getVAlign(), textVAlign) ||
 		    width != prevWidth || height != prevHeight
 		) {
 			float w = width  <= 0 ? tf->getWidth()  : float(width);

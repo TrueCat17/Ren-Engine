@@ -8,7 +8,6 @@
 
 
 #include "media/image_manipulator.h"
-#include "media/py_utils.h"
 
 #include "utils/file_system.h"
 #include "utils/scope_exit.h"

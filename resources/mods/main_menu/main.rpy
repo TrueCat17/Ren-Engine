@@ -1,12 +1,12 @@
 init python:
 	set_fps(20)
 	set_can_mouse_hide(False)
-	set_can_autosave(False)
+	config.has_autosave = False
 	
 	pause_screen.disable = True
 	start_screens = ['hotkeys', 'main_menu']
 	
-	back_path = gui + 'menu/main/back.png'
+	back_path = 'images/gui/menu/main/back.png'
 
 screen main_menu:
 	image back_path:

@@ -6,7 +6,7 @@ typedef struct _object PyObject;
 class GUI {
 public:
 	static PyObject* getScreenTimes();
-	static void update();
+	static void update(bool saving = false);
 };
 
 #endif // GUI_H

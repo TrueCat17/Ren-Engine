@@ -15,7 +15,6 @@
 #include "gv.h"
 #include "logger.h"
 
-#include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
 #include "parser/node.h"
@@ -24,7 +23,6 @@
 #include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/stage.h"
-#include "utils/string.h"
 
 
 static std::map<std::string, Node*> declAts;

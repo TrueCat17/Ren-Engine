@@ -18,7 +18,7 @@ Child::Child(Node *node, Container *screenParent, Screen *screen):
 {}
 
 bool Child::isModal() const {
-	return !Screen::hasModal() || (screen && screen->modal);
+	return !Screen::hasModal() || screen->modal || screen->ignore_modal;
 }
 
 void Child::updateStyle() {

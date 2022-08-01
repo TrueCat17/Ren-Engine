@@ -5,8 +5,8 @@ init -1000 python:
 		sliders_v[name] = {
 			'length': length,
 			'page_length': page_length,
-			'ground': ground or vbar_ground,
-			'hover': hover or vbar_hover,
+			'ground': ground or gui.vbar_ground,
+			'hover': hover or gui.vbar_hover,
 			'value': value,
 			'button_size': button_size,
 			'buttons': buttons

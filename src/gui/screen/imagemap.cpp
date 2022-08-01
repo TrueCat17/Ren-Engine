@@ -1,11 +1,8 @@
 #include "imagemap.h"
 
-#include "style.h"
-
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
-#include "utils/utils.h"
 
 Imagemap::Imagemap(Node *node, Screen *screen):
 	Container(node, this, screen)

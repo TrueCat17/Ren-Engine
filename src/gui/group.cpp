@@ -1,7 +1,5 @@
 #include "group.h"
 
-#include "utils/utils.h"
-
 
 void Group::updateGlobal() {
 	DisplayObject::updateGlobal();

@@ -41,7 +41,6 @@ static long fps = 60;
 static double frameTime = 1.0 / 60;
 
 static int modStartTime = 0;
-static bool canAutoSave = true;
 
 static const std::string savesPath = "../var/saves";
 
@@ -53,13 +52,6 @@ void Game::startMod(const std::string &dir) {
 }
 int Game::getModStartTime() {
 	return modStartTime;
-}
-
-bool Game::getCanAutoSave() {
-	return canAutoSave;
-}
-void Game::setCanAutoSave(bool v) {
-	canAutoSave = v;
 }
 
 
@@ -110,14 +102,14 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 
 	{
 		long fps;
-		bool hideMouse, autosave;
+		bool hideMouse;
 
 		std::getline(is, tmp);
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 3) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 3 args");
+		if (tmpVec.size() != 2) {
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 2 args");
 			fps = 60;
-			hideMouse = autosave = true;
+			hideMouse = true;
 		}else {
 			fps = String::toInt(tmpVec[0]);
 			if (fps == 0) {
@@ -128,12 +120,10 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 			}
 
 			hideMouse = tmpVec[1] == "True";
-			autosave = tmpVec[2] == "True";
 		}
 
 		Game::setFps(fps);
 		Mouse::setCanHide(hideMouse);
-		Game::setCanAutoSave(autosave);
 	}
 	std::getline(is, tmp);
 
@@ -242,11 +232,11 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 }
 
 void Game::save() {
-	const std::string table = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_table", true);
-	const std::string name  = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_name",  true);
+	const std::string page = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_page", true);
+	const std::string slot = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_slot",  true);
 
-	const std::string tablePath = savesPath + '/' + table;
-	const std::string fullPath = tablePath + '/' + name;
+	const std::string tablePath = savesPath + '/' + page;
+	const std::string fullPath = tablePath + '/' + slot;
 
 
 	{//check directory to save
@@ -281,16 +271,13 @@ void Game::save() {
 		infoFile << GV::mainExecNode->params << '\n'
 		         << GV::gameTime << '\n'
 		         << Game::getFps() << ' '
-		         << (Mouse::getCanHide() ? "True" : "False") << ' '
-		         << (Game::getCanAutoSave() ? "True" : "False") << "\n\n";
+		         << (Mouse::getCanHide() ? "True" : "False")  << "\n\n";
 
 		//screens
 		std::vector<const Screen*> mainScreens;
 		for (const DisplayObject *d : Stage::screens->children) {
 			const Screen* s = static_cast<const Screen*>(d);
-
-			static const std::set<std::string> noSaveScreens = {"pause", "load", "save"};
-			if (!noSaveScreens.count(s->getName())) {
+			if (s->save) {
 				mainScreens.push_back(s);
 			}
 		}
@@ -340,10 +327,7 @@ void Game::save() {
 
 
 	{//save screenshot
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_screenshotting = True");
-		GUI::update();
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_screenshotting = False");
-
+		GUI::update(true);
 		{
 			while (Renderer::needToRender) {
 				Utils::sleep(0.001);
@@ -389,7 +373,6 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		std::lock_guard g2(GV::updateMutex);
 
 		modStartTime = int(std::time(nullptr));
-		canAutoSave = true;
 
 		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);

@@ -964,6 +964,34 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	    } \
 	}\
 }
+#define makeUpdateTextAlignFunc(propName, funcPostfix, zero, one) \
+static void update_##funcPostfix(Child *obj, size_t propIndex) { \
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	\
+	if (PyString_CheckExact(prop)) { \
+	    std::string valueStr = PyString_AS_STRING(prop); \
+	    float value = 0; \
+	    if (valueStr == zero) { \
+	        value = 0; \
+	    }else \
+	    if (valueStr == "center") { \
+	        value = 0.5; \
+	    }else \
+	    if (valueStr == one) { \
+	        value = 1; \
+	    }else { \
+	        outError(obj, #propName, propIndex, "Expected str " zero ", center or " one ", got <" + valueStr + ">"); \
+	    } \
+	    static_cast<Text*>(obj)->propName = value; \
+	}else \
+	if (PyFloat_CheckExact(prop)) { \
+	    static_cast<Text*>(obj)->propName = float(PyFloat_AS_DOUBLE(prop)); \
+	}else { \
+	    static_cast<Text*>(obj)->propName = 0; \
+	    std::string type = prop->ob_type->tp_name; \
+	    outError(obj, #propName, propIndex, "Expected type str or float, got " + type); \
+	} \
+}
 
 #include "gui/screen/style.h"
 static void update_style(Child *obj, size_t propIndex) {
@@ -1002,7 +1030,9 @@ makeUpdateFuncType(Key, keyDelay)
 makeUpdateFuncType(Key, firstKeyDelay)
 
 makeUpdateFuncType(Screen, zorder)
+makeUpdateFuncWithBool(Screen, ignore_modal, ignore_modal)
 makeUpdateFuncWithBool(Screen, modal, modal)
+makeUpdateFuncWithBool(Screen, save, save)
 
 makeUpdateFuncType(Container, spacing)
 
@@ -1015,8 +1045,8 @@ makeUpdateTextFunc(underline, TTF_STYLE_UNDERLINE)
 makeUpdateTextFunc(strikethrough, TTF_STYLE_STRIKETHROUGH)
 
 makeUpdateFuncWithStrSimple(Text, font)
-makeUpdateFuncWithStr(Text, textHAlign, text_align)
-makeUpdateFuncWithStr(Text, textVAlign, text_valign)
+makeUpdateTextAlignFunc(textHAlign, text_align, "left", "right")
+makeUpdateTextAlignFunc(textVAlign, text_valign, "top", "bottom")
 
 makeUpdateFuncWithStr(TextButton, ground, ground_textbutton)
 makeUpdateFuncWithStr(TextButton, hover, hover_textbutton)
@@ -1053,7 +1083,9 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"first_param",       update_first_param},
 	{"crop",              update_crop},
 	{"zorder",            update_zorder},
+	{"ignore_modal",      update_ignore_modal},
 	{"modal",             update_modal},
+	{"save",              update_save},
 	{"spacing",           update_spacing},
 	{"color",             update_text_color},
 	{"outlinecolor",      update_text_outlinecolor},

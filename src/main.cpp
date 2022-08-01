@@ -459,8 +459,18 @@ static void eventLoop() {
 
 		Utils::sleep(0.010, false);
 
-		std::lock_guard g1(eventMutex);
-		std::lock_guard g2(Renderer::renderMutex);//SDL can change window size inside SDL_PollEvent
+		//SDL can change window size inside SDL_PollEvent => need lock renderMutex
+		//  This code displays messages while trying lock the mutex (for case when messages appearance in render)
+		bool ok = false;
+		while (true) {
+			ok = Renderer::renderMutex.try_lock();
+			if (ok) break;
+
+			while (Utils::realOutMsg()) {}
+			Utils::sleep(0.001, false);
+		}
+
+		std::lock_guard g(eventMutex);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
@@ -471,6 +481,8 @@ static void eventLoop() {
 
 			events.push_back(event);
 		}
+
+		Renderer::renderMutex.unlock();
 	}
 }
 

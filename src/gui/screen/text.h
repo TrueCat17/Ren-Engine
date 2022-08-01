@@ -19,8 +19,8 @@ public:
 	TextField *tf;
 
 	std::string font;
-	std::string textHAlign;
-	std::string textVAlign;
+	float textHAlign;
+	float textVAlign;
 
 	Text(Node *node, Screen *screen);
 	virtual ~Text();

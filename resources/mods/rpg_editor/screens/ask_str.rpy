@@ -15,19 +15,21 @@ init python:
 	ask_shift = False
 	
 	ask_res = ''
+	ask_empty_is_ok = False
 	callback_ask_str = None
-	def ask_str(func, default_res = ''):
-		global callback_ask_str, ask_res, ask_cursor
+	def ask_str(func, default_res = '', empty_is_ok = False):
+		global callback_ask_str, ask_res, ask_cursor, ask_empty_is_ok
 		callback_ask_str = func
 		ask_res = default_res
 		ask_cursor = len(ask_res)
+		ask_empty_is_ok = empty_is_ok
 		
 		show_screen('ask_str')
 	
 	def ask_exit():
 		hide_screen('ask_str')
 	def ask_ready():
-		if ask_res:
+		if ask_res or ask_empty_is_ok:
 			ask_exit()
 			callback_ask_str(ask_res)
 	
@@ -81,13 +83,19 @@ init python:
 		ask_cursor = len(ask_res)
 	
 	def ask_backspace():
-		if ask_cursor:
-			global ask_res
-			ask_res = ask_res[0:ask_cursor - 1] + ask_res[ask_cursor:]
-			ask_cursor_left()
-	def ask_delete():
+		prev_cursor = ask_cursor
+		ask_cursor_left()
 		global ask_res
-		ask_res = ask_res[0:ask_cursor] + ask_res[ask_cursor+1:]
+		ask_res = ask_res[0:ask_cursor] + ask_res[prev_cursor:]
+	def ask_delete():
+		global ask_cursor
+		prev_cursor = ask_cursor
+		ask_cursor_right()
+		global ask_res
+		ask_res = ask_res[0:prev_cursor] + ask_res[ask_cursor:]
+		ask_cursor = prev_cursor
+	
+	hotkeys.disable_on_screens.append('ask_str')
 
 
 screen ask_str:

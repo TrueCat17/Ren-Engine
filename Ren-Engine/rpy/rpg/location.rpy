@@ -178,18 +178,18 @@ init -1002 python:
 				location_banned_exits.remove((tmp_loc, tmp_place))
 	
 	
-	def get_location_image(obj, directory, name, name_postfix, ext, is_free, need = True):
+	def get_location_image(obj, directory, name, name_suffix, ext, is_free, need = True):
 		if obj.cache is None:
 			obj.cache = {}
 		
 		mode = times['current_name']
-		key = name, name_postfix, mode
+		key = name, name_suffix, mode
 		if obj.cache.has_key(key):
 			return obj.cache[key]
 		
 		file_name = name
-		if name_postfix:
-			file_name += '_' + name_postfix
+		if name_suffix:
+			file_name += '_' + name_suffix
 		
 		path = directory + file_name + '_' + mode + '.' + ext
 		if not os.path.exists(path):

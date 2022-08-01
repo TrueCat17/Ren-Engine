@@ -42,16 +42,41 @@ init -1000 python:
 				symbols += 1
 			
 			# going to the next symbol
-			while index < l and not is_first_byte(text[index]):
+			while index < l and not utf8.is_first_byte(text[index]):
 				index += 1
 		
 		return index, symbols, tag, value
 	
 	
-	def db__show_text(name, name_prefix, name_postfix, name_color, text, text_prefix, text_postfix, text_color):
+	def db__show_text(name, text, local_styles):
+		if name is None and db.dialogue_text is None:
+			name = ''
+			local_styles = narrator
+			out_msg('db.show_text', "Don't use <extend> character before usual character to say text")
+		
+		if name is not None:
+			db.local_styles = local_styles
+			for style in ('dialogue_box', 'dialogue_text', 'name_box', 'name_text'):
+				props = []
+				for prop in ('xpos', 'ypos', 'width', 'height'):
+					props += [prop, prop + '_min', prop + '_max']
+				
+				if style.endswith('text'):
+					props += ['font', 'size', 'size_min', 'size_max', 'color', 'outlinecolor', 'prefix', 'suffix']
+				else:
+					props += ['bg']
+				
+				for prop in props:
+					prop = style + '_' + prop
+					db[prop] = (local_styles if local_styles.has_key(prop) else gui)[prop]
+					if prop.endswith('color'):
+						db[prop] = color_to_int(db[prop])
+					elif prop.endswith('bg') and callable(db[prop]):
+						db[prop] = db[prop]()
+		
 		db.pause_after_text = 0
 		db.pause_end = 0
-		db.voice_text_after_pause = ''
+		db.dialogue_text_after_pause = ''
 		
 		prev_index = None
 		index = 0
@@ -67,8 +92,8 @@ init -1000 python:
 					except:
 						out_msg('db.show_text', 'Pause time <' + value + '> is not float')
 				
-				db.voice_text_after_pause = text[index:]
-				text = text[0:prev_index]
+				db.dialogue_text_after_pause = text[index:]
+				text = text[:prev_index]
 				break
 		
 		db.read = False
@@ -77,50 +102,88 @@ init -1000 python:
 		if name is not None:
 			db.start_time = get_game_time()
 			
-			db.name_text = name_prefix + name + name_postfix
-			db.name_color = name_color
+			db.name_text = db.name_text_prefix + name + db.name_text_suffix
 			
-			db.voice_text = ''
-			db.voice_full_text = text_prefix + text
-			if not db.voice_text_after_pause:
-				db.voice_full_text += text_postfix
-			db.last_text_postfix = text_postfix
+			db.dialogue_text = ''
+			db.dialogue_full_text = db.dialogue_text_prefix + text
+			if not db.dialogue_text_after_pause:
+				db.dialogue_full_text += db.dialogue_text_suffix
+			db.last_dialogue_text_suffix = db.dialogue_text_suffix
 		
-		# continuation of prev text
+		# continuation of prev text (for <extend> character)
 		else:
-			db.start_time = get_game_time() - len_unicode(db.voice_text) / float(renpy.config.text_cps)
+			db.start_time = get_game_time() - utf8.len(db.dialogue_text) / float(config.text_cps)
 			
-			db.voice_full_text += text
-			if not db.voice_text_after_pause:
-				db.voice_full_text += db.last_text_postfix
+			if db.last_dialogue_text_suffix and db.dialogue_full_text.endswith(db.last_dialogue_text_suffix):
+				db.dialogue_full_text = db.dialogue_full_text[:-len(db.last_dialogue_text_suffix)]
+			db.dialogue_full_text += text
+			if not db.dialogue_text_after_pause:
+				db.dialogue_full_text += db.last_dialogue_text_suffix
 		
-		text_object = (db.name_text, db.name_color, text, text_color)
-		db.prev_texts.append(text_object)
-		db.prev_texts = db.prev_texts[-config.count_prev_texts:]
-		
-		db.voice_color = text_color
+		if name is not None or db.dialogue_text_after_pause or not db.prev_texts:
+			text_object = [
+				db.name_text, db.name_text_font,     db.name_text_color,     db.name_text_outlinecolor,
+				text,         db.dialogue_text_font, db.dialogue_text_color, db.dialogue_text_outlinecolor
+			]
+			db.prev_texts.append(text_object)
+			db.prev_texts = db.prev_texts[-config.history_length:]
+		else:
+			db.prev_texts[-1][4] += text
 		
 		window_show()
 	
 	
 	def db__update():
-		db.text_size = max(14, get_stage_height() / 30)
-		db.voice_size = get_stage_width() - (db.prev_btn_size + db.next_btn_size + 20), int(max(80, 0.2 * get_stage_height()))
+		if db.local_styles:
+			db._dialogue_button_spacing = gui.get_int('dialogue_button_spacing')
+			db._dialogue_button_width = gui.get_int('dialogue_button_width')
+			db._dialogue_button_height = gui.get_int('dialogue_button_height')
+			if db._dialogue_button_width <= 0 or db._dialogue_button_height <= 0:
+				db._dialogue_button_width = db._dialogue_button_height = db._dialogue_button_spacing = 0
+			
+			db._dialogue_menu_button_width  = gui.get_int('dialogue_menu_button_width')
+			db._dialogue_menu_button_height = gui.get_int('dialogue_menu_button_height')
+			if db._dialogue_menu_button_width <= 0 or db._dialogue_menu_button_height <= 0:
+				db._dialogue_menu_button_width = db._dialogue_menu_button_height = 0
+			
+			if db.dialogue_box_width:
+				db._dialogue_box_width = gui.get_int('dialogue_box_width', obj = db)
+			else:
+				db._dialogue_box_width = get_stage_width() - 4 * db._dialogue_button_spacing - 2 * db._dialogue_button_width # spc btn spc dialogue spc btn spc
+			db._dialogue_box_height = gui.get_int('dialogue_box_height', obj = db)
+			
+			db._dialogue_text_xpos = gui.get_int('dialogue_text_xpos', obj = db)
+			db._dialogue_text_ypos = gui.get_int('dialogue_text_ypos', obj = db)
+			
+			db._dialogue_text_width = gui.dialogue_text_width
+			if not db._dialogue_text_width:
+				db._dialogue_text_width = db._dialogue_box_width - 2 * db._dialogue_text_xpos
+			db._dialogue_text_height = gui.dialogue_text_height
+			if not db._dialogue_text_height:
+				db._dialogue_text_height = db._dialogue_box_height - 2 * db._dialogue_text_ypos
+			
+			name_box_width_is_auto = db.name_box_width is None
+			if name_box_width_is_auto:
+				db.name_box_width = utf8.width(db.name_text_prefix + db.name_text + db.name_text_suffix, gui.get_int('name_text_size', obj = db)) + 20
+			db._name_box_width = gui.get_int('name_box_width', obj = db)
+			if name_box_width_is_auto:
+				db.name_box_width = None
 		
-		if db.voice_text != db.voice_full_text:
-			symbols_to_render = int((get_game_time() - db.start_time) * renpy.config.text_cps)
+		
+		if db.dialogue_text != db.dialogue_full_text:
+			symbols_to_render = int((get_game_time() - db.start_time) * config.text_cps)
 			
 			prev_index = None
 			index = 0
 			while symbols_to_render and prev_index != index:
 				prev_index = index
-				index, symbols, tag, value = db.make_step(db.voice_full_text, index, symbols_to_render)
+				index, symbols, tag, value = db.make_step(db.dialogue_full_text, index, symbols_to_render)
 				symbols_to_render -= symbols
 			
-			if index < len(db.voice_full_text):
-				db.voice_text = db.voice_full_text[0:index] + '{invisible}' + db.voice_full_text[index:]
+			if index < len(db.dialogue_full_text):
+				db.dialogue_text = db.dialogue_full_text[0:index] + '{invisible}' + db.dialogue_full_text[index:]
 			else:
-				db.voice_text = db.voice_full_text
+				db.dialogue_text = db.dialogue_full_text
 		else:
 			if db.pause_after_text != 0:
 				if db.pause_end == 0:
@@ -128,7 +191,7 @@ init -1000 python:
 				elif db.pause_end < get_game_time():
 					db.pause_after_text = 0
 					db.pause_end = 0
-					db.show_text(None, '', '', 0, db.voice_text_after_pause, '', db.last_text_postfix, db.voice_color)
+					db.show_text(None, db.dialogue_text_after_pause, db.local_styles)
 	
 	
 	def db__enter_action():
@@ -144,18 +207,22 @@ init -1000 python:
 			db.pause_end = get_game_time()
 			return
 		
-		if db.voice_text == db.voice_full_text:
+		if db.dialogue_text == db.dialogue_full_text:
 			if db.read:
 				return
 			db.read = True
 			
 			if db.mode == 'nvl':
-				db.dialogue += [(db.name_text, db.name_color, db.voice_text, db.voice_color)]
-				db.name_text = db.voice_text = db.voice_full_text = ''
+				text_object = (
+					db.name_text,     db.name_text_font,     db.name_text_color,     db.name_text_outlinecolor,
+					db.dialogue_text, db.dialogue_text_font, db.dialogue_text_color, db.dialogue_text_outlinecolor
+				)
+				db.dialogue.append(text_object)
+				db.name_text = db.dialogue_text = db.dialogue_full_text = ''
 			else:
 				db.dialogue = []
 		else:
-			db.voice_text = db.voice_full_text
+			db.dialogue_text = db.dialogue_full_text
 	
 	
 	
@@ -179,28 +246,6 @@ init -1000 python:
 	db.no_skip_time_alt_shift = 0.5
 	db.no_skip_time_ctrl = 0.33
 	
-	db.font = style.text.font
-	
-	db.name = gui + 'dialogue/name.png'
-	db.name_color = 0xFF0000
-	db.name_text = ''
-	
-	db.voice = gui + 'dialogue/voice.png'
-	db.voice_color = 0xFFFF00
-	db.voice_text = ''
-	db.voice_full_text = ''
-	db.voice_text_after_pause = ''
-	
-	db.menu_btn = gui + 'dialogue/to_menu.png'
-	db.menu_btn_size = 50
-	db.menu_btn_indent = 20
-	
-	db.next_btn = gui + 'dialogue/to_next.png'
-	db.next_btn_size = 50
-	
-	db.prev_btn = gui + 'dialogue/to_prev.png'
-	db.prev_btn_size = 50
-	
 	db.prev_texts = []
 	
 	
@@ -211,7 +256,7 @@ init -1000 python:
 	
 	
 	def db__disable_skipping_on_menu(screen_name):
-		if screen_name == 'choose_menu':
+		if screen_name == 'choice_menu':
 			db.skip_tab = False
 	signals.add('show_screen', db__disable_skipping_on_menu)
 	
@@ -231,14 +276,192 @@ init -1000 python:
 		nvl_clear()
 
 
+
+screen dialogue_box_buttons(disable_next_btn = False):
+	vbox:
+		xalign gui.dialogue_box_xalign
+		yalign gui.dialogue_box_yalign
+		spacing 5
+	
+		if db._dialogue_button_width and db.visible:
+			hbox:
+				spacing db._dialogue_button_spacing
+				
+				button:
+					ground gui.bg('dialogue_prev_ground')
+					hover  style.get_default_hover(gui.bg('dialogue_prev_hover'), gui.bg('dialogue_prev_ground'))
+					action    ShowScreen('history')
+					alternate pause_screen.show
+					
+					yalign gui.dialogue_button_yalign
+					xsize db._dialogue_button_width
+					ysize db._dialogue_button_height
+				
+				null size (db._dialogue_box_width, db._dialogue_box_height)
+				
+				if not screen.disable_next_btn:
+					button:
+						ground gui.bg('dialogue_next_ground')
+						hover  style.get_default_hover(gui.bg('dialogue_next_hover'), gui.bg('dialogue_next_ground'))
+						action    db.on_enter
+						alternate pause_screen.show
+						
+						yalign gui.dialogue_button_yalign
+						xsize db._dialogue_button_width
+						ysize db._dialogue_button_height
+				else:
+					null:
+						xsize db._dialogue_button_width
+						ysize db._dialogue_button_height
+		else:
+			null:
+				ysize db._dialogue_button_height or 0
+		
+		if quick_menu:
+			use quick_menu
+	
+	if db._dialogue_menu_button_width:
+		button:
+			ground gui.bg('dialogue_menu_button_ground')
+			hover  style.get_default_hover(gui.bg('dialogue_menu_button_hover'), gui.bg('dialogue_menu_button_ground'))
+			action    pause_screen.show
+			alternate pause_screen.show
+			
+			xpos gui.dialogue_menu_button_xpos
+			ypos gui.dialogue_menu_button_ypos
+			xanchor gui.dialogue_menu_button_xanchor
+			yanchor gui.dialogue_menu_button_yanchor
+			xsize db._dialogue_menu_button_width
+			ysize db._dialogue_menu_button_height
+
+
+screen dialogue_box_adv:
+	vbox:
+		xalign gui.dialogue_box_xalign
+		yalign gui.dialogue_box_yalign
+		spacing 5
+		
+		image db.dialogue_box_bg:
+			xsize db._dialogue_box_width
+			ysize db._dialogue_box_height
+			
+			image db.name_box_bg:
+				xanchor gui.name_box_xanchor
+				yanchor gui.name_box_yanchor
+				xpos gui.get_int('name_box_xpos', obj = db)
+				ypos gui.get_int('name_box_ypos', obj = db)
+				xsize db._name_box_width
+				ysize gui.get_int('name_box_height', obj = db)
+				
+				alpha 1 if db.name_text else 0
+				
+				text db.name_text:
+					font         gui.name_text_font
+					text_size    gui.get_int('name_text_size', obj = db)
+					color        db.name_text_color
+					outlinecolor db.name_text_outlinecolor
+					xalign       gui.name_text_xalign
+					yalign       gui.name_text_yalign
+			
+			text db.dialogue_text:
+				xpos gui.get_int('dialogue_text_xpos', obj = db)
+				ypos gui.get_int('dialogue_text_ypos', obj = db)
+				xsize db._dialogue_text_width
+				ysize db._dialogue_text_height
+				
+				font         db.dialogue_text_font
+				text_size    gui.get_int('dialogue_text_size', obj = db)
+				color        db.dialogue_text_color
+				outlinecolor db.dialogue_text_outlinecolor
+				text_align   gui.dialogue_text_align
+		
+		if quick_menu:
+			null ysize gui.get_int('quick_button_height')
+	
+	button:
+		ground 'images/bg/black.jpg'
+		hover  'images/bg/black.jpg'
+		
+		size  1.0
+		alpha 0.01
+		mouse False
+		
+		action    db.on_enter
+		alternate pause_screen.show
+
+
+screen dialogue_box_nvl:
+	image 'images/bg/black.jpg':
+		size 1.0
+		alpha 0.30
+	
+	vbox:
+		ypos 0.05
+		
+		spacing 0 if gui.nvl_height else gui.nvl_spacing
+		
+		python:
+			db.last_dialogue = db.dialogue + [(
+				db.name_text,     db.name_text_font,     db.name_text_color,     db.name_text_outlinecolor,
+				db.dialogue_text, db.dialogue_text_font, db.dialogue_text_color, db.dialogue_text_outlinecolor
+			)]
+			_name_text_yoffset     = max(gui.get_int('dialogue_text_size') - gui.get_int('name_text_size'), 0)
+			_dialogue_text_yoffset = max(gui.get_int('name_text_size') - gui.get_int('dialogue_text_size'), 0)
+		
+		for _name_text, _name_font, _name_color, _name_outlinecolor, _dialogue_text, _dialogue_font, _dialogue_color, _dialogue_outlinecolor in db.last_dialogue:
+			null:
+				ysize gui.get_int('nvl_height') if gui.nvl_height else -1
+				
+				if _name_text:
+					text _name_text:
+						xpos gui.get_int('nvl_name_xpos')
+						ypos gui.get_int('nvl_name_ypos') + _name_text_yoffset
+						xsize gui.get_int('nvl_name_width')
+						xanchor    gui.nvl_name_xalign
+						text_align gui.nvl_name_xalign
+						
+						font         _name_font
+						text_size    gui.get_int('name_text_size')
+						color        _name_color
+						outlinecolor _name_outlinecolor
+				
+				$ nvl_text_prefix = 'nvl_' + ('text' if _name_text else 'thought') + '_'
+				text _dialogue_text:
+					xpos gui.get_int(nvl_text_prefix + 'xpos')
+					ypos gui.get_int(nvl_text_prefix + 'ypos') + (_dialogue_text_yoffset if _name_text else 0)
+					xsize gui.get_int(nvl_text_prefix + 'width')
+					xanchor    gui[nvl_text_prefix + 'xalign']
+					text_align gui[nvl_text_prefix + 'xalign']
+					
+					font         _dialogue_font
+					text_size    gui.get_int('dialogue_text_size')
+					color        _dialogue_color
+					outlinecolor _dialogue_outlinecolor
+	
+	button:
+		ground 'images/bg/black.jpg'
+		hover  'images/bg/black.jpg'
+		
+		size  1.0
+		alpha 0.01
+		mouse False
+		
+		action    db.on_enter
+		alternate pause_screen.show
+
+
+
 screen dialogue_box:
 	zorder -2
 	
 	key 'h' action SetDict(db, 'hide_interface', not db.hide_interface)
 	
 	$ db.to_next = False
-	key 'RETURN' action db.enter_action
-	key 'SPACE'  action db.enter_action
+	for key in ('RETURN', 'SPACE'):
+		key key:
+			action db.enter_action
+			first_delay style.key.first_delay if config.long_next_is_skipping else 1e9
+			delay       style.key.delay       if config.long_next_is_skipping else 1e9
 	if db.to_next:
 		$ db.skip_tab = False
 	
@@ -275,125 +498,26 @@ screen dialogue_box:
 		$ db.update()
 		
 		if db.visible:
-			
-			button:
-				ground 'images/bg/black.jpg'
-				hover  'images/bg/black.jpg'
-				
-				size  (1.0, 1.0)
-				alpha (0.01 if db.mode == 'adv' else 0.30)
-				mouse False
-				
-				action db.on_enter
-			
-			
 			if db.mode == 'adv':
-				vbox:
-					align (0.5, 0.99)
-					
-					image db.name:
-						xpos max(get_stage_width() / 10, db.prev_btn_size * 2)
-						size (max(250, get_stage_width() / 5), int(db.text_size * 1.5))
-						
-						text db.name_text:
-							font       db.font
-							text_align 'center'
-							text_size  db.text_size
-							color      db.name_color
-							align      (0.5, 0.8)
-					
-					hbox:
-						spacing 5
-						xalign 0.5
-						
-						button:
-							yalign 0.5
-							ground db.prev_btn
-							size   (db.prev_btn_size, db.prev_btn_size)
-							action ShowScreen('history')
-						
-						image db.voice:
-							size db.voice_size
-							
-							text db.voice_text:
-								font      db.font
-								text_size db.text_size
-								color     db.voice_color
-								align     (0.5, 0.5)
-								size      (db.voice_size[0] - 30, db.voice_size[1] - 15)
-						
-						button:
-							yalign 0.5
-							ground db.next_btn
-							size   (db.next_btn_size, db.next_btn_size)
-							action db.on_enter
-					
-					use quick_menu
-			
-			
+				use dialogue_box_adv
 			elif db.mode == 'nvl':
-				vbox:
-					anchor 	(0.5, 0.0)
-					pos		(0.5, 0.05)
-					
-					
-					$ db.last_dialogue = db.dialogue + [(db.name_text, db.name_color, db.voice_text, db.voice_color)]
-					
-					for _name_text_i, _name_color_i, _voice_text_i, _voice_color_i in db.last_dialogue:
-						$ _tmp_name = ('{color=' + hex(_name_color_i) + '}' + _name_text_i + '{/color}: ') if _name_text_i else ''
-						$ _tmp_voice = _voice_text_i or ''
-						
-						text (_tmp_name + _tmp_voice):
-							font      db.font
-							text_size db.text_size
-							color     _voice_color_i
-							xsize     0.75
-				
-				vbox:
-					align (0.5, 0.99)
-					
-					null ysize int(db.text_size * 1.5)
-					
-					hbox:
-						spacing 5
-						xalign 0.5
-						
-						button:
-							yalign 0.5
-							ground db.prev_btn
-							size   (db.prev_btn_size, db.prev_btn_size)
-							action ShowScreen('history')
-						
-						null size db.voice_size
-						
-						button:
-							yalign 0.5
-							ground db.next_btn
-							size   (db.next_btn_size, db.next_btn_size)
-							action db.on_enter
-					
-					use quick_menu
+				use dialogue_box_nvl
+			else:
+				$ out_msg('dialogue_box', 'Expected db.mode will be "adv" or "nvl", got "' + str(db.mode) + '"')
 			
 			if db.skip:
 				text 'Skip Mode':
 					color 0xFFFFFF
 					text_size 30
 					pos (20, 20)
-		
-		
-		button:
-			ground 	db.menu_btn
-			
-			anchor (0.5, 0.5)
-			pos    (get_stage_width() - db.menu_btn_indent - db.menu_btn_size / 2, db.menu_btn_indent + db.menu_btn_size / 2)
-			size   (db.menu_btn_size, db.menu_btn_size)
-			action pause_screen.show
+		use dialogue_box_buttons
+	
 	else:
 		button:
 			ground 'images/bg/black.jpg'
 			hover  'images/bg/black.jpg'
 			
-			size   (1.0, 1.0)
+			size   1.0
 			alpha  0.01
 			mouse  False
 			

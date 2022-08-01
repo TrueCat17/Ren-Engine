@@ -15,8 +15,6 @@
 #include "key.h"
 
 
-#include "media/py_utils.h"
-
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -218,7 +216,7 @@ void Container::addChildrenFromNode() {
 				"has, first_param, spacing, "
 			    "xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, xzoom, yzoom, "
 			    "align, anchor, pos, size, zoom, crop, rotate, alpha, clipping, "
-				"modal, zorder, ground, hover, "
+			    "modal, ignore_modal, save, zorder, ground, hover, "
 				"action, alternate, hovered, unhovered, activate_sound, hover_sound, mouse, "
 				"color, font, text_size, text_align, text_valign"
 			, ", ");

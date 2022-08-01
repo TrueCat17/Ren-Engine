@@ -1,4 +1,4 @@
-init -10000 python:
+init -100000 python:
 	
 	_interval_id = 0
 	_interval_funcs = []

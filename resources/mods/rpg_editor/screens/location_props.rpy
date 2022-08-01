@@ -87,7 +87,7 @@ init python:
 	
 	def rename_to_loc(to_location_name):
 		place = selected_location.places[selected_place_name]
-		place.to_location_name = to_location_name
+		place.to_location_name = to_location_name or None
 		set_save_locations()
 	def rename_to_place(to_place_name):
 		place = selected_location.places[selected_place_name]
@@ -200,7 +200,7 @@ screen location_props:
 						button:
 							size (16, 16)
 							
-							ground (checkbox_no if persistent.hide_main else checkbox_yes)
+							ground (gui.checkbox_no if persistent.hide_main else gui.checkbox_yes)
 							action SetDict(persistent, 'hide_main', not persistent.hide_main)
 						null xsize 10
 						text 'Main':
@@ -215,7 +215,7 @@ screen location_props:
 							button:
 								size (16, 16)
 								
-								ground (checkbox_no if persistent.hide_over else checkbox_yes)
+								ground (gui.checkbox_no if persistent.hide_over else gui.checkbox_yes)
 								action SetDict(persistent, 'hide_over', not persistent.hide_over)
 							null xsize 10
 							text 'Over':
@@ -230,7 +230,7 @@ screen location_props:
 							button:
 								size (16, 16)
 								
-								ground (checkbox_yes if persistent.show_free else checkbox_no)
+								ground (gui.checkbox_yes if persistent.show_free else gui.checkbox_no)
 								action SetDict(persistent, 'show_free', not persistent.show_free)
 							null xsize 10
 							text 'Free':
@@ -245,7 +245,7 @@ screen location_props:
 							button:
 								size (16, 16)
 								
-								ground (checkbox_no if persistent.hide_places else checkbox_yes)
+								ground (gui.checkbox_no if persistent.hide_places else gui.checkbox_yes)
 								action SetDict(persistent, 'hide_places', not persistent.hide_places)
 							null xsize 10
 							text (_('Places') + ' (' + str(len(selected_location.places)) + ')'):
@@ -271,7 +271,7 @@ screen location_props:
 						style 'prop_btn'
 						text_size 15
 						color 0xFFFFFF if not place.to_location_name or rpg_locations.has_key(place.to_location_name) else 0xFF0000
-						action ask_str(rename_to_loc, place.to_location_name or '')
+						action ask_str(rename_to_loc, place.to_location_name or '', empty_is_ok = True)
 					
 					
 					if place.to_location_name:

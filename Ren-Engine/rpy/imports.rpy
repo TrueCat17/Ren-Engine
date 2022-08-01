@@ -9,6 +9,8 @@ init -100001 python:
 	import traceback
 	import itertools
 	
+	from collections import defaultdict
+	
 	if sys.platform in ('win32', 'msys', 'msys2', 'cygwin'):
 		sys.path.append("../Ren-Engine/py_libs/win32.dll/")
 	

@@ -8,7 +8,6 @@
 #include <SDL2/SDL_image.h>
 
 #include "config.h"
-#include "gv.h"
 
 #include "gui/display_object.h"
 #include "media/image_manipulator.h"

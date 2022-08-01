@@ -26,7 +26,7 @@ init -995 python:
 	
 	
 	def console__add(s):
-		if console.ctrl:
+		if hotkeys.ctrl:
 			if s == 'c':
 				set_clipboard_text(console.input)
 				return
@@ -49,7 +49,7 @@ init -995 python:
 				console.input = '\n'.join(lines)
 				return
 		
-		if console.shift and s in console.keys:
+		if hotkeys.shift and s in console.keys:
 			s = console.keys_shift[console.keys.index(s)]
 		if s == '{':
 			s = console.key_tag
@@ -64,11 +64,11 @@ init -995 python:
 	
 	def console__cursor_home():
 		console.cursor_x = 0
-		if console.ctrl:
+		if hotkeys.ctrl:
 			console.cursor_y = 0
 	def console__cursor_end():
 		lines = console.input.split('\n')
-		if console.ctrl:
+		if hotkeys.ctrl:
 			console.cursor_y = len(lines) - 1
 		cur = lines[console.cursor_y]
 		console.cursor_x = len(cur)
@@ -81,7 +81,7 @@ init -995 python:
 		index -= 1
 		symbol = console.input[index]
 		check = console.get_check(symbol)
-		if console.ctrl:
+		if hotkeys.ctrl:
 			if symbol == ' ' and index and console.input[index - 1] == ' ':
 				while index and console.input[index - 1] == ' ':
 					index -= 1
@@ -96,7 +96,7 @@ init -995 python:
 		symbol = console.input[index]
 		check = console.get_check(symbol)
 		index += 1
-		if console.ctrl:
+		if hotkeys.ctrl:
 			while index < len(console.input) and console.input[index] == ' ':
 				index += 1
 			while index < len(console.input) and check(console.input[index]):
@@ -318,11 +318,10 @@ init -995 python:
 	console.cursor_x = 0
 	console.cursor_y = 0
 	console.num_command = 0
-	
-	console.ctrl = False
-	console.shift = False
 
 init:
+	$ hotkeys.disable_on_screens.append('console')
+	
 	style console_text is text:
 		font         'Consola'
 		color        0xFFFFFF
@@ -362,13 +361,6 @@ screen console:
 	$ db.skip_tab = False
 	
 	key 'ESCAPE' action [Hide('console'), SetDict(pause_screen, 'hided_time', get_game_time())]
-	
-	$ console.ctrl  = False
-	key 'LEFT CTRL'   action SetDict(console, 'ctrl', True) first_delay 0
-	key 'RIGHT CTRL'  action SetDict(console, 'ctrl', True) first_delay 0
-	$ console.shift = False
-	key 'LEFT SHIFT'  action SetDict(console, 'shift', True) first_delay 0
-	key 'RIGHT SHIFT' action SetDict(console, 'shift', True) first_delay 0
 	
 	key 'SPACE' action console.add(' ')
 	

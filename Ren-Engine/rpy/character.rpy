@@ -105,27 +105,30 @@ init -1001 python:
 	
 	characters = []
 	class Character(Object):
-		def __init__(self, name, **kwargs):
+		def __init__(self, name, **properties):
 			Object.__init__(self)
 			characters.append(self)
 			
 			self.real_name = name
-			self.unknown_name = kwargs.get('unknown_name', name)
+			self.unknown_name = properties.get('unknown_name', name)
 			
-			self.name = name
-			self.name_prefix = kwargs.get('name_prefix', '')
-			self.name_postfix = kwargs.get('name_postfix', '')
-			self.color = kwargs.get('color', 0)
-			if type(self.color) is not int:
-				r, g, b, a = renpy.easy.color(self.color)
-				self.color = (r << 16) + (g << 8) + b
+			self.dynamic = properties.get('dynamic', False)
+			self.name = Eval(name) if self.dynamic and type(name) is str else name
 			
-			self.text_prefix = kwargs.get('text_prefix', '')
-			self.text_postfix = kwargs.get('text_postfix', '')
-			self.text_color = kwargs.get('text_color', 0xFFFF00)
-			if type(self.text_color) is not int:
-				r, g, b, a = renpy.easy.color(self.text_color)
-				self.text_color = (r << 16) + (g << 8) + b
+			for prefix_from, prefix_to in [('who_', 'name_text_'), ('what_', 'dialogue_text_')]:
+				for prop in ('font', 'size', 'color', 'outlinecolor', 'background', 'prefix', 'suffix'):
+					prop_from = prefix_from + prop
+					prop_to   = prefix_to   + prop
+					
+					if prop_from not in properties and prefix_from == 'who_': # for example, try check <color> instead of <who_color>
+						prop_from = prop
+					if prop_from not in properties:
+						continue
+					
+					value = properties[prop_from]
+					if prop.endswith('color'):
+						value = color_to_int(value)
+					self[prop_to] = value
 			
 			# rpg-props:
 			self.show_time = 0
@@ -171,9 +174,13 @@ init -1001 python:
 			return str(self.name)
 		
 		def __call__(self, text):
-			name = None if self.name is None else _(self.name)
-			db.show_text(name, self.name_prefix, self.name_postfix, self.color,
-			             text, self.text_prefix, self.text_postfix, self.text_color)
+			name = self.name
+			if callable(name):
+				name = name()
+			if name is not None:
+				name = _(name)
+			
+			db.show_text(name, text, self)
 		
 		
 		# rpg-funcs:
@@ -733,9 +740,9 @@ init -1001 python:
 			out_msg('hide_character', 'Character <' + character.real_name + ', ' + character.unknow_name + '> not shown')
 	
 	
-	tmp_character = Character('TMP', color = 0xFFFFFF)
+	tmp_character = Character('TMP')
 	
 	narrator = Character('')
-	th = Character('', text_prefix='~', text_postfix='~')
+	th = Character('', what_prefix='~ ', what_suffix=' ~')
 	extend = Character(None)
 

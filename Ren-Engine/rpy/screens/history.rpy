@@ -12,9 +12,6 @@ init python:
 	
 	history.background = im.rect('#181818BB')
 	
-	history.spacing = 5
-	history.x_indent = 20
-	history.xsize = 0.75
 	history.ysize = 0.95
 	
 	slider_v_init('history', 0, history.ysize)
@@ -24,6 +21,8 @@ init python:
 	history.hided_time = 0
 	history.appearance_time = 0.4
 	history.disappearance_time = 0.4
+	
+	hotkeys.disable_key_on_screens['ESCAPE'].append('history')
 
 
 screen history:
@@ -41,45 +40,78 @@ screen history:
 	
 	
 	python:
-		dtime = get_game_time() - history.showed_time
-		x = int(-history.xsize * get_stage_width() * (history.appearance_time - dtime) / history.appearance_time)
-		if x > 0:
-			x = 0
+		history.spacing = 0 if gui.history_height else gui.history_spacing
+		history.text_size = max(gui.get_int('name_text_size'), gui.get_int('dialogue_text_size'))
 		
-		history.viewport_content_height = len(db.prev_texts) * (db.text_size + history.spacing) * 2 # 2 - extra space for wordwraps
-		slider_v_change('history', length = history.viewport_content_height, button_size = db.text_size)
-		y = int(-slider_v_get_value('history') * (history.viewport_content_height - history.ysize * get_stage_height()))
+		history.usual_xsize    = float(gui.get_int('history_text_xpos')    + gui.get_int('history_text_width')    + 70)
+		history.narrator_xsize = float(gui.get_int('history_thought_xpos') + gui.get_int('history_thought_width') + 70)
+		history.xsize = max(history.usual_xsize, history.narrator_xsize) / get_stage_width()
+		
+		dtime = get_game_time() - history.showed_time
+		history.x = int(-history.xsize * get_stage_width() * (history.appearance_time - dtime) / history.appearance_time)
+		if history.x > 0:
+			history.x = 0
+		
+		if gui.history_height:
+			history.viewport_content_height = len(db.prev_texts) * gui.get_int('history_height')
+		else:
+			history.viewport_content_height = len(db.prev_texts) * (history.text_size + history.spacing) * 2 # 2 - extra space for wordwraps
+		slider_v_change('history', length = history.viewport_content_height, button_size = history.text_size)
+		history.y = int(-slider_v_get_value('history') * (history.viewport_content_height - history.ysize * get_stage_height()))
 		
 		if history.hided_time:
 			dtime = get_game_time() - history.hided_time
-			alpha = (history.disappearance_time - dtime) / history.disappearance_time
-			if alpha <= 0:
+			history.alpha = (history.disappearance_time - dtime) / history.disappearance_time
+			if history.alpha <= 0:
 				hide_screen('history')
 		else:
-			alpha = 1
+			history.alpha = 1
 	
 	image history.background:
 		clipping True
-		alpha alpha
-		xpos x
+		alpha history.alpha
+		xpos history.x
 		yalign 0.5
-		size (history.xsize, history.ysize)
+		xsize history.xsize
+		ysize history.ysize
 		
 		vbox:
-			ypos y
+			ypos history.y
 			spacing history.spacing
 			
-			for name_text, name_color, text, text_color in db.prev_texts:
-				if name_text:
-					$ tmp_name = '{color=' + hex(name_color) + '}' + name_text + '{/color}: '
-				else:
-					$ tmp_name = ''
-				
-				text (tmp_name + text):
-					text_size db.text_size
-					color text_color
-					xsize int(history.xsize * get_stage_width()) - history.x_indent * 2 - db.text_size
-					xpos history.x_indent
+			null ysize 1 # for spacing before first text line
+			
+			$ _name_text_yoffset     = max(gui.get_int('dialogue_text_size') - gui.get_int('name_text_size'), 0)
+			$ _dialogue_text_yoffset = max(gui.get_int('name_text_size') - gui.get_int('dialogue_text_size'), 0)
+			for _name_text, _name_font, _name_color, _name_outlinecolor, _dialogue_text, _dialogue_font, _dialogue_color, _dialogue_outlinecolor in db.prev_texts:
+				null:
+					ysize gui.get_int('history_height') if gui.history_height else -1
+					
+					if _name_text:
+						text _name_text:
+							xpos gui.get_int('history_name_xpos')
+							ypos gui.get_int('history_name_ypos') + _name_text_yoffset
+							xsize gui.get_int('history_name_width')
+							xanchor    gui.history_name_xalign
+							text_align gui.history_name_xalign
+							
+							font         _name_font
+							text_size    gui.get_int('name_text_size')
+							color        _name_color
+							outlinecolor _name_outlinecolor
+					
+					$ history_text_prefix = 'history_' + ('text' if _name_text else 'thought') + '_'
+					text _dialogue_text:
+						xpos gui.get_int(history_text_prefix + 'xpos')
+						ypos gui.get_int(history_text_prefix + 'ypos') + (_dialogue_text_yoffset if _name_text else 0)
+						xsize gui.get_int(history_text_prefix + 'width')
+						xanchor    gui[history_text_prefix + 'xalign']
+						text_align gui[history_text_prefix + 'xalign']
+						
+						font         _dialogue_font
+						text_size    gui.get_int('dialogue_text_size')
+						color        _dialogue_color
+						outlinecolor _dialogue_outlinecolor
 		
 		null:
 			align (0.99, 0.5)

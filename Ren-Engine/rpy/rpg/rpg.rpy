@@ -28,6 +28,8 @@ label rpg_loop:
 
 
 label rpg_update:
+	$ db.skip_tab = False
+	
 	if not get_rpg_control():
 		return
 	

@@ -1,7 +1,7 @@
 init python:
 	show_screen('snow')
 	set_can_mouse_hide(False)
-	set_can_autosave(False)
+	config.has_autosave = False
 	
 	
 	image_render = False

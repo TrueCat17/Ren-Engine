@@ -54,11 +54,11 @@ screen info:
 			spacing info.indent
 			
 			for group in info.groups:
-				$ max_len = max(len_unicode(_(resource)) for resource in group)
+				$ max_len = max(utf8.len(_(resource)) for resource in group)
 				vbox:
 					for resource in group:
 						python:
-							spaces = ' ' * (max_len - len_unicode(_(resource)))
+							spaces = ' ' * (max_len - utf8.len(_(resource)))
 							count = sc_map.player[resource]
 							changing = sc_map.player['change_' + resource]
 							changing_color = '0x00FF00' if changing >= 0 else '#FF0000'

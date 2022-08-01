@@ -100,7 +100,7 @@ init python:
 			
 			help.groups.append((name, text.strip()))
 			
-			help.xsizes[name] = int(len_unicode(name) * style.btn.text_size / 1.5) + 10
+			help.xsizes[name] = utf8.width(name, style.btn.text_size) + 10
 		
 		help.start_index = 0
 		help.max_index = 0
@@ -198,14 +198,14 @@ screen help:
 					textbutton '<':
 						style  'btn'
 						bold   True
-						xalign 0.1
+						xalign 0.05
 						xsize  style.btn.ysize
 						action SetDict(help, 'start_index', max(0, help.start_index - 1))
 				if help.start_index != help.max_index:
 					textbutton '>':
 						style  'btn'
 						bold   True
-						xalign 0.9
+						xalign 0.95
 						xsize  style.btn.ysize
 						action SetDict(help, 'start_index', min(help.start_index + 1, help.max_index))
 			

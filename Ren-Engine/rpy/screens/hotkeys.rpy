@@ -1,7 +1,38 @@
+init -900 python:
+	hotkeys.keymap = dict(
+		screenshot = ['P'],
+		console = ['shift_O'],
+		
+		help = ['F1'],
+		toggle_fps_visible = ['F3'],
+		toggle_fullscreen = ['F11'],
+		
+		quicksave = ['Q'],
+		quickload = ['L'],
+		
+		pause = ['ESCAPE'],
+	)
+	# to change/add:
+	#  hotkeys.keymap['quicksave'] = ['F5']
+	
+	hotkeys.underlay.append(renpy.Keymap(
+		screenshot = make_screenshot,
+		console = console.show,
+		
+		toggle_fps_visible = debug_screen.next_visible_mode,
+		toggle_fullscreen = toggle_fullscreen,
+		
+		quicksave = QuickSave(),
+		quickload = QuickLoad(),
+		
+		pause = 'pause_screen.show()',
+	))
+
+
 init -901 python:
 	def hotkeys__init(screen_name):
 		hotkeys.prepared_keymap = {}
-		hotkeys.keys_for_listen = set()
+		hotkeys.keys_to_listen = set()
 		for name, key_list in hotkeys.keymap.iteritems():
 			for keys_str in key_list:
 				keys_str = keys_str.replace('K_', '').upper()
@@ -36,7 +67,7 @@ init -901 python:
 				keys_str = ctrl + shift + alt + keys[-1]
 				
 				hotkeys.prepared_keymap[keys_str] = name
-				hotkeys.keys_for_listen.add(main_key)
+				hotkeys.keys_to_listen.add(main_key)
 	
 	signals.add('show_screen', hotkeys__init, times=1)
 	
@@ -57,10 +88,31 @@ init -901 python:
 		alt   = 'ALT_'   if hotkeys.alt  else ''
 		key = ctrl + shift + alt + key.upper()
 		
+		for screen in hotkeys.disable_on_screens + hotkeys.disable_key_on_screens[key]:
+			if renpy.has_screen(screen):
+				return
+		
+		
 		name = hotkeys.prepared_keymap.get(key, None)
 		if name:
 			for i in hotkeys.underlay:
 				exec_funcs(i.get(name, None))
+	
+	def hotkeys__get_key_for(func, get_list = False):
+		keys = []
+		for i in hotkeys.underlay:
+			for name, _func in i.iteritems():
+				if func is not _func: continue
+				
+				for key, name2 in hotkeys.prepared_keymap.iteritems():
+					if name == name2:
+						keys.append(key)
+		if get_list:
+			return keys
+		
+		if keys:
+			return '(' + ', '.join(keys) + ')'
+		return ''
 	
 	
 	build_object('hotkeys')
@@ -69,7 +121,7 @@ init -901 python:
 	hotkeys.ctrl = hotkeys.shift = hotkeys.alt = False
 	hotkeys.underlay = []
 	
-	hotkeys.keys = alphabet
+	hotkeys.keys = list(alphabet)
 	for i in xrange(12):
 		hotkeys.keys.append('F' + str(i + 1))
 	hotkeys.keys.extend([
@@ -87,39 +139,20 @@ init -901 python:
 	
 	for i in xrange(len(hotkeys.keys)):
 		hotkeys.keys[i] = hotkeys.keys[i].upper()
-
-
-init -900 python:
-	hotkeys.keymap = dict(
-		screenshot = ['P'],
-		console = ['shift_O'],
-		
-		help = ['F1'],
-		toggle_fps_visible = ['F3'],
-		toggle_fullscreen = ['F11'],
-		
-		quicksave = ['Q'],
-		quickload = ['L'],
-		
-		pause = ['ESCAPE'],
-	)
 	
-	hotkeys.underlay.append(renpy.Keymap(
-		screenshot = make_screenshot,
-		console = console.show,
-		
-		toggle_fps_visible = debug_screen.next_visible_mode,
-		toggle_fullscreen = toggle_fullscreen,
-		
-		quicksave = QuickSave(),
-		quickload = QuickLoad(),
-		
-		pause = pause_screen.show,
-	))
+	
+	# disable all hotkeys, if shown 'my_screen' (need for "console", for example)
+	#   using: hotkeys.disable_on_screens.append('my_screen')
+	hotkeys.disable_on_screens = []
+	
+	# disable specified hotkey, if shown 'my_screen' (need for "ESCAPE" in "history", for example)
+	#   using: hotkeys.disable_key_on_screens['MY HOTKEY'].append('my_screen')
+	hotkeys.disable_key_on_screens = defaultdict(list)
 
 
 screen hotkeys:
 	zorder -1e9
+	ignore_modal True # UNDOCUMENTED! Don't use in your code!
 	
 	$ hotkeys.ctrl = hotkeys.shift = hotkeys.alt = False
 	key 'LEFT CTRL'   action 'hotkeys.ctrl  = True' first_delay 0
@@ -130,5 +163,5 @@ screen hotkeys:
 	key 'RIGHT ALT'   action 'hotkeys.alt   = True' first_delay 0
 	
 	if hotkeys.ctrl + hotkeys.shift + hotkeys.alt < 2 or not hotkeys.only_one_mod_key:
-		for key in hotkeys.keys_for_listen:
+		for key in hotkeys.keys_to_listen:
 			key key action hotkeys.pressed(key)

@@ -14,9 +14,6 @@ public:
 	static void startMod(const std::string &dir);
 	static int getModStartTime();
 
-	static bool getCanAutoSave();
-	static void setCanAutoSave(bool v);
-
 	static void load(const std::string &table, const std::string &name);
 	static const std::vector<std::string> loadInfo(const std::string &loadPath);
 

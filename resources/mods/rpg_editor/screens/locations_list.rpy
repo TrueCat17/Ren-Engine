@@ -1,6 +1,4 @@
 init python:
-	init_checkboxes()
-	
 	locations_width = 300
 	
 	locations_indent = 10

@@ -1,4 +1,4 @@
-init -999 python:
+init -9990 python:
 	
 	pause_end = 0
 	def pause(sec = None):
@@ -17,7 +17,6 @@ init -999 python:
 	def renpy__music__register_channel(name, mixer, loop):
 		file_name, num_line = get_file_and_line(1)
 		_register_channel(name, mixer, loop, file_name, num_line)
-	renpy__music__has_channel = _has_channel
 	
 	def renpy__music__get_audio_len(url):
 		return _get_audio_len(url)
@@ -111,13 +110,6 @@ init -999 python:
 		return r, g, b, a
 	
 	
-	renpy__config   = persistent.config
-	renpy__Keymap   = dict
-	renpy__random   = random # prop = module
-	renpy__absolute = absolute # prop = type
-	
-	
-	renpy__pause = pause
 	
 	def renpy__say(who, what):
 		if who is None:
@@ -138,8 +130,6 @@ init -999 python:
 			out_msg('renpy.say', str(who) + ' is not callable')
 			narrator(what)
 	
-	renpy__play = renpy__music__play
-	renpy__stop = renpy__music__stop
 	
 	def renpy__has_label(label):
 		return (type(label) is str) and _has_label(label)
@@ -156,20 +146,15 @@ init -999 python:
 		else:
 			out_msg('renpy.call', 'Label <' + str(label) + '> not found')
 	
-	def show_screen(name, *args, **kwargs):
-		return _show_screen(name, args, kwargs)
-	
-	renpy__show_screen = show_screen
-	renpy__hide_screen = hide_screen
-	renpy__has_screen = has_screen
 	
 	def renpy__call_screen(screen_name, ret_name, **kwargs):
-		global call_screen_choosed, call_screen_name, call_ret_name
+		global call_screen_ready, call_screen_name, call_ret_name
 		
-		call_screen_choosed = False
+		call_screen_ready = False
 		call_screen_name, call_ret_name = screen_name, ret_name
 		
 		show_screen(screen_name)
+	
 	
 	def renpy__seen_image(image):
 		return persistent._seen_images.has_key(image)
@@ -179,7 +164,6 @@ init -999 python:
 	
 	def renpy__seen_label(label):
 		return persistent._seen_labels[get_current_mod()].has_key(label)
-	renpy__get_all_labels = _get_all_labels
 	
 	def renpy__change_language(lang):
 		if type(lang) is not str:
@@ -187,8 +171,32 @@ init -999 python:
 			return
 		config.language = lang
 		_set_lang(lang)
-	renpy__known_languages = _known_languages
 	
 	
 	build_object('renpy')
-
+	
+	renpy.config   = persistent.config
+	renpy.Keymap   = dict
+	renpy.random   = random   # prop = module
+	renpy.absolute = absolute # prop = type
+	
+	renpy.pause = pause
+	
+	renpy.music.has_channel = _has_channel
+	renpy.play = renpy.music.play
+	renpy.stop = renpy.music.stop
+	
+	renpy.show_screen = show_screen
+	renpy.hide_screen = hide_screen
+	renpy.has_screen = has_screen
+	
+	renpy.get_all_labels = _get_all_labels
+	renpy.known_languages = _known_languages
+	
+	renpy.can_load = slots.can_load
+	renpy.load = slots.load
+	renpy.save = slots.save
+	renpy.unlink_save = slots.delete
+	renpy.list_slots = slots.list_slots
+	renpy.slot_mtime = slots.mtime
+	renpy.slot_screenshot = slots.screenshot

@@ -111,7 +111,7 @@ label clubs__before_clubs:
 	$ me.move_to_place("before_porch")
 	
 	window show
-	"Проходя мимо здания клубов, я заметил, что тут вышла {color=" + hex(un.color) + "}какая-то девушка{/color}."
+	"Проходя мимо здания клубов, я заметил, что тут вышла {color=" + hex(un.name_text_color) + "}какая-то девушка{/color}."
 	
 	$ me.set_direction(to_forward)
 	$ show_character(un, "radio_club")
@@ -121,7 +121,7 @@ label clubs__before_clubs:
 	$ us.move_to_place("porch_left", True, 1)
 	$ un.set_direction(to_left)
 	
-	"Пока я раздумывал, стоит ли подходить к ней, появилась {color=" + hex(us.color) + "}ещё одна{/color}."
+	"Пока я раздумывал, стоит ли подходить к ней, появилась {color=" + hex(us.name_text_color) + "}ещё одна{/color}."
 	"Она подошла к первой."		
 	"Начала что-то рассказывать и..."
 	
@@ -145,7 +145,7 @@ label clubs__before_clubs:
 	$ hide_character(us)
 	
 	$ me.set_direction(to_forward)
-	"Когда они убежали, я заметил, что {color=" + hex(un.color) + "}первая{/color} девушка что-то обронила."
+	"Когда они убежали, я заметил, что {color=" + hex(un.name_text_color) + "}первая{/color} девушка что-то обронила."
 	$ quest_start('key')
 	
 	window hide

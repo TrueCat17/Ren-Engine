@@ -70,6 +70,7 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	if (style.alpha * 255 < 1) return;
 
 	SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
+	if (rect.y < 3) rect.y = 0;//fix for fonts, where some symbols have height more than font size on init
 
 	SurfacePtr tmpSurface;
 	if (style.enableOutline) {
@@ -189,7 +190,7 @@ static void updateFont(TextStyle &textStyle) {
 }
 
 static bool invisible;
-static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle> &stackStyles, int x, int *w, int *h, SDL_Surface *surface) {
+static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle> &styleStack, int x, int *w, int *h, SDL_Surface *surface) {
 	bool onlySize = !surface;
 
 	bool isStyle = line[i] == '{';
@@ -204,10 +205,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 		*w = *h = 0;
 
 		size_t start = line.find_first_not_of(' ', i + 1);
-		size_t end = start;
-		while (end < line.size() && line[end] != '}') {
-			++end;
-		}
+		size_t end = line.find('}', start);
 		if (start >= end || end == line.size()) {
 			if (!onlySize) {
 				Utils::outMsg("TextField::makeStep", "Incomplete tag");
@@ -223,16 +221,16 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 		std::string tag = line.substr(start, end - start);
 
 		if (closeTag) {
-			if (tag == stackStyles.back().tag) {
-				stackStyles.pop_back();
-				updateStyle(stackStyles.back());
+			if (tag == styleStack.back().tag) {
+				styleStack.pop_back();
+				updateStyle(styleStack.back());
 			}else {
 				if (!onlySize) {
-					Utils::outMsg("TextField::makeStep", "Tag <" + tag + "> != last opened tag <" + stackStyles.back().tag + ">");
+					Utils::outMsg("TextField::makeStep", "Tag <" + tag + "> != last opened tag <" + styleStack.back().tag + ">");
 				}
 			}
 		}else {
-			TextStyle style = stackStyles.back();//copy
+			TextStyle style = styleStack.back();//copy
 
 			std::string value = getTagValue(tag);
 			if (value.empty() && (tag == "color" || tag == "outlinecolor" || tag == "alpha" || tag == "size" || tag == "font" || tag == "image")) {
@@ -272,28 +270,23 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			else if (tag == "size")  apply(style.fontSize, value);
 			else if (tag == "font") style.fontName = value;
 
-			else {
+			else if (tag != "image" && tag != "invisible") {
 				unknownTag = true;
-				if (!onlySize && tag != "image" && tag != "invisible") {
+				if (!onlySize) {
 					Utils::outMsg("TextField::makeStep", "Unknown tag <" + tag + ">");
 				}
 			}
 
-			if (!unknownTag) {
-				if (tag == "font" || tag == "size") {
-					updateFont(style);
-				}
-				updateStyle(style);
-
-				stackStyles.push_back(style);
-			}else if (tag == "image") {
+			if (tag == "invisible") {
+				invisible = true;
+			}else
+			if (tag == "image") {
 				SurfacePtr image = getImage(value);
 				if (!image) {
 					if (!onlySize) {
 						Utils::outMsg("TextField::makeStep", "Failed to load image <" + value + ">");
 					}
 				}else {
-
 					*h = int(style.fontSize);
 					*w = int(style.fontSize * float(image->w) / float(image->h));
 					if (!onlySize && !invisible) {
@@ -303,26 +296,31 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 						SDL_SetSurfaceAlphaMod(image.get(), 255);
 					}
 				}
-			}else if (tag == "invisible") {
-				invisible = true;
+			}else
+			if (!unknownTag) {
+				if (tag == "font" || tag == "size") {
+					updateFont(style);
+				}
+				updateStyle(style);
+
+				styleStack.push_back(style);
 			}
 		}
 	}else {
 		size_t start = i;
-		size_t end = i + 1;
-		while (end < line.size()) {
-			if (line[end] == '{' || line[end] == ' ') break;
-			++end;
+		size_t end = line.find('{', i + 1);
+		if (end == size_t(-1)) {
+			end = line.size();
 		}
 		i = end - 1;
 		std::string word = line.substr(start, end - start);
 
 		if (onlySize) {
-			if (TTF_SizeUTF8(stackStyles.back().font, word.c_str(), w, h)) {
+			if (TTF_SizeUTF8(styleStack.back().font, word.c_str(), w, h)) {
 				Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			}
 		}else if (!invisible) {
-			addChars(word, x, w, h, stackStyles.back(), surface);
+			addChars(word, x, w, h, styleStack.back(), surface);
 		}
 	}
 
@@ -335,16 +333,108 @@ void TextField::setFont(std::string fontName, float fontSize) {
 	updateFont(mainStyle);
 }
 
-static std::vector<TextStyle> startWordStackStyles, tmpStackStyles;
+
+static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styleStack, int maxWidth) {
+	std::vector<TextStyle> originStyleStack = styleStack;
+
+	struct TextPart {
+		size_t start;
+		size_t len;
+		int widthOnEnd;
+	};
+	std::vector<TextPart> parts;
+
+	updateStyle(styleStack.back());
+	int width = 0;
+	size_t i = 0;
+	while (i < line.size() && width <= maxWidth) {
+		TextPart part;
+		part.start = i;
+
+		int w, h;
+		i = makeStep(line, i, styleStack, -1, &w, &h, nullptr);
+		if (!w) continue;
+
+		width += w;
+
+		part.len = i - part.start;
+		part.widthOnEnd = width;
+
+		parts.push_back(part);
+	}
+	if (width <= maxWidth) {
+		return line.size();
+	}
+
+
+	const TextPart &part = parts.back();
+
+	int prevWidth = 0;
+	if (parts.size() > 1) {
+		prevWidth = parts[parts.size() - 2].widthOnEnd;
+	}
+	int partMaxWidth = maxWidth - prevWidth;
+
+	//calculate style stack for the part
+	styleStack.swap(originStyleStack);
+	updateStyle(styleStack.back());
+	i = 0;
+	while (i < part.start) {
+		int w, h;
+		i = makeStep(line, i, styleStack, -1, &w, &h, nullptr);
+	}
+	TTF_Font *font = styleStack.back().font;
+
+	std::string_view partStr = std::string_view(line).substr(part.start, part.len);
+
+	width = 0;
+	size_t lastSymbolBytes = 0;
+	int lastSymbolPixels = 0;
+	i = 0;
+	while (i < partStr.size() && width <= partMaxWidth) {
+		size_t start = i++;
+		while (!Algo::isFirstByte(partStr[i])) ++i;
+		const std::string symbol = std::string(partStr.substr(start, i - start));
+		lastSymbolBytes = symbol.size();
+
+		if (TTF_SizeUTF8(font, symbol.c_str(), &lastSymbolPixels, nullptr)) {
+			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+		}else {
+			width += lastSymbolPixels;
+		}
+	}
+	if (width > partMaxWidth) {
+		i -= lastSymbolBytes;
+	}
+
+
+	size_t spaceIndex = partStr.rfind(' ', i);
+	if (spaceIndex == size_t(-1)) {
+		for (size_t j = parts.size() - 2; j != size_t(-1); --j) {
+			const TextPart &prevPart = parts[j];
+			std::string_view prevPartStr = std::string_view(line).substr(prevPart.start, prevPart.len);
+			size_t prevPartSpaceIndex = prevPartStr.rfind(' ');
+			if (prevPartSpaceIndex != size_t(-1)) {
+				return prevPart.start + prevPartSpaceIndex;
+			}
+		}
+		spaceIndex = i;
+	}else {
+		size_t notSpaceIndex = partStr.find_last_not_of(' ', spaceIndex);
+		if (notSpaceIndex == size_t(-1)) {
+			spaceIndex = 0;
+		}
+	}
+
+	return part.start + spaceIndex;
+}
+
 void TextField::setText(const std::string &text) {
 	if (!mainStyle.font) return;
 
-	const int maxW = maxWidth  > 0 ? maxWidth  : int(1e9);
-	const int maxH = maxHeight > 0 ? maxHeight : int(1e9);
-
-	std::vector<TextStyle> stackStyles;
-	stackStyles.reserve(4);
-	stackStyles.push_back(mainStyle);
+	std::vector<TextStyle> styleStack;
+	styleStack.reserve(4);
+	styleStack.push_back(mainStyle);
 	updateStyle(mainStyle);
 
 	std::vector<std::string> tmpLines = String::split(text, "\n");
@@ -356,105 +446,46 @@ void TextField::setText(const std::string &text) {
 	for (size_t numLine = 0; numLine < tmpLines.size(); ++numLine) {
 		std::string &line = tmpLines[numLine];
 
+		//check text wrap
+		size_t wrapIndex = line.size();
+		if (maxWidth > 0) {
+			wrapIndex = findWrapIndex(line, styleStack, maxWidth);
+		}
+		if (wrapIndex != line.size()) {
+			std::string nextLine;
+			size_t startNextLine = line.find_first_not_of(' ', wrapIndex);
+			if (startNextLine != size_t(-1)) {
+				nextLine = line.substr(startNextLine);
+			}
+
+			line.erase(wrapIndex);
+			while (!line.empty() && line.back() == ' ') {
+				line.pop_back();
+			}
+
+			if (line.empty()) {
+				line = nextLine;
+			}else {
+				tmpLines.insert(tmpLines.begin() + long(numLine + 1), nextLine);
+			}
+			--numLine;
+			continue;
+		}
+
 		SDL_Rect lineRect = { 0, currentHeight, 0, 0};
-
-		int x = 0;
 		int lineWidth = 0;
-		int lineHeight = TTF_FontHeight(stackStyles.back().font);
+		int lineHeight = TTF_FontHeight(styleStack.back().font);
 
-		size_t startWord = 0;
-		int startWordLineWidth = lineWidth;
-		int startWordLineHeight = lineHeight;
-		startWordStackStyles = stackStyles;
-
+		updateStyle(styleStack.back());
 		size_t i = 0;
 		while (i < line.size()) {
-			if (line[i] == ' ') {
-				startWord = i;
-				startWordLineWidth = lineWidth;
-				startWordLineHeight = lineHeight;
-				startWordStackStyles = stackStyles;
-			}
-
 			int w, h;
-			i = makeStep(line, i, stackStyles, x, &w, &h, nullptr);
-
-			bool lineBreak = false;
-			if (wordwrap && lineWidth + w >= maxW) {
-				tmpStackStyles = stackStyles;
-				size_t tmpI = i;
-				if (tmpI != line.size() && line[tmpI] != ' ') {
-					while (tmpI < line.size()) {
-						int tmpW, tmpH;
-						size_t prevTmpI = tmpI;
-						tmpI = makeStep(line, tmpI, stackStyles, 0, &tmpW, &tmpH, nullptr);
-						if (tmpW) {
-							tmpI = prevTmpI;
-							break;
-						}
-					}
-				}
-				lineBreak = tmpI == line.size() || line[tmpI] == ' ';
-				stackStyles = tmpStackStyles;
-			}
-
-			if (lineBreak) {
-				bool wordBreak = (lineWidth - startWordLineWidth) + w >= maxW;
-
-				size_t startNextLine;
-				if (wordBreak) {
-					//binary search of string with max len < maxW:
-					size_t min = startWord;
-					size_t max = std::min(i, min + size_t(maxW / (MIN_TEXT_SIZE / 2)));
-
-					w = 0;
-					while (true) {
-						size_t mid = (min + max) / 2;
-						while (!Algo::isFirstByte(line[mid])) --mid;
-						if (mid == min) break;
-
-						std::string tmpStr = line.substr(startWord, mid - startWord);
-						tmpStackStyles = startWordStackStyles;
-
-						size_t tmpI = 0;
-						int tmpW = 0;
-						while (tmpI < tmpStr.size()) {
-							int w, h;
-							tmpI = makeStep(tmpStr, tmpI, tmpStackStyles, tmpW, &w, &h, nullptr);
-							tmpW += w;
-						}
-
-						if (startWordLineWidth + tmpW >= maxW) {
-							max = mid;
-						}else {
-							min = mid;
-							w = tmpW;
-						}
-					}
-
-					startNextLine = line.find_first_not_of(' ', min);
-
-					lineWidth += w;
-					lineHeight = std::max(lineHeight, h);
-				}else {
-					startNextLine = startWord + 1;
-					lineWidth = startWordLineWidth;
-					lineHeight = startWordLineHeight;
-					stackStyles = startWordStackStyles;
-					updateStyle(stackStyles.back());
-				}
-
-				std::string nextLine = line.substr(startNextLine);
-				line.erase(startNextLine);
-				tmpLines.insert(tmpLines.begin() + long(numLine + 1), nextLine);
-				break;
-			}
-
-			x += w;
+			i = makeStep(line, i, styleStack, lineWidth, &w, &h, nullptr);
 			lineWidth += w;
 			lineHeight = std::max(lineHeight, h);
 		}
 
+		lineWidth = std::min(lineWidth, Renderer::info.max_texture_width);
 		maxLineWidth = std::max(maxLineWidth, lineWidth);
 
 		lineRect.w = lineWidth;
@@ -462,9 +493,9 @@ void TextField::setText(const std::string &text) {
 		tmpLineRects.push_back(lineRect);
 
 		currentHeight += lineHeight;
-		if (currentHeight >= maxH) {
-			tmpLineRects.back().h -= currentHeight - maxH;
-			currentHeight = maxH;
+		if (maxHeight > 0 && currentHeight >= maxHeight) {
+			tmpLineRects.back().h -= currentHeight - maxHeight;
+			currentHeight = maxHeight;
 			tmpLines.erase(tmpLines.begin() + long(numLine + 1), tmpLines.end());
 			break;
 		}
@@ -479,94 +510,60 @@ void TextField::setText(const std::string &text) {
 	rect.h = float(currentHeight);
 
 	//draw with calced sizes
-	stackStyles.erase(stackStyles.begin() + 1, stackStyles.end());
+	styleStack.erase(styleStack.begin() + 1, styleStack.end());
 	updateStyle(mainStyle);
 	lineSurfaces.clear();
 	invisible = false;
 	for (size_t numLine = 0; numLine < lines.size(); ++numLine) {
-		setLine(numLine, lines[numLine], stackStyles);
+		setLine(numLine, lines[numLine], styleStack);
 	}
 
 	setAlign(hAlign, vAlign);
 }
 
-void TextField::setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &stackStyles) {
+void TextField::setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack) {
 	const SDL_Rect &lineRect = lineRects[numLine];
-	if (!lineRect.w) {
-		lineSurfaces.push_back(nullptr);
-		return;
-	}
 
-	SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA32);
+	SDL_Surface *surface = nullptr;
+	if (lineRect.w) {
+		surface = SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA32);
+	}
 	SurfacePtr surfacePtr(surface, SDL_FreeSurface);
 
 	lineSurfaces.push_back(surfacePtr);
-	if (!surfacePtr) return;
 
 	size_t i = 0;
 	int x = 0;
 	int w, h;
 	while (i < line.size()) {
 		h = lineRect.h;
-		i = makeStep(line, i, stackStyles, x, &w, &h, surface);
+		i = makeStep(line, i, styleStack, x, &w, &h, surface);
 		x += w;
 	}
 }
 
-void TextField::setAlign(std::string hAlign, std::string vAlign) {
-	if (hAlign != "left" && hAlign != "center" && hAlign != "right") {
-		Utils::outMsg("TextField::setAlign", "Unexpected hAlign: <" + hAlign + ">\n");
-		hAlign = "left";
-	}
-	if (vAlign != "top" && vAlign != "center" && vAlign != "bottom") {
-		Utils::outMsg("TextField::setAlign", "Unexpected vAlign: <" + vAlign + ">\n");
-		vAlign = "top";
-	}
+void TextField::setAlign(float hAlign, float vAlign) {
 	this->hAlign = hAlign;
 	this->vAlign = vAlign;
-
-	int height = 0;
-	for (const SDL_Rect &lineRect : lineRects) {
-		height += lineRect.h;
-	}
-
-	int indentY = 0;
-	if (vAlign == "center") {
-		indentY = (int(getHeight()) - height) / 2;
-	}else if (vAlign == "bottom") {
-		indentY = int(getHeight()) - height;
-	}
 
 	int maxWidth = this->maxWidth;
 	for (const SDL_Rect &lineRect : lineRects) {
 		maxWidth = std::max(maxWidth, lineRect.w);
 	}
 
-	rects = lineRects;
-	if (hAlign == "left") {
-		for (SDL_Rect &rect : rects) {
-			rect.x = 0;
-			rect.y += indentY;
-		}
-	}else {
-		bool isCenter = hAlign == "center";
-		for (SDL_Rect &rect : rects) {
-			if (isCenter) {
-				rect.x = (maxWidth - rect.w) / 2;
-			}else {
-				rect.x = maxWidth - rect.w;
-			}
-			rect.y += indentY;
-		}
+	int height = 0;
+	for (const SDL_Rect &lineRect : lineRects) {
+		height += lineRect.h;
 	}
-
+	float indentY = (getHeight() - float(height)) * vAlign;
 
 	float sinA = Math::getSin(int(getGlobalRotate()));
 	float cosA = Math::getCos(int(getGlobalRotate()));
 
+	rects = lineRects;
 	for (SDL_Rect &rect : rects) {
-		float x = float(rect.x);
-		float y = float(rect.y);
+		float x = float(maxWidth - rect.w) * hAlign;
+		float y = float(rect.y) + indentY;
 
 		rect.x = int(x * cosA - y * sinA);
 		rect.y = int(x * sinA + y * cosA);

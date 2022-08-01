@@ -39,7 +39,9 @@ absolute_new(PyTypeObject *, PyObject *args, PyObject *kwds) {
 		if (PyLong_CheckExact(x)) {
 			val = PyLong_AsDouble(x);
 		}else {
-			PyErr_SetString(PyExc_TypeError, "absolute() argument must be float, int or long");
+			std::string type = x->ob_type->tp_name;
+			std::string desc = "absolute() argument must be float, int or long, got " + type;
+			PyErr_SetString(PyExc_TypeError, desc.c_str());
 			return nullptr;
 		}
 	}

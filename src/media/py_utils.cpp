@@ -16,7 +16,6 @@
 #include "translation.h"
 
 #include "parser/mods.h"
-#include "parser/parser.h"
 
 #include "utils/game.h"
 #include "utils/math.h"
@@ -151,7 +150,6 @@ void PyUtils::init() {
 	}
 
 	setGlobalValue("need_save", false);
-	setGlobalValue("save_screenshotting", false);
 	setGlobalValue("need_screenshot", false);
 	setGlobalValue("screenshot_width", 640);
 	setGlobalValue("screenshot_height", 640 / String::toDouble(Config::get("window_w_div_h")));
@@ -185,8 +183,6 @@ void PyUtils::init() {
 
 	setGlobalFunc("start_mod", Game::startMod);
 	setGlobalFunc("get_mod_start_time", Game::getModStartTime);
-	setGlobalFunc("get_can_autosave", Game::getCanAutoSave);
-	setGlobalFunc("set_can_autosave", Game::setCanAutoSave);
 	setGlobalFunc("_load", Game::load);
 	setGlobalFunc("exit_from_game", Game::exitFromGame);
 
@@ -371,7 +367,7 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 				if ((c == 'X' || c == 'x') && prev == '0') {
 					hex = true;
 				}else {
-					if (!hex && ((c > 'F' && c <= 'Z') || (c > 'f' && c <= 'z'))) return false;
+					if (!hex || ((c > 'F' && c <= 'Z') || (c > 'f' && c <= 'z'))) return false;
 				}
 			}else
 			if (c < '0' || c > '9') {

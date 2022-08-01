@@ -6,7 +6,6 @@
 #include "media/music.h"
 #include "media/py_utils.h"
 
-#include "utils/math.h"
 #include "utils/stage.h"
 #include "utils/utils.h"
 

@@ -23,7 +23,7 @@ PyObject* GUI::getScreenTimes() {
 }
 
 
-void GUI::update() {
+void GUI::update(bool saving) {
 	if (!GV::inGame) return;
 
 	++GV::numUpdate;
@@ -38,9 +38,11 @@ void GUI::update() {
 	PyObject *pyDict = PyDict_New();
 
 	for (DisplayObject *child : Stage::screens->children) {
+		Screen *scr = static_cast<Screen*>(child);
+		if (saving && !scr->save) continue;
+
 		double st = Utils::getTimer();
 
-		Screen *scr = static_cast<Screen*>(child);
 #if printTime
 		std::cout << "update <" << scr->getName() << ">:\n";
 		const double time1 = Utils::getTimer();

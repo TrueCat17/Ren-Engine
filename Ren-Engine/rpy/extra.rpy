@@ -1,32 +1,8 @@
-init -10000 python:
-	gui = 'images/gui/'
-	
+init -1000000 python:
 	alphabet = list(map(chr, xrange(ord('a'), ord('z') + 1))) # a-z
 	numbers = range(10) # 0-9
-
-
-init -998 python:
-	
-	checkbox_yes_orig = gui + 'std/checkbox/yes.png'
-	checkbox_no_orig  = gui + 'std/checkbox/no.png'
-	
-	checkboxes_inited = False
-	def init_checkboxes():
-		global checkboxes_inited, checkbox_yes, checkbox_no
-		checkboxes_inited = True
-		
-		checkbox_yes = get_back_with_color(checkbox_yes_orig)
-		checkbox_no  = get_back_with_color(checkbox_no_orig)
 	
 	
-	bar_ground = gui + 'std/bar/ground.png'
-	bar_hover  = gui + 'std/bar/hover.png'
-	
-	vbar_ground = im.rotozoom(bar_ground, 90, 1)
-	vbar_hover  = im.rotozoom(bar_hover , 90, 1)
-
-
-init -1000000 python:
 	def build_object(name):
 		"""
 		name__prop -> name.prop
@@ -49,9 +25,8 @@ init -1000000 python:
 				tmp_obj = tmp_obj[sub]
 			
 			tmp_obj[prop_name] = g[orig_name]
-
-
-init -1000000 python:
+	
+	
 	def get_file_and_line(depth):
 		frame = sys._getframe()
 		frame = frame.f_back
@@ -68,16 +43,18 @@ init -1000000 python:
 	def get_stack(depth):
 		stack = traceback.format_stack()
 		return stack[:-(depth + 1)]
-
-
-init -100000 python:
+	
+	
 	def quick_load():
-		path = os.path.join(save_dir, config.quick_save_table, config.quick_save_name, 'py_globals')
+		path = os.path.join(slots.directory, 'quick', '1', 'py_globals')
 		if os.path.exists(path):
-			load(config.quick_save_table, config.quick_save_name)
+			slots.load('1', page='quick')
 	def quick_save():
 		if get_current_mod() != 'main_menu':
-			sl_save(config.quick_save_table, config.quick_save_name)
+			slots.save('1', page='quick')
+	
+	def show_screen(name, *args, **kwargs):
+		return _show_screen(name, args, kwargs)
 	
 	def make_screenshot(width = None, height = None):
 		global need_screenshot, screenshot_width, screenshot_height
@@ -109,9 +86,6 @@ init -100000 python:
 		if ret_type is bool:
 			return res == "True"
 		return ret_type(res)
-	
-	def load(table, num):
-		_load(str(table), str(num))
 	
 	def out_msg(msg, err = ''):
 		err = str(err)
@@ -153,6 +127,16 @@ init -100000 python:
 		if bx + bw < ax: return False
 		if by + bh < ay: return False
 		return True
+	
+	
+	def color_to_int(color, alpha = False):
+		if color is None or type(color) is int:
+			return color
+		
+		r, g, b, a = [in_bounds(c, 0, 255) for c in renpy.easy.color(color)]
+		if alpha:
+			return r << 24 | g << 16 | b << 8 | a
+		return r << 16 | g << 8 | b
 	
 	
 	def get_md5(s):

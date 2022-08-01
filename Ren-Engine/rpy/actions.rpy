@@ -22,23 +22,48 @@ init -10000 python:
 		def __call__(self):
 			return apply(self.func, self.args, self.kwargs)
 	
-	# for get value: Eval("2 + 3")() -> 5
-	class Eval(Object):
-		def __init__(self, code):
-			file_name, num_line = get_file_and_line(1)
-			compiled = compile('\n' * (num_line - 1) + code, file_name, 'eval')
-			Object.__init__(self, compiled = compiled)
+	
+	class EvalObject(Object):
+		def __init__(self, code, mode, depth = 0):
+			file_name, num_line = get_file_and_line(depth + 1)
+			Object.__init__(self, code = code, mode = mode, file_name = file_name, num_line = num_line)
+			self.compile()
 		def __call__(self):
-			return eval(self.compiled)
+			res = None
+			if self.compiled:
+				try:
+					res = eval(self.compiled, globals(), globals())
+				except Exception as e:
+					out_msg('EvalObject.eval', e.__class__.__name__ + ': ' + str(e.args[0]))
+			return res
+		
+		def compile(self):
+			try:
+				self.compiled = compile('\n' * (self.num_line - 1) + self.code, self.file_name, self.mode)
+			except Exception as e:
+				file_name, line_num, symbol_num, error_line = e.args[1]
+				msg = 'File <%s>, line %s: invalid syntax' % (file_name, line_num)
+				if error_line:
+					msg += '\n  ' + str(error_line)
+					if symbol_num:
+						msg += '\n  ' + ' ' * (symbol_num - 1) + '^'
+				out_msg('EvalObject.compile', msg)
+		
+		# for pickle
+		def __getstate__(self):
+			return (self.file_name, self.num_line, self.code, self.mode)
+		def __setstate__(self, params):
+			Object.__init__(self)
+			self.file_name, self.num_line, self.code, self.mode = params
+			self.compile()
+	
+	# for get value: Eval("2 + 3")() -> 5
+	def Eval(code):
+		return EvalObject(code, 'eval', 1)
 	
 	# for exec code: Exec("v = f(2, 3)")() -> None
-	class Exec(Object):
-		def __init__(self, code):
-			file_name, num_line = get_file_and_line(1)
-			compiled = compile('\n' * (num_line - 1) + code, file_name, 'exec')
-			Object.__init__(self, compiled = compiled)
-		def __call__(self):
-			eval(self.compiled)
+	def Exec(code):
+		return EvalObject(code, 'exec', 1)
 	
 	
 	_undefined = object()
@@ -116,10 +141,39 @@ init -10000 python:
 	def Stop(channel):
 		return Function(renpy.stop, channel)
 	
+	
 	def QuickLoad():
 		return Function(quick_load)
 	def QuickSave():
 		return Function(quick_save)
+	
+	def FilePage(page):
+		return Function(slots.set_page, page)
+	def FileCurrentPage():
+		return slots.get_page()
+	
+	def FilePageName(auto='a', quick='q'):
+		if page == 'quick':
+			return quick
+		if page == 'auto':
+			return auto
+		return persistent.slot_page
+	
+	def FileLoad(slot = None, page = None):
+		return Function(sl.load, slot, page)
+	def FileDelete(slot = None, page = None):
+		return Function(sl.delete, slot, page)
+	
+	def FileTime(slot = None, page = None, empty = ''):
+		res = slots.mtime_formatted(slot, page)
+		if res is None:
+			return empty
+		return res
+	def FileScreenshot(slot = None, page = None):
+		return renpy.screenshot(slot, page)
+	def FileLoadable(slot = None, page = None):
+		return renpy.can_load(slot, page)
+	
 	
 	def Show(name):
 		return Function(show_screen, name)

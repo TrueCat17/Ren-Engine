@@ -1,4 +1,4 @@
-init -998 python:
+init -2000 python:
 	std_mixers = ('music', 'sfx', 'ambience', )
 	std_mixers_names = ('Music', 'Sounds', 'Ambience', )
 	

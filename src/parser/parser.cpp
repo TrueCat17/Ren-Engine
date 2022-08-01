@@ -11,10 +11,8 @@
 
 #include "parser/node.h"
 #include "parser/syntax_checker.h"
-#include "parser/screen_node_utils.h"
 
 #include "utils/algo.h"
-#include "utils/file_system.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -118,7 +116,7 @@ Parser::Parser(const std::string &dir) {
 			String::replaceAll(s, "\t", "    ");
 
 			if (String::startsWith(s, "FILENAME")) {
-				Utils::outMsg("Parser::Parser", "String cannot begin with FILENAME (file <" + fileName + ">");
+				Utils::outMsg("Parser::Parser", "String cannot start with <FILENAME> (file <" + fileName + ">");
 				s = "";
 			}
 
@@ -453,7 +451,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	headLine.erase(0, headLine.find_first_not_of(' '));
 
 	if (isText) {
-		if (headLine.size() > 1 && headLine[0] == '$') {
+		if (String::startsWith(headLine, "$")) {
 			res->command = "$";
 			res->params = headLine.substr(1);
 			Utils::outMsg("Parser::getNode",
@@ -706,14 +704,14 @@ size_t Parser::getNextStart(size_t start) const {
 	size_t last = start;
 	for (size_t i = start + 1; i < code.size(); ++i) {
 		const std::string &line = code[i];
-		if (!line.empty()) {
-			const size_t countIndent = line.find_first_not_of(' ');
-			if (countIndent <= countStartIndent) {
-				return last + 1;
-			}
+		if (line.empty()) continue;
 
-			last = i;
+		const size_t countIndent = line.find_first_not_of(' ');
+		if (countIndent <= countStartIndent) {
+			return last + 1;
 		}
+
+		last = i;
 	}
 
 	return last + 1;

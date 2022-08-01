@@ -7,10 +7,10 @@ init -1001 python:
 		
 		times['next_name'] = name
 		
-		if not has_screen('location') or not times.has_key('current_name') or not cur_location:
-			set_time_direct()
-		else:
+		if has_screen('location') and times.has_key('current_name') and cur_location:
 			set_location(cur_location.name, me)
+		else:
+			set_time_direct()
 	
 	def make_time(name, **kwargs):
 		globals()[name + '_time'] = Function(change_time, name)
@@ -34,4 +34,14 @@ init -1001 python:
 	make_time('sunset', sprite=(240, 210, 255), location=(240, 210, 255)) # sunset_time
 	
 	day_time()
+	
+	
+	
+	def get_timed_image(path):
+		orig_path = path
+		path, ext = os.path.splitext(path)
+		path += '_' + times['current_name'] + ext
+		if os.path.exists(path):
+			return path
+		return im.recolor(orig_path, *sprite_time_rgb)
 	

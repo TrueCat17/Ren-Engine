@@ -1,16 +1,19 @@
-init -10002 python:
+init -100002 python:
 	def picklable(obj):
+		t = type(obj)
+		simple_types = (type(None), bool, int, long, float, absolute, str)
+		if t in simple_types:
+			return True
+		
 		class TmpClass:
 			def method(self): pass
 		tmp_instance = TmpClass()
 		
 		func_type = type(picklable)
 		
-		simple_types = (type(None), bool, int, long, float, absolute, str)
 		safe_types = (type(tmp_instance), type(tmp_instance.method), func_type)
 		
-		t = type(obj)
-		if t in simple_types or t in safe_types:
+		if t in safe_types:
 			return True
 		if t in (list, tuple, set, dict):
 			for v in obj:
@@ -123,7 +126,7 @@ init -10002 python:
 
 
 
-init -1001 python:
+init -10001 python:
 	persistent_path = '../var/persistent'
 	
 	try:
@@ -136,7 +139,7 @@ init -1001 python:
 		raise
 
 
-init -1000 python:
+init -10001 python:
 	persistent.in_persistent = True
 	
 	if not persistent.has_attr('config'):

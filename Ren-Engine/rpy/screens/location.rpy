@@ -181,7 +181,7 @@ screen location:
 		loc__calculate_cut_params()
 	
 	if draw_location:
-		key 'I' action show_inventory
+		key 'I' action ShowScreen('inventory')
 		
 		python:
 			loc__shift_is_down = False

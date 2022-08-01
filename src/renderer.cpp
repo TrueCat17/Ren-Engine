@@ -741,6 +741,9 @@ static void initImpl(bool *inited, bool *error) {
 	}
 
 	SDL_GetRendererInfo(renderer, &Renderer::info);
+	if (Renderer::info.max_texture_width <= 0)  Renderer::info.max_texture_width  = 2048;
+	if (Renderer::info.max_texture_height <= 0) Renderer::info.max_texture_height = 2048;
+
 	if (std::string(Renderer::info.name) == "opengl") {
 		size_t countErrors = 0;
 		const size_t maxCountErrors = 10;

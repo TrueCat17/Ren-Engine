@@ -7,7 +7,7 @@ void pySetErrorType(const char *funcName, size_t argIndex, PyObject *obj, const 
 	std::string err = std::string() +
 		funcName + "(), argument #" + std::to_string(argIndex + 1) + ": "
 		"expected " + expectedType + ", "
-		"got " + (PyType_CheckExact(obj) ? "type" : obj->ob_type->tp_name);
+	    "got " + obj->ob_type->tp_name;
 	PyErr_SetString(PyExc_TypeError, err.c_str());
 	throw PyConvertError();
 }

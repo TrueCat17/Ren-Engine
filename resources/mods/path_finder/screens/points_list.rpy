@@ -1,6 +1,4 @@
 init python:
-	init_checkboxes()
-	
 	out_text = ''
 	def set_out_text(text):
 		global out_text
@@ -148,7 +146,7 @@ screen points_list:
 				button:
 					size (20, 20)
 					
-					ground (checkbox_yes if brute_force else checkbox_no)
+					ground (gui.checkbox_yes if brute_force else gui.checkbox_no)
 					action SetVariable('brute_force', not brute_force)
 				
 				text 'brute_force':

@@ -62,10 +62,10 @@ init -995 python:
 		res = []
 		max_len = 0
 		for name in debug_screen.screen_time_arrays:
-			max_len = max(max_len, len_unicode(name))
+			max_len = max(max_len, utf8.len(name))
 		
 		def with_spaces(name):
-			return name + ' ' * (max_len - len_unicode(name))
+			return name + ' ' * (max_len - utf8.len(name))
 		
 		names = sorted(debug_screen.screen_time_arrays.keys())
 		mode = debug_screen.get_show_mode()

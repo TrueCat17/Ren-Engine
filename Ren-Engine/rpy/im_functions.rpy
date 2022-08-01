@@ -299,10 +299,11 @@ init -1001 python:
 		return res
 	
 	def im__bar(progress_end, progress_start = 0, vertical = False, ground = None, hover = None):
+		bar = ('v' if vertical else '') + 'bar'
 		if ground is None:
-			ground = vbar_ground if vertical else bar_ground
+			ground = gui[bar + '_ground']
 		if hover is None:
-			hover  =  vbar_hover if vertical else bar_hover
+			hover  = gui[bar + '_hover']
 		tw, th = get_image_size(ground)
 		
 		if vertical:

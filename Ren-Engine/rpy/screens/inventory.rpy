@@ -1,20 +1,16 @@
 init -101 python:
 	inventory_background = im.rect('#FED')
-	inventory_cell_usual = gui + 'save_load/hover.png'
-	inventory_cell_selected = gui + 'save_load/selected.png'
+	
+	inventory_cell_usual    = 'images/gui/save_load/hover.png'
+	inventory_cell_selected = 'images/gui/save_load/selected.png'
 	inventory_cell_size = 50
 	inventory_cell_text_size = 16
 	inventory_cell_spacing = 10
 	
-	inventory_selected = 0
-	
-	
 	inventory_close_size = 25
-	inventory_inited = False
-	def init_inventory():
-		global inventory_inited, inventory_close
-		inventory_inited = True
-		inventory_close = get_back_with_color(gui + 'menu/pause/close.png')
+	inventory_close = 'images/gui/menu/pause/close.png'
+	
+	inventory_selected = 0
 	
 	
 	def inventory_get_cell_image(index):
@@ -69,9 +65,7 @@ init -101 python:
 		if element[1] == 0:
 			inventory[inventory_selected] = ['', 0]
 	
-	def show_inventory():
-		init_inventory()
-		show_screen('inventory')
+	hotkeys.disable_key_on_screens['ESCAPE'].append('inventory')
 
 
 screen inventory:
