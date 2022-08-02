@@ -44,27 +44,29 @@ init python:
 			points[index1], points[index2] = points[index2], points[index1]
 	
 	def start_moving():
-		if len(points) > 1:
-			location, place = points[0]
-			
-			global draw_location
-			draw_location = None
-			
-			set_location(location, place)
-			cam_to(me, 0)
-			show_screen('selected_location')
-			
-			st = time.time()
-			if not me.move_to_places(points, 1, brute_force=brute_force):
-				me.move_to_place(None)
-				stop_moving()
-				set_out_text('Path not found')
-				return
-			dtime_ms = (time.time() - st) * 1000
-			set_out_text(_('Spent') + ': ' + str(round(dtime_ms, 2)) + ' ms')
-			
-			if has_screen('all_locations'):
-				hide_screen('all_locations')
+		if len(points) <= 1:
+			return
+		
+		location, place = points[0]
+		
+		global draw_location
+		draw_location = None
+		
+		set_location(location, place)
+		cam_to(me, 0)
+		show_screen('selected_location')
+		
+		st = time.time()
+		if not me.move_to_places(points, 1, brute_force=brute_force):
+			me.move_to_place(None)
+			stop_moving()
+			set_out_text('Path not found')
+			return
+		dtime_ms = (time.time() - st) * 1000
+		set_out_text(_('Spent') + ': ' + str(round(dtime_ms, 2)) + ' ms')
+		
+		if has_screen('all_locations'):
+			hide_screen('all_locations')
 	
 	def stop_moving():
 		me.paths = None
@@ -82,7 +84,7 @@ screen points_list:
 	key 'P' action make_screenshot
 	
 	image im.rect('#FFF'):
-		xalign (0.0 if points_left else 1.0)
+		xalign 0.0 if points_left else 1.0
 		yalign 0.5
 		size (points_width, 0.7)
 		
@@ -132,7 +134,7 @@ screen points_list:
 							size (16, 16)
 							text_size 14
 							color 0xFF0000
-							action [SetVariable('points', points[:i] + points[i+1:]), SetVariable('i', i - 1)]
+							action [SetVariable('points', points[:i] + points[i+1:]), AddVariable('i', -1)]
 				$ i += 1
 		
 		vbox:
@@ -144,9 +146,9 @@ screen points_list:
 				spacing points_indent
 				
 				button:
-					size (20, 20)
+					size 20
 					
-					ground (gui.checkbox_yes if brute_force else gui.checkbox_no)
+					ground gui.checkbox_yes if brute_force else gui.checkbox_no
 					action SetVariable('brute_force', not brute_force)
 				
 				text 'brute_force':

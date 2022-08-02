@@ -82,7 +82,7 @@ init -1000 python:
 				spr = sprites.list[index]
 				if spr.as_name == d['as']:
 					old_sprite = spr
-					sprites.list.remove(spr)
+					sprites.list.pop(index)
 					break
 				index += 1
 		
@@ -150,30 +150,34 @@ init -1000 python:
 					spr.set_effect(effect)
 					spr.hiding = True
 				else:
-					sprites.list = sprites.list[0:i] + sprites.list[i+1:]
+					sprites.list.pop(i)
 				break
 		else:
 			out_msg('sprites.hide', 'Sprite <' + name + '> not found')
 	
 	def sprites__get_datas():
+		xzoom = absolute(get_stage_width() ) / config.width  if config.width  else 1
+		yzoom = absolute(get_stage_height()) / config.height if config.height else 1
+		
 		res = []
 		for spr in sprites.list + [sprites.screen]: # new list, because in update something can be removed from sprites.list
 			spr.update()
 			
-			for spr_data in spr.data_list:
-				for data in spr_data.get_all_data():
-					tmp_image = data.res_image if data.res_image is not None else data.image
-					if tmp_image and data.real_alpha > 0:
-						tmp = Object()
-						tmp.image  =  tmp_image
-						tmp.pos    = (data.real_xpos,    data.real_ypos)
-						tmp.anchor = (data.real_xanchor, data.real_yanchor)
-						tmp.size   = (data.real_xsize,   data.real_ysize)
-						tmp.zoom   = (data.real_xzoom,   data.real_yzoom)
-						tmp.crop   = (data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop)
-						tmp.alpha  =  data.real_alpha
-						tmp.rotate =  data.real_rotate
-						res.append(tmp)
+			for data in spr.get_all_data():
+				tmp_image = data.res_image or data.image
+				if not tmp_image or data.real_alpha <= 0: continue
+				
+				xanchor, yanchor = data.real_xanchor, data.real_yanchor
+				
+				tmp = Object()
+				tmp.image  =  tmp_image
+				tmp.size   = (data.real_xsize * xzoom, data.real_ysize * yzoom)
+				tmp.anchor = (xanchor * xzoom, yanchor * yzoom)
+				tmp.pos    = (data.real_xpos + xanchor, data.real_ypos + yanchor) # real_pos already taked anchor, cancel it
+				tmp.crop   = (data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop)
+				tmp.alpha  =  data.real_alpha
+				tmp.rotate =  data.real_rotate
+				res.append(tmp)
 		return res
 	
 	
@@ -203,7 +207,6 @@ screen sprites:
 			pos    tmp.pos
 			anchor tmp.anchor
 			size   tmp.size
-			zoom   tmp.zoom
 			crop   tmp.crop
 			alpha  tmp.alpha
 			rotate tmp.rotate

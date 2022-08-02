@@ -28,38 +28,24 @@ init -9000 python:
 			
 			self.data_list = (self.new_data,) if self.new_data else ()
 		
-		
-		def update_data_size(self):
-			main_data = self.new_data or self.old_data
-			if main_data is None:
-				return
-			
-			for data in self.data_list:
-				if data.xsize is not None:
-					xsize = get_absolute(data.xsize, get_stage_width())
-				else:
-					if main_data.xsize is None and data.image:
-						xsize = get_image_width(data.image)
-					else:
-						xsize = main_data.xsize or 0
-			
-				if data.ysize is not None:
-					ysize = get_absolute(data.ysize, get_stage_height())
-				else:
-					if main_data.ysize is None and data.image:
-						ysize = get_image_height(data.image)
-					else:
-						ysize = main_data.ysize or 0
-				
-				data.real_xsize, data.real_ysize = xsize, ysize
-		
-		def update(self):
+		def update(self, parent = None):
 			for data in self.data_list:
 				data.update()
 			
-			self.update_data_size()
 			if self.effect:
 				self.effect.update()
+			
+			self.calculate_props(parent)
+		
+		def calculate_props(self, parent):
+			for data in self.data_list:
+				data.calculate_props(parent)
+		
+		def get_all_data(self):
+			res = []
+			for data in self.data_list:
+				res.extend(data.get_all_data())
+			return res
 		
 		def __str__(self):
 			return str(self.call_str)

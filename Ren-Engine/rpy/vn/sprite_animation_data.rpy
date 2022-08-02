@@ -23,6 +23,9 @@ init -9000 python:
 			self.decl_at = SpriteAnimation(decl_at, self)
 			self.at      = SpriteAnimation(at,      self)
 			self.show_at = SpriteAnimation(show_at, self)
+			
+			self.update()
+			self.calculate_props()
 		
 		def update(self):
 			self.decl_at.update()
@@ -32,48 +35,68 @@ init -9000 python:
 			for spr in self.contains:
 				spr.update()
 		
-		
-		def get_all_data(self, parent = None):
+		def calculate_props(self, parent = None):
 			if parent is not None:
 				p_xzoom,   p_yzoom   = parent.real_xzoom,   parent.real_yzoom
 				p_xsize,   p_ysize   = parent.real_xsize,   parent.real_ysize
+				p_xpos,    p_ypos    = parent.real_xpos,    parent.real_ypos
 				p_xanchor, p_yanchor = parent.real_xanchor, parent.real_yanchor
 				p_rotate             = parent.real_rotate
+				p_alpha              = parent.real_alpha
 			else:
 				p_xzoom,   p_yzoom   = 1, 1
 				p_xsize,   p_ysize   = get_stage_width(),   get_stage_height()
+				p_xpos,    p_ypos    = 0, 0
 				p_xanchor, p_yanchor = 0, 0
 				p_rotate             = 0
+				p_alpha              = 1.0
 			
+			
+			self.real_rotate = self.rotate + p_rotate
+			self.real_alpha  = self.alpha * p_alpha
+			self.real_xzoom  = absolute(self.xzoom * p_xzoom)
+			self.real_yzoom  = absolute(self.yzoom * p_yzoom)
+			
+			
+			main_data = self.sprite.new_data or self.sprite.old_data
+			
+			if self.xsize is None:
+				xsize = (main_data and main_data.xsize) or (get_image_width(self.image) if self.image else 0)
+			else:
+				xsize = get_absolute(self.xsize, config.width or get_stage_width())
+			
+			if self.ysize is None:
+				ysize = (main_data and main_data.ysize) or (get_image_height(self.image) if self.image else 0)
+			else:
+				ysize = get_absolute(self.ysize, config.height or get_stage_height())
+			
+			self.real_xsize = xsize * self.real_xzoom
+			self.real_ysize = ysize * self.real_yzoom
+			
+			
+			self.real_xanchor = get_absolute(self.xanchor, xsize) * self.real_xzoom
+			self.real_yanchor = get_absolute(self.yanchor, ysize) * self.real_yzoom
 			
 			x = get_absolute(self.xpos, p_xsize) * p_xzoom - p_xanchor
 			y = get_absolute(self.ypos, p_ysize) * p_yzoom - p_yanchor
-			
 			sina = _sin(p_rotate)
 			cosa = _cos(p_rotate)
+			xrot = absolute(x * cosa - y * sina)
+			yrot = absolute(x * sina + y * cosa)
 			
-			self.real_xpos    = absolute(x * cosa - y * sina)
-			self.real_ypos    = absolute(x * sina + y * cosa)
+			self.real_xpos = p_xpos + p_xanchor + xrot - self.real_xanchor
+			self.real_ypos = p_ypos + p_yanchor + yrot - self.real_yanchor
 			
-			self.real_xanchor = get_absolute(self.xanchor, self.real_xsize) * self.xzoom
-			self.real_yanchor = get_absolute(self.yanchor, self.real_ysize) * self.yzoom
-			self.real_alpha   = self.alpha
-			self.real_rotate  = self.rotate
-			self.real_xzoom   = self.xzoom
-			self.real_yzoom   = self.yzoom
-			
-			res = [self]
 			
 			for spr in self.contains:
+				spr.calculate_props(self)
+		
+		
+		def get_all_data(self):
+			res = [self]
+			for spr in self.contains:
 				for spr_data in spr.data_list:
-					for data in spr_data.get_all_data(self):
-						data.real_xpos   += self.real_xpos
-						data.real_ypos   += self.real_ypos
-						data.real_alpha  *= self.real_alpha
-						data.real_rotate += self.real_rotate
-						data.real_xzoom  *= self.xzoom
-						data.real_yzoom  *= self.yzoom
-						res.append(data)
+					res.extend(spr_data.get_all_data())
 			
 			return res
 	

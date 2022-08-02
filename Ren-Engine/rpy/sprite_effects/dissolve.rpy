@@ -49,7 +49,7 @@ init -9000 python:
 					return cache[data]
 				
 				xanchor, yanchor = data.real_xanchor, data.real_yanchor
-				x, y             = data.real_xpos - xanchor, data.real_ypos - yanchor
+				x, y             = data.real_xpos, data.real_ypos
 				xsize, ysize     = data.real_xsize, data.real_ysize
 				
 				xmin, ymin = x, y
@@ -95,7 +95,7 @@ init -9000 python:
 			if not make_common:
 				return
 			
-			all_datas = [data for data in new_datas + old_datas if data.image is not None]
+			all_datas = [data for data in new_datas + old_datas if data.image]
 			all_rects = [get_rect(data) for data in all_datas]
 			
 			xmin, ymin, xmax, ymax = all_rects[0]
