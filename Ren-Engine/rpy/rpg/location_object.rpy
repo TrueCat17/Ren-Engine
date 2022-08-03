@@ -320,7 +320,8 @@ init -1001 python:
 			instance = RpgLocationObject(obj_name, px + pw / 2, py + ph / 2)
 		elif str(type(obj_name)) == "<type 'classobj'>":
 			instance = obj_name(px, py, pw, ph, **kwargs)
-			instance.type = obj_name
+			if not instance.type:
+				instance.type = obj_name
 		else:
 			out_msg('', 'Object <' + obj_name + '> not registered')
 			return
