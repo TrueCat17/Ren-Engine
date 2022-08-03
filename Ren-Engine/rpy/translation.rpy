@@ -200,16 +200,20 @@ init -1000 python:
 		return language, region
 	
 	def locale_to_language_function(locale, region):
-        lang_name = locales.get(region)
-        if lang_name is not None and lang_name in renpy.known_languages():
-            return lang_name
+		lang_name = locales.get(region)
+		if lang_name is not None and lang_name in renpy.known_languages():
+			return lang_name
 		
-        lang_name = locales.get(locale)
-        if lang_name is not None and lang_name in renpy.known_languages():
-            return lang_name
+		lang_name = locales.get(locale)
+		if lang_name is not None and lang_name in renpy.known_languages():
+			return lang_name
+		
+		return None
 	
 	def _choose_lang():
 		lang = os.getenv('RE_LANG')
+		if lang:
+			os.environ.pop('RE_LANG') # don't change lang to it after each mod start
 		if lang not in renpy.known_languages():
 			lang = None
 		
