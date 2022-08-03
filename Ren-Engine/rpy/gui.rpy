@@ -81,6 +81,7 @@ init -1000 python:
 	gui.dialogue_text_font = 'Calibri'
 	gui.dialogue_text_size = 0.035
 	gui.dialogue_text_size_min = 16
+	gui.dialogue_text_size_max = 30
 	gui.dialogue_text_color        = '#FF0'
 	gui.dialogue_text_outlinecolor = None
 	gui.dialogue_text_align = 'left'
@@ -112,6 +113,7 @@ init -1000 python:
 	gui.name_text_font = 'Calibri'
 	gui.name_text_size = 0.04
 	gui.name_text_size_min = 16
+	gui.name_text_size_max = 32
 	gui.name_text_color        = '#F00'
 	gui.name_text_outlinecolor = None
 	gui.name_text_xalign = 0.5
