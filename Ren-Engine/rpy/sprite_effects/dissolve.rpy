@@ -172,7 +172,7 @@ init -9000 python:
 				state_num = sum(data.state_num for data in new_datas + old_datas if data.image)
 				if self.state_num != state_num:
 					self.set_data_list()
-					self.sprite.update_data_size()
+					self.sprite.calculate_props(None)
 			
 			alpha = in_bounds(dtime / self.time, 0.0, 1.0)
 			anti_alpha = 1 - alpha
