@@ -54,7 +54,7 @@ init -1000 python:
 screen slider_v:
 	python:
 		if slider_v_current_name is None:
-			out_msg('Screen slider_v', 'For use SliderV you must call slider_v_set(name)')
+			out_msg('Screen slider_v', 'For use slider_v screen you must call slider_v_set(name)')
 			slider_v_cur = None
 			slider_v_size = (0, 0)
 		else:
@@ -78,7 +78,7 @@ screen slider_v:
 					action slider_v_add_value(-0.5)
 			
 			python:
-				tmp_length = get_absolute(slider_v_cur['length'], get_stage_height())
+				tmp_length = get_absolute(slider_v_cur['length'] or 1, get_stage_height())
 				tmp_scroll = get_absolute(slider_v_cur['page_length'], get_stage_height()) / float(tmp_length)
 				
 				tmp_image = im.bar(
