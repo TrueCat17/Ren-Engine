@@ -175,15 +175,15 @@ static void restoreScreens(const std::string &loadPath) {
 						std::string name = PyString_AS_STRING(elem);
 						startScreensVec.push_back(name);
 					}else {
-						Utils::outMsg("Scenario::execute",
+						Utils::outMsg("Scenario::restoreScreens",
 						              "type(start_screens[" + std::to_string(i) + "]) is not str");
 					}
 				}
 			}else {
-				Utils::outMsg("Scenario::execute", "type(start_screens) is not list");
+				Utils::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
 			}
 		}else {
-			Utils::outMsg("Scenario::execute", "start_screens is not defined");
+			Utils::outMsg("Scenario::restoreScreens", "start_screens is not defined");
 		}
 	}
 
