@@ -385,49 +385,76 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 	}
 	TTF_Font *font = styleStack.back().font;
 
-	std::string_view partStr = std::string_view(line).substr(part.start, part.len);
+	std::string partStr = line.substr(part.start, part.len);
+
+	size_t spaceBeforePart = size_t(-1);
+	for (size_t i = parts.size() - 2; i != size_t(-1); --i) {
+		const TextPart &prevPart = parts[i];
+		std::string_view prevPartStr = std::string_view(line).substr(prevPart.start, prevPart.len);
+		size_t prevPartSpaceIndex = prevPartStr.rfind(' ');
+		if (prevPartSpaceIndex != size_t(-1)) {
+			spaceBeforePart = prevPart.start + prevPartSpaceIndex;
+			break;
+		}
+	}
 
 	width = 0;
-	size_t lastSymbolBytes = 0;
-	int lastSymbolPixels = 0;
 	i = 0;
 	while (i < partStr.size() && width <= partMaxWidth) {
 		size_t start = i++;
 		while (!Algo::isFirstByte(partStr[i])) ++i;
 		const std::string symbol = std::string(partStr.substr(start, i - start));
-		lastSymbolBytes = symbol.size();
 
-		if (TTF_SizeUTF8(font, symbol.c_str(), &lastSymbolPixels, nullptr)) {
+		int w;
+		if (TTF_SizeUTF8(font, symbol.c_str(), &w, nullptr)) {
 			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
-		}else {
-			width += lastSymbolPixels;
+			return line.size();
 		}
-	}
-	if (i == partStr.size()) {
-		return part.start + part.len;
+		width += w;
 	}
 
-	i -= lastSymbolBytes;
-
-	size_t spaceIndex = partStr.rfind(' ', i);
-	if (spaceIndex == size_t(-1)) {
-		for (size_t j = parts.size() - 2; j != size_t(-1); --j) {
-			const TextPart &prevPart = parts[j];
-			std::string_view prevPartStr = std::string_view(line).substr(prevPart.start, prevPart.len);
-			size_t prevPartSpaceIndex = prevPartStr.rfind(' ');
-			if (prevPartSpaceIndex != size_t(-1)) {
-				return prevPart.start + prevPartSpaceIndex;
+	size_t firstSpaceIndex = partStr.find(' ');
+	if (i < partStr.size() && partStr[i] != ' ') {//index in the middle of a word
+		if (i > firstSpaceIndex) {
+			i = partStr.rfind(' ', i);
+		}else {
+			if (spaceBeforePart != size_t(-1)) {
+				return spaceBeforePart;
 			}
 		}
-		spaceIndex = i;
-	}else {
-		size_t notSpaceIndex = partStr.find_last_not_of(' ', spaceIndex);
-		if (notSpaceIndex == size_t(-1)) {
-			spaceIndex = 0;
+	}
+	partStr.erase(i);
+	firstSpaceIndex = partStr.find(' ');
+
+
+	while (!partStr.empty()) {
+		while (!partStr.empty() && partStr.back() == ' ') {
+			partStr.pop_back();
+		}
+
+		if (TTF_SizeUTF8(font, partStr.c_str(), &width, nullptr)) {
+			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+			return line.size();
+		}
+		if (width <= partMaxWidth) break;
+
+		size_t spaceIndex = partStr.rfind(' ');
+		if (spaceIndex != size_t(-1) && firstSpaceIndex != size_t(-1) && spaceIndex >= firstSpaceIndex) {
+			partStr.erase(spaceIndex);
+		}else {
+			if (spaceBeforePart != size_t(-1)) {
+				return spaceBeforePart;
+			}
+
+			while (!partStr.empty() && !Algo::isFirstByte(partStr.back())) {
+				partStr.pop_back();
+			}
+			if (!partStr.empty()) {
+				partStr.pop_back();
+			}
 		}
 	}
-
-	return part.start + spaceIndex;
+	return part.start + partStr.size();
 }
 
 void TextField::setText(const std::string &text) {
@@ -450,7 +477,12 @@ void TextField::setText(const std::string &text) {
 		//check text wrap
 		size_t wrapIndex = line.size();
 		if (maxWidth > 0) {
+			size_t firstNotSpace = line.find_first_not_of(' ');
 			wrapIndex = findWrapIndex(line, styleStack, maxWidth);
+			if (firstNotSpace != size_t(-1) && wrapIndex <= firstNotSpace) {
+				line.erase(0, firstNotSpace);
+				wrapIndex = line.empty() ? 0 : 1;
+			}
 		}
 		if (wrapIndex != line.size()) {
 			std::string nextLine;
