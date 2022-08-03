@@ -320,6 +320,7 @@ init -1001 python:
 			instance = RpgLocationObject(obj_name, px + pw / 2, py + ph / 2)
 		elif str(type(obj_name)) == "<type 'classobj'>":
 			instance = obj_name(px, py, pw, ph, **kwargs)
+			instance.type = obj_name
 		else:
 			out_msg('', 'Object <' + obj_name + '> not registered')
 			return
@@ -445,17 +446,21 @@ init -1001 python:
 				place = tmp_place
 			px, py = place['x'], place['y']
 		
+		if count == 0:
+			return
+		
 		to_remove = []
 		for i in location.objects:
 			if i.type == obj_name:
 				to_remove.append(i)
 		
-		def dist_sqr(obj):
-			dx, dy = (obj.x or 0) - px, (obj.y or 0) - py
-			return dx*dx + dy*dy
-		
-		to_remove.sort(key = dist_sqr)
-		to_remove = to_remove[0:count]
+		if count > 0:
+			def dist_sqr(obj):
+				dx, dy = (obj.x or 0) - px, (obj.y or 0) - py
+				return dx*dx + dy*dy
+			
+			to_remove.sort(key = dist_sqr)
+			to_remove = to_remove[0:count]
 		
 		for i in to_remove:
 			i.location = None
