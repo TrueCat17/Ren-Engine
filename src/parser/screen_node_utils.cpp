@@ -644,7 +644,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	[[maybe_unused]] bool tmpBool; \
+	bool tmpBool; \
 	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
 	else { \
 	    static_cast<Type*>(obj)->propName = 0; \

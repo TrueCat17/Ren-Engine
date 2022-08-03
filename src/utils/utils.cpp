@@ -28,7 +28,7 @@
 static std::map<std::string, Node*> declAts;
 
 
-void Utils::setThreadName(std::string name) {
+void Utils::setThreadName([[maybe_unused]] std::string name) {
 #ifndef __WIN32__ //suspend on wine
 	size_t maxNameSize = 14;//if more - no change in task manager
 

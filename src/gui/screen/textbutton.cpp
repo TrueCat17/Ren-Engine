@@ -54,7 +54,7 @@ static void onRightClick(DisplayObject* owner) {
 	}else {
 		Style::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
 	}
-};
+}
 
 
 

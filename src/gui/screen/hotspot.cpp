@@ -41,7 +41,7 @@ static void onLeftClick(DisplayObject* owner) {
 	}else {
 		Style::execAction(node->getFileName(), node->getNumLine(), style, "action");
 	}
-};
+}
 
 static void onRightClick(DisplayObject* owner) {
 	const Hotspot *hotspot = static_cast<Hotspot*>(owner);
@@ -55,7 +55,7 @@ static void onRightClick(DisplayObject* owner) {
 	}else {
 		Style::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
 	}
-};
+}
 
 Hotspot::Hotspot(Node *node, Screen *screen):
 	Child(node, nullptr, screen)
