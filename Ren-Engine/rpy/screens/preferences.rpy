@@ -181,7 +181,7 @@ screen preferences:
 			for name, dir_name in get_mods():
 				textbutton name:
 					ground gui.bg('button_ground')
-					hover  gui.bg('button_ground')
+					hover  gui.bg('button_hover')
 					xsize gui.get_int('button_width')
 					ysize gui.get_int('button_height')
 					font         gui.button_text_font
@@ -311,7 +311,7 @@ screen preferences:
 								
 								textbutton '-':
 									ground gui.bg('button_ground')
-									hover  gui.bg('button_ground')
+									hover  gui.bg('button_hover')
 									size   gui.get_int('button_height')
 									font         gui.button_text_font
 									color        gui.get_int('button_text_color')
@@ -324,7 +324,7 @@ screen preferences:
 									ysize gui.get_int('prefs_bar_height')
 								textbutton '+':
 									ground gui.bg('button_ground')
-									hover  gui.bg('button_ground')
+									hover  gui.bg('button_hover')
 									size   gui.get_int('button_height')
 									font         gui.button_text_font
 									color        gui.get_int('button_text_color')
@@ -336,7 +336,7 @@ screen preferences:
 	
 	textbutton _('Preferences' if preferences.show_mods else 'Mods'):
 		ground gui.bg('button_ground')
-		hover  gui.bg('button_ground')
+		hover  gui.bg('button_hover')
 		xsize gui.get_int('button_width')
 		ysize gui.get_int('button_height')
 		font         gui.button_text_font
@@ -350,7 +350,7 @@ screen preferences:
 	
 	textbutton _('Return'):
 		ground gui.bg('button_ground')
-		hover  gui.bg('button_ground')
+		hover  gui.bg('button_hover')
 		xsize gui.get_int('button_width')
 		ysize gui.get_int('button_height')
 		font         gui.button_text_font

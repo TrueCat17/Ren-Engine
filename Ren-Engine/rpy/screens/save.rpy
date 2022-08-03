@@ -21,7 +21,7 @@ screen save:
 		
 		textbutton _('Return'):
 			ground gui.bg('button_ground')
-			hover  gui.bg('button_ground')
+			hover  gui.bg('button_hover')
 			xsize gui.get_int('button_width')
 			ysize gui.get_int('button_height')
 			font         gui.button_text_font
