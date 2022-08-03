@@ -403,10 +403,11 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 			width += lastSymbolPixels;
 		}
 	}
-	if (width > partMaxWidth) {
-		i -= lastSymbolBytes;
+	if (i == partStr.size()) {
+		return part.start + part.len;
 	}
 
+	i -= lastSymbolBytes;
 
 	size_t spaceIndex = partStr.rfind(' ', i);
 	if (spaceIndex == size_t(-1)) {
