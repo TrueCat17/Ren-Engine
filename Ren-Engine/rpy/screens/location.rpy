@@ -267,11 +267,12 @@ screen location:
 			for character in characters:
 				character.update()
 			
-			for obj in draw_location.objects:
-				if isinstance(obj, Character):
-					continue
-				if obj.update:
-					obj.update()
+			if not has_screen('pause'):
+				for obj in draw_location.objects:
+					if isinstance(obj, Character):
+						continue
+					if obj.update:
+						obj.update()
 			
 			draw_location.update_pos()
 		
