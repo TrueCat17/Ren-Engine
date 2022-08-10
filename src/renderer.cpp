@@ -62,7 +62,7 @@ bool Renderer::needToUpdateViewPort = true;
 
 std::mutex Renderer::renderMutex;
 
-std::mutex Renderer::RenderDataMutex;
+std::mutex Renderer::renderDataMutex;
 std::vector<RenderStruct> Renderer::renderData;
 
 SDL_RendererInfo Renderer::info;
@@ -530,7 +530,7 @@ static void loop() {
 
 
 		{
-			std::lock_guard g(Renderer::RenderDataMutex);
+			std::lock_guard g(Renderer::renderDataMutex);
 			curRenderData.clear();
 			Renderer::renderData.swap(curRenderData);
 		}

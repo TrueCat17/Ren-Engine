@@ -33,7 +33,7 @@ public:
 
 	static std::mutex renderMutex;
 
-	static std::mutex RenderDataMutex;
+	static std::mutex renderDataMutex;
 	static std::vector<RenderStruct> renderData;
 
 	static SDL_RendererInfo info;

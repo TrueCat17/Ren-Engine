@@ -1,3 +1,4 @@
+#include "utils/scope_exit.h"
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -416,7 +417,7 @@ static void loop() {
 				Utils::sleep(0.001, false);
 			}
 
-			std::lock_guard g(Renderer::RenderDataMutex);
+			std::lock_guard g(Renderer::renderDataMutex);
 			Renderer::renderData.clear();
 			if (Stage::screens) {
 				Stage::screens->draw();
@@ -461,28 +462,44 @@ static void eventLoop() {
 
 		//SDL can change window size inside SDL_PollEvent => need lock renderMutex
 		//  This code displays messages while trying lock the mutex (for case when messages appearance in render)
-		bool ok = false;
 		while (true) {
-			ok = Renderer::renderMutex.try_lock();
-			if (ok) break;
+			bool success = Renderer::renderMutex.try_lock();
+			if (success) break;
 
 			while (Utils::realOutMsg()) {}
 			Utils::sleep(0.001, false);
 		}
+		ScopeExit se([]() {
+			Renderer::renderMutex.unlock();
+		});
 
-		std::lock_guard g(eventMutex);
+		//for no deadlock
+		int i = 0;
+		for (; i < 50; ++i) {
+			bool success = eventMutex.try_lock();
+			if (success) break;
+
+			while (Utils::realOutMsg()) {}
+			Utils::sleep(0.001, false);
+		}
+		if (i == 50) continue;
+
+		ScopeExit se2([]() {
+			eventMutex.unlock();
+		});
+
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
-			if (event.window.event == SDL_WINDOWEVENT_CLOSE || event.type == SDL_QUIT) {
+			if (event.type == SDL_QUIT ||
+			    (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE))
+			{
 				GV::exit = true;
 				return;
 			}
 
 			events.push_back(event);
 		}
-
-		Renderer::renderMutex.unlock();
 	}
 }
 

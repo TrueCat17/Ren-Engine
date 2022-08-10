@@ -333,7 +333,7 @@ void Game::save() {
 				Utils::sleep(0.001);
 			}
 
-			std::lock_guard g(Renderer::RenderDataMutex);
+			std::lock_guard g(Renderer::renderDataMutex);
 
 			Renderer::renderData.clear();
 			if (Stage::screens) {
@@ -426,7 +426,7 @@ void Game::makeScreenshot() {
 			Utils::sleep(0.001);
 		}
 
-		std::lock_guard g(Renderer::RenderDataMutex);
+		std::lock_guard g(Renderer::renderDataMutex);
 
 		Renderer::renderData.clear();
 		if (Stage::screens) {
