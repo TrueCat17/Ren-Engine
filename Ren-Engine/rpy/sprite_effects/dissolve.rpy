@@ -22,6 +22,9 @@ init -9000 python:
 			return res
 		
 		def set_data_list(self):
+			if self.sprite is sprites.scene:
+				return
+			
 			def rotate_point(x, y, xcenter, ycenter, sina, cosa):
 				tx, ty = x - xcenter, y - ycenter
 				rx, ry = tx * cosa - ty * sina, tx * sina + ty * cosa
@@ -67,11 +70,10 @@ init -9000 python:
 			def intersection_rects(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2):
 				return xmax1 > xmin2 and xmax2 > xmin1 and ymax1 > ymin2 and ymax2 > ymin1
 			
-			new_datas = self.sprite.new_data.get_all_data() if self.sprite.new_data else ()
-			old_datas = self.sprite.old_data.get_all_data() if self.sprite.old_data else ()
+			new_data, old_data = self.sprite.new_data, self.sprite.old_data
 			
-			if self.sprite is sprites.scene:
-				return
+			new_datas = self.sprite.new_data.get_all_data() if new_data else ()
+			old_datas = self.sprite.old_data.get_all_data() if old_data else ()
 			
 			make_common = False
 			for new_data in new_datas:
@@ -106,8 +108,8 @@ init -9000 python:
 				ymax = max(ymax, rect[3])
 			
 			width, height = xmax - xmin, ymax - ymin
-			if width <= 0 or height <= 0:
-				self.sprite.data_list = (self.sprite.old_data, self.sprite.new_data)
+			if width <= 0 or height <= 0 or (xmin, ymin, xmax, ymax) == (0, 0, get_stage_width(), get_stage_height()):
+				self.sprite.data_list = (old_data, new_data)
 				return
 			
 			new_args = [(width, height)]
@@ -149,7 +151,8 @@ init -9000 python:
 			common_data = SpriteAnimationData(self.sprite, [], [], [])
 			common_data.image = im.mask(new_image, old_image, 1, 'a', 'ge', 'a', 1)
 			load_image(common_data.image)
-			common_data.xpos, common_data.ypos = xmin, ymin
+			common_data.xanchor, common_data.yanchor = new_data.xanchor, new_data.yanchor
+			common_data.xpos, common_data.ypos = xmin + get_absolute(new_data.xanchor, width), ymin + get_absolute(new_data.yanchor, height)
 			common_data.xsize, common_data.ysize = width, height
 			
 			self.sprite.data_list = (common_data, self.sprite.old_data, self.sprite.new_data)

@@ -167,13 +167,11 @@ init -1000 python:
 				tmp_image = data.res_image or data.image
 				if not tmp_image or data.real_alpha <= 0: continue
 				
-				xanchor, yanchor = data.real_xanchor, data.real_yanchor
-				
 				tmp = Object()
 				tmp.image  =  tmp_image
-				tmp.size   = (data.real_xsize * xzoom, data.real_ysize * yzoom)
-				tmp.anchor = (xanchor * xzoom, yanchor * yzoom)
-				tmp.pos    = (data.real_xpos + xanchor, data.real_ypos + yanchor) # real_pos already taked anchor, cancel it
+				tmp.size   = (data.real_xsize, data.real_ysize)
+				tmp.anchor = (data.real_xanchor, data.real_yanchor)
+				tmp.pos    = (data.real_xpos + data.real_xanchor, data.real_ypos + data.real_yanchor) # real_pos already taked anchor, cancel it
 				tmp.crop   = (data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop)
 				tmp.alpha  =  data.real_alpha
 				tmp.rotate =  data.real_rotate
@@ -198,6 +196,9 @@ screen sprites:
 	
 	$ sprites.images = sprites.get_datas()
 	
+	xzoom absolute(get_stage_width() ) / config.width  if config.width  else 1
+	yzoom absolute(get_stage_height()) / config.height if config.height else 1
+		
 	pos    (sprites.screen.new_data.xpos,       sprites.screen.new_data.ypos)
 	anchor (sprites.screen.new_data.xanchor,    sprites.screen.new_data.yanchor)
 	size   (sprites.screen.new_data.real_ysize, sprites.screen.new_data.real_xsize)

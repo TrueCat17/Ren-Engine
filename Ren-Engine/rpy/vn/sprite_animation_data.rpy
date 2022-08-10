@@ -45,7 +45,7 @@ init -9000 python:
 				p_alpha              = parent.real_alpha
 			else:
 				p_xzoom,   p_yzoom   = 1, 1
-				p_xsize,   p_ysize   = get_stage_width(),   get_stage_height()
+				p_xsize,   p_ysize   = config.width or get_stage_width(), config.height or get_stage_height()
 				p_xpos,    p_ypos    = 0, 0
 				p_xanchor, p_yanchor = 0, 0
 				p_rotate             = 0
@@ -72,7 +72,6 @@ init -9000 python:
 			
 			self.real_xsize = xsize * self.real_xzoom
 			self.real_ysize = ysize * self.real_yzoom
-			
 			
 			self.real_xanchor = get_absolute(self.xanchor, xsize) * self.real_xzoom
 			self.real_yanchor = get_absolute(self.yanchor, ysize) * self.real_yzoom
