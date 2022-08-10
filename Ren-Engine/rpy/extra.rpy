@@ -239,9 +239,13 @@ init -1000000 python:
 	can_exec_next_check_funcs = []
 	can_exec_next_skip_funcs = []
 	
+	func_that_stopped_scenario = None
+	
 	def can_exec_next_command():
+		global func_that_stopped_scenario
 		for func in can_exec_next_check_funcs:
 			if not func():
+				func_that_stopped_scenario = func
 				return False
 		return True
 	
