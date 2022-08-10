@@ -818,10 +818,10 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	const int angle = int(-String::toDouble(Algo::clear(args[2])));
 	double zoom = String::toDouble(Algo::clear(args[3]));
 	if (Math::doublesAreEq(zoom, 0)) {
-		Utils::outMsg("ImageManipulator::rotozoom", "zoom must be not equal 0");
+		Utils::outMsg("ImageManipulator::rotozoom", "zoom must not be 0");
 		zoom = 1;
 	}
-	if (Math::doublesAreEq(zoom, 1) && angle == 0) {
+	if (Math::doublesAreEq(zoom, 1) && (angle % 360) == 0) {
 		return img;
 	}
 
@@ -844,7 +844,7 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	const SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
 
 	SurfacePtr res(SDL_CreateRGBSurfaceWithFormat(0, resW, resH, 32, SDL_PIXELFORMAT_RGBA32),
-				   SDL_FreeSurface);
+	               SDL_FreeSurface);
 
 	SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
 	ScopeExit se([&]() { SDL_DestroyRenderer(renderer); });
@@ -1005,7 +1005,7 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 	if (img->w != mask->w || img->h != mask->h) {
 		const std::string imgSize = std::to_string(img->w) + "x" + std::to_string(img->h);
 		const std::string maskSize = std::to_string(mask->w) + "x" + std::to_string(mask->h);
-		Utils::outMsg("ImageManipulator::mask", "Mask sizes " + maskSize + " not equal image sizes " + imgSize + ":\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Mask sizes " + maskSize + " is not equal to image sizes " + imgSize + ":\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
@@ -1018,7 +1018,7 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 
 	const std::string valueStr = Algo::clear(args[4]);
 	if (!String::isNumber(valueStr)) {
-		Utils::outMsg("ImageManipulator::mask", "Value <" + valueStr + "> must be number:\n<" + String::join(args, ", ") + ">");
+		Utils::outMsg("ImageManipulator::mask", "Value <" + valueStr + "> must be a number:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 	const int value = int(String::toDouble(valueStr));
@@ -1198,12 +1198,12 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 		}
 	};
 	if (smallImage(w, h)) {
-		for (int y = 0; y < rotateH; ++y) {
+		for (int y = 0; y < h; ++y) {
 			lineToRotate(y);
 		}
 	}else {
 #pragma omp parallel for
-		for (int y = 0; y < rotateH; ++y) {
+		for (int y = 0; y < h; ++y) {
 			lineToRotate(y);
 		}
 	}
