@@ -398,7 +398,7 @@ screen dialogue_box_nvl:
 	vbox:
 		ypos 0.05
 		
-		spacing 0 if gui.nvl_height else gui.nvl_spacing
+		spacing 0 if gui.nvl_height else gui.get_int('nvl_spacing')
 		
 		python:
 			db.last_dialogue = db.dialogue + [(

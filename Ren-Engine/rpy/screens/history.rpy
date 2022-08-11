@@ -40,7 +40,7 @@ screen history:
 	
 	
 	python:
-		history.spacing = 0 if gui.history_height else gui.history_spacing
+		history.spacing = 0 if gui.history_height else gui.get_int('history_spacing')
 		history.text_size = max(gui.get_int('name_text_size'), gui.get_int('dialogue_text_size'))
 		
 		history.usual_xsize    = float(gui.get_int('history_text_xpos')    + gui.get_int('history_text_width')    + 70)
