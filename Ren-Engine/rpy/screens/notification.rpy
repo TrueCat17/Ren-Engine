@@ -1,14 +1,19 @@
 init -980 python:
 	def notification__out(msg):
+		obj = [str(msg), None, 1.0]
+		
 		show_screen('notification')
-		notification.msgs.append([str(msg), None, 1.0])
+		notification.msgs.append(obj)
+		
+		signals.add('enter_frame', SetDictFuncRes(obj, 1, get_game_time), times = 1)
 	
 	def notification__update():
 		i = 0
 		while i < len(notification.msgs):
 			msg, start_time, alpha = notification.msgs[i]
-			if not start_time:
-				start_time = notification.msgs[i][1] = get_game_time()
+			if start_time is None:
+				i += 1
+				continue
 			dtime = get_game_time() - start_time
 			
 			if dtime < notification.show_time:
