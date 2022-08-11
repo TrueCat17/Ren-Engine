@@ -58,8 +58,8 @@ init -9000 python:
 			
 			self.end_pause_time = 0
 			
-			self.start_changing_time = 0
-			self.end_changing_time = 0
+			self.start_changing_time = None
+			self.end_changing_time = None
 		
 		
 		def copy(self):
@@ -71,12 +71,12 @@ init -9000 python:
 			if now < self.end_pause_time:
 				return
 			
-			if self.start_changing_time:
+			if self.start_changing_time is not None:
 				self.update_changing()
 				if now <= self.end_changing_time:
 					return
 				else:
-					self.start_changing_time = 0
+					self.start_changing_time = None
 			
 			
 			if self.block:
