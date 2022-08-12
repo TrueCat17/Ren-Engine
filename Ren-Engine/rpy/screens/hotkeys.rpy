@@ -1,5 +1,5 @@
 init -900 python:
-	hotkeys.keymap = dict(
+	config.keymap = dict(
 		screenshot = ['P'],
 		console = ['shift_O'],
 		
@@ -13,9 +13,9 @@ init -900 python:
 		pause = ['ESCAPE'],
 	)
 	# to change/add:
-	#  hotkeys.keymap['quicksave'] = ['F5']
+	#  config.keymap['quicksave'] = ['F5']
 	
-	hotkeys.underlay.append(renpy.Keymap(
+	config.underlay.append(renpy.Keymap(
 		screenshot = make_screenshot,
 		console = console.show,
 		
@@ -30,22 +30,31 @@ init -900 python:
 
 
 init -901 python:
+	config.set_prop_is_not_persistent('keymap')
+	config.set_prop_is_not_persistent('underlay')
+	
+	config.underlay = []
+	
 	def hotkeys__init(screen_name):
 		hotkeys.prepared_keymap = {}
 		hotkeys.keys_to_listen = set()
-		for name, key_list in hotkeys.keymap.iteritems():
+		for name, key_list in config.keymap.iteritems():
+			if name == 'activate_sound':
+				out_msg('hotkeys.init', 'Name <activate_sound> is disallowed for hotkey')
+				continue
+			
 			for keys_str in key_list:
 				keys_str = keys_str.replace('K_', '').upper()
 				
 				keys = keys_str.split('_')
 				if len(keys) > 2 and hotkeys.only_one_mod_key:
-					out_msg('hotkeys.init', 'Using more than 1 mod key (CTRL, SHIFT or ALT) in hotkey <%s>' % keys_str)
+					out_msg('hotkeys.init', 'Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>' % keys_str)
 					continue
 				
 				ok = True
 				for key in keys[:-1]:
 					if key not in ('CTRL', 'SHIFT', 'ALT'):
-						out_msg('hotkeys.init', 'First key <%s> in hotkey <%s> is not CTRL, SHIFT or ALT' % (keys[0], keys_str))
+						out_msg('hotkeys.init', 'Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)' % (keys[0], keys_str))
 						ok = False
 				if not ok:
 					continue
@@ -69,7 +78,7 @@ init -901 python:
 				hotkeys.prepared_keymap[keys_str] = name
 				hotkeys.keys_to_listen.add(main_key)
 	
-	signals.add('show_screen', hotkeys__init, times=1)
+	signals.add('show_screen', hotkeys__init, times=1) # after all init blocks
 	
 	
 	def hotkeys__pressed(key):
@@ -95,12 +104,17 @@ init -901 python:
 		
 		name = hotkeys.prepared_keymap.get(key, None)
 		if name:
-			for i in hotkeys.underlay:
-				exec_funcs(i.get(name, None))
+			for i in config.underlay:
+				funcs = i.get(name, None)
+				if funcs is not None:
+					sound = i.get('activate_sound', None)
+					if sound:
+						renpy.play(sound, 'button_click')
+					exec_funcs(funcs)
 	
 	def hotkeys__get_key_for(func, get_list = False):
 		keys = []
-		for i in hotkeys.underlay:
+		for i in config.underlay:
 			for name, _func in i.iteritems():
 				if func is not _func: continue
 				
@@ -119,7 +133,6 @@ init -901 python:
 	# by default only 1 mod key (ctrl/shift/alt) available for no intersections with OS hotkeys
 	hotkeys.only_one_mod_key = True
 	hotkeys.ctrl = hotkeys.shift = hotkeys.alt = False
-	hotkeys.underlay = []
 	
 	hotkeys.keys = list(alphabet)
 	for i in xrange(12):
