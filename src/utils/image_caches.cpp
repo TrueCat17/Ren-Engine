@@ -212,7 +212,7 @@ TexturePtr ImageCaches::getTexture(SDL_Renderer *renderer, const SurfacePtr &sur
 		return it->second.second;
 	}
 
-	TexturePtr texture(SDL_CreateTextureFromSurface(renderer, surface.get()), SDL_DestroyTexture);
+	TexturePtr texture = SDL_CreateTextureFromSurface(renderer, surface.get());
 	if (texture) {
 		trimTexturesCache(surface);
 		textures[surface] = std::make_pair(Utils::getTimer(), texture);
@@ -308,7 +308,7 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 	for (SDL_Surface *surface : toDelete) {
 		std::vector<DisplayObject*> &vec = objs[surface];
 		for (DisplayObject *obj : vec) {
-			obj->surface.reset();
+			obj->surface = nullptr;
 		}
 
 		for (const std::string &path : paths[surface]) {
@@ -378,7 +378,7 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 	}
 
 	if (String::startsWith(realPath, "images/bg/black.")) {
-		res.reset(SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32), SDL_FreeSurface);
+		res = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32);
 		if (!res) {
 			Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
 			return nullptr;
@@ -392,7 +392,7 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 		return res;
 	}
 
-	res.reset(IMG_Load(realPath.c_str()), SDL_FreeSurface);
+	res = IMG_Load(realPath.c_str());
 	if (!res) {
 		Utils::outMsg("IMG_Load", IMG_GetError());
 		return nullptr;

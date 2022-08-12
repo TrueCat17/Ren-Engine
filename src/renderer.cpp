@@ -401,7 +401,7 @@ SurfacePtr Renderer::getScaled(const SurfacePtr &src, int width, int height) {
 	while (!scaled) {
 		Utils::sleep(0.001);
 	}
-	toScaleSurface.reset();
+	toScaleSurface = nullptr;
 
 	return scaledSurface;
 }

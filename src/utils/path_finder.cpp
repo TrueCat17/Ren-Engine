@@ -22,8 +22,7 @@ static void saveMap(std::vector<bool> map, int w, int h, const std::string &name
 	resPitch = (resPitch + 3) & ~3;//align to 4
 	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
 
-	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat),
-	               SDL_FreeSurface);
+	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 	res->flags &= Uint32(~SDL_PREALLOC);
 

@@ -75,7 +75,7 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	SurfacePtr tmpSurface;
 	if (style.enableOutline) {
 		//masks from TTF_RenderUTF8_Blended
-		tmpSurface.reset(SDL_CreateRGBSurface(0, *w, *h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000), SDL_FreeSurface);
+		tmpSurface = SDL_CreateRGBSurface(0, *w, *h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 
 		SDL_Color outlineColor;
 		outlineColor.r = Uint8(style.outlineColor >> 16);
@@ -561,7 +561,7 @@ void TextField::setLine(size_t numLine, const std::string &line, std::vector<Tex
 	if (lineRect.w) {
 		surface = SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA32);
 	}
-	SurfacePtr surfacePtr(surface, SDL_FreeSurface);
+	SurfacePtr surfacePtr = surface;
 
 	lineSurfaces.push_back(surfacePtr);
 

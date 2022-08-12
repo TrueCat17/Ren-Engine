@@ -94,8 +94,7 @@ SurfacePtr ImageManipulator::getNewNotClear(int w, int h, Uint32 format) {
 	pitch = (pitch + 3) & ~3;//align to 4
 	void *pixels = SDL_malloc(size_t(h * pitch));
 
-	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, SDL_BITSPERPIXEL(format), pitch, format),
-				   SDL_FreeSurface);
+	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, SDL_BITSPERPIXEL(format), pitch, format);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 
 	res->flags &= Uint32(~SDL_PREALLOC);
@@ -843,8 +842,7 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 
 	const SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
 
-	SurfacePtr res(SDL_CreateRGBSurfaceWithFormat(0, resW, resH, 32, SDL_PIXELFORMAT_RGBA32),
-	               SDL_FreeSurface);
+	SurfacePtr res = SDL_CreateRGBSurfaceWithFormat(0, resW, resH, 32, SDL_PIXELFORMAT_RGBA32);
 
 	SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
 	ScopeExit se([&]() { SDL_DestroyRenderer(renderer); });
@@ -854,7 +852,7 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 		return nullptr;
 	}
 
-	TexturePtr texture(SDL_CreateTextureFromSurface(renderer, img.get()), SDL_DestroyTexture);
+	TexturePtr texture = SDL_CreateTextureFromSurface(renderer, img.get());
 	if (!texture) {
 		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateTextureFromSurface", SDL_GetError());
 		return nullptr;
@@ -1484,8 +1482,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	resPitch = (resPitch + 3) & ~3;//align to 4
 	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
 
-	SurfacePtr res(SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat),
-	               SDL_FreeSurface);
+	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 	res->flags &= Uint32(~SDL_PREALLOC);
 
