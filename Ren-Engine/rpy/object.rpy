@@ -2,12 +2,19 @@ init -100000 python:
 	class Object:
 		def __init__(self, _obj = None, **kwords):
 			self.in_persistent = False
+			self.not_persistent_props = set()
 			
 			if _obj is not None:
 				for k, v in _obj.__dict__.iteritems():
 					self.__dict__[k] = v
 			for k, v in kwords.iteritems():
 				self.__dict__[k] = v
+		
+		def set_prop_is_not_persistent(self, prop, not_persistent = True):
+			if not_persistent:
+				self.not_persistent_props.add(prop)
+			else:
+				self.not_persistent_props.remove(prop)
 		
 		def has_key(self, attr):
 			return self.__dict__.has_key(attr)
@@ -25,15 +32,17 @@ init -100000 python:
 			return None
 		
 		def __setattr__(self, attr, value):
-			if not self.__dict__.has_key(attr) or self.__dict__[attr] is not value:
-				self.__dict__[attr] = value
+			if self.__dict__.has_key(attr) and self.__dict__[attr] is value:
+				return
+			
+			self.__dict__[attr] = value
+			
+			if self.in_persistent and attr not in self.not_persistent_props:
+				if isinstance(value, Object):
+					value.in_persistent = True
 				
-				if self.in_persistent:
-					if isinstance(value, Object):
-						value.in_persistent = True
-					
-					global persistent_need_save
-					persistent_need_save = True
+				global persistent_need_save
+				persistent_need_save = True
 		
 		def __delattr__(self, attr):
 			del self.__dict__[attr]
@@ -81,7 +90,10 @@ init -100000 python:
 		
 		# for pickle
 		def __getstate__(self):
-			return self.__dict__
+			res = dict(self.__dict__)
+			for prop in self.not_persistent_props:
+				del res[prop]
+			return res
 		def __setstate__(self, new_dict):
 			self.__dict__.update(new_dict)
 
