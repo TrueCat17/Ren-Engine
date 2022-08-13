@@ -37,31 +37,35 @@ init -901 python:
 	
 	def hotkeys__init(screen_name):
 		hotkeys.prepared_keymap = {}
-		hotkeys.keys_to_listen = set()
+		hotkeys.keys_to_listen = set(hotkeys.keypad_synonyms)
 		for name, key_list in config.keymap.iteritems():
 			if name == 'activate_sound':
-				out_msg('hotkeys.init', 'Name <activate_sound> is disallowed for hotkey')
+				out_msg('hotkeys.init', _('Name <activate_sound> is disallowed for hotkey'))
 				continue
 			
 			for keys_str in key_list:
 				keys_str = keys_str.replace('K_', '').upper()
 				
 				keys = keys_str.split('_')
+				if keys_str == '_' or (len(keys_str) > 2 and keys_str.endswith('__') and not keys_str.endswith('___')):
+					while keys and not keys[-1]:
+						keys.pop(-1)
+					keys.append('_')
 				if len(keys) > 2 and hotkeys.only_one_mod_key:
-					out_msg('hotkeys.init', 'Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>' % keys_str)
+					out_msg('hotkeys.init', _('Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>') % keys_str)
 					continue
 				
 				ok = True
 				for key in keys[:-1]:
 					if key not in ('CTRL', 'SHIFT', 'ALT'):
-						out_msg('hotkeys.init', 'Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)' % (keys[0], keys_str))
+						out_msg('hotkeys.init', _('Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)') % (keys[0], keys_str))
 						ok = False
 				if not ok:
 					continue
 				
 				main_key = keys[-1]
 				if main_key not in hotkeys.keys and main_key not in hotkeys.shift_to:
-					out_msg('hotkeys.init', 'Unexpected key <%s> in hotkey <%s>' % (main_key, keys_str))
+					out_msg('hotkeys.init', _('Unexpected key <%s> in hotkey <%s>') % (main_key, keys_str))
 					continue
 				
 				if main_key in hotkeys.shift_to:
@@ -83,14 +87,15 @@ init -901 python:
 	
 	def hotkeys__pressed(key):
 		add_shift = False
-		if hotkeys.shift:
+		if key in hotkeys.keypad_synonyms:
+			key = key[-1]
+			add_shift = hotkeys.shift
+		elif hotkeys.shift:
 			if key in hotkeys.shift_from:
 				index = hotkeys.shift_from.index(key)
 				key = hotkeys.shift_to[index]
 			else:
 				add_shift = True
-		elif key in hotkeys.keypad_synonyms:
-			key = key[-1]
 		
 		ctrl  = 'CTRL_'  if hotkeys.ctrl else ''
 		shift = 'SHIFT_' if add_shift    else ''
@@ -144,7 +149,6 @@ init -901 python:
 	])
 	
 	hotkeys.keypad_synonyms = ['KEYPAD +', 'KEYPAD -', 'KEYPAD *', 'KEYPAD /', 'KEYPAD =']
-	hotkeys.keys.extend(hotkeys.keypad_synonyms)
 	
 	hotkeys.shift_from = list("`1234567890-=,./;'[]\\")
 	hotkeys.shift_to   = list('~!@#$%^&*()_+<>?:"{}|')
