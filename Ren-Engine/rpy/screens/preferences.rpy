@@ -91,7 +91,7 @@ init -100 python:
 	# Elem of preferences.content['Your menu name'] -> hbox form list
 	# Elems from the list:
 	#  None
-	#  ['str', 'Your text', text_size = 25, xsize = -1, text_align = 'left']
+	#  ['str', 'Your text', text_size = -1, xsize = -1, text_align = 'left']
 	#  ['bool', 'Your text', function_for_get, function_for_set]
 	#  ['btn', 'Your text', (function_for_get, result) - mb None, function_for_set, size = (100, 25)]
 	#  ['bar', 'Your text', obj (None for global), 'prop' (mb func), min_value, max_value, function_for_minus, function_for_plus]
@@ -102,7 +102,7 @@ init -100 python:
 	#  Simplest example:
 	#   var_name = 123
 	#    "[var_name]" -> "123"
-	#  !t: "['text to translate'!t]:" -> _('text to translate')
+	#  !t: "['text to translate'!t]:" -> _('text to translate') + ":"
 	#  !i:
 	#   who = "Name"
 	#   welcome = "Hello, [who]!"
@@ -257,14 +257,20 @@ screen preferences:
 									text = interpolate_tags(str(text))
 							
 							if obj == 'str':
+								python:
+									if len(elem) <= 2 or elem[2] <= 0:
+										text_size = gui.get_int('interface_text_size')
+									else:
+										text_size = get_absolute(elem[2], get_stage_height())
+								
 								text text:
 									yalign 0.5
 									font         gui.interface_text_font
 									color        gui.get_int('interface_text_color')
 									outlinecolor gui.get_int('interface_text_outlinecolor')
-									text_size   gui.get_int('interface_text_size')   if len(elem) <= 2 else elem[2]
-									xsize                                         -1 if len(elem) <= 3 else elem[3]
-									text_align  gui.interface_text_xalign if len(elem) <= 4 else elem[4]
+									text_size  text_size
+									xsize      -1 if len(elem) <= 3 or elem[3] <= 0 else elem[3]
+									text_align gui.interface_text_xalign if len(elem) <= 4 else elem[4]
 							
 							elif obj == 'bool':
 								python:
