@@ -159,10 +159,12 @@ init -10000 python:
 			return auto
 		return persistent.slot_page
 	
+	def FileSave(slot = None, page = None):
+		return Function(renpy.save, slot, page)
 	def FileLoad(slot = None, page = None):
-		return Function(sl.load, slot, page)
+		return Function(renpy.load, slot, page)
 	def FileDelete(slot = None, page = None):
-		return Function(sl.delete, slot, page)
+		return Function(renpy.unlink_save, slot, page)
 	
 	def FileTime(slot = None, page = None, empty = ''):
 		res = slots.mtime_formatted(slot, page)

@@ -70,14 +70,14 @@ screen slots(name):
 				btns = []
 				if screen.name == 'load':
 					if renpy.can_load():
-						btns.append(['Load game', 1.0, True, slots.load])
+						btns.append(['Load game', 1.0, True, renpy.load])
 					else:
 						btns.append(['Load game', 0.7, False, None])
 				else:
-					btns.append(['Save game', 1.0, True, slots.save])
+					btns.append(['Save game', 1.0, True, renpy.save])
 				
-				if renpy.can_load(slots.selected):
-					btns.append(['Delete', 1.0, True, slots.delete])
+				if renpy.can_load():
+					btns.append(['Delete', 1.0, True, renpy.delete])
 				else:
 					btns.append(['Delete', 0.7, False, None])
 			
