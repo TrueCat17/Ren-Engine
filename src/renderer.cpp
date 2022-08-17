@@ -1,6 +1,4 @@
 #include "renderer.h"
-#include "utils/scope_exit.h"
-
 
 #include <thread>
 #include <map>
@@ -19,6 +17,7 @@
 
 #include "utils/math.h"
 #include "utils/image_caches.h"
+#include "utils/scope_exit.h"
 #include "utils/stage.h"
 #include "utils/utils.h"
 
