@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "utils/scope_exit.h"
 
 
 #include <thread>
@@ -540,7 +541,17 @@ static void loop() {
 		Renderer::needToRedraw = false;
 
 
-		std::lock_guard g(Renderer::renderMutex);
+		Renderer::renderMutex.lock();
+		ScopeExit se([]() {
+			Renderer::renderMutex.unlock();
+
+			if (GV::inGame) {
+				//pause between loop iterations for no long locks
+				// when rendering takes the whole frame time (on software renderer, for example)
+				//with long locks - (keyboard) event processing is bad
+				Utils::sleep(0.001, false);
+			}
+		});
 
 		{
 			std::map<SurfacePtr, TexturePtr> cache;
