@@ -1,6 +1,10 @@
 init python:
 	common_cam_x, common_cam_y = 0, 0
-	common_k = 1.0
+	
+	common_k = absolute(1.0)
+	common_k_min = absolute(0.25)
+	common_k_max = absolute(2.0)
+	
 	common_speed = 25
 	
 	locations_coords = {}
@@ -41,26 +45,29 @@ screen all_locations:
 	zorder -100
 	
 	image im.rect('#444'):
-		size (1.0, 1.0)
+		size 1.0
 	
 	key 'w' action AddVariable('common_cam_y', -common_speed)
 	key 'a' action AddVariable('common_cam_x', -common_speed)
 	key 's' action AddVariable('common_cam_y', +common_speed)
 	key 'd' action AddVariable('common_cam_x', +common_speed)
 	
-	key '9' action SetVariable('common_k', max(common_k - 0.25, 0.25))
-	key '0' action SetVariable('common_k', min(common_k + 0.25, 2.00))
+	for key in '-_':
+		key key action SetVariable('common_k', max(common_k - common_k_min, common_k_min))
+	for key in '+=':
+		key key action SetVariable('common_k', min(common_k + common_k_min, common_k_max))
 	
 	null:
-		xpos int(-common_cam_x * common_k)
-		ypos int(-common_cam_y * common_k)
+		zoom common_k
+		xpos -common_cam_x
+		ypos -common_cam_y
 		
 		for name, location in rpg_locations.iteritems():
-			$ k = 128.0 / max(location.xsize, location.ysize)
+			$ k = absolute(128.0) / max(location.xsize, location.ysize)
 			
 			button:
-				pos (int(location.x * common_k), int(location.y * common_k))
-				size (int(k * location.xsize * common_k), int(k * location.ysize * common_k))
+				pos (location.x, location.y)
+				size (location.xsize * k, location.ysize * k)
 				
 				ground location.main()
 				hover  location.main()

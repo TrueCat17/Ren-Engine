@@ -75,9 +75,12 @@ init python:
 	context_menu.pos = 0, 0
 	context_menu.items = []
 	context_menu.selected_index = None
+	
+	hotkeys.disable_key_on_screens['ESCAPE'].append('context_menu')
 
 
 screen context_menu:
+	modal True
 	zorder 100
 	
 	key 'ESCAPE' action [hide_screen('context_menu'), info.set_msg('')]

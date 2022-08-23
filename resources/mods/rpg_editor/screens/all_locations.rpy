@@ -8,7 +8,11 @@ init python:
 	mouse_moved = True
 	
 	common_cam_x, common_cam_y = 0, 0
-	common_k = 1.0
+	
+	common_k = absolute(1.0)
+	common_k_min = absolute(0.25)
+	common_k_max = absolute(2.0)
+	
 	common_speed = 25
 	
 	start_x, start_y = common_cam_x, common_cam_y
@@ -42,8 +46,10 @@ screen all_locations:
 	key 's' action [AddVariable('common_cam_y', +common_speed), AddVariable('start_y', +common_speed)]
 	key 'd' action [AddVariable('common_cam_x', +common_speed), AddVariable('start_x', +common_speed)]
 	
-	key '9' action SetVariable('common_k', max(common_k - 0.25, 0.25))
-	key '0' action SetVariable('common_k', min(common_k + 0.25, 2.00))
+	for key in '-_':
+		key key action SetVariable('common_k', max(common_k - common_k_min, common_k_min))
+	for key in '+=':
+		key key action SetVariable('common_k', min(common_k + common_k_min, common_k_max))
 	
 	python:
 		x, y = int(-common_cam_x * common_k), int(-common_cam_y * common_k)
@@ -74,6 +80,7 @@ screen all_locations:
 	
 	null:
 		pos (x, y)
+		zoom common_k
 		
 		for name, location in rpg_locations.iteritems():
 			if location.x is None:
@@ -81,8 +88,8 @@ screen all_locations:
 			
 			$ preview = get_preview(name)
 			button:
-				pos (int(location.x * common_k), int(location.y * common_k))
-				size (int(get_image_width(preview) * common_k), int(get_image_height(preview) * common_k))
+				pos (location.x, location.y)
+				size get_image_size(preview)
 				
 				ground preview
 				hover preview

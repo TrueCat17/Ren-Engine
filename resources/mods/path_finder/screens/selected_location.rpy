@@ -1,3 +1,6 @@
+init python:
+	hotkeys.disable_key_on_screens['ESCAPE'].append('selected_location')
+
 screen selected_location:
 	key 'ESCAPE' action unselect_location
 	

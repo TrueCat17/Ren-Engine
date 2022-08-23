@@ -13,9 +13,12 @@ init python:
 		technology_names.append(building)
 	
 	technology_costs = [0, 100, 300, 900, 2700]
+	
+	hotkeys.disable_key_on_screens['ESCAPE'].append('research')
 
 
 screen research:
+	modal True
 	zorder 100
 	
 	key 'ESCAPE' action hide_screen('research')

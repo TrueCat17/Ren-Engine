@@ -31,6 +31,8 @@ init python:
 	
 	def close_help():
 		hide_screen('help')
+	
+	hotkeys.disable_key_on_screens['ESCAPE'].append('help')
 
 
 screen help:
@@ -42,7 +44,7 @@ screen help:
 	button:
 		ground im.rect('#000')
 		hover  im.rect('#000')
-		size (1.0, 1.0)
+		size  1.0
 		alpha 0.3
 		mouse False
 		action close_help

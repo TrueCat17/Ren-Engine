@@ -21,7 +21,7 @@ screen control:
 	vbox:
 		spacing control.indent
 		size (control.xsize - 2 * control.indent, get_stage_height() - info.ysize)
-		xpos (get_stage_width() - control.xsize + control.indent)
+		xpos get_stage_width() - control.xsize + control.indent
 		ypos control.indent
 		
 		null:

@@ -38,6 +38,8 @@ init python:
 	help_viewport_content_height = 1500
 	
 	slider_v_init('help', help_viewport_content_height, help_viewport_ysize)
+	
+	hotkeys.disable_key_on_screens['ESCAPE'].append('help')
 
 
 screen help:
@@ -52,7 +54,7 @@ screen help:
 	button:
 		ground im.rect('#000')
 		hover  im.rect('#000')
-		size (1.0, 1.0)
+		size  1.0
 		alpha 0.3
 		mouse False
 		action close_help

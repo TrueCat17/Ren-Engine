@@ -99,6 +99,10 @@ init python:
 
 
 screen ask_str:
+	modal True
+	zorder 10000
+	
+	
 	key 'ESCAPE' action ask_exit
 	
 	$ ask_ctrl  = False
@@ -125,9 +129,6 @@ screen ask_str:
 	
 	key 'RETURN'    action ask_ready
 	
-	
-	modal True
-	zorder 10000
 	
 	button:
 		ground 'images/bg/black.jpg'

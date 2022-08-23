@@ -111,4 +111,6 @@ screen info:
 				style     'btn'
 				xsize     info.btn_size
 				text_size info.text_size
-				action pause_screen.show(ignore_checks=True)
+				hovered   info.set_msg('Esc')
+				unhovered info.set_msg_if_prev('', 'Esc')
+				action pause_screen.show()

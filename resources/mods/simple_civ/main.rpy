@@ -2,7 +2,6 @@ init 10 python:
 	set_fps(20)
 	set_can_mouse_hide(False)
 	
-	pause_screen.disable = True
 	start_screens = ['hotkeys', 'debug_screen', 'map', 'control', 'info']
 	
 	style.btn = Style(style.textbutton)

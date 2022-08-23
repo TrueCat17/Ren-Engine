@@ -12,6 +12,7 @@ screen main_menu:
 	image back_path:
 		size 1.0
 	
+	
 	vbox:
 		align (0.5, 0.25)
 		spacing 5

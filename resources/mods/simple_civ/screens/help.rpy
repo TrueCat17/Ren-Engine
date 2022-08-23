@@ -148,9 +148,12 @@ init python:
 	slider_v_init('help', help.viewport_content_height, help.viewport_ysize)
 	
 	signals.add('resized_stage', help.on_resize)
+	
+	hotkeys.disable_key_on_screens['ESCAPE'].append('help')
 
 
 screen help:
+	modal True
 	zorder 1000001
 	
 	$ slider_v_set('help')

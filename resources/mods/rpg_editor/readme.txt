@@ -22,8 +22,8 @@ You can move locations:
 	4. Release LMB after end moving.
 Location position relatively others need only for ease edit, it is not important in game.
 
-Keys W, A, S and D moves camera.
-Keys 9 and 0 - down and up scale.
+Keys {color=FF0000}W{/color}, {color=FF0000}A{/color}, {color=FF0000}S{/color} and {color=FF0000}D{/color} moves camera.
+Keys {color=FF0000}-{/color} and {color=FF0000}+{/color} - down and up scale.
 
 Click on location - edit it.
 
@@ -68,7 +68,7 @@ Tab <Objects> shows list of registered objects:
 	Use only for shows images and names.
 	Arrows up/down rewinds this list.
 
-Keys W, A, S, D, 9 and 0 works as on global screen.
+Keys {color=FF0000}W{/color}, {color=FF0000}A{/color}, {color=FF0000}S{/color}, {color=FF0000}D{/color}, {color=FF0000}-{/color} and {color=FF0000}+{/color} works as on global screen.
 Key Esc and button <Unselect> - pull off selection of place or location (last - return to global screen).
 
 
