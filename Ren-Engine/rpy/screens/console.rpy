@@ -259,13 +259,14 @@ init -995 python:
 	
 	def console__watch_add(code):
 		try:
-			cmpl = compile(code, 'Console', 'eval')
+			eval_obj = Eval(code, 'Console', 1)
 		except Exception as e:
 			console.out('Compilation Failed: ' + str(e))
+			return
 		
 		if not console.to_watch:
 			show_screen('console_watching')
-		console.to_watch.append((code, cmpl))
+		console.to_watch.append((code, eval_obj))
 	
 	def console__watch_del(code_to_del):
 		for code, cmpl in console.to_watch:
@@ -322,36 +323,66 @@ init -995 python:
 init:
 	$ hotkeys.disable_on_screens.append('console')
 	
+	
+	
 	style console_text is text:
 		font         'Consola'
 		color        0xFFFFFF
 		outlinecolor 0
 		text_size    20
+	
+	python:
+		console.watching_image = im.rect('#0006')
+		console.watching_xalign = 1.0
+		console.watching_yalign = 0.0
+		console.watching_xoffset = -30
+		console.watching_yoffset = +30
+		console.watching_xindent = 20
+		console.watching_yindent = 20
+		console.watching_xsize_max = 0.5
+		console.watching_calced_color = '#FFFF00'
+
 
 
 screen console_watching:
 	zorder 10001
 	
-	image im.rect('#0006'):
-		align (1.0, 0.0)
-		size  (0.4, 0.3)
+	image console.watching_image:
+		xanchor console.watching_xalign
+		yanchor console.watching_yalign
+		
+		xpos get_absolute(console.watching_xalign, get_stage_width())  + console.watching_xoffset
+		ypos get_absolute(console.watching_yalign, get_stage_height()) + console.watching_yoffset
 		
 		python:
+			console.watching_xsize_max_real = get_absolute(console.watching_xsize_max, get_stage_width()) - console.watching_xindent * 2
+			
 			console.watching_text = []
-			for code, cmpl in console.to_watch:
+			console.watching_xsize = 0
+			console.watching_ysize = 0
+			for code, eval_obj in console.to_watch:
+				res_start = code + ': '
 				try:
-					res = str(eval(cmpl)).replace('{', '{{')
+					res_end = str(eval_obj()).replace('{', '{{')
 				except:
-					res = 'Eval Failed'
-				console.watching_text.append(code + ': ' + res)
+					res_end = 'Eval Failed'
+				console.watching_text.append(res_start + '{color=' + console.watching_calced_color + '}' + res_end + '{/color}')
+				console.watching_xsize = max(console.watching_xsize, utf8.width(res_start + res_end, style.console_text.text_size))
+				if console.watching_xsize > 0:
+					console.watching_ysize += int(math.ceil(console.watching_xsize / console.watching_xsize_max_real)) * style.console_text.text_size
+			
+			console.watching_xsize = min(console.watching_xsize, console.watching_xsize_max_real)
+		
+		xsize console.watching_xsize + console.watching_xindent * 2
+		ysize console.watching_ysize + console.watching_yindent * 2
 		
 		vbox:
-			align (0.5, 0.5)
-			size  (0.35, 0.25)
+			align 0.5
 			
 			for text in console.watching_text:
 				text text:
-					text_size 20
+					style 'console_text'
+					xsize console.watching_xsize
 
 
 screen console:

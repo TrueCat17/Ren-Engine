@@ -24,8 +24,11 @@ init -10000 python:
 	
 	
 	class EvalObject(Object):
-		def __init__(self, code, mode, depth = 0):
-			file_name, num_line = get_file_and_line(depth + 1)
+		def __init__(self, code, mode, depth = 0, file_name = None, num_line = None):
+			if file_name is None:
+				file_name = get_filename(depth + 1)
+			if num_line is None:
+				num_line = get_numline(depth + 1)
 			Object.__init__(self, code = code, mode = mode, file_name = file_name, num_line = num_line)
 			self.compile()
 		def __call__(self):
@@ -58,12 +61,12 @@ init -10000 python:
 			self.compile()
 	
 	# for get value: Eval("2 + 3")() -> 5
-	def Eval(code):
-		return EvalObject(code, 'eval', 1)
+	def Eval(code, file_name = None, num_line = None):
+		return EvalObject(code, 'eval', 1, file_name, num_line)
 	
 	# for exec code: Exec("v = f(2, 3)")() -> None
-	def Exec(code):
-		return EvalObject(code, 'exec', 1)
+	def Exec(code, file_name = None, num_line = None):
+		return EvalObject(code, 'exec', 1, file_name, num_line)
 	
 	
 	_undefined = object()
