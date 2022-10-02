@@ -27,6 +27,8 @@ init -1001 python:
 		global sprite_time_rgb, location_time_rgb
 		sprite_time_rgb   = times[name]['sprite']
 		location_time_rgb = times[name]['location']
+		
+		signals.send('time', name)
 	
 	
 	make_time('day') # def day_time
