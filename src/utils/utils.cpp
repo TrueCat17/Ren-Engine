@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <fstream>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -27,6 +28,22 @@
 
 static std::map<std::string, Node*> declAts;
 
+
+static std::string versionStr;
+std::string Utils::getVersion() {
+	if (versionStr.empty()) {
+		std::ifstream is("../Ren-Engine/version", std::ios_base::binary);
+		while (!is.eof()) {
+			std::getline(is, versionStr);
+			if (!versionStr.empty()) break;
+		}
+
+		if (versionStr.empty()) {
+			versionStr = "None";
+		}
+	}
+	return versionStr;
+}
 
 void Utils::setThreadName([[maybe_unused]] std::string name) {
 #ifndef __WIN32__ //suspend on wine

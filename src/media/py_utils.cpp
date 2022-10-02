@@ -148,6 +148,7 @@ void PyUtils::init() {
 		PyObject *builtinDict = PyModule_GetDict(builtinModule);
 		PyDict_SetItemString(builtinDict, "absolute", (PyObject*)&PyAbsolute_Type);
 	}
+	setGlobalFunc("get_engine_version", Utils::getVersion);
 
 	setGlobalValue("need_save", false);
 	setGlobalValue("need_screenshot", false);

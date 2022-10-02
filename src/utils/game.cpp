@@ -249,6 +249,15 @@ void Game::save() {
 
 
 
+	{//save python global-vars
+		std::string res = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__,
+		    "pickling.save_global_vars('" + fullPath + "/py_globals')", true);
+		if (res != "True") {
+			return;
+		}
+	}
+
+
 	{//save stack
 		std::ofstream stackFile(fullPath + "/stack", std::ios::binary);
 
@@ -351,11 +360,6 @@ void Game::save() {
 
 			ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
 		}
-	}
-
-
-	{//save python global-vars
-		PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_global_vars('" + fullPath + "/py_globals')");
 	}
 }
 

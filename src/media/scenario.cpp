@@ -159,7 +159,7 @@ static void restoreScreens(const std::string &loadPath) {
 	std::vector<std::string> startScreensVec;
 	if (!loadPath.empty()) {
 		PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__,
-		              "load_global_vars('" + loadPath + "/py_globals')");
+		              "pickling.load_global_vars('" + loadPath + "/py_globals')");
 
 		startScreensVec = Game::loadInfo(loadPath);
 	}else {

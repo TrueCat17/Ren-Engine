@@ -36,27 +36,6 @@
 #include "utils/string.h"
 #include "utils/utils.h"
 
-static std::string versionStr;
-static std::string getVersion() {
-	if (versionStr.empty()) {
-		std::string major = "0";
-		std::string minor = "9";
-		std::string micro = "6";
-
-		std::string date = __DATE__;
-
-		std::string months = "JanFebMarAprMayJunJulAugSepOctNovDec";
-		size_t monthInt = months.find(date.substr(0, 3)) / 3 + 1;
-		std::string month = std::string() + char((monthInt / 10) + '0') + char((monthInt % 10) + '0');
-
-		std::string day = (date[4] == ' ') ? ('0' + date.substr(5, 1)) : date.substr(4, 2);
-		std::string year = date.substr(7, 4);
-
-		versionStr = major + "." + minor + "." + micro + "-" + year + "." + month + "." + day;
-	}
-	return versionStr;
-}
-
 
 
 static std::string rootDirectory;
@@ -579,7 +558,7 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 	}
 	for (const char *i : { "--version", "-version", "-ver", "-v", "v" }) {
 		if (resources == i) {
-			std::cout << "Ren-Engine " << getVersion() << '\n';
+			std::cout << "Ren-Engine " << Utils::getVersion() << '\n';
 			return true;
 		}
 	}
@@ -604,7 +583,7 @@ int main(int argc, char **argv) {
 		if (init()) {
 			return 0;
 		}
-		Logger::logEvent("Ren-Engine (version " + getVersion() + ") Initing", Utils::getTimer() - initStartTime);
+		Logger::logEvent("Ren-Engine (version " + Utils::getVersion() + ") Initing", Utils::getTimer() - initStartTime);
 
 		std::string platform = SDL_GetPlatform();
 		Logger::log("OS: " + platform);

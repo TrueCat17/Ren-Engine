@@ -12,6 +12,8 @@ class Node;
 
 class Utils {
 public:
+	static std::string getVersion();
+
 	static void setThreadName(std::string name);
 
 	static std::string getClipboardText();

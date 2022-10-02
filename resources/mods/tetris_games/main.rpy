@@ -2,6 +2,7 @@
 
 init -100 python:
 	day_time()
+	quick_menu = False
 	
 	tg_pause = False
 	

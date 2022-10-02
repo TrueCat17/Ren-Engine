@@ -75,7 +75,7 @@ init python:
 		global tg_snake_fail, tg_snake_score, tg_snake_direction_changed
 		tg_snake_direction_changed = False
 		
-		if tg_snake_fail or save_screenshotting:
+		if tg_snake_fail:
 			return
 		
 		to_x, to_y = tg_snake_list[-1]

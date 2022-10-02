@@ -11,10 +11,19 @@ init -100000 python:
 				self.__dict__[k] = v
 		
 		def set_prop_is_not_persistent(self, prop, not_persistent = True):
+			changed = False
 			if not_persistent:
-				self.not_persistent_props.add(prop)
+				changed = prop not in self.not_persistent_props
+				if changed:
+					self.not_persistent_props.add(prop)
 			else:
-				self.not_persistent_props.remove(prop)
+				changed = prop in self.not_persistent_props
+				if changed:
+					self.not_persistent_props.remove(prop)
+			
+			if changed and self.in_persistent:
+				global persistent_need_save
+				persistent_need_save = True
 		
 		def has_key(self, attr):
 			return self.__dict__.has_key(attr)
@@ -58,7 +67,7 @@ init -100000 python:
 		
 		def __delattr__(self, attr):
 			del self.__dict__[attr]
-			if self.in_persistent:
+			if self.in_persistent and attr not in self.not_persistent_props:
 				global persistent_need_save
 				persistent_need_save = True
 		
@@ -104,10 +113,20 @@ init -100000 python:
 		# for pickle
 		def __getstate__(self):
 			res = dict(self.__dict__)
+			if not res['in_persistent']:
+				del res['in_persistent']
+			if not res['not_persistent_props']:
+				del res['not_persistent_props']
+			
 			for prop in self.not_persistent_props:
 				if prop in res:
 					del res[prop]
 			return res
 		def __setstate__(self, new_dict):
+			if 'in_persistent' not in new_dict:
+				new_dict['in_persistent'] = False
+			if 'not_persistent_props' not in new_dict:
+				new_dict['not_persistent_props'] = set()
+			
 			self.__dict__.update(new_dict)
 

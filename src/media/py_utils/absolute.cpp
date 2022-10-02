@@ -214,9 +214,22 @@ static PyNumberMethods asNumber = {
 
 
 static PyObject* richcompare(PyObject *pyA, PyObject *pyB, int op) {
+	bool res = false;
+	if (pyB == Py_None) {
+		     if (op == Py_LT) res = false;
+		else if (op == Py_LE) res = false;
+		else if (op == Py_EQ) res = false;
+		else if (op == Py_NE) res = true;
+		else if (op == Py_GT) res = true;
+		else if (op == Py_GE) res = true;
+
+		PyObject *pyRes = res ? Py_True : Py_False;
+		Py_INCREF(pyRes);
+		return pyRes;
+	}
+
 	PREPARE_DOUBLES
 
-	bool res = false;
 	     if (op == Py_LT) res = a < b;
 	else if (op == Py_LE) res = a <= b;
 	else if (op == Py_EQ) res = Math::doublesAreEq(a, b);
