@@ -14,7 +14,7 @@ init -995 python:
 		persistent.console_commands = []
 		persistent.console_text = 'Press Esc to exit, type help for help'
 	
-	if not persistent.console_commands or not persistent.console_text:
+	if persistent.console_commands is None or not persistent.console_text:
 		console__clear()
 	
 	

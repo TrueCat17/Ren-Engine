@@ -144,7 +144,7 @@ init -100 python:
 			['btn', '->', None, preferences.next_autosave_time, 25],
 		],
 		None,
-		[['bool', '["Show FPS"!t] [hotkeys.get_key_for(debug_screen.next_visible_mode)]', Function(getattr, config, 'debug_screen_visible_mode'), debug_screen.toggle_fps]],
+		[['bool', '["Show FPS"!t] [hotkeys.get_key_for(debug_screen.next_visible_mode)]', GetSetAttr('config.debug_screen_visible_mode'), debug_screen.toggle_fps]],
 	]
 	
 	preferences.content['Language'] = []

@@ -115,6 +115,9 @@ init -10000 python:
 		else:
 			setattr(obj, attr, value)
 	
+	def GetSetAttr(attrs_str, value = _undefined, obj = None):
+		return Function(getset_attr, attrs_str, value = value, obj = obj)
+	
 	class SetVariable(Object):
 		def __init__(self, attrs_str, value):
 			Object.__init__(self, attrs_str = attrs_str, value = value)
@@ -202,4 +205,3 @@ init -10000 python:
 		def __call__(self):
 			obj = self.obj if self.obj is not None else globals()
 			obj[self.var_name] = self.func()
-	

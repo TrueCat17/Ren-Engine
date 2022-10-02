@@ -329,39 +329,39 @@ init -1001 python:
 		save_image(image, path, str(width and int(width)), str(height and int(height)))
 	
 	
-	im__Scale = im__scale
-	im__FactorScale = im__factor_scale
-	im__RendererScale = im__renderer_scale
-	im__Crop = im__crop
-	
-	im__Composite = im__composite
-	
-	im__Flip = im__flip
-	
-	im__MatrixColor = im__matrix_color
-	im__Grayscale = im__grayscale
-	im__Sepia = im__sepia
-	
-	im__ReColor = im__Recolor = im__recolor
-	im__Color = im__color
-	im__Alpha = im__alpha
-	
-	im__Rotozoom = im__RotoZoom = im__rotozoom
-	
-	im__Mask = im__mask
-	im__AlphaMask = im__alpha_mask
-	
-	im__BlurH = im__blur_h
-	im__BlurV = im__blur_v
-	im__Blur = im__blur
-	im__MotionBlur = im__motion_blur
-	
-	im__Rect = im__rect
-	im__Circle = im__circle
-	im__Bar = im__bar
-	
-	im__Save = im__save
-	
 	
 	build_object('im')
+	
+	im.Scale = im.scale
+	im.FactorScale = im.factor_scale
+	im.RendererScale = im.renderer_scale
+	im.Crop = im.crop
+	
+	im.Composite = im.composite
+	
+	im.Flip = im.flip
+	
+	im.MatrixColor = im.matrix_color
+	im.Grayscale = im.grayscale
+	im.Sepia = im.sepia
+	
+	im.ReColor = im.Recolor = im.recolor
+	im.Color = im.color
+	im.Alpha = im.alpha
+	
+	im.Rotozoom = im.RotoZoom = im.rotozoom
+	
+	im.Mask = im.mask
+	im.AlphaMask = im.alpha_mask
+	
+	im.BlurH = im.blur_h
+	im.BlurV = im.blur_v
+	im.Blur = im.blur
+	im.MotionBlur = im.motion_blur
+	
+	im.Rect = im.rect
+	im.Circle = im.circle
+	im.Bar = im.bar
+	
+	im.Save = im.save
 

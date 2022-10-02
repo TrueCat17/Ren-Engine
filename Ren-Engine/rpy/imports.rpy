@@ -1,4 +1,4 @@
-init -100001 python:
+init -1000001 python:
 	import os
 	import sys
 	import time
@@ -8,6 +8,7 @@ init -100001 python:
 	import cPickle as pickle
 	import traceback
 	import itertools
+	import types
 	
 	from collections import defaultdict
 	

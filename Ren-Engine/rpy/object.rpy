@@ -32,8 +32,20 @@ init -100000 python:
 			return None
 		
 		def __setattr__(self, attr, value):
-			if self.__dict__.has_key(attr) and self.__dict__[attr] is value:
-				return
+			if self.__dict__.has_key(attr):
+				old = self.__dict__[attr]
+				if type(old) in simple_types:
+					dont_change = type(old) is type(value) and old == value
+				else:
+					dont_change = old is value
+					# 'is', not '==', because code (for example):
+					#    obj.prop = []
+					#    ...
+					#    obj.prop = array = []
+					#    array.append(123)
+					#    print obj.prop # [123], not []
+				if dont_change:
+					return
 			
 			self.__dict__[attr] = value
 			
@@ -84,6 +96,7 @@ init -100000 python:
 		def get_props(self, get_list = False):
 			keys = self.__dict__.keys()
 			keys.remove('in_persistent')
+			keys.remove('not_persistent_props')
 			
 			return keys if get_list else ' '.join(keys)
 		
@@ -92,7 +105,8 @@ init -100000 python:
 		def __getstate__(self):
 			res = dict(self.__dict__)
 			for prop in self.not_persistent_props:
-				del res[prop]
+				if prop in res:
+					del res[prop]
 			return res
 		def __setstate__(self, new_dict):
 			self.__dict__.update(new_dict)

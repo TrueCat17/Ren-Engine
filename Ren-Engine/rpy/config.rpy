@@ -3,10 +3,25 @@ init -1100 python:
 	start_screens = ['hotkeys', 'debug_screen', 'dialogue_box']
 	
 	
+	
 	config = renpy.config
+	
+	
+	config.set_prop_is_not_persistent('enable_language_autodetect')
+	config.set_prop_is_not_persistent('default_language')
+	config.set_prop_is_not_persistent('thumbnail_width')
+	
+	config.set_prop_is_not_persistent('long_next_is_skipping')
+	config.set_prop_is_not_persistent('has_quicksave')
+	config.set_prop_is_not_persistent('has_autosave')
+	
+	config.set_prop_is_not_persistent('width')
+	config.set_prop_is_not_persistent('height')
+	
 	
 	config.enable_language_autodetect = True
 	config.default_language = 'english'
+	
 	
 	# height calculate: width / get_from_hard_config("window_w_div_h", float)
 	config.thumbnail_width = 480
