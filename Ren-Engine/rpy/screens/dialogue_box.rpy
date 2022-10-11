@@ -48,31 +48,53 @@ init -1000 python:
 		return index, symbols, tag, value
 	
 	
+	def db__update_styles(local_styles = None):
+		if local_styles is None:
+			local_styles = db.local_styles or {}
+		db.local_styles = local_styles
+		
+		for style in ('dialogue_box', 'dialogue_text', 'name_box', 'name_text'):
+			props = []
+			for prop in ('xpos', 'ypos', 'width', 'height'):
+				props += [prop, prop + '_min', prop + '_max']
+			
+			if style.endswith('text'):
+				props += ['font', 'size', 'size_min', 'size_max', 'color', 'outlinecolor', 'prefix', 'suffix']
+			else:
+				props += ['bg']
+			
+			for prop in props:
+				prop = style + '_' + prop
+				db[prop] = (local_styles if local_styles.has_key(prop) else gui)[prop]
+				if prop.endswith('color'):
+					db[prop] = color_to_int(db[prop])
+				elif prop.endswith('bg') and callable(db[prop]):
+					db[prop] = db[prop]()
+		
+		for style in ('dialogue_button', 'dialogue_menu_button'):
+			props = []
+			for prop in ('width', 'height') + (('spacing', 'yalign') if style == 'dialogue_button' else ('xpos', 'ypos', 'xanchor', 'yanchor')):
+				props += [prop, prop + '_min', prop + '_max']
+			
+			for prop in props:
+				prop = style + '_' + prop
+				db[prop] = (local_styles if local_styles.has_key(prop) else gui)[prop]
+		
+		for style in ('prev', 'next', 'menu_button'):
+			for prop in ('ground', 'hover'):
+				prop = 'dialogue_' + style + '_' + prop
+				value = (local_styles if local_styles.has_key(prop) else gui)[prop]
+				if callable(value):
+					value = value()
+				db[prop] = value
+	
 	def db__show_text(name, text, local_styles):
 		if name is None and db.dialogue_text is None:
 			name = ''
 			local_styles = narrator
 			out_msg('db.show_text', "Don't use <extend> character before usual character to say text")
 		
-		if name is not None:
-			db.local_styles = local_styles
-			for style in ('dialogue_box', 'dialogue_text', 'name_box', 'name_text'):
-				props = []
-				for prop in ('xpos', 'ypos', 'width', 'height'):
-					props += [prop, prop + '_min', prop + '_max']
-				
-				if style.endswith('text'):
-					props += ['font', 'size', 'size_min', 'size_max', 'color', 'outlinecolor', 'prefix', 'suffix']
-				else:
-					props += ['bg']
-				
-				for prop in props:
-					prop = style + '_' + prop
-					db[prop] = (local_styles if local_styles.has_key(prop) else gui)[prop]
-					if prop.endswith('color'):
-						db[prop] = color_to_int(db[prop])
-					elif prop.endswith('bg') and callable(db[prop]):
-						db[prop] = db[prop]()
+		db.update_styles(local_styles)
 		
 		db.pause_after_text = 0
 		db.pause_end = 0
@@ -133,16 +155,16 @@ init -1000 python:
 		window_show()
 	
 	
-	def db__update():
+	def db__recalc_props():
 		if db.local_styles:
-			db._dialogue_button_spacing = gui.get_int('dialogue_button_spacing')
-			db._dialogue_button_width = gui.get_int('dialogue_button_width')
-			db._dialogue_button_height = gui.get_int('dialogue_button_height')
+			db._dialogue_button_spacing = gui.get_int('dialogue_button_spacing', obj = db)
+			db._dialogue_button_width = gui.get_int('dialogue_button_width', obj = db)
+			db._dialogue_button_height = gui.get_int('dialogue_button_height', obj = db)
 			if db._dialogue_button_width <= 0 or db._dialogue_button_height <= 0:
 				db._dialogue_button_width = db._dialogue_button_height = db._dialogue_button_spacing = 0
 			
-			db._dialogue_menu_button_width  = gui.get_int('dialogue_menu_button_width')
-			db._dialogue_menu_button_height = gui.get_int('dialogue_menu_button_height')
+			db._dialogue_menu_button_width  = gui.get_int('dialogue_menu_button_width', obj = db)
+			db._dialogue_menu_button_height = gui.get_int('dialogue_menu_button_height', obj = db)
 			if db._dialogue_menu_button_width <= 0 or db._dialogue_menu_button_height <= 0:
 				db._dialogue_menu_button_width = db._dialogue_menu_button_height = 0
 			
@@ -288,12 +310,12 @@ screen dialogue_box_buttons(disable_next_btn = False):
 				spacing db._dialogue_button_spacing
 				
 				button:
-					ground gui.bg('dialogue_prev_ground')
-					hover  style.get_default_hover(gui.bg('dialogue_prev_hover'), gui.bg('dialogue_prev_ground'))
+					ground db.dialogue_prev_ground
+					hover  style.get_default_hover(db.dialogue_prev_hover, db.dialogue_prev_ground)
 					action    ShowScreen('history')
 					alternate pause_screen.show
 					
-					yalign gui.dialogue_button_yalign
+					yalign db.dialogue_button_yalign
 					xsize db._dialogue_button_width
 					ysize db._dialogue_button_height
 				
@@ -301,12 +323,12 @@ screen dialogue_box_buttons(disable_next_btn = False):
 				
 				if not screen.disable_next_btn:
 					button:
-						ground gui.bg('dialogue_next_ground')
-						hover  style.get_default_hover(gui.bg('dialogue_next_hover'), gui.bg('dialogue_next_ground'))
+						ground db.dialogue_next_ground
+						hover  style.get_default_hover(db.dialogue_next_hover, db.dialogue_next_ground)
 						action    db.on_enter
 						alternate pause_screen.show
 						
-						yalign gui.dialogue_button_yalign
+						yalign db.dialogue_button_yalign
 						xsize db._dialogue_button_width
 						ysize db._dialogue_button_height
 				else:
@@ -322,8 +344,8 @@ screen dialogue_box_buttons(disable_next_btn = False):
 	
 	if db._dialogue_menu_button_width:
 		button:
-			ground gui.bg('dialogue_menu_button_ground')
-			hover  style.get_default_hover(gui.bg('dialogue_menu_button_hover'), gui.bg('dialogue_menu_button_ground'))
+			ground db.dialogue_menu_button_ground
+			hover  style.get_default_hover(db.dialogue_menu_button_hover, db.dialogue_menu_button_ground)
 			action    pause_screen.show
 			alternate pause_screen.show
 			
@@ -495,7 +517,7 @@ screen dialogue_box:
 			db.on_enter()
 	
 	if not db.hide_interface:
-		$ db.update()
+		$ db.recalc_props()
 		
 		if db.visible:
 			if db.mode == 'adv':

@@ -130,6 +130,10 @@ init -1001 python:
 						value = color_to_int(value)
 					self[prop_to] = value
 			
+			for prop, value in properties.iteritems():
+				if prop.startswith('dialogue_'):
+					self[prop] = value
+			
 			# rpg-props:
 			self.show_time = 0
 			
