@@ -89,10 +89,13 @@ init -1000 python:
 				db[prop] = value
 	
 	def db__show_text(name, text, local_styles):
-		if name is None and db.dialogue_text is None:
-			name = ''
-			local_styles = narrator
-			out_msg('db.show_text', "Don't use <extend> character before usual character to say text")
+		if name is None:
+			if db.local_styles is None:
+				name = ''
+				local_styles = narrator
+				out_msg('db.show_text', "Don't use <extend> character before usual character to say text")
+			else:
+				local_styles = db.local_styles
 		
 		db.update_styles(local_styles)
 		
