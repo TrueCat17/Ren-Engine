@@ -33,7 +33,7 @@ static std::string versionStr;
 std::string Utils::getVersion() {
 	if (versionStr.empty()) {
 		std::ifstream is("../Ren-Engine/version", std::ios_base::binary);
-		while (!is.eof()) {
+		while (is.is_open() && !is.eof()) {
 			std::getline(is, versionStr);
 			if (!versionStr.empty()) break;
 		}
