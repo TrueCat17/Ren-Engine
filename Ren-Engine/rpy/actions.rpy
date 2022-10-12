@@ -19,8 +19,8 @@ init -10000 python:
 	class Function(Object):
 		def __init__(self, func, *args, **kwargs):
 			Object.__init__(self, func = func, args = args, kwargs = kwargs)
-		def __call__(self):
-			return apply(self.func, self.args, self.kwargs)
+		def __call__(self, *args, **kwargs):
+			return apply(self.func, self.args + args, dict(self.kwargs.items() + kwargs.items()))
 	
 	
 	class EvalObject(Object):
