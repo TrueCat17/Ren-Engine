@@ -2,8 +2,9 @@ init -1001 python:
 	
 	times = {}
 	
-	def change_time(name):
-		if times.get('current_name') == name: return
+	def change_time(name, need = False):
+		if not need and times.get('current_name') == name:
+			return
 		
 		times['next_name'] = name
 		
