@@ -47,7 +47,7 @@ init -9000 python:
 					self.after_middle = True
 					sprites.remove_hiding()
 				
-				sprites.screen.new_data.alpha = 1 - in_bounds((dtime - self.out_time - self.hold_time) / self.out_time, 0.0, 1.0)
+				sprites.screen.new_data.alpha = 1 - in_bounds((dtime - self.out_time - self.hold_time) / self.in_time, 0.0, 1.0)
 				if sprites.screen.new_data.alpha == 0:
 					sprites.screen.remove_effect()
 		
