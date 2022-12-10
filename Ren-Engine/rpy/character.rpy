@@ -224,6 +224,18 @@ init -1001 python:
 			else:
 				self.set_direction(to_forward if dy < 0 else to_back)
 		
+		def rotate_in_place(self, place = None):
+			if not place:
+				place = get_location_place(self)
+			if type(place) is not str:
+				place = place['name']
+			
+			if '_left'    in place: self.set_direction(to_left)
+			if '_right'   in place: self.set_direction(to_right)
+			if '_forward' in place: self.set_direction(to_forward)
+			if '_back'    in place: self.set_direction(to_back)
+		
+		
 		def get_pose(self):
 			return self.pose
 		def set_pose(self, pose):

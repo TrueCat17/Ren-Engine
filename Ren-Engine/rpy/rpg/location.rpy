@@ -23,7 +23,7 @@ init -1002 python:
 	cur_location_name = None
 	cur_exit = None
 	cur_place = None
-	cur_place_name = None
+	cur_place_name = ''
 	
 	
 	location_zoom = 1.0
@@ -87,7 +87,7 @@ init -1002 python:
 		cur_location = rpg_locations[location_name]
 		cur_location_name = location_name
 		cur_place = place
-		cur_place_name = place['name'] if place.has_key('name') else None
+		cur_place_name = place['name'] if place.has_key('name') else ''
 		
 		if prev_location != cur_location:
 			signals.send('rpg-location')
@@ -139,7 +139,8 @@ init -1002 python:
 	def hide_location():
 		global cur_location, cur_location_name, cur_place, cur_place_name
 		cur_location = cur_location_name = None
-		cur_place = cur_place_name = None
+		cur_place = None
+		cur_place_name = ''
 		
 		global draw_location
 		draw_location = None

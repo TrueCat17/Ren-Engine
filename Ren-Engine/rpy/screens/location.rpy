@@ -251,15 +251,15 @@ screen location:
 					me.set_direction(loc__direction)
 			
 			if get_rpg_control() and (loc__character_dx or loc__character_dy or 'action' in rpg_events):
-				cur_exit = get_location_exit(read_only=False)
+				cur_exit = get_location_exit(read_only = False)
 				if cur_exit:
 					set_location(cur_exit.to_location_name, cur_exit.to_place_name)
 					me.set_direction(cur_exit.to_side)
-					cur_place_name = None
+					cur_place_name = ''
 				
 				prev_place_name = cur_place_name
 				cur_place = get_location_place()
-				cur_place_name = cur_place and cur_place.name
+				cur_place_name = cur_place.name if cur_place else ''
 				if cur_place_name and cur_place_name != prev_place_name:
 					rpg_events.add('enter')
 					signals.send('rpg-place')
