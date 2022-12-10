@@ -46,7 +46,7 @@ init python:
 				s = get_clipboard_text()
 				i = 0
 				while i < len(s):
-					if s[i] not in ask_keys:
+					if s[i] not in ask_keys and s[i] not in '-_':
 						s = s[0:i] + s[i+1:]
 					else:
 						i += 1
