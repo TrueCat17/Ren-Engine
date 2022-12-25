@@ -190,7 +190,11 @@ init -1001 python:
 				top = bottom
 				
 				if character:
-					res.append(character.get_draw_data())
+					data = character.get_draw_data()
+					if type(data) in (list, tuple):
+						res.extend(data)
+					else:
+						res.append(data)
 				
 			over_image = self.over()
 			if over_image:

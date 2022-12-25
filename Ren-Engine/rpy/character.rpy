@@ -139,6 +139,7 @@ init -1001 python:
 			
 			self.directory = None
 			self.dress = None
+			self.overs = []
 			
 			self.frame = 0
 			self.direction = 0
@@ -194,10 +195,26 @@ init -1001 python:
 			self.rpg_name = rpg_name
 			self.set_dress(start_dress)
 		
+		def add_over(self, images):
+			self.overs.append(images)
+		def remove_over(self, images):
+			if images in self.overs:
+				self.overs.remove(images)
+		
+		
 		def get_zorder(self):
 			return self.y + self.yoffset
 		def get_draw_data(self):
-			return get_usual_location_object_data(self)
+			main = get_usual_location_object_data(self)
+			res = [main]
+			for images in self.overs:
+				if callable(images):
+					images = images(self)
+				if type(images) not in (list, tuple):
+					images = [images]
+				for image in images:
+					res.append(dict(main, image = image))
+			return res
 		
 		def main(self):
 			if self.start_anim_time is not None:

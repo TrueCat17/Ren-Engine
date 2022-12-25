@@ -14,22 +14,21 @@ init python:
 			Object.__init__(self)
 			self.show_time = get_game_time()
 			
+			self.location = origin.location
 			self.x, self.y = origin.x, origin.y
-			self.xoffset, self.yoffset = origin.xoffset, origin.yoffset
-			
-			self.xanchor, self.yanchor = origin.xanchor, origin.yanchor
-			self.xsize, self.ysize = origin.xsize, origin.ysize
-			
-			self.crop = origin.crop
+			self.zorder = origin.get_zorder()
 			self.alpha = 1
 			
-			self.location = origin.location
-			self.image = origin.main()
+			self.data = origin.get_draw_data()
+			if type(self.data) not in (list, tuple):
+				self.data = [self.data]
 		
 		def get_zorder(self):
-			return self.y + self.yoffset
+			return self.zorder
 		def get_draw_data(self):
-			return get_usual_location_object_data(self)
+			for data in self.data:
+				data['alpha'] = self.alpha
+			return self.data
 		
 		def main(self):
 			return self.image
