@@ -297,6 +297,49 @@ init -1001 python:
 		if get_image_size(res) != (width, height):
 			res = im.scale(res, width, height)
 		return res
+	def im__round_rect(color, width = 512, height = 64, left = 16, right = None, top = None, bottom = None):
+		if right is None:
+			right = left
+		if top is None:
+			top = left or right
+		if bottom is None:
+			bottom = top
+		
+		if max(left, right, top, bottom) <= 0:
+			return im.rect(color, width, height)
+		
+		args = [(width, height)]
+		# rects
+		if width > left + right:
+			if top > 0:
+				args.append((left, 0))
+				args.append(im.rect('#000', width - left - right, top))
+			if bottom > 0:
+				args.append((left, height - bottom))
+				args.append(im.rect('#000', width - left - right, bottom))
+		if height > top + bottom:
+			args.append((0, top))
+			args.append(im.rect('#000', width, height - top - bottom))
+		# circles
+		if left > 0 and top > 0:
+			args.append((0, 0))
+			args.append(im.circle('#000', left * 2, top * 2))
+		if right > 0 and top > 0:
+			args.append((width - 2 * right, 0))
+			args.append(im.circle('#000', right * 2, top * 2))
+		if left > 0 and bottom > 0:
+			args.append((0, height - 2 * bottom))
+			args.append(im.circle('#000', left * 2, bottom * 2))
+		if right > 0 and bottom > 0:
+			args.append((width - 2 * right, height - 2 * bottom))
+			args.append(im.circle('#000', right * 2, bottom * 2))
+		res = im.composite(*args)
+		
+		r, g, b, a = renpy.easy.color(color)
+		if (r, g, b, a) != (0, 0, 0, 255):
+			m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
+			res = im.matrix_color(res, m)
+		return res
 	
 	def im__bar(progress_end, progress_start = 0, vertical = False, ground = None, hover = None):
 		bar = ('v' if vertical else '') + 'bar'
@@ -361,6 +404,7 @@ init -1001 python:
 	
 	im.Rect = im.rect
 	im.Circle = im.circle
+	im.RoundRect = im.round_rect
 	im.Bar = im.bar
 	
 	im.Save = im.save
