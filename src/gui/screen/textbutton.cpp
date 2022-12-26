@@ -6,6 +6,7 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
+#include "utils/file_system.h"
 #include "utils/utils.h"
 
 
@@ -85,8 +86,9 @@ void TextButton::updateTexture(bool skipError) {
 	prevHover = hover;
 
 	const std::string &path = !btnRect.mouseOvered ? ground : hover;
-	surface = ImageManipulator::getImage(path, false);
+	if (skipError && !FileSystem::exists(path)) return;
 
+	surface = ImageManipulator::getImage(path, false);
 	updateRect();
 }
 
