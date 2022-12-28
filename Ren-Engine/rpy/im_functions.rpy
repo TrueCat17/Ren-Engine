@@ -297,7 +297,13 @@ init -1001 python:
 		if get_image_size(res) != (width, height):
 			res = im.scale(res, width, height)
 		return res
-	def im__round_rect(color, width = 512, height = 64, left = 16, right = None, top = None, bottom = None):
+	def im__round_rect(color, width = 512, height = 64, left = 16, right = None, top = None, bottom = None, use_cache = True):
+		if use_cache:
+			cache = im__round_rect.__dict__
+			key = (color, width, height, left, right, top, bottom)
+			if key in cache:
+				return cache[key]
+		
 		if right is None:
 			right = left
 		if top is None:
@@ -339,6 +345,9 @@ init -1001 python:
 		if (r, g, b, a) != (0, 0, 0, 255):
 			m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
 			res = im.matrix_color(res, m)
+		
+		if use_cache:
+			cache[key] = res
 		return res
 	
 	def im__bar(progress_end, progress_start = 0, vertical = False, ground = None, hover = None):
