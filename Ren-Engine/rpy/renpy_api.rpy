@@ -187,6 +187,7 @@ init -9990 python:
 			return
 		config.language = lang
 		_set_lang(lang)
+		signals.send('language')
 	
 	
 	build_object('renpy')
