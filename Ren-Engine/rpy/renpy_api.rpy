@@ -61,7 +61,23 @@ init -9990 python:
 	
 	
 	def renpy__easy__color(c):
-		if isinstance(c, tuple) or isinstance(c, list):
+		if type(c) is int:
+			if c >= 0x01000000:
+				r =  c >> 24
+				g = (c >> 16) & 0xFF
+				b = (c >>  8) & 0xFF
+				a = c & 0xFF
+			elif c >= 0:
+				r =  c >> 16
+				g = (c >> 8) & 0xFF
+				b = c & 0xFF
+				a = 255
+			else:
+				r = g = b = 0
+				a = 255
+				out_msg('renpy.easy.color', 'Expected non-negative int (got: ' + str(c) + ')')
+		
+		elif type(c) in (tuple, list):
 			if len(c) == 4:
 				r, g, b, a = c
 			else:
@@ -70,7 +86,7 @@ init -9990 python:
 					r, g, b = c
 				else:
 					r = g = b = 0
-					out_msg('Unexpected size of list (expected: 3 or 4, got: ' + str(len(c)) + ', c = ' + str(c) + ')')
+					out_msg('renpy.easy.color', 'Unexpected size of list (expected: 3 or 4, got: ' + str(len(c)) + ', c = ' + str(c) + ')')
 		
 		elif isinstance(c, basestring):
 			if c[0] == '#':
