@@ -35,7 +35,7 @@ init -901 python:
 	
 	config.underlay = []
 	
-	def hotkeys__init(screen_name):
+	def hotkeys__init(screen_name = None):
 		hotkeys.prepared_keymap = {}
 		hotkeys.keys_to_listen = set(hotkeys.keypad_synonyms)
 		for name, key_list in config.keymap.iteritems():
