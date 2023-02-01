@@ -55,11 +55,6 @@ static void absolute_dealloc(PyObject *obj) {
 
 
 static PyObject* reduce(PyObject *self, PyObject *) {
-	if (!PyAbsolute_CheckExact(self)) {
-		PyErr_SetString(PyExc_TypeError, "absolute.__reduce__ expected self is absolute");
-		return nullptr;
-	}
-
 	double value = PyFloat_AS_DOUBLE(self);
 	PyObject *pyFloat = PyFloat_FromDouble(value);
 
@@ -70,16 +65,15 @@ static PyObject* reduce(PyObject *self, PyObject *) {
 	PyObject *type = reinterpret_cast<PyObject*>(&PyAbsolute_Type);
 	Py_INCREF(type);
 	PyTuple_SET_ITEM(res, 0, type);
-	PyTuple_SET_ITEM(res, 1, reinterpret_cast<PyObject*>(args));
+	PyTuple_SET_ITEM(res, 1, args);
 	return res;
+}
+static long hash(PyObject *self) {
+	double value = PyFloat_AS_DOUBLE(self);
+	return _Py_HashDouble(value);
 }
 
 static PyObject* toStr(PyObject *self) {
-	if (!PyAbsolute_CheckExact(self)) {
-		PyErr_SetString(PyExc_TypeError, "absolute.__str__ expected self is absolute");
-		return nullptr;
-	}
-
 	double value = PyFloat_AS_DOUBLE(self);
 	std::string str = "absolute(" + std::to_string(value) + ")";
 
@@ -222,20 +216,15 @@ static PyObject* richcompare(PyObject *pyA, PyObject *pyB, int op) {
 		else if (op == Py_NE) res = true;
 		else if (op == Py_GT) res = true;
 		else if (op == Py_GE) res = true;
-
-		PyObject *pyRes = res ? Py_True : Py_False;
-		Py_INCREF(pyRes);
-		return pyRes;
+	}else {
+		PREPARE_DOUBLES
+		     if (op == Py_LT) res = a < b;
+		else if (op == Py_LE) res = a <= b;
+		else if (op == Py_EQ) res = Math::doublesAreEq(a, b);
+		else if (op == Py_NE) res = !Math::doublesAreEq(a, b);
+		else if (op == Py_GT) res = a > b;
+		else if (op == Py_GE) res = a >= b;
 	}
-
-	PREPARE_DOUBLES
-
-	     if (op == Py_LT) res = a < b;
-	else if (op == Py_LE) res = a <= b;
-	else if (op == Py_EQ) res = Math::doublesAreEq(a, b);
-	else if (op == Py_NE) res = !Math::doublesAreEq(a, b);
-	else if (op == Py_GT) res = a > b;
-	else if (op == Py_GE) res = a >= b;
 
 	PyObject *pyRes = res ? Py_True : Py_False;
 	Py_INCREF(pyRes);
@@ -257,7 +246,7 @@ PyTypeObject PyAbsolute_Type = {
     &asNumber,                                  /* tp_as_number */
     nullptr,                                    /* tp_as_sequence */
     nullptr,                                    /* tp_as_mapping */
-    nullptr,                                    /* tp_hash */
+    hash,                                       /* tp_hash */
     nullptr,                                    /* tp_call */
     toStr,                                      /* tp_str */
     PyObject_GenericGetAttr,                    /* tp_getattro */
