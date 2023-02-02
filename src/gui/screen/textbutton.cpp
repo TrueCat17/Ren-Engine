@@ -14,14 +14,14 @@
 static void onLeftClick(DisplayObject* owner) {
 	const TextButton *button = static_cast<TextButton*>(owner);
 	const Node *node = button->node;
-	const StyleStruct *style = button->style;
+	const Style *style = button->style;
 
 	const Node *activateSound = node->getProp("activate_sound");
 	if (activateSound) {
 		Music::play("button_click " + activateSound->params,
 		            activateSound->getFileName(), activateSound->getNumLine());
 	}else {
-		PyObject *activateSoundObj = Style::getProp(style, "activate_sound");
+		PyObject *activateSoundObj = StyleManager::getProp(style, "activate_sound");
 
 		if (PyString_CheckExact(activateSoundObj)) {
 			const char *sound = PyString_AS_STRING(activateSoundObj);
@@ -39,21 +39,21 @@ static void onLeftClick(DisplayObject* owner) {
 		PyUtils::exec(action->getFileName(), action->getNumLine(),
 		              "exec_funcs(" + action->params + ")");
 	}else {
-		Style::execAction(node->getFileName(), node->getNumLine(), style, "action");
+		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "action");
 	}
 }
 
 static void onRightClick(DisplayObject* owner) {
 	const TextButton *button = static_cast<TextButton*>(owner);
 	const Node *node = button->node;
-	const StyleStruct *style = button->style;
+	const Style *style = button->style;
 
 	const Node* alternate = node->getProp("alternate");
 	if (alternate) {
 		PyUtils::exec(alternate->getFileName(), alternate->getNumLine(),
 		              "exec_funcs(" + alternate->params + ")");
 	}else {
-		Style::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
+		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
 	}
 }
 
@@ -99,7 +99,7 @@ void TextButton::checkEvents() {
 			if (hoverSound) {
 				Music::play("button_hover " + hoverSound->params, hoverSound->getFileName(), hoverSound->getNumLine());
 			}else {
-				PyObject *hoverSoundObj = Style::getProp(style, "hover_sound");
+				PyObject *hoverSoundObj = StyleManager::getProp(style, "hover_sound");
 
 				if (PyString_CheckExact(hoverSoundObj)) {
 					const char *sound = PyString_AS_STRING(hoverSoundObj);
@@ -116,7 +116,7 @@ void TextButton::checkEvents() {
 			if (hovered) {
 				PyUtils::exec(hovered->getFileName(), hovered->getNumLine(), "exec_funcs(" + hovered->params + ")");
 			}else {
-				Style::execAction(getFileName(), getNumLine(), style, "hovered");
+				StyleManager::execAction(getFileName(), getNumLine(), style, "hovered");
 			}
 		}
 	}else {
@@ -125,7 +125,7 @@ void TextButton::checkEvents() {
 			if (unhovered) {
 				PyUtils::exec(unhovered->getFileName(), unhovered->getNumLine(), "exec_funcs(" + unhovered->params + ")");
 			}else {
-				Style::execAction(getFileName(), getNumLine(), style, "unhovered");
+				StyleManager::execAction(getFileName(), getNumLine(), style, "unhovered");
 			}
 		}
 	}

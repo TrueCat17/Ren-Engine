@@ -37,19 +37,19 @@ void Child::updateStyle() {
 		updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
 
 		if (!style) {
-			style = Style::getByNode(node);
+			style = StyleManager::getByNode(node);
 		}
 
-		const StyleStruct *defaultStyle = Style::getByName(node, node->command);
+		const Style *defaultStyle = StyleManager::getByName(node, node->command);
 		bool isDefaultStyle = style->pyStyle == defaultStyle->pyStyle;
 
 		const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
 
 		props = PyUtils::tuple1;
 		for (const std::string &prop : propNames) {
-			PyObject *res = Style::getProp(style, prop);
+			PyObject *res = StyleManager::getProp(style, prop);
 			if (res == Py_None && !isDefaultStyle) {
-				res = Style::getProp(defaultStyle, prop);
+				res = StyleManager::getProp(defaultStyle, prop);
 			}
 			PyTuple_SET_ITEM(props, 0, res);
 

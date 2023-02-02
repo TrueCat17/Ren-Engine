@@ -13,7 +13,7 @@ void Group::updateGlobal() {
 
 size_t Group::getChildIndex(DisplayObject *child) const {
 	for (size_t i = 0; i < children.size(); ++i) {
-		if (children[i] == child){
+		if (children[i] == child) {
 			return i;
 		}
 	}

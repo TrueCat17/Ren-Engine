@@ -16,7 +16,7 @@
 #include "media/py_utils.h"
 #include "media/py_utils/absolute.h"
 
-#include <utils/algo.h>
+#include "utils/algo.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -594,7 +594,9 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 
 	if (!obj->wasInited()) {
 		for (const Node *child : node->children) {
-			if (child->isScreenProp && child->command == propName) {
+			if (!child->isScreenProp) continue;
+
+			if (child->command == propName || child->command + "Pre" == propName) {
 				std::string desc = expected + '\n' +
 				                   child->getPlace();
 				Utils::outMsg(propName, desc);
@@ -607,7 +609,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 		if (child->isScreenProp && child->screenNum == propIndex) {
 			std::string desc = expected + '\n';
 
-			if (child->command == propName) {
+			if (child->command == propName || child->command + "Pre" == propName) {
 				desc += child->getPlace();
 			}else {
 				std::string style = node->command;
@@ -630,13 +632,13 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 	isFloat = PyFloat_CheckExact(prop); \
 	typedef decltype(var) DT; \
 	if (isFloat || PyAbsolute_CheckExact(prop)) { \
-	    var = DT(PyFloat_AS_DOUBLE(prop)); \
+		var = DT(PyFloat_AS_DOUBLE(prop)); \
 	}else \
 	if (PyInt_CheckExact(prop)) { \
-	    var = DT(PyInt_AS_LONG(prop)); \
+		var = DT(PyInt_AS_LONG(prop)); \
 	}else \
 	if (PyLong_CheckExact(prop)) { \
-	    var = DT(PyLong_AsDouble(prop)); \
+		var = DT(PyLong_AsDouble(prop)); \
 	}
 
 
@@ -647,7 +649,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	bool tmpBool; \
 	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
 	else { \
-	    static_cast<Type*>(obj)->propName = 0; \
+		static_cast<Type*>(obj)->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
@@ -662,7 +664,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyBool_Check(prop)) { \
 		static_cast<Type*>(obj)->propName = prop == Py_True; \
 	}else { \
-	    static_cast<Type*>(obj)->propName = false; \
+		static_cast<Type*>(obj)->propName = false; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
 	} \
@@ -674,7 +676,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(obj->propName##IsFloat, obj->propName, prop) \
 	else { \
-	    obj->propName = 0; \
+		obj->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
@@ -694,21 +696,21 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	} \
 	\
 	if (isNumber) { \
-	    xIsFloat = yIsFloat = tmpBool; \
+		xIsFloat = yIsFloat = tmpBool; \
 		obj->x##propName = obj->y##propName = value; \
 		return; \
 	} \
 	\
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) { \
-	    xIsFloat = yIsFloat = false; \
-	    obj->x##propName = obj->y##propName = 0; \
+		xIsFloat = yIsFloat = false; \
+		obj->x##propName = obj->y##propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type); \
 		return; \
 	} \
 	if (Py_SIZE(prop) != 2) { \
-	    xIsFloat = yIsFloat = false; \
-	    obj->x##propName = obj->y##propName = 0; \
+		xIsFloat = yIsFloat = false; \
+		obj->x##propName = obj->y##propName = 0; \
 		std::string size = std::to_string(Py_SIZE(prop)); \
 		outError(obj, #propName, propIndex, "Expected sequence with size == 2, got " + size); \
 		return; \
@@ -719,15 +721,15 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	updateCondition(xIsFloat, obj->x##propName, x) \
 	else { \
-	    xIsFloat = false; \
-	    obj->x##propName = 0; \
+		xIsFloat = false; \
+		obj->x##propName = 0; \
 		std::string type = x->ob_type->tp_name; \
 		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
 	updateCondition(yIsFloat, obj->y##propName, y) \
 	else { \
-	    yIsFloat = false; \
-	    obj->y##propName = 0; \
+		yIsFloat = false; \
+		obj->y##propName = 0; \
 		std::string type = y->ob_type->tp_name; \
 		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, absolute, int or long, got " + type); \
 	} \
@@ -745,8 +747,8 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	float value = 0; \
 	updateCondition(isFloat, value, prop) \
 	else { \
-	    isFloat = false; \
-	    value = 0; \
+		isFloat = false; \
+		value = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute, int or long, got " + type); \
 	} \
@@ -817,7 +819,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyString_CheckExact(prop)) { \
 		static_cast<Type*>(obj)->propName = PyString_AS_STRING(prop); \
 	}else { \
-	    static_cast<Type*>(obj)->propName = ""; \
+		static_cast<Type*>(obj)->propName = ""; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type str, got " + type); \
 	} \
@@ -888,17 +890,17 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	auto oldFontStyle = fontStyle; \
 	\
 	if (prop == Py_True) { \
-	    fontStyle |= Uint8(mask); \
+		fontStyle |= Uint8(mask); \
 		if (fontStyle != oldFontStyle) { \
 			text->needUpdate = true; \
 		} \
 	}else if (prop == Py_False) { \
-	    fontStyle &= Uint8(~mask); \
+		fontStyle &= Uint8(~mask); \
 		if (fontStyle != oldFontStyle) { \
 			text->needUpdate = true; \
 		} \
 	}else { \
-	    fontStyle &= Uint8(~mask); \
+		fontStyle &= Uint8(~mask); \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected bool, got " + type); \
 	} \
@@ -919,7 +921,7 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 		} \
 	}else \
 	if (PyLong_CheckExact(prop)) { \
-	    double d = PyLong_AsDouble(prop); \
+		double d = PyLong_AsDouble(prop); \
 		if (d < 0 || d > 0xFFFFFF) { \
 			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
 		}else { \
@@ -951,17 +953,17 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 			} \
 		} \
 	}else { \
-	    if constexpr (isOutline) { \
-	        if (style.enableOutline) { \
-	            style.enableOutline = false; \
-	            text->needUpdate = true; \
-	        } \
-	    }else { \
-	        if (style.color) { \
-	            style.color = 0; \
-	            text->needUpdate = true; \
-	        } \
-	    } \
+		if constexpr (isOutline) { \
+			if (style.enableOutline) { \
+				style.enableOutline = false; \
+				text->needUpdate = true; \
+			} \
+		}else { \
+			if (style.color) { \
+				style.color = 0; \
+				text->needUpdate = true; \
+			} \
+		} \
 	}\
 }
 #define makeUpdateTextAlignFunc(propName, funcPostfix, zero, one) \
@@ -969,41 +971,41 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
 	if (PyString_CheckExact(prop)) { \
-	    std::string valueStr = PyString_AS_STRING(prop); \
-	    float value = 0; \
-	    if (valueStr == zero) { \
-	        value = 0; \
-	    }else \
-	    if (valueStr == "center") { \
-	        value = 0.5; \
-	    }else \
-	    if (valueStr == one) { \
-	        value = 1; \
-	    }else { \
-	        outError(obj, #propName, propIndex, "Expected str " zero ", center or " one ", got <" + valueStr + ">"); \
-	    } \
-	    static_cast<Text*>(obj)->propName = value; \
+		std::string valueStr = PyString_AS_STRING(prop); \
+		float value = 0; \
+		if (valueStr == zero) { \
+			value = 0; \
+		}else \
+		if (valueStr == "center") { \
+			value = 0.5; \
+		}else \
+		if (valueStr == one) { \
+			value = 1; \
+		}else { \
+			outError(obj, #propName, propIndex, "Expected str " zero ", center or " one ", got <" + valueStr + ">"); \
+		} \
+		static_cast<Text*>(obj)->propName = value; \
 	}else \
 	if (PyFloat_CheckExact(prop)) { \
-	    static_cast<Text*>(obj)->propName = float(PyFloat_AS_DOUBLE(prop)); \
+		static_cast<Text*>(obj)->propName = float(PyFloat_AS_DOUBLE(prop)); \
 	}else { \
-	    static_cast<Text*>(obj)->propName = 0; \
-	    std::string type = prop->ob_type->tp_name; \
-	    outError(obj, #propName, propIndex, "Expected type str or float, got " + type); \
+		static_cast<Text*>(obj)->propName = 0; \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected type str or float, got " + type); \
 	} \
 }
 
 #include "gui/screen/style.h"
 static void update_style(Child *obj, size_t propIndex) {
 	PyObject *style = PySequence_Fast_GET_ITEM(obj->props, propIndex);
-	obj->style = Style::getByNode(obj->node, style);
+	obj->style = StyleManager::getByNode(obj->node, style);
 }
 
 
 makeUpdateFunc(alpha)
 makeUpdateFunc(rotate)
 makeUpdateFuncWithBool(Child, clipping, clipping)
-makeUpdateFuncWithBool(Child, skipMouse, skip_mouse)
+makeUpdateFuncWithBool(Child, skip_mouse, skip_mouse)
 
 makeUpdateFuncWithIsFloat(xpos)
 makeUpdateFuncWithIsFloat(ypos)
@@ -1027,8 +1029,8 @@ makeUpdateFuncWithAlign(y)
 
 makeUpdateFuncWithStrSimple(Child, first_param)
 
-makeUpdateFuncType(Key, keyDelay)
-makeUpdateFuncType(Key, firstKeyDelay)
+makeUpdateFuncType(Key, delay)
+makeUpdateFuncType(Key, first_delay)
 
 makeUpdateFuncType(Screen, zorder)
 makeUpdateFuncWithBool(Screen, ignore_modal, ignore_modal)
@@ -1065,8 +1067,8 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"rotate",            update_rotate},
 	{"clipping",          update_clipping},
 	{"skip_mouse",        update_skip_mouse},
-	{"delay",             update_keyDelay},
-	{"first_delay",       update_firstKeyDelay},
+	{"delay",             update_delay},
+	{"first_delay",       update_first_delay},
 	{"xpos",              update_xpos},
 	{"ypos",              update_ypos},
 	{"xanchor",           update_xanchorPre},

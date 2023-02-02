@@ -37,7 +37,7 @@ public:
 
 	bool enable = true;
 	bool clipping = false;
-	bool skipMouse = false;
+	bool skip_mouse = false;
 
 	SDL_Rect crop = { 0, 0, 0, 0 };//int, because zoom does not work with crop
 	float alpha = 1;

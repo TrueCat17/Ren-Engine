@@ -354,7 +354,7 @@ void Music::play(const std::string &desc,
 	Channel *channel = findChannel(channelName);
 	if (channel) {
 		Music *music = new Music(url, channel, fadeIn, volume, fileName, numLine, place);
-		if (music->initCodec()){
+		if (music->initCodec()) {
 			delete music;
 		}else {
 			PyUtils::exec(fileName, numLine, "persistent._seen_audio['" + url + "'] = True");

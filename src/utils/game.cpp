@@ -397,7 +397,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Stage::screens->setHeight(float(Stage::height));
 		Stage::screens->updateGlobal();
 
-		Style::destroyAll();
+		StyleManager::destroyAll();
 
 		PyUtils::init();
 

@@ -4,16 +4,16 @@
 #include "utils/utils.h"
 
 
-StyleStruct::StyleStruct(PyObject *style, const std::string &name) {
-	this->name = name;
-
+Style::Style(PyObject *style, const std::string &name):
+    pyStyle(style),
+    name(name)
+{
 	Py_INCREF(style);
-	this->pyStyle = style;
 	if (style == Py_None) return;
 
 	PyObject *dict = PyObject_GetAttrString(style, "__dict__");
 	if (!dict || !PyDict_CheckExact(dict)) {
-		Utils::outMsg("StyleStruct::StyleStruct", "Expected type(obj.__dict__) is dict");
+		Utils::outMsg("Style::Style", "Expected type(obj.__dict__) is dict");
 		return;
 	}
 
@@ -27,7 +27,7 @@ StyleStruct::StyleStruct(PyObject *style, const std::string &name) {
 	}
 }
 
-StyleStruct::~StyleStruct() {
+Style::~Style() {
 	Py_DECREF(pyStyle);
 	for (auto &i : props) {
 		PyObject *prop = i.second;
@@ -37,41 +37,41 @@ StyleStruct::~StyleStruct() {
 
 
 
-static std::map<std::string, const StyleStruct*> styleStructs;
-static std::map<PyObject*, const StyleStruct*> stylesByPy;
-void Style::destroyAll() {
+static std::map<std::string, const Style*> stylesByName;
+static std::map<PyObject*, const Style*> stylesByPy;
+void StyleManager::destroyAll() {
 	std::lock_guard g(PyUtils::pyExecMutex);
 
-	for (auto &[name, style] : styleStructs) {
+	for (auto &[name, style] : stylesByName) {
 		delete style;
 	}
-	styleStructs.clear();
+	stylesByName.clear();
 	stylesByPy.clear();
 }
 
 
-const StyleStruct* Style::getByName(const Node *node, const std::string &name) {
-	auto it = styleStructs.find(name);
-	if (it != styleStructs.end()) {
+const Style* StyleManager::getByName(const Node *node, const std::string &name) {
+	auto it = stylesByName.find(name);
+	if (it != stylesByName.end()) {
 		return it->second;
 	}
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
-	const StyleStruct *res;
+	const Style *res;
 	PyObject *pyStyle = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), "style." + name);
 	if (!pyStyle || pyStyle == Py_None) {
-		Utils::outMsg("Style::getByName", "Style <" + name + "> is not defined");
-		res = new StyleStruct(Py_None, "None");
+		Utils::outMsg("StyleManager::getByName", "Style <" + name + "> is not defined");
+		res = new Style(Py_None, "None");
 	}else {
-		res = new StyleStruct(pyStyle, name);
+		res = new Style(pyStyle, name);
 	}
 
-	return styleStructs[name] = res;
+	return stylesByName[name] = res;
 }
 
-const StyleStruct* Style::getByNode(const Node *node, PyObject *style) {
-	if (style){
+const Style* StyleManager::getByNode(const Node *node, PyObject *style) {
+	if (style) {
 		auto it = stylesByPy.find(style);
 		if (it != stylesByPy.end()) {
 			return it->second;
@@ -86,14 +86,13 @@ const StyleStruct* Style::getByNode(const Node *node, PyObject *style) {
 			style = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), propStyle->params);
 		}
 
-		const StyleStruct *res;
+		const Style *res;
 		if (PyString_CheckExact(style)) {
 			res = getByName(node, PyString_AS_STRING(style));
 		}else {
-			std::string name = "unknown (" +
-			        propStyle->getFileName() + ":" + std::to_string(propStyle->getNumLine()) +
-			        ")";
-			res = new StyleStruct(style, name);
+			std::string place = propStyle->getFileName() + ":" + std::to_string(propStyle->getNumLine());
+			std::string name = "unknown (" + place + ")";
+			res = new Style(style, name);
 		}
 		return stylesByPy[style] = res;
 	}
@@ -104,7 +103,7 @@ const StyleStruct* Style::getByNode(const Node *node, PyObject *style) {
 }
 
 
-PyObject* Style::getProp(const StyleStruct *style, const std::string &propName) {
+PyObject* StyleManager::getProp(const Style *style, const std::string &propName) {
 	auto it = style->props.find(propName);
 	if (it != style->props.end()) {
 		return it->second;
@@ -112,9 +111,9 @@ PyObject* Style::getProp(const StyleStruct *style, const std::string &propName) 
 	return Py_None;
 }
 
-void Style::execAction(const std::string &fileName, size_t numLine, const StyleStruct *style, const std::string &propName) {
+void StyleManager::execAction(const std::string &fileName, size_t numLine, const Style *style, const std::string &propName) {
 	std::lock_guard g(PyUtils::pyExecMutex);
 
-	PyDict_SetItemString(PyUtils::global, "last_style", style->pyStyle);
-	PyUtils::exec(fileName, numLine, "exec_funcs(last_style." + propName + ")");
+	PyDict_SetItemString(PyUtils::global, "_SL_last_style", style->pyStyle);
+	PyUtils::exec(fileName, numLine, "exec_funcs(_SL_last_style." + propName + ")");
 }

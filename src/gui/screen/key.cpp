@@ -124,9 +124,9 @@ void Key::checkEvents() {
 
 		if (inFirstDown || Key::getPressed(key)) {
 			const double dTime = GV::frameStartTime - lastDown;
-			const double delay = !wasFirstDelay ? firstKeyDelay : keyDelay;
+			const double needDelay = !wasFirstDelay ? first_delay : delay;
 
-			if (dTime >= delay || Math::doublesAreEq(lastDown, 0.0)) {
+			if (dTime >= needDelay || Math::doublesAreEq(lastDown, 0.0)) {
 				if (!inFirstDown) {
 					wasFirstDelay = true;
 				}
@@ -137,7 +137,7 @@ void Key::checkEvents() {
 				if (action) {
 					PyUtils::exec(action->getFileName(), action->getNumLine(), "exec_funcs(" + action->params + ")");
 				}else {
-					Style::execAction(node->getFileName(), node->getNumLine(), style, "action");
+					StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "action");
 				}
 			}
 			prevIsDown = true;

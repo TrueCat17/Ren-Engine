@@ -72,7 +72,7 @@ void DisplayObject::updateGlobal() {
 	if (parent && parent->globalSkipMouse) {
 		globalSkipMouse = true;
 	}else {
-		globalSkipMouse = skipMouse;
+		globalSkipMouse = skip_mouse;
 	}
 }
 

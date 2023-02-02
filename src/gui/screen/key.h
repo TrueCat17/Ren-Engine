@@ -26,8 +26,8 @@ public:
 	static void setFirstDownState(const SDL_Keycode key);
 	static void setUpState(const SDL_Keycode key);
 
-	double keyDelay = 0.010;
-	double firstKeyDelay = 0.333;
+	double delay = 0.010;
+	double first_delay = 0.333;
 
 	Key(Node *node, Screen *screen);
 	~Key();

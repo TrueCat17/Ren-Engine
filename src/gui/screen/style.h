@@ -9,27 +9,27 @@
 #include "parser/node.h"
 
 
-struct StyleStruct {
-	std::string name;
+struct Style {
 	PyObject *pyStyle;
+	std::string name;
 	std::map<std::string, PyObject*> props;
 
-	explicit StyleStruct(PyObject *style, const std::string &name);
-	StyleStruct(const StyleStruct&) = delete;
-	~StyleStruct();
+	explicit Style(PyObject *style, const std::string &name);
+	Style(const Style&) = delete;
+	~Style();
 };
 
-class Style {
+class StyleManager {
 public:
 	static void destroyAll();
 
-	static const StyleStruct* getByName(const Node *node, const std::string &name);
-	static const StyleStruct* getByNode(const Node *node, PyObject *style = nullptr);
+	static const Style* getByName(const Node *node, const std::string &name);
+	static const Style* getByNode(const Node *node, PyObject *style = nullptr);
 
-	static PyObject* getProp(const StyleStruct *style, const std::string &propName);
+	static PyObject* getProp(const Style *style, const std::string &propName);
 
 	static void execAction(const std::string &fileName, size_t numLine,
-	                       const StyleStruct *style, const std::string &propName);
+	                       const Style *style, const std::string &propName);
 };
 
 #endif // STYLE_H
