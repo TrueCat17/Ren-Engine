@@ -60,38 +60,42 @@ void DisplayObject::updateGlobal() {
 			clipRect = parent->clipRect;
 		}
 	}else {
+		globalClipping = clipping;
 		if (clipping) {
 			if (!Math::floatsAreEq(std::fmod(globalRotate, float(360)), 0)) {
 				Utils::outMsg("DisplayObject::updateGlobal", "Object with clipping can't be rotated");
 			}
-			globalClipping = true;
 			clipRect = { globalX, globalY, getWidth(), getHeight() };
-		}else {
-			globalClipping = false;
 		}
+	}
+
+	if (parent && parent->globalSkipMouse) {
+		globalSkipMouse = true;
+	}else {
+		globalSkipMouse = skipMouse;
 	}
 }
 
-bool DisplayObject::checkAlpha(int x, int y) const {
-	if (!enable || globalAlpha <= 0 || !surface) return false;
-
-	float fx = float(x);
-	float fy = float(y);
+bool DisplayObject::transparentForMouse(int x, int y) const {
+	if (!enable || globalAlpha <= 0 || globalSkipMouse || !surface) return true;
 
 	if (globalClipping) {
+		float fx = float(x);
+		float fy = float(y);
+
 		if (fx + globalX < clipRect.x ||
 		    fy + globalY < clipRect.y ||
 		    fx + globalX >= clipRect.x + clipRect.w ||
 		    fy + globalY >= clipRect.y + clipRect.h
-		) return false;
+		) return true;
 	}
 
-	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return false;
+	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return true;
 
 	SDL_Rect rect = { x, y, int(getWidth()), int(getHeight()) };
 	Uint32 color = Utils::getPixel(surface, rect, crop);
-	Uint8 alpha = color & 255;
-	return alpha > 0;
+	Uint8 alpha = color & 0xFF;
+	return alpha == 0;
 }
 
 void DisplayObject::draw() const {

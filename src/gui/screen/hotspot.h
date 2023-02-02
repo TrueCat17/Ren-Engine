@@ -22,7 +22,7 @@ public:
 	virtual void updateRect(bool needUpdatePos = true);
 	virtual void checkEvents();
 
-	virtual bool checkAlpha(int x, int y) const;
+	virtual bool transparentForMouse(int x, int y) const;
 	virtual void draw() const;
 };
 

@@ -18,7 +18,7 @@ public:
 
 	virtual void updateGlobal();
 
-	virtual bool checkAlpha(int x, int y) const;
+	virtual bool transparentForMouse(int x, int y) const;
 	virtual void draw() const;
 };
 

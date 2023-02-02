@@ -23,7 +23,7 @@ static bool objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 			int rotX = int(x * cosA - y * sinA + child->xAnchor);
 			int rotY = int(x * sinA + y * cosA + child->yAnchor);
 
-			if (child->checkAlpha(rotX, rotY)) {
+			if (!child->transparentForMouse(rotX, rotY)) {
 				return false;
 			}
 		}
@@ -91,7 +91,7 @@ void BtnRect::checkMouseCursor() {
 		if (rotX >= 0 && rotX < int(owner->getWidth()) &&
 		    rotY >= 0 && rotY < int(owner->getHeight())
 		) {
-			if (!owner->checkAlpha(rotX, rotY)) continue;
+			if (owner->transparentForMouse(rotX, rotY)) continue;
 			if (!objInTop(owner, mouseX, mouseY)) continue;
 
 			Mouse::setLocal(rotX, rotY);
@@ -134,7 +134,7 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 		if (rotX >= 0 && rotX < int(owner->getWidth()) &&
 		    rotY >= 0 && rotY < int(owner->getHeight())
 		) {
-			if (!owner->checkAlpha(rotX, rotY)) continue;
+			if (owner->transparentForMouse(rotX, rotY)) continue;
 			if (!objInTop(owner, mouseX, mouseY)) continue;
 
 			if (left) {

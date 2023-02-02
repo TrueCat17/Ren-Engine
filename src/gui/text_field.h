@@ -59,7 +59,7 @@ public:
 	void setFont(std::string fontName, float fontSize);
 	void setText(const std::string &text);
 
-	virtual bool checkAlpha(int x, int y) const;
+	virtual bool transparentForMouse(int x, int y) const;
 	virtual void draw() const;
 };
 

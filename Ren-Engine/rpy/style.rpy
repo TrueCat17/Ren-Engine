@@ -96,6 +96,7 @@ init -1001:
 		rotate 0
 		alpha 1
 		clipping False
+		skip_mouse False
 	
 	style screen:
 		modal False

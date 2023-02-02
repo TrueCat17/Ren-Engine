@@ -46,19 +46,17 @@ void Group::clearChildren() {
 	}
 }
 
-bool Group::checkAlpha(int x, int y) const {
-	if (!enable || globalAlpha <= 0) return false;
-
-	if (DisplayObject::checkAlpha(x, y)) {
-		return true;
+bool Group::transparentForMouse(int x, int y) const {
+	if (!DisplayObject::transparentForMouse(x, y)) {
+		return false;
 	}
 
 	for (const DisplayObject *child : children) {
-		if (child->checkAlpha(x - int(child->getX()), y - int(child->getY()))) {
-			return true;
+		if (!child->transparentForMouse(x - int(child->getX()), y - int(child->getY()))) {
+			return false;
 		}
 	}
-	return false;
+	return true;
 }
 
 void Group::draw() const {

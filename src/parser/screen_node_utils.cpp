@@ -1003,6 +1003,7 @@ static void update_style(Child *obj, size_t propIndex) {
 makeUpdateFunc(alpha)
 makeUpdateFunc(rotate)
 makeUpdateFuncWithBool(Child, clipping, clipping)
+makeUpdateFuncWithBool(Child, skipMouse, skip_mouse)
 
 makeUpdateFuncWithIsFloat(xpos)
 makeUpdateFuncWithIsFloat(ypos)
@@ -1063,6 +1064,7 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	{"alpha",             update_alpha},
 	{"rotate",            update_rotate},
 	{"clipping",          update_clipping},
+	{"skip_mouse",        update_skip_mouse},
 	{"delay",             update_keyDelay},
 	{"first_delay",       update_firstKeyDelay},
 	{"xpos",              update_xpos},

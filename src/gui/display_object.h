@@ -23,6 +23,7 @@ protected:
 	float globalZoomY = 1;
 
 	bool globalClipping = false;
+	bool globalSkipMouse = false;
 
 public:
 	static std::vector<DisplayObject*> objects;
@@ -34,8 +35,9 @@ public:
 
 	static SDL_Rect buildIntRect(float x, float y, float w, float h, bool exactSize);
 
-	bool clipping = false;
 	bool enable = true;
+	bool clipping = false;
+	bool skipMouse = false;
 
 	SDL_Rect crop = { 0, 0, 0, 0 };//int, because zoom does not work with crop
 	float alpha = 1;
@@ -77,7 +79,7 @@ public:
 	void setWidth(float value) { rect.w = value; }
 	void setHeight(float value) { rect.h = value; }
 
-	virtual bool checkAlpha(int x, int y) const;
+	virtual bool transparentForMouse(int x, int y) const;
 	virtual void draw() const;
 };
 

@@ -603,26 +603,26 @@ void TextField::setAlign(float hAlign, float vAlign) {
 	}
 }
 
-bool TextField::checkAlpha(int x, int y) const {
-	if (!enable || globalAlpha <= 0) return false;
-
-	float fx = float(x);
-	float fy = float(y);
+bool TextField::transparentForMouse(int x, int y) const {
+	if (!enable || globalAlpha <= 0 || globalSkipMouse) return true;
 
 	if (globalClipping) {
+		float fx = float(x);
+		float fy = float(y);
+
 		if (fx + globalX < clipRect.x ||
 		    fy + globalY < clipRect.y ||
 		    fx + globalX >= clipRect.x + clipRect.w ||
 		    fy + globalY >= clipRect.y + clipRect.h
-		) return false;
+		) return true;
 	}
 
 	for (const SDL_Rect &rect : rects) {
 		if (x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h) {
-			return true;
+			return false;
 		}
 	}
-	return false;
+	return true;
 }
 
 void TextField::draw() const {

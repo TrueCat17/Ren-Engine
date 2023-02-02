@@ -142,12 +142,12 @@ void Hotspot::checkEvents() {
 }
 
 
-bool Hotspot::checkAlpha(int x, int y) const {
-	if (!enable || globalAlpha <= 0) return false;
+bool Hotspot::transparentForMouse(int x, int y) const {
+	if (!enable || globalAlpha <= 0 || globalSkipMouse) return true;
 
 	const Imagemap *imageMap = static_cast<Imagemap*>(parent);
 	SurfacePtr hover = imageMap->hover;
-	if (!hover) return false;
+	if (!hover) return true;
 
 	float fx = float(x);
 	float fy = float(y);
@@ -157,15 +157,15 @@ bool Hotspot::checkAlpha(int x, int y) const {
 		    fy + globalY < clipRect.y ||
 		    fx + globalX >= clipRect.x + clipRect.w ||
 		    fy + globalY >= clipRect.y + clipRect.h
-		) return false;
+		) return true;
 	}
 
-	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return false;
+	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return true;
 
 	SDL_Rect rect = DisplayObject::buildIntRect(fx + getX(), fy + getY(), imageMap->getWidth(), imageMap->getHeight(), false);
 	Uint32 color = Utils::getPixel(hover, rect, imageMap->crop);
 	Uint8 alpha = color & 0xFF;
-	return alpha > 0;
+	return alpha == 0;
 }
 
 void Hotspot::draw() const {
