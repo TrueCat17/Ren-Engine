@@ -200,18 +200,32 @@ init -1001 python:
 	
 	
 	def im__scale(image, w, h):
-		return 'Scale|(' + image + ')|' + str(int(w)) + '|' + str(int(h))
+		if w <= 0 or h <= 0:
+			out_msg('im.scale', 'Sizes are invalid: (%s, %s)' % (w, h))
+			return image
+		return 'Scale|(%s)|%s|%s' % (image, int(w), int(h))
 	
-	def im__factor_scale(image, k):
-		return 'FactorScale|(' + image + ')|' + str(k)
+	def im__factor_scale(image, w, h = None):
+		if h is None:
+			h = w
+		if w <= 0 or h <= 0:
+			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
+			return image
+		return 'FactorScale|(%s)|%s|%s' % (image, int(w), int(h))
 	
 	def im__renderer_scale(image, w, h):
-		return 'RendererScale|(' + image + ')|' + str(int(w)) + '|' + str(int(h))
+		if w <= 0 or h <= 0:
+			out_msg('im.renderer_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
+			return image
+		return 'RendererScale|(%s)|%s|%s' % (image, int(w), int(h))
 	
-	def im__crop(image, rect):
-		rect = map(lambda f: str(int(f)), rect)
-		rect = ' '.join(rect)
-		return 'Crop|(' + image + ')|(' + rect + ')'
+	def im__crop(image, x, y = None, w = None, h = None):
+		if y is None:
+			x, y, w, h = x
+		if w <= 0 or h <= 0:
+			out_msg('im.crop', 'Sizes are invalid: (%s, %s)' % (w, h))
+			return image
+		return 'Crop|(%s)|(%s %s %s %s)' % (image, int(x), int(y), int(w), int(h))
 	
 	
 	def im__composite(*args):
@@ -219,23 +233,30 @@ init -1001 python:
 			out_msg('im.composite', 'Expected odd count of arguments')
 			return ''
 		
-		size = str(int(args[0][0])) + ' ' + str(int(args[0][1]))
-		res = 'Composite|(' + size + ')'
+		try:
+			w, h = args[0]
+			if w <= 0 or h <= 0:
+				raise ValueError()
+		except:
+			out_msg('im.composite', 'Sizes are invalid: <%s>' % (args[0], ))
+			return im.rect('#888', 100, 100)
+		
+		res = 'Composite|(%s %s)' % (int(w), int(h))
 		
 		for i in xrange(1, len(args) - 1, 2):
-			pos = str(int(args[i][0])) + ' ' + str(int(args[i][1]))
-			img = str(args[i + 1])
+			x, y = args[i]
+			img = args[i + 1]
 			
-			res += '|(' + pos + ')|(' + img + ')'
+			res += '|(%s %s)|(%s)' % (int(x), int(y), img)
 		return res
 	
 	
 	def im__flip(image, horizontal = False, vertical = False):
-		return 'Flip|(' + image + ')|' + str(bool(horizontal)) + '|' + str(bool(vertical))
+		return 'Flip|(%s)|%s|%s' % (image, bool(horizontal), bool(vertical))
 	
 	
 	def im__matrix_color(image, matrix):
-		return 'MatrixColor|(' + image + ')|(' + str(matrix) + ')'
+		return 'MatrixColor|(%s)|(%s)' % (image, matrix)
 	
 	def im__grayscale(image, desat=(0.2126, 0.7152, 0.0722)):
 		return im.matrix_color(image, im.matrix.saturation(0.0, desat))
@@ -245,9 +266,7 @@ init -1001 python:
 	
 	
 	def im__recolor(image, r, g, b, a = 255):
-		colors = map(str, (r + 1, g + 1, b + 1, a + 1))
-		colors = ' '.join(colors)
-		return 'ReColor|(' + image + ')|(' + colors + ')'
+		return 'ReColor|(%s)|(%s %s %s %s)' % (image, r + 1, g + 1, b + 1, a + 1)
 	
 	def im__color(image, color):
 		r, g, b, a = renpy.easy.color(color)
@@ -258,24 +277,52 @@ init -1001 python:
 	
 	
 	def im__rotozoom(image, angle, zoom = 1.0):
-		return 'Rotozoom|(' + image + ')|(' + str(int(angle) % 360) + ')|(' + str(zoom) + ')'
+		if zoom == 0:
+			out_msg('im.rotozoom', 'Zoom must not be 0')
+			zoom = 1
+		return 'Rotozoom|(%s)|%s|%s' % (image, int(angle) % 360, zoom)
 	
 	
-	def im__mask(image, mask, value, channel = 'r', cmp_func_name = 'le', alpha_channel = 'a', alpha_image = 1):
-		return 'Mask|(' + image + ')|(' + mask + ')|(' + channel + ')|(' + str(int(value)) + ')|(' + cmp_func_name + ')|(' + alpha_channel + ')|(' + str(alpha_image) + ')'
+	def im__mask(image, mask, value, channel = 'r', cmp_func_name = '<=', alpha_channel = 'a', alpha_image = 1):
+		if channel not in 'rgba':
+			out_msg('im.mask', '<channel> must be r, g, b or a, got %s' % (channel, ))
+			channel = 'r'
+		cmp_func_name_variants = ('l', 'g', 'e', 'ne', 'le', 'ge', '<', '>', '==', '!=', '<=', '>=')
+		if cmp_func_name not in cmp_func_name_variants:
+			out_msg('im.mask', '<cmp_func_name> must be in %s, got %s' % (cmp_func_name_variants, cmp_func_name))
+			cmp_func_name = '<='
+		if alpha_channel not in 'rgba':
+			out_msg('im.mask', '<alpha_channel> must be r, g, b or a, got %s' % (alpha_channel, ))
+			alpha_channel = 'r'
+		if alpha_image not in (1, 2, '1', '2'):
+			out_msg('im.mask', '<alpha_image> must be 1 or 2, got %s' % (alpha_image, ))
+			alpha_image = '1'
+		return 'Mask|(%s)|(%s)|(%s)|%s|%s|%s|%s' % (image, mask, channel, int(value), cmp_func_name, alpha_channel, alpha_image)
 	def im__alpha_mask(image, mask):
 		return im.mask(image, mask, 0, 'r', 'g', 'r', 2)
 	
 	
 	def im__blur_h(image, dist = 5):
-		return 'BlurH|(' + image + ')|' + str(dist)
+		if dist < 0:
+			out_msg('im.blur_h', 'Blur distance must be >= 0, got: %s' % dist)
+			return image
+		return 'BlurH|(%s)|%s' % (image, int(dist))
 	def im__blur_v(image, dist = 5):
-		return 'BlurV|(' + image + ')|' + str(dist)
+		if dist < 0:
+			out_msg('im.blur_v', 'Blur distance must be >= 0, got: %s' % dist)
+			return image
+		return 'BlurV|(%s)|%s' % (image, int(dist))
 	def im__blur(image, dist_h = 5, dist_v = 5):
+		if dist_h < 0 or dist_v < 0:
+			out_msg('im.blur', 'Blur distances must be >= 0, got: %s' % (dist_h, dist_v))
+			return image
 		return im.blur_h(im.blur_v(image, dist_v), dist_h)
 	
 	def im__motion_blur(image, cx = 0.5, cy = 0.5, dist = 5):
-		return 'MotionBlur|(' + image + ')|' + str(cx) + '|' + str(cy) + '|' + str(int(dist))
+		if dist <= 0 or dist > 255:
+			out_msg('im.motion_blur', 'Blur distance must be from 1 to 255, got: %s' % dist)
+			return image
+		return 'MotionBlur|(%s)|%s|%s|%s' % (image, cx, cy, int(dist))
 	
 	
 	def im__rect(color, width = 1, height = 1):

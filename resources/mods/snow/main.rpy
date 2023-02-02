@@ -34,7 +34,7 @@ init python:
 		x, y, dx, dy, size = 0, 1, 2, 3, 4
 		
 		if image_render:
-			img_cache = [im.scale('mods/snow/snow.png', i, i) for i in xrange(11)]
+			img_cache = [None] + [im.scale('mods/snow/snow.png', i, i) for i in xrange(1, 11)]
 			
 			tmp_image_args = [(width, height)]
 			for obj in objs:

@@ -243,26 +243,27 @@ static SurfacePtr scale(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr factorScale(const std::vector<std::string> &args) {
-	if (args.size() != 3) {
-		Utils::outMsg("ImageManipulator::factorScale", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
+	if (args.size() != 4) {
+		Utils::outMsg("ImageManipulator::factorScale", "Expected 3 arguments:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
 	SurfacePtr img = getNotPaletteImage(args[1]);
 	if (!img) return nullptr;
 
-	const double k = String::toDouble(Algo::clear(args[2]));
-	if (k <= 0) {
-		Utils::outMsg("ImageManipulator::factorScale", "Scale factor must be > 0:\n<" + String::join(args, ", ") + ">");
+	const double width = String::toDouble(Algo::clear(args[2]));
+	const double height = String::toDouble(Algo::clear(args[3]));
+	if (width <= 0 || height <= 0) {
+		Utils::outMsg("ImageManipulator::factorScale", "Scale factors must be > 0:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
 
-	if (Math::doublesAreEq(k, 1)) {
+	if (Math::doublesAreEq(width, 1) && Math::doublesAreEq(height, 1)) {
 		return img;
 	}
 
-	int w = std::max(int(img->w * k), 1);
-	int h = std::max(int(img->h * k), 1);
+	int w = std::max(int(img->w * width), 1);
+	int h = std::max(int(img->h * height), 1);
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format->format);
 	if (SDL_BlitScaled(img.get(), nullptr, res.get(), nullptr)) {
@@ -817,7 +818,7 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	const int angle = int(-String::toDouble(Algo::clear(args[2])));
 	double zoom = String::toDouble(Algo::clear(args[3]));
 	if (Math::doublesAreEq(zoom, 0)) {
-		Utils::outMsg("ImageManipulator::rotozoom", "zoom must not be 0");
+		Utils::outMsg("ImageManipulator::rotozoom", "Zoom must not be 0");
 		zoom = 1;
 	}
 	if (Math::doublesAreEq(zoom, 1) && (angle % 360) == 0) {
@@ -935,21 +936,21 @@ static void maskChooseCmp(const int value, const std::string &cmp,
 						  GetChannel getChannel,
 						  GetPixel getPixel, GetAlpha getAlphaFunc)
 {
-	if (cmp == "l") {
+	if (cmp == "l" || cmp == "<") {
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::less<int>(), getPixel, getAlphaFunc);
 	}else
-	if (cmp == "g") {
+	if (cmp == "g" || cmp == ">") {
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::greater<int>(), getPixel, getAlphaFunc);
 	}else
-	if (cmp == "e") {
+	if (cmp == "e" || cmp == "==") {
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::equal_to<int>(), getPixel, getAlphaFunc);
 	}else
-	if (cmp == "ne") {
+	if (cmp == "ne" || cmp == "!=") {
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::not_equal_to<int>(), getPixel, getAlphaFunc);
 	}else
-	if (cmp == "le") {
+	if (cmp == "le" || cmp == "<=") {
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::less_equal<int>(), getPixel, getAlphaFunc);
-	}else {//ge
+	}else {//ge or >=
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::greater_equal<int>(), getPixel, getAlphaFunc);
 	}
 }
@@ -1022,7 +1023,7 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 	const int value = int(String::toDouble(valueStr));
 
 	const std::string cmp = Algo::clear(args[5]);
-	static const std::vector<std::string> cmps = {"l", "g", "e", "ne", "le", "ge"};
+	static const std::vector<std::string> cmps = {"l", "g", "e", "ne", "le", "ge", "<", ">", "==", "!=", "<=", ">="};
 	if (!Algo::in(cmp, cmps)) {
 		Utils::outMsg("ImageManipulator::mask", "Unexpected compare function <" + cmp + ">, expected l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<" + String::join(args, ", ") + ">");
 		return nullptr;
@@ -1040,6 +1041,7 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 		Utils::outMsg("ImageManipulator::mask", "Unexpected image num <" + alphaStr + ">, expected 1 (image) or 2 (mask):\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
+	bool alphaFromImage = alphaImage == "1";
 
 
 	const Uint8 *maskPixels = (Uint8*)mask->pixels;
@@ -1047,17 +1049,16 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 	SurfacePtr res = ImageManipulator::getNewNotClear(img->w, img->h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 
-
 	if (channel == 'r') {
-		maskChooseAlpha(alphaChannel, alphaImage == "1", value, cmp, img, maskPixels, resPixels, getRed);
+		maskChooseAlpha(alphaChannel, alphaFromImage, value, cmp, img, maskPixels, resPixels, getRed);
 	}else
 	if (channel == 'g') {
-		maskChooseAlpha(alphaChannel, alphaImage == "1", value, cmp, img, maskPixels, resPixels, getGreen);
+		maskChooseAlpha(alphaChannel, alphaFromImage, value, cmp, img, maskPixels, resPixels, getGreen);
 	}else
 	if (channel == 'b') {
-		maskChooseAlpha(alphaChannel, alphaImage == "1", value, cmp, img, maskPixels, resPixels, getBlue);
+		maskChooseAlpha(alphaChannel, alphaFromImage, value, cmp, img, maskPixels, resPixels, getBlue);
 	}else {//a
-		maskChooseAlpha(alphaChannel, alphaImage == "1", value, cmp, img, maskPixels, resPixels, getAlpha);
+		maskChooseAlpha(alphaChannel, alphaFromImage, value, cmp, img, maskPixels, resPixels, getAlpha);
 	}
 
 	return res;
