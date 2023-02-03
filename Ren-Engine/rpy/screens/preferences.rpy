@@ -66,7 +66,7 @@ init -100 python:
 			mixer, mixer_name = std_mixers[i], std_mixers_names[i]
 			
 			mixer_text = ['str', '["%s"!t]:' % mixer_name, 25, 150]
-			mixer_bar = ['bar', config, mixer + '_volume', 0, 1, Function(renpy.music.add_mixer_volume, -0.1, mixer), Function(renpy.music.add_mixer_volume, +0.1, mixer)]
+			mixer_bar = ['bar', None, 'config.' + mixer + '_volume', 0, 1, Function(renpy.music.add_mixer_volume, -0.1, mixer), Function(renpy.music.add_mixer_volume, +0.1, mixer)]
 			res.append([mixer_text, mixer_bar])
 		return res
 	
@@ -76,6 +76,7 @@ init -100 python:
 	
 	k = get_from_hard_config("window_w_div_h", float)
 	preferences.resolutions = tuple((i, int(i/k)) for i in (640, 960, 1200, 1366, 1920))
+	del k
 	
 	preferences.langs = renpy.known_languages()
 	
@@ -152,6 +153,7 @@ init -100 python:
 		preferences.content['Language'].append(
 			[['btn', lang, None, Function(renpy.change_language, lang), (150, 25)]]
 		)
+	del lang
 
 init python:
 	hotkeys.disable_key_on_screens['ESCAPE'].append('preferences')
