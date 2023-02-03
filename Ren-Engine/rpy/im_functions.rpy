@@ -211,7 +211,7 @@ init -1001 python:
 		if w <= 0 or h <= 0:
 			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
 			return image
-		return 'FactorScale|(%s)|%s|%s' % (image, int(w), int(h))
+		return 'FactorScale|(%s)|%s|%s' % (image, w, h)
 	
 	def im__renderer_scale(image, w, h):
 		if w <= 0 or h <= 0:
