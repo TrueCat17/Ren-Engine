@@ -10,6 +10,12 @@ init -995 python:
 		console.cursor_y = input_slice.count('\n')
 		console.cursor_x = (index - input_slice.rindex('\n') - 1) if console.cursor_y else index
 	
+	def console__get_input_text():
+		index = console.get_cursor_index()
+		alpha_cursor = '{alpha=' + str(1 if get_game_time() % 2 < 1 else 0) + '}' + console.cursor + '{/alpha}'
+		res = console.input[0:index] + alpha_cursor + console.input[index:]
+		return res.replace(console.key_tag, '{{')
+	
 	def console__clear():
 		persistent.console_commands = []
 		persistent.console_text = 'Press Esc to exit, type help for help'
@@ -297,6 +303,34 @@ init -995 python:
 		if not has_screen('console'):
 			console.showed_time = get_game_time()
 			show_screen('console')
+	def console__hide():
+		if has_screen('console'):
+			hide_screen('console')
+			pause_screen.hided_time = get_game_time()
+	
+	def console__update_watching_text():
+		xsize_max_real = get_absolute(console.watching_xsize_max, get_stage_width()) - console.watching_xindent * 2
+		text_size = style.console_text.text_size
+		
+		text = []
+		xsize_max = 0
+		ysize = 0
+		for code, eval_obj in console.to_watch:
+			res_start = code + ': '
+			try:
+				res_end = str(eval_obj()).replace('{', '{{')
+			except:
+				res_end = 'Eval Failed'
+			text.append(res_start + '{color=' + console.watching_calced_color + '}' + res_end + '{/color}')
+			
+			xsize = utf8.width(res_start + res_end, text_size)
+			if xsize > 0:
+				ysize += int(math.ceil(xsize / xsize_max_real)) * text_size
+			xsize_max = max(xsize, xsize_max)
+		
+		console.watching_text = text
+		console.watching_xsize = min(xsize_max, xsize_max_real)
+		console.watching_ysize = ysize
 	
 	
 	build_object('console')
@@ -310,7 +344,7 @@ init -995 python:
 	console.input_tmp = ''
 	
 	console.keys = alphabet + list("1234567890-=[]\\;',./`")
-	console.keys_shift = [s.upper() for s in alphabet] + list("!@#$%^&*()_+{}|:\"<>?~")
+	console.keys_shift = [s.upper() for s in alphabet] + list('!@#$%^&*()_+{}|:"<>?~')
 	console.key_tag = chr(255)
 	
 	console.spec_symbols = console.keys[console.keys.index('-'):] + console.keys_shift[console.keys_shift.index('!'):] + [console.key_tag]
@@ -354,25 +388,7 @@ screen console_watching:
 		xpos get_absolute(console.watching_xalign, get_stage_width())  + console.watching_xoffset
 		ypos get_absolute(console.watching_yalign, get_stage_height()) + console.watching_yoffset
 		
-		python:
-			console.watching_xsize_max_real = get_absolute(console.watching_xsize_max, get_stage_width()) - console.watching_xindent * 2
-			
-			console.watching_text = []
-			console.watching_xsize = 0
-			console.watching_ysize = 0
-			for code, eval_obj in console.to_watch:
-				res_start = code + ': '
-				try:
-					res_end = str(eval_obj()).replace('{', '{{')
-				except:
-					res_end = 'Eval Failed'
-				console.watching_text.append(res_start + '{color=' + console.watching_calced_color + '}' + res_end + '{/color}')
-				console.watching_xsize = max(console.watching_xsize, utf8.width(res_start + res_end, style.console_text.text_size))
-				if console.watching_xsize > 0:
-					console.watching_ysize += int(math.ceil(console.watching_xsize / console.watching_xsize_max_real)) * style.console_text.text_size
-			
-			console.watching_xsize = min(console.watching_xsize, console.watching_xsize_max_real)
-		
+		$ console.update_watching_text()
 		xsize console.watching_xsize + console.watching_xindent * 2
 		ysize console.watching_ysize + console.watching_yindent * 2
 		
@@ -391,7 +407,7 @@ screen console:
 	
 	$ db.skip_tab = False
 	
-	key 'ESCAPE' action [Hide('console'), SetDict(pause_screen, 'hided_time', get_game_time())]
+	key 'ESCAPE' action console.hide
 	
 	key 'SPACE' action console.add(' ')
 	
@@ -438,12 +454,7 @@ screen console:
 				style 'console_text'
 				xsize 50
 			
-			python:
-				index = console.get_cursor_index()
-				alpha_cursor = '{alpha=' + str(1 if get_game_time() % 2 < 1 else 0) + '}' + console.cursor + '{/alpha}'
-				console.input_with_cursor = console.input[0:index] + alpha_cursor + console.input[index:]
-			
-			text console.input_with_cursor.replace(console.key_tag, '{{'):
+			text console.get_input_text():
 				style 'console_text'
 				xsize get_stage_width() - 50
 
