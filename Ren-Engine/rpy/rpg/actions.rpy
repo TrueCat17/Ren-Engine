@@ -7,7 +7,7 @@ init -1000 python:
 			return None
 		
 		black_color = 255 # r, g, b, a = 0, 0, 0, 255
-		cr = character_radius
+		cr = Character.radius
 		
 		location_name = random.choice(location_names)
 		location = rpg_locations[location_name]
@@ -350,7 +350,7 @@ init -1000 python:
 		if state == 'moving':
 			same_location = character.location is friend.location
 			dist = get_dist(character.x, character.y, friend.x, friend.y)
-			if same_location and dist < character_radius * 3:
+			if same_location and dist < Character.radius * 3:
 				character.move_to_place(None)
 				character.rotate_to(friend)
 				

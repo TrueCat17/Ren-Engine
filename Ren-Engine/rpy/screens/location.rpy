@@ -61,15 +61,15 @@ init python:
 			dx /= 2 ** 0.5
 			dy /= 2 ** 0.5
 		
-		me.fps =            character_run_fps if loc__shift_is_down else character_walk_fps
-		me.set_pose(                    'run' if loc__shift_is_down else 'walk'              )
-		character_speed = character_run_speed if loc__shift_is_down else character_walk_speed
+		me.fps =      me.run_fps if loc__shift_is_down else me.walk_fps
+		me.set_pose(       'run' if loc__shift_is_down else 'walk'      )
+		speed =     me.run_speed if loc__shift_is_down else me.walk_speed
 		
 		dtime = get_game_time() - loc__prev_time
 		loc__prev_time = get_game_time()
 		
-		dx *= character_speed * dtime
-		dy *= character_speed * dtime
+		dx *= speed * dtime
+		dy *= speed * dtime
 		
 		to_x, to_y = get_end_point(me.x, me.y, dx, dy)
 		dx, dy = to_x - me.x, to_y - me.y
@@ -96,10 +96,10 @@ init python:
 	def loc__process_action():
 		obj = get_near_location_object_for_inventory()
 		if obj is not None:
-			left = add_to_inventory(obj.type, 1)
+			left = inventory.add(obj.type, 1)
 			if left == 0:
 				remove_location_object(cur_location_name, me, obj.type, 1)
-				inventory_add_event('taking', obj.type)
+				inventory.add_event('taking', obj.type)
 		else:
 			rpg_events.add('action')
 			if not get_location_exit():
@@ -181,7 +181,7 @@ screen location:
 		loc__calculate_cut_params()
 	
 	if draw_location:
-		key 'I' action ShowScreen('inventory')
+		key 'I' action inventory.show
 		
 		python:
 			loc__shift_is_down = False

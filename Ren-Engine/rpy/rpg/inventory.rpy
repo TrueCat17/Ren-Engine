@@ -1,134 +1,163 @@
-init -100 python:
+init -1010 python:
 	
-	inventory_size = 0
-	inventory = []
-	def set_inventory_size(count):
-		global inventory_size, inventory
-		if inventory_size < count:
-			for i in xrange(count - inventory_size):
-				inventory.append(['', 0])
+	def inventory__set_size(size, obj = None):
+		obj = obj or me
+		if isinstance(obj, Object) and obj.inventory is None:
+			obj.inventory = []
+		inv = obj if type(obj) is list else obj.inventory
+		
+		old_size = len(inv)
+		if size > old_size:
+			for i in xrange(size - old_size):
+				inv.append(['', 0])
 		else:
-			reduce_inventory_size(inventory_size - count)
-		inventory_size = count
-		
-		global inventory_row, inventory_full_rows, inventory_last_row
-		inventory_row = min(10, inventory_size)
-		inventory_full_rows = int(inventory_size / inventory_row)
-		inventory_last_row = inventory_size % inventory_row
-		
-		global inventory_xsize, inventory_ysize
-		xsize1 = inventory_cell_size + inventory_cell_spacing
-		ysize1 = inventory_cell_size + inventory_cell_text_size + inventory_cell_spacing
-		inventory_xsize = max(xsize1 * inventory_row + inventory_cell_spacing, 450)
-		inventory_ysize = ysize1 * (inventory_full_rows + (1 if inventory_last_row else 0)) + inventory_cell_spacing + 60
-	
-	set_inventory_size(30)
+			inventory.reduce_size(old_size - size, inv)
 	
 	
-	def reduce_inventory_size(reduce_count):
-		global inventory
-		new_size = inventory_size - reduce_count
+	def inventory__reduce_size(dsize, inv):
+		new_size = len(inv) - dsize
 		
 		# for overflowed elements
-		for index in xrange(reduce_count):
-			element = inventory[new_size + index]
-			obj_name, count = element
+		for index in xrange(dsize):
+			obj_name, obj_count = inv[new_size + index]
 			if not obj_name: continue
 			
-			obj = location_objects[obj_name]
-			max_count = obj['max_in_inventory_cell']
+			loc_obj = location_objects[obj_name]
+			max_count = loc_obj['max_in_inventory_cell']
 			
 			# move to prev cells
 			for i in xrange(new_size):
-				if not inventory[i][0]:
-					inventory[i] = inventory[new_size + index]
-					count = 0
-				elif inventory[i][0] == obj_name:
-					while inventory[i][1] != max_count and count != 0:
-						inventory[i][1] += 1
-						count -= 1
+				if not inv[i][0]:
+					inv[i] = inv[new_size + index]
+					obj_count = 0
+				elif inv[i][0] == obj_name:
+					d = min(max_count - inv[i][1], obj_count)
+					if d > 0:
+						inv[i][1] += d
+						obj_count -= d
 				
-				if count == 0: break
-			if count == 0: continue
+				if obj_count == 0: break
+			if obj_count == 0: continue
 			
 			# remove_to_location
-			if obj['remove_to_location']:
-				for i in xrange(count):
-					dx, dy = random.randint(-3, 3), random.randint(-3, 3)
+			if loc_obj['remove_to_location']:
+				r = inventory.throw_radius
+				for i in xrange(obj_count):
+					dx, dy = random.randint(-r, r), random.randint(-r, r)
 					add_location_object(cur_location.name, {'x': me.x + dx, 'y': me.y + dy}, obj_name)
 		
-		inventory = inventory[:-reduce_count]
+		inv[-dsize:] = []
 	
 	
-	def add_to_inventory(obj_name, count):
-		obj = location_objects.get(obj_name, None)
-		if not obj:
-			out_msg('add_to_inventory', 'Object <' + obj_name + '> not registered')
+	def inventory__add(obj_name, count = 1, obj = None):
+		obj = obj or me
+		inv = obj if type(obj) is list else obj.inventory
+		
+		loc_obj = location_objects.get(obj_name, None)
+		if not loc_obj:
+			out_msg('inventory.add', 'Object <' + str(obj_name) + '> not registered')
+			return count
+		max_count = loc_obj['max_in_inventory_cell']
+		if max_count == 0:
 			return count
 		
-		while count > 0:
-			index = -1
-			for i in xrange(inventory_size):
-				element = inventory[i]
-				if element[0] == obj_name and element[1] < obj['max_in_inventory_cell']:
-					index = i
-					break
-			else:
-				for i in xrange(inventory_size):
-					if not inventory[i][0]:
-						index = i
-						break
-			
-			if index == -1:
-				break
-			
-			if not inventory[index][0]:
-				inventory[index] = [obj_name, 0]
-			
-			element = inventory[index]
-			d = min(obj['max_in_inventory_cell'] - element[1], count)
-			
-			element[1] += d
-			count -= d
-		
+		for step in (1, 2): # 1 - add to existed stacks, 2 - to empty cells
+			for element in inv:
+				if step == 1 and element[0] != obj_name: continue
+				if step == 2 and element[0]: continue
+				
+				if not element[0]:
+					element[:] = [obj_name, 0]
+				
+				d = min(max_count - element[1], count)
+				if d > 0:
+					element[1] += d
+					count -= d
+					if count == 0:
+						return 0
 		return count
 	
-	def has_in_inventory(obj_name, count = 1):
-		if not location_objects.has_key(obj_name):
-			out_msg('has_in_inventory', 'Object <' + obj_name + '> not registered')
+	def inventory__has(obj_name, count = 1, obj = None):
+		obj = obj or me
+		inv = obj if type(obj) is list else obj.inventory
+		
+		if obj_name not in location_objects:
+			out_msg('inventory.has', 'Object <' + str(obj_name) + '> not registered')
 			return False
 		
 		t = 0
-		for element in inventory:
+		for element in inv:
 			if element[0] == obj_name:
 				t += element[1]
 				if t >= count:
 					return True
 		return False
 	
-	def remove_from_inventory(obj_name, count):
-		obj = location_objects.get(obj_name, None)
-		if not obj:
-			out_msg('remove_from_inventory', 'Object <' + obj_name + '> not registered')
+	def inventory__remove(obj_name, count, obj = None):
+		obj = obj or me
+		inv = obj if type(obj) is list else obj.inventory
+		
+		if obj_name not in location_objects:
+			out_msg('inventory.remove', 'Object <' + str(obj_name) + '> not registered')
 			return count
 		
-		while count > 0:
-			index = -1
-			for i in xrange(inventory_size):
-				if inventory[i][0] == obj_name:
-					index = i
-					break
-			else:
-				break
+		for element in inv:
+			if element[0] != obj_name: continue
 			
-			element = inventory[index]
 			if element[1] > count:
 				element[1] -= count
 				count = 0
 			else:
 				count -= element[1]
-				inventory[index] = ['', 0]
+				inv[index] = ['', 0]
+			
+			if count == 0:
+				break
 		
 		return count
-		
 	
+	def inventory__change(old, new):
+		old_len, new_len = len(old), len(new)
+		
+		for i in xrange(min(old_len, new_len)):
+			if not new[i][0] and old[i][0]:
+				new[i], old[i] = old[i], new[i]
+		
+		auto_failed = False
+		for i in xrange(old_len):
+			obj_name, obj_count = old[i]
+			if not obj_name: continue
+			
+			max_count = location_objects[obj_name]['max_in_inventory_cell']
+			for j in xrange(new_len):
+				obj_name_new, obj_count_new = new[j]
+				if not obj_name_new:
+					new[j], old[i] = old[i], new[j]
+					obj_count = 0
+					break
+				
+				if obj_name_new == obj_name:
+					d = min(max_count - obj_count_new, obj_count)
+					if d > 0:
+						new[j][1] += d
+						old[i][1] -= d
+						obj_count -= d
+						
+						if obj_count == 0:
+							old[i][0] = ''
+							break
+			
+			if obj_count:
+				auto_failed = True
+		
+		if auto_failed:
+			inventory.show(new, old)
+	
+	
+	build_object('inventory')
+	
+	inventory.throw_radius = 3
+	
+	inventory.dress_sizes = {
+		'default': 10,
+	}

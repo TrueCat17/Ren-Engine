@@ -3,25 +3,6 @@ init -1001 python:
 	character_ext = 'png'
 	
 	
-	character_walk_fps          =   4
-	character_run_fps           =  12
-	character_acceleration_time = 0.5
-	character_walk_speed        =  50
-	character_run_speed         = 150*1
-	
-	character_walk_acceleration = character_walk_speed / character_acceleration_time
-	character_run_acceleration = character_run_speed / character_acceleration_time
-	
-	
-	character_max_frame = 4
-	character_max_direction = 4
-	
-	character_radius = 10 # used physics.rpy
-	
-	character_xsize = 48
-	character_ysize = 96
-	
-	
 	# directions
 	to_forward = 3
 	to_back = 0
@@ -105,6 +86,8 @@ init -1001 python:
 	
 	characters = []
 	class Character(Object):
+		radius = 10 # used in physics.rpy
+		
 		def __init__(self, name, **properties):
 			Object.__init__(self)
 			characters.append(self)
@@ -135,6 +118,20 @@ init -1001 python:
 					self[prop] = value
 			
 			# rpg-props:
+			
+			self.walk_fps =  4
+			self.run_fps  = 12
+			self.walk_speed =  50
+			self.run_speed  = 150
+			
+			self.sit_frame = 4 # first (left) = 0
+			self.stay_frame = 3
+			self.count_of_moving_frames = 4
+			self.count_of_directions = 4
+			
+			self.radius = Character.radius
+			
+			
 			self.show_time = 0
 			
 			self.directory = None
@@ -145,7 +142,7 @@ init -1001 python:
 			self.direction = 0
 			self.run = False
 			self.pose = 'stay' # 'sit' | 'stay' | 'walk' | 'run'
-			self.fps = character_walk_fps
+			self.fps = self.walk_fps
 			
 			self.prev_update_time = get_game_time()
 			self.moving_ended = True
@@ -156,7 +153,7 @@ init -1001 python:
 			self.xoffset, self.yoffset = 0, 0
 			
 			self.xanchor, self.yanchor = 0.5, 0.8
-			self.xsize, self.ysize = character_xsize, character_ysize
+			self.xsize, self.ysize = 48, 96
 			self.crop = (0, 0, self.xsize, self.ysize)
 			self.alpha = 0
 			
@@ -174,6 +171,10 @@ init -1001 python:
 			
 			self.auto_actions = False
 			self.actions = None
+			
+			self.inventories = {}
+			for dress, size in inventory.dress_sizes.iteritems():
+				self.inventories[dress] = [['', 0] for i in xrange(size)]
 		
 		def __str__(self):
 			return str(self.name)
@@ -225,13 +226,24 @@ init -1001 python:
 		def get_dress(self):
 			return self.dress
 		def set_dress(self, dress):
+			if dress == self.dress:
+				return
+			
 			self.dress = dress
+			if dress not in self.inventories:
+				size = inventory.dress_sizes[dress if dress in inventory.dress_sizes else 'default']
+				self.inventories[dress] = [['', 0] for i in xrange(size)]
+			
+			old_inventory = self.inventory
+			self.inventory = self.inventories[dress]
+			if old_inventory and self.inventory:
+				inventory.change(old_inventory, self.inventory)
 		
 		def get_direction(self):
 			return self.direction
 		def set_direction(self, direction):
 			if direction is not None:
-				self.direction = direction % character_max_direction
+				self.direction = direction % self.count_of_directions
 		
 		def rotate_to(self, obj):
 			x, y = get_place_center(obj)
@@ -263,7 +275,7 @@ init -1001 python:
 				if pose in ('walk', 'run'):
 					g = globals()
 					for prop in ('fps', 'speed', 'acceleration'):
-						self[prop] = g['character_' + pose + '_' + prop] # for example: self.fps = character_run_fps
+						self[prop] = self[pose + '_' + prop] # for example: self.fps = self.run_fps
 				self.pose = pose
 			else:
 				self.pose = 'stay'
@@ -278,11 +290,11 @@ init -1001 python:
 			if self.start_anim_time is None:
 				pose = self.get_pose()
 				if pose == 'sit':
-					frame = character_max_frame
+					frame = self.sit_frame
 				elif pose == 'stay':
-					frame = character_max_frame - 1
+					frame = self.stay_frame
 				else:
-					frame %= character_max_frame
+					frame %= self.count_of_moving_frames
 				
 				y = self.direction * self.ysize
 			else:
@@ -577,7 +589,7 @@ init -1001 python:
 		
 		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
 			if not self.animations.has_key(anim_name):
-				out_msg('start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
+				out_msg('Character.start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
 				return
 			
 			animation = self.animation = self.animations[anim_name]
@@ -597,7 +609,8 @@ init -1001 python:
 			self.start_anim_time = None
 			self.end_wait_anim_time = None
 			self.xoffset, self.yoffset = 0, 0
-			self.xsize, self.ysize = character_xsize, character_ysize
+			if self.orig_size:
+				self.xsize, self.ysize = self.orig_size
 		
 		def anim_to_end(self):
 			self.remove_animation()
@@ -669,6 +682,7 @@ init -1001 python:
 						animation.xsize, animation.ysize = get_image_size(self.main())
 						animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
 					
+					self.orig_size = self.xsize, self.ysize
 					self.xsize, self.ysize = animation.xsize, animation.ysize
 				
 				start_frame = animation.start_frame

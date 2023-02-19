@@ -4,13 +4,13 @@ init python:
 		location_free = cur_location.free()
 		
 		size = 64
-		half_size = size / 2 # > (character_radius + some_indent) * 2
+		half_size = size / 2 # > (radius + some_indent) * 2
 		me_x = in_bounds(me.x, 0, get_image_width(location_free) - 1)
 		me_y = in_bounds(me.y, 0, get_image_height(location_free) - 1)
 		start_x = int(round(me_x / half_size) - 1) * half_size
 		start_y = int(round(me_y / half_size) - 1) * half_size
 		
-		cs = character_xsize / 2
+		cs = me.xsize / 2
 		def near(x, y, width, height):
 			return (
 				(x < me.x + cs and me.x - cs < x + width and y < me.y + cs and me.y - cs < y + height) and
@@ -52,15 +52,14 @@ init python:
 		return im.composite(*to_draw), start_x, start_y
 	
 	def get_end_point(from_x, from_y, dx, dy):
-		to_x, to_y = from_x + dx, from_y + dy
-		if to_x >= cur_location.xsize: to_x = cur_location.xsize - 1
-		if to_x < 0:                   to_x = 0
-		if to_y >= cur_location.ysize: to_y = cur_location.ysize - 1
-		if to_y < 0:                   to_y = 0
+		to_x = in_bounds(from_x + dx, 0, cur_location.xsize)
+		to_y = in_bounds(from_y + dy, 0, cur_location.ysize)
 		dx, dy = to_x - from_x, to_y - from_y
+		if dx == 0 and dy == 0:
+			return to_x, to_y
 		
 		free, start_x, start_y = get_map_free()
-		if free is None or (dx == 0 and dy == 0):
+		if free is None:
 			return to_x, to_y
 		
 		from_x -= start_x
@@ -108,16 +107,16 @@ init python:
 		left1, right1 = rotations[(rot_index - 1) % len(rotations)], rotations[(rot_index + 1) % len(rotations)]
 		left2, right2 = rotations[(rot_index - 2) % len(rotations)], rotations[(rot_index + 2) % len(rotations)]
 		
-		
+		radius = me.radius
 		x, y = from_x, from_y
-		fx, fy = x + forward[0] * character_radius, y + forward[1] * character_radius
+		fx, fy = x + radius * forward[0], y + radius * forward[1]
 		while int(x + dx) != int(x) or int(y + dy) != int(y):
 			pdx, pdy = part(dx), part(dy)
 			
 			left_last_block = 0
 			left_first_block = 0
-			left_first_free = character_radius
-			for dist in xrange(1, character_radius):
+			left_first_free = radius
+			for dist in xrange(1, radius):
 				is_free = is_black(fx + pdx + dist * left[0] + left1[0], fy + pdy + dist * left[1] + left1[1])
 				
 				if not is_free:
@@ -125,13 +124,13 @@ init python:
 					if not left_first_block:
 						left_first_block = dist
 				else:
-					if left_first_free == character_radius:
+					if left_first_free == radius:
 						left_first_free = dist
 			
 			right_last_block = 0
 			right_first_block = 0
-			right_first_free = character_radius
-			for dist in xrange(1, character_radius):
+			right_first_free = radius
+			for dist in xrange(1, radius):
 				is_free = is_black(fx + pdx + right1[0] + dist * right[0], fy + pdy + right1[1] + dist * right[1])
 				
 				if not is_free:
@@ -139,7 +138,7 @@ init python:
 					if not right_first_block:
 						right_first_block = dist
 				else:
-					if right_first_free == character_radius:
+					if right_first_free == radius:
 						right_first_free = dist
 			
 			changed = True
@@ -156,7 +155,7 @@ init python:
 					elif left_first_free > right_first_free:
 						side = 'right'
 					else:
-						for dist in xrange(character_radius):
+						for dist in xrange(radius):
 							left_free = is_black(fx + pdx + left1[0] + dist * left2[0], fy + pdy + left1[1] + dist * left2[1])
 							right_free = is_black(fx + pdx + right1[0] + dist * right2[0], fy + pdy + right1[1] + dist * right2[1])
 							
@@ -184,7 +183,7 @@ init python:
 			else:
 				dx, dy = to_zero(dx), to_zero(dy)
 				x, y = x + dpoint[0], y + dpoint[1]
-				fx, fy = x + character_radius * forward[0], y + character_radius * forward[1]
+				fx, fy = x + radius * forward[0], y + radius * forward[1]
 		
 		return start_x + x + dx, start_y + y + dy
 

@@ -149,6 +149,8 @@ init -1001 python:
 			
 			self.alpha = 1
 			
+			self.inventory = []
+			
 			self.remove_animation()
 			self.update()
 		
@@ -378,7 +380,7 @@ init -1001 python:
 		character = character or me
 		x, y = character['x'], character['y']
 		
-		min_dist = character_radius * 3
+		min_dist = character.radius * 3
 		res = None
 		
 		for i in character.location.objects:
@@ -390,6 +392,29 @@ init -1001 python:
 				continue
 			
 			dist = get_dist(i.x, i.y, x, y)
+			if dist < min_dist:
+				min_dist = dist
+				res = i
+		return res
+	
+	def get_near_location_object_with_inventory(character = None):
+		character = character or me
+		x, y = character['x'], character['y']
+		
+		min_dist = character.radius * 3
+		res = None
+		
+		for i in character.location.objects + character.location.places.values():
+			if isinstance(i, RpgLocationObject):
+				ix, iy = i.x, i.y
+			elif isinstance(i, RpgPlace):
+				ix, iy = get_place_center(i)
+			else:
+				continue
+			if not i.inventory:
+				continue
+			
+			dist = get_dist(ix, iy, x, y)
 			if dist < min_dist:
 				min_dist = dist
 				res = i
@@ -419,8 +444,8 @@ init -1001 python:
 					continue
 				px, py, to_side = obj.sit_places[i]
 				dx, dy = sides_dpos[to_side]
-				px = obj.x + px + dx * character_radius
-				py = obj.y - obj.ysize + py + dy * character_radius
+				px = obj.x + px + dx * character.radius
+				py = obj.y - obj.ysize + py + dy * character.radius
 				
 				dist = get_dist(px, py, character.x, character.y)
 				if dist < min_dist:

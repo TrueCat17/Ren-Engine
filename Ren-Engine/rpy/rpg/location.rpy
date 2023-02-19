@@ -303,6 +303,7 @@ init -1002 python:
 			self.x, self.y = x, y
 			self.xsize, self.ysize = xsize, ysize
 			self.exit_side, self.to_location_name, self.to_place_name, self.to_side = to
+			self.inventory = []
 		
 		def __str__(self):
 			return '<RpgPlace ' + self.name + '>'
@@ -432,7 +433,7 @@ init -1002 python:
 				x, y = int(place.x + place.xsize / 2), int(place.y + place.ysize / 2)
 				places.extend((place.name, x, y, place.to_location_name or '', place.to_place_name or ''))
 			
-			path_update_location(location.name, free, character_radius, objects, places, location.min_scale, location.count_scales)
+			path_update_location(location.name, free, Character.radius, objects, places, location.min_scale, location.count_scales)
 	
 	
 	class RpgLocationOver(Object):
