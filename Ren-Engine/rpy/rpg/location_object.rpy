@@ -240,6 +240,78 @@ init -1001 python:
 				res = im.crop(res, self.crop)
 			return res
 		
+		def get_free_rect(self):
+			free = self.free()
+			if not free:
+				return 0, 0, self.xsize, self.ysize
+			
+			cache = RpgLocationObject.get_free_rect.__dict__
+			if free not in cache:
+				w, h = get_image_size(free)
+				black_color = 0x000000FF # 0xRRGGBBAA
+				
+				for left in xrange(w):
+					empty = True
+					for i in xrange(h):
+						if get_image_pixel(free, left, i) == black_color:
+							empty = False
+							break
+					if not empty:
+						break
+				
+				if empty:
+					left, top = 0, 0
+					right, bottom = w, h
+				else:
+					for right in xrange(w - 1, -1, -1):
+						empty = True
+						for i in xrange(h):
+							if get_image_pixel(free, right, i) == black_color:
+								empty = False
+								break
+						if not empty:
+							break
+					
+					for top in xrange(h):
+						empty = True
+						for i in xrange(left, right + 1):
+							if get_image_pixel(free, i, top) == black_color:
+								empty = False
+								break
+						if not empty:
+							break
+					for bottom in xrange(h - 1, -1, -1):
+						empty = True
+						for i in xrange(left, right + 1):
+							if get_image_pixel(free, i, bottom) == black_color:
+								empty = False
+								break
+						if not empty:
+							break
+				
+				cache[free] = left, top, right, bottom # (x, y, x + w, y + h)
+			return cache[free]
+		
+		def dist_to(self, x, y):
+			x -= self.x - get_absolute(self.xanchor, self.xsize)
+			y -= self.y - get_absolute(self.yanchor, self.ysize)
+			left, top, right, bottom = self.get_free_rect()
+			
+			if left <= x <= right:
+				if y <= top:
+					return top - y
+				if y >= bottom:
+					return y - bottom
+			elif top <= y <= bottom:
+				if x <= left:
+					return left - x
+				if x >= right:
+					return x - right
+			
+			dx = min(abs(x - left), abs(x - right))
+			dy = min(abs(y - top),  abs(y - bottom))
+			return math.sqrt(dx * dx + dy * dy)
+		
 		def start_animation(self, anim_name, repeat = 0):
 			if self.set_animation(anim_name):
 				self.repeat = int(repeat)
@@ -315,7 +387,7 @@ init -1001 python:
 			pw, ph = place.xsize, place.ysize
 			px, py = place.x, place.y
 		else:
-			px, py = place['x'], place['y'] - 1
+			px, py = place['x'], place['y']
 			if isinstance(place, (dict, RpgPlace)):
 				pw = place['xsize'] if place.has_key('xsize') else 0
 				ph = place['ysize'] if place.has_key('ysize') else 0
@@ -329,7 +401,7 @@ init -1001 python:
 			if not instance.type:
 				instance.type = obj_name
 		else:
-			out_msg('', 'Object <' + obj_name + '> not registered')
+			out_msg('add_location_object', 'Object <' + obj_name + '> not registered')
 			return
 		
 		instance.location = location
@@ -363,12 +435,10 @@ init -1001 python:
 		for obj in location.objects:
 			if not isinstance(obj, RpgLocationObject):
 				continue
-			
 			if obj_type is not None and obj_type != obj.type:
 				continue
 			
-			dx, dy = obj.x - px, obj.y - py
-			dist = dx * dx + dy * dy
+			dist = obj.dist_to(px, py)
 			res.append((dist, obj))
 		
 		res.sort(key = lambda (dist, obj): dist)
@@ -391,7 +461,7 @@ init -1001 python:
 			if obj['max_in_inventory_cell'] <= 0:
 				continue
 			
-			dist = get_dist(i.x, i.y, x, y)
+			dist = i.dist_to(x, y)
 			if dist < min_dist:
 				min_dist = dist
 				res = i
@@ -406,15 +476,21 @@ init -1001 python:
 		
 		for i in character.location.objects + character.location.places.values():
 			if isinstance(i, RpgLocationObject):
-				ix, iy = i.x, i.y
+				dist = i.dist_to(x, y)
 			elif isinstance(i, RpgPlace):
 				ix, iy = get_place_center(i)
+				dist = get_dist(ix, iy, x, y)
 			else:
 				continue
 			if not i.inventory:
 				continue
+			if i.openable is not None:
+				openable = i.openable
+				if callable(openable):
+					openable = openable()
+				if not openable:
+					continue
 			
-			dist = get_dist(ix, iy, x, y)
 			if dist < min_dist:
 				min_dist = dist
 				res = i
