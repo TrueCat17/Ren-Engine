@@ -109,7 +109,7 @@ init -1010 python:
 				count = 0
 			else:
 				count -= element[1]
-				inv[index] = ['', 0]
+				element[:] = ['', 0]
 			
 			if count == 0:
 				break
