@@ -164,7 +164,7 @@ init python:
 		me.y = ycell * cell_size + y
 		
 		moving_dtime = get_game_time() - last_stay_time
-		fps = character_walk_fps if shift_is_down else character_run_fps
+		fps = me.walk_fps if shift_is_down else me.run_fps
 		me.set_frame(int(moving_dtime * fps))
 		
 		me.update_crop()
