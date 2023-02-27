@@ -109,6 +109,12 @@ init -10000 python:
 	def slots__save(slot = None, page = None):
 		page = page or persistent.slot_page
 		slot = slot or persistent.slot_selected
+		
+		screenshot = os.path.join(slots.directory, page, slot, 'screenshot.png')
+		screenshot_mtime = os.path.getmtime(screenshot) if os.path.exists(screenshot) else 0
+		if time.time() - screenshot_mtime < 1:
+			return
+		
 		if page in ('auto', 'quick'):
 			slots.sort_by_time(page)
 		
