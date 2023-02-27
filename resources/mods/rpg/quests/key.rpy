@@ -29,7 +29,7 @@ label key__*:
 	window hide
 
 label key__radio_club*:
-	if has_in_inventory("key", 1):
+	if inventory.has("key", 1):
 		$ set_rpg_control(False)
 		$ location_cutscene_on()
 		$ me.set_direction(to_forward)
@@ -54,7 +54,7 @@ label key__radio_club*:
 		$ sh.set_direction(to_forward)
 		
 		python:
-			last_keys = remove_from_inventory("key", 1)
+			last_keys = inventory.remove("key", 1)
 			if last_keys == 0:
 				quest_end('key')
 		
