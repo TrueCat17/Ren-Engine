@@ -57,7 +57,7 @@ init python:
 		show_screen('selected_location')
 		
 		st = time.time()
-		if not me.move_to_places(points, 1, brute_force=brute_force):
+		if not me.move_to_places(points, run=True, brute_force=brute_force):
 			me.move_to_place(None)
 			stop_moving()
 			set_out_text('Path not found')

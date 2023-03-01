@@ -109,11 +109,11 @@ label clubs__before_clubs:
 	$ set_rpg_control(False)
 	$ location_cutscene_on(align='down')
 	$ me.move_to_place("before_porch")
+	$ me.set_direction(to_forward)
 	
 	window show
 	"Проходя мимо здания клубов, я заметил, что тут вышла {color=" + hex(un.name_text_color) + "}какая-то девушка{/color}."
 	
-	$ me.set_direction(to_forward)
 	$ show_character(un, "radio_club")
 	$ un.move_to_place("porch")
 	
@@ -122,6 +122,7 @@ label clubs__before_clubs:
 	$ un.set_direction(to_left)
 	
 	"Пока я раздумывал, стоит ли подходить к ней, появилась {color=" + hex(us.name_text_color) + "}ещё одна{/color}."
+	$ us.set_direction(to_right)
 	"Она подошла к первой."		
 	"Начала что-то рассказывать и..."
 	

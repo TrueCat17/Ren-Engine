@@ -22,7 +22,8 @@ static void saveMap(std::vector<bool> map, int w, int h, const std::string &name
 	resPitch = (resPitch + 3) & ~3;//align to 4
 	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
 
-	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat);
+	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(
+	            resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 	res->flags &= Uint32(~SDL_PREALLOC);
 
@@ -133,7 +134,9 @@ static void makeOutsideMsg(const std::string &from, PointInt xStart, PointInt yS
 	std::string startPoint = std::to_string(xStart) + ',' + std::to_string(yStart);
 	std::string endPoint = std::to_string(xEnd) + ',' + std::to_string(yEnd);
 	std::string startSize = std::to_string(startMap->originalWidth) + 'x' + std::to_string(startMap->originalHeight);
-	std::string endSize = endMap ? std::to_string(endMap->originalWidth) + 'x' + std::to_string(endMap->originalHeight) : "";
+	std::string endSize = endMap
+	        ? std::to_string(endMap->originalWidth) + 'x' + std::to_string(endMap->originalHeight)
+	        : "";
 
 	Utils::outMsg("PathFinder::" + from,
 	                "Start (" + startPoint + ") or/and End (" + endPoint + ") point outside\n" +
@@ -297,12 +300,16 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 	long countObjectElements = Py_SIZE(objects);
 	long countPlaceElements = Py_SIZE(places);
 	if ((countObjectElements % 3) || (countPlaceElements % 5)) {
-		Utils::outMsg("PathFinder::updateLocation", "Expects objects == [freeImage, x, y] * N, places == [name, x, y, loc_name, to_place_name] * N");
+		Utils::outMsg("PathFinder::updateLocation",
+		              "Expects objects == [freeImage, x, y] * N, places == [name, x, y, loc_name, to_place_name] * N");
 		return;
 	}
 
 	if (!minScale || minScale > MipMap::MAX_SCALE || (minScale & (minScale - 1))) {
-		Utils::outMsg("PathFinder::updateLocation", "minScale(" + std::to_string(minScale) + ") == 0, more than " + std::to_string(MipMap::MAX_SCALE) + " or is not power of 2");
+		Utils::outMsg("PathFinder::updateLocation",
+		              "minScale (" + std::to_string(minScale) + ") == 0, "
+		              "more than " + std::to_string(MipMap::MAX_SCALE) + " or "
+		              "is not a power of 2");
 		return;
 	}
 	if (!countScales) {
@@ -316,6 +323,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		mipMap = new MipMap();
 	}else {
 		mipMap = it->second;
+		mipMap->exitPaths.clear();
 	}
 
 	MipMapParams params;
@@ -347,7 +355,9 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		PyObject *pyLocation = PyList_GET_ITEM(places, i + 3);
 		PyObject *pyPlace = PyList_GET_ITEM(places, i + 4);
 
-		if (!PyString_CheckExact(pyName) || !PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY) || !PyString_CheckExact(pyLocation) || !PyString_CheckExact(pyPlace)) {
+		if (!PyString_CheckExact(pyName) || !PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY) ||
+		    !PyString_CheckExact(pyLocation) || !PyString_CheckExact(pyPlace))
+		{
 			Utils::outMsg("PathFinder::updateLocation", "Expects places == [str, int, int, str, str] * N");
 			continue;
 		}
@@ -498,7 +508,9 @@ static float calcDist(PointInt x1, PointInt y1, PointInt x2, PointInt y2) {
 	PointInt dY = y1 > y2 ? y1 - y2 : y2 - y1;
 	return std::sqrt(float(dX * dX + dY * dY));
 }
-static Point* getNewPoint(PointInt x, PointInt y, float costFromStart = 0, Point *parent = nullptr, Point *end = nullptr) {
+static Point* getNewPoint(PointInt x, PointInt y, float costFromStart = 0,
+                          Point *parent = nullptr, Point *end = nullptr)
+{
 	Point *res = &mapPoints[currentMap->w * y + x];
 
 	for (const auto *vec : {&openPoints, &closePoints}) {
@@ -748,10 +760,15 @@ static const std::pair<Path, float>& findAndSavePath(MipMap* mipMap, SimplePoint
 
 	float cost;
 	if (!path.empty()) {
-		auto [startX, startY] = path.back();
-		cost = calcDist(start.x, start.y, startX, startY);
-		for (size_t i = 0; i < path.size() - 1; ++i) {
-			cost += calcDist(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
+		if (path.size() == 1) {
+			cost = calcDist(start.x, start.y, end.x, end.y);
+			path[0] = end;
+		}else {
+			auto [startX, startY] = path.back();
+			cost = calcDist(start.x, start.y, startX, startY);
+			for (size_t i = 0; i < path.size() - 1; ++i) {
+				cost += calcDist(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y);
+			}
 		}
 	}else {
 		cost = -1;
@@ -786,6 +803,7 @@ struct LocationNode {
 };
 static std::vector<LocationNode> locationNodes;
 
+static Path resPath;
 PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart,
                                                const std::string &endLocation, PointInt xEnd, PointInt yEnd,
                                                PyObject *bannedExits, bool bruteForce)
@@ -933,6 +951,11 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	endNode.mipMap = endMap;
 	endNode.prevId = uint16_t(-1);
 
+	if (startMap == endMap) {
+		auto &[path, cost] = findAndSavePath(endMap, {xStart, yStart}, {xEnd, yEnd}, false);
+		startNode.destinations.push_back({endNode.id, cost});
+	}
+
 	//link nodes
 	tmpPaths.clear();
 	for (LocationNode &node : locationNodes) {
@@ -959,7 +982,8 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 				if (exitNode.toLocationName == node.toLocationName && exitNode.toPlaceName == node.toPlaceName) continue;
 
 				SimplePoint to = {exitNode.x, exitNode.y};
-				bool pathIsConst = node.id != startNode.id && exitNode.id != endNode.id;//const - from [in] to [out], else - tmp
+				//const - from [in] to [out], else - tmp
+				bool pathIsConst = node.id != startNode.id && exitNode.id != endNode.id;
 				auto &[path, cost] = findAndSavePath(mipMap, from, to, pathIsConst);
 
 				if (!path.empty()) {
@@ -995,7 +1019,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	}
 
 	//get result
-	path.clear();
+	resPath.clear();
 	uint16_t lastId = endNode.id;
 	while (lastId != uint16_t(-1) && locationNodes[lastId].prevId != uint16_t(-1)) {
 		LocationNode &localEndNode = locationNodes[lastId];
@@ -1003,22 +1027,26 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		LocationNode &localStartNode = locationNodes[startId];
 		lastId = localStartNode.prevId;
 
-		bool pathIsConst = endNode.id != localEndNode.id && startNode.id != localStartNode.id;//const - from [in] to [out], else - tmp
-		auto &[subPath, cost] = findAndSavePath(localEndNode.mipMap, {localStartNode.x, localStartNode.y}, {localEndNode.x, localEndNode.y}, pathIsConst);
-		path.insert(path.end(), subPath.begin(), subPath.end());//path += subPath
+		//const - from [in] to [out], else - tmp
+		bool pathIsConst = endNode.id != localEndNode.id && startNode.id != localStartNode.id;
+		auto &[subPath, cost] = findAndSavePath(localEndNode.mipMap,
+		                                        {localStartNode.x, localStartNode.y},
+		                                        {localEndNode.x, localEndNode.y},
+		                                        pathIsConst);
+		resPath.insert(resPath.end(), subPath.begin(), subPath.end());//path += subPath
 
-		path.push_back({PointInt(-1), startId});
+		resPath.push_back({PointInt(-1), startId});
 	}
-	if (path.size() > 1) {
-		path.back() = {xStart, yStart};
-		path.front() = {xEnd, yEnd};
+	if (resPath.size() > 1) {
+		resPath.back() = {xStart, yStart};
+		resPath.front() = {xEnd, yEnd};
 	}
 
 	//set result
-	long resSize = long(path.size()) * 2;
+	long resSize = long(resPath.size()) * 2;
 	PyObject *res = PyTuple_New(resSize);
-	for (size_t i = path.size() - 1; i != size_t(-1); --i) {
-		auto [x, y] = path[i];
+	for (size_t i = resPath.size() - 1; i != size_t(-1); --i) {
+		auto [x, y] = resPath[i];
 
 		if (x == PointInt(-1)) {
 			LocationNode &node = locationNodes[y];
