@@ -8,7 +8,7 @@ init -10000 python:
 			if type(func) is str:
 				file_name, num_line = get_file_and_line(1)
 				compiled = compile('\n' * (num_line - 1) + func, file_name, 'exec')
-				eval(compiled)
+				eval(compiled, globals(), globals())
 			else:
 				func()
 	
