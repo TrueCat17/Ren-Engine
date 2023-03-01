@@ -290,9 +290,9 @@ init -1000 python:
 	def rpg_action_to_friend(character, state):
 		actions = character.get_actions()
 		friend = actions.friend
-		if friend:
+		friend_actions = friend and friend.get_actions()
+		if friend and state != 'end':
 			# check for changed friend action
-			friend_actions = friend.get_actions()
 			if not friend_actions: return 'end'
 			if friend_actions.cur_action is not rpg_action_to_friend: return 'end'
 			if friend_actions.friend is not character: return 'end'
@@ -321,6 +321,7 @@ init -1000 python:
 				if not friends:
 					return 'end'
 				friend = random.choice(friends)
+				friend_actions = friend.get_actions()
 			
 			path_found = character.move_to_place([friend.location.name, friend])
 			if not path_found:
@@ -330,7 +331,6 @@ init -1000 python:
 			actions.to_friend_start_time = get_game_time()
 			
 			if no_start_friend:
-				friend_actions = friend.get_actions()
 				if friend_actions and friend_actions.cur_action is not rpg_action_to_friend:
 					friend_actions.stop()
 				
@@ -385,8 +385,8 @@ init -1000 python:
 		if state == 'end':
 			character.move_to_place(None)
 			actions.friend = None
-			if friend and friend.get_actions():
-				friend.get_actions().stop()
+			if friend_actions:
+				friend_actions.stop()
 			return 'end'
 	
 	def rpg_action_follow(character, state, to):
@@ -502,7 +502,8 @@ init -1000 python:
 		
 		def stop(self):
 			if self.cur_action:
-				self.cur_action(self.character, 'end', *self.cur_args, **self.cur_kwargs)
+				self.state = 'end'
+				self.exec_action()
 				self.cur_action = None
 		def stopped(self):
 			return self.cur_action is None

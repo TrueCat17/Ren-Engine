@@ -260,8 +260,6 @@ init -1002 python:
 		def __str__(self):
 			return '<RpgLocation ' + str(self.name) + '>'
 		
-		def get_zorder(self):
-			return 0
 		def get_draw_data(self):
 			return [{
 				'image':   self.main(),
@@ -270,7 +268,7 @@ init -1002 python:
 				'anchor': (0, 0),
 				'crop':   (0, 0, 1.0, 1.0),
 				'alpha':   1,
-				'zorder':  self.get_zorder(),
+				'zorder':  0,
 			}]
 		
 		def main(self):
@@ -438,11 +436,7 @@ init -1002 python:
 	
 	class RpgLocationOver(Object):
 		def __init__(self, location):
-			Object.__init__(self)
-			self.location = location
-		
-		def get_zorder(self):
-			return 1e6
+			Object.__init__(self, location = location)
 		
 		def get_draw_data(self):
 			return {
@@ -451,7 +445,7 @@ init -1002 python:
 				'pos':    (0, 0),
 				'anchor': (0, 0),
 				'crop':   (0, 0, 1.0, 1.0),
-				'alpha':   1.0,
-				'zorder':  self.get_zorder()
+				'alpha':   1,
+				'zorder':  1e6,
 			}
 

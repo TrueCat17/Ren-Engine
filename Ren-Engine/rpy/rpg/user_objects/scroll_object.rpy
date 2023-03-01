@@ -32,9 +32,6 @@ init -1000 python:
 			self.cx += self.dx * dtime
 			self.cy += self.dy * dtime
 		
-		def get_zorder(self):
-			return self.zorder
-		
 		def get_draw_data(self):
 			xsize = get_absolute(self.xsize, self.location.xsize)
 			ysize = get_absolute(self.ysize, self.location.ysize)
@@ -53,7 +50,7 @@ init -1000 python:
 						'anchor': (0, 0),
 						'crop':   (0, 0, 1.0, 1.0),
 						'alpha':   self.alpha,
-						'zorder':  self.get_zorder(),
+						'zorder':  self.zorder,
 					})
 					
 					xpos += xsize
