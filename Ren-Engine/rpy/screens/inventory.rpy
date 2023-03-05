@@ -69,7 +69,7 @@ init -101 python:
 		if key in cache:
 			return cache[key]
 		
-		hover = gui.bg('inventory_cell_selected_over' if is_selected else 'inventory_cell_usual_over')
+		hover = inventory['cell_selected_over' if is_selected else 'cell_usual_over']
 		hover = im.scale(hover, inventory.cell_xsize, inventory.cell_ysize)
 		hover = get_back_with_color(hover)
 		
@@ -357,6 +357,9 @@ screen inventory:
 			inventory.cell_image_ysize = gui.get_int('inventory_cell_image_height', max_value = inventory.cell_ysize)
 		else:
 			inventory.cell_image_ysize = inventory.cell_image_xsize
+		
+		inventory.cell_selected_over = gui.bg('inventory_cell_selected_over')
+		inventory.cell_usual_over = gui.bg('inventory_cell_usual_over')
 		
 		inventory.cell_xspacing = gui.get_int('inventory_cell_xspacing')
 		inventory.cell_yspacing = gui.get_int('inventory_cell_yspacing')
