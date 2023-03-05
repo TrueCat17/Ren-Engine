@@ -116,7 +116,7 @@ init -1010 python:
 		
 		return count
 	
-	def inventory__change(old, new):
+	def inventory__change(old, new, show_on_fail):
 		old_len, new_len = len(old), len(new)
 		
 		for i in xrange(min(old_len, new_len)):
@@ -150,7 +150,7 @@ init -1010 python:
 			if obj_count:
 				auto_failed = True
 		
-		if auto_failed:
+		if auto_failed and show_on_fail:
 			inventory.show(new, old)
 	
 	

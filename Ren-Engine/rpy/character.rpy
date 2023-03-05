@@ -174,7 +174,8 @@ init -1001 python:
 			
 			self.inventories = {}
 			for dress, size in inventory.dress_sizes.iteritems():
-				self.inventories[dress] = [['', 0] for i in xrange(size)]
+				if dress != 'default':
+					self.inventories[dress] = [['', 0] for i in xrange(size)]
 		
 		def __str__(self):
 			return str(self.name)
@@ -237,7 +238,7 @@ init -1001 python:
 			old_inventory = self.inventory
 			self.inventory = self.inventories[dress]
 			if old_inventory and self.inventory:
-				inventory.change(old_inventory, self.inventory)
+				inventory.change(old_inventory, self.inventory, show_on_fail = self is me)
 		
 		def get_direction(self):
 			return self.direction
