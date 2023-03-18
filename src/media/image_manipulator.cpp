@@ -323,14 +323,6 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 		Utils::outMsg("ImageManipulator::crop", "Sizes are invalid:\n<" + String::join(args, ", ") + ">");
 		return nullptr;
 	}
-	if (x + w > img->w || y + h > img->h) {
-		Utils::outMsg("ImageManipulator::crop", std::string() +
-		              "Crop area outside image:\n"
-		              "Crop: (" + String::join(rectVec, ", ") + ")\n"
-		              "Image size: " + std::to_string(img->w) + "x" + std::to_string(img->h) + "\n"
-		              "<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
 
 	if (!x && !y && w == img->w && h == img->h) {
 		return img;
