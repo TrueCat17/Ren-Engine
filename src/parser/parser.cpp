@@ -605,7 +605,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		size_t startIndent;
 		do {
 			startIndent = code[i++].find_first_not_of(' ');
-		}while (startIndent == size_t(-1));
+		}while (startIndent == size_t(-1) && i < end);
 
 		for (i = start + 1; i < end; ++i) {
 			const std::string &line = code[i];
