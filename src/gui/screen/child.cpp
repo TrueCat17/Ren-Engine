@@ -76,7 +76,7 @@ void Child::updateStyle() {
 		}
 		if (child->command == "has" || child->command == "pass") continue;
 
-		PyObject *res = PyUtils::execRetObj(getFileName(), getNumLine(), child->params);
+		PyObject *res = PyUtils::execRetObj(child->getFileName(), child->getNumLine(), child->params);
 		if (!res) continue;
 
 		PyTuple_SET_ITEM(props, 0, res);
