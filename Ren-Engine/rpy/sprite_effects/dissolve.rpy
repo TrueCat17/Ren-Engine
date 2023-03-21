@@ -193,7 +193,7 @@ init -9000 python:
 		
 		def for_not_hiding(self):
 			if self.sprite.new_data:
-				self.sprite.new_data.alpha = 1
+				self.sprite.new_data.alpha = 1.0
 	
 	
 	dspr = Dissolve(0.2)

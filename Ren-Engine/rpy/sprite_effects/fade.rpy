@@ -52,7 +52,7 @@ init -9000 python:
 					sprites.screen.remove_effect()
 		
 		def remove(self):
-			sprites.screen.new_data.alpha = 0
+			sprites.screen.new_data.alpha = 0.0
 			sprites.screen.effect = None
 		
 		def for_not_hiding(self):

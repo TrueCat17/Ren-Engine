@@ -11,7 +11,7 @@ init -9000 python:
 			self.xanchor = self.yanchor = 0
 			self.xsize = self.ysize = None
 			self.xzoom = self.yzoom = 1.0
-			self.xcrop, self.ycrop, self.xsizecrop, self.ysizecrop = 0, 0, 1.0, 1.0
+			self.xcrop, self.ycrop, self.xsizecrop, self.ysizecrop = 0.0, 0.0, 1.0, 1.0
 			self.alpha = 1.0
 			self.rotate = 0
 			

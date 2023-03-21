@@ -24,7 +24,11 @@ init -9000 python:
 			return [prop]
 		if prop in atl_props['xy']:
 			return ['x' + prop, 'y' + prop]
-		return atl_props.get(prop, None)
+		if prop in atl_props['crop']:
+			return [prop]
+		if prop == 'crop':
+			return atl_props['crop']
+		return None
 	
 	
 	def get_prop_names(prop):

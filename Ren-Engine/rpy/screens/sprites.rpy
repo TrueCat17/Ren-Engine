@@ -94,14 +94,16 @@ init -1000 python:
 			at = eval(d['at'])
 			at = at.actions if at else []
 		else:
-			if old_sprite and (old_sprite.new_data or old_sprite.old_data):
-				at = (old_sprite.new_data or old_sprite.old_data).at.actions
+			data = old_sprite and (old_sprite.new_data or old_sprite.old_data)
+			if data:
+				at = data.at.actions
 				if not at and not show_at:
 					at = center.actions
 			else:
 				at = [] if show_at else center.actions
 		
 		spr = Sprite(decl_at, at, show_at, old_sprite if effect else None)
+		spr.sprite_name = image_name
 		spr.as_name = d['as']
 		spr.call_str = params_str
 		if is_scene or old_sprite is sprites.scene:
@@ -196,9 +198,9 @@ screen sprites:
 	
 	$ sprites.images = sprites.get_datas()
 	
-	xzoom absolute(get_stage_width() ) / config.width  if config.width  else 1
-	yzoom absolute(get_stage_height()) / config.height if config.height else 1
-		
+	xzoom get_stage_width()  / float(config.width  or get_stage_width())
+	yzoom get_stage_height() / float(config.height or get_stage_height())
+	
 	pos    (sprites.screen.new_data.xpos,       sprites.screen.new_data.ypos)
 	anchor (sprites.screen.new_data.xanchor,    sprites.screen.new_data.yanchor)
 	size   (sprites.screen.new_data.real_ysize, sprites.screen.new_data.real_xsize)
