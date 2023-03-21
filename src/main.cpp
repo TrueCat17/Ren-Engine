@@ -100,18 +100,6 @@ static bool init() {
 		return true;
 	}
 
-	std::string scaleQuality = Config::get("scale_quality");
-	if (scaleQuality != "0" && scaleQuality != "1" && scaleQuality != "2") {
-		Utils::outMsg("Config::get",
-		              "Value of param scale_quality expected 0, 1 or 2, got <" + scaleQuality + ">");
-		scaleQuality = "0";
-	}
-	if (scaleQuality != "0") {
-		if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, scaleQuality.c_str()) == SDL_FALSE) {
-			Utils::outMsg("SDL_SetHint", "Failed to set scale quality");
-		}
-	}
-
 	if (TTF_Init()) {
 		Utils::outMsg("TTF_Init", TTF_GetError());
 		return true;

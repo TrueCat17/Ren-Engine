@@ -4,6 +4,8 @@
 #include <fstream>
 #include <vector>
 
+#include <SDL2/SDL_hints.h>
+
 #include "utils/algo.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -209,4 +211,26 @@ void Config::save() {
 		}
 		os << '\n';
 	}
+}
+
+
+void Config::setDefaultScaleQuality() {
+	std::string value = Config::get("scale_quality");
+	Config::setScaleQuality(value);
+}
+bool Config::setScaleQuality(std::string value) {
+	bool ok = true;
+	if (value != "0" && value != "1" && value != "2") {
+		Utils::outMsg("Config::setScaleQuality", "Expected 0, 1 or 2, got <" + value + ">");
+		value = "0";
+		ok = false;
+	}
+	if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, value.c_str()) == SDL_FALSE) {
+		Utils::outMsg("SDL_SetHint", "Failed to set scale quality");
+		ok = false;
+	}
+	return ok;
+}
+std::string Config::getScaleQuality() {
+	return SDL_GetHint(SDL_HINT_RENDER_SCALE_QUALITY);
 }

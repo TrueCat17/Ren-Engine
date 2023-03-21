@@ -144,8 +144,6 @@ void PyUtils::init() {
 	if (PyType_Ready(&PyAbsolute_Type) < 0) {
 		Utils::outMsg("PyUtils::init", "Can't initialize absolute type");
 	}else {
-		PyObject *builtinModule = PyImport_AddModule("__builtin__");
-		PyObject *builtinDict = PyModule_GetDict(builtinModule);
 		PyDict_SetItemString(builtinDict, "absolute", (PyObject*)&PyAbsolute_Type);
 	}
 	setGlobalFunc("get_engine_version", Utils::getVersion);
@@ -232,6 +230,9 @@ void PyUtils::init() {
 	setGlobalFunc("set_clipboard_text", Utils::setClipboardText);
 
 	setGlobalFunc("get_screen_times", GUI::getScreenTimes);
+
+	setGlobalFunc("set_scale_quality", Config::setScaleQuality);
+	setGlobalFunc("get_scale_quality", Config::getScaleQuality);
 }
 
 

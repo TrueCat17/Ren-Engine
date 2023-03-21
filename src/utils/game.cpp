@@ -379,7 +379,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		modStartTime = int(std::time(nullptr));
 
 		Logger::log("Start mod <" + dir + ">");
-		Logger::logEvent("Waiting while stoped executed mod", Utils::getTimer() - waitingStartTime);
+		Logger::logEvent("Waiting for the running mod to stop", Utils::getTimer() - waitingStartTime);
 
 		double clearStartTime = Utils::getTimer();
 		Music::clear();
@@ -404,6 +404,8 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Translation::init();
 
 		ScreenNodeUtils::clear();
+
+		Config::setDefaultScaleQuality();
 
 		Logger::logEvent("Clearing", Utils::getTimer() - clearStartTime);
 	}
