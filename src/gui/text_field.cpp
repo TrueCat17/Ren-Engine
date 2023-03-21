@@ -18,6 +18,10 @@
 
 bool operator==(const SDL_Rect &a, const SDL_Rect &b);
 
+inline int getCountOutlines(TextStyle &textStyle) {
+    return textStyle.fontSize >= 25 ? 2 : 1;
+}
+
 
 static const int MIN_TEXT_SIZE = 8;
 static const int MAX_TEXT_SIZE = 72;
@@ -69,6 +73,15 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	}
 	if (style.alpha * 255 < 1) return;
 
+	int origW = *w;
+	int origH = *h;
+
+	int countOutlines = getCountOutlines(style);
+	if (style.enableOutline) {
+		*w += countOutlines * 2;
+		*h += countOutlines * 2;
+	}
+
 	SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
 	if (rect.y < 3) rect.y = 0;//fix for fonts, where some symbols have height more than font size on init
 
@@ -89,13 +102,11 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 			return;
 		}
 
-		int countOutlines = style.fontSize >= 25 ? 2 : 1;
-
 		std::pair<int, int> pairs[8] = {{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}};
 		for (auto [x, y] : pairs) {
 			for (int i = 1; i <= countOutlines; ++i) {
-				SDL_Rect rect = {x * i, y * i, *w, *h};
-				SDL_BlitSurface(surfaceOutlineText, nullptr, tmpSurface.get(), &rect);
+				SDL_Rect to = {countOutlines + x * i, countOutlines + y * i, origW, origH};
+				SDL_BlitSurface(surfaceOutlineText, nullptr, tmpSurface.get(), &to);
 			}
 		}
 		SDL_FreeSurface(surfaceOutlineText);
@@ -114,7 +125,9 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	}
 
 	if (style.enableOutline) {
-		SDL_BlitSurface(surfaceText, nullptr, tmpSurface.get(), nullptr);
+		SDL_Rect to = {countOutlines, countOutlines, origW, origH};
+		SDL_BlitSurface(surfaceText, nullptr, tmpSurface.get(), &to);
+
 		SDL_SetSurfaceAlphaMod(tmpSurface.get(), Uint8(std::min<float>(style.alpha * 255, 255)));
 		SDL_BlitSurface(tmpSurface.get(), nullptr, surface, &rect);
 	}else {
@@ -315,12 +328,18 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 		i = end - 1;
 		std::string word = line.substr(start, end - start);
 
+		TextStyle &style = styleStack.back();
 		if (onlySize) {
-			if (TTF_SizeUTF8(styleStack.back().font, word.c_str(), w, h)) {
+			if (TTF_SizeUTF8(style.font, word.c_str(), w, h)) {
 				Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			}
+			if (style.enableOutline) {
+				int countOutlines = getCountOutlines(style);
+				*w += countOutlines * 2;
+				*h += countOutlines * 2;
+			}
 		}else if (!invisible) {
-			addChars(word, x, w, h, styleStack.back(), surface);
+			addChars(word, x, w, h, style, surface);
 		}
 	}
 
@@ -410,7 +429,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			return line.size();
 		}
-		width += w;
+		width += w + getCountOutlines(styleStack.back()) * 2;
 	}
 
 	size_t firstSpaceIndex = partStr.find(' ');
@@ -435,6 +454,9 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 		if (TTF_SizeUTF8(font, partStr.c_str(), &width, nullptr)) {
 			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			return line.size();
+		}
+		if (styleStack.back().enableOutline) {
+			width += getCountOutlines(styleStack.back()) * 2;
 		}
 		if (width <= partMaxWidth) break;
 
@@ -482,6 +504,7 @@ void TextField::setText(const std::string &text) {
 			if (firstNotSpace != size_t(-1) && wrapIndex <= firstNotSpace) {
 				line.erase(0, firstNotSpace);
 				wrapIndex = line.empty() ? 0 : 1;
+				while (!Algo::isFirstByte(line[wrapIndex])) ++wrapIndex;
 			}
 		}
 		if (wrapIndex != line.size()) {
