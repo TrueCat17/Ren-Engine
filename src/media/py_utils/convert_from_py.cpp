@@ -2,22 +2,27 @@
 
 #include <limits>
 
-[[noreturn]]
-void pySetErrorType(const char *funcName, size_t argIndex, PyObject *obj, const char *expectedType) {
+bool pyErrorFlag = false;
+
+
+static void pySetErrorType(const char *funcName, size_t argIndex, PyObject *obj, const char *expectedType) {
+	if (pyErrorFlag) return;//dont overwrite prev error
+	pyErrorFlag = true;
+
 	std::string err = std::string() +
 		funcName + "(), argument #" + std::to_string(argIndex + 1) + ": "
 		"expected " + expectedType + ", "
 	    "got " + obj->ob_type->tp_name;
 	PyErr_SetString(PyExc_TypeError, err.c_str());
-	throw PyConvertError();
 }
 
-[[noreturn]]
-void pySetErrorOverflow(const char *funcName, size_t argIndex, const char *msg, const char *type) {
+static void pySetErrorOverflow(const char *funcName, size_t argIndex, const char *msg, const char *type) {
+	if (pyErrorFlag) return;//dont overwrite prev error
+	pyErrorFlag = true;
+
 	std::string err = std::string() +
 		funcName + "(), argument #" + std::to_string(argIndex + 1) + ": " + msg + type;
 	PyErr_SetString(PyExc_OverflowError, err.c_str());
-	throw PyConvertError();
 }
 
 
@@ -33,6 +38,7 @@ bool convertFromPy<bool>(PyObject *obj, const char *funcName, size_t argIndex) {
 		return obj == Py_True;
 	}
 	pySetErrorType(funcName, argIndex, obj, "bool");
+	return false;
 }
 
 
@@ -68,6 +74,7 @@ type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) {
 	} \
 	\
 	pySetErrorType(funcName, argIndex, obj, expectedType); \
+	return 0; \
 }
 
 MAKE_CONVERT_FROM_PY_TO_INT(  int8_t, "int")
@@ -89,6 +96,7 @@ const char* convertFromPy<const char*>(PyObject *obj, const char *funcName, size
 		return PyString_AS_STRING(obj);
 	}
 	pySetErrorType(funcName, argIndex, obj, "str");
+	return "";
 }
 template<>
 std::string convertFromPy<std::string>(PyObject *obj, const char *funcName, size_t argIndex) {
@@ -96,4 +104,5 @@ std::string convertFromPy<std::string>(PyObject *obj, const char *funcName, size
 		return PyString_AS_STRING(obj);
 	}
 	pySetErrorType(funcName, argIndex, obj, "str");
+	return "";
 }

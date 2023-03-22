@@ -131,11 +131,17 @@ void PyUtils::init() {
 	PyObject *tracebackModule = PyImport_AddModule("traceback");
 	PyObject *tracebackDict = PyModule_GetDict(tracebackModule);
 	formatTraceback = PyDict_GetItemString(tracebackDict, "format_tb");
-	if (!formatTraceback) throw std::runtime_error("traceback.format_tb == nullptr");
+	if (!formatTraceback) {
+		Utils::outMsg("PyUtils::init", "traceback.format_tb == nullptr");
+		std::abort();
+	}
 
 	PyObject *builtinModule = PyImport_AddModule("__builtin__");
 	builtinDict = PyModule_GetDict(builtinModule);
-	if (!builtinDict) throw std::runtime_error("__builtin__ == nullptr");
+	if (!builtinDict) {
+		Utils::outMsg("PyUtils::init", "__builtin__ == nullptr");
+		std::abort();
+	}
 
 	PyObject *main = PyImport_AddModule("__main__");
 	global = PyModule_GetDict(main);

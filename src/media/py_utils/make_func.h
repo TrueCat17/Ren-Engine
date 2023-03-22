@@ -1,8 +1,8 @@
 #ifndef MAKE_FUNC_H
 #define MAKE_FUNC_H
 
+#include <tuple>
 #include <vector>
-#include <utility>
 
 #include <Python.h>
 
@@ -61,37 +61,41 @@ public:
 private:
 	static constexpr size_t COUNT_ARGS = sizeof...(Args);
 
-	static PyObject* call(const PyWrapperBase &wrapper, PyObject *args) {
-		return helper(wrapper, args, std::make_index_sequence<COUNT_ARGS>());
+	static PyObject* call(const PyWrapperBase &wrapper, PyObject *pyArgs) {
+		return helper(wrapper, pyArgs, std::make_index_sequence<COUNT_ARGS>());
 	}
 
 	template<size_t ...Indexes>
-	static PyObject* helper(const PyWrapperBase &wrapper, PyObject *args, std::index_sequence<Indexes...>) {
-		if (Py_SIZE(args) != COUNT_ARGS) {
+	static PyObject* helper(const PyWrapperBase &wrapper, PyObject *pyArgs, std::index_sequence<Indexes...>) {
+		if (Py_SIZE(pyArgs) != COUNT_ARGS) {
 			std::string err = std::string(wrapper.name) + "() takes exactly ";
 			if constexpr (COUNT_ARGS == 1) {
 				err += "1 argument";
 			}else {
 				err += std::to_string(COUNT_ARGS) + " arguments";
 			}
-			err += " (" + std::to_string(Py_SIZE(args)) + " given)";
+			err += " (" + std::to_string(Py_SIZE(pyArgs)) + " given)";
 
 			PyErr_SetString(PyExc_TypeError, err.c_str());
 			return nullptr;
 		}
 
-		try {
-			Ret (*typedFunc)(Args...) = reinterpret_cast<Ret(*)(Args...)>(wrapper.funcPtr);
+		Ret (*typedFunc)(Args...) = reinterpret_cast<Ret(*)(Args...)>(wrapper.funcPtr);
 
-			if constexpr (std::is_same<Ret, void>::value) {
-				typedFunc(convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(args, Indexes), wrapper.name, Indexes)...);
-				Py_RETURN_NONE;
-			}else {
-				typename remove_rc<Ret>::type res = typedFunc(convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(args, Indexes), wrapper.name, Indexes)...);
-				return convertToPy(res);
-			}
-		}catch (PyConvertError&) {
+		pyErrorFlag = false;
+		std::tuple args = {
+		    convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(pyArgs, Indexes), wrapper.name, Indexes)...
+		};
+		if (pyErrorFlag) {
 			return nullptr;
+		}
+
+		if constexpr (std::is_same_v<Ret, void>) {
+			std::apply(typedFunc, args);
+			Py_RETURN_NONE;
+		}else {
+			typename remove_rc<Ret>::type res = std::apply(typedFunc, args);
+			return convertToPy(res);
 		}
 	}
 };

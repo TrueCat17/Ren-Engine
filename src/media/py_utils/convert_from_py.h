@@ -7,8 +7,7 @@
 #include <Python.h>
 
 
-struct PyConvertError {};
-
+extern bool pyErrorFlag;
 
 template<typename T>
 T convertFromPy(PyObject *obj, const char *funcName, size_t argIndex);
