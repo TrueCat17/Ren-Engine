@@ -93,6 +93,12 @@ void TextButton::updateTexture(bool skipError) {
 }
 
 void TextButton::checkEvents() {
+	if (alpha <= 0) {
+		btnRect.mouseOvered = false;
+		btnRect.mouseLeftDown = false;
+		btnRect.mouseRightDown = false;
+	}
+
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {
 			const Node *hoverSound = node->getProp("hover_sound");
