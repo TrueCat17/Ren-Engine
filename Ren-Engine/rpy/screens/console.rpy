@@ -27,12 +27,18 @@ init -995 python:
 	def console__out(text):
 		persistent.console_text += '\n' + str(text).replace('{', '{{')
 	def console__out_help():
-		to_out = 'commands: clear, jump, call, scene, show, hide, watch <expr>, unwatch <expr>, unwatchall or python-expr'
-		console.out(to_out)
+		console.out(console.help)
 	
 	
 	def console__add(s):
 		if hotkeys.ctrl:
+			if s == 'd':
+				lines = console.input.split('\n')
+				lines = lines[0:console.cursor_y] + lines[console.cursor_y+1:]
+				console.cursor_y = min(console.cursor_y, len(lines) - 1)
+				console.cursor_x = len(lines[console.cursor_y]) if lines else 0
+				console.input = '\n'.join(lines)
+				return
 			if s == 'c':
 				set_clipboard_text(console.input)
 				return
@@ -47,18 +53,11 @@ init -995 python:
 					else:
 						i += 1
 				s = '\n'.join(lines)
-			if s == 'd':
-				lines = console.input.split('\n')
-				lines = lines[0:console.cursor_y] + lines[console.cursor_y+1:]
-				console.cursor_x = 0
-				console.cursor_y = min(console.cursor_y, len(lines) - 1)
-				console.input = '\n'.join(lines)
-				return
+		else:
+			if hotkeys.shift and s in console.keys:
+				s = console.keys_shift[console.keys.index(s)]
 		
-		if hotkeys.shift and s in console.keys:
-			s = console.keys_shift[console.keys.index(s)]
-		if s == '{':
-			s = console.key_tag
+		s = s.replace('{', console.key_tag)
 		
 		index = console.get_cursor_index()
 		console.input = console.input[0:index] + s + console.input[index:]
@@ -76,8 +75,7 @@ init -995 python:
 		lines = console.input.split('\n')
 		if hotkeys.ctrl:
 			console.cursor_y = len(lines) - 1
-		cur = lines[console.cursor_y]
-		console.cursor_x = len(cur)
+		console.cursor_x = len(lines[console.cursor_y])
 	
 	
 	def console__cursor_left():
@@ -86,25 +84,19 @@ init -995 python:
 			return
 		index -= 1
 		symbol = console.input[index]
-		check = console.get_check(symbol)
 		if hotkeys.ctrl:
-			if symbol == ' ' and index and console.input[index - 1] == ' ':
-				while index and console.input[index - 1] == ' ':
-					index -= 1
-			else:
-				while index and check(console.input[index - 1]):
-					index -= 1
+			check = console.get_check(symbol)
+			while index and check(console.input[index - 1]):
+				index -= 1
 		console.set_cursor_index(index)
 	def console__cursor_right():
 		index = console.get_cursor_index()
 		if index == len(console.input):
 			return
 		symbol = console.input[index]
-		check = console.get_check(symbol)
 		index += 1
 		if hotkeys.ctrl:
-			while index < len(console.input) and console.input[index] == ' ':
-				index += 1
+			check = console.get_check(symbol)
 			while index < len(console.input) and check(console.input[index]):
 				index += 1
 		console.set_cursor_index(index)
@@ -291,12 +283,18 @@ init -995 python:
 			hide_screen('console_watching')
 	
 	
+	def console__is_space(s):
+		return s == ' '
 	def console__is_spec(s):
 		return s in console.spec_symbols
 	def console__is_not_spec(s):
 		return s != ' ' and s not in console.spec_symbols
 	def console__get_check(s):
-		return console.is_spec if s in console.spec_symbols else console.is_not_spec
+		if s == ' ':
+			return console.is_space
+		if s in console.spec_symbols:
+			return console.is_spec
+		return console.is_not_spec
 	
 	
 	def console__show():
@@ -334,6 +332,7 @@ init -995 python:
 	
 	
 	build_object('console')
+	console.help = 'commands: clear, jump, call, scene, show, hide, watch <expr>, unwatch <expr>, unwatchall or python-expr'
 	
 	console.to_watch = []
 	
