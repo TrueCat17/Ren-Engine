@@ -131,14 +131,14 @@ init -995 python:
 			prompt_xsize = utf8.width(input.prompt, style.input_prompt.text_size)
 			
 			btns = len(input.btns)
-			btns_xsize = get_absolute(style.input_btn.xsize, w) * btns + spacing * (btns - 1)
+			btns_xsize = get_absolute(style.input_button.xsize, w) * btns + spacing * (btns - 1)
 			
 			input.bg_xsize = max(prompt_xsize, input.tf_bg_xsize, btns_xsize) + spacing * 2
 		
 		if input.bg_height:
 			input.bg_ysize = get_absolute(input.bg_height, h)
 		else:
-			input.bg_ysize = input.tf_bg_ysize + get_absolute(style.input_btn.ysize, h) + spacing * 3
+			input.bg_ysize = input.tf_bg_ysize + get_absolute(style.input_button.ysize, h) + spacing * 3
 			if input.prompt:
 				input.bg_ysize += style.input_prompt.text_size + spacing
 	
@@ -185,7 +185,7 @@ init:
 		input.reverse_btns = False # True - <Ok> on the right, False - <Ok> on the left
 	
 	
-	style input_btn is textbutton:
+	style input_button is textbutton:
 		size (100, 25)
 	
 	style input_text is text:
@@ -307,5 +307,5 @@ screen input_content:
 		
 		for text, action in input.btns:
 			textbutton _(text):
-				style 'input_btn'
+				style 'input_button'
 				action action
