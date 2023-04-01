@@ -10,6 +10,8 @@ init:
 		color     0
 
 init python:
+	input_allow_symbols = ''.join(alphabet) + ''.join(alphabet).upper() + '0123456789_-+'
+	
 	props_width = 300
 	
 	show_objects_list = False
@@ -257,13 +259,13 @@ screen location_props:
 				if selected_place_name is None:
 					textbutton (_('Add') + ' ' + _('Place')):
 						style 'prop_btn'
-						action ask_str(add_place)
+						action input.ask_str(add_place, 'New place name', allow = input_allow_symbols)
 				else:
 					$ place = selected_location.places[selected_place_name]
 					
 					textbutton (_('Rename') + ' ' + _('Place')):
 						style 'prop_btn'
-						action ask_str(rename_place, selected_place_name)
+						action input.ask_str(rename_place, 'Renaming a place', selected_place_name, allow = input_allow_symbols)
 					textbutton (_('Delete') + ' ' + _('Place')):
 						style 'prop_btn'
 						action del_place
@@ -271,7 +273,7 @@ screen location_props:
 						style 'prop_btn'
 						text_size 15
 						color 0xFFFFFF if not place.to_location_name or rpg_locations.has_key(place.to_location_name) else 0xFF0000
-						action ask_str(rename_to_loc, place.to_location_name or '', empty_is_ok = True)
+						action input.ask_str(rename_to_loc, 'To location', place.to_location_name or '', allow = input_allow_symbols)
 					
 					
 					if place.to_location_name:
@@ -283,7 +285,7 @@ screen location_props:
 								style 'prop_btn'
 								text_size 15
 								color 0xFFFFFF if rpg_locations.has_key(place.to_location_name) and rpg_locations[place.to_location_name].get_place(place.to_place_name) else 0xFF0000
-								action ask_str(rename_to_place, place.to_place_name or '')
+								action input.ask_str(rename_to_place, 'To place', place.to_place_name or '', allow = input_allow_symbols)
 							
 							null ysize 1
 							

@@ -1,18 +1,14 @@
 translate russian strings:
 	
-	# ask_str
-	old 'Cancel'
-	new 'Отмена'
-	
 	# location_props
 	old 'Place <%s> already exists'
 	new 'Место <%s> уже существует'
 	
 	old 'Unselect place'
-	new 'Отменить выбор места'
+	new 'Отменить выбор\nместа'
 	
 	old 'Unselect location'
-	new 'Отменить выбор локации'
+	new 'Отменить выбор\nлокации'
 	
 	old 'Properties'
 	new 'Свойства'
@@ -43,6 +39,12 @@ translate russian strings:
 	
 	old 'To place'
 	new 'В место'
+	
+	old 'New place name'
+	new 'Название нового места'
+	
+	old 'Renaming a place'
+	new 'Переименование места'
 	
 	old 'Exit side'
 	new 'Сторона выхода'

@@ -268,7 +268,7 @@ screen input_content:
 	align 0.5
 	spacing input.real_spacing
 	
-	text input.prompt:
+	text _(input.prompt):
 		style 'input_prompt'
 	
 	vbox:
