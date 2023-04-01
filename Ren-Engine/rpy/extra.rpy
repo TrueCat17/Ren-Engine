@@ -1,6 +1,6 @@
 init -1000000 python:
-	alphabet = list(map(chr, xrange(ord('a'), ord('z') + 1))) # a-z
-	numbers = range(10) # 0-9
+	alphabet = str(map(chr, xrange(ord('a'), ord('z') + 1))) # a-z
+	numbers = '0123456789'
 	
 	
 	def build_object(name):

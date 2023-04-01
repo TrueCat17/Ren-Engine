@@ -69,8 +69,8 @@ init python:
 	
 	build_object('text_nav')
 	
-	text_nav.keys = alphabet + list("1234567890-=[]\\;',./`")
-	text_nav.keys_shift = [s.upper() for s in alphabet] + list('!@#$%^&*()_+{}|:"<>?~')
+	text_nav.keys = list(alphabet) + list("1234567890-=[]\\;',./`")
+	text_nav.keys_shift = list(alphabet.upper()) + list('!@#$%^&*()_+{}|:"<>?~')
 	text_nav.key_tag = chr(255)
 	
 	text_nav.spec_symbols = text_nav.keys[text_nav.keys.index('-'):] + text_nav.keys_shift[text_nav.keys_shift.index('!'):] + [text_nav.key_tag]

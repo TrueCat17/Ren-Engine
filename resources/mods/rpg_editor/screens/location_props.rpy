@@ -10,7 +10,7 @@ init:
 		color     0
 
 init python:
-	input_allow_symbols = ''.join(alphabet) + ''.join(alphabet).upper() + '0123456789_-+'
+	input_allow_symbols = alphabet + alphabet.upper() + numbers + '_-+'
 	
 	props_width = 300
 	
