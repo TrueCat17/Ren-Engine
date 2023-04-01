@@ -154,3 +154,10 @@ translate russian strings:
 	
 	old 'Unexpected key <%s> in hotkey <%s>'
 	new 'Неожиданная клавиша <%s> в сочетании клавиш <%s>'
+	
+	# input
+	old 'Reset'
+	new 'Сброс'
+	
+	old 'Cancel'
+	new 'Отмена'

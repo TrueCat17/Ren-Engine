@@ -6,15 +6,15 @@ init -995 python:
 			index += len(lines[y]) + 1
 		return index
 	def console__set_cursor_index(index):
-		input_slice = console.input[0:index]
+		input_slice = console.input[:index]
 		console.cursor_y = input_slice.count('\n')
 		console.cursor_x = (index - input_slice.rindex('\n') - 1) if console.cursor_y else index
 	
 	def console__get_input_text():
 		index = console.get_cursor_index()
-		alpha_cursor = '{alpha=' + str(1 if get_game_time() % 2 < 1 else 0) + '}' + console.cursor + '{/alpha}'
-		res = console.input[0:index] + alpha_cursor + console.input[index:]
-		return res.replace(console.key_tag, '{{')
+		alpha_cursor = '{alpha=' + ('1' if get_game_time() % 2 < 1 else '0.01') + '}' + console.cursor + '{/alpha}'
+		res = console.input[:index] + alpha_cursor + console.input[index:]
+		return res.replace(text_nav.key_tag, '{{')
 	
 	def console__clear():
 		persistent.console_commands = []
@@ -31,38 +31,20 @@ init -995 python:
 	
 	
 	def console__add(s):
-		if hotkeys.ctrl:
-			if s == 'd':
-				lines = console.input.split('\n')
-				lines = lines[0:console.cursor_y] + lines[console.cursor_y+1:]
-				console.cursor_y = min(console.cursor_y, len(lines) - 1)
-				console.cursor_x = len(lines[console.cursor_y]) if lines else 0
-				console.input = '\n'.join(lines)
-				return
-			if s == 'c':
-				set_clipboard_text(console.input)
-				return
-			if s == 'v':
-				s = get_clipboard_text()
-				s = s.replace('\t', '    ')
-				lines = s.split('\n')
-				i = 0
-				while i < len(lines):
-					if not lines[i] or lines[i].isspace():
-						lines.pop(i)
-					else:
-						i += 1
-				s = '\n'.join(lines)
-		else:
-			if hotkeys.shift and s in console.keys:
-				s = console.keys_shift[console.keys.index(s)]
-		
-		s = s.replace('{', console.key_tag)
+		def remove_empty_lines(s):
+			lines = s.split('\n')
+			lines = filter(lambda i: i and not i.isspace(), lines)
+			return '\n'.join(lines)
 		
 		index = console.get_cursor_index()
-		console.input = console.input[0:index] + s + console.input[index:]
-		index += len(s)
-		console.set_cursor_index(index)
+		console.input, console.cursor_x, console.cursor_y, add_index = text_nav.add(
+			console.input, console.cursor_x, console.cursor_y,
+			s, index, hotkeys.ctrl, hotkeys.shift,
+			paste_processor = remove_empty_lines,
+		)
+		
+		if add_index:
+			console.set_cursor_index(index + add_index)
 		
 		if not console.num_command:
 			console.input_tmp = console.input
@@ -80,26 +62,13 @@ init -995 python:
 	
 	def console__cursor_left():
 		index = console.get_cursor_index()
-		if index == 0:
-			return
-		index -= 1
-		symbol = console.input[index]
-		if hotkeys.ctrl:
-			check = console.get_check(symbol)
-			while index and check(console.input[index - 1]):
-				index -= 1
+		index = text_nav.cursor_left(console.input, index, hotkeys.ctrl)
 		console.set_cursor_index(index)
 	def console__cursor_right():
 		index = console.get_cursor_index()
-		if index == len(console.input):
-			return
-		symbol = console.input[index]
-		index += 1
-		if hotkeys.ctrl:
-			check = console.get_check(symbol)
-			while index < len(console.input) and check(console.input[index]):
-				index += 1
+		index = text_nav.cursor_right(console.input, index, hotkeys.ctrl)
 		console.set_cursor_index(index)
+	
 	def console__cursor_up():
 		if console.cursor_y > 0:
 			console.cursor_y -= 1
@@ -131,14 +100,14 @@ init -995 python:
 		start_index = console.get_cursor_index()
 		console.cursor_left()
 		index = console.get_cursor_index()
-		console.input = console.input[0:index] + console.input[start_index:]
+		console.input = console.input[:index] + console.input[start_index:]
 		if not console.num_command:
 			console.input_tmp = console.input
 	def console__delete():
 		start_index = console.get_cursor_index()
 		console.cursor_right()
 		index = console.get_cursor_index()
-		console.input = console.input[0:start_index] + console.input[index:]
+		console.input = console.input[:start_index] + console.input[index:]
 		console.set_cursor_index(start_index)
 		if not console.num_command:
 			console.input_tmp = console.input
@@ -168,10 +137,10 @@ init -995 python:
 			console.input = console.input_tmp = ''
 			if not persistent.console_commands or persistent.console_commands[-1] != to_exec:
 				persistent.console_commands += [to_exec]
-			console.execute(to_exec.replace(console.key_tag, '{'))
+			console.execute(to_exec.replace(text_nav.key_tag, '{'))
 		else:
 			index = console.get_cursor_index()
-			console.input = console.input[0:index] + '\n' + ' ' * cur_indent + console.input[index:]
+			console.input = console.input[:index] + '\n' + ' ' * cur_indent + console.input[index:]
 			console.cursor_y += 1
 			console.cursor_x = cur_indent
 	
@@ -204,8 +173,8 @@ init -995 python:
 		
 		if ' ' in command:
 			index = command.index(' ')
-			params = command[index+1:]
-			command = command[0:index]
+			params = command[index+1:].lstrip()
+			command = command[:index]
 		else:
 			params = ''
 		
@@ -283,22 +252,9 @@ init -995 python:
 			hide_screen('console_watching')
 	
 	
-	def console__is_space(s):
-		return s == ' '
-	def console__is_spec(s):
-		return s in console.spec_symbols
-	def console__is_not_spec(s):
-		return s != ' ' and s not in console.spec_symbols
-	def console__get_check(s):
-		if s == ' ':
-			return console.is_space
-		if s in console.spec_symbols:
-			return console.is_spec
-		return console.is_not_spec
-	
-	
 	def console__show():
 		if not has_screen('console'):
+			db.skip_tab = False
 			console.showed_time = get_game_time()
 			show_screen('console')
 	def console__hide():
@@ -342,13 +298,7 @@ init -995 python:
 	console.input = ''
 	console.input_tmp = ''
 	
-	console.keys = alphabet + list("1234567890-=[]\\;',./`")
-	console.keys_shift = [s.upper() for s in alphabet] + list('!@#$%^&*()_+{}|:"<>?~')
-	console.key_tag = chr(255)
-	
-	console.spec_symbols = console.keys[console.keys.index('-'):] + console.keys_shift[console.keys_shift.index('!'):] + [console.key_tag]
-	
-	console.cursor = '{color=#FFFFFF}|{/color}'
+	console.cursor = '|'
 	console.cursor_x = 0
 	console.cursor_y = 0
 	console.num_command = 0
@@ -404,14 +354,12 @@ screen console:
 	modal True
 	zorder 10002
 	
-	$ db.skip_tab = False
-	
 	key 'ESCAPE' action console.hide
 	
 	key 'SPACE' action console.add(' ')
 	
 	if get_game_time() - console.showed_time > 0.333:
-		for key in console.keys:
+		for key in text_nav.keys:
 			key key action console.add(key)
 	
 	key 'HOME'      action console.cursor_home

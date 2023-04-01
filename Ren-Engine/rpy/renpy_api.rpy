@@ -189,6 +189,15 @@ init -9990 python:
 		_set_lang(lang)
 		signals.send('language')
 	
+	def renpy__input_save(res):
+		renpy.input_res = res
+	def renpy__input(var_name, prompt, default = '', allow = None, exclude = '', length = None, mask = None, reset_btn = None):
+		if reset_btn is None:
+			reset_btn = default != ''
+		renpy.input_res = None
+		renpy.input_var_name = var_name
+		input.ask_str(renpy.input_save, prompt, default, allow, exclude, length, mask, reset_btn = reset_btn, cancel_btn = False)
+		renpy.call('input_waiting')
 	
 	build_object('renpy')
 	
@@ -217,3 +226,9 @@ init -9990 python:
 	renpy.list_slots = slots.list_slots
 	renpy.slot_mtime = slots.mtime
 	renpy.slot_screenshot = slots.screenshot
+
+
+label input_waiting:
+	while renpy.input_res is None:
+		pause 0.1
+	$ getset_attr(renpy.input_var_name, renpy.input_res)
