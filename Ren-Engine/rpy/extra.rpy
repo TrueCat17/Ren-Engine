@@ -1,5 +1,5 @@
 init -1000000 python:
-	alphabet = str(map(chr, xrange(ord('a'), ord('z') + 1))) # a-z
+	alphabet = ''.join(map(chr, xrange(ord('a'), ord('z') + 1))) # a-z
 	numbers = '0123456789'
 	
 	
