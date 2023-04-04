@@ -2,6 +2,7 @@ init -995 python:
 	
 	def input__ask_str(callback, prompt, default = '', allow = None, exclude = '', length = None, mask = None, reset_btn = True, cancel_btn = True):
 		db.skip_tab = False
+		input.show_time = get_game_time()
 		
 		input.callback = callback
 		input.prompt = prompt
@@ -58,8 +59,9 @@ init -995 python:
 	def input__close():
 		hide_screen('input')
 	def input__ready():
-		input.close()
-		input.callback(input.res)
+		if get_game_time() - input.show_time > 0.5:
+			input.close()
+			input.callback(input.res)
 	def input__reset():
 		input.res = input.default
 		input.index = len(input.res)
