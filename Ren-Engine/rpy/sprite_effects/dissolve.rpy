@@ -48,7 +48,7 @@ init -9000 python:
 			
 			cache = {}
 			def get_rect(data):
-				if cache.has_key(data):
+				if data in cache:
 					return cache[data]
 				
 				xanchor, yanchor = data.real_xanchor, data.real_yanchor

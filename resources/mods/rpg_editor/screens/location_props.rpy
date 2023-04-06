@@ -38,7 +38,7 @@ init python:
 			show_screen('all_locations')
 	
 	def check_place(name):
-		if selected_location.places.has_key(name):
+		if name in selected_location.places:
 			out_msg(_('Place <%s> already exists') % name)
 			return False
 		return True
@@ -272,7 +272,7 @@ screen location_props:
 					textbutton (_('To location') + ': ' + (place.to_location_name or '')):
 						style 'prop_btn'
 						text_size 15
-						color 0xFFFFFF if not place.to_location_name or rpg_locations.has_key(place.to_location_name) else 0xFF0000
+						color 0xFFFFFF if not place.to_location_name or place.to_location_name in rpg_locations else 0xFF0000
 						action input.ask_str(rename_to_loc, 'To location', place.to_location_name or '', allow = input_allow_symbols)
 					
 					
@@ -284,7 +284,7 @@ screen location_props:
 							textbutton (_('To place') + ': ' + (place.to_place_name or '')):
 								style 'prop_btn'
 								text_size 15
-								color 0xFFFFFF if rpg_locations.has_key(place.to_location_name) and rpg_locations[place.to_location_name].get_place(place.to_place_name) else 0xFF0000
+								color 0xFFFFFF if place.to_location_name in rpg_locations and rpg_locations[place.to_location_name].get_place(place.to_place_name) else 0xFF0000
 								action input.ask_str(rename_to_place, 'To place', place.to_place_name or '', allow = input_allow_symbols)
 							
 							null ysize 1

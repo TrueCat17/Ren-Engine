@@ -25,23 +25,21 @@ init -100000 python:
 				global persistent_need_save
 				persistent_need_save = True
 		
-		def has_key(self, attr):
-			return self.__dict__.has_key(attr)
-		def has_attr(self, attr):
-			return self.__dict__.has_key(attr)
+		def __contains__(self, key):
+			return key in self.__dict__
 		
 		def get(self, attr, default_value = None):
 			return self.__dict__.get(attr, default_value)
 		
 		def __getattr__(self, attr):
-			if self.__dict__.has_key(attr):
+			if attr in self.__dict__:
 				return self.__dict__[attr]
 			if attr.startswith('__'):
 				raise AttributeError(attr)
 			return None
 		
 		def __setattr__(self, attr, value):
-			if self.__dict__.has_key(attr):
+			if attr in self.__dict__:
 				old = self.__dict__[attr]
 				if type(old) in simple_types:
 					dont_change = type(old) is type(value) and old == value

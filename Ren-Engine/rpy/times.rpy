@@ -8,7 +8,7 @@ init -1001 python:
 		
 		times['next_name'] = name
 		
-		if has_screen('location') and times.has_key('current_name') and cur_location:
+		if has_screen('location') and 'current_name' in times and cur_location:
 			set_location(cur_location.name, me)
 		else:
 			set_time_direct()

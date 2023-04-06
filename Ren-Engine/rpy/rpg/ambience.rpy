@@ -17,7 +17,7 @@ init python:
 		default_location_ambience_volume = volume
 	
 	def set_location_ambience(location_name, paths, volume = 1.0):
-		if not rpg_locations.has_key(location_name):
+		if location_name not in rpg_locations:
 			out_msg('set_location_ambience', 'Location <' + location_name + '> not registered')
 			return
 		
@@ -40,7 +40,7 @@ init python:
 			paths = default_location_ambience_paths
 		
 		time = times['current_name']
-		if not paths.has_key(time):
+		if time not in paths:
 			time = None
 		
 		return paths.get(time, None)

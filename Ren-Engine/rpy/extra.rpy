@@ -20,7 +20,7 @@ init -1000000 python:
 			
 			tmp_obj = g
 			for sub in subs:
-				if not tmp_obj.has_key(sub):
+				if sub not in tmp_obj:
 					tmp_obj[sub] = Object()
 				tmp_obj = tmp_obj[sub]
 			

@@ -20,7 +20,7 @@ screen map:
 	key 'F5' action SetDict(sc_map, 'mark_unloaded', not sc_map.mark_unloaded)
 	
 	for obj in sc_map.to_draw():
-		if obj.has_key('image'):
+		if 'image' in obj:
 			image obj['image']:
 				pos  (obj['xpos'], obj['ypos'])
 				size  obj['size']

@@ -4,7 +4,7 @@ init -1000 python:
 		def __init__(self, xpos, ypos, xsize, ysize, **kwargs):
 			Object.__init__(self)
 			
-			if kwargs.has_key('image'):
+			if 'image' in kwargs:
 				self.image = kwargs['image']
 			else:
 				self.image = im.rect('#8888')

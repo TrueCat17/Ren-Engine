@@ -19,16 +19,14 @@ init -1002 python:
 				for name, value in properties.iteritems():
 					self.__setattr__(name, value)
 		
-		def has_key(self, attr):
+		def __contains__(self, key):
 			if attr in self.complex_props:
-				props = get_prop_names(attr)
+				props = get_prop_names(key)
 				for prop in props:
-					if not self.has_key(prop):
+					if prop not in self:
 						return False
 				return True
-			return Object.has_key(self, attr)
-		def has_attr(self, attr):
-			return self.has_key(attr)
+			return Object.__contains__(self, key)
 		
 		def get(self, attr, default_value = None):
 			if attr in self.complex_props:
@@ -77,7 +75,7 @@ init -1002 python:
 				for prop in props:
 					self.__delattr__(prop)
 			else:
-				if self.has_key(attr):
+				if attr in self:
 					Object.__delattr__(self, attr)
 
 

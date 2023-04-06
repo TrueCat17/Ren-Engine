@@ -56,7 +56,7 @@ init -1000 python:
 		while len(params) > 2 and (params[-2] in pnames):
 			pname, pvalue = params[-2], params[-1]
 			params = params[0:-2]
-			if d.has_key(pname):
+			if pname in d:
 				out_msg('sprites.show', 'Param <' + pname + '> specified several times')
 			else:
 				d[pname] = pvalue
@@ -65,7 +65,7 @@ init -1000 python:
 			return
 		
 		for pname in pnames:
-			if not d.has_key(pname):
+			if pname not in d:
 				d[pname] = None
 		if d['as'] is None:
 			d['as'] = params[0]

@@ -65,7 +65,7 @@ init -1000 python:
 			
 			for prop in props:
 				prop = style + '_' + prop
-				db[prop] = (local_styles if local_styles.has_key(prop) else gui)[prop]
+				db[prop] = (local_styles if prop in local_styles else gui)[prop]
 				if prop.endswith('color'):
 					db[prop] = color_to_int(db[prop])
 				elif prop.endswith('bg') and callable(db[prop]):
@@ -78,12 +78,12 @@ init -1000 python:
 			
 			for prop in props:
 				prop = style + '_' + prop
-				db[prop] = (local_styles if local_styles.has_key(prop) else gui)[prop]
+				db[prop] = (local_styles if prop in local_styles else gui)[prop]
 		
 		for style in ('prev', 'next', 'menu_button'):
 			for prop in ('ground', 'hover'):
 				prop = 'dialogue_' + style + '_' + prop
-				value = (local_styles if local_styles.has_key(prop) else gui)[prop]
+				value = (local_styles if prop in local_styles else gui)[prop]
 				if callable(value):
 					value = value()
 				db[prop] = value

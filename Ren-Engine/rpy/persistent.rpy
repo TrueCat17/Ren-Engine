@@ -92,7 +92,7 @@ init -100002 python:
 	def _unpickle_method(func_name, obj, cls):
 		if hasattr(cls, 'mro'):
 			for cls in cls.mro():
-				if cls.__dict__.has_key(func_name):
+				if func_name in cls.__dict__:
 					func = cls.__dict__[func_name]
 					break
 		else:
@@ -262,14 +262,14 @@ init -10001 python:
 init -10001 python:
 	persistent.in_persistent = True
 	
-	if not persistent.has_attr('config'):
+	if 'config' not in persistent:
 		persistent.config = Object()
 	
 	for prop in ('_seen_labels', '_seen_images', '_seen_audio'):
-		if not persistent.has_attr(prop):
+		if prop not in persistent:
 			persistent[prop] = Object()
 	
-	if not persistent._seen_labels.has_key(get_current_mod()):
+	if get_current_mod() not in persistent._seen_labels:
 		persistent._seen_labels[get_current_mod()] = Object()
 	
 	persistent_need_save = False

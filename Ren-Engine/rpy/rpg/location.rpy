@@ -32,13 +32,13 @@ init -1002 python:
 	rpg_locations = {}
 	
 	def register_location(name, path_to_images, is_room, xsize, ysize):
-		if rpg_locations.has_key(name):
+		if name in rpg_locations:
 			out_msg('register_location', 'Location <' + name + '> already registered')
 		else:
 			rpg_locations[name] = RpgLocation(name, path_to_images, is_room, xsize, ysize)
 	
 	def register_place(location_name, place_name, x, y, xsize, ysize, to = None):
-		if not rpg_locations.has_key(location_name):
+		if location_name not in rpg_locations:
 			out_msg('register_place', 'Location <' + location_name + '> not registered')
 			return
 		
@@ -69,7 +69,7 @@ init -1002 python:
 	def set_location(location_name, place, character = None):
 		character = character or me
 		
-		if not rpg_locations.has_key(location_name):
+		if location_name not in rpg_locations:
 			out_msg('set_location', 'Location <' + location_name + '> not registered')
 			return
 		
@@ -87,7 +87,7 @@ init -1002 python:
 		cur_location = rpg_locations[location_name]
 		cur_location_name = location_name
 		cur_place = place
-		cur_place_name = place['name'] if place.has_key('name') else ''
+		cur_place_name = place['name'] if 'name' in place else ''
 		
 		if prev_location != cur_location:
 			signals.send('rpg-location')
@@ -155,7 +155,7 @@ init -1002 python:
 			return
 		
 		if place_name is not None:
-			if location.places.has_key(place_name):
+			if place_name in location.places:
 				location_banned_exits.add((location_name, place_name))
 			else:
 				out_msg('ban_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
@@ -169,7 +169,7 @@ init -1002 python:
 		if location is None:
 			out_msg('unban_exit', 'Location <' + str(location_name) + '> is not registered')
 			return
-		if place_name is not None and not location.places.has_key(place_name):
+		if place_name is not None and place_name not in location.places:
 			out_msg('unban_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
 			return
 		
@@ -185,7 +185,7 @@ init -1002 python:
 		
 		mode = times['current_name']
 		key = name, name_suffix, mode
-		if obj.cache.has_key(key):
+		if key in obj.cache:
 			return obj.cache[key]
 		
 		file_name = name
@@ -208,7 +208,7 @@ init -1002 python:
 		return path
 	
 	def set_location_scales(name, min_scale, count_scales):
-		if not rpg_locations.has_key(name):
+		if name not in rpg_locations:
 			out_msg('set_location_scales', 'Location <' + str(name) + '> is not registered')
 			return
 		
@@ -340,11 +340,11 @@ init -1002 python:
 			x, y, w, h = place.get_rect(of_exit = False)
 		else:
 			x, y = place['x'], place['y']
-			w = place['xsize'] if place.has_key('xsize') else 0
-			h = place['ysize'] if place.has_key('ysize') else 0
+			w = place['xsize'] if 'xsize' in place else 0
+			h = place['ysize'] if 'ysize' in place else 0
 		
-		xa = get_absolute(place['xanchor'], w) if place.has_key('xanchor') else 0
-		ya = get_absolute(place['yanchor'], h) if place.has_key('yanchor') else 0
+		xa = get_absolute(place['xanchor'], w) if 'xanchor' in place else 0
+		ya = get_absolute(place['yanchor'], h) if 'yanchor' in place else 0
 		
 		if anchor is None:
 			if isinstance(place, Character):

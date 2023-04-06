@@ -35,7 +35,7 @@ init -1001 python:
 	
 	def register_location_object(obj_name, directory, main_image, free_image,
 	                             max_in_inventory_cell = 0, remove_to_location = True):
-		if location_objects.has_key(obj_name):
+		if obj_name in location_objects:
 			out_msg('register_location_object', 'Object <' + obj_name + '> already exists')
 			return
 		
@@ -53,7 +53,7 @@ init -1001 python:
 	                                       directory, main_image, free_image,
 	                                       xoffset, yoffset,
 	                                       count_frames, start_frame, end_frame, time = 1.0):
-		if not location_objects.has_key(obj_name):
+		if obj_name not in location_objects:
 			out_msg('register_location_object_animation', 'Object <' + str(obj_name) + '> not registered')
 			return
 		
@@ -72,7 +72,7 @@ init -1001 python:
 		
 		obj = location_objects[obj_name]
 		animations = obj.animations
-		if animations.has_key(anim_name):
+		if anim_name in animations:
 			out_msg('register_location_object_animation', 'Animation <' + str(anim_name) + '> of object <' + str(obj_name) + '> already exists')
 			return
 		
@@ -94,7 +94,7 @@ init -1001 python:
 		)
 	
 	def set_sit_place(obj_name, sit_places, over = None):
-		if not location_objects.has_key(obj_name):
+		if obj_name not in location_objects:
 			out_msg('set_sit_place', 'Object <' + str(obj_name) + '> not registered')
 			return
 		
@@ -213,7 +213,7 @@ init -1001 python:
 				self.location.path_need_update = True
 		
 		def set_animation(self, anim_name):
-			if not self.animations.has_key(anim_name):
+			if anim_name not in self.animations:
 				out_msg('set_animation', 'Animation <' + str(anim_name) + '> not found in object <' + str(self.type) + '>')
 				return False
 			
@@ -369,7 +369,7 @@ init -1001 python:
 	
 	
 	def add_location_object(location_name, place, obj_name, **kwargs):
-		if not rpg_locations.has_key(location_name):
+		if location_name not in rpg_locations:
 			out_msg('add_location_object', 'Location <' + location_name + '> not registered')
 			return
 		location = rpg_locations[location_name]
@@ -389,12 +389,12 @@ init -1001 python:
 		else:
 			px, py = place['x'], place['y']
 			if isinstance(place, (dict, RpgPlace)):
-				pw = place['xsize'] if place.has_key('xsize') else 0
-				ph = place['ysize'] if place.has_key('ysize') else 0
+				pw = place['xsize'] if 'xsize' in place else 0
+				ph = place['ysize'] if 'ysize' in place else 0
 			else:
 				pw = ph = 0
 		
-		if location_objects.has_key(obj_name):
+		if obj_name in location_objects:
 			instance = RpgLocationObject(obj_name, px + pw / 2, py + ph / 2)
 		elif str(type(obj_name)) == "<type 'classobj'>":
 			instance = obj_name(px, py, pw, ph, **kwargs)
@@ -414,7 +414,7 @@ init -1001 python:
 	
 	
 	def get_location_objects(location_name, place, obj_type, count = -1):
-		if not rpg_locations.has_key(location_name):
+		if location_name not in rpg_locations:
 			out_msg('get_location_objects', 'Location <' + location_name + '> not registered')
 			return
 		location = rpg_locations[location_name]
@@ -536,7 +536,7 @@ init -1001 python:
 	
 	
 	def remove_location_object(location_name, place, obj_name, count = 1):
-		if not rpg_locations.has_key(location_name):
+		if location_name not in rpg_locations:
 			out_msg('remove_location_object', 'Location <' + location_name + '> not registered')
 			return
 		location = rpg_locations[location_name]

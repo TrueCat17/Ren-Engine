@@ -14,7 +14,7 @@ init python:
 		for place in selected_location.places.itervalues():
 			if '_pos' in place.name:
 				obj_name = place.name[0:place.name.index('_pos')]
-				if location_objects.has_key(obj_name):
+				if obj_name in location_objects:
 					obj = location_objects[obj_name]
 					main_frame = obj['animations'][None]
 					obj_image = get_image_or_similar(main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext)
@@ -27,7 +27,7 @@ init python:
 				image = im.Rect('#0B0')
 			else:
 				to_loc = rpg_locations.get(place.to_location_name, None)
-				if to_loc and to_loc.places.has_key(place.to_place_name):
+				if to_loc and place.to_place_name in to_loc.places:
 					if place.exit_side:
 						x, y, w, h = place.get_rect(of_exit = False)
 						ex, ey, ew, eh = place.get_rect(of_exit = True)

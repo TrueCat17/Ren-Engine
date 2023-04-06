@@ -133,7 +133,7 @@ init -9990 python:
 		
 		if isinstance(who, str):
 			g = globals()
-			if g.has_key(who):
+			if who in g:
 				who = g[who]
 			else:
 				out_msg('renpy.say', 'Character <' + who + '> not found')
@@ -173,13 +173,13 @@ init -9990 python:
 	
 	
 	def renpy__seen_image(image):
-		return persistent._seen_images.has_key(image)
+		return image in persistent._seen_images
 	
 	def renpy__seen_audio(file_name):
-		return persistent._seen_audio.has_key(file_name)
+		return file_name in persistent._seen_audio
 	
 	def renpy__seen_label(label):
-		return persistent._seen_labels[get_current_mod()].has_key(label)
+		return label in persistent._seen_labels[get_current_mod()]
 	
 	def renpy__change_language(lang):
 		if type(lang) is not str:

@@ -47,7 +47,7 @@ init -1001 python:
 			return
 		
 		animations = character.animations
-		if animations.has_key(anim_name):
+		if anim_name in animations:
 			out_msg('register_character_animation', 'Animation <' + str(anim_name) + '> of character <' + str(character) + '> already exists')
 			return
 		
@@ -364,7 +364,7 @@ init -1001 python:
 				return
 			
 			if place_name is not None:
-				if location.places.has_key(place_name):
+				if place_name in location.places:
 					self.allowed_exits.add((location_name, place_name))
 				else:
 					out_msg('Character.allow_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
@@ -378,7 +378,7 @@ init -1001 python:
 			if location is None:
 				out_msg('Character.disallow_exit', 'Location <' + str(location_name) + '> is not registered')
 				return
-			if place_name is not None and not location.places.has_key(place_name):
+			if place_name is not None and place_name not in location.places:
 				out_msg('Character.disallow_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
 				return
 			
@@ -589,7 +589,7 @@ init -1001 python:
 		
 		
 		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
-			if not self.animations.has_key(anim_name):
+			if anim_name not in self.animations:
 				out_msg('Character.start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
 				return
 			
@@ -703,13 +703,13 @@ init -1001 python:
 	
 	def get_name(who):
 		g = globals()
-		if g.has_key(who):
+		if who in g:
 			return g[who].name
 		out_msg('get_name', 'Character <' + str(who) + '> not found')
 	
 	def set_name(who, name):
 		g = globals()
-		if g.has_key(who):
+		if who in g:
 			g[who].name = str(name)
 		else:
 			out_msg('set_name', 'Character <' + str(who) + '> not found')
@@ -740,7 +740,7 @@ init -1001 python:
 				return
 			location = cur_location
 		elif type(location) is str:
-			if not rpg_locations.has_key(location):
+			if location not in rpg_locations:
 				out_msg('show_character', 'Location <' + location + '> not registered')
 				return
 			location = rpg_locations[location]
