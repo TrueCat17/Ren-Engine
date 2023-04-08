@@ -19,10 +19,10 @@ init python:
 			for i in xrange(d):
 				size = random.randint(2, 10)
 				
-				x = random.randint(0, width)
-				y = random.randint(0, height)
-				dx = random.uniform(-7, 7) * size
-				dy = random.uniform(10, 25) * size
+				x = random.uniform(0, 1)
+				y = random.uniform(0, 1)
+				dx = random.uniform(-7, 7) * size / width
+				dy = random.uniform(10, 25) * size / height
 				
 				obj = [x, y, dx, dy, size]
 				objs.append(obj)
@@ -30,28 +30,28 @@ init python:
 	def update_snow():
 		k = get_last_tick()
 		
-		width, height = get_stage_size()
 		x, y, dx, dy, size = 0, 1, 2, 3, 4
 		
 		if image_render:
+			width, height = float(get_stage_width()), float(get_stage_height())
 			img_cache = [None] + [im.scale('mods/snow/snow.png', i, i) for i in xrange(1, 11)]
 			
 			tmp_image_args = [(width, height)]
 			for obj in objs:
-				obj[x] = (obj[x] + obj[dx] * k) % width
-				obj[y] = (obj[y] + obj[dy] * k) % height
+				obj[x] = (obj[x] + obj[dx] * k) % 1.0
+				obj[y] = (obj[y] + obj[dy] * k) % 1.0
 				
 				tmp_image_args.extend(
-					((obj[x], obj[y]), img_cache[obj[size]])
+					((obj[x] * width, obj[y] * height), img_cache[obj[size]])
 				)
 			global tmp_image
 			tmp_image = im.composite(*tmp_image_args)
 		else:
 			for obj in objs:
-				obj[x] = (obj[x] + obj[dx] * k) % width
-				obj[y] = (obj[y] + obj[dy] * k) % height
+				obj[x] = (obj[x] + obj[dx] * k) % 1.0
+				obj[y] = (obj[y] + obj[dy] * k) % 1.0
 	
-	set_count(4000)
+	set_count(5000)
 
 
 screen snow:
@@ -64,11 +64,12 @@ screen snow:
 		image tmp_image:
 			size 1.0
 	else:
-		for x, y, dx, dy, size in objs:
+		# x, y, dx, dy, size = 0, 1, 2, 3, 4
+		for obj in objs:
 			image 'mods/snow/snow.png':
-				xpos ftoi(x)
-				ypos ftoi(y)
-				size size
+				xpos obj[0]
+				ypos obj[1]
+				size obj[4]
 	
 	image im.Rect('#0004'):
 		size (350, 70)
