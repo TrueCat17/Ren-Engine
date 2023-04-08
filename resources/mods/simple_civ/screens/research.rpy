@@ -59,7 +59,7 @@ screen research:
 				for building in technology_names:
 					python:
 						name = _(building)
-						if building in technology_extra:
+						if technology_extra.has_key(building):
 							name += ' (' + _(technology_extra[building]) + ')'
 					
 					text name:
@@ -82,6 +82,7 @@ screen research:
 						text_size info.text_size
 						color 0x00FF00
 						outlinecolor 0
+						ysize info.text_size
 			
 			vbox:
 				spacing 10
@@ -99,6 +100,7 @@ screen research:
 							text_size info.text_size
 							color 0xFFFF00 if cost <= sc_map.player.science else 0xFF0000
 							outlinecolor 0
+							ysize info.text_size
 					else:
 						null:
 							size info.text_size
