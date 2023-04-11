@@ -77,7 +77,7 @@ screen slots(name):
 					btns.append(['Save game', 1.0, True, renpy.save])
 				
 				if renpy.can_load():
-					btns.append(['Delete', 1.0, True, renpy.delete])
+					btns.append(['Delete', 1.0, True, renpy.unlink_save])
 				else:
 					btns.append(['Delete', 0.7, False, None])
 			
