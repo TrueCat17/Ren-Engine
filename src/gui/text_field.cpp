@@ -18,8 +18,11 @@
 
 bool operator==(const SDL_Rect &a, const SDL_Rect &b);
 
-inline int getCountOutlines(TextStyle &textStyle) {
-    return textStyle.fontSize >= 25 ? 2 : 1;
+inline int getCountOutlines(const TextStyle &textStyle) {
+	if (textStyle.enableOutline) {
+		return textStyle.fontSize >= 25 ? 2 : 1;
+	}
+	return 0;
 }
 
 
@@ -77,10 +80,8 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	int origH = *h;
 
 	int countOutlines = getCountOutlines(style);
-	if (style.enableOutline) {
-		*w += countOutlines * 2;
-		*h += countOutlines * 2;
-	}
+	*w += countOutlines * 2;
+	*h += countOutlines * 2;
 
 	SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
 	if (rect.y < 3) rect.y = 0;//fix for fonts, where some symbols have height more than font size on init
@@ -333,11 +334,9 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			if (TTF_SizeUTF8(style.font, word.c_str(), w, h)) {
 				Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			}
-			if (style.enableOutline) {
-				int countOutlines = getCountOutlines(style);
-				*w += countOutlines * 2;
-				*h += countOutlines * 2;
-			}
+			int countOutlines = getCountOutlines(style);
+			*w += countOutlines * 2;
+			*h += countOutlines * 2;
 		}else if (!invisible) {
 			addChars(word, x, w, h, style, surface);
 		}
@@ -429,7 +428,10 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			return line.size();
 		}
-		width += w + getCountOutlines(styleStack.back()) * 2;
+		if (!width) {
+			width += getCountOutlines(styleStack.back()) * 2;
+		}
+		width += w;
 	}
 
 	size_t firstSpaceIndex = partStr.find(' ');
@@ -455,9 +457,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 			return line.size();
 		}
-		if (styleStack.back().enableOutline) {
-			width += getCountOutlines(styleStack.back()) * 2;
-		}
+		width += getCountOutlines(styleStack.back()) * 2;
 		if (width <= partMaxWidth) break;
 
 		size_t spaceIndex = partStr.rfind(' ');
