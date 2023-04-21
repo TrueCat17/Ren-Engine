@@ -1,6 +1,7 @@
 #include "convert_from_py.h"
 
 #include <limits>
+#include <string>
 
 bool pyErrorFlag = false;
 
@@ -9,20 +10,18 @@ static void pySetErrorType(const char *funcName, size_t argIndex, PyObject *obj,
 	if (pyErrorFlag) return;//dont overwrite prev error
 	pyErrorFlag = true;
 
-	std::string err = std::string() +
-		funcName + "(), argument #" + std::to_string(argIndex + 1) + ": "
-		"expected " + expectedType + ", "
-	    "got " + obj->ob_type->tp_name;
-	PyErr_SetString(PyExc_TypeError, err.c_str());
+	PyErr_Format(PyExc_TypeError,
+	    "%s(), argument #%zu: expected %s, got %s (%.50R)",
+	    funcName, argIndex + 1, expectedType, obj->ob_type->tp_name, obj);
 }
 
-static void pySetErrorOverflow(const char *funcName, size_t argIndex, const char *msg, const char *type) {
+static void pySetErrorOverflow(const char *funcName, size_t argIndex, PyObject* obj, const char *msg) {
 	if (pyErrorFlag) return;//dont overwrite prev error
 	pyErrorFlag = true;
 
-	std::string err = std::string() +
-		funcName + "(), argument #" + std::to_string(argIndex + 1) + ": " + msg + type;
-	PyErr_SetString(PyExc_OverflowError, err.c_str());
+	PyErr_Format(PyExc_OverflowError,
+	    "%s(), argument #%zu: %s (%.50R) %s",
+	    funcName, argIndex + 1, PyLong_CheckExact(obj) ? "int" : "float", obj, msg);
 }
 
 
@@ -42,67 +41,61 @@ bool convertFromPy<bool>(PyObject *obj, const char *funcName, size_t argIndex) {
 }
 
 
-#define MAKE_CONVERT_FROM_PY_TO_INT(type, expectedType) \
+#define MAKE_CONVERT_FROM_PY_TO_INT(type) \
 template<> \
 type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) { \
-	if (PyInt_CheckExact(obj)) { \
-		long tmp = PyInt_AS_LONG(obj); \
-		if constexpr (sizeof(type) < sizeof(long) || !std::numeric_limits<type>::is_signed) { \
-			if (tmp < long(std::numeric_limits<type>::min())) { \
-				pySetErrorOverflow(funcName, argIndex, "int too small to convert to ", #type); \
-			} \
-		} \
-		if constexpr (sizeof(type) < sizeof(long)) { \
-			if (tmp > long(std::numeric_limits<type>::max())) { \
-				pySetErrorOverflow(funcName, argIndex, "int too large to convert to ", #type); \
-			} \
-		} \
-		return type(tmp); \
+	bool isLong = PyLong_CheckExact(obj); \
+	bool isFloat = !isLong && PyFloat_CheckExact(obj); \
+	if (!isLong && !isFloat) { \
+	    pySetErrorType(funcName, argIndex, obj, \
+	        std::is_floating_point_v<type> ? "float" : "int"); \
+	    return 0; \
 	} \
-	\
-	if (PyFloat_CheckExact(obj)) { \
-		double tmp = PyFloat_AS_DOUBLE(obj); \
-		if constexpr (!(std::is_same<type, double>::value || std::is_same<type, float>::value)) { \
-			if (tmp < double(std::numeric_limits<double>::min())) { \
-				pySetErrorOverflow(funcName, argIndex, "float too small to convert to ", #type); \
-			} \
-			if (tmp > double(std::numeric_limits<type>::max())) { \
-				pySetErrorOverflow(funcName, argIndex, "float too large to convert to ", #type); \
-			} \
-		} \
-		return type(tmp); \
+	double tmp; \
+	if (isLong) { \
+	    tmp = PyLong_AsDouble(obj); \
+	    if (PyErr_Occurred()) { \
+	        pySetErrorOverflow(funcName, argIndex, obj, "too large to convert to "#type); \
+	        return 0; \
+	    } \
+	}else { \
+	    tmp = PyFloat_AS_DOUBLE(obj); \
 	} \
-	\
-	pySetErrorType(funcName, argIndex, obj, expectedType); \
-	return 0; \
+	if constexpr (!std::is_floating_point_v<type>) { \
+	    if (tmp < double(std::numeric_limits<type>::min())) { \
+	        pySetErrorOverflow(funcName, argIndex, obj, "too small to convert to "#type); \
+	        return 0; \
+	    } \
+	    if (tmp > double(std::numeric_limits<type>::max())) { \
+	        pySetErrorOverflow(funcName, argIndex, obj, "too large to convert to "#type); \
+	        return 0; \
+	    } \
+	} \
+	return type(tmp); \
 }
 
-MAKE_CONVERT_FROM_PY_TO_INT(  int8_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT( uint8_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT( int16_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT(uint16_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT( int32_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT(uint32_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT( int64_t, "int")
-MAKE_CONVERT_FROM_PY_TO_INT(uint64_t, "int")
+MAKE_CONVERT_FROM_PY_TO_INT(  int8_t)
+MAKE_CONVERT_FROM_PY_TO_INT( uint8_t)
+MAKE_CONVERT_FROM_PY_TO_INT( int16_t)
+MAKE_CONVERT_FROM_PY_TO_INT(uint16_t)
+MAKE_CONVERT_FROM_PY_TO_INT( int32_t)
+MAKE_CONVERT_FROM_PY_TO_INT(uint32_t)
+MAKE_CONVERT_FROM_PY_TO_INT( int64_t)
+MAKE_CONVERT_FROM_PY_TO_INT(uint64_t)
 
-MAKE_CONVERT_FROM_PY_TO_INT( float, "float")
-MAKE_CONVERT_FROM_PY_TO_INT(double, "float")
+MAKE_CONVERT_FROM_PY_TO_INT( float)
+MAKE_CONVERT_FROM_PY_TO_INT(double)
 
 
-template<>
-const char* convertFromPy<const char*>(PyObject *obj, const char *funcName, size_t argIndex) {
-	if (PyString_CheckExact(obj)) {
-		return PyString_AS_STRING(obj);
-	}
-	pySetErrorType(funcName, argIndex, obj, "str");
-	return "";
+#define MAKE_CONVERT_FROM_PY_TO_STR(type) \
+template<> \
+type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) { \
+	if (PyUnicode_CheckExact(obj)) { \
+	    return PyUnicode_AsUTF8(obj); \
+	} \
+	pySetErrorType(funcName, argIndex, obj, "str"); \
+	return ""; \
 }
-template<>
-std::string convertFromPy<std::string>(PyObject *obj, const char *funcName, size_t argIndex) {
-	if (PyString_CheckExact(obj)) {
-		return PyString_AS_STRING(obj);
-	}
-	pySetErrorType(funcName, argIndex, obj, "str");
-	return "";
-}
+
+MAKE_CONVERT_FROM_PY_TO_STR(const char *)
+MAKE_CONVERT_FROM_PY_TO_STR(std::string)

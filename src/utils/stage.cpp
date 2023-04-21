@@ -203,7 +203,7 @@ static void wait() {
 	}
 
 	if (GV::inGame) {
-		PyUtils::exec("CPP_EMBED: stage.cpp", __LINE__, "globals().has_key('signals') and signals.send('resized_stage')");
+		PyUtils::exec("CPP_EMBED: stage.cpp", __LINE__, "if 'signals' in globals(): signals.send('resized_stage')");
 	}
 }
 

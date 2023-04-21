@@ -628,17 +628,19 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 	}
 }
 
-#define updateCondition(isFloat, var, prop) \
+#define updateCondition(isFloat, var, prop, propName) \
 	isFloat = PyFloat_CheckExact(prop); \
 	typedef decltype(var) DT; \
 	if (isFloat || PyAbsolute_CheckExact(prop)) { \
 		var = DT(PyFloat_AS_DOUBLE(prop)); \
 	}else \
-	if (PyInt_CheckExact(prop)) { \
-		var = DT(PyInt_AS_LONG(prop)); \
-	}else \
 	if (PyLong_CheckExact(prop)) { \
-		var = DT(PyLong_AsDouble(prop)); \
+		int overflow; \
+		var = DT(PyLong_AsLongAndOverflow(prop, &overflow)); \
+		if (overflow) { \
+			var = 0; \
+			outError(obj, propName, propIndex, "int too large (" + PyUtils::objToStr(prop) + ")"); \
+		} \
 	}
 
 
@@ -647,11 +649,11 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
 	bool tmpBool; \
-	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop) \
+	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop, #propName) \
 	else { \
 		static_cast<Type*>(obj)->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
+		outError(obj, #propName, propIndex, "Expected types float, absolute or int, got " + type); \
 	} \
 }
 
@@ -674,11 +676,11 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	updateCondition(obj->propName##IsFloat, obj->propName, prop) \
+	updateCondition(obj->propName##IsFloat, obj->propName, prop, #propName) \
 	else { \
 		obj->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, absolute, int or long, got " + type); \
+		outError(obj, #propName, propIndex, "Expected types float, absolute or int, got " + type); \
 	} \
 }
 
@@ -690,7 +692,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	bool isNumber = true; \
 	[[maybe_unused]] bool unusedBoolX, unusedBoolY; \
 	float value = 0; \
-	updateCondition(tmpBool, value, prop) \
+	updateCondition(tmpBool, value, prop, #propName) \
 	else { \
 		isNumber = false; \
 	} \
@@ -705,7 +707,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		xIsFloat = yIsFloat = false; \
 		obj->x##propName = obj->y##propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type); \
+		outError(obj, #propName, propIndex, "Expected types float, absolute, int, tuple or list, got " + type); \
 		return; \
 	} \
 	if (Py_SIZE(prop) != 2) { \
@@ -719,19 +721,19 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0); \
 	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1); \
 	\
-	updateCondition(xIsFloat, obj->x##propName, x) \
+	updateCondition(xIsFloat, obj->x##propName, x, #propName) \
 	else { \
 		xIsFloat = false; \
 		obj->x##propName = 0; \
 		std::string type = x->ob_type->tp_name; \
-		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, absolute, int or long, got " + type); \
+		outError(obj, "x"#propName, propIndex, "At x" #propName "-prop expected types float, absolute or int, got " + type); \
 	} \
-	updateCondition(yIsFloat, obj->y##propName, y) \
+	updateCondition(yIsFloat, obj->y##propName, y, #propName) \
 	else { \
 		yIsFloat = false; \
 		obj->y##propName = 0; \
 		std::string type = y->ob_type->tp_name; \
-		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, absolute, int or long, got " + type); \
+		outError(obj, "y"#propName, propIndex, "At y" #propName "-prop expected types float, absolute or int, got " + type); \
 	} \
 }
 
@@ -745,12 +747,12 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	\
 	bool isFloat; \
 	float value = 0; \
-	updateCondition(isFloat, value, prop) \
+	updateCondition(isFloat, value, prop, #x_or_y"align") \
 	else { \
 		isFloat = false; \
 		value = 0; \
 		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute, int or long, got " + type); \
+		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute or int, got " + type); \
 	} \
 	obj->x_or_y##posIsFloat = obj->x_or_y##anchorPreIsFloat = isFloat; \
 	obj->x_or_y##pos = obj->x_or_y##anchorPre = value; \
@@ -762,7 +764,7 @@ static void update_align(Child *obj, size_t propIndex) {
 	bool isFloat;
 	bool isNumber = true;
 	float value = 0;
-	updateCondition(isFloat, value, prop)
+	updateCondition(isFloat, value, prop, "align")
 	else {
 		isNumber = false;
 	}
@@ -777,7 +779,7 @@ static void update_align(Child *obj, size_t propIndex) {
 		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = false;
 		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = 0;
 		std::string type = prop->ob_type->tp_name;
-		outError(obj, "align", propIndex, "Expected types float, absolute, int, long, tuple or list, got " + type);
+		outError(obj, "align", propIndex, "Expected types float, absolute, int, tuple or list, got " + type);
 		return;
 	}
 	if (Py_SIZE(prop) != 2) {
@@ -791,22 +793,22 @@ static void update_align(Child *obj, size_t propIndex) {
 	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0);
 	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1);
 
-	updateCondition(isFloat, value, x)
+	updateCondition(isFloat, value, x, "xalign")
 	else {
 		isFloat = false;
 		value = 0;
 		std::string type = x->ob_type->tp_name;
-		outError(obj, "align", propIndex, "At xalign-prop expected types float, absolute, int or long, got " + type);
+		outError(obj, "align", propIndex, "At xalign-prop expected types float, absolute or int, got " + type);
 	}
 	obj->xposIsFloat = obj->xanchorPreIsFloat = isFloat;
 	obj->xpos = obj->xanchorPre = value;
 
-	updateCondition(isFloat, value, y)
+	updateCondition(isFloat, value, y, "yalign")
 	else {
 		isFloat = false;
 		value = 0;
 		std::string type = y->ob_type->tp_name;
-		outError(obj, "align", propIndex, "At yalign-prop expected types float, absolute, int or long, got " + type);
+		outError(obj, "align", propIndex, "At yalign-prop expected types float, absolute or int, got " + type);
 	}
 	obj->yposIsFloat = obj->yanchorPreIsFloat = isFloat;
 	obj->ypos = obj->yanchorPre = value;
@@ -816,8 +818,8 @@ static void update_align(Child *obj, size_t propIndex) {
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	if (PyString_CheckExact(prop)) { \
-		static_cast<Type*>(obj)->propName = PyString_AS_STRING(prop); \
+	if (PyUnicode_CheckExact(prop)) { \
+		static_cast<Type*>(obj)->propName = PyUnicode_AsUTF8(prop); \
 	}else { \
 		static_cast<Type*>(obj)->propName = ""; \
 		std::string type = prop->ob_type->tp_name; \
@@ -849,36 +851,36 @@ static void update_crop(Child *obj, size_t propIndex) {
 	PyObject *w = PySequence_Fast_GET_ITEM(prop, 2);
 	PyObject *h = PySequence_Fast_GET_ITEM(prop, 3);
 
-	updateCondition(obj->xcropIsFloat, obj->xcrop, x)
+	updateCondition(obj->xcropIsFloat, obj->xcrop, x, "xcrop")
 	else {
 		obj->xcropIsFloat = false;
 		obj->xcrop = 0;
 		std::string type = x->ob_type->tp_name;
-		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, absolute, int or long, got " + type);
+		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, absolute or int, got " + type);
 	}
 
-	updateCondition(obj->ycropIsFloat, obj->ycrop, y)
+	updateCondition(obj->ycropIsFloat, obj->ycrop, y, "ycrop")
 	else {
 		obj->ycropIsFloat = false;
 		obj->ycrop = 0;
 		std::string type = y->ob_type->tp_name;
-		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, absolute, int or long, got " + type);
+		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, absolute or int, got " + type);
 	}
 
-	updateCondition(obj->wcropIsFloat, obj->wcrop, w)
+	updateCondition(obj->wcropIsFloat, obj->wcrop, w, "wcrop")
 	else {
 		obj->wcropIsFloat = false;
 		obj->wcrop = 0;
 		std::string type = w->ob_type->tp_name;
-		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, absolute, int or long, got " + type);
+		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, absolute or int, got " + type);
 	}
 
-	updateCondition(obj->hcropIsFloat, obj->hcrop, h)
+	updateCondition(obj->hcropIsFloat, obj->hcrop, h, "hcrop")
 	else {
 		obj->hcropIsFloat = false;
 		obj->hcrop = 0;
 		std::string type = h->ob_type->tp_name;
-		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, absolute, int or long, got " + type);
+		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, absolute or int, got " + type);
 	}
 }
 
@@ -912,17 +914,10 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	auto &style = text->tf->mainStyle; \
 	\
 	Uint32 v = Uint32(-1); \
-	if (PyInt_CheckExact(prop)) { \
-		long l = PyInt_AS_LONG(prop); \
-		if (l < 0 || l > 0xFFFFFF) { \
-			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(l) + ">"); \
-		}else { \
-			v = Uint32(l); \
-		} \
-	}else \
 	if (PyLong_CheckExact(prop)) { \
-		double d = PyLong_AsDouble(prop); \
-		if (d < 0 || d > 0xFFFFFF) { \
+		int overflow;\
+		long d = PyLong_AsLongAndOverflow(prop, &overflow); \
+		if (overflow || d < 0 || d > 0xFFFFFF) { \
 			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
 		}else { \
 			v = Uint32(d); \
@@ -936,7 +931,7 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 	} \
 	else { \
 		std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types int, long, None or False, got " + type); \
+		outError(obj, #propName, propIndex, "Expected types int, None or False, got " + type); \
 	} \
 	\
 	if (v != Uint32(-1)) { \
@@ -970,8 +965,8 @@ static void update_text_##propName(Child *obj, size_t propIndex) { \
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
-	if (PyString_CheckExact(prop)) { \
-		std::string valueStr = PyString_AS_STRING(prop); \
+	if (PyUnicode_CheckExact(prop)) { \
+		std::string valueStr = PyUnicode_AsUTF8(prop); \
 		float value = 0; \
 		if (valueStr == zero) { \
 			value = 0; \

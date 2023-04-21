@@ -335,14 +335,19 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		PyObject *pyX = PyList_GET_ITEM(objects, i + 1);
 		PyObject *pyY = PyList_GET_ITEM(objects, i + 2);
 
-		if (!PyString_CheckExact(pyObjectFree) || !PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY)) {
+		if (!PyUnicode_CheckExact(pyObjectFree) || !PyLong_CheckExact(pyX) || !PyLong_CheckExact(pyY)) {
 			Utils::outMsg("PathFinder::updateLocation", "Expects objects == [str, int, int] * N");
 			continue;
 		}
 
-		std::string objectFreePath = PyString_AS_STRING(pyObjectFree);
-		int startX = int(PyInt_AS_LONG(pyX));
-		int startY = int(PyInt_AS_LONG(pyY));
+		std::string objectFreePath = PyUnicode_AsUTF8(pyObjectFree);
+		int overflowX, overflowY;
+		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
+		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
+		if (overflowX || overflowY) {
+			Utils::outMsg("PathFinder::updateLocation", "Object coordinates are overflowing");
+			continue;
+		}
 
 		params.objects.push_back({objectFreePath, startX, startY});
 	}
@@ -355,18 +360,23 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		PyObject *pyLocation = PyList_GET_ITEM(places, i + 3);
 		PyObject *pyPlace = PyList_GET_ITEM(places, i + 4);
 
-		if (!PyString_CheckExact(pyName) || !PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY) ||
-		    !PyString_CheckExact(pyLocation) || !PyString_CheckExact(pyPlace))
+		if (!PyUnicode_CheckExact(pyName) || !PyLong_CheckExact(pyX) || !PyLong_CheckExact(pyY) ||
+		    !PyUnicode_CheckExact(pyLocation) || !PyUnicode_CheckExact(pyPlace))
 		{
 			Utils::outMsg("PathFinder::updateLocation", "Expects places == [str, int, int, str, str] * N");
 			continue;
 		}
 
-		std::string name = PyString_AS_STRING(pyName);
-		int startX = int(PyInt_AS_LONG(pyX));
-		int startY = int(PyInt_AS_LONG(pyY));
-		std::string location = PyString_AS_STRING(pyLocation);
-		std::string place = PyString_AS_STRING(pyPlace);
+		std::string name = PyUnicode_AsUTF8(pyName);
+		int overflowX, overflowY;
+		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
+		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
+		if (overflowX || overflowY) {
+			Utils::outMsg("PathFinder::updateLocation", "Place coordinates are overflowing");
+			continue;
+		}
+		std::string location = PyUnicode_AsUTF8(pyLocation);
+		std::string place = PyUnicode_AsUTF8(pyPlace);
 
 		params.places.push_back({name, startX, startY, location, place, false, false});
 	}
@@ -686,16 +696,21 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 					PyObject *pyY = PyList_GET_ITEM(objects, j + 1);
 					PyObject *pyW = PyList_GET_ITEM(objects, j + 2);
 					PyObject *pyH = PyList_GET_ITEM(objects, j + 3);
-					if (!PyInt_CheckExact(pyX) || !PyInt_CheckExact(pyY) ||
-					    !PyInt_CheckExact(pyW) || !PyInt_CheckExact(pyH))
+					if (!PyLong_CheckExact(pyX) || !PyLong_CheckExact(pyY) ||
+					    !PyLong_CheckExact(pyW) || !PyLong_CheckExact(pyH))
 					{
 						Utils::outMsg("PathFinder::findPath", "Expects type(objects[i]) is int");
 						continue;
 					}
-					long x = PyInt_AS_LONG(pyX);
-					long y = PyInt_AS_LONG(pyY);
-					long w = PyInt_AS_LONG(pyW);
-					long h = PyInt_AS_LONG(pyH);
+					int overflowX, overflowY, overflowW, overflowH;
+					long x = PyLong_AsLongAndOverflow(pyX, &overflowX);
+					long y = PyLong_AsLongAndOverflow(pyY, &overflowY);
+					long w = PyLong_AsLongAndOverflow(pyW, &overflowW);
+					long h = PyLong_AsLongAndOverflow(pyH, &overflowH);
+					if (overflowX || overflowY || overflowW || overflowH) {
+						Utils::outMsg("PathFinder::updateLocation", "Object coordinates/sizes are overflowing");
+						continue;
+					}
 
 					long startX = x / scale;
 					long startY = y / scale;
@@ -727,8 +742,8 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 	PyObject *res = PyTuple_New(resSize);
 	for (size_t i = pathPtr->size() - 1; i != size_t(-1); --i) {
 		const SimplePoint &p = (*pathPtr)[i];
-		PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyInt_FromLong(p.x));
-		PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyInt_FromLong(p.y));
+		PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(p.x));
+		PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(p.y));
 	}
 	return res;
 }
@@ -864,17 +879,17 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 		PyObject *pyLocationName = PyTuple_GET_ITEM(elem, 0);
 		PyObject *pyPlaceName = PyTuple_GET_ITEM(elem, 1);
-		if (!PyString_CheckExact(pyLocationName) || !PyString_CheckExact(pyPlaceName)) {
+		if (!PyUnicode_CheckExact(pyLocationName) || !PyUnicode_CheckExact(pyPlaceName)) {
 			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] == (str, str)");
 			continue;
 		}
 
-		std::string locationName = PyString_AS_STRING(pyLocationName);
+		std::string locationName = PyUnicode_AsUTF8(pyLocationName);
 		MipMap *location = getLocation(locationName);
 		if (!location) continue;
 
 		for (LocationPlace &place : location->params.places) {
-			if (place.name == PyString_AS_STRING(pyPlaceName)) {
+			if (place.name == PyUnicode_AsUTF8(pyPlaceName)) {
 				place.isBannedExit = true;
 				break;
 			}
@@ -1050,11 +1065,11 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 		if (x == PointInt(-1)) {
 			LocationNode &node = locationNodes[y];
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyString_FromString(node.mipMap->name.c_str()));
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyString_FromString(node.placeName.c_str()));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyUnicode_FromString(node.mipMap->name.c_str()));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyUnicode_FromString(node.placeName.c_str()));
 		}else {
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyInt_FromLong(x));
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyInt_FromLong(y));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(x));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(y));
 		}
 	}
 

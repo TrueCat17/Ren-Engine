@@ -11,4 +11,5 @@ extern PyTypeObject PyAbsolute_Type;
 
 PyObject* PyAbsolute_FromDouble(double);
 
+
 }

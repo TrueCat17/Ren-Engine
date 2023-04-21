@@ -171,8 +171,8 @@ static void restoreScreens(const std::string &loadPath) {
 				size_t len = size_t(Py_SIZE(startScreens));
 				for (size_t i = 0; i < len; ++i) {
 					PyObject *elem = PyList_GET_ITEM(startScreens, i);
-					if (PyString_CheckExact(elem)) {
-						std::string name = PyString_AS_STRING(elem);
+					if (PyUnicode_CheckExact(elem)) {
+						std::string name = PyUnicode_AsUTF8(elem);
 						startScreensVec.push_back(name);
 					}else {
 						Utils::outMsg("Scenario::restoreScreens",
@@ -574,7 +574,7 @@ void Scenario::execute(const std::string &loadPath) {
 
 
 			std::string tmp = (whoDefined ? who + " " : "") + what + "\r\n";
-			std::string md5 = PyUtils::getMd5(tmp);
+			std::string md5 = Utils::md5(tmp);
 
 			size_t i = stack.size() - 1;
 			while (stack[i].first->command != "label") {

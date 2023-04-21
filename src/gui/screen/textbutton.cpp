@@ -23,10 +23,9 @@ static void onLeftClick(DisplayObject* owner) {
 	}else {
 		PyObject *activateSoundObj = StyleManager::getProp(style, "activate_sound");
 
-		if (PyString_CheckExact(activateSoundObj)) {
-			const char *sound = PyString_AS_STRING(activateSoundObj);
-			Music::play("button_click '" + std::string(sound) + "'",
-			            node->getFileName(), node->getNumLine());
+		if (PyUnicode_CheckExact(activateSoundObj)) {
+			std::string sound = PyUnicode_AsUTF8(activateSoundObj);
+			Music::play("button_click '" + sound + "'", node->getFileName(), node->getNumLine());
 		}else if (activateSoundObj != Py_None) {
 			std::string type = activateSoundObj->ob_type->tp_name;
 			Utils::outMsg("TextButton::onLeftClick",
@@ -107,10 +106,9 @@ void TextButton::checkEvents() {
 			}else {
 				PyObject *hoverSoundObj = StyleManager::getProp(style, "hover_sound");
 
-				if (PyString_CheckExact(hoverSoundObj)) {
-					const char *sound = PyString_AS_STRING(hoverSoundObj);
-					Music::play("button_hover '" + std::string(sound) + "'",
-								getFileName(), getNumLine());
+				if (PyUnicode_CheckExact(hoverSoundObj)) {
+					std::string sound = PyUnicode_AsUTF8(hoverSoundObj);
+					Music::play("button_hover '" + sound + "'", getFileName(), getNumLine());
 				}else if (hoverSoundObj != Py_None) {
 					std::string type = hoverSoundObj->ob_type->tp_name;
 					Utils::outMsg("TextButton::hovered",

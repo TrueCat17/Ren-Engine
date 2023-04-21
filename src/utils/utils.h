@@ -35,6 +35,8 @@ public:
 
 	static PyObject* getImageDeclAt(const std::string &name);
 	static std::vector<std::string> getVectorImageDeclAt(const std::string &name);
+
+	static std::string md5(const std::string &str);
 };
 
 #endif // UTILS_H

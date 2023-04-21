@@ -40,18 +40,16 @@
 
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
-#ifdef __WIN32__
-	Py_SetPythonHome(const_cast<char*>("../Ren-Engine/py_libs/"));
-#else
+#ifndef __WIN32__
 	if (!setlocale(LC_ALL, "C.UTF-8")) {
 		printf("Fail on set locale <C.UTF-8>\n");
 		if (!setlocale(LC_ALL, "en_US.UTF-8")) {
 			printf("Fail on set locale <en_US.UTF-8>\n");
 		}
 	}
-	setenv("PYTHONPATH", "../Ren-Engine/py_libs/Lib/", 1);
-	setenv("PYTHONHOME", "../Ren-Engine/py_libs/Lib/", 1);
 #endif
+	setenv("PYTHONPATH", "../Ren-Engine/py_libs/", 1);
+	setenv("PYTHONHOME", "../Ren-Engine/py_libs/", 1);
 
 	if (newRoot.empty()) {
 		char *charsPathUTF8 = SDL_GetBasePath();
@@ -236,7 +234,7 @@ static void loop() {
 			GV::frameStartTime = Utils::getTimer();
 			GV::gameTime += Game::getLastTick();
 
-			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('enter_frame')");
+			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "if 'signals' in globals(): signals.send('enter_frame')");
 		}
 
 		bool resizeWithoutMouseDown = false;
@@ -403,7 +401,7 @@ static void loop() {
 			Game::makeScreenshot();
 		}
 
-		PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "globals().has_key('signals') and signals.send('exit_frame')");
+		PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "if 'signals' in globals(): signals.send('exit_frame')");
 
 		GV::updateMutex.unlock();
 

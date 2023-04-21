@@ -20,9 +20,9 @@ Style::Style(PyObject *style, const std::string &name):
 	Py_ssize_t i = 0;
 	PyObject *key, *value;
 	while (PyDict_Next(dict, &i, &key, &value)) {
-		if (PyString_CheckExact(key)) {
+		if (PyUnicode_CheckExact(key)) {
 			Py_INCREF(value);
-			props[PyString_AS_STRING(key)] = value;
+			props[PyUnicode_AsUTF8(key)] = value;
 		}
 	}
 }
@@ -87,8 +87,8 @@ const Style* StyleManager::getByNode(const Node *node, PyObject *style) {
 		}
 
 		const Style *res;
-		if (PyString_CheckExact(style)) {
-			res = getByName(node, PyString_AS_STRING(style));
+		if (PyUnicode_CheckExact(style)) {
+			res = getByName(node, PyUnicode_AsUTF8(style));
 		}else {
 			std::string place = propStyle->getFileName() + ":" + std::to_string(propStyle->getNumLine());
 			std::string name = "unknown (" + place + ")";

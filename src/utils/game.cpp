@@ -482,7 +482,7 @@ PyObject* Game::getAllLabels() {
 	PyObject *res = PyList_New(0);
 	for (const Node *node : GV::mainExecNode->children) {
 		if (node->command == "label") {
-			PyObject *name = PyString_FromString(node->params.c_str());
+			PyObject *name = PyUnicode_FromString(node->params.c_str());
 			PyList_Append(res, name);
 			Py_DECREF(name);
 		}
@@ -530,8 +530,8 @@ PyObject* Game::getArgs(const std::string &str) {
 	PyObject *res = PyList_New(long(vec.size()));
 	for (size_t i = 0; i < vec.size(); ++i) {
 		const std::string &str = vec[i];
-		PyObject *pyStr = PyString_FromString(str.c_str());
-		PyList_SET_ITEM(res, i, pyStr);
+		PyObject *pyStr = PyUnicode_FromString(str.c_str());
+		PyList_SET_ITEM(res, long(i), pyStr);
 	}
 	return res;
 }

@@ -10,6 +10,10 @@
 #include <map>
 #include <pthread.h>
 
+extern "C" {
+#include <libavutil/md5.h>
+}
+
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_clipboard.h>
 
@@ -325,7 +329,7 @@ void Utils::registerImage(Node *imageNode) {
 	size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
 	for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
 		PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
-		if (!PyString_CheckExact(elem)) {
+		if (!PyUnicode_CheckExact(elem)) {
 			outMsg("Utils::registerImage",
 			       "default_decl_at[" + std::to_string(i) + "] is not str\n" +
 			       imageNode->getPlace());
@@ -333,7 +337,7 @@ void Utils::registerImage(Node *imageNode) {
 		}
 
 		Node *node = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
-		node->params = PyString_AS_STRING(elem);
+		node->params = PyUnicode_AsUTF8(elem);
 		imageNode->children.push_back(node);
 	}
 }
@@ -364,4 +368,22 @@ std::vector<std::string> Utils::getVectorImageDeclAt(const std::string &name) {
 
 	Utils::outMsg("Utils::getVectorImageDeclAt", "Image <" + name + "> not registered");
 	return {};
+}
+
+static std::mutex md5_mutex;
+static const char *md5_table16 = "0123456789abcdef";
+std::string Utils::md5(const std::string &str) {
+	std::lock_guard g(md5_mutex);
+
+	uint8_t data[16];
+	av_md5_sum(data, reinterpret_cast<const uint8_t*>(str.c_str()), str.size());
+
+	std::string res;
+	res.resize(32);
+	for (size_t i = 0; i < 16; ++i) {
+		uint8_t v = data[i];
+		res[i * 2 + 0] = md5_table16[v >> 4];
+		res[i * 2 + 1] = md5_table16[v & 15];
+	}
+	return res;
 }

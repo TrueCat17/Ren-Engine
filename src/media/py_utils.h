@@ -13,7 +13,7 @@ public:
 	static std::recursive_mutex pyExecMutex;
 
 
-	static PyCodeObject* getCompileObject(const std::string &code, const std::string &fileName, size_t numLine);
+	static PyObject *getCompileObject(const std::string &code, const std::string &fileName, size_t numLine);
 	static bool isConstExpr(const std::string &code, bool checkSimple = true);
 	static std::string exec(const std::string &fileName, size_t numLine, const std::string &code, bool retRes = false);
 	static PyObject* execRetObj(const std::string &fileName, size_t numLine, const std::string &code);
@@ -21,7 +21,7 @@ public:
 
 	static void init();
 
-	static std::string getMd5(const std::string &str);
+	static std::string objToStr(PyObject *obj);
 };
 
 #endif // PYUTILS_H

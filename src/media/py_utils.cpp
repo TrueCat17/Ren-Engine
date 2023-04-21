@@ -29,7 +29,7 @@
 typedef std::tuple<const std::string, const std::string, uint32_t> PyCode;
 
 static std::map<std::string, PyObject*> constObjects;
-static std::map<PyCode, PyCodeObject*> compiledObjects;
+static std::map<PyCode, PyObject*> compiledObjects;
 
 static const std::string True = "True";
 static const std::string False = "False";
@@ -46,7 +46,7 @@ PyObject *PyUtils::tuple1 = nullptr;
 std::recursive_mutex PyUtils::pyExecMutex;
 
 
-PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
+PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
 	std::tuple<const std::string&, const std::string&, size_t> refPyCode(code, fileName, numLine);
 
 	std::lock_guard g(pyExecMutex);
@@ -62,27 +62,25 @@ PyCodeObject* PyUtils::getCompileObject(const std::string &code, const std::stri
 	indentCode.insert(0, numLine - 1, '\n');
 	indentCode += code;
 
-	PyObject *t = Py_CompileStringFlags(indentCode.c_str(), fileName.c_str(), Py_file_input, nullptr);
-	PyCodeObject *co = reinterpret_cast<PyCodeObject*>(t);
-	if (!co) {
+	PyObject *res = Py_CompileStringFlags(indentCode.c_str(), fileName.c_str(), Py_file_input, nullptr);
+	if (!res) {
 		PyUtils::errorProcessing(code);
 	}
 
-	compiledObjects[refPyCode] = co;
-	return co;
+	return compiledObjects[refPyCode] = res;
 }
 
 
 static PyObject* getMouse() {
 	PyObject *res = PyTuple_New(2);
-	PyTuple_SET_ITEM(res, 0, PyInt_FromLong(Mouse::getX() - Stage::x));
-	PyTuple_SET_ITEM(res, 1, PyInt_FromLong(Mouse::getY() - Stage::y));
+	PyTuple_SET_ITEM(res, 0, PyLong_FromLong(Mouse::getX() - Stage::x));
+	PyTuple_SET_ITEM(res, 1, PyLong_FromLong(Mouse::getY() - Stage::y));
 	return res;
 }
 static PyObject* getLocalMouse() {
 	PyObject *res = PyTuple_New(2);
-	PyTuple_SET_ITEM(res, 0, PyInt_FromLong(Mouse::getLocalX()));
-	PyTuple_SET_ITEM(res, 1, PyInt_FromLong(Mouse::getLocalY()));
+	PyTuple_SET_ITEM(res, 0, PyLong_FromLong(Mouse::getLocalX()));
+	PyTuple_SET_ITEM(res, 1, PyLong_FromLong(Mouse::getLocalY()));
 	return res;
 }
 
@@ -126,20 +124,23 @@ void PyUtils::init() {
 	Py_Initialize();
 
 	tuple1 = PyTuple_New(1);
-	builtinStr = PyString_FromString("__builtin__");
+	builtinStr = PyUnicode_FromString("builtins");
 
-	PyObject *tracebackModule = PyImport_AddModule("traceback");
-	PyObject *tracebackDict = PyModule_GetDict(tracebackModule);
-	formatTraceback = PyDict_GetItemString(tracebackDict, "format_tb");
+	PyObject *tracebackModule = PyImport_ImportModule("traceback");
+	if (!tracebackModule) {
+		PyErr_Print();
+		std::abort();
+	}
+	formatTraceback = PyObject_GetAttrString(tracebackModule, "format_tb");
 	if (!formatTraceback) {
 		Utils::outMsg("PyUtils::init", "traceback.format_tb == nullptr");
 		std::abort();
 	}
 
-	PyObject *builtinModule = PyImport_AddModule("__builtin__");
+	PyObject *builtinModule = PyImport_AddModule("builtins");
 	builtinDict = PyModule_GetDict(builtinModule);
 	if (!builtinDict) {
-		Utils::outMsg("PyUtils::init", "__builtin__ == nullptr");
+		Utils::outMsg("PyUtils::init", "builtins == nullptr");
 		std::abort();
 	}
 
@@ -160,6 +161,7 @@ void PyUtils::init() {
 	setGlobalValue("screenshot_height", 640 / String::toDouble(Config::get("window_w_div_h")));
 
 	setGlobalFunc("ftoi", ftoi);
+	setGlobalFunc("get_md5", Utils::md5);
 
 	setGlobalFunc("get_current_mod", getCurrentMod);
 	setGlobalFunc("get_mods", Mods::getList);
@@ -242,7 +244,8 @@ void PyUtils::init() {
 }
 
 
-static void getRealString(size_t numLine, const std::string &code, std::string &fileName, std::string &numLineStr) {
+static void getRealString(const std::string &code, std::string &fileName, std::string &numLineStr) {
+	size_t numLine = size_t(String::toInt(numLineStr));
 	size_t commentEnd = 0;
 	for (size_t i = 0; i < numLine; ++i) {
 		commentEnd = code.find('\n', commentEnd) + 1;
@@ -261,74 +264,79 @@ static void getRealString(size_t numLine, const std::string &code, std::string &
 	size_t fileNameEnd = comment.size();
 	fileName = comment.substr(fileNameStart, fileNameEnd - fileNameStart);
 }
+static void fixToRealString(std::string &str, const std::string &code,
+                            size_t fileNameStart, size_t fileNameEnd,
+                            size_t numLineStart, size_t numLineEnd
+) {
+	std::string fileName = str.substr(fileNameStart, fileNameEnd - fileNameStart);
+	std::string numLineStr = str.substr(numLineStart, numLineEnd - numLineStart);
+	getRealString(code, fileName, numLineStr);
+
+	str.erase(numLineStart, numLineEnd - numLineStart);
+	str.insert(numLineStart, numLineStr);
+
+	str.erase(fileNameStart, fileNameEnd - fileNameStart);
+	str.insert(fileNameStart, fileName);
+}
 
 void PyUtils::errorProcessing(const std::string &code) {
-	PyObject *ptype, *pvalue, *ptraceback;
-	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-	if (!ptype) {
-		Utils::outMsg("PyUtils::errorProcessing", "ptype == nullptr");
+	PyObject *pyType, *pyValue, *pyTraceback;
+	PyErr_Fetch(&pyType, &pyValue, &pyTraceback);
+	if (!pyType) {
+		Utils::outMsg("PyUtils::errorProcessing", "pyType == nullptr");
 		return;
 	}
 
-	PyErr_NormalizeException(&ptype, &pvalue, &ptraceback);
+	PyErr_NormalizeException(&pyType, &pyValue, &pyTraceback);
 
-	PyObject *typeStrObj = PyObject_Str(ptype);
-	std::string typeStr = PyString_AS_STRING(typeStrObj);
-
-	PyObject *valueStrObj = PyObject_Str(pvalue);
-	std::string valueStr = PyString_AS_STRING(valueStrObj);
+	std::string typeStr = PyUtils::objToStr(pyType);
+	std::string valueStr = PyUtils::objToStr(pyValue);
 
 	std::string traceback;
-	if (ptraceback && ptraceback != Py_None) {
-		PyTuple_SET_ITEM(tuple1, 0, ptraceback);
+	if (pyTraceback && pyTraceback != Py_None) {
+		PyTuple_SET_ITEM(tuple1, 0, pyTraceback);
 		PyObject *res = PyObject_Call(formatTraceback, tuple1, nullptr);
 		PyTuple_SET_ITEM(tuple1, 0, nullptr);
 
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
 			PyObject *item = PyList_GET_ITEM(res, i);
-			std::string str = PyString_AS_STRING(item);
+			std::string str = PyUnicode_AsUTF8(item);
 
 			size_t fileNameStart = str.find("_SL_FILE_");
 			if (fileNameStart != size_t(-1)) {
 				size_t fileNameEnd = str.find('"', fileNameStart);
-				std::string fileName = str.substr(fileNameStart, fileNameEnd - fileNameStart);
 
 				size_t numLineStart = str.find("line ") + 5;
 				size_t numLineEnd = str.find(',', numLineStart);
-				std::string numLineStr = str.substr(numLineStart, numLineEnd - numLineStart);
-				size_t numLine = size_t(String::toInt(numLineStr));
 
-				getRealString(numLine, code, fileName, numLineStr);
-
-				str.erase(numLineStart, numLineEnd - numLineStart);
-				str.insert(numLineStart, numLineStr);
-
-				str.erase(fileNameStart, fileNameEnd - fileNameStart);
-				str.insert(fileNameStart, fileName);
+				fixToRealString(str, code, fileNameStart, fileNameEnd, numLineStart, numLineEnd);
 			}
 			traceback += str;
 		}
 
 		Py_DECREF(res);
 	}else {
-		size_t fileNameStart = valueStr.find('(') + 1;
+		size_t fileNameStart = valueStr.find_last_of('(') + 1;
 		size_t fileNameEnd = valueStr.find_last_of(',');
-		std::string fileName = valueStr.substr(fileNameStart, fileNameEnd - fileNameStart);
 
-		if (fileName.find("_SL_FILE_") != size_t(-1)) {
+		if (pyType == PyExc_SyntaxError) {
+			PyObject *pyFileName = PyObject_GetAttrString(pyValue, "filename");
+			if (pyFileName) {
+				std::string fileNameWithFullPath = PyUtils::objToStr(pyFileName);
+				Py_DECREF(pyFileName);
+
+				valueStr.erase(fileNameStart, fileNameEnd - fileNameStart);
+				valueStr.insert(fileNameStart, fileNameWithFullPath);
+				fileNameEnd += fileNameWithFullPath.size() - (fileNameEnd - fileNameStart);
+			}
+		}
+
+		if (valueStr.find("_SL_FILE_", fileNameStart, 1) != size_t(-1)) {
 			size_t numLineStart = valueStr.find_last_of(' ') + 1;
 			size_t numLineEnd = valueStr.size() - 1;
-			std::string numLineStr = valueStr.substr(numLineStart, numLineEnd - numLineStart);
-			size_t numLine = size_t(String::toInt(numLineStr));
 
-			getRealString(numLine, code, fileName, numLineStr);
-
-			valueStr.erase(numLineStart, numLineEnd - numLineStart);
-			valueStr.insert(numLineStart, numLineStr);
-
-			valueStr.erase(fileNameStart, fileNameEnd - fileNameStart);
-			valueStr.insert(fileNameStart, fileName);
+			fixToRealString(valueStr, code, fileNameStart, fileNameEnd, numLineStart, numLineEnd);
 		}
 	}
 
@@ -344,6 +352,10 @@ void PyUtils::errorProcessing(const std::string &code) {
 	Logger::log(out);
 
 	Utils::outMsg("Python", "See details in var/log.txt");
+
+	Py_XDECREF(pyType);
+	Py_XDECREF(pyValue);
+	Py_XDECREF(pyTraceback);
 }
 
 bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
@@ -419,11 +431,11 @@ std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std
 
 	std::lock_guard g(pyExecMutex);
 
-	PyCodeObject *co;
+	PyObject *co;
 	if (!retRes) {
 		co = getCompileObject(code, fileName, numLine);
 	}else {
-		co = getCompileObject("res = str(" + code + ")", fileName, numLine);
+		co = getCompileObject("_res = str(" + code + ")", fileName, numLine);
 	}
 
 	if (co) {
@@ -431,8 +443,8 @@ std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std
 
 		if (ok) {
 			if (retRes) {
-				PyObject *resObj = PyDict_GetItemString(global, "res");
-				res = PyString_AS_STRING(resObj);
+				PyObject *resObj = PyDict_GetItemString(global, "_res");
+				res = PyUnicode_AsUTF8(resObj);
 
 				if (isConst) {
 					constExprs[code] = res;
@@ -460,7 +472,7 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 
 	std::lock_guard g(pyExecMutex);
 
-	PyCodeObject *co = getCompileObject("res = " + code, fileName, numLine);
+	PyObject *co = getCompileObject("res = " + code, fileName, numLine);
 	if (co) {
 		bool ok = PyEval_EvalCode(co, global, nullptr);
 
@@ -480,30 +492,13 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 }
 
 
-std::string PyUtils::getMd5(const std::string &str) {
-	std::lock_guard g(pyExecMutex);
-
-	PyObject *module = PyImport_AddModule("_md5");
-	PyObject *constructor = PyObject_GetAttrString(module, "new");
-
-	PyObject *noArgs = PyTuple_New(0);
-
-	PyObject *md5 = PyObject_Call(constructor, noArgs, nullptr);
-	PyObject *update = PyObject_GetAttrString(md5, "update");
-	PyObject *hexdigest = PyObject_GetAttrString(md5, "hexdigest");
-
-	PyObject *pyStr = PyString_FromStringAndSize(str.c_str(), long(str.size()));
-	PyTuple_SET_ITEM(tuple1, 0, pyStr);
-	PyObject_Call(update, tuple1, nullptr);
-	PyTuple_SET_ITEM(tuple1, 0, nullptr);
-	PyObject *pyRes = PyObject_Call(hexdigest, noArgs, nullptr);
-
-	std::string res = PyString_AS_STRING(pyRes);
-
-	Py_DECREF(md5);
-	Py_DECREF(pyStr);
-	Py_DECREF(pyRes);
-	Py_DECREF(noArgs);
-
+std::string PyUtils::objToStr(PyObject *obj) {
+	PyObject *objStr = PyObject_Str(obj);
+	std::string res = PyUnicode_AsUTF8(objStr);
+	if (res.size() > 50) {
+		res.erase(48);
+		res += "..";
+	}
+	Py_DECREF(objStr);
 	return res;
 }

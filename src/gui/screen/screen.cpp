@@ -49,7 +49,7 @@ static void show(const std::string &name) {
 	}
 
 	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
-	              "globals().has_key('signals') and signals.send('show_screen', '" + name + "')");
+	              "if 'signals' in globals(): signals.send('show_screen', '" + name + "')");
 	Stage::screens->addChildAt(scr, Stage::screens->children.size());
 }
 static void hide(const std::string &name) {
@@ -60,7 +60,7 @@ static void hide(const std::string &name) {
 		if (scr->getName() == name) {
 			delete scr;
 			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
-			              "globals().has_key('signals') and signals.send('hide_screen', '" + name + "')\n"
+			              "if 'signals' in globals(): signals.send('hide_screen', '" + name + "')\n"
 			              "del screen_vars['" + name + "']");
 			return;
 		}
@@ -155,7 +155,7 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 	Py_ssize_t i = 0;
 	PyObject *key, *value;
 	while (PyDict_Next(kwargs, &i, &key, &value)) {
-		std::string varName = PyString_AS_STRING(key);
+		std::string varName = PyUnicode_AsUTF8(key);
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) == argsWasSet.cend()) {
 			argsWasSet.push_back(varName);
 		}else {
@@ -374,7 +374,7 @@ void Screen::calcProps() {
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
-	if (!PyEval_EvalCode(static_cast<PyCodeObject*>(co), PyUtils::global, nullptr)) {
+	if (!PyEval_EvalCode(co, PyUtils::global, nullptr)) {
 		PyUtils::errorProcessing(screenCode);
 	}
 }

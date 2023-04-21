@@ -1,6 +1,7 @@
 #ifndef MAKE_FUNC_H
 #define MAKE_FUNC_H
 
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -29,16 +30,19 @@ struct remove_rc<T&> {
 };
 
 
+class PyWrapperBase;
+typedef PyObject* (*PyWrapperCallType)(const PyWrapperBase&, PyObject *const *args, Py_ssize_t nargs);
+
 class PyWrapperBase {
 public:
-	PyObject* (*call)(const PyWrapperBase&, PyObject*);
+	PyWrapperCallType call;
 	void *funcPtr;
 	const char *name;
 
-	PyWrapperBase(PyObject* (*call)(const PyWrapperBase&, PyObject*), void *funcPtr, const char *name):
-		call(call),
-		funcPtr(funcPtr),
-		name(name)
+	PyWrapperBase(PyWrapperCallType call, void *funcPtr, const char *name):
+	    call(call),
+	    funcPtr(funcPtr),
+	    name(name)
 	{}
 };
 
@@ -47,55 +51,48 @@ std::vector<PyWrapperBase> &getPyWrappers();
 void clearPyWrappers();
 
 
-PyObject* pyFuncDelegator(PyObject *indexObj, PyObject *args);
-
-
 
 template<typename Ret, typename... Args>
 class PyWrapper: public PyWrapperBase {
 public:
 	PyWrapper(const char *name, Ret(*funcPtr)(Args...)):
-		PyWrapperBase(call, reinterpret_cast<void*>(funcPtr), name)
+	    PyWrapperBase(call, reinterpret_cast<void*>(funcPtr), name)
 	{}
 
 private:
 	static constexpr size_t COUNT_ARGS = sizeof...(Args);
 
-	static PyObject* call(const PyWrapperBase &wrapper, PyObject *pyArgs) {
+	static PyObject* call(const PyWrapperBase &wrapper, PyObject *const *pyArgs, Py_ssize_t nargs) {
+		if (nargs != COUNT_ARGS) {
+			return PyErr_Format(PyExc_TypeError,
+			    "%s() takes exactly %zu argument%s (%zi given)",
+			    wrapper.name, COUNT_ARGS, COUNT_ARGS == 1 ? "" : "s", nargs);
+		}
 		return helper(wrapper, pyArgs, std::make_index_sequence<COUNT_ARGS>());
 	}
 
 	template<size_t ...Indexes>
-	static PyObject* helper(const PyWrapperBase &wrapper, PyObject *pyArgs, std::index_sequence<Indexes...>) {
-		if (Py_SIZE(pyArgs) != COUNT_ARGS) {
-			std::string err = std::string(wrapper.name) + "() takes exactly ";
-			if constexpr (COUNT_ARGS == 1) {
-				err += "1 argument";
-			}else {
-				err += std::to_string(COUNT_ARGS) + " arguments";
-			}
-			err += " (" + std::to_string(Py_SIZE(pyArgs)) + " given)";
-
-			PyErr_SetString(PyExc_TypeError, err.c_str());
-			return nullptr;
-		}
-
+	static PyObject* helper(const PyWrapperBase &wrapper, PyObject *const *pyArgs, std::index_sequence<Indexes...>) {
 		Ret (*typedFunc)(Args...) = reinterpret_cast<Ret(*)(Args...)>(wrapper.funcPtr);
 
 		pyErrorFlag = false;
 		std::tuple args = {
-		    convertFromPy<typename remove_rc<Args>::type>(PyTuple_GET_ITEM(pyArgs, Indexes), wrapper.name, Indexes)...
+		    convertFromPy<typename remove_rc<Args>::type>(pyArgs[Indexes], wrapper.name, Indexes)...
 		};
 		if (pyErrorFlag) {
 			return nullptr;
 		}
 
-		if constexpr (std::is_same_v<Ret, void>) {
+		if constexpr (std::is_void_v<Ret>) {
 			std::apply(typedFunc, args);
 			Py_RETURN_NONE;
 		}else {
 			typename remove_rc<Ret>::type res = std::apply(typedFunc, args);
-			return convertToPy(res);
+			if constexpr (std::is_arithmetic_v<Ret> || std::is_pointer_v<Ret>) {
+				return convertToPy(res);
+			}else {
+				return convertToPy<const Ret&>(res);
+			}
 		}
 	}
 };
@@ -110,7 +107,7 @@ PyObject* makeFuncImpl(const char *name, Ret(*func)(Args...), PyObject *moduleNa
 	pyWrappers.push_back(wrapper);
 
 	PyMethodDef *methodDef = getMethodDef(name);
-	PyObject *res = PyCFunction_NewEx(methodDef, PyInt_FromLong(long(pyWrappers.size() - 1)), nullptr);
+	PyObject *res = PyCFunction_New(methodDef, PyLong_FromSize_t(pyWrappers.size() - 1));
 	if (moduleName) {
 		PyObject_SetAttrString(res, "__module__", moduleName);
 	}

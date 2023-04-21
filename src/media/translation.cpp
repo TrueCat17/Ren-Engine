@@ -85,7 +85,7 @@ PyObject* Translation::getKnownLanguages() {
 
 	PyObject *res = PyTuple_New(long(vec.size()));
 	for (size_t i = 0; i < vec.size(); ++i) {
-		PyTuple_SET_ITEM(res, i, PyString_FromString(vec[i].c_str()));
+		PyTuple_SET_ITEM(res, i, PyUnicode_FromString(vec[i].c_str()));
 	}
 	return res;
 }

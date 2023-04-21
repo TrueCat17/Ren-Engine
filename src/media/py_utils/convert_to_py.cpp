@@ -1,11 +1,14 @@
 #include "convert_to_py.h"
 
+#include <string>
 
-PyObject* convertToPy(PyObject *obj) {
+template<>
+PyObject* convertToPy<>(PyObject *obj) {
 	return obj;
 }
 
-PyObject* convertToPy(bool obj) {
+template<>
+PyObject* convertToPy<>(bool obj) {
 	PyObject *res = obj ? Py_True : Py_False;
 	Py_INCREF(res);
 	return res;
@@ -13,56 +16,41 @@ PyObject* convertToPy(bool obj) {
 
 
 #define MAKE_CONVERT_INT_TO_PY(type) \
-PyObject* convertToPy(type obj) { \
-	return PyInt_FromLong(long(obj)); \
+template<> \
+PyObject* convertToPy<>(type obj) { \
+	return PyLong_FromLongLong((long long)(obj)); \
 }
+MAKE_CONVERT_INT_TO_PY( int8_t)
+MAKE_CONVERT_INT_TO_PY(int16_t)
+MAKE_CONVERT_INT_TO_PY(int32_t)
+MAKE_CONVERT_INT_TO_PY(int64_t)
 
-MAKE_CONVERT_INT_TO_PY(  int8_t)
-MAKE_CONVERT_INT_TO_PY( uint8_t)
-MAKE_CONVERT_INT_TO_PY( int16_t)
-MAKE_CONVERT_INT_TO_PY(uint16_t)
-MAKE_CONVERT_INT_TO_PY( int32_t)
 
-//long: int32_t or int64_t
-
-//if long == int64_t
-#if ((LONG_MAX) == (LONG_LONG_MAX))
-MAKE_CONVERT_INT_TO_PY(uint32_t)
-MAKE_CONVERT_INT_TO_PY( int64_t)
-#endif
-
-//if long == int32_t
-#if ((LONG_MAX) == (INT_MAX))
-PyObject* convertToPy(uint32_t obj) {
-	if (obj <= uint32_t(INT_MAX))
-		return PyInt_FromLong(long(obj));
-	return PyLong_FromUnsignedLongLong(obj);
+#define MAKE_CONVERT_UINT_TO_PY(type) \
+template<> \
+PyObject* convertToPy<>(type obj) { \
+	return PyLong_FromUnsignedLongLong((unsigned long long)(obj)); \
 }
-PyObject* convertToPy(int64_t obj) {
-	if (obj >= int64_t(INT_MIN) && obj <= int64_t(INT_MAX))
-		return PyInt_FromLong(long(obj));
-	return PyLong_FromLongLong(obj);
-}
-#endif
-
-PyObject* convertToPy(uint64_t obj) {
-	if (obj <= uint64_t(LONG_MAX))
-		return PyInt_FromLong(long(obj));
-	return PyLong_FromUnsignedLongLong(obj);
-}
+MAKE_CONVERT_UINT_TO_PY( uint8_t)
+MAKE_CONVERT_UINT_TO_PY(uint16_t)
+MAKE_CONVERT_UINT_TO_PY(uint32_t)
+MAKE_CONVERT_UINT_TO_PY(uint64_t)
 
 
-
-PyObject* convertToPy(float obj) {
+template<>
+PyObject* convertToPy<>(float obj) {
 	return PyFloat_FromDouble(double(obj));
 }
-PyObject* convertToPy(double obj) {
+template<>
+PyObject* convertToPy<>(double obj) {
 	return PyFloat_FromDouble(obj);
 }
 
-PyObject* convertToPy(const char *obj) {
-	return PyString_FromString(obj);
+template<>
+PyObject* convertToPy<>(const char *obj) {
+	return PyUnicode_FromString(obj);
 }
-PyObject* convertToPy(const std::string &obj) {
-	return PyString_FromString(obj.c_str());
+template<>
+PyObject* convertToPy<>(const std::string &obj) {
+	return PyUnicode_FromStringAndSize(obj.c_str(), long(obj.size()));
 }

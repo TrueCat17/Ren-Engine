@@ -47,7 +47,7 @@ endif()
 
 
 include_directories("${LIB}/include")
-include_directories("${LIB}/include/python2.7")
+include_directories("${LIB}/include/python3")
 if ("${LTO}" STREQUAL "1")
 	link_directories("${LIB}/lto")
 else()
@@ -57,10 +57,10 @@ endif()
 
 if ("${LTO}" STREQUAL "1")
 	# disable, because LTO with <C++> is unstable
-	#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -flto")
+	#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -flto=auto")
 
 	# enable, because LTO with <C> is stable
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -flto")
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -flto=auto")
 endif()
 
 if ("${PROFILE}" STREQUAL "generate")
@@ -82,14 +82,14 @@ link_libraries(
 	freetype
 	brotlidec-static
 	brotlicommon-static
+	python3.11
+	z # z after python, because python's zlibmodule uses libz
 )
 
 if (PLATFORM STREQUAL "win32")
 	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -mwindows -static -static-libstdc++")
 	
 	link_libraries(
-		:python27.dll
-		z
 		opengl32
 		winmm imm32 version setupapi # for SDL2
 		ws2_32 # for avformat
@@ -99,8 +99,6 @@ else()
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Xlinker --export-dynamic")
 
 	link_libraries(
-		python2.7 dl util
-		z # z after python, because python's zlibmodule uses libz
 		GL
 		jemalloc
 		c m
@@ -111,7 +109,7 @@ endif()
 
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "") # to remove <unrecognized command line option -rdynamic>
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fno-exceptions -Wno-register -Wall -Wextra -Wpedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fno-exceptions -Wall -Wextra -Wpedantic")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wconversion -Wsign-conversion -Wfloat-equal")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
@@ -123,15 +121,5 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 
 
 include_directories(.)
-
-file(GLOB SOURCES
-	"*.cpp"
-	"gui/*.cpp"
-	"gui/screen/*.cpp"
-	"media/*.cpp"
-	"media/py_utils/*.cpp"
-	"parser/*.cpp"
-	"utils/*.cpp"
-)
-
+file(GLOB_RECURSE SOURCES "*.cpp")
 add_executable(${OUTPUT_NAME} ${SOURCES})

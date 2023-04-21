@@ -56,10 +56,10 @@ PyObject* Node::getPyList() const {
 
 	if (!isHighLevelCommands) {
 		if (!command.empty()) {
-			PyList_Append(res, PyString_FromString(command.c_str()));
+			PyList_Append(res, PyUnicode_FromString(command.c_str()));
 		}
 		if (!params.empty()) {
-			PyList_Append(res, PyString_FromString(params.c_str()));
+			PyList_Append(res, PyUnicode_FromString(params.c_str()));
 		}
 	}
 
@@ -79,12 +79,12 @@ PyObject* Node::getPyList() const {
 
 			for (size_t i = 0; i < len; ++i) {
 				PyObject *elem = PyList_GET_ITEM(childPyList, i);
-				const char *chars = PyString_AS_STRING(elem);
-				toJoin.push_back(std::string(chars));
+				std::string elemStr = PyUnicode_AsUTF8(elem);
+				toJoin.push_back(elemStr);
 			}
 
 			std::string joinedStr = String::join(toJoin, " ");
-			PyObject *joined = PyString_FromString(joinedStr.c_str());
+			PyObject *joined = PyUnicode_FromString(joinedStr.c_str());
 
 			PyList_Append(res, joined);
 		}

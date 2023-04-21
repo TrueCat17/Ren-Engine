@@ -89,9 +89,9 @@ static void updateList() {
 	pyMods = PyTuple_New(long(res.size()));
 	for (size_t i = 0; i < res.size(); ++i) {
 		PyObject *item = PyTuple_New(2);
-		PyTuple_SET_ITEM(item, 0, PyString_FromString(res[i].first.c_str()));
-		PyTuple_SET_ITEM(item, 1, PyString_FromString(res[i].second.c_str()));
-		PyTuple_SET_ITEM(pyMods, i, item);
+		PyTuple_SET_ITEM(item, 0, PyUnicode_FromString(res[i].first.c_str()));
+		PyTuple_SET_ITEM(item, 1, PyUnicode_FromString(res[i].second.c_str()));
+		PyTuple_SET_ITEM(pyMods, long(i), item);
 	}
 }
 
