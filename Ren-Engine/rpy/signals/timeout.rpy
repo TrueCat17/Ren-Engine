@@ -37,7 +37,8 @@ init -100000 python:
 				try:
 					function()
 				except:
-					out_msg('exec_timeouts', 'Id=%s, Function=%s' % (id, function))
+					func_name = getattr(function, '__name__', str(function))
+					out_msg('exec_timeouts', 'Id = %s, Function = %s' % (id, func_name))
 		
 		i = 0
 		while i < len(_timeout_funcs):

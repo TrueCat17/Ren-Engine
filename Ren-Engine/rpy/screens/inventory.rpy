@@ -58,7 +58,7 @@ init -101 python:
 	
 	def inventory__get_cell_image_size(image):
 		w, h = get_image_size(image)
-		k = min(inventory.cell_image_xsize / float(w), inventory.cell_image_ysize / float(h))
+		k = min(inventory.cell_image_xsize / w, inventory.cell_image_ysize / h)
 		return int(w * k), int(h * k)
 	
 	def inventory__get_cell_image(index, is_selected):
@@ -82,7 +82,7 @@ init -101 python:
 		image = main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext
 		
 		w, h = inventory.get_cell_image_size(image)
-		x, y = (inventory.cell_xsize - w) / 2, (inventory.cell_ysize - h) / 2
+		x, y = (inventory.cell_xsize - w) // 2, (inventory.cell_ysize - h) // 2
 		
 		res = im.composite((inventory.cell_xsize, inventory.cell_ysize),
 		          (x, y), im.scale(image, w, h),
@@ -257,7 +257,7 @@ init -101 python:
 			obj = location_objects[inventory.dnd_obj_name]
 			if obj['remove_to_location']:
 				r = inventory.throw_radius
-				for i in xrange(lost):
+				for i in range(lost):
 					dx, dy = random.randint(-r, r), random.randint(-r, r)
 					add_location_object(cur_location.name, {'x': me.x + dx, 'y': me.y + dy}, inventory.dnd_obj_name)
 		
@@ -281,18 +281,18 @@ screen inventory_cells:
 	
 	python:
 		inventory.inv = inventory['inv' + inventory.current]
-		inventory.full_rows = len(inventory.inv) / gui.inventory_xcount
+		inventory.full_rows = len(inventory.inv) // gui.inventory_xcount
 		inventory.last_row = len(inventory.inv) - inventory.full_rows * gui.inventory_xcount
 		
 		if inventory.selected_cell >= len(inventory.inv1):
 			inventory.selected_cell = len(inventory.inv1) - 1
 	
-	for i in xrange(inventory.full_rows + 1):
+	for i in range(inventory.full_rows + 1):
 		hbox:
 			spacing inventory.cell_xspacing
 			xalign gui.inventory_cell_xalign
 			
-			for j in xrange(gui.inventory_xcount if i != inventory.full_rows else inventory.last_row):
+			for j in range(gui.inventory_xcount if i != inventory.full_rows else inventory.last_row):
 				$ index = i * gui.inventory_xcount + j
 				
 				vbox:
@@ -459,8 +459,8 @@ screen inventory:
 			spacing inventory.cell_text_ypos
 			
 			pos get_mouse()
-			xanchor inventory.dnd_image_xsize / 2
-			yanchor inventory.dnd_image_ysize / 2
+			xanchor inventory.dnd_image_xsize // 2
+			yanchor inventory.dnd_image_ysize // 2
 			skip_mouse True
 			
 			image inventory.dnd_image:

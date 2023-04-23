@@ -16,7 +16,7 @@ init -1002 python:
 			if properties:
 				if type(properties) is not dict:
 					properties = dict(properties)
-				for name, value in properties.iteritems():
+				for name, value in properties.items():
 					self.__setattr__(name, value)
 		
 		def __contains__(self, key):
@@ -64,7 +64,7 @@ init -1002 python:
 					self.__setattr__(prop, values[index])
 			else:
 				if attr == 'properties':
-					for k, v in value.iteritems():
+					for k, v in value.items():
 						Object.__setattr__(self, k, v)
 				else:
 					Object.__setattr__(self, attr, value)

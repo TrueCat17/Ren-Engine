@@ -194,8 +194,8 @@ init -10000 python:
 	slots.directory = '../var/saves/'
 
 init -900 python:
-	slots.pages = [str(i + 1) for i in xrange(gui.slot_pages)] + ['auto', 'quick']
-	slots.slots = [str(i + 1) for i in xrange(gui.file_slot_cols * gui.file_slot_rows)]
+	slots.pages = [str(i + 1) for i in range(gui.slot_pages)] + ['auto', 'quick']
+	slots.slots = [str(i + 1) for i in range(gui.file_slot_cols * gui.file_slot_rows)]
 	slots.update()
 	
 	if not persistent.slot_page:

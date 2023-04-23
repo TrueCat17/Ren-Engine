@@ -37,7 +37,7 @@ screen quick_menu:
 				outlinecolor gui.get_int('quick_button_text_outlinecolor')
 				text_align gui.quick_button_text_xalign
 				
-				xsize gui.get_int('quick_button_width', default=utf8.width(_(text), gui.get_int('quick_button_text_size')))
+				xsize gui.get_int('quick_button_width', default=get_text_width(_(text), gui.get_int('quick_button_text_size')))
 				ysize gui.get_int('quick_button_height')
 				
 				ground gui.quick_button_ground

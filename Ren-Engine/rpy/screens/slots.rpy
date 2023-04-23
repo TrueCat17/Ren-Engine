@@ -35,11 +35,11 @@ screen slots(name):
 			spacing gui.get_int('slot_spacing')
 			
 			$ i = 0
-			for y in xrange(gui.file_slot_rows):
+			for y in range(gui.file_slot_rows):
 				hbox:
 					spacing gui.get_int('slot_spacing')
 					
-					for x in xrange(gui.file_slot_cols):
+					for x in range(gui.file_slot_cols):
 						$ slot = slots.get(slots.slots[i])
 						$ i += 1
 						

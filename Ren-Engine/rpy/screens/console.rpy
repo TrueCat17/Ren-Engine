@@ -2,7 +2,7 @@ init -995 python:
 	def console__get_cursor_index():
 		lines = console.input.split('\n')
 		index = min(console.cursor_x, len(lines[console.cursor_y]))
-		for y in xrange(console.cursor_y):
+		for y in range(console.cursor_y):
 			index += len(lines[y]) + 1
 		return index
 	def console__set_cursor_index(index):
@@ -148,16 +148,8 @@ init -995 python:
 		try:
 			res = to_exec()
 		except Exception as e:
-			if isinstance(e, SyntaxError):
-				file_name, line_num, symbol_num, error_line = e.args[1]
-				msg = 'File <%s>, line %s: invalid syntax' % (file_name, line_num)
-				if error_line:
-					msg += '\n  ' + str(error_line)
-					if symbol_num:
-						msg += '\n  ' + ' ' * (symbol_num - 1) + '^'
-				console.out(msg)
-			else:
-				console.out(e.__class__.__name__ + ': ' + str(e.args[0]))
+			msg = get_exception_stack_str(e, depth = 2) # cut first (console.execute) and second (console.except_error) funcs
+			console.out(msg)
 			res = None
 		return res
 	
@@ -167,7 +159,7 @@ init -995 python:
 			return
 		
 		lines = command.split('\n')
-		for i in xrange(len(lines)):
+		for i in range(len(lines)):
 			pre = '... ' if i else '>>> '
 			console.out(pre + lines[i])
 		
@@ -225,10 +217,8 @@ init -995 python:
 	
 	
 	def console__watch_add(code):
-		try:
-			eval_obj = Eval(code, 'Console', 1)
-		except Exception as e:
-			console.out('Compilation Failed: ' + str(e))
+		eval_obj = Eval(code, 'Console', 1, depth = 1)
+		if eval_obj.error:
 			return
 		
 		if not console.to_watch:
@@ -277,7 +267,7 @@ init -995 python:
 				res_end = 'Eval Failed'
 			text.append(res_start + '{color=' + console.watching_calced_color + '}' + res_end + '{/color}')
 			
-			xsize = utf8.width(res_start + res_end, text_size)
+			xsize = get_text_width(res_start + res_end, text_size)
 			if xsize > 0:
 				ysize += int(math.ceil(xsize / xsize_max_real)) * text_size
 			xsize_max = max(xsize, xsize_max)
@@ -380,7 +370,7 @@ screen console:
 		console.input_height = style.console_text.text_size * console.input.count('\n')
 		
 		console.output_height = get_stage_height() - console.input_height
-		console.output_lines = console.output_height / style.console_text.text_size
+		console.output_lines = console.output_height // style.console_text.text_size
 		
 		console.output = '\n'.join(persistent.console_text.split('\n')[-console.output_lines:])
 	

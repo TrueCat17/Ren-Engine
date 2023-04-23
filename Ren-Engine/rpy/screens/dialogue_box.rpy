@@ -11,9 +11,11 @@ init -1000 python:
 		while index < l and (max_count_symbols == -1 or symbols < max_count_symbols):
 			while index < l and text[index].isspace():
 				index += 1
+			if index == l:
+				break
 			
-			# maybe start/end style, for example: {size=25} or {/b}
-			if index < l and text[index] == '{':
+			# maybe style start/end, for example: {size=25} or {/b}
+			if text[index] == '{':
 				
 				# not style, '{{' render to '{'
 				if index + 1 < l and text[index + 1] == '{':
@@ -40,10 +42,6 @@ init -1000 python:
 			else:
 				index += 1
 				symbols += 1
-			
-			# going to the next symbol
-			while index < l and not utf8.is_first_byte(text[index]):
-				index += 1
 		
 		return index, symbols, tag, value
 	
@@ -137,7 +135,7 @@ init -1000 python:
 		
 		# continuation of prev text (for <extend> character)
 		else:
-			db.start_time = get_game_time() - utf8.len(db.dialogue_text) / float(config.text_cps)
+			db.start_time = get_game_time() - len(db.dialogue_text) / config.text_cps
 			
 			if db.last_dialogue_text_suffix and db.dialogue_full_text.endswith(db.last_dialogue_text_suffix):
 				db.dialogue_full_text = db.dialogue_full_text[:-len(db.last_dialogue_text_suffix)]
@@ -189,7 +187,7 @@ init -1000 python:
 			
 			name_box_width_is_auto = db.name_box_width is None
 			if name_box_width_is_auto:
-				db.name_box_width = utf8.width(db.name_text_prefix + db.name_text + db.name_text_suffix, gui.get_int('name_text_size', obj = db)) + 20
+				db.name_box_width = get_text_width(db.name_text_prefix + db.name_text + db.name_text_suffix, gui.get_int('name_text_size', obj = db)) + 20
 			db._name_box_width = gui.get_int('name_box_width', obj = db)
 			if name_box_width_is_auto:
 				db.name_box_width = None

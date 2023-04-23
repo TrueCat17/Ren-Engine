@@ -53,7 +53,7 @@ init -100 python:
 		
 		res = []
 		last_line = None
-		for i in xrange(len(btns)):
+		for i in range(len(btns)):
 			if (i % 3) == 0:
 				last_line = []
 				res.append(last_line)
@@ -62,7 +62,7 @@ init -100 python:
 	
 	def preferences__get_mixer_bars():
 		res = []
-		for i in xrange(len(std_mixers)):
+		for i in range(len(std_mixers)):
 			mixer, mixer_name = std_mixers[i], std_mixers_names[i]
 			
 			mixer_text = ['str', '["%s"!t]:' % mixer_name, 25, 150]
@@ -315,7 +315,7 @@ screen preferences:
 									value = getset_attr(prop, obj = obj)
 									if callable(value):
 										value = value()
-									part = in_bounds((value - min_value) / float(max_value - min_value), 0, 1)
+									part = in_bounds((value - min_value) / (max_value - min_value), 0, 1)
 								
 								textbutton '-':
 									ground gui.bg('button_ground')

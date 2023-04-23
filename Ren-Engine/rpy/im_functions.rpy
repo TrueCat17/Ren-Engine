@@ -9,7 +9,7 @@ init -1001 python:
 			out_msg('ConditionSwitch', 'Expected even count of arguments')
 			return ''
 		
-		for i in xrange(0, len(args), 2):
+		for i in range(0, len(args), 2):
 			cond = args[i]
 			if type(cond) == bool and cond == True:
 				return args[i + 1]
@@ -92,9 +92,9 @@ init -1001 python:
 			)
 			# slow, but simple:
 #			res = Matrix()
-#			for y in xrange(5):
-#				for x in xrange(5):
-#					for i in xrange(5):
+#			for y in range(5):
+#				for x in range(5):
+#					for i in range(5):
 #						res[y * 5 + x] += self[i * 5 + x] * other[y * 5 + i]
 #			return res
 		
@@ -243,7 +243,7 @@ init -1001 python:
 		
 		res = 'Composite|(%s %s)' % (int(w), int(h))
 		
-		for i in xrange(1, len(args) - 1, 2):
+		for i in range(1, len(args) - 1, 2):
 			x, y = args[i]
 			img = args[i + 1]
 			

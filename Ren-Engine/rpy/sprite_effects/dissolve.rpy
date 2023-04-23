@@ -126,7 +126,7 @@ init -9000 python:
 					
 					crop = [data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop]
 					if crop != [0, 0, 1, 1] and crop != [0, 0, image_xsize, image_ysize]:
-						for i in xrange(4):
+						for i in range(4):
 							crop[i] = get_absolute(crop[i], image_ysize if i % 2 else image_xsize)
 						image = im.crop(image, crop)
 						image_xsize, image_ysize = crop[2] - crop[0], crop[3] - crop[1]

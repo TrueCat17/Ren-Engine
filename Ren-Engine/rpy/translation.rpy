@@ -182,7 +182,7 @@ init -1000 python:
 	}
 	def detect_user_locale():
 		import locale
-		locale_name = locale.getdefaultlocale()
+		locale_name = locale.getlocale()
 		if locale_name is not None:
 			locale_name = locale_name[0]
 
@@ -199,7 +199,7 @@ init -1000 python:
 			language, region = locale_name.lower().split('_')
 		return language, region
 	
-	def locale_to_language_function(locale, region):
+	def locale_to_language(locale, region):
 		lang_name = locales.get(region)
 		if lang_name is not None and lang_name in renpy.known_languages():
 			return lang_name
@@ -222,7 +222,7 @@ init -1000 python:
 		
 		if not lang:
 			locale, region = detect_user_locale()
-			lang = locale_to_language_function(locale, region)
+			lang = locale_to_language(locale, region)
 		
 		if not lang:
 			lang = config.default_language or 'english'

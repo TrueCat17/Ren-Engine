@@ -1,5 +1,5 @@
 init -1000000 python:
-	alphabet = ''.join(map(chr, xrange(ord('a'), ord('z') + 1))) # a-z
+	alphabet = ''.join([chr(i) for i in range(ord('a'), ord('z') + 1)]) # a-z
 	numbers = '0123456789'
 	
 	
@@ -11,7 +11,7 @@ init -1000000 python:
 		g = globals()
 		
 		start_str = name + '__'
-		for prop_name in g.keys():
+		for prop_name in list(g.keys()):
 			if not prop_name.startswith(start_str): continue
 			orig_name = prop_name
 			
@@ -74,6 +74,9 @@ init -1000000 python:
 	def sign(x):
 		return -1 if x < 0 else 1 if x > 0 else 0
 	
+	def get_text_width(text, text_size):
+		return int(len(text) * (text_size / 1.5))
+	
 	def get_image_size(image):
 		return get_image_width(image), get_image_height(image)
 	def get_stage_size():
@@ -87,17 +90,40 @@ init -1000000 python:
 			return res == "True"
 		return ret_type(res)
 	
-	def out_msg(msg, err = ''):
-		err = str(err)
-		exc_type, exc_value, exc_traceback = sys.exc_info()
-		if exc_traceback:
-			stack = traceback.format_tb(exc_traceback)
-			err += '\n\nException (type=' + type(exc_value).__name__ + '): ' + str(exc_value)
+	def get_exception_stack_str(e, depth):
+		if isinstance(e, SyntaxError):
+			msg = '%s (%s, line %s)' % (e.msg, e.filename, e.lineno)
+			text = getattr(e, 'text', None)
+			if text:
+				if '\n' in text:
+					text = text[:text.index('\n')]
+				msg += '\n  ' + text
+				if e.offset:
+					end_offset = getattr(e, 'end_offset', len(text))
+					msg += '\n  ' + ' ' * (e.offset - 1) + '^' * max(1, end_offset - e.offset)
 		else:
-			stack = get_stack(1)
-		err += '\n\nStack:\n'
-		for frame in stack:
-			err += frame
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			msg = 'Exception (type = ' + type(exc_value).__name__ + '): ' + str(exc_value)
+			if exc_traceback:
+				stack = traceback.format_tb(exc_traceback)[depth:]
+				if stack:
+					msg += '\nStack:\n'
+					for frame in stack:
+						msg += frame
+		return msg
+	
+	def out_msg(msg, err = '', show_stack = True):
+		err = str(err)
+		if show_stack:
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			if exc_traceback:
+				stack = traceback.format_tb(exc_traceback)
+				err += '\n\nException (type = ' + type(exc_value).__name__ + '): ' + str(exc_value)
+			else:
+				stack = get_stack(1)
+			err += '\n\nStack:\n'
+			for frame in stack:
+				err += frame
 		
 		_out_msg(str(msg), err)
 	
@@ -109,7 +135,7 @@ init -1000000 python:
 		"""
 		if start == end:
 			return 0 if reverse else 1
-		r = float(value - start) / (end - start)
+		r = (value - start) / (end - start)
 		return in_bounds(1 - r if reverse else r, 0.0, 1.0)
 	
 	def interpolate(start, end, k, reverse = False):
@@ -137,13 +163,6 @@ init -1000000 python:
 		if alpha:
 			return r << 24 | g << 16 | b << 8 | a
 		return r << 16 | g << 8 | b
-	
-	
-	def get_md5(s):
-		import hashlib
-		md5 = hashlib.md5()
-		md5.update(s)
-		return md5.hexdigest()
 	
 	
 	def get_glob_labels(name):

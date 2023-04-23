@@ -143,7 +143,7 @@ init -1000 python:
 			out_msg('hide_sprite', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <' + str(params) + '>')
 			return
 		
-		for i in xrange(len(sprites.list)):
+		for i in range(len(sprites.list)):
 			spr = sprites.list[i]
 			if spr.as_name == name:
 				if effect is not None:
@@ -158,9 +158,6 @@ init -1000 python:
 			out_msg('sprites.hide', 'Sprite <' + name + '> not found')
 	
 	def sprites__get_datas():
-		xzoom = absolute(get_stage_width() ) / config.width  if config.width  else 1
-		yzoom = absolute(get_stage_height()) / config.height if config.height else 1
-		
 		res = []
 		for spr in sprites.list + [sprites.screen]: # new list, because in update something can be removed from sprites.list
 			spr.update()
@@ -198,8 +195,8 @@ screen sprites:
 	
 	$ sprites.images = sprites.get_datas()
 	
-	xzoom get_stage_width()  / float(config.width  or get_stage_width())
-	yzoom get_stage_height() / float(config.height or get_stage_height())
+	xzoom get_stage_width()  / (config.width  or get_stage_width())
+	yzoom get_stage_height() / (config.height or get_stage_height())
 	
 	pos    (sprites.screen.new_data.xpos,       sprites.screen.new_data.ypos)
 	anchor (sprites.screen.new_data.xanchor,    sprites.screen.new_data.yanchor)

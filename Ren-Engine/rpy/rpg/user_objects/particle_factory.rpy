@@ -37,7 +37,7 @@ init -1000 python:
 			else:
 				self.objs.extend([None] * (count - old_count))
 				
-				for i in xrange(count - old_count):
+				for i in range(count - old_count):
 					x, y = random.uniform(0, self.xsize), random.uniform(0, self.ysize)
 					dx, dy = random.uniform(self.min_dx, self.max_dx), random.uniform(self.min_dy, self.max_dy)
 					size = random.uniform(self.min_size, self.max_size)
@@ -68,7 +68,7 @@ init -1000 python:
 					'zorder':  self.zorder,
 				}
 			
-			for i in xrange(len(self.objs)):
+			for i in range(len(self.objs)):
 				x, y, dx, dy, size = self.objs[i]
 				res[back + i] = {
 					'image':   self.image,

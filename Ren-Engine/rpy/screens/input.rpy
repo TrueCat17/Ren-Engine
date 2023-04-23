@@ -120,7 +120,7 @@ init -995 python:
 		if input.tf_bg_width:
 			input.tf_bg_xsize = get_absolute(input.tf_bg_width, w)
 		else:
-			input.tf_bg_xsize = utf8.width('a' * input.length, style.input_text.text_size) + input.tf_side_indent * 2
+			input.tf_bg_xsize = get_text_width('a' * input.length, style.input_text.text_size) + input.tf_side_indent * 2
 		
 		if input.tf_bg_height:
 			input.tf_bg_ysize = get_absolute(input.tf_bg_height, h)
@@ -130,7 +130,7 @@ init -995 python:
 		if input.bg_width:
 			input.bg_xsize = get_absolute(input.bg_width, w)
 		else:
-			prompt_xsize = utf8.width(input.prompt, style.input_prompt.text_size)
+			prompt_xsize = get_text_width(input.prompt, style.input_prompt.text_size)
 			
 			btns = len(input.btns)
 			btns_xsize = get_absolute(style.input_button.xsize, w) * btns + spacing * (btns - 1)

@@ -8,7 +8,7 @@ init -1010 python:
 		
 		old_size = len(inv)
 		if size > old_size:
-			for i in xrange(size - old_size):
+			for i in range(size - old_size):
 				inv.append(['', 0])
 		else:
 			inventory.reduce_size(old_size - size, inv)
@@ -18,7 +18,7 @@ init -1010 python:
 		new_size = len(inv) - dsize
 		
 		# for overflowed elements
-		for index in xrange(dsize):
+		for index in range(dsize):
 			obj_name, obj_count = inv[new_size + index]
 			if not obj_name: continue
 			
@@ -26,7 +26,7 @@ init -1010 python:
 			max_count = loc_obj['max_in_inventory_cell']
 			
 			# move to prev cells
-			for i in xrange(new_size):
+			for i in range(new_size):
 				if not inv[i][0]:
 					inv[i] = inv[new_size + index]
 					obj_count = 0
@@ -42,7 +42,7 @@ init -1010 python:
 			# remove_to_location
 			if loc_obj['remove_to_location']:
 				r = inventory.throw_radius
-				for i in xrange(obj_count):
+				for i in range(obj_count):
 					dx, dy = random.randint(-r, r), random.randint(-r, r)
 					add_location_object(cur_location.name, {'x': me.x + dx, 'y': me.y + dy}, obj_name)
 		
@@ -119,17 +119,17 @@ init -1010 python:
 	def inventory__change(old, new, show_on_fail):
 		old_len, new_len = len(old), len(new)
 		
-		for i in xrange(min(old_len, new_len)):
+		for i in range(min(old_len, new_len)):
 			if not new[i][0] and old[i][0]:
 				new[i], old[i] = old[i], new[i]
 		
 		auto_failed = False
-		for i in xrange(old_len):
+		for i in range(old_len):
 			obj_name, obj_count = old[i]
 			if not obj_name: continue
 			
 			max_count = location_objects[obj_name]['max_in_inventory_cell']
-			for j in xrange(new_len):
+			for j in range(new_len):
 				obj_name_new, obj_count_new = new[j]
 				if not obj_name_new:
 					new[j], old[i] = old[i], new[j]

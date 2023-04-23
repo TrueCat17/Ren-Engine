@@ -51,9 +51,9 @@ init -1000 python:
 			return 'end'
 		
 		actions = character.get_actions()
-		location_names = actions.interesting_places or rpg_locations.keys()
+		location_names = actions.interesting_places or list(rpg_locations.keys())
 		
-		for i in xrange(100):
+		for i in range(100):
 			res = rpg_random_free_point(location_names)
 			if res:
 				location_name, x, y = res
@@ -117,7 +117,7 @@ init -1000 python:
 				location_names = [location_names]
 			
 			st = time.time()
-			for i in xrange(3):
+			for i in range(3):
 				res = rpg_random_free_point(location_names)
 				if not res: continue
 				
@@ -141,13 +141,13 @@ init -1000 python:
 	
 	
 	def rpg_action_near_location(character, state):
-		location_names = [place.to_location_name for place in character.location.places.itervalues() if place.to_location_name]
+		location_names = [place.to_location_name for place in character.location.places.values() if place.to_location_name]
 		character.get_actions().cur_action = rpg_action_other_place
 		return rpg_action_other_place(character, state, location_names)
 	
 	
 	def rpg_action_random_location(character, state):
-		location_names = rpg_locations.keys()
+		location_names = list(rpg_locations.keys())
 		character.get_actions().cur_action = rpg_action_other_place
 		return rpg_action_other_place(character, state, location_names)
 	
@@ -474,7 +474,7 @@ init -1000 python:
 			self.chances[name] = chance_min, chance_max
 		
 		def get_names(self):
-			return self.funcs.keys()
+			return list(self.funcs.keys())
 		
 		def update(self, state = None):
 			if not self.stopped():
@@ -514,7 +514,7 @@ init -1000 python:
 		def random(self):
 			scores = 0
 			chances = []
-			for action, (chance_min, chance_max) in self.chances.iteritems():
+			for action, (chance_min, chance_max) in self.chances.items():
 				if self.allow and action not in self.allow: continue
 				if self.block and action     in self.block: continue
 				

@@ -37,7 +37,8 @@ init -100000 python:
 				try:
 					function()
 				except:
-					out_msg('exec_intervals', 'Id=%s, Function=%s' % (id, function))
+					func_name = getattr(function, '__name__', str(function))
+					out_msg('exec_intervals', 'Id = %s, Function = %s' % (id, func_name))
 			interval_obj[3] = before_exec_time
 		
 		i = 0

@@ -34,21 +34,24 @@ init -1001 python:
 	def register_character_animation(character, anim_name, path, xoffset, yoffset,
 	                                 count_frames, start_frame, end_frame, time = 1.0):
 		if (type(xoffset), type(yoffset)) != (int, int):
-			out_msg('register_character_animation',
-			        'On registration of animation <' + str(anim_name) + '> of character <' + str(character) + '>\n' +
-			        'set invalid offset: <' + str(xoffset) + ', ' + str(yoffset) + '>, expected ints')
+			msg = 'On registration of animation <%s> of character <%s>\n' + 'set invalid pos: <%s, %s>, expected ints'
+			out_msg('register_character_animation', msg % (anim_name, character, xoffset, yoffset))
 			return
 		
+		if (type(count_frames), type(start_frame), type(end_frame)) != (int, int, int):
+			msg = 'On registration of animation <%s> of character <%s>\n'
+			msg += 'params count_frame, start_frame and end_frame must be ints\n'
+			msg += '(got %s, %s, %s)'
+			out_msg('register_character_animation', msg % (anim_name, character, count_frames, start_frame, end_frame))
+			return
 		if count_frames <= 0 or not (0 <= start_frame < count_frames) or not (0 <= end_frame < count_frames):
-			out_msg('register_character_animation',
-			        'On registration of animation <' + str(anim_name) + '> of character <' + str(character) + '>\n' +
-			        'set invalid frames:\n' +
-			        'count, start, end = ' + str(count_frames) + ', ' + str(start_frame) + ', ' + str(end_frame))
+			msg = 'On registration of animation <%s> of character <%s>\n' + 'set invalid frames:\n' + 'count, start, end = %s, %s, %s'
+			out_msg('register_character_animation', msg % (anim_name, character, count_frames, start_frame, end_frame))
 			return
 		
 		animations = character.animations
 		if anim_name in animations:
-			out_msg('register_character_animation', 'Animation <' + str(anim_name) + '> of character <' + str(character) + '> already exists')
+			out_msg('register_character_animation', 'Animation <%s> of character <%s> already exists' % (anim_name, character))
 			return
 		
 		animations[anim_name] = Object(
@@ -113,7 +116,7 @@ init -1001 python:
 						value = color_to_int(value)
 					self[prop_to] = value
 			
-			for prop, value in properties.iteritems():
+			for prop, value in properties.items():
 				if prop.startswith('dialogue_'):
 					self[prop] = value
 			
@@ -173,9 +176,9 @@ init -1001 python:
 			self.actions = None
 			
 			self.inventories = {}
-			for dress, size in inventory.dress_sizes.iteritems():
+			for dress, size in inventory.dress_sizes.items():
 				if dress != 'default':
-					self.inventories[dress] = [['', 0] for i in xrange(size)]
+					self.inventories[dress] = [['', 0] for i in range(size)]
 		
 		def __str__(self):
 			return str(self.name)
@@ -233,7 +236,7 @@ init -1001 python:
 			self.dress = dress
 			if dress not in self.inventories:
 				size = inventory.dress_sizes[dress if dress in inventory.dress_sizes else 'default']
-				self.inventories[dress] = [['', 0] for i in xrange(size)]
+				self.inventories[dress] = [['', 0] for i in range(size)]
 			
 			old_inventory = self.inventory
 			self.inventory = self.inventories[dress]
@@ -312,7 +315,7 @@ init -1001 python:
 			
 			place_index = -1
 			min_dist = 1e6
-			for i in xrange(len(obj.sit_places)):
+			for i in range(len(obj.sit_places)):
 				if obj.on[i]:
 					continue
 				place_x, place_y, to_side = obj.sit_places[i]
@@ -342,7 +345,7 @@ init -1001 python:
 			if not sit_object:
 				return
 			
-			for i in xrange(len(sit_object.on)):
+			for i in range(len(sit_object.on)):
 				if sit_object.on[i] is self:
 					sit_object.on[i] = None
 					break
@@ -427,7 +430,7 @@ init -1001 python:
 			
 			banned = [exit for exit in location_banned_exits if exit not in self.allowed_exits]
 			
-			for i in xrange(len(place_names)):
+			for i in range(len(place_names)):
 				place_elem = place_names[i]
 				
 				if type(place_elem) is int:
@@ -681,6 +684,10 @@ init -1001 python:
 					if not animation.loaded:
 						animation.loaded = True
 						animation.xsize, animation.ysize = get_image_size(self.main())
+						if (animation.xsize / animation.count_frames) % 1:
+							msg = 'Animation <%s> of character <%s> has xsize (%s) that is not divisible by the count of frames (%s)'
+							params = (animation.name, self, animation.xsize, animation.count_frames)
+							out_msg('Character.update', msg % params)
 						animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
 					
 					self.orig_size = self.xsize, self.ysize

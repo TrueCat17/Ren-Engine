@@ -142,7 +142,7 @@ init -9000 python:
 						if len(args) > 2:
 							out_msg('SpriteAnimation.update', 'repeat expected 1 optional argument: count of repeats\n' + action)
 						
-						count = int(10e9) if len(args) == 1 else int(args[1])
+						count = int(10e9 if len(args) == 1 else args[1])
 						num = self.action_num - 1
 						repeated = self.repeated.get(num, 0)
 						
@@ -150,7 +150,7 @@ init -9000 python:
 							self.action_num = 0
 							self.repeated[num] = self.repeated.get(num, 0) + 1
 							
-							for key in self.repeated.keys():
+							for key in self.repeated:
 								if key < num:
 									self.repeated[key] = 0
 							
@@ -177,7 +177,7 @@ init -9000 python:
 									else:
 										self.data.contains = []
 										self.data.image = evaled
-								elif isinstance(evaled, (int, float, long)):
+								elif isinstance(evaled, (int, float)):
 									self.end_pause_time = get_game_time() + float(evaled)
 									return
 								else:
@@ -185,7 +185,7 @@ init -9000 python:
 							except:
 								try:
 									evaled = eval(command)
-									if str(type(evaled)) == "<type 'function'>":
+									if callable(evaled):
 										if len(args) % 2:
 											desc = command + ' expected odd count of arguments: time, [param value]+\n' + action
 											out_msg('SpriteAnimation.update', desc)
@@ -238,7 +238,7 @@ init -9000 python:
 		def save_change_params(self, args):
 			self.change_props = []
 			
-			for i in xrange(0, len(args), 2):
+			for i in range(0, len(args), 2):
 				names = get_prop_names(args[i])
 				
 				new_value = eval(args[i + 1])
@@ -266,7 +266,7 @@ init -9000 python:
 				
 				if isinstance(new_value, (list, tuple)):
 					value = []
-					for i in xrange(len(old_value)):
+					for i in range(len(old_value)):
 						new_v = new_value[i]
 						old_v = old_value[i]
 						type_v = float if type(old_v) is float else type(new_v)
@@ -317,7 +317,7 @@ init -9000 python:
 						out_msg('SpriteAnimation.set_prop', err_msg)
 				else:
 					if len(props) == len(value):
-						for i in xrange(len(props)):
+						for i in range(len(props)):
 							self.set_prop(props[i], value[i])
 					else:
 						out_msg('SpriteAnimation.set_prop', err_msg)

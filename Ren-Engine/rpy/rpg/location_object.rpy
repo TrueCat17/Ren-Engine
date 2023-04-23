@@ -54,29 +54,34 @@ init -1001 python:
 	                                       xoffset, yoffset,
 	                                       count_frames, start_frame, end_frame, time = 1.0):
 		if obj_name not in location_objects:
-			out_msg('register_location_object_animation', 'Object <' + str(obj_name) + '> not registered')
+			out_msg('register_location_object_animation', 'Object <%s> not registered' % (obj_name, ))
 			return
 		
-		if type(xoffset) is not int or type(yoffset) is not int:
-			out_msg('register_location_object_animation',
-			        'On registration of animation <' + str(anim_name) + '> of object <' + str(obj_name) + '>\n' +
-			        'set invalid pos: <' + str(xoffset) + ', ' + str(yoffset) + '>, expected ints')
+		if (type(xoffset), type(yoffset)) != (int, int):
+			msg = 'On registration of animation <%s> of object <%s>\n' + 'set invalid pos: <%s, %s>, expected ints'
+			out_msg('register_location_object_animation', msg % (anim_name, obj_name, xoffset, yoffset))
 			return
 		
+		if (type(count_frames), type(start_frame), type(end_frame)) != (int, int, int):
+			msg = 'On registration of animation <%s> of object <%s>\n'
+			msg += 'params count_frame, start_frame and end_frame must be ints\n'
+			msg += '(got %s, %s, %s)'
+			out_msg('register_location_object_animation', msg % (anim_name, obj_name, count_frames, start_frame, end_frame))
+			return
 		if count_frames <= 0 or not (0 <= start_frame < count_frames) or not (0 <= end_frame < count_frames):
-			out_msg('register_location_object_animation',
-			        'On registration of animation <' + str(anim_name) + '> of object <' + str(obj_name) + '>\n' +
-			        'set invalid frames:\n' +
-			        'count, start, end = ' + str(count_frames) + ', ' + str(start_frame) + ', ' + str(end_frame))
+			msg = 'On registration of animation <%s> of object <%s>\n' + 'set invalid frames:\n' + 'count, start, end = %s, %s, %s'
+			out_msg('register_location_object_animation', msg % (anim_name, obj_name, count_frames, start_frame, end_frame))
 			return
 		
 		obj = location_objects[obj_name]
 		animations = obj.animations
 		if anim_name in animations:
-			out_msg('register_location_object_animation', 'Animation <' + str(anim_name) + '> of object <' + str(obj_name) + '> already exists')
+			out_msg('register_location_object_animation', 'Animation <%s> of object <%s> already exists' % (anim_name, obj_name))
 			return
 		
 		animations[anim_name] = Object(
+			name = anim_name,
+			
 			directory    = directory,
 			main_image   = main_image,
 			free_image   = free_image,
@@ -90,12 +95,12 @@ init -1001 python:
 			yoffset = yoffset,
 			xsize = 0,
 			ysize = 0,
-			loaded = False
+			loaded = False,
 		)
 	
 	def set_sit_place(obj_name, sit_places, over = None):
 		if obj_name not in location_objects:
-			out_msg('set_sit_place', 'Object <' + str(obj_name) + '> not registered')
+			out_msg('set_sit_place', 'Object <%s> not registered' % (obj_name, ))
 			return
 		
 		obj = location_objects[obj_name]
@@ -104,7 +109,7 @@ init -1001 python:
 		if over:
 			obj.animations[None].over_image = over
 		
-		for name, location in rpg_locations.iteritems():
+		for name, location in rpg_locations.items():
 			for obj in location.objects:
 				if obj.type != obj_name:
 					continue
@@ -250,9 +255,9 @@ init -1001 python:
 				w, h = get_image_size(free)
 				black_color = 0x000000FF # 0xRRGGBBAA
 				
-				for left in xrange(w):
+				for left in range(w):
 					empty = True
-					for i in xrange(h):
+					for i in range(h):
 						if get_image_pixel(free, left, i) == black_color:
 							empty = False
 							break
@@ -263,26 +268,26 @@ init -1001 python:
 					left, top = 0, 0
 					right, bottom = w, h
 				else:
-					for right in xrange(w - 1, -1, -1):
+					for right in range(w - 1, -1, -1):
 						empty = True
-						for i in xrange(h):
+						for i in range(h):
 							if get_image_pixel(free, right, i) == black_color:
 								empty = False
 								break
 						if not empty:
 							break
 					
-					for top in xrange(h):
+					for top in range(h):
 						empty = True
-						for i in xrange(left, right + 1):
+						for i in range(left, right + 1):
 							if get_image_pixel(free, i, top) == black_color:
 								empty = False
 								break
 						if not empty:
 							break
-					for bottom in xrange(h - 1, -1, -1):
+					for bottom in range(h - 1, -1, -1):
 						empty = True
-						for i in xrange(left, right + 1):
+						for i in range(left, right + 1):
 							if get_image_pixel(free, i, bottom) == black_color:
 								empty = False
 								break
@@ -344,6 +349,10 @@ init -1001 python:
 				if not animation.loaded:
 					animation.loaded = True
 					animation.xsize, animation.ysize = get_image_size(self.main())
+					if (animation.xsize / animation.count_frames) % 1:
+						msg = 'Animation <%s> of object <%s> has xsize (%s) that is not divisible by the count of frames (%s)'
+						params = (animation.name, self.type, animation.xsize, animation.count_frames)
+						out_msg('RpgLocationObject.update', msg % params)
 					animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
 				
 				self.xsize, self.ysize = animation.xsize, animation.ysize
@@ -395,8 +404,8 @@ init -1001 python:
 				pw = ph = 0
 		
 		if obj_name in location_objects:
-			instance = RpgLocationObject(obj_name, px + pw / 2, py + ph / 2)
-		elif str(type(obj_name)) == "<type 'classobj'>":
+			instance = RpgLocationObject(obj_name, px + pw // 2, py + ph // 2)
+		elif callable(obj_name):
 			instance = obj_name(px, py, pw, ph, **kwargs)
 			if not instance.type:
 				instance.type = obj_name
@@ -425,7 +434,7 @@ init -1001 python:
 				out_msg('get_location_objects', 'Place <' + place + '> not found in location <' + location_name + '>')
 				return
 			place = tmp_place
-			px, py = place.x + place.xsize / 2, place.y + place.ysize / 2
+			px, py = place.x + place.xsize // 2, place.y + place.ysize // 2
 		elif place is not None:
 			px, py = place['x'], place['y']
 		else:
@@ -441,7 +450,7 @@ init -1001 python:
 			dist = obj.dist_to(px, py)
 			res.append((dist, obj))
 		
-		res.sort(key = lambda (dist, obj): dist)
+		res.sort(key = lambda dist_and_obj: dist_and_obj[0])
 		if count >= 0:
 			res = res[:count]
 		return [obj for dist, obj in res]
@@ -474,7 +483,7 @@ init -1001 python:
 		min_dist = character.radius * 3
 		res = None
 		
-		for i in character.location.objects + character.location.places.values():
+		for i in character.location.objects + list(character.location.places.values()):
 			if isinstance(i, RpgLocationObject):
 				dist = i.dist_to(x, y)
 			elif isinstance(i, RpgPlace):
@@ -515,7 +524,7 @@ init -1001 python:
 			min_dist = max_dist
 			near_point = None
 			
-			for i in xrange(len(obj.sit_places)):
+			for i in range(len(obj.sit_places)):
 				if obj.on[i]:
 					continue
 				px, py, to_side = obj.sit_places[i]

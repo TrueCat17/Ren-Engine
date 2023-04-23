@@ -34,8 +34,6 @@ init python:
 			check = text_nav.get_check(symbol)
 			while index and check(text[index - 1]):
 				index -= 1
-		while not utf8.is_first_byte(text[index]):
-			index -= 1
 		return index
 	
 	def text_nav__cursor_right(text, index, ctrl):
@@ -47,8 +45,6 @@ init python:
 			check = text_nav.get_check(symbol)
 			while index < len(text) and check(text[index]):
 				index += 1
-		while index < len(text) and not utf8.is_first_byte(text[index]):
-			index += 1
 		return index
 	
 	

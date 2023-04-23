@@ -11,6 +11,10 @@ init -100001 python:
 				out_msg('Signals.add', 'Function <%s> is not picklable' % function)
 				return
 			
+			if not callable(function):
+				out_msg('Signals.add', '<%s> is not callable' % function)
+				return
+			
 			if event not in self.funcs:
 				self.funcs[event] = []
 			self.funcs[event].append([priority, function, times])
@@ -32,7 +36,8 @@ init -100001 python:
 				try:
 					function(*args, **kwargs)
 				except:
-					out_msg('Signals.send', 'Event=%s, Function=%s' % (event, function))
+					func_name = getattr(function, '__name__', str(function))
+					out_msg('Signals.send', 'Event = %s, Function = %s' % (event, func_name))
 			
 			i = 0
 			while i < len(funcs):

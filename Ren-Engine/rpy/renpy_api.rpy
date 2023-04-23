@@ -88,7 +88,7 @@ init -9990 python:
 					r = g = b = 0
 					out_msg('renpy.easy.color', 'Unexpected size of list (expected: 3 or 4, got: ' + str(len(c)) + ', c = ' + str(c) + ')')
 		
-		elif isinstance(c, basestring):
+		elif isinstance(c, str):
 			if c[0] == '#':
 				c = c[1:]
 			elif c[0:2] == '0x':
@@ -121,7 +121,7 @@ init -9990 python:
 		else:
 			r = g = b = 0
 			a = 255
-			out_msg('renpy.easy.color', 'Unexpected argument type (expected: list, tuple or basestring, got: ' + str(type(c)) + ')')
+			out_msg('renpy.easy.color', 'Unexpected argument type (expected: list, tuple or str, got: ' + str(type(c)) + ')')
 		
 		return r, g, b, a
 	

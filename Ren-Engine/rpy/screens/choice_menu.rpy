@@ -17,10 +17,10 @@ screen choice_menu:
 				choice_max_width = 0
 				for variant in choice_menu_variants:
 					if variant:
-						choice_max_width = max(choice_max_width, utf8.width(_(variant), gui.choice_button_text_size))
+						choice_max_width = max(choice_max_width, get_text_width(_(variant), gui.choice_button_text_size))
 			choice_max_width = max(choice_max_width, gui.choice_button_width_min)
 		
-		for i in xrange(len(choice_menu_variants)):
+		for i in range(len(choice_menu_variants)):
 			if choice_menu_variants[i]:
 				textbutton _(choice_menu_variants[i]):
 					font      gui.choice_button_text_font

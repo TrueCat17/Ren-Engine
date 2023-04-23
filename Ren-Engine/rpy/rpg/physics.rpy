@@ -4,13 +4,13 @@ init python:
 		location_free = cur_location.free()
 		
 		size = 64
-		half_size = size / 2 # > (radius + some_indent) * 2
+		half_size = size // 2 # > (radius + some_indent) * 2
 		me_x = in_bounds(me.x, 0, get_image_width(location_free) - 1)
 		me_y = in_bounds(me.y, 0, get_image_height(location_free) - 1)
 		start_x = int(round(me_x / half_size) - 1) * half_size
 		start_y = int(round(me_y / half_size) - 1) * half_size
 		
-		cs = me.xsize / 2
+		cs = me.xsize // 2
 		def near(x, y, width, height):
 			return (
 				(x < me.x + cs and me.x - cs < x + width and y < me.y + cs and me.y - cs < y + height) and
@@ -35,7 +35,7 @@ init python:
 			obj_free = obj.free() if callable(obj.free) else None
 			if obj_free is None or isinstance(obj, RpgLocation):
 				continue
-			if obj.frames > 1:
+			if obj.frames and obj.frames > 1:
 				obj_free = im.crop(obj_free, obj.crop)
 			
 			w, h = get_image_size(obj_free)
@@ -45,7 +45,7 @@ init python:
 		
 		for character in characters:
 			if not character.invisible and near(character.x, character.y, 0, 0):
-				to_draw += [(int(character.x - cs / 2 - start_x), int(character.y - cs / 2 - start_y)), im.rect('#FFF', cs, cs)]
+				to_draw += [(int(character.x - cs // 2 - start_x), int(character.y - cs // 2 - start_y)), im.rect('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]
 			return location_free, 0, 0
@@ -116,7 +116,7 @@ init python:
 			left_last_block = 0
 			left_first_block = 0
 			left_first_free = radius
-			for dist in xrange(1, radius):
+			for dist in range(1, radius):
 				is_free = is_black(fx + pdx + dist * left[0] + left1[0], fy + pdy + dist * left[1] + left1[1])
 				
 				if not is_free:
@@ -130,7 +130,7 @@ init python:
 			right_last_block = 0
 			right_first_block = 0
 			right_first_free = radius
-			for dist in xrange(1, radius):
+			for dist in range(1, radius):
 				is_free = is_black(fx + pdx + right1[0] + dist * right[0], fy + pdy + right1[1] + dist * right[1])
 				
 				if not is_free:
@@ -155,7 +155,7 @@ init python:
 					elif left_first_free > right_first_free:
 						side = 'right'
 					else:
-						for dist in xrange(radius):
+						for dist in range(radius):
 							left_free = is_black(fx + pdx + left1[0] + dist * left2[0], fy + pdy + left1[1] + dist * left2[1])
 							right_free = is_black(fx + pdx + right1[0] + dist * right2[0], fy + pdy + right1[1] + dist * right2[1])
 							

@@ -129,7 +129,7 @@ init -1002 python:
 		cur_location.cam_object_old = None
 		
 		if character is me:
-			for place in cur_location.places.itervalues():
+			for place in cur_location.places.values():
 				if place.inside(me.x, me.y):
 					break
 			else:
@@ -308,7 +308,7 @@ init -1002 python:
 		
 		def get_rect(self, of_exit = False):
 			x, y, w, h = self.x, self.y, self.xsize, self.ysize
-			w2, h2 = w / 2, h / 2
+			w2, h2 = w // 2, h // 2
 			
 			side = self.exit_side
 			if not side:
@@ -367,7 +367,7 @@ init -1002 python:
 				was_out_exit = True
 			return None
 		
-		for place in cur_location.places.itervalues():
+		for place in cur_location.places.values():
 			if not place.inside_exit(me.x, me.y):
 				continue
 			
@@ -399,14 +399,14 @@ init -1002 python:
 		ch = character or me
 		location = ch.location
 		
-		for place in location.places.itervalues():
+		for place in location.places.values():
 			if place.inside(ch.x, ch.y):
 				return place
 		return None
 	
 	
 	def path_update_locations():
-		for location in rpg_locations.itervalues():
+		for location in rpg_locations.values():
 			if not location.path_need_update: continue
 			location.path_need_update = False
 			
@@ -427,8 +427,8 @@ init -1002 python:
 				objects.extend((free_obj, x, y))
 			
 			places = []
-			for place in location.places.itervalues():
-				x, y = int(place.x + place.xsize / 2), int(place.y + place.ysize / 2)
+			for place in location.places.values():
+				x, y = int(place.x + place.xsize // 2), int(place.y + place.ysize // 2)
 				places.extend((place.name, x, y, place.to_location_name or '', place.to_place_name or ''))
 			
 			path_update_location(location.name, free, Character.radius, objects, places, location.min_scale, location.count_scales)

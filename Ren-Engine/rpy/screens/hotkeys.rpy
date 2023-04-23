@@ -38,7 +38,7 @@ init -901 python:
 	def hotkeys__init(screen_name = None):
 		hotkeys.prepared_keymap = {}
 		hotkeys.keys_to_listen = set(hotkeys.keypad_synonyms)
-		for name, key_list in config.keymap.iteritems():
+		for name, key_list in config.keymap.items():
 			if name == 'activate_sound':
 				out_msg('hotkeys.init', _('Name <activate_sound> is disallowed for hotkey'))
 				continue
@@ -120,10 +120,10 @@ init -901 python:
 	def hotkeys__get_key_for(func, get_list = False):
 		keys = []
 		for i in config.underlay:
-			for name, _func in i.iteritems():
+			for name, _func in i.items():
 				if func is not _func: continue
 				
-				for key, name2 in hotkeys.prepared_keymap.iteritems():
+				for key, name2 in hotkeys.prepared_keymap.items():
 					if name == name2:
 						keys.append(key)
 		if get_list:
@@ -140,7 +140,7 @@ init -901 python:
 	hotkeys.ctrl = hotkeys.shift = hotkeys.alt = False
 	
 	hotkeys.keys = list(alphabet)
-	for i in xrange(12):
+	for i in range(12):
 		hotkeys.keys.append('F' + str(i + 1))
 	hotkeys.keys.extend([
 		'ESCAPE', 'TAB', 'RETURN', 'SPACE', 'MENU', 'BACKSPACE', 'DELETE', 'INSERT',
@@ -154,7 +154,7 @@ init -901 python:
 	hotkeys.shift_to   = list('~!@#$%^&*()_+<>?:"{}|')
 	hotkeys.keys.extend(hotkeys.shift_from)
 	
-	for i in xrange(len(hotkeys.keys)):
+	for i in range(len(hotkeys.keys)):
 		hotkeys.keys[i] = hotkeys.keys[i].upper()
 	
 	

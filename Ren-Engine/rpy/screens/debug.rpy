@@ -4,7 +4,7 @@ init -995 python:
 		
 		array = debug_screen.fps_time_array
 		i = 0
-		for i in xrange(len(array)):
+		for i in range(len(array)):
 			if cur_time - array[i] < 1:
 				i -= 1
 				break
@@ -45,14 +45,14 @@ init -995 python:
 		cur_time = get_game_time()
 		
 		screen_times = get_screen_times()
-		for name, time in screen_times.iteritems():
+		for name, time in screen_times.items():
 			if name not in debug_screen.screen_time_arrays:
 				debug_screen.screen_time_arrays[name] = []
 			debug_screen.screen_time_arrays[name].append((cur_time, time * 1000))
 		
-		for name, array in debug_screen.screen_time_arrays.iteritems():
+		for name, array in debug_screen.screen_time_arrays.items():
 			i = 0
-			for i in xrange(len(array)):
+			for i in range(len(array)):
 				if cur_time - array[i][0] < 1:
 					i -= 1
 					break
@@ -62,10 +62,10 @@ init -995 python:
 		res = []
 		max_len = 0
 		for name in debug_screen.screen_time_arrays:
-			max_len = max(max_len, utf8.len(name))
+			max_len = max(max_len, len(name))
 		
 		def with_spaces(name):
-			return name + ' ' * (max_len - utf8.len(name))
+			return name + ' ' * (max_len - len(name))
 		
 		names = sorted(debug_screen.screen_time_arrays.keys())
 		mode = debug_screen.get_show_mode()
@@ -190,7 +190,7 @@ screen debug_screen_buttons:
 
 screen debug_screen_text:
 	has vbox
-	spacing debug_screen.indent / 2
+	spacing debug_screen.indent // 2
 	
 	xsize debug_screen.size[0]
 	
