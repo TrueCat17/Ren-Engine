@@ -101,7 +101,7 @@ else()
 	link_libraries(
 		GL
 		jemalloc
-		c m
+		c m dl util
 	)
 endif()
 
