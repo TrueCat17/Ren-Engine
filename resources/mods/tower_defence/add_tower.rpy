@@ -17,8 +17,8 @@ init python:
 		fw, fh = td_map_w * td_cell_size * td_zoom, td_map_h * td_cell_size * td_zoom
 		
 		td_fx, td_fy = int((sw - fw) * 0.5), int(sh * 0.4 - fh * 0.5)
-		cell_x = (mouse_x - td_fx) / td_cell_size / td_zoom
-		cell_y = (mouse_y - td_fy) / td_cell_size / td_zoom
+		cell_x = (mouse_x - td_fx) // td_cell_size // td_zoom
+		cell_y = (mouse_y - td_fy) // td_cell_size // td_zoom
 		
 		if cell_x < 0 or cell_y < 0 or cell_x >= td_map_w or cell_y >= td_map_h:
 			return None

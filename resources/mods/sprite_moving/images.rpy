@@ -9,7 +9,7 @@ init python:
 				if not f.endswith('.rpy'): continue
 				
 				for l in open(os.path.join(path, f), 'rb'):
-					l = l.strip()
+					l = str(l, 'utf8').strip()
 					if not l.startswith('image '): continue
 					
 					l = l[6:] # 6 = len('image ')
@@ -39,7 +39,7 @@ init python:
 		one_symbol_xsize = images.sprite_name_btn_text_size / 1.5
 		images.name_xsize = int(one_symbol_xsize * images.max_name_len * 1.2)
 		
-		images.name_count = images.xsize / (images.name_xsize + images.indent)
+		images.name_count = images.xsize // (images.name_xsize + images.indent)
 		images.all_names = images.name_count >= len(images.names)
 		if not images.all_names:
 			images.name_count -= 2 # place for <prev> and <next> buttons
@@ -68,7 +68,7 @@ init python:
 		images.images = images.sprites[name] if name else []
 		
 		free_ysize = images.ysize - (images.sprite_name_btn_ysize + images.indent * 2) - (panel.info_text_size + images.indent * 2)
-		images.image_count = (free_ysize + images.small_indent) / (style.image_name_btn.ysize + images.small_indent)
+		images.image_count = (free_ysize + images.small_indent) // (style.image_name_btn.ysize + images.small_indent)
 		images.all_images = images.image_count >= len(images.images)
 		if not images.all_images:
 			images.image_count -= 2 # place for <prev> and <next> buttons
@@ -127,8 +127,8 @@ init python:
 		images.sprite_xsize = config.width or get_stage_width()
 		images.sprite_ysize = config.height or get_stage_height()
 		
-		images.sprite_xzoom = float(images.sprite_real_xsize) / images.sprite_xsize
-		images.sprite_yzoom = float(images.sprite_real_ysize) / images.sprite_ysize
+		images.sprite_xzoom = images.sprite_real_xsize / images.sprite_xsize
+		images.sprite_yzoom = images.sprite_real_ysize / images.sprite_ysize
 	
 	
 	build_object('images')
@@ -140,8 +140,8 @@ init python:
 	images.border_size = 3
 	images.sprite_back = im.rect('#888')
 	
-	images.sprite_real_xsize = 1920 / 4
-	images.sprite_real_ysize = 1080 / 4
+	images.sprite_real_xsize = 1920 // 4
+	images.sprite_real_ysize = 1080 // 4
 	images.fix_sprite_real_size()
 	images.update_sprite_size()
 	signals.add('resized_stage', images.update_sprite_size)

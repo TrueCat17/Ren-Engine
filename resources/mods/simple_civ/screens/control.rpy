@@ -11,8 +11,8 @@ init python:
 
 screen control:
 	python:
-		control.indent = min(get_stage_height() / 40, 15)
-		control.text_size = min(get_stage_height() / 20, 20)
+		control.indent = min(get_stage_height() // 40, 15)
+		control.text_size = min(get_stage_height() // 20, 20)
 	
 	image control.back:
 		size (control.xsize, get_stage_height() - info.ysize)
@@ -76,7 +76,7 @@ screen control:
 					color 0
 					text_size control.text_size
 				
-				$ control.unit_size = min(get_stage_height() / 20, 32)
+				$ control.unit_size = min(get_stage_height() // 20, 32)
 				image control.unit_back:
 					xsize control.xsize - 2 * min(control.indent, 10)
 					ysize control.unit_size + control.indent
@@ -86,7 +86,7 @@ screen control:
 						align 0.5
 						spacing 10
 						
-						for i in xrange(control.selected_unit_array_start, control.selected_unit_array_end):
+						for i in range(control.selected_unit_array_start, control.selected_unit_array_end):
 							$ unit = control.selected_unit_array[i]
 							image im.rect('#0A0' if unit is control.selected_unit else '#999'):
 								size control.unit_size

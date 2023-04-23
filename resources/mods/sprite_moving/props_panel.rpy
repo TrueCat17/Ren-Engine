@@ -22,9 +22,9 @@ init 1 python:
 		if x_is_int or y_is_int:
 			image = props.get_cur_image()
 			if x_is_int:
-				x = float(x) / get_image_width(image)
+				x = x / get_image_width(image)
 			if y_is_int:
-				y = float(y) / get_image_height(image)
+				y = y / get_image_height(image)
 		return in_bounds(x, -0.25, 1.25), in_bounds(y, -0.25, 1.25)
 	
 	def props__change(d):
@@ -55,7 +55,7 @@ init 1 python:
 		if type(v) is float:
 			v = int(v * full)
 		else:
-			v = float(v) / full
+			v /= full
 		
 		panel.cur_sprite.new_data[prop] = v
 	
@@ -77,8 +77,8 @@ init 1 python:
 		if not panel.cur_sprite or panel.cur_sprite.new_data.alpha <= 0:
 			return
 		
-		xzoom = 1.0 if panel.hide else (1.0 * panel.sprites_xsize / get_stage_width())
-		yzoom = 1.0 if panel.hide else (1.0 * panel.sprites_ysize / get_stage_height())
+		xzoom = 1.0 if panel.hide else (panel.sprites_xsize / get_stage_width())
+		yzoom = 1.0 if panel.hide else (panel.sprites_ysize / get_stage_height())
 		
 		mouse = get_mouse()
 		dx = (mouse[0] - props.prev_mouse[0]) / xzoom

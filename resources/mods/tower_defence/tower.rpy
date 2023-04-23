@@ -14,8 +14,8 @@ init -1 python:
 	init_towers()
 
 init python:
-	td_tower_size = td_cell_size / 2
-	td_half_tower_size = td_tower_size / 2
+	td_tower_size = td_cell_size // 2
+	td_half_tower_size = td_tower_size // 2
 	
 	td_towers = []
 	

@@ -7,8 +7,8 @@ init python:
 	
 	def change_using_location(location):
 		if location.x is None:
-			location.x = location.x or k * get_stage_width() / 3
-			location.y = location.y or k * get_stage_height() / 2
+			location.x = location.x or common_k * get_stage_width() / 3
+			location.y = location.y or common_k * get_stage_height() / 2
 		else:
 			del location.x
 		
@@ -28,10 +28,9 @@ screen locations_list:
 			spacing locations_indent
 			
 			python:
-				names = rpg_locations.keys()
-				names.sort()
+				names = sorted(rpg_locations.keys())
 				
-				locations_count_btns = (get_stage_height() - locations_indent) / (locations_btn_height + locations_indent)
+				locations_count_btns = (get_stage_height() - locations_indent) // (locations_btn_height + locations_indent)
 				locations_start_btn = in_bounds(locations_start_btn, 0, max(0, len(names) - locations_count_btns))
 				
 				names = names[locations_start_btn:locations_start_btn + locations_count_btns]
@@ -56,7 +55,7 @@ screen locations_list:
 							
 							image preview:
 								align 0.5
-								size (get_image_width(preview) / 2, get_image_height(preview) / 2)
+								size (get_image_width(preview) // 2, get_image_height(preview) // 2)
 						
 						vbox:
 							yalign 0.5

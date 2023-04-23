@@ -26,7 +26,7 @@ init -20 python:
 				return
 			
 			args = [(cell_size, cell_size)]
-			for i in xrange(cell_size):
+			for i in range(cell_size):
 				args.append((i, cell_size - 1 - i))
 				args.append(im.scale(black_color, 1, i + 1))
 			Pltf_LeftWall.image = im.matrix_color(im.composite(*args), get_invert_and_tint_matrix(wall_color))
@@ -57,7 +57,7 @@ init -20 python:
 				return
 			
 			args = [(cell_size, cell_size)]
-			for i in xrange(cell_size):
+			for i in range(cell_size):
 				args.append((i, i))
 				args.append(im.scale(black_color, 1, cell_size - i))
 			Pltf_RightWall.image = im.matrix_color(im.composite(*args), get_invert_and_tint_matrix(wall_color))
@@ -81,7 +81,7 @@ init -20 python:
 				return
 			
 			args = [(cell_size, cell_size)]
-			for i in xrange(cell_size / 2):
+			for i in range(cell_size // 2):
 				args.append((i, cell_size - 1 - i))
 				args.append(im.scale(black_color, 1, i + 1))
 				args.append((i + cell_size / 2, i + cell_size / 2))
@@ -95,8 +95,8 @@ init -20 python:
 				return pixel
 			
 			tx, ty = x + dx, y + dy
-			if ty >= cell_size / 2:
-				if tx < cell_size / 2:
+			if ty >= cell_size // 2:
+				if tx < cell_size // 2:
 					free = cell_size - 1 - tx > ty
 					if not free:
 						if dy > 0:

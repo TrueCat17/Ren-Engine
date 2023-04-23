@@ -26,9 +26,9 @@ init -20 python:
 			args += [(0, 0),              main]
 			args += [(cell_size - main_size, 0), main]
 			
-			step = float(cell_size) / count
-			for i in xrange(count):
-				args.append((main_size, int(round(step * i + size / 2))))
+			step = cell_size / count
+			for i in range(count):
+				args.append((main_size, round(step * i + size / 2)))
 				args.append(extra)
 			
 			Pltf_Ladder.image = im.matrix_color(im.composite(*args), get_invert_and_tint_matrix(ladder_color))

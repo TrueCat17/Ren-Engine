@@ -74,8 +74,8 @@ init python:
 		tg_tanks_walls = [0] * size
 		tg_color_field = ['#FFF'] * size
 		
-		for y in xrange(tg_height):
-			for x in xrange(tg_width):
+		for y in range(tg_height):
+			for x in range(tg_width):
 				index = y * tg_width + x
 				src = const_level[index]
 				
@@ -110,8 +110,8 @@ init python:
 	
 	
 	def tg_tanks_update_walls():
-		for y in xrange(tg_height):
-			for x in xrange(tg_width):
+		for y in range(tg_height):
+			for x in range(tg_width):
 				index = y * tg_width + x
 				src = tg_tanks_walls[index]
 				
@@ -125,8 +125,8 @@ init python:
 	def tg_tanks_get_near_count(array, _x, _y):
 		count = 0
 		
-		for dy in xrange(-1, 2):
-			for dx in xrange(-1, 2):
+		for dy in (-1, 0, +1):
+			for dx in (-1, 0, +1):
 				x = (_x + dx) % tg_width
 				y = (_y + dy) % tg_height
 				
@@ -153,8 +153,8 @@ init python:
 				tank.update()
 				tank.x, tank.y = tank.to_x, tank.to_y
 		
-		tg_tanks_bullets = filter(lambda bullet: not bullet.need_to_delete, tg_tanks_bullets)
-		tg_tanks_players = filter(lambda player: not player.need_to_delete, tg_tanks_players)
+		tg_tanks_bullets = [bullet for bullet in tg_tanks_bullets if not bullet.need_to_delete]
+		tg_tanks_players = [player for player in tg_tanks_players if not player.need_to_delete]
 		
 		for bullet in tg_tanks_bullets:
 			bullet.x, bullet.y = bullet.to_x, bullet.to_y
@@ -163,7 +163,7 @@ init python:
 	
 	
 	def tg_tanks_render():
-		for i in xrange(tg_width * tg_height):
+		for i in range(tg_width * tg_height):
 			is_wall = tg_tanks_walls[i]
 			if is_wall > 0:
 				tg_color_field[i] = '#000'
@@ -177,8 +177,8 @@ init python:
 			rotation = tg_tanks_rotations[tank.rotation]
 			hp = tank.hp
 			
-			for dy in xrange(3):
-				for dx in xrange(3):
+			for dy in range(3):
+				for dx in range(3):
 					x = (_x + dx) % tg_width
 					y = (_y + dy) % tg_height
 					
@@ -202,8 +202,8 @@ init python:
 			tg_color_field[index] = tg_hex_colors[color]
 	
 	def tg_tanks_check_point(x, y):
-		for dy in xrange(-1, 2):
-			for dx in xrange(-1, 2):
+		for dy in (-1, 0, 1):
+			for dx in (-1, 0, 1):
 				_x = (x + dx) % tg_width
 				_y = (y + dy) % tg_height
 				index = _y * tg_width + _x

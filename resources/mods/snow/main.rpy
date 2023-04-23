@@ -16,7 +16,7 @@ init python:
 		else:
 			width, height = get_stage_size()
 			
-			for i in xrange(d):
+			for i in range(d):
 				size = random.randint(2, 10)
 				
 				x = random.uniform(0, 1)
@@ -34,7 +34,7 @@ init python:
 		
 		if image_render:
 			width, height = float(get_stage_width()), float(get_stage_height())
-			img_cache = [None] + [im.scale('mods/snow/snow.png', i, i) for i in xrange(1, 11)]
+			img_cache = [None] + [im.scale('mods/snow/snow.png', i, i) for i in range(1, 11)]
 			
 			tmp_image_args = [(width, height)]
 			for obj in objs:
@@ -97,7 +97,7 @@ screen snow:
 				xalign 1.0
 				text_size 20
 				size 25
-				action set_count(min(len(objs) + 100, 20000))
+				action set_count(min(len(objs) + 100, 30000))
 		
 		null:
 			align (0.5, 0.8)

@@ -92,7 +92,7 @@ init -10 python:
 					
 					if add:
 						if type(value) in (tuple, list):
-							for i in xrange(len(value)):
+							for i in range(len(value)):
 								if type(value[i]) is float:
 									value[i] = round(value[i], 3)
 						else:

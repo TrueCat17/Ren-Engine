@@ -82,7 +82,7 @@ screen all_locations:
 		pos (x, y)
 		zoom common_k
 		
-		for name, location in rpg_locations.iteritems():
+		for name, location in rpg_locations.items():
 			if location.x is None:
 				continue
 			

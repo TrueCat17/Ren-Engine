@@ -45,13 +45,13 @@ screen tg_main_screen:
 	vbox:
 		align (0.5, 0.4)
 		
-		for i in xrange(tg_height):
+		for i in range(tg_height):
 			hbox:
 				python:
 					tg_line = []
 					
 					tg_count = 0
-					for j in xrange(tg_width):
+					for j in range(tg_width):
 						tg_count += 1
 						
 						tg_color = tg_color_field[i * tg_width + j]

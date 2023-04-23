@@ -12,7 +12,7 @@ init -1 python:
 	prev_level = cur_level = -1
 	def set_level(level):
 		if not level_class_props:
-			for symbol, obj_type in level_classes.iteritems():
+			for symbol, obj_type in level_classes.items():
 				level_class_props[symbol] = dir(level_classes[symbol])
 		
 		global level_dynamic_objects
@@ -27,7 +27,7 @@ init -1 python:
 		level_w, level_h = len(level_map[0]) - 1, len(level_map) # 1 is space that ends each line
 		
 		
-		for symbol, props in level_classes.iteritems():
+		for symbol, props in level_classes.items():
 			if 'start' in level_class_props[symbol]:
 				level_classes[symbol].start()
 		
@@ -35,10 +35,10 @@ init -1 python:
 		exit_x = exit_y = -100
 		
 		args = [(level_w * cell_size, level_h * cell_size)]
-		for y in xrange(level_h):
+		for y in range(level_h):
 			line = level_map[y]
 			
-			for x in xrange(level_w):
+			for x in range(level_w):
 				symbol = line[x]
 				
 				if symbol not in level_classes:

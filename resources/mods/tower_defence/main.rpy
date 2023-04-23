@@ -40,7 +40,7 @@ init python:
 	
 	def td_update():
 		global td_last_update_time, td_to_update_time, td_zoom
-		td_zoom = min(get_stage_width() / td_map_w / td_cell_size, int(get_stage_height() * 0.7 / td_map_h / td_cell_size))
+		td_zoom = int(min(get_stage_width() / td_map_w / td_cell_size, get_stage_height() * 0.7 / td_map_h / td_cell_size))
 		if td_zoom < 1:
 			td_zoom = 1
 		
@@ -110,7 +110,7 @@ screen tower_defence:
 				rotate obj.rotation
 		python:
 			if td_to_delete_tower is not None:
-				td_moneys += td_tower_types[td_to_delete_tower.tower_type]['cost'] / 2
+				td_moneys += td_tower_types[td_to_delete_tower.tower_type]['cost'] // 2
 				td_towers.remove(td_to_delete_tower)
 		
 		image im.Rect('#FB4'):

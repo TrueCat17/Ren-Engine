@@ -27,11 +27,11 @@ init -990 python:
 	info.group_size = 3
 	
 	info.groups = []
-	info.count_groups = int(math.ceil(len(info.resources) / float(info.group_size)))
-	for i in xrange(info.count_groups):
+	info.count_groups = int(math.ceil(len(info.resources) / info.group_size))
+	for i in range(info.count_groups):
 		group = []
 		info.groups.append(group)
-		for j in xrange(info.group_size):
+		for j in range(info.group_size):
 			index = i * info.group_size + j
 			if index < len(info.resources):
 				group.append(info.resources[index])
@@ -39,9 +39,9 @@ init -990 python:
 
 screen info:
 	python:
-		info.ysize = max(get_stage_height() / 5, 100)
-		info.indent = min(get_stage_height() / 60, 20)
-		info.text_size = min(get_stage_height() / 20, 22)
+		info.ysize = max(get_stage_height() // 5, 100)
+		info.indent = min(get_stage_height() // 60, 20)
+		info.text_size = min(get_stage_height() // 20, 22)
 		info.btn_size = min(int(get_stage_height() * 0.4), 250)
 	
 	image info.back:
@@ -54,11 +54,11 @@ screen info:
 			spacing info.indent
 			
 			for group in info.groups:
-				$ max_len = max(utf8.len(_(resource)) for resource in group)
+				$ max_len = max(len(_(resource)) for resource in group)
 				vbox:
 					for resource in group:
 						python:
-							spaces = ' ' * (max_len - utf8.len(_(resource)))
+							spaces = ' ' * (max_len - len(_(resource)))
 							count = sc_map.player[resource]
 							changing = sc_map.player['change_' + resource]
 							changing_color = '0x00FF00' if changing >= 0 else '#FF0000'

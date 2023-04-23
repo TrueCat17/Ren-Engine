@@ -6,8 +6,8 @@ screen sprites:
 	$ props.update_mouse()
 	$ sprites.images = sprites.get_datas()
 	
-	xzoom (get_stage_width()  if panel.hide else panel.sprites_xsize) / float(config.width  or get_stage_width())
-	yzoom (get_stage_height() if panel.hide else panel.sprites_ysize) / float(config.height or get_stage_height())
+	xzoom (get_stage_width()  if panel.hide else panel.sprites_xsize) / (config.width  or get_stage_width())
+	yzoom (get_stage_height() if panel.hide else panel.sprites_ysize) / (config.height or get_stage_height())
 	
 	pos    (sprites.screen.new_data.xpos,       sprites.screen.new_data.ypos)
 	anchor (sprites.screen.new_data.xanchor,    sprites.screen.new_data.yanchor)

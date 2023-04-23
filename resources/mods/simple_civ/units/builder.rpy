@@ -24,11 +24,11 @@ init -1 python:
 			player = self.player
 			
 			if task == 'build':
-				for resource, count in building_cost['%s-%s' % tuple(args)].iteritems():
+				for resource, count in building_cost['%s-%s' % tuple(args)].items():
 					if player[resource] < count:
 						info.set_msg('Not enough resources', resource)
 						return
-				for resource, count in building_cost['%s-%s' % tuple(args)].iteritems():
+				for resource, count in building_cost['%s-%s' % tuple(args)].items():
 					player[resource] -= count
 				
 				if cell.road_level == 0:
@@ -83,7 +83,7 @@ init -1 python:
 				out_msg('Builder.exec_task', 'Expected task <build>, <unbuild> or <train>, got <' + str(task) + '>')
 			
 			self.turns = 0
-			sc_map.update_block(self.x / sc_map.block_size, self.y / sc_map.block_size)
+			sc_map.update_block(self.x // sc_map.block_size, self.y // sc_map.block_size)
 			control.select_cell(self.x, self.y) # update menu
 		
 		

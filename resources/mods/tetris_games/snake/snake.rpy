@@ -44,12 +44,12 @@ init python:
 		tg_snake_fail = False
 		
 		tg_width, tg_height = tg_snake_level_sizes[level]
-		tg_snake_field = [False for i in xrange(tg_width * tg_height)]
-		tg_color_field = [tg_snake_color_empty for i in xrange(tg_width * tg_height)]
+		tg_snake_field = [False] * (tg_width * tg_height)
+		tg_color_field = [tg_snake_color_empty] * (tg_width * tg_height)
 		const_level = tg_snake_levels[level]
 		
-		for y in xrange(tg_height):
-			for x in xrange(tg_width):
+		for y in range(tg_height):
+			for x in range(tg_width):
 				index = y * tg_width + x
 				src = const_level[index]
 				
@@ -98,8 +98,8 @@ init python:
 	
 	
 	def tg_snake_render():
-		for y in xrange(tg_height):
-			for x in xrange(tg_width):
+		for y in range(tg_height):
+			for x in range(tg_width):
 				index = y * tg_width + x
 				if tg_snake_field[index]:
 					tg_color_field[index] = tg_snake_color_wall

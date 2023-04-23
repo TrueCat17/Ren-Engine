@@ -25,7 +25,7 @@ init python:
 		set_location(location.name, {'x': 0, 'y': 0})
 		me.paths = None
 		hide_character(me)
-		cam_to({'x': location.xsize / 2, 'y': location.ysize / 2}, 0)
+		cam_to({'x': location.xsize // 2, 'y': location.ysize // 2}, 0)
 		
 		global location_start_time
 		location_start_time = 0
@@ -62,7 +62,7 @@ screen all_locations:
 		xpos -common_cam_x
 		ypos -common_cam_y
 		
-		for name, location in rpg_locations.iteritems():
+		for name, location in rpg_locations.items():
 			$ k = absolute(128.0) / max(location.xsize, location.ysize)
 			
 			button:

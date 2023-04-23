@@ -17,7 +17,7 @@ init -2 python:
 	
 	def td_get_pos(v):
 		i = td_map.index(v)
-		return i % td_map_w, i / td_map_w
+		return i % td_map_w, i // td_map_w
 	
 	def td_from_map(x, y = None):
 		if y is None:
@@ -65,7 +65,7 @@ init -2 python:
 		
 		rotation = 90
 		td_rotations.append(rotation)
-		for i in xrange(1, len(td_path) - 1):
+		for i in range(1, len(td_path) - 1):
 			px, py = td_path[i - 1]
 			x, y   = td_path[i]
 			nx, ny = td_path[i + 1]

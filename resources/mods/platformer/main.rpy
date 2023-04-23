@@ -32,11 +32,11 @@ init python:
 		lw, lh = level_w * cell_size, level_h * cell_size
 		
 		if lw < sw:
-			level_x = (sw - lw) / 2
+			level_x = (sw - lw) // 2
 		else:
-			level_x = sw / 2 - (me.x + cell_size / 2)
+			level_x = sw // 2 - int(me.x + cell_size / 2)
 		if lh < sh:
-			level_y = (sh - lh) / 2
+			level_y = (sh - lh) // 2
 		else:
-			level_y = sh / 2 - (me.y + cell_size / 2)
+			level_y = sh // 2 - int(me.y + cell_size / 2)
 

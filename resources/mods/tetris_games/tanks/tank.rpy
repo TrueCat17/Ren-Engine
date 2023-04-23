@@ -12,8 +12,8 @@ init -1 python:
 			step += 1
 			changed = False
 			
-			for y in xrange(tg_height):
-				for x in xrange(tg_width):
+			for y in range(tg_height):
+				for x in range(tg_width):
 					if tg_tanks_get_from_level(level, x, y) != step:
 						continue
 					
@@ -73,7 +73,7 @@ init -1 python:
 			self.is_bot = True
 			self.start_time = get_game_time()
 			
-			self.rotation = 'left' if x > tg_width / 2 else 'right'
+			self.rotation = 'left' if x > tg_width // 2 else 'right'
 			self.dx = -1 if self.rotation == 'left' else 1
 			self.dy = 0
 			
@@ -283,9 +283,9 @@ init -1 python:
 					return None
 			
 			dx, dy = (x - self.x) % tg_width, (y - self.y) % tg_height
-			if dx > tg_width / 2:
+			if dx > tg_width // 2:
 				dx -= tg_width
-			if dy > tg_height / 2:
+			if dy > tg_height // 2:
 				dy -= tg_height
 			return dx, dy
 		
@@ -373,8 +373,8 @@ init -1 python:
 				self.to_attack()
 				return
 			
-			for y in xrange(tg_height):
-				for x in xrange(tg_width):
+			for y in range(tg_height):
+				for x in range(tg_width):
 					index = y * tg_width + x
 					if level[index] == max_step:
 						to_x, to_y = x, y
@@ -393,18 +393,18 @@ init -1 python:
 				self.to_attack()
 				return
 			
-			if   self.bullet_last_point(self.x, self.y, -1, 0, (tg_width + 1) / 2):
+			if   self.bullet_last_point(self.x, self.y, -1, 0, (tg_width + 1) // 2):
 				self.dx, self.dy, self.need_to_fire = -1, 0, True
-			elif self.bullet_last_point(self.x, self.y, +1, 0, (tg_width + 1) / 2):
+			elif self.bullet_last_point(self.x, self.y, +1, 0, (tg_width + 1) // 2):
 				self.dx, self.dy, self.need_to_fire = 1, 0, True
-			elif self.bullet_last_point(self.x, self.y, 0, -1, (tg_height + 1) / 2):
+			elif self.bullet_last_point(self.x, self.y, 0, -1, (tg_height + 1) // 2):
 				self.dx, self.dy, self.need_to_fire = 0, -1, True
-			elif self.bullet_last_point(self.x, self.y, 0, +1, (tg_height + 1) / 2):
+			elif self.bullet_last_point(self.x, self.y, 0, +1, (tg_height + 1) // 2):
 				self.dx, self.dy, self.need_to_fire = 0, 1, True
 			else:
 				sides = [(-1, 0), (0, -1), (1, 0), (0, 1)]
 				random.shuffle(sides)
-				for i in xrange(4):
+				for i in range(4):
 					self.dx, self.dy = sides[i]
 					if self.can_move():
 						break

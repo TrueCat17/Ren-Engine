@@ -6,10 +6,10 @@ init python:
 	}
 	
 	td_bullet_image = 'mods/tower_defence/images/bullet.png'
-	td_bullet_image_bung = im.ReColor(td_bullet_image, 255, 128, 0)
+	td_bullet_image_bung = im.recolor(td_bullet_image, 255, 128, 0)
 	
-	td_bullet_size = td_cell_size / 8
-	td_bullet_test_size = float(td_tank_size + td_bullet_size) / td_cell_size
+	td_bullet_size = td_cell_size // 8
+	td_bullet_test_size = (td_tank_size + td_bullet_size) / td_cell_size
 	td_bullet_test_half_size = td_bullet_test_size / 2
 	
 	
@@ -37,7 +37,7 @@ init python:
 				self[prop] = orig[prop]
 			
 			r, g, b, a = renpy.easy.color(self.color)
-			self.image = im.ReColor(td_bullet_image, r, g, b, a)
+			self.image = im.recolor(td_bullet_image, r, g, b, a)
 			
 			self.size = td_bullet_size
 		

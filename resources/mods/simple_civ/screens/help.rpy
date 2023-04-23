@@ -100,7 +100,7 @@ init python:
 			
 			help.groups.append((name, text.strip()))
 			
-			help.xsizes[name] = utf8.width(name, style.btn.text_size) + 10
+			help.xsizes[name] = get_text_width(name, style.btn.text_size) + 10
 		
 		help.start_index = 0
 		help.max_index = 0
@@ -109,7 +109,7 @@ init python:
 			help.text = help.groups[0][1]
 			
 			l = len(help.groups)
-			for i in xrange(l):
+			for i in range(l):
 				width = 0
 				count = 0
 				for name, text in help.groups[i:]:

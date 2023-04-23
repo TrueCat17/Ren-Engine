@@ -59,7 +59,7 @@ screen research:
 				for building in technology_names:
 					python:
 						name = _(building)
-						if technology_extra.has_key(building):
+						if building in technology_extra:
 							name += ' (' + _(technology_extra[building]) + ')'
 					
 					text name:

@@ -17,7 +17,7 @@ init -10 python:
 		def __getstate__(self):
 			return tuple(getattr(self, prop) for prop in self.__slots__)
 		def __setstate__(self, state):
-			for i in xrange(len(self.__slots__)):
+			for i in range(len(self.__slots__)):
 				setattr(self, self.__slots__[i], state[i])
 	
 	
@@ -26,8 +26,8 @@ init -10 python:
 		sc_map.xsize, sc_map.ysize = w, h
 		
 		sc_map.block_size = block_size
-		sc_map.block_xcount = sc_map.xsize / block_size
-		sc_map.block_ycount = sc_map.ysize / block_size
+		sc_map.block_xcount = sc_map.xsize // block_size
+		sc_map.block_ycount = sc_map.ysize // block_size
 		
 		sum_chances = 0.0
 		chances = []
@@ -36,11 +36,11 @@ init -10 python:
 			chances.append((k, sum_chances))
 		
 		sc_map.map = []
-		for y in xrange(sc_map.ysize):
+		for y in range(sc_map.ysize):
 			line = []
 			sc_map.map.append(line)
 			
-			for x in xrange(sc_map.xsize):
+			for x in range(sc_map.xsize):
 				r = random.random() * sum_chances
 				for resource, chance in chances:
 					if r <= chance:
@@ -51,13 +51,13 @@ init -10 python:
 				line.append(Cell(x, y, resource, count))
 		
 		sc_map.players = []
-		for i in xrange(sc_map.count_players):
+		for i in range(sc_map.count_players):
 			player = Player(is_ai = i>0)
 			sc_map.players.append(player)
 			
-			start_x = random.randint(sc_map.xsize / 8, sc_map.xsize * 7 / 8)
-			start_y = random.randint(sc_map.ysize / 8, sc_map.ysize * 7 / 8)
-			for _ in xrange(sc_map.count_start_builders):
+			start_x = random.randint(sc_map.xsize // 8, sc_map.xsize * 7 // 8)
+			start_y = random.randint(sc_map.ysize // 8, sc_map.ysize * 7 // 8)
+			for _ in range(sc_map.count_start_builders):
 				player.add_builder(start_x, start_y)
 			
 			if i == 0:
@@ -70,8 +70,8 @@ init -10 python:
 			player.calc_changing_resources()
 		
 		sc_map.blocks = {}
-		for y in xrange(sc_map.block_ycount):
-			for x in xrange(sc_map.block_xcount):
+		for y in range(sc_map.block_ycount):
+			for x in range(sc_map.block_xcount):
 				sc_map.update_block(x, y)
 	
 	def sc_map__get_block(block_x, block_y):
@@ -85,9 +85,9 @@ init -10 python:
 		
 		xstart = block_x * sc_map.block_size
 		ystart = block_y * sc_map.block_size
-		for y in xrange(sc_map.block_size):
+		for y in range(sc_map.block_size):
 			line  = sc_map.map[ystart + y]
-			for x in xrange(sc_map.block_size):
+			for x in range(sc_map.block_size):
 				cell = line[xstart + x]
 				cell_x, cell_y = x * image_size, y * image_size
 				
@@ -117,8 +117,8 @@ init -10 python:
 			cell_x += x
 			cell_y += y
 		
-		sc_map.x = -cell_x * sc_map.image_size * sc_map.zoom + (get_stage_width() - control.xsize) / 2.0
-		sc_map.y = -cell_y * sc_map.image_size * sc_map.zoom + (get_stage_height() - info.ysize) / 2.0
+		sc_map.x = -cell_x * sc_map.image_size * sc_map.zoom + (get_stage_width() - control.xsize) / 2
+		sc_map.y = -cell_y * sc_map.image_size * sc_map.zoom + (get_stage_height() - info.ysize) / 2
 		sc_map.alignment()
 		sc_map.update_center_cell()
 	
@@ -137,7 +137,7 @@ init -10 python:
 		xsize = sc_map.xsize * sc_map.image_size * sc_map.zoom
 		stage_width = get_stage_width() - control.xsize
 		if xsize < stage_width:
-			sc_map.x = (stage_width - int(xsize)) / 2
+			sc_map.x = (stage_width - int(xsize)) // 2
 		else:
 			left = stage_width - int(xsize)
 			right = 0
@@ -146,7 +146,7 @@ init -10 python:
 		ysize = sc_map.ysize * sc_map.image_size * sc_map.zoom
 		stage_height = get_stage_height() - info.ysize
 		if ysize < stage_height:
-			sc_map.y = (stage_height - int(ysize)) / 2
+			sc_map.y = (stage_height - int(ysize)) // 2
 		else:
 			top = stage_height - int(ysize)
 			bottom = 0
@@ -183,7 +183,7 @@ init -10 python:
 					is_free = unit.turns > 0
 					units[pos] = units.get(pos) or is_free
 				
-				for (xpos, ypos), is_free in units.iteritems():
+				for (xpos, ypos), is_free in units.items():
 					res.append({
 						'image': UnitType.image,
 						'xpos': int(xpos * sc_map.image_size * zoom + x),
@@ -274,7 +274,7 @@ init -10 python:
 				
 				cell = m[ny][nx]
 				if cell.road_level > 0:
-					for i in xrange(len(opened)):
+					for i in range(len(opened)):
 						if c < opened[i]:
 							opened.insert(i, c)
 							break

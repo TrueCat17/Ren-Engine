@@ -36,14 +36,14 @@ init python:
 		tg_life_exit = False
 		
 		tg_life_alives = set()
-		for i in xrange(tg_width * tg_height / 3):
+		for i in range(tg_width * tg_height // 3):
 			x = random.randint(0, tg_width  - 1)
 			y = random.randint(0, tg_height - 1)
 			tg_life_alives.add((x, y))
 		
 		tg_life_nears = {}
-		for y in xrange(tg_height):
-			for x in xrange(tg_width):
+		for y in range(tg_height):
+			for x in range(tg_width):
 				nears = []
 				for dy in (-1, 0, 1):
 					for dx in (-1, 0, 1):
@@ -86,7 +86,7 @@ init python:
 		tg_life_render()
 	
 	def tg_life_render():
-		for i in xrange(tg_width * tg_height):
+		for i in range(tg_width * tg_height):
 			tg_color_field[i] = '#FFF'
 		
 		for x, y in tg_life_alives:
@@ -116,8 +116,8 @@ init python:
 	def tg_life_make_planer():
 		tg_life_clear()
 		
-		start_x = int(tg_width / 2) - 1
-		start_y = int(tg_height / 2) - 1
+		start_x = tg_width // 2 - 1
+		start_y = tg_height // 2 - 1
 		
 		tg_life_alives.add((start_x + 0, start_y + 0))
 		tg_life_alives.add((start_x + 1, start_y + 0))
@@ -131,8 +131,8 @@ init python:
 	def tg_life_make_r_pentamino():
 		tg_life_clear()
 		
-		start_x = int(tg_width / 2) - 1
-		start_y = int(tg_height / 2) - 1
+		start_x = tg_width // 2 - 1
+		start_y = tg_height // 2 - 1
 		
 		tg_life_alives.add((start_x + 1, start_y + 0))
 		tg_life_alives.add((start_x + 2, start_y + 0))
@@ -146,8 +146,8 @@ init python:
 	def tg_life_make_space_ship():
 		tg_life_clear()
 		
-		start_x = int(tg_width / 2) - 1
-		start_y = int(tg_height / 2) - 1
+		start_x = tg_width // 2 - 1
+		start_y = tg_height // 2 - 1
 		
 		tg_life_alives.add((start_x + 1, start_y + 0))
 		tg_life_alives.add((start_x + 2, start_y + 0))
@@ -164,12 +164,12 @@ init python:
 	def tg_life_make_taxi():
 		tg_life_clear()
 		
-		start_x = int(tg_width / 2) - 10
-		start_y = int(tg_height / 2) - 1
+		start_x = tg_width // 2 - 10
+		start_y = tg_height // 2 - 1
 		
-		for i in xrange(9):
+		for i in range(9):
 			tg_life_alives.add((start_x + i * 2 + 1, start_y + 0))
-		for i in xrange(10):
+		for i in range(10):
 			tg_life_alives.add((start_x + i * 2 + 0, start_y + 1))
 		
 		tg_life_render()

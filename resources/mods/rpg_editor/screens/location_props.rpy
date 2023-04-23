@@ -157,8 +157,7 @@ screen location_props:
 				key 'DOWN' action SetVariable('objects_start_btn', min(objects_start_btn + 1, len(location_objects) - 1))
 				
 				python:
-					names = location_objects.keys()
-					names.sort()
+					names = sorted(location_objects.keys())
 					names = names[objects_start_btn:]
 				
 				for name in names:
@@ -176,7 +175,7 @@ screen location_props:
 						
 						image obj_image:
 							anchor 0.5
-							pos objects_btn_size / 2
+							pos objects_btn_size // 2
 							size (w, h)
 						
 						text name:

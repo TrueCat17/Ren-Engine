@@ -2,9 +2,9 @@ init -990 python:
 	
 	# VN characters:
 	
-	sm = Character('Семён', color='#DDDDAA')
+	sm = Character('Семён', color = '#DDDDAA')
 	me = sm
-	rn = Character('Рен', color='#FFFFFF')
+	rn = Character('Рен', color = '#FFFFFF')
 	
 	
 	# RPG characters:

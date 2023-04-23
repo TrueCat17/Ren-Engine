@@ -38,7 +38,7 @@ init 1 python:
 	
 	def panel__update_sprite_count():
 		free_ysize = get_stage_height() - (panel.info_text_size + style.place_btn.ysize * 2 + panel.small_indent) - style.sprite_btn.ysize - 5 * panel.indent
-		panel.sprite_btn_count = (free_ysize + panel.small_indent) / (style.sprite_btn.ysize + panel.small_indent)
+		panel.sprite_btn_count = (free_ysize + panel.small_indent) // (style.sprite_btn.ysize + panel.small_indent)
 		
 		panel.all_sprite_btns = panel.sprite_btn_count >= len(sprites.list)
 		if not panel.all_sprite_btns:

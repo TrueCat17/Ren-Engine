@@ -55,11 +55,11 @@ init -900 python:
 			
 			# cost of support and base science
 			for cell in self.road_cells:
-				for resource, count in support_cost['road'].iteritems():
+				for resource, count in support_cost['road'].items():
 					self['change_' + resource] -= count
 			for cell in self.building_cells:
 				if cell.building in ('storage', 'district'):
-					for resource, count in support_cost[cell.building].iteritems():
+					for resource, count in support_cost[cell.building].items():
 						self['change_' + resource] -= count * cell.building_level
 			for unit in self.units:
 				if isinstance(unit, Worker):
@@ -94,18 +94,18 @@ init -900 python:
 					self['change_' + cell.resource] += cell.resource_count * power
 				elif cell.building in building_production:
 					production = building_production[cell.building]
-					for resource, count in production['from'].iteritems():
+					for resource, count in production['from'].items():
 						self['change_' + resource] -= count * power
-					for resource, count in production['to'].iteritems():
+					for resource, count in production['to'].items():
 						self['change_' + resource] += count * power
 				else:
 					workers = 0
 					power = 0
 				
 				self.change_science += power
-				for resource, count in support_cost['worker'].iteritems():
+				for resource, count in support_cost['worker'].items():
 					self['change_' + resource] -= count * workers
-				for resource, count in support_cost[cell.building].iteritems():
+				for resource, count in support_cost[cell.building].items():
 					self['change_' + resource] -= count * workers
 		
 		

@@ -31,7 +31,7 @@ init python:
 		xcell, ycell = floor(me.x / cell_size), floor(me.y / cell_size)
 		x, y = me.x - xcell * cell_size, me.y - ycell * cell_size
 		
-		symbol = get_symbol(level, floor(xcell + float(x) / cell_size + 0.5), floor(ycell + float(y - 1) / cell_size + 1))
+		symbol = get_symbol(level, floor(xcell + x / cell_size + 0.5), floor(ycell + (y - 1) / cell_size + 1))
 		obj_type = level_classes[symbol]
 		
 		
@@ -102,9 +102,9 @@ init python:
 				x += ax
 				y += ay
 				
-				xcell += floor(float(x) / cell_size)
+				xcell += floor(x / cell_size)
 				x %= cell_size
-				ycell += floor(float(y) / cell_size)
+				ycell += floor(y / cell_size)
 				y %= cell_size
 				
 				if dx < 0:
@@ -130,9 +130,9 @@ init python:
 				x += ax
 				y += ay
 				
-				xcell += floor(float(x) / cell_size)
+				xcell += floor(x / cell_size)
 				x %= cell_size
-				ycell += floor(float(y) / cell_size)
+				ycell += floor(y / cell_size)
 				y %= cell_size
 				
 				if dy < 0:
@@ -183,9 +183,9 @@ init python:
 		xcell, ycell = cell
 		x, y = pixel
 		
-		xcell += int(math.floor(float(x) / cell_size))
+		xcell += int(math.floor(x / cell_size))
 		x %= cell_size
-		ycell += int(math.floor(float(y) / cell_size))
+		ycell += int(math.floor(y / cell_size))
 		y %= cell_size
 		
 		if y == cell_size - 1:

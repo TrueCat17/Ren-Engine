@@ -88,8 +88,7 @@ init python:
 		
 		
 		tmp = ['init python:', '\t']
-		location_names = rpg_locations.keys()
-		location_names.sort()
+		location_names = sorted(rpg_locations.keys())
 		for location_name in location_names:
 			location = rpg_locations[location_name]
 			if location.x is None:
@@ -102,15 +101,14 @@ init python:
 			
 			tmp.append('\tregister_location(' + ', '.join([location_name, path, is_room, w, h]) + ')')
 			
-			places = location.places.keys()
-			places.sort()
+			places = sorted(location.places.keys())
 			for place_name in places:
 				place = location.places[place_name]
 				if place.to_location_name:
 					continue
 				
 				place_name = '"' + place_name + '"'
-				place_args = [location_name, place_name] + map(str, [place.x, place.y, place.xsize, place.ysize])
+				place_args = [location_name, place_name] + [str(place[prop]) for prop in 'x y xsize ysize'.split()]
 				tmp.append('\tregister_place(' + place_indent + ', '.join(place_args) + ')')
 			
 			for place_name in places:
@@ -119,7 +117,7 @@ init python:
 					continue
 				
 				place_name = '"' + place_name + '"'
-				place_args = [location_name, place_name] + map(str, [place.x, place.y, place.xsize, place.ysize])
+				place_args = [location_name, place_name] + [str(place[prop]) for prop in 'x y xsize ysize'.split()]
 				tmp.append('\tregister_place(' + place_indent + ', '.join(place_args) + get_place_to(place) + ')')
 			
 			tmp.append('\t')
@@ -137,7 +135,7 @@ init python:
 		tmp.append('')
 		
 		locations_file = open(locations_file_path, 'wb')
-		locations_file.writelines(map(lambda s: s + '\n', tmp))
+		locations_file.writelines([bytes(s + '\n', 'utf8') for s in tmp])
 		locations_file.close()
 		
 		
@@ -146,9 +144,9 @@ init python:
 			return
 		
 		location_objects_file = open(location_objects_file_path, 'rb')
-		tmp = location_objects_file.readlines()
+		tmp = [str(i, 'utf8') for i in location_objects_file]
 		location_objects_file.close()
-		for i in xrange(len(tmp) - 1, -1, -1):
+		for i in range(len(tmp) - 1, -1, -1):
 			if not tmp[i].startswith('\tregister_location_object'): continue
 			
 			s = 0
@@ -159,29 +157,26 @@ init python:
 				if s == 0:
 					break
 			break
-		tmp = map(lambda s: '\t' if s == '\t\n' else s.rstrip(), tmp[0:i])
+		tmp = ['\t' if s == '\t\n' else s.rstrip() for s in tmp[0:i]]
 		tmp.append('\t')
 		
-		obj_names = location_objects.keys()
 		for location_name in location_names:
 			location = rpg_locations[location_name]
 			
 			added = False
-			places = location.places.keys()
-			places.sort()
+			places = sorted(location.places.keys())
 			for place_name in places:
 				if '_pos' not in place_name: continue
 				
 				obj_name = place_name[0:place_name.index('_pos')]
-				if obj_name not in obj_names: continue
+				if obj_name not in location_objects: continue
 				
 				added = True
-				args = map(lambda s: '"' + s + '"', [location_name, place_name, obj_name])
+				args = ['"%s"' % s for s in (location_name, place_name, obj_name)]
 				tmp.append('\tadd_location_object(' + ', '.join(args) + ')')
 			
 			if added:
 				tmp.append('\t')
 		
 		location_objects_file = open(location_objects_file_path, 'wb')
-		location_objects_file.writelines(map(lambda s: s + '\n', tmp))
-
+		location_objects_file.writelines([bytes(s + '\n', 'utf8') for s in tmp])

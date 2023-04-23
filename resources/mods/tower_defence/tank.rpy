@@ -5,7 +5,7 @@ init -1 python:
 		'power': { 'speed':1, 'speed_rotation':1, 'hp':70, 'color':'#822', 'cost':15 }
 	}
 	
-	td_tank_size = td_cell_size / 2
+	td_tank_size = td_cell_size // 2
 	
 	td_tank_image = 'mods/tower_defence/images/tank.png'
 	
