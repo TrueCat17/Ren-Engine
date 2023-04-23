@@ -99,3 +99,20 @@ type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) {
 
 MAKE_CONVERT_FROM_PY_TO_STR(const char *)
 MAKE_CONVERT_FROM_PY_TO_STR(std::string)
+
+
+
+//if long == int, x86, 32-bit
+// then long is independent type (is not synonym for int32_t)
+//else (64-bit)
+// do nothing, because long is int64_t
+#if ((LONG_MAX) == (INT_MAX))
+#define MAKE_CONVERT_FROM_PY_TO_LONG(type, real) \
+template<> \
+type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) { \
+	return convertFromPy<real>(obj, funcName, argIndex); \
+}
+
+MAKE_CONVERT_FROM_PY_TO_LONG(long, int32_t)
+MAKE_CONVERT_FROM_PY_TO_LONG(unsigned long, uint32_t)
+#endif

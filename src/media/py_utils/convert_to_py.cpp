@@ -54,3 +54,20 @@ template<>
 PyObject* convertToPy<>(const std::string &obj) {
 	return PyUnicode_FromStringAndSize(obj.c_str(), long(obj.size()));
 }
+
+
+
+//if long == int, x86, 32-bit
+// then long is independent type (is not synonym for int32_t)
+//else (64-bit)
+// do nothing, because long is int64_t
+#if ((LONG_MAX) == (INT_MAX))
+template<>
+PyObject* convertToPy<>(long obj) {
+	return PyLong_FromLong(obj);
+}
+template<>
+PyObject* convertToPy<>(unsigned long obj) {
+	return PyLong_FromUnsignedLong(obj);
+}
+#endif
