@@ -495,10 +495,6 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const
 std::string PyUtils::objToStr(PyObject *obj) {
 	PyObject *objStr = PyObject_Str(obj);
 	std::string res = PyUnicode_AsUTF8(objStr);
-	if (res.size() > 50) {
-		res.erase(48);
-		res += "..";
-	}
 	Py_DECREF(objStr);
 	return res;
 }
