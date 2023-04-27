@@ -4,10 +4,6 @@
 #include <map>
 #include <cmath>
 
-#ifdef __WIN32__
-    #undef _DLL
-    #undef GL_NO_STDCALL
-#endif
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL.h>
 

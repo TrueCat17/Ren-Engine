@@ -14,7 +14,7 @@ endif()
 
 if (PLATFORM STREQUAL "win32")
 	set(OUTPUT_NAME "${PROJECT_NAME}")
-	set(CMAKE_CXX_COMPILER "i686-w64-mingw32-g++")
+	set(CMAKE_CXX_COMPILER "i686-pc-cygwin-g++")
 	set(LIB "${CMAKE_CURRENT_SOURCE_DIR}/../libs/win32")
 
 elseif (PLATFORM STREQUAL "linux-i686")
@@ -89,10 +89,10 @@ link_libraries(
 if (PLATFORM STREQUAL "win32")
 	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -mwindows -static -static-libstdc++")
 	
+	link_directories("/cygdrive/c/Windows/System32/")
 	link_libraries(
-		opengl32
-		winmm imm32 version setupapi # for SDL2
-		ws2_32 # for avformat
+		:opengl32.dll
+		winmm imm32 version setupapi ole32 oleaut32 uuid # for SDL2
 	)
 else()
 	# for python dynamic module _ssl.so

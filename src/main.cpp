@@ -1,4 +1,3 @@
-#include "utils/scope_exit.h"
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -32,11 +31,16 @@
 #include "utils/image_caches.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/scope_exit.h"
 #include "utils/stage.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
 
+//no declaration in cygwin
+extern "C" {
+int setenv(const char *name, const char *value, int replace);
+}
 
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
