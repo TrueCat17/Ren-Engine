@@ -1,7 +1,6 @@
 #!/usr/bin/env -S python3 -B
 
 import os
-import shutil
 
 was_error = False
 for prog in ('g++', 'make', 'cmake'):
@@ -38,9 +37,6 @@ def set_platform():
 	
 	else:
 		platform = 'win32'
-		
-		shutil.copyfile(build + '../libs/py_win32/msvcr90.dll',  build + 'msvcr90.dll')
-		shutil.copyfile(build + '../libs/py_win32/python27.dll', build + 'python27.dll')
 	
 	print('  platform =', platform)
 	print()
