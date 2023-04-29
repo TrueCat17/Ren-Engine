@@ -55,14 +55,16 @@ def set_platform():
 
 
 def set_lto():
-	print('2/4: LTO')
-	print('Link Time Optimization make building very slow.')
-	
 	global lto
-	if input('Input 1 for enable LTO: ') == '1':
-		lto = 'enabled'
+	lto = 'disabled'
+	
+	print('2/4: LTO')
+	if platform == 'win32':
+		print('Disabled for win32')
 	else:
-		lto = 'disabled'
+		print('Link Time Optimization make building very slow.')
+		if input('Input 1 for enable LTO: ') == '1':
+			lto = 'enabled'
 	
 	print('  LTO:', lto)
 	print()
@@ -74,24 +76,29 @@ def set_lto():
 
 def set_pgo():
 	print('3/4: PGO')
-	print('Profile-Guided Optimization require 2 builds. How use it:')
-	print(' * build with <profile-generate>')
-	print('   * run compiled program (need <resource> dir from demo at <' + build + '..>)')
-	print(' * build with <profile-use>')
-	print('   * got final version')
 	
-	print('Choose PGO mode:')
-	print('0. Disable')
-	print('1. Generate')
-	print('2. Use')
-	
-	while True:
-		mode = input('Input 1 or 2 for generate or use PGO: ')
-		if mode == '':
-			mode = '0'
-		if mode in ('0', '1', '2'):
-			break
-		print('Expected 0, 1 or 2')
+	if platform == 'win32':
+		print('Disabled for win32')
+		mode = '0'
+	else:
+		print('Profile-Guided Optimization require 2 builds. How use it:')
+		print(' * build with <profile-generate>')
+		print('   * run compiled Ren-Engine and start some hard mods')
+		print(' * build with <profile-use>')
+		print('   * got final version')
+		
+		print('Choose PGO mode:')
+		print('0. Disable')
+		print('1. Generate')
+		print('2. Use')
+		
+		while True:
+			mode = input('Input 1 or 2 for generate or use PGO: ')
+			if mode == '':
+				mode = '0'
+			if mode in ('0', '1', '2'):
+				break
+			print('Expected 0, 1 or 2')
 	
 	global pgo
 	pgo = ['', 'generate', 'use'][int(mode)]
