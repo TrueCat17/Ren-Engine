@@ -27,9 +27,11 @@ init -1000001 python:
 			if 'linux' in sys.platform:
 				bits = 64 if sys.maxsize > 2**32 else 32
 				shared_dir = 'linux-' + ('x86_64' if bits == 64 else 'i686')
+				ext = 'so'
 			else:
 				shared_dir = 'win32'
-			path = '../Ren-Engine/py_libs/dyn/%s/_ssl_v%s.so' % (shared_dir, ver)
+				ext = 'dll'
+			path = '../Ren-Engine/py_libs/dyn/%s/_ssl_v%s.%s' % (shared_dir, ver, ext)
 			
 			import importlib.util
 			spec = importlib.util.spec_from_file_location('_ssl', path)
