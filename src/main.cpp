@@ -44,14 +44,6 @@ int setenv(const char *name, const char *value, int replace);
 
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
-#ifndef __WIN32__
-	if (!setlocale(LC_ALL, "C.UTF-8")) {
-		printf("Fail on set locale <C.UTF-8>\n");
-		if (!setlocale(LC_ALL, "en_US.UTF-8")) {
-			printf("Fail on set locale <en_US.UTF-8>\n");
-		}
-	}
-#endif
 	setenv("PYTHONPATH", "../Ren-Engine/py_libs/", 1);
 	setenv("PYTHONHOME", "../Ren-Engine/py_libs/", 1);
 
