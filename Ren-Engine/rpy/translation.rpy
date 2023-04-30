@@ -176,9 +176,12 @@ init -1000 python:
 		"yo": "yoruba",
 		"za": "zhuang",
 		"zu": "zulu",
+		"cn": "simplified_chinese",
 		"chs": "simplified_chinese",
 		"cht": "traditional_chinese",
 		"zh": "traditional_chinese",
+		"chinese-simplified": "simplified_chinese",
+		"chinese-traditional": "traditional_chinese",
 	}
 	def detect_user_locale():
 		import locale
@@ -204,6 +207,8 @@ init -1000 python:
 		if lang_name is not None and lang_name in renpy.known_languages():
 			return lang_name
 		
+		if locale in locales.values():
+			return locale
 		lang_name = locales.get(locale)
 		if lang_name is not None and lang_name in renpy.known_languages():
 			return lang_name
@@ -211,14 +216,18 @@ init -1000 python:
 		return None
 	
 	def _choose_lang():
-		lang = os.getenv('RE_LANG')
-		if lang:
-			os.environ.pop('RE_LANG') # don't change lang to it after each mod start
-		if lang not in renpy.known_languages():
-			lang = None
+		lang = config.language
 		
 		if not lang:
-			lang = config.language
+			lang = (os.getenv('RE_LANG') or '').lower() # lang or locale
+			
+			if '@' in lang:
+				lang = lang[:lang.index('@')]
+			if '.' in lang:
+				lang = lang[:lang.index('.')]
+			if '_' in lang:
+				params = lang.split('_')
+				lang = locale_to_language(params[0], params[1])
 		
 		if not lang:
 			locale, region = detect_user_locale()
