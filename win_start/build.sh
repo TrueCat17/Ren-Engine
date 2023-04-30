@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-CC=i686-w64-mingw32-gcc-posix
+CC=i686-w64-mingw32-gcc
 
-$CC -O2 -c main.c -o main.o
-$CC -mwindows -s -static -static-libgcc main.o -o start.exe
+$CC -Os -c main.c -o main.o
+$CC -s -static -static-libgcc main.o -o start.exe

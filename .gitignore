@@ -2,4 +2,9 @@
 !/build/build.py
 !/build/readme*
 
+/start.exe
+/win_start/*
+!/win_start/build.sh
+!/win_start/main.c
+
 /var/
