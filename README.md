@@ -47,7 +47,7 @@ git submodule update --init --depth=1
 
 #### Версия на Python2.7
 
-На данный момент движок переходит на Python3.11.  
+На данный момент движок перешёл на Python3.11.  
 Старая версия движка, оставленная без обновлений, доступна по
 [этой ссылке](https://drive.google.com/file/d/15Ryxox5hGL6_bEt7WgXAVHPKENhuNV78/view).  
 Архив содержит демку, лаунчер и документацию (в markdown и html), актуальную на 15.04.23.
@@ -94,7 +94,7 @@ git submodule update --init --depth=1
 
 #### Version in Python2.7
 
-At the moment, the engine is moving to Python3.11.  
+At the moment, the engine has switched to Python3.11.  
 The old version of the engine, left without updates, is available at
 [this link](https://drive.google.com/file/d/15Ryxox5hGL6_bEt7WgXAVHPKENhuNV78/view).  
 The archive contains a demo, launcher and documentation (in markdown and html) that is current as of April 15, 2023.
