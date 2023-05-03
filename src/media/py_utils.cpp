@@ -17,6 +17,7 @@
 
 #include "parser/mods.h"
 
+#include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
@@ -241,6 +242,9 @@ void PyUtils::init() {
 
 	setGlobalFunc("set_scale_quality", Config::setScaleQuality);
 	setGlobalFunc("get_scale_quality", Config::getScaleQuality);
+	
+	setGlobalFunc("_get_cwd", FileSystem::getCurrentPath);
+	setGlobalFunc("_start_file_win32", FileSystem::startFile_win32);
 }
 
 

@@ -1,5 +1,12 @@
 init -1000001 python:
 	import os
+	
+	# Ren-Engine helpers for cygwin
+	os.getcwd = _get_cwd
+	if os.sys.platform in ('win32', 'cygwin'):
+		os.startfile = _start_file_win32
+	
+	
 	import sys
 	import time
 	import random
@@ -43,6 +50,8 @@ init -1000001 python:
 			try:
 				self.load_ssl('3') # linked with new lib: libssl.so.3
 			except:
+				if sys.platform in ('win32', 'cygwin'):
+					raise
 				self.load_ssl('1') # linked with old lib: libssl.so.1.1
 	
 	sys.meta_path.insert(0, SslImporter())

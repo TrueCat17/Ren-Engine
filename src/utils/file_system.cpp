@@ -19,20 +19,38 @@ static std::string clear(std::string path) {
 }
 
 
+#ifdef __CYGWIN__
+extern "C" {
+__declspec(dllimport) int __stdcall GetCurrentDirectoryW(int bufferLen, wchar_t* buffer);
+}
+#endif
+
 std::string FileSystem::getCurrentPath() {
-	return fs::current_path().string();
+	std::string res;
+#ifndef __CYGWIN__
+	res = fs::current_path().string();
+#else
+	int len = GetCurrentDirectoryW(0, nullptr);
+	std::wstring cwd;
+	cwd.resize(len);
+	GetCurrentDirectoryW(len, cwd.data());
+	
+	char *cwd_utf8 = SDL_iconv_wchar_utf8(cwd.data());
+	res = cwd_utf8;
+	if (cwd_utf8) {
+		SDL_free(cwd_utf8);
+	}else {
+		Utils::outMsg("FileSystem::getCurrentPath, SDL_iconv_wchar_utf8", SDL_GetError());
+	}
+#endif
+	String::replaceAll(res, "\\", "/");
+	return res;
 }
 std::string FileSystem::setCurrentPath(std::string path) {
 	path = clear(path);
 
 	std::error_code ec;
-#ifdef __WIN32__
-	auto buf = (wchar_t*)SDL_iconv_utf8_ucs2(path.c_str());
-	fs::current_path(buf, ec);
-	SDL_free(buf);
-#else
 	fs::current_path(path.c_str(), ec);
-#endif
 
 	if (!ec.value()) return "";
 	return "Set current path to <" + path + "> failed\n" + ec.message();
@@ -139,4 +157,25 @@ std::vector<std::string> FileSystem::getFilesRecursive(const std::string &path) 
 
 	std::sort(res.begin(), res.end());
 	return res;
+}
+
+#ifdef __CYGWIN__
+extern "C" {
+__declspec(dllimport) int __stdcall ShellExecuteW(void*, void*, const wchar_t* file, void*, void*, int show);
+}
+#endif
+
+bool FileSystem::startFile_win32([[maybe_unused]] std::string path) {
+#ifndef __CYGWIN__
+	return false;
+#else
+	wchar_t *wpath = reinterpret_cast<wchar_t*>(SDL_iconv_utf8_ucs2(path.c_str()));
+	if (!wpath) {
+		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_utf8_ucs2", SDL_GetError());
+		return false;
+	}
+	int code = ShellExecuteW(nullptr, nullptr, wpath, nullptr, nullptr, 1);
+	SDL_free(wpath);
+	return code > 32;
+#endif
 }

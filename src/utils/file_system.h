@@ -24,6 +24,8 @@ public:
 
 	static std::vector<std::string> getFiles(const std::string &path);
 	static std::vector<std::string> getFilesRecursive(const std::string &path);
+	
+	static bool startFile_win32(std::string path);
 };
 
 #endif // FILE_SYSTEM_H
