@@ -75,6 +75,7 @@ static void checkErrorsImpl(const char *from, const char *glFuncName) {
 	GLuint error = glGetError();
 	if (error == GL_NO_ERROR) return;
 
+	bool mutexWasLocked = !Renderer::renderMutex.try_lock();
 	Renderer::renderMutex.unlock();
 
 	fastOpenGL = false;
@@ -91,7 +92,9 @@ static void checkErrorsImpl(const char *from, const char *glFuncName) {
 
 	Utils::outMsg("Renderer::" + std::string(from) + ", " + glFuncName, str);
 
-	Renderer::renderMutex.lock();
+	if (mutexWasLocked) {
+		Renderer::renderMutex.lock();
+	}
 }
 #define checkErrors(glFuncName) checkErrorsImpl(__FUNCTION__, glFuncName)
 
