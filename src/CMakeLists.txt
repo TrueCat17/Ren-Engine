@@ -77,7 +77,7 @@ link_libraries(
 	pthread
 	stdc++fs
 	avformat avcodec avutil swresample
-	SDL2 SDL2_image SDL2_ttf
+	SDL2_image SDL2_ttf
 	jpeg png16 webp
 	freetype
 	brotlidec-static
@@ -87,12 +87,12 @@ link_libraries(
 )
 
 if (PLATFORM STREQUAL "win32")
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -mwindows -static -static-libstdc++")
+	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -mwindows -static -static-libstdc++ -Wl,--enable-stdcall-fixup")
 	
 	link_directories("/cygdrive/c/Windows/System32/")
 	link_libraries(
 		:opengl32.dll
-		winmm imm32 version setupapi ole32 oleaut32 uuid # for SDL2
+		:SDL2.dll
 	)
 else()
 	# for python dynamic module _ssl.so
@@ -101,6 +101,7 @@ else()
 	link_libraries(
 		GL
 		jemalloc
+		SDL2
 		c m dl util
 	)
 endif()

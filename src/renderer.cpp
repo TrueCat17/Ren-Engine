@@ -4,10 +4,7 @@
 #include <map>
 #include <cmath>
 
-#ifdef __WIN32__
-    #undef _DLL
-    #undef GL_NO_STDCALL
-#endif
+#define USE_OPENGL32
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL.h>
 
@@ -705,6 +702,7 @@ static void initImpl(bool *inited, bool *error) {
 	Utils::setThreadName("renderer");
 
 	Uint32 flags;
+	int renderDriver = -1;
 	if (Config::get("software_renderer") == "True") {
 		flags = SDL_RENDERER_SOFTWARE;
 	}else {
@@ -714,7 +712,6 @@ static void initImpl(bool *inited, bool *error) {
 		}
 
 		std::string opengl = "opengl";
-		int renderDriver = -1;
 		int countRenderDrivers = SDL_GetNumRenderDrivers();
 		for (int i = 0; i < countRenderDrivers; ++i) {
 			SDL_RendererInfo info;
@@ -734,8 +731,8 @@ static void initImpl(bool *inited, bool *error) {
 			}
 		}
 	}
-
-	renderer = SDL_CreateRenderer(Stage::window, -1, flags);
+	
+	renderer = SDL_CreateRenderer(Stage::window, renderDriver, flags);
 	if (!renderer) {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 
