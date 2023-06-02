@@ -158,7 +158,7 @@ init -1000 python:
 		return rpg_action_other_place(character, state, location_names)
 	
 	
-	def rpg_action_look_around(character, state):
+	def rpg_action_look_around(character, state, turn_at_the_end = None):
 		actions = character.get_actions()
 		
 		if state == 'start':
@@ -167,7 +167,9 @@ init -1000 python:
 			actions.rotation_start_time = get_game_time()
 			actions.rotation_time = random.random() * 1.1 + 0.4
 			
-			if random.random() < 0.25:
+			if turn_at_the_end is None:
+				turn_at_the_end = random.random() < 0.25
+			if turn_at_the_end:
 				forward = [to_left, to_back, to_right, to_forward]
 				back    = [to_right, to_forward, to_left, to_back]
 				rotation = back[forward.index(rotation)]
@@ -314,7 +316,7 @@ init -1000 python:
 					if not friend.location: continue
 					friend_actions = friend.get_actions()
 					if friend_actions:
-						if friend_actions.friend: continue
+						if not friend_actions.interruptable: continue
 						if friend_actions.allow and 'to_friend' not in friend_actions.allow: continue
 						if friend_actions.block and 'to_friend'     in friend_actions.block: continue
 					friends.append(friend)
@@ -458,6 +460,9 @@ init -1000 python:
 			
 			self.allow = []
 			self.block = []
+			
+			self.interruptable = True
+			self.default_interruptable = True
 		
 		def copy(self, character):
 			res = RpgActions()
@@ -467,6 +472,7 @@ init -1000 python:
 			res.chances = self.chances.copy()
 			res.allow = list(self.allow)
 			res.block = list(self.block)
+			res.interruptable, res.default_interruptable = self.interruptable, self.default_interruptable
 			return res
 		
 		def set_action(self, name, func, chance_min, chance_max = None):
@@ -492,6 +498,7 @@ init -1000 python:
 			if self.block and action_name     in self.block: return
 			
 			self.stop()
+			self.interruptable = self.default_interruptable
 			if type(action_name) is str:
 				self.cur_action = self.funcs[action_name]
 			else:
@@ -505,6 +512,7 @@ init -1000 python:
 				self.state = 'end'
 				self.exec_action()
 				self.cur_action = None
+			self.interruptable = True
 		def stopped(self):
 			return self.cur_action is None
 		

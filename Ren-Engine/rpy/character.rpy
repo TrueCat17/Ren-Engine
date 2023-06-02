@@ -81,7 +81,7 @@ init -1001 python:
 	def characters_anim_to_end():
 		if cur_location:
 			for obj in cur_location.objects:
-				if isinstance(obj, Character):
+				if isinstance(obj, Character) and not obj.ended_anim_waiting():
 					obj.anim_to_end()
 	can_exec_next_skip_funcs.append(characters_anim_to_end)
 	

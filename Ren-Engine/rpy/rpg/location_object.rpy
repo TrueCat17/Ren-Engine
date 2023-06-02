@@ -540,7 +540,7 @@ init -1001 python:
 			if near_point:
 				res.append((min_dist, obj, near_point))
 		
-		res.sort()
+		res.sort(key = lambda t: t[0])
 		return [(obj, near_point) for min_dist, obj, near_point in res]
 	
 	
