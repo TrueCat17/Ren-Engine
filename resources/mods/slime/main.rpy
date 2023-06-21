@@ -73,7 +73,7 @@ init python:
 	def update():
 		global stage_width, stage_height
 		stage_width, stage_height = get_stage_size()
-		stage_height -= panel_size
+		stage_width -= panel_size
 		
 		update_steps()
 		update_agents()
@@ -90,8 +90,8 @@ init python:
 	
 	
 	def resized_stage():
-		kx = get_stage_width() / stage_width
-		ky = (get_stage_height() - panel_size) / stage_height
+		kx = (get_stage_width() - panel_size) / stage_width
+		ky = get_stage_height() / stage_height
 		
 		global cells
 		cells = defaultdict(list)

@@ -27,7 +27,7 @@ init -2 python:
 			r, g, b = agent_random_colors[group % len(agent_random_colors)]
 			self.circle = im.recolor(circle, r, g, b)
 			
-			self.x = random.randint(0, get_stage_width() - 1)
+			self.x = random.randint(0, get_stage_width() - 1 - panel_size)
 			self.y = random.randint(0, get_stage_height() - 1)
 			self.angle = random.randint(0, 359)
 			
@@ -84,7 +84,7 @@ init -2 python:
 		agent_count = len(agents)
 	
 	def del_agents(count):
-		agents[len(agents) - count:] = []
+		agents[:count] = []
 		global agent_count
 		agent_count = len(agents)
 	
