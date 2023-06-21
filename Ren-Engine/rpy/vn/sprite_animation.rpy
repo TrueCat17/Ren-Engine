@@ -300,14 +300,14 @@ init -9000 python:
 			if len(props) == 1:
 				if isinstance(value, (list, tuple)):
 					out_msg('SpriteAnimation.set_prop',
-							'Value expected single, got list: ' + str(value))
+							'Expected single value, got list: ' + str(value))
 				elif self.data[prop] != value:
 					self.data[prop] = value
 					
 					if prop not in self.data.except_state_props:
 						self.data.state_num += 1
 			else:
-				err_msg = 'Value expected list with ' + str(len(props)) + ' items, got: ' + str(value)
+				err_msg = 'Expected list with ' + str(len(props)) + ' items, got: ' + str(value)
 				
 				if not isinstance(value, (list, tuple)):
 					if len(props) == 2:
