@@ -60,16 +60,15 @@ init -1000 python:
 				show_character(character, {'x': x, 'y': y}, location_name)
 				return 'end'
 		
-		out_msg('rpg_action_spawn', 'Spawn point for <' + str(character) + '> not found')
+		out_msg('rpg_action_spawn', 'Spawn point for <%s> not found' % character)
 		return 'end'
 	
 	
 	def rpg_action_sit(character, state):
 		actions = character.get_actions()
-		sit_start_time = actions.sit_start_time or 0
 		
 		if state == 'start':
-			if get_game_time() - sit_start_time < 10:
+			if get_game_time() - (actions.sit_start_time or -10) < 10:
 				return 'end'
 			
 			objs = get_near_sit_objects(character, 1e9)
@@ -98,7 +97,7 @@ init -1000 python:
 			return 'moving'
 		
 		if state == 'sitting':
-			if get_game_time() - sit_start_time > 3:
+			if get_game_time() - actions.sit_start_time > 5:
 				return 'end'
 			return 'sitting'
 		
@@ -142,20 +141,20 @@ init -1000 python:
 	
 	def rpg_action_near_location(character, state):
 		location_names = [place.to_location_name for place in character.location.places.values() if place.to_location_name]
-		character.get_actions().cur_action = rpg_action_other_place
-		return rpg_action_other_place(character, state, location_names)
+		character.get_actions().set('other_place', location_names, state = state)
+		return IGNORE_STATE
 	
 	
 	def rpg_action_random_location(character, state):
 		location_names = list(rpg_locations.keys())
-		character.get_actions().cur_action = rpg_action_other_place
-		return rpg_action_other_place(character, state, location_names)
+		character.get_actions().set('other_place', location_names, state = state)
+		return IGNORE_STATE
 	
 	
 	def rpg_action_interesting_place(character, state):
 		location_names = character.get_actions().interesting_places
-		character.get_actions().cur_action = rpg_action_other_place
-		return rpg_action_other_place(character, state, location_names)
+		character.get_actions().set('other_place', location_names, state = state)
+		return IGNORE_STATE
 	
 	
 	def rpg_action_look_around(character, state, turn_at_the_end = None):
@@ -342,10 +341,9 @@ init -1000 python:
 					return 'end'
 				
 				if friend_actions:
-					friend_actions.start(rpg_action_to_friend)
-					friend_actions.state = 'moving'
 					friend_actions.friend = character
 					friend_actions.to_friend_start_time = get_game_time()
+					friend_actions.set(rpg_action_to_friend, state = 'moving')
 			
 			return 'moving'
 		
@@ -436,7 +434,7 @@ init -1000 python:
 			
 			return 'moving'
 		
-		if state == 'rewind_to_min' or state == 'rewind_to_max':
+		if state in ('rewind_to_min', 'rewind_to_max'):
 			path_found = character.move_to_place([to.location.name, to])
 			if not path_found:
 				return 'start'
@@ -451,6 +449,9 @@ init -1000 python:
 			return 'end'
 	
 	
+	
+	IGNORE_STATE = 'ignore state'
+	
 	class RpgActions(Object):
 		def __init__(self):
 			Object.__init__(self)
@@ -461,6 +462,8 @@ init -1000 python:
 			self.allow = []
 			self.block = []
 			
+			self.queue = []
+			
 			self.interruptable = True
 			self.default_interruptable = True
 		
@@ -468,11 +471,8 @@ init -1000 python:
 			res = RpgActions()
 			Object.__init__(res, self)
 			res.character = character
-			res.funcs = self.funcs.copy()
-			res.chances = self.chances.copy()
-			res.allow = list(self.allow)
-			res.block = list(self.block)
-			res.interruptable, res.default_interruptable = self.interruptable, self.default_interruptable
+			for prop in ('funcs', 'chances', 'allow', 'block', 'queue'):
+				res[prop] = self[prop].copy()
 			return res
 		
 		def set_action(self, name, func, chance_min, chance_max = None):
@@ -483,36 +483,63 @@ init -1000 python:
 			return list(self.funcs.keys())
 		
 		def update(self, state = None):
+			if self.last_update == get_game_time():
+				return
+			self.last_update = get_game_time()
+			
 			if not self.stopped():
 				if state is not None:
 					self.state = state
-				self.state = self.exec_action()
+				old_action, old_state = self.cur_action, self.state
+				
+				new_state = self.exec_action()
+				if new_state == IGNORE_STATE:
+					return
+				if type(new_state) is not str:
+					params = (old_action, self.character, new_state, old_state)
+					msg = 'Action <%s> of character <%s> returned non-str new state <%s> (old state = <%s>)' % params
+					out_msg('RpgActions.update', msg)
+					new_state = 'end'
+				
+				self.state = new_state
 				if self.state == 'end':
 					self.stop()
 			
 			if self.stopped() and self.character.get_auto():
-				self.random()
+				if not self.next():
+					self.random()
 		
-		def start(self, action_name, *args, **kwargs):
-			if self.allow and action_name not in self.allow: return
-			if self.block and action_name     in self.block: return
+		def set(self, action_name, *args, **kwargs):
+			if self.blocked(action_name): return
 			
-			self.stop()
 			self.interruptable = self.default_interruptable
 			if type(action_name) is str:
 				self.cur_action = self.funcs[action_name]
 			else:
 				self.cur_action = action_name
-			self.cur_args, self.cur_kwargs = args, kwargs
-			self.state = 'start'
+			
+			self.save_params(args, kwargs)
+			
 			self.character.set_auto(True)
+			
+			self.last_update = None
+			self.update()
+		
+		def start(self, action_name, *args, **kwargs):
+			if self.blocked(action_name): return
+			
+			self.stop()
+			self.set(action_name, *args, **kwargs)
 		
 		def stop(self):
 			if self.cur_action:
 				self.state = 'end'
-				self.exec_action()
+				new_state = self.exec_action()
+				if new_state == IGNORE_STATE:
+					return
 				self.cur_action = None
 			self.interruptable = True
+		
 		def stopped(self):
 			return self.cur_action is None
 		
@@ -536,6 +563,33 @@ init -1000 python:
 				if r < score:
 					self.start(action)
 					break
+		
+		def blocked(self, action):
+			return (
+				(self.allow and action not in self.allow)
+				or
+				(self.block and action     in self.block)
+			)
+		
+		def save_params(self, args, kwargs):
+			self.state = kwargs.get('state', 'start')
+			if 'state' in kwargs:
+				del kwargs['state']
+			self.cur_args, self.cur_kwargs = args, kwargs
+		
+		def add(self, action_name, *args, **kwargs):
+			self.queue.append([action_name, args, kwargs])
+		
+		def next(self):
+			while True:
+				if not self.queue:
+					return False
+				
+				action_name, args, kwargs = self.queue[0]
+				self.queue.pop(0)
+				if not self.blocked(action_name):
+					self.start(action_name, *args, **kwargs)
+					return True
 	
 	
 	def get_std_rpg_actions():

@@ -525,14 +525,15 @@ init -1001 python:
 					dx, dy = to_x - self.x, to_y - self.y
 					if dx or dy:
 						# rotation
-						if abs(dx) + abs(dy) > 3: # not very short step
+						adx, ady = abs(dx), abs(dy)
+						if adx + ady > 3: # not very short step
 							dx_direction = to_left if dx < 0 else to_right
 							dy_direction = to_forward if dy < 0 else to_back
-							kx = abs(dx) / max(abs(dy), 0.01)
-							ky = abs(dy) / max(abs(dx), 0.01)
-							main_directions = ([dx_direction] if (kx > 0.5) else []) + ([dy_direction] if (ky > 0.5) else [])
+							kx = adx / max(ady, 0.01)
+							ky = ady / max(adx, 0.01)
+							main_directions = ([dx_direction] if kx > 0.5 else []) + ([dy_direction] if ky > 0.5 else [])
 							if last_direction not in main_directions:
-								last_direction = dx_direction if abs(dx) > abs(dy) else dy_direction
+								last_direction = dx_direction if adx > ady else dy_direction
 						
 						need_dist = math.sqrt(dx*dx + dy*dy)
 						need_time = need_dist / self.speed

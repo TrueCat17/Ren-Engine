@@ -20,9 +20,7 @@ init -10000 python:
 		def __init__(self, func, *args, **kwargs):
 			Object.__init__(self, func = func, args = args, kwargs = kwargs)
 		def __call__(self, *args, **kwargs):
-			res_kwargs = dict(self.kwargs)
-			res_kwargs.update(kwargs)
-			return self.func(*(self.args + args), **res_kwargs)
+			return self.func(*(self.args + args), **(self.kwargs | kwargs))
 	
 	
 	class EvalObject(Object):

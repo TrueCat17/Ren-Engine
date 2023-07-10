@@ -59,7 +59,7 @@ init -100000 python:
 					#    ...
 					#    obj.prop = array = []
 					#    array.append(123)
-					#    print obj.prop # [123], not []
+					#    print(obj.prop) # [123], not []
 				if dont_change:
 					return
 			
