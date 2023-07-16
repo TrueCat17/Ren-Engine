@@ -490,20 +490,22 @@ init -1000 python:
 			if not self.stopped():
 				if state is not None:
 					self.state = state
-				old_action, old_state = self.cur_action, self.state
 				
-				new_state = self.exec_action()
-				if new_state == IGNORE_STATE:
-					return
-				if type(new_state) is not str:
-					params = (old_action, self.character, new_state, old_state)
-					msg = 'Action <%s> of character <%s> returned non-str new state <%s> (old state = <%s>)' % params
-					out_msg('RpgActions.update', msg)
-					new_state = 'end'
+				if self.state != 'end':
+					old_action, old_state = self.cur_action, self.state
+					
+					new_state = self.exec_action()
+					if new_state == IGNORE_STATE:
+						return
+					if type(new_state) is not str:
+						params = (old_action, self.character, new_state, old_state)
+						msg = 'Action <%s> of character <%s> returned non-str new state <%s> (old state = <%s>)' % params
+						out_msg('RpgActions.update', msg)
+						new_state = 'end'
+					self.state = new_state
 				
-				self.state = new_state
 				if self.state == 'end':
-					self.stop()
+					self.stop(directly = False)
 			
 			if self.stopped() and self.character.get_auto():
 				if not self.next():
@@ -531,11 +533,19 @@ init -1000 python:
 			self.stop()
 			self.set(action_name, *args, **kwargs)
 		
-		def stop(self):
+		def stop(self, directly = True):
 			if self.cur_action:
 				self.state = 'end'
 				new_state = self.exec_action()
-				if new_state == IGNORE_STATE:
+				
+				# if self.exec_action() on 'end' state calls self.set()
+				i = 0
+				while directly and new_state != 'end' and i < 10:
+					i += 1
+					self.state = 'end'
+					new_state = self.exec_action()
+				
+				if new_state == IGNORE_STATE and not directly:
 					return
 				self.cur_action = None
 			self.interruptable = True
