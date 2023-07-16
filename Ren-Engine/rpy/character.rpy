@@ -313,6 +313,8 @@ init -1001 python:
 				out_msg('Character.sit_down', 'obj.sit_places is empty')
 				return False
 			
+			self.stand_up()
+			
 			place_index = -1
 			min_dist = 1e6
 			for i in range(len(obj.sit_places)):
