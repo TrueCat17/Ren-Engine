@@ -47,7 +47,7 @@ private:
 	double fadeIn = 0;
 	double fadeOut = 0;
 	double relativeVolume;
-	int64_t lastFramePts = 0;
+	double curTime = -1;
 
 	std::string fileName;
 	size_t numLine;
@@ -57,7 +57,7 @@ private:
 
 	AVFormatContext	*formatCtx = nullptr;
 	AVCodecContext *codecCtx = nullptr;
-	SwrContext *auConvertCtx = nullptr;
+	SwrContext *convertCtx = nullptr;
 
 	AVPacket *packet;
 	AVFrame *frame;
@@ -133,6 +133,8 @@ public:
 	void setFadeOut(double v);
 	void setRelativeVolume(double v);
 	void setPos(double sec);
+
+	void addToCurTime(size_t playedBytesCount);
 };
 
 #endif // MUSIC_H

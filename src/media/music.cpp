@@ -17,6 +17,7 @@ extern "C" {
 
 #include "utils/algo.h"
 #include "utils/math.h"
+#include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -68,7 +69,8 @@ static void fillAudio(void *, Uint8 *stream, int globalLen) {
 		if (!music->audioPos || music->audioLen <= 0) continue;
 		if (music->paused) continue;
 
-		Uint32 len = Uint32(globalLen) > music->audioLen ? music->audioLen : Uint32(globalLen);
+		Uint32 len = std::min<Uint32>(Uint32(globalLen), music->audioLen);
+		music->addToCurTime(len);
 
 		int volume = music->getVolume();
 		if (volume > 0) {
@@ -177,6 +179,10 @@ bool Music::hasChannel(const std::string &name) {
 
 PyObject* Music::getAudioLen(const std::string &url) {
 	AVFormatContext* formatCtx = avformat_alloc_context();
+	ScopeExit se([&]() {
+		avformat_close_input(&formatCtx);
+	});
+
 	if (int error = avformat_open_input(&formatCtx, url.c_str(), nullptr, nullptr)) {
 		if (error == AVERROR(ENOENT)) {
 			Utils::outMsg("Music::getAudioLen: avformat_open_input",
@@ -194,11 +200,7 @@ PyObject* Music::getAudioLen(const std::string &url) {
 	}
 
 	double duration = double(formatCtx->duration) / double(AV_TIME_BASE);
-	avformat_close_input(&formatCtx);
-	avformat_free_context(formatCtx);
-
-	PyObject *res = PyFloat_FromDouble(duration);
-	return res;
+	return PyFloat_FromDouble(duration);
 }
 
 void Music::setMixerVolume(double volume, const std::string &mixer,
@@ -236,12 +238,10 @@ PyObject* Music::getPosOnChannel(const std::string &channelName,
 	const std::string place = "File <" + fileName + ">\n"
 	                          "Line " + std::to_string(numLine);
 	Music *music = findMusic(channelName, "Music::getPosOnChannel", place);
-	if (!music) {
-		Py_RETURN_NONE;
+	if (music) {
+		return PyFloat_FromDouble(music->getPos());
 	}
-
-	PyObject *res = PyFloat_FromDouble(music->getPos());
-	return res;
+	Py_RETURN_NONE;
 }
 void Music::setPosOnChannel(double sec, const std::string &channelName,
                             const std::string &fileName, size_t numLine)
@@ -455,7 +455,7 @@ Music::~Music() {
 	avcodec_free_context(&codecCtx);
 	avformat_close_input(&formatCtx);
 
-	swr_free(&auConvertCtx);
+	swr_free(&convertCtx);
 }
 
 
@@ -510,8 +510,8 @@ bool Music::initCodec() {
 	av_channel_layout_default(&in, codecCtx->ch_layout.nb_channels);
 	av_channel_layout_default(&out, 2); //2 = stereo
 
-	auConvertCtx = nullptr;
-	if (swr_alloc_set_opts2(&auConvertCtx,
+	convertCtx = nullptr;
+	if (swr_alloc_set_opts2(&convertCtx,
 	                        &out, AV_SAMPLE_FMT_S16, 44100,
 	                        &in, codecCtx->sample_fmt, codecCtx->sample_rate,
 	                        0, nullptr))
@@ -520,7 +520,7 @@ bool Music::initCodec() {
 		              "Failed to create SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
 	}
-	if (swr_init(auConvertCtx)) {
+	if (swr_init(convertCtx)) {
 		Utils::outMsg("Music::initCodec: swr_init",
 		              "Failed to init SwrContext for convert stream of file <" + url + ">\n\n" + place);
 		return true;
@@ -553,17 +553,12 @@ void Music::loadNextPart() {
 				return;
 			}
 
+			curTime = -1;
 			if (av_seek_frame(formatCtx, audioStream, 0, AVSEEK_FLAG_ANY) < 0) {
 				Utils::outMsg("Music::loadNextPart",
-				              "Error on restart, play from:\n" + place);
+				              "Error on restart, playing from:\n" + place);
 				return;
 			}
-
-			avcodec_close(codecCtx);
-			AVCodecParameters *codecPars = formatCtx->streams[audioStream]->codecpar;
-			const AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
-			avcodec_open2(codecCtx, codec, nullptr);
-
 			continue;
 		}
 
@@ -586,14 +581,13 @@ void Music::loadNextPart() {
 			              "Failed to receive frame from codec of file <" + url + ">\n\n" + place);
 			return;
 		}
-		lastFramePts = frame->pts;
 
-		int countSamples = 0;
+		int sampleCount = 0;
 		if (!sendError && !reveiveError) {
-			countSamples = swr_convert(auConvertCtx,
-			                           &tmpBuffer, SAMPLES_PER_PART,
-			                           const_cast<const uint8_t**>(frame->data), frame->nb_samples);
-			if (countSamples < 0) {
+			sampleCount = swr_convert(convertCtx,
+			                          &tmpBuffer, SAMPLES_PER_PART,
+			                          const_cast<const uint8_t**>(frame->data), frame->nb_samples);
+			if (sampleCount < 0) {
 				Utils::outMsg("Music::loadNextPart: swr_convert",
 				              "Failed to convert frame of file <" + url + ">\n\n" + place);
 				av_packet_unref(packet);
@@ -602,10 +596,15 @@ void Music::loadNextPart() {
 			}
 		}
 
+		if (curTime < 0) {
+			auto k = formatCtx->streams[audioStream]->time_base;
+			curTime = double(frame->pts) * k.num / k.den;
+		}
+
 		if (audioPos && audioLen && audioPos != buffer) {
 			memmove(buffer, audioPos, audioLen);
 		}
-		Uint32 lastLen = Uint32(countSamples) * SAMPLE_SIZE;
+		Uint32 lastLen = Uint32(sampleCount) * SAMPLE_SIZE;
 		memcpy(buffer + audioLen, tmpBuffer, lastLen);
 
 		audioPos = buffer;
@@ -662,8 +661,7 @@ double Music::getRelativeVolume() const {
 	return relativeVolume;
 }
 double Music::getPos() const {
-	auto k = formatCtx->streams[audioStream]->time_base;
-	return double(lastFramePts) * k.num / k.den;
+	return curTime;
 }
 
 void Music::setFadeIn(double v) {
@@ -680,6 +678,8 @@ void Music::setRelativeVolume(double v) {
 void Music::setPos(double sec) {
 	std::lock_guard g(musicMutex);
 
+	curTime = -1;
+
 	audioPos = buffer;
 	audioLen = 0;
 
@@ -689,11 +689,12 @@ void Music::setPos(double sec) {
 	if (av_seek_frame(formatCtx, audioStream, ts, AVSEEK_FLAG_ANY) < 0) {
 		Utils::outMsg("Music::setPos", "Failed to rewind file <" + url + ">");
 	}else {
-		avcodec_close(codecCtx);
-		AVCodecParameters *codecPars = formatCtx->streams[audioStream]->codecpar;
-		const AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
-		avcodec_open2(codecCtx, codec, nullptr);
-
 		update();
 	}
+}
+
+
+void Music::addToCurTime(size_t playedBytesCount) {
+	size_t sampleCount = playedBytesCount / SAMPLE_SIZE;
+	curTime += double(sampleCount) / 44100;
 }

@@ -2,6 +2,7 @@
 #define TEXT_FIELD_H
 
 #include <vector>
+#include <string>
 
 #include "gui/display_object.h"
 

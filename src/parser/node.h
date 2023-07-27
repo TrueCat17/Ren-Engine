@@ -1,8 +1,9 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <vector>
+#include <inttypes.h>
 #include <string>
+#include <vector>
 
 typedef struct _object PyObject;
 

@@ -2,6 +2,7 @@
 #define PYUTILS_H
 
 #include <mutex>
+#include <string>
 
 #include <Python.h>
 
