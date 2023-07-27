@@ -3,6 +3,9 @@
 #include "py_utils/absolute.h"
 
 
+#include <map>
+
+
 #include "gv.h"
 #include "logger.h"
 #include "config.h"
@@ -10,10 +13,10 @@
 #include "gui/gui.h"
 #include "gui/screen/screen.h"
 
-#include "image_manipulator.h"
-#include "music.h"
-#include "scenario.h"
-#include "translation.h"
+#include "media/audio_manager.h"
+#include "media/image_manipulator.h"
+#include "media/scenario.h"
+#include "media/translation.h"
 
 #include "parser/mods.h"
 
@@ -168,17 +171,17 @@ void PyUtils::init() {
 	setGlobalFunc("get_mods", Mods::getList);
 	setGlobalFunc("_out_msg", Utils::outMsg);
 
-	setGlobalFunc("_register_channel", Music::registerChannel);
-	setGlobalFunc("_has_channel", Music::hasChannel);
-	setGlobalFunc("_get_audio_len", Music::getAudioLen);
-	setGlobalFunc("_set_mixer_volume", Music::setMixerVolume);
-	setGlobalFunc("_set_volume_on_channel", Music::setVolumeOnChannel);
-	setGlobalFunc("_get_pos_on_channel", Music::getPosOnChannel);
-	setGlobalFunc("_set_pos_on_channel", Music::setPosOnChannel);
-	setGlobalFunc("_get_pause_on_channel", Music::getPauseOnChannel);
-	setGlobalFunc("_set_pause_on_channel", Music::setPauseOnChannel);
-	setGlobalFunc("_play", Music::play);
-	setGlobalFunc("_stop", Music::stop);
+	setGlobalFunc("_register_channel", AudioManager::registerChannel);
+	setGlobalFunc("_has_channel", AudioManager::hasChannel);
+	setGlobalFunc("_get_audio_len", AudioManager::getAudioLen);
+	setGlobalFunc("_set_mixer_volume", AudioManager::setMixerVolume);
+	setGlobalFunc("_set_volume_on_channel", AudioManager::setVolumeOnChannel);
+	setGlobalFunc("_get_pos_on_channel", AudioManager::getPosOnChannel);
+	setGlobalFunc("_set_pos_on_channel", AudioManager::setPosOnChannel);
+	setGlobalFunc("_get_pause_on_channel", AudioManager::getPauseOnChannel);
+	setGlobalFunc("_set_pause_on_channel", AudioManager::setPauseOnChannel);
+	setGlobalFunc("_play", AudioManager::play);
+	setGlobalFunc("_stop", AudioManager::stop);
 
 	setGlobalFunc("image_was_registered", Utils::imageWasRegistered);
 	setGlobalFunc("get_image", Utils::getImageDeclAt);

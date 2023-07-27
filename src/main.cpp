@@ -17,8 +17,8 @@
 #include "gui/gui.h"
 #include "gui/screen/key.h"
 
+#include "media/audio_manager.h"
 #include "media/image_manipulator.h"
-#include "media/music.h"
 #include "media/py_utils.h"
 #include "media/scenario.h"
 
@@ -162,7 +162,7 @@ static bool init() {
 		return true;
 	}
 	ImageManipulator::init();
-	Music::init();
+	AudioManager::init();
 	SyntaxChecker::init();
 
 	return false;

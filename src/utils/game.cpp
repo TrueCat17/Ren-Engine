@@ -17,8 +17,8 @@
 #include "gui/screen/screen.h"
 #include "gui/screen/style.h"
 
+#include "media/audio_manager.h"
 #include "media/image_manipulator.h"
-#include "media/music.h"
 #include "media/py_utils.h"
 #include "media/scenario.h"
 #include "media/translation.h"
@@ -46,6 +46,7 @@ static const std::string savesPath = "../var/saves";
 
 
 static void _startMod(const std::string &dir, const std::string &loadPath = "");
+static void makeScreenshotHelper(const std::string &screenshotPath);
 
 void Game::startMod(const std::string &dir) {
 	std::thread(_startMod, dir, "").detach();
@@ -112,10 +113,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 			hideMouse = true;
 		}else {
 			fps = String::toInt(tmpVec[0]);
-			if (fps == 0) {
-				fps = maxFps;
-			}else
-			if (fps > maxFps) {
+			if (fps <= 0 || fps > maxFps) {
 				fps = maxFps;
 			}
 
@@ -136,231 +134,63 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	}
 	std::getline(is, tmp);
 
-
-	std::getline(is, tmp);
-	size_t countMusicChannels = size_t(String::toInt(tmp));
-	for (size_t i = 0; i < countMusicChannels; ++i) {
-		std::getline(is, tmp);
-		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 4) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 4 args");
-			continue;
-		}
-
-		const std::string &name = tmpVec[0];
-		const std::string &mixer = tmpVec[1];
-		const std::string &loop = tmpVec[2];
-		double volume = String::toDouble(tmpVec[3]);
-
-		if (!Music::hasChannel(name)) {
-			Music::registerChannel(name, mixer, loop == "True", loadFile, 0);
-		}
-		Music::setVolumeOnChannel(volume, name, loadFile, 0);
-	}
-	std::getline(is, tmp);
-
-	std::getline(is, tmp);
-	size_t countMusics = size_t(String::toInt(tmp));
-	for (size_t i = 0; i < countMusics; ++i) {
-		std::string url, fileName;
-
-		std::getline(is, url);
-		std::getline(is, fileName);
-
-		std::getline(is, tmp);
-		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 7) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 7 args");
-			continue;
-		}
-
-		size_t numLine = size_t(String::toInt(tmpVec[0]));
-		const std::string &channel = tmpVec[1];
-		double fadeIn = String::toDouble(tmpVec[2]);
-		double fadeOut = String::toDouble(tmpVec[3]);
-		double relativeVolume = String::toDouble(tmpVec[4]);
-		double pos = String::toDouble(tmpVec[5]);
-		bool paused = tmpVec[6] == "True";
-
-		Music::play(channel + " '" + url + "'", fileName, numLine);
-		Music *music = nullptr;
-		for (Music *i : Music::getMusics()) {
-			if (i->getChannel()->name == channel) {
-				music = i;
-				break;
-			}
-		}
-
-		if (music) {
-			music->setFadeIn(fadeIn);
-			if (fadeOut > 0) {
-				music->setFadeOut(fadeOut);
-			}
-			music->setRelativeVolume(relativeVolume);
-			music->setPos(pos);
-			music->paused = paused;
-		}else {
-			Utils::outMsg(loadFile,
-			              "Sound-file <" + url + "> not restored\n"
-			              "Play from:\n"
-			              "  File <" + fileName + ">\n"
-			              "  Line " + std::to_string(numLine));
-		}
-	}
-	std::getline(is, tmp);
-
-
-	std::getline(is, tmp);
-	size_t countMixers = size_t(String::toInt(tmp));
-	for (size_t i = 0; i < countMixers; ++i) {
-		std::getline(is, tmp);
-
-		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 2) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 2 args");
-			continue;
-		}
-
-		const std::string &name = tmpVec[0];
-		double volume = String::toDouble(tmpVec[1]);
-
-		Music::setMixerVolume(volume, name, loadFile, 0);
-	}
-	std::getline(is, tmp);
+	AudioManager::load(is);
 
 	return startScreensVec;
 }
 
+static void saveInfo(const std::string &path) {
+	std::ofstream infoFile(path, std::ios::binary);
+
+	//mod-name
+	//fps hideMouse autosave
+	infoFile << GV::mainExecNode->params << '\n'
+	         << GV::gameTime << '\n'
+	         << Game::getFps() << ' '
+	         << (Mouse::getCanHide() ? "True" : "False")  << "\n\n";
+
+	//screens
+	std::vector<const Screen*> mainScreens;
+	for (const DisplayObject *d : Stage::screens->children) {
+		const Screen* s = static_cast<const Screen*>(d);
+		if (s->save) {
+			mainScreens.push_back(s);
+		}
+	}
+	infoFile << mainScreens.size() << '\n';
+	for (const Screen *s : mainScreens) {
+		infoFile << s->getName() << '\n';
+	}
+	infoFile << '\n';
+
+	AudioManager::save(infoFile);
+}
+
 void Game::save() {
 	const std::string page = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_page", true);
-	const std::string slot = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_slot",  true);
+	const std::string slot = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_slot", true);
 
 	const std::string tablePath = savesPath + '/' + page;
 	const std::string fullPath = tablePath + '/' + slot;
 
-
-	{//check directory to save
-		for (const std::string &path : {savesPath, tablePath, fullPath}) {
-			if (!FileSystem::exists(path)) {
-				FileSystem::createDirectory(path);
-			}
+	//check directory to save
+	for (const std::string &path : {savesPath, tablePath, fullPath}) {
+		if (!FileSystem::exists(path)) {
+			FileSystem::createDirectory(path);
 		}
 	}
 
 
+	std::string varsAreSaved = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__,
+	    "pickling.save_global_vars('" + fullPath + "/py_globals')", true);
+	if (varsAreSaved != "True") return;
 
-	{//save python global-vars
-		std::string res = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__,
-		    "pickling.save_global_vars('" + fullPath + "/py_globals')", true);
-		if (res != "True") {
-			return;
-		}
-	}
+	Scenario::saveStack(fullPath + "/stack");
 
+	saveInfo(fullPath + "/info");
 
-	{//save stack
-		std::ofstream stackFile(fullPath + "/stack", std::ios::binary);
-
-		std::vector<std::pair<std::string, std::string>> stackToSave = Scenario::getStackToSave();
-		if (stackToSave.empty()) {
-			stackFile << '\n';
-		}else {
-			for (auto p : stackToSave) {
-				stackFile << p.first << ' ' << p.second << '\n';
-			}
-		}
-	}
-
-
-	{//save info
-		std::ofstream infoFile(fullPath + "/info", std::ios::binary);
-
-		//mod-name
-		//fps hideMouse autosave
-		infoFile << GV::mainExecNode->params << '\n'
-		         << GV::gameTime << '\n'
-		         << Game::getFps() << ' '
-		         << (Mouse::getCanHide() ? "True" : "False")  << "\n\n";
-
-		//screens
-		std::vector<const Screen*> mainScreens;
-		for (const DisplayObject *d : Stage::screens->children) {
-			const Screen* s = static_cast<const Screen*>(d);
-			if (s->save) {
-				mainScreens.push_back(s);
-			}
-		}
-		infoFile << mainScreens.size() << '\n';
-		for (const Screen *s : mainScreens) {
-			infoFile << s->getName() << '\n';
-		}
-		infoFile << '\n';
-
-		//music-channels
-		const std::vector<Channel*> &channels = Music::getChannels();
-		infoFile << channels.size() << '\n';
-		for (const Channel *channel : channels) {
-			infoFile << channel->name << ' '
-					 << channel->mixer << ' '
-					 << (channel->loop ? "True" : "False") << ' '
-					 << int(channel->volume * 1000) / 1000.0 << '\n';
-		}
-		infoFile << '\n';
-
-		//music-files
-		const std::vector<Music*> &musics = Music::getMusics();
-		infoFile << musics.size() << '\n';
-		for (const Music *music : musics) {
-			std::string musicUrl = music->getUrl();
-			std::string musicFileName = music->getFileName();
-
-			infoFile << musicUrl << '\n'
-			         << musicFileName << '\n'
-			         << music->getNumLine() << ' '
-			         << music->getChannel()->name << ' '
-			         << music->getFadeIn() << ' '
-			         << music->getFadeOut() << ' '
-			         << music->getRelativeVolume() << ' '
-			         << music->getPos() << ' '
-			         << (music->paused ? "True" : "False") << '\n';
-		}
-		infoFile << '\n';
-
-		const std::map<std::string, double> &mixerVolumes = Music::getMixerVolumes();
-		infoFile << mixerVolumes.size() << '\n';
-		for (const auto &p : mixerVolumes) {
-			infoFile << p.first << ' ' << p.second << '\n';
-		}
-		infoFile << '\n';
-	}
-
-
-	{//save screenshot
-		GUI::update(true);
-		{
-			while (Renderer::needToRender) {
-				Utils::sleep(0.001);
-			}
-
-			std::lock_guard g(Renderer::renderDataMutex);
-
-			Renderer::renderData.clear();
-			if (Stage::screens) {
-				Stage::screens->draw();
-			}
-
-			Renderer::needMakeScreenshot();
-		}
-
-		const SurfacePtr screenshot = Renderer::getScreenshot();
-		if (screenshot) {
-			std::string screenshotPath = fullPath + "/screenshot.png";
-			std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
-			std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
-
-			ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
-		}
-	}
+	GUI::update(true);
+	makeScreenshotHelper(fullPath + "/screenshot.png");
 }
 
 static std::mutex modMutex;
@@ -382,7 +212,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		Logger::logEvent("Waiting for the running mod to stop", Utils::getTimer() - waitingStartTime);
 
 		double clearStartTime = Utils::getTimer();
-		Music::clear();
+		AudioManager::clear();
 
 		Utils::clearImages();
 		Node::destroyAll();
@@ -420,13 +250,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 }
 
 
-void Game::makeScreenshot() {
-	static const std::string path = "../var/screenshots";
-
-	if (!FileSystem::exists(path)) {
-		FileSystem::createDirectory(path);
-	}
-
+static void makeScreenshotHelper(const std::string &screenshotPath) {
 	{
 		while (Renderer::needToRender) {
 			Utils::sleep(0.001);
@@ -445,6 +269,17 @@ void Game::makeScreenshot() {
 	const SurfacePtr screenshot = Renderer::getScreenshot();
 	if (!screenshot) return;
 
+	std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
+	std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
+	ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
+}
+void Game::makeScreenshot() {
+	static const std::string path = "../var/screenshots";
+
+	if (!FileSystem::exists(path)) {
+		FileSystem::createDirectory(path);
+	}
+
 	bool exists = true;
 	int num = 1;
 	std::string screenshotPath;
@@ -460,9 +295,7 @@ void Game::makeScreenshot() {
 		++num;
 	}
 
-	std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
-	std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
-	ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
+	makeScreenshotHelper(screenshotPath);
 }
 
 void Game::exitFromGame() {

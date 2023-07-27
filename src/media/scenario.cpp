@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
+#include <vector>
 
 
 #include "config.h"
@@ -10,7 +12,7 @@
 
 #include "gui/screen/screen.h"
 
-#include "media/music.h"
+#include "media/audio_manager.h"
 #include "media/py_utils.h"
 #include "media/translation.h"
 
@@ -130,12 +132,20 @@ static void restoreStack(const std::string &loadPath) {
 
 static bool needToSaveStack = false;
 static std::vector<std::pair<std::string, std::string>> stackToSave;
-std::vector<std::pair<std::string, std::string> > Scenario::getStackToSave() {
+void Scenario::saveStack(const std::string &path) {
 	needToSaveStack = true;
 	while (needToSaveStack && GV::inGame) {
 		Utils::sleep(Game::getFrameTime());
 	}
-	return stackToSave;
+
+	std::ofstream stackFile(path, std::ios::binary);
+	if (stackToSave.empty()) {
+		stackFile << '\n';
+	}else {
+		for (auto p : stackToSave) {
+			stackFile << p.first << ' ' << p.second << '\n';
+		}
+	}
 }
 static void checkToSaveStack() {
 	if (!needToSaveStack) return;
@@ -596,12 +606,12 @@ void Scenario::execute(const std::string &loadPath) {
 		}
 
 		if (child->command == "play") {
-			Music::play(child->params, child->getFileName(), child->getNumLine());
+			AudioManager::play(child->params, child->getFileName(), child->getNumLine());
 			continue;
 		}
 
 		if (child->command == "stop") {
-			Music::stop(child->params, child->getFileName(), child->getNumLine());
+			AudioManager::stop(child->params, child->getFileName(), child->getNumLine());
 			continue;
 		}
 

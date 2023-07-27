@@ -23,8 +23,6 @@ struct RenderStruct {
 	bool operator==(const RenderStruct &o) const;
 };
 
-typedef struct SDL_RendererInfo SDL_RendererInfo;
-
 class Renderer {
 public:
 	static bool needToRender;
