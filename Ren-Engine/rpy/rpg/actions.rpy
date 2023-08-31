@@ -2,6 +2,19 @@ init -1000 python:
 	# rpg_action funcs
 	
 	
+	rpg_action_spent_time = defaultdict(int)
+	signals.add('enter_frame', rpg_action_spent_time.clear)
+	
+	def rpg_action_spent_time_exec(func, cur_action):
+		st = time.time()
+		res = func()
+		dtime = time.time() - st
+		
+		rpg_action_spent_time[cur_action] += dtime
+		rpg_action_spent_time[None] += dtime
+		return res
+	
+	
 	def rpg_random_free_point(location_names):
 		if not location_names:
 			return None
@@ -453,6 +466,10 @@ init -1000 python:
 	IGNORE_STATE = 'ignore state'
 	
 	class RpgActions(Object):
+		# for any frame, in seconds
+		MAX_ACTION_FRAME_TIME = 0.020
+		MAX_ALL_ACTIONS_FRAME_TIME = 0.100
+		
 		def __init__(self):
 			Object.__init__(self)
 			
@@ -491,10 +508,14 @@ init -1000 python:
 				if state is not None:
 					self.state = state
 				
+				if rpg_action_spent_time[self.cur_action] > self.MAX_ACTION_FRAME_TIME or rpg_action_spent_time[None] > self.MAX_ALL_ACTIONS_FRAME_TIME:
+					if self.state != 'end' and (self.state != 'start' or self.start_from_random) and state is None:
+						return
+				
 				if self.state != 'end':
 					old_action, old_state = self.cur_action, self.state
 					
-					new_state = self.exec_action()
+					new_state = rpg_action_spent_time_exec(self.exec_action, self.cur_action)
 					if new_state == IGNORE_STATE:
 						return
 					if type(new_state) is not str:
@@ -536,14 +557,14 @@ init -1000 python:
 		def stop(self, directly = True):
 			if self.cur_action:
 				self.state = 'end'
-				new_state = self.exec_action()
+				new_state = rpg_action_spent_time_exec(self.exec_action, self.cur_action)
 				
 				# if self.exec_action() on 'end' state calls self.set()
 				i = 0
 				while directly and new_state != 'end' and i < 10:
 					i += 1
 					self.state = 'end'
-					new_state = self.exec_action()
+					new_state = rpg_action_spent_time_exec(self.exec_action, self.cur_action)
 				
 				if new_state == IGNORE_STATE and not directly:
 					return
@@ -560,18 +581,17 @@ init -1000 python:
 			scores = 0
 			chances = []
 			for action, (chance_min, chance_max) in self.chances.items():
-				if self.allow and action not in self.allow: continue
-				if self.block and action     in self.block: continue
-				
-				chance = chance_min if chance_max is None else random.randint(chance_min, chance_max)
-				
-				scores += chance
-				chances.append((action, scores))
+				if not self.blocked(action):
+					chance = chance_min if chance_max is None else random.randint(chance_min, chance_max)
+					scores += chance
+					chances.append((action, scores))
 			
 			r = random.random() * scores
 			for action, score in chances:
 				if r < score:
+					self.start_from_random = True
 					self.start(action)
+					self.start_from_random = False
 					break
 		
 		def blocked(self, action):
