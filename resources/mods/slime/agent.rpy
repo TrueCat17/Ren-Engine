@@ -27,8 +27,8 @@ init -2 python:
 			r, g, b = agent_random_colors[group % len(agent_random_colors)]
 			self.circle = im.recolor(circle, r, g, b)
 			
-			self.x = random.randint(0, get_stage_width() - 1 - panel_size)
-			self.y = random.randint(0, get_stage_height() - 1)
+			self.x = absolute(random.randint(0, get_stage_width() - 1 - panel_size))
+			self.y = absolute(random.randint(0, get_stage_height() - 1))
 			self.angle = random.randint(0, 359)
 			
 			self.escaping = 0
@@ -66,8 +66,8 @@ init -2 python:
 				self.angle += rotation_angle
 			
 			self.angle += extra_rotation + random.randint(-wobble, +wobble)
-			self.x = (self.x + _cos(self.angle) * speed) % stage_width
-			self.y = (self.y + _sin(self.angle) * speed) % stage_height
+			self.x = (x + _cos(self.angle) * speed) % stage_width
+			self.y = (y + _sin(self.angle) * speed) % stage_height
 			
 			add_step(self)
 	

@@ -96,24 +96,25 @@ init python:
 		global cells
 		cells = defaultdict(list)
 		
-		max_xcell = get_stage_width() // cell_size
-		max_ycell = (get_stage_width() - panel_size - 1) // cell_size
+		xcount_cell = (get_stage_width() - panel_size - 1) // cell_size + 1
+		ycount_cell = (get_stage_height() - 1) // cell_size + 1
 		
-		for i in range(max_xcell + 1):
-			cells[(i, -1)] = cells[(i, max_ycell)]
-			cells[(i, max_ycell + 1)] = cells[(i, 0)]
-		for i in range(max_ycell + 1):
-			cells[(-1, i)] = cells[(max_xcell, i)]
-			cells[(max_xcell + 1, i)] = cells[(0, i)]
+		for i in range(-1, xcount_cell + 1):
+			cells[(i, -1)] = cells[(i % xcount_cell, ycount_cell - 1)]
+			cells[(i, ycount_cell)] = cells[(i % xcount_cell, 0)]
+		for i in range(ycount_cell):
+			cells[(-1, i)] = cells[(xcount_cell - 1, i)]
+			cells[(xcount_cell, i)] = cells[(0, i)]
 		
-		# step = [x, y, agent_id, only_view, circle, gen_num]
+		# step = [x, y, agent_id, cell, circle, gen_num]
 		for step_gen in step_generations:
 			for step in step_gen:
-				step[0] = int(round(step[0] * kx))
-				step[1] = int(round(step[1] * ky))
+				step[0] = int(step[0] * kx)
+				step[1] = int(step[1] * ky)
 				
-				if not step[3]:
-					cells[(step[0] // cell_size, step[1] // cell_size)].append(step)
+				if step[3]:
+					step[3] = cells[(step[0] // cell_size, step[1] // cell_size)]
+					step[3].append(step)
 		
 		for agent in agents:
 			agent.x *= kx
@@ -126,7 +127,7 @@ init python:
 screen slime:
 	$ update()
 	
-	# step = [x, y, agent_id, only_view, circle, gen_num]
+	# step = [x, y, agent_id, cell, circle, gen_num]
 	if use_colors:
 		for step in itertools.chain.from_iterable(step_generations):
 			image step[4]:
@@ -149,5 +150,5 @@ screen slime:
 			image (escaping_agent_circle if agent.escaping else agent_circle):
 				align 0.5
 				size 8
-				xpos ftoi(agent.x)
-				ypos ftoi(agent.y)
+				xpos agent.x
+				ypos agent.y

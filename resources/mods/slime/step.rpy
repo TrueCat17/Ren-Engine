@@ -1,5 +1,5 @@
 init -1 python:
-	# step = [x, y, agent_id, only_view, circle, gen_num]
+	# step = [x, y, agent_id, cell, circle, gen_num]
 	
 	cell_size = sensors_dist
 	remove_in_cell_dist2 = (cell_size / 6) ** 2
@@ -22,25 +22,21 @@ init -1 python:
 		global step_life_time
 		step_life_time = len(step_generations)
 	
-		
-	def remove_step_from_cell(step):
-		if not step[3]:
-			cells[(step[0] // cell_size, step[1] // cell_size)].remove(step)
 	
 	def add_step(agent):
-		x = int(round(agent.x))
-		y = int(round(agent.y))
-		new_step = [x, y, agent.agent_id, False, agent.circle, cur_gen_num]
+		x = int(agent.x)
+		y = int(agent.y)
+		cell = cells[(x // cell_size, y // cell_size)]
+		new_step = [x, y, agent.agent_id, cell, agent.circle, cur_gen_num]
 		cur_step_generation.append(new_step)
 		
-		cell = cells[(x // cell_size, y // cell_size)]
 		i = 0
 		while i < len(cell):
 			old_step = cell[i]
 			tdx = old_step[0] - x
 			tdy = old_step[1] - y
 			if tdx*tdx + tdy*tdy < remove_in_cell_dist2:
-				old_step[3] = True
+				old_step[3] = None
 				cell.pop(i)
 			else:
 				i += 1
@@ -55,7 +51,8 @@ init -1 python:
 		cur_step_generation = step_generations[-1]
 		
 		for step in step_generations[0]:
-			remove_step_from_cell(step)
+			if step[3]:
+				step[3].remove(step) # remove from cell
 		step_generations.pop(0)
 	
 	
@@ -78,6 +75,10 @@ init -1 python:
 					tdy = step[1] - y
 					dist = tdx*tdx + tdy*tdy
 					if dist <= sensors_dist2:
+						# uncomment one algo, comment all others
+						
 						#res = max((cur_gen_num - step[5]) / (dist or 0.01), res)
+						#res = max(step_life_time - ((cur_gen_num - step[5])) / (dist or 0.01), res)
 						res += (cur_gen_num - step[5]) / (dist or 0.01)
+						#res += (step_life_time - (cur_gen_num - step[5])) / (dist or 0.01)
 		return res
