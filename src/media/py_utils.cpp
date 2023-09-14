@@ -151,7 +151,9 @@ void PyUtils::init() {
 	PyObject *main = PyImport_AddModule("__main__");
 	global = PyModule_GetDict(main);
 
-
+	if (!PyAbsolute_PreInit()) {
+		Utils::outMsg("PyUtils::init", "Failure on call PyAbsolute_PreInit()");
+	}
 	if (PyType_Ready(&PyAbsolute_Type) < 0) {
 		Utils::outMsg("PyUtils::init", "Can't initialize absolute type");
 	}else {

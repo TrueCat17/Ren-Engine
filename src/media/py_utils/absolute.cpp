@@ -6,6 +6,30 @@
 
 extern "C" {
 
+bool PyAbsolute_PreInit() {
+	PyMethodDef *round = nullptr;
+	PyMethodDef *methods = PyFloat_Type.tp_methods;
+	while (methods->ml_name) {
+		if (std::string(methods->ml_name) == "__round__") {
+			round = methods;
+			break;
+		}
+		++methods;
+	}
+	if (!round) return false;
+
+	methods = PyAbsolute_Type.tp_methods;
+	while (methods->ml_name) {
+		if (std::string(methods->ml_name) == "__round__") {
+			*methods = *round;
+			return true;
+		}
+		++methods;
+	}
+
+	return false;
+}
+
 PyObject* PyAbsolute_FromDouble(double val) {
 	PyObject *res = PyFloat_FromDouble(val);
 	res->ob_type = &PyAbsolute_Type;
@@ -86,6 +110,7 @@ static PyObject* reduce(PyObject *self, PyObject *) {
 	return res;
 }
 
+
 static PyObject* toStr(PyObject *self) {
 	double value = PyFloat_AS_DOUBLE(self);
 	std::string str = "absolute(" + std::to_string(value) + ")";
@@ -102,6 +127,7 @@ static Py_hash_t hash(PyObject *self) {
 
 static PyMethodDef methods[] = {
     {"__reduce__", reduce, METH_NOARGS, "helper for pickle"},
+    {"__round__", nullptr, 0, ""},                             //see PyAbsolute_PreInit
     {nullptr, nullptr, 0, nullptr}
 };
 
