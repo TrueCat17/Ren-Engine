@@ -26,11 +26,13 @@ public:
 
 	static void checkScreenEvents();
 
-	static void addToShow(const std::string &name, PyObject *args = nullptr, PyObject *kwargs = nullptr);
-	static void addToHide(const std::string &name);
-	static bool hasScreen(const std::string &name);
+	static void replace(const std::string &fromName, const std::string &toName);
 
-	static void logScreenCode(const std::string &name);
+	static void addToShow(std::string name, PyObject *args = nullptr, PyObject *kwargs = nullptr);
+	static void addToHide(std::string name);
+	static bool hasScreen(std::string name);
+
+	static void logScreenCode(std::string name);
 
 
 	double zorder = 0;

@@ -14,6 +14,7 @@ bool Screen::destroyedScreenIsModal = false;
 
 
 static std::map<std::string, Node*> declared;
+static std::map<std::string, std::string> screenMap;
 static std::mutex screenMutex;
 
 void Screen::declare(Node *screenNode) {
@@ -87,10 +88,25 @@ void Screen::updateLists() {
 	}
 }
 
-void Screen::clear() {
-	declared.clear();
-
+void Screen::replace(const std::string &fromName, const std::string &toName) {
 	std::lock_guard g(screenMutex);
+
+	if (toName.empty()) {
+		auto it = screenMap.find(fromName);
+		if (it != screenMap.end()) {
+			screenMap.erase(it);
+		}
+	}else {
+		screenMap[fromName] = toName;
+	}
+}
+
+void Screen::clear() {
+	std::lock_guard g(screenMutex);
+
+	declared.clear();
+	screenMap.clear();
+
 	toShowList.clear();
 	toHideList.clear();
 }
@@ -180,11 +196,16 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 	}
 }
 
-void Screen::addToShow(const std::string &name, PyObject *args, PyObject *kwargs) {
+void Screen::addToShow(std::string name, PyObject *args, PyObject *kwargs) {
 	//pyExecMutex need for func makeScreenVars
 	//this order of locks need for no deadlocks
 	std::lock_guard g(PyUtils::pyExecMutex);
 	std::lock_guard g2(screenMutex);
+
+	auto it = screenMap.find(name);
+	if (it != screenMap.end()) {
+		name = screenMap[name];
+	}
 
 	Node *node = Screen::getDeclared(name);
 	if (!node) {
@@ -203,8 +224,13 @@ void Screen::addToShow(const std::string &name, PyObject *args, PyObject *kwargs
 
 	toShowList.push_back(name);
 }
-void Screen::addToHide(const std::string &name) {
+void Screen::addToHide(std::string name) {
 	std::lock_guard g(screenMutex);
+
+	auto it = screenMap.find(name);
+	if (it != screenMap.end()) {
+		name = screenMap[name];
+	}
 
 	for (size_t i = 0; i < toShowList.size(); ++i) {
 		if (toShowList[i] == name) {
@@ -215,8 +241,13 @@ void Screen::addToHide(const std::string &name) {
 
 	toHideList.push_back(name);
 }
-bool Screen::hasScreen(const std::string &name) {
+bool Screen::hasScreen(std::string name) {
 	std::lock_guard g(screenMutex);
+
+	auto it = screenMap.find(name);
+	if (it != screenMap.end()) {
+		name = screenMap[name];
+	}
 
 	for (const std::string &screenName : toShowList) {
 		if (screenName == name) return true;
@@ -225,7 +256,14 @@ bool Screen::hasScreen(const std::string &name) {
 	return getMain(name);
 }
 
-void Screen::logScreenCode(const std::string &name) {
+void Screen::logScreenCode(std::string name) {
+	std::lock_guard g(screenMutex);
+
+	auto it = screenMap.find(name);
+	if (it != screenMap.end()) {
+		name = screenMap[name];
+	}
+
 	Node* node = getDeclared(name);
 	std::string code = ScreenNodeUtils::getScreenCode(node);
 	Logger::log("\n\n\nCode of screen <" + name + ">:\n\n" + code + "\n\n\n");
