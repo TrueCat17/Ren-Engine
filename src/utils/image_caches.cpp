@@ -11,8 +11,13 @@
 
 #include "gui/display_object.h"
 #include "media/image_manipulator.h"
+#include "utils/algo.h"
+#include "utils/file_system.h"
 #include "utils/string.h"
 #include "utils/utils.h"
+
+
+static std::vector<std::string> supportedExts = {"png", "jpg", "jpeg", "webp"};
 
 
 SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
@@ -390,6 +395,29 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 
 		setSurface(path, res);
 		return res;
+	}
+
+	if (!FileSystem::exists(realPath)) {
+		std::string fileName = FileSystem::getFileName(realPath);
+		size_t dot = fileName.rfind('.');
+		if (dot != size_t(-1)) {
+			fileName.erase(dot);
+		}
+
+		std::string dir = FileSystem::getParentDirectory(realPath);
+		for (const std::string &tmpFile : FileSystem::getFiles(dir)) {
+			size_t tmpDot = tmpFile.rfind('.');
+			if (tmpDot == size_t(-1)) continue;
+
+			std::string tmpExt = tmpFile.substr(tmpDot + 1);
+			if (!Algo::in(tmpExt, supportedExts)) continue;
+
+			std::string tmpName = tmpFile.substr(dir.size(), tmpDot - dir.size());
+			if (tmpName == fileName) {
+				realPath = tmpFile;
+				break;
+			}
+		}
 	}
 
 	res = IMG_Load(realPath.c_str());
