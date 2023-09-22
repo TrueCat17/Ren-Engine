@@ -148,18 +148,12 @@ static void initIsEnd(Node *node) {
 	const std::string &command = node->command;
 
 	if (command == "$" || command == "python") return;
-
-	if (command == "use") {
-		Node *screenNode = Screen::getDeclared(node->params);
-		if (screenNode) {
-			node->isScreenEnd = screenNode->isScreenEnd;
-		}
-		return;
-	}
+	if (command == "use") return;
 
 	for (Node *child : node->children) {
 		initIsEnd(child);
 	}
+	if (command == "screen") return;
 
 	if (command == "if" || command == "elif" || command == "else" ||
 	    command == "for" || command == "while") return;
@@ -459,7 +453,7 @@ static std::string initCode(Node *node, const std::string& index) {
 
 
 
-	if (node->isScreenEnd && !isMainScreen) {
+	if (node->isScreenEnd) {
 		res = "(\n";
 		for (Node *child : node->children) {
 			if (child->isScreenConst || child->isScreenEvent) continue;
