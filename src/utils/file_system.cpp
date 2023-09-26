@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 #include "utils/utils.h"
 
 
-static std::string clear(std::string path) {
+static std::string clear(const std::string &path) {
 	if (path.empty() || (path.back() != '/' && path.back() != '\\')) {
 		return path;
 	}
@@ -99,10 +99,13 @@ void FileSystem::rename(const std::string &oldPath, const std::string &newPath) 
 std::string FileSystem::getParentDirectory(const std::string &path) {
 	std::string res = fs::path(clear(path)).lexically_normal().parent_path().string();
 
-	if (String::endsWith(res, "\\")) {
-		res.pop_back();
-	}
-	if (!res.empty() && !String::endsWith(res, "/")) {
+	if (res.empty()) {
+		res = "./";
+	}else
+	if (res.back() == '\\') {
+		res.back() = '/';
+	}else
+	if (res.back() != '/') {
 		res.push_back('/');
 	}
 
