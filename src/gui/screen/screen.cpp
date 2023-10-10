@@ -37,6 +37,16 @@ Screen* Screen::getMain(const std::string &name) {
 }
 
 
+static std::vector<std::string> getSameNames(const std::string &name) {
+	std::vector<std::string> res = { name };
+	for (const auto& [from, to] : screenMap) {
+		if (to == name) {
+			res.push_back(from);
+		}
+	}
+	return res;
+}
+
 static void show(const std::string &name) {
 	Screen *scr = Screen::getMain(name);
 	if (!scr) {
@@ -49,25 +59,29 @@ static void show(const std::string &name) {
 		scr = new Screen(node, nullptr);
 	}
 
-	PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
-	              "if 'signals' in globals(): signals.send('show_screen', '" + name + "')");
+	for (const auto &sameName : getSameNames(name)) {
+		PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
+		              "if 'signals' in globals(): signals.send('show_screen', '" + sameName + "')");
+	}
 	Stage::screens->addChildAt(scr, Stage::screens->children.size());
 }
 static void hide(const std::string &name) {
 	if (!Stage::screens) return;
 
-	for (DisplayObject *d : Stage::screens->children) {
-		Screen *scr = static_cast<Screen*>(d);
-		if (scr->getName() == name) {
-			delete scr;
-			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__,
-			              "if 'signals' in globals(): signals.send('hide_screen', '" + name + "')\n"
-			              "del screen_vars['" + name + "']");
-			return;
-		}
+	Screen *scr = Screen::getMain(name);
+	if (!scr) {
+		Utils::outMsg("Screen::hide", "Screen <" + name + "> is not shown");
+		return;
 	}
 
-	Utils::outMsg("Screen::hide", "Screen <" + name + "> is not shown");
+	delete scr;
+	PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
+	              "del screen_vars['" + name + "']");
+
+	for (const auto &sameName : getSameNames(name)) {
+		PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
+		              "if 'signals' in globals(): signals.send('hide_screen', '" + sameName + "')");
+	}
 }
 
 static std::vector<std::string> toShowList;
