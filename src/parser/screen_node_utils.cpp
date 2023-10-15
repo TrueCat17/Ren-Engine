@@ -3,6 +3,7 @@
 #include <map>
 
 #include <SDL2/SDL_ttf.h>
+#undef main
 
 #include "gui/screen/screen.h"
 #include "gui/screen/key.h"
