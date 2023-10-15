@@ -1,11 +1,9 @@
 #include "screen_node_utils.h"
 
 #include <map>
-#include <set>
 
 #include <SDL2/SDL_ttf.h>
 
-#include "gui/text_field.h"
 #include "gui/screen/screen.h"
 #include "gui/screen/key.h"
 #include "gui/screen/text.h"
@@ -697,18 +695,19 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		return; \
 	} \
 	\
+	std::string error; \
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) { \
-		xIsFloat = yIsFloat = false; \
-		obj->x##propName = obj->y##propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, absolute, int, tuple or list, got " + type); \
-		return; \
-	} \
+		error = "Expected types float, absolute, int, tuple or list, got " + type; \
+	}else \
 	if (Py_SIZE(prop) != 2) { \
+		std::string size = std::to_string(Py_SIZE(prop)); \
+		error = "Expected sequence with size == 2, got " + size; \
+	} \
+	if (!error.empty()) { \
 		xIsFloat = yIsFloat = false; \
 		obj->x##propName = obj->y##propName = 0; \
-		std::string size = std::to_string(Py_SIZE(prop)); \
-		outError(obj, #propName, propIndex, "Expected sequence with size == 2, got " + size); \
+		outError(obj, #propName, propIndex, error); \
 		return; \
 	} \
 	\
@@ -769,43 +768,37 @@ static void update_align(Child *obj, size_t propIndex) {
 		return;
 	}
 
+	std::string error;
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
-		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = false;
-		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = 0;
 		std::string type = prop->ob_type->tp_name;
-		outError(obj, "align", propIndex, "Expected types float, absolute, int, tuple or list, got " + type);
-		return;
-	}
+		error = "Expected types float, absolute, int, tuple or list, got " + type;
+	}else
 	if (Py_SIZE(prop) != 2) {
+		std::string size = std::to_string(Py_SIZE(prop));
+		error = "Expected sequence with size == 2, got " + size;
+	}
+	if (!error.empty()) {
 		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = false;
 		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = 0;
-		std::string size = std::to_string(Py_SIZE(prop));
-		outError(obj, "align", propIndex, "Expected sequence with size == 2, got " + size);
+		outError(obj, "align", propIndex, error);
 		return;
 	}
 
-	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0);
-	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1);
+#define partProc(part, index) \
+	PyObject *part = PySequence_Fast_GET_ITEM(prop, index); \
+	updateCondition(isFloat, value, part, #part "align") \
+	else { \
+		isFloat = false; \
+		value = 0; \
+		std::string type = part->ob_type->tp_name; \
+		outError(obj, "align", propIndex, "At " #part "align-prop expected types float, absolute or int, got " + type); \
+	} \
+	obj->part##posIsFloat = obj->part##anchorPreIsFloat = isFloat; \
+	obj->part##pos = obj->part##anchorPre = value;
 
-	updateCondition(isFloat, value, x, "xalign")
-	else {
-		isFloat = false;
-		value = 0;
-		std::string type = x->ob_type->tp_name;
-		outError(obj, "align", propIndex, "At xalign-prop expected types float, absolute or int, got " + type);
-	}
-	obj->xposIsFloat = obj->xanchorPreIsFloat = isFloat;
-	obj->xpos = obj->xanchorPre = value;
-
-	updateCondition(isFloat, value, y, "yalign")
-	else {
-		isFloat = false;
-		value = 0;
-		std::string type = y->ob_type->tp_name;
-		outError(obj, "align", propIndex, "At yalign-prop expected types float, absolute or int, got " + type);
-	}
-	obj->yposIsFloat = obj->yanchorPreIsFloat = isFloat;
-	obj->ypos = obj->yanchorPre = value;
+	partProc(x, 0);
+	partProc(y, 1);
+#undef partProc
 }
 
 #define makeUpdateFuncWithStr(Type, propName, funcPostfix) \
@@ -815,149 +808,160 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	if (PyUnicode_CheckExact(prop)) { \
 		static_cast<Type*>(obj)->propName = PyUnicode_AsUTF8(prop); \
 	}else { \
-		static_cast<Type*>(obj)->propName = ""; \
+		static_cast<Type*>(obj)->propName.clear(); \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type str, got " + type); \
 	} \
 }
-#define makeUpdateFuncWithStrSimple(Type, propName) makeUpdateFuncWithStr(Type, propName, propName)
 
 static void update_crop(Child *obj, size_t propIndex) {
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
 
+	std::string error;
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
-		obj->xcropIsFloat = obj->ycropIsFloat = obj->wcropIsFloat = obj->hcropIsFloat = false;
-		obj->xcrop = obj->ycrop = obj->wcrop = obj->hcrop = 0;
 		std::string type = prop->ob_type->tp_name;
-		outError(obj, "crop", propIndex, "Expected types tuple or list, got " + type);
-		return;
-	}
+		error = "Expected types tuple or list, got " + type;
+	}else
 	if (Py_SIZE(prop) != 4) {
+		std::string size = std::to_string(Py_SIZE(prop));
+		error = "Expected sequence with size == 4, got " + size;
+	}
+	if (!error.empty()) {
 		obj->xcropIsFloat = obj->ycropIsFloat = obj->wcropIsFloat = obj->hcropIsFloat = false;
 		obj->xcrop = obj->ycrop = obj->wcrop = obj->hcrop = 0;
-		std::string size = std::to_string(Py_SIZE(prop));
-		outError(obj, "crop", propIndex, "Expected sequence with size == 4, got " + size);
+		outError(obj, "crop", propIndex, error);
 		return;
 	}
 
-	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0);
-	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1);
-	PyObject *w = PySequence_Fast_GET_ITEM(prop, 2);
-	PyObject *h = PySequence_Fast_GET_ITEM(prop, 3);
-
-	updateCondition(obj->xcropIsFloat, obj->xcrop, x, "xcrop")
-	else {
-		obj->xcropIsFloat = false;
-		obj->xcrop = 0;
-		std::string type = x->ob_type->tp_name;
-		outError(obj, "xcrop", propIndex, "At xcrop-prop expected types float, absolute or int, got " + type);
+#define partProc(part, index) \
+	PyObject *part = PySequence_Fast_GET_ITEM(prop, index); \
+	updateCondition(obj->part##cropIsFloat, obj->part##crop, part, #part "crop") \
+	else { \
+		obj->part##cropIsFloat = false; \
+		obj->part##crop = 0; \
+		std::string type = part->ob_type->tp_name; \
+		outError(obj, #part "crop", propIndex, "At " #part "crop-prop expected types float, absolute or int, got " + type); \
 	}
 
-	updateCondition(obj->ycropIsFloat, obj->ycrop, y, "ycrop")
-	else {
-		obj->ycropIsFloat = false;
-		obj->ycrop = 0;
-		std::string type = y->ob_type->tp_name;
-		outError(obj, "ycrop", propIndex, "At ycrop-prop expected types float, absolute or int, got " + type);
-	}
-
-	updateCondition(obj->wcropIsFloat, obj->wcrop, w, "wcrop")
-	else {
-		obj->wcropIsFloat = false;
-		obj->wcrop = 0;
-		std::string type = w->ob_type->tp_name;
-		outError(obj, "wcrop", propIndex, "At wcrop-prop expected types float, absolute or int, got " + type);
-	}
-
-	updateCondition(obj->hcropIsFloat, obj->hcrop, h, "hcrop")
-	else {
-		obj->hcropIsFloat = false;
-		obj->hcrop = 0;
-		std::string type = h->ob_type->tp_name;
-		outError(obj, "hcrop", propIndex, "At hcrop-prop expected types float, absolute or int, got " + type);
-	}
+	partProc(x, 0)
+	partProc(y, 1)
+	partProc(w, 2)
+	partProc(h, 3)
+#undef partProc
 }
 
-#define makeUpdateTextFunc(propName, mask) \
-static void update_text_##propName(Child *obj, size_t propIndex) { \
+
+#define makeUpdateTextSize(main_or_hover, propName) \
+static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	auto text = static_cast<Text*>(obj); \
-	auto &fontStyle = text->tf->mainStyle.fontStyle; \
-	auto oldFontStyle = fontStyle; \
+	auto &params = text->main_or_hover##Params; \
 	\
-	if (prop == Py_True) { \
-		fontStyle |= Uint8(mask); \
-		if (fontStyle != oldFontStyle) { \
-			text->needUpdate = true; \
+	bool tmpBool; \
+	updateCondition(tmpBool, params.size, prop, #propName) \
+	else { \
+		params.size = 0; \
+		\
+		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
+		bool ok = isHoverParam && prop == Py_None; \
+		if (!ok) { \
+			std::string type = prop->ob_type->tp_name; \
+			outError(obj, #propName, propIndex, "Expected types float, absolute or int, got " + type); \
 		} \
-	}else if (prop == Py_False) { \
-		fontStyle &= Uint8(~mask); \
-		if (fontStyle != oldFontStyle) { \
-			text->needUpdate = true; \
-		} \
-	}else { \
-		fontStyle &= Uint8(~mask); \
-		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected bool, got " + type); \
 	} \
 }
-#define makeUpdateTextColor(propName, isOutline) \
-static void update_text_##propName(Child *obj, size_t propIndex) { \
+
+#define makeUpdateTextFunc(main_or_hover, propName, mask) \
+static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	auto text = static_cast<Text*>(obj); \
-	auto &style = text->tf->mainStyle; \
+	auto &params = text->main_or_hover##Params; \
+	\
+	if (prop == Py_None) { \
+		params.set_font_style &= Uint8(~mask); \
+		params.font_style &= Uint8(~mask); \
+	}else { \
+		params.set_font_style |= Uint8(mask); \
+		\
+		if (prop == Py_True) { \
+			params.font_style |= Uint8(mask); \
+		}else { \
+			params.font_style &= Uint8(~mask); \
+			if (prop != Py_False) { \
+				std::string type = prop->ob_type->tp_name; \
+				outError(obj, #propName, propIndex, "Expected bool, got " + type); \
+			} \
+		} \
+	} \
+}
+
+#define makeUpdateFont(main_or_hover, funcPostfix) \
+static void update_##funcPostfix(Child *obj, size_t propIndex) { \
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	auto text = static_cast<Text*>(obj); \
+	auto &params = text->main_or_hover##Params; \
+	\
+	if (PyUnicode_CheckExact(prop)) { \
+		params.font = PyUnicode_AsUTF8(prop); \
+		params.set_font = true; \
+	}else { \
+		params.font.clear(); \
+		params.set_font = false; \
+		\
+		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
+		bool ok = isHoverParam && prop == Py_None; \
+		if (!ok) { \
+			std::string type = prop->ob_type->tp_name; \
+			outError(obj, #funcPostfix, propIndex, "Expected type str, got " + type); \
+		} \
+	} \
+}
+
+#define makeUpdateTextColor(main_or_hover, propName, simpleName) \
+static void update_##propName(Child *obj, size_t propIndex) { \
+	constexpr bool isOutline = std::string_view(#simpleName) == "outlinecolor"; \
+	\
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	auto text = static_cast<Text*>(obj); \
+	auto &params = text->main_or_hover##Params; \
 	\
 	Uint32 v = Uint32(-1); \
 	if (PyLong_CheckExact(prop)) { \
-		int overflow;\
+		int overflow; \
 		long d = PyLong_AsLongAndOverflow(prop, &overflow); \
 		if (overflow || d < 0 || d > 0xFFFFFF) { \
-			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + std::to_string(d) + ">"); \
+			std::string s = PyUtils::objToStr(prop); \
+			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + s + ">"); \
 		}else { \
 			v = Uint32(d); \
 		} \
-	}else \
-	if (prop == Py_None || prop == Py_False) { \
-		if (style.enableOutline) { \
-			text->needUpdate = true; \
-			style.enableOutline = false; \
+	}else { \
+		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
+		bool ok = (isHoverParam || isOutline) && (prop == Py_None || prop == Py_False); \
+		if (!ok) { \
+			if constexpr (isOutline) { \
+				std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
+				outError(obj, #propName, propIndex, "Expected type int, None or False, got " + type); \
+			}else { \
+				std::string type = prop->ob_type->tp_name; \
+				outError(obj, #propName, propIndex, "Expected type int, got " + type); \
+			} \
 		} \
-	} \
-	else { \
-		std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types int, None or False, got " + type); \
 	} \
 	\
 	if (v != Uint32(-1)) { \
-		if constexpr (isOutline) { \
-			if (style.outlineColor != v || !style.enableOutline) { \
-				text->needUpdate = true; \
-				style.outlineColor = v; \
-				style.enableOutline = true; \
-			} \
-		}else { \
-			if (style.color != v) { \
-				text->needUpdate = true; \
-				style.color = v; \
-			} \
-		} \
+		params.simpleName = v; \
+		params.set_##simpleName = true; \
 	}else { \
-		if constexpr (isOutline) { \
-			if (style.enableOutline) { \
-				style.enableOutline = false; \
-				text->needUpdate = true; \
-			} \
-		}else { \
-			if (style.color) { \
-				style.color = 0; \
-				text->needUpdate = true; \
-			} \
-		} \
-	}\
+		params.simpleName = 0; \
+		params.set_##simpleName = false; \
+	} \
 }
-#define makeUpdateTextAlignFunc(propName, funcPostfix, zero, one) \
+#define makeUpdateTextAlignFunc(main_or_hover, propName, funcPostfix, zero, one) \
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	auto text = static_cast<Text*>(obj); \
+	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
 		std::string valueStr = PyUnicode_AsUTF8(prop); \
@@ -973,14 +977,25 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		}else { \
 			outError(obj, #propName, propIndex, "Expected str " zero ", center or " one ", got <" + valueStr + ">"); \
 		} \
-		static_cast<Text*>(obj)->propName = value; \
+		params.propName = value; \
+		params.set_##propName = true; \
 	}else \
 	if (PyFloat_CheckExact(prop)) { \
-		static_cast<Text*>(obj)->propName = float(PyFloat_AS_DOUBLE(prop)); \
+		params.propName = float(PyFloat_AS_DOUBLE(prop)); \
+		params.set_##propName = true; \
 	}else { \
-		static_cast<Text*>(obj)->propName = 0; \
-		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected type str or float, got " + type); \
+		params.propName = 0; \
+		params.set_##propName = false; \
+		\
+		if constexpr (std::string_view(#main_or_hover) == "main") { \
+			std::string type = prop->ob_type->tp_name; \
+			outError(obj, #propName, propIndex, "Expected types str or float, got " + type); \
+		}else { \
+			if (prop != Py_None) { \
+				std::string type = prop->ob_type->tp_name; \
+				outError(obj, #propName, propIndex, "Expected types str, float or None, got " + type); \
+			} \
+		} \
 	} \
 }
 
@@ -1016,7 +1031,7 @@ makeUpdateCommonFuncWithoutIsFloat(zoom)
 makeUpdateFuncWithAlign(x)
 makeUpdateFuncWithAlign(y)
 
-makeUpdateFuncWithStrSimple(Child, first_param)
+makeUpdateFuncWithStr(Child, first_param, first_param)
 
 makeUpdateFuncType(Key, delay)
 makeUpdateFuncType(Key, first_delay)
@@ -1028,18 +1043,6 @@ makeUpdateFuncWithBool(Screen, save, save)
 
 makeUpdateFuncType(Container, spacing)
 
-makeUpdateFuncType(Text, text_size)
-makeUpdateTextColor(color, false)
-makeUpdateTextColor(outlinecolor, true)
-makeUpdateTextFunc(bold, TTF_STYLE_BOLD)
-makeUpdateTextFunc(italic, TTF_STYLE_ITALIC)
-makeUpdateTextFunc(underline, TTF_STYLE_UNDERLINE)
-makeUpdateTextFunc(strikethrough, TTF_STYLE_STRIKETHROUGH)
-
-makeUpdateFuncWithStrSimple(Text, font)
-makeUpdateTextAlignFunc(textHAlign, text_align, "left", "right")
-makeUpdateTextAlignFunc(textVAlign, text_valign, "top", "bottom")
-
 makeUpdateFuncWithStr(TextButton, ground, ground_textbutton)
 makeUpdateFuncWithStr(TextButton, hover, hover_textbutton)
 makeUpdateFuncWithBool(TextButton, btnRect.buttonMode, mouse_textbutton)
@@ -1050,52 +1053,71 @@ makeUpdateFuncWithStr(Imagemap, groundPath, ground_imagemap)
 makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
 
 
+#define makeTextFuncs(main_or_hover, infix) \
+makeUpdateFont(main_or_hover, infix##font) \
+makeUpdateTextSize(main_or_hover, infix##text_size) \
+makeUpdateTextColor(main_or_hover, infix##color, color) \
+makeUpdateTextColor(main_or_hover, infix##outlinecolor, outlinecolor) \
+makeUpdateTextFunc(main_or_hover, infix##bold, TTF_STYLE_BOLD) \
+makeUpdateTextFunc(main_or_hover, infix##italic, TTF_STYLE_ITALIC) \
+makeUpdateTextFunc(main_or_hover, infix##underline, TTF_STYLE_UNDERLINE) \
+makeUpdateTextFunc(main_or_hover, infix##strikethrough, TTF_STYLE_STRIKETHROUGH) \
+makeUpdateTextAlignFunc(main_or_hover, halign, infix##text_align, "left", "right") \
+makeUpdateTextAlignFunc(main_or_hover, valign, infix##text_valign, "top", "bottom")
+
+makeTextFuncs(main, )
+makeTextFuncs(hover, hover_)
+
+
 static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
-	{"style",             update_style},
-	{"alpha",             update_alpha},
-	{"rotate",            update_rotate},
-	{"clipping",          update_clipping},
-	{"skip_mouse",        update_skip_mouse},
-	{"delay",             update_delay},
-	{"first_delay",       update_first_delay},
-	{"xpos",              update_xpos},
-	{"ypos",              update_ypos},
-	{"xanchor",           update_xanchorPre},
-	{"yanchor",           update_yanchorPre},
-	{"xsize",             update_xsize},
-	{"ysize",             update_ysize},
-	{"xzoom",             update_xzoom},
-	{"yzoom",             update_yzoom},
-	{"pos",               update_pos},
-	{"anchor",            update_anchorPre},
-	{"size",              update_size},
-	{"zoom",              update_zoom},
-	{"xalign",            update_xalign},
-	{"yalign",            update_yalign},
-	{"align",             update_align},
-	{"first_param",       update_first_param},
-	{"crop",              update_crop},
-	{"zorder",            update_zorder},
-	{"ignore_modal",      update_ignore_modal},
-	{"modal",             update_modal},
-	{"save",              update_save},
-	{"spacing",           update_spacing},
-	{"color",             update_text_color},
-	{"outlinecolor",      update_text_outlinecolor},
-	{"font",              update_font},
-	{"text_align",        update_text_align},
-	{"text_valign",       update_text_valign},
-	{"text_size",         update_text_size},
-	{"bold",              update_text_bold},
-	{"italic",            update_text_italic},
-	{"underline",         update_text_underline},
-	{"strikethrough",     update_text_strikethrough},
-	{"ground_textbutton", update_ground_textbutton},
-	{"hover_textbutton",  update_hover_textbutton},
-	{"mouse_textbutton",  update_mouse_textbutton},
-	{"mouse_hotspot",     update_mouse_hotspot},
-	{"ground_imagemap",   update_ground_imagemap},
-	{"hover_imagemap",    update_hover_imagemap},
+	{ "xanchor", update_xanchorPre },
+	{ "yanchor", update_yanchorPre },
+	{ "anchor", update_anchorPre },
+
+//addProp(style) -> { "style", update_style },
+#define addProp(name) { #name, update_##name },
+	addProp(style)
+	addProp(alpha)
+	addProp(rotate)
+	addProp(clipping)
+	addProp(skip_mouse)
+	addProp(delay)
+	addProp(first_delay)
+	addProp(first_param)
+	addProp(crop)
+	addProp(zorder)
+	addProp(ignore_modal)
+	addProp(modal)
+	addProp(save)
+	addProp(spacing)
+	addProp(ground_textbutton)
+	addProp(hover_textbutton)
+	addProp(mouse_textbutton)
+	addProp(mouse_hotspot)
+	addProp(ground_imagemap)
+	addProp(hover_imagemap)
+
+#define addXYProp(name) addProp(x##name) addProp(y##name) addProp(name)
+	addXYProp(pos)
+	addXYProp(size)
+	addXYProp(zoom)
+	addXYProp(align)
+#undef addXYProp
+
+#define addTextProp(name) addProp(name) addProp(hover_##name)
+	addTextProp(color)
+	addTextProp(outlinecolor)
+	addTextProp(font)
+	addTextProp(text_align)
+	addTextProp(text_valign)
+	addTextProp(text_size)
+	addTextProp(bold)
+	addTextProp(italic)
+	addTextProp(underline)
+	addTextProp(strikethrough)
+
+#undef addTextProp
+#undef addProp
 };
 
 static void initUpdateFuncs(Node *node) {
@@ -1143,5 +1165,3 @@ ScreenUpdateFunc ScreenNodeUtils::getUpdateFunc(const std::string &type, std::st
 	Utils::outMsg("ScreenNodeUtils::getUpdateFunc", "Func <" + propName + "> not found");
 	return nullptr;
 }
-
-

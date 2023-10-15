@@ -19,6 +19,7 @@ public:
 	static void init();
 	static bool check(const std::string &parent, const std::string &child, const std::string &prevChild, const int superParent, bool &isText);
 
+	static bool isKnownScreenLeaf(const std::string &name);//xpos, alpha, pass, python...
 	static const std::vector<std::string>& getScreenProps(const std::string &type);
 };
 

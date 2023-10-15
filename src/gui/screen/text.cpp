@@ -1,5 +1,7 @@
 #include "text.h"
 
+#include <tuple>
+
 #include "gui/text_field.h"
 
 #include "utils/math.h"
@@ -16,59 +18,111 @@ Text::~Text() {
 	delete tf;
 }
 
+#define makeGetFunction(prop) \
+static inline \
+decltype(TextParams::prop) get_##prop(const Text *text) { \
+	if (text->curParamsIsHover && text->hoverParams.set_##prop) { \
+		return text->hoverParams.prop; \
+	} \
+	return text->mainParams.prop; \
+}
+makeGetFunction(font)
+makeGetFunction(color)
+makeGetFunction(outlinecolor)
+makeGetFunction(size)
+makeGetFunction(halign)
+makeGetFunction(valign)
+
+static inline
+bool get_enable_outline(const Text *text) {
+	if (text->curParamsIsHover && text->hoverParams.set_outlinecolor) {
+		return true;
+	}else {
+		return text->mainParams.set_outlinecolor;
+	}
+}
+
+static inline
+Uint8 get_font_style(const Text *text) {
+	Uint8 res = text->mainParams.font_style;
+	if (text->curParamsIsHover) {
+		for (int i = 0; i < 8; ++i) {
+			int mask = 1 << i;
+			if (text->hoverParams.set_font_style & mask) {
+				if (text->hoverParams.font_style & mask) {
+					res |= mask;
+				}else {
+					res &= ~mask;
+				}
+			}
+		}
+	}
+	return res;
+}
+
 
 void Text::updateRect(bool) {
 	tf->enable = true;
 
-	int width  = int(xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX);
-	int height = int(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY);
+	float width  = xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX;
+	float height = ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY;
 
 	if (first_param.empty() && prevText.empty()) {
-		setWidth(float(std::max(width, 0)));
-		setHeight(float(std::max(height, 0)));
-	}else {
-		if (tf->maxWidth != width) {
-			tf->maxWidth = width;
-			needUpdate = true;
-		}
-		if (tf->maxHeight != height) {
-			tf->maxHeight = height;
-			needUpdate = true;
-		}
+		setWidth(std::max<float>(width, 0));
+		setHeight(std::max<float>(height, 0));
+		return;
+	}
 
-		if (tf->mainStyle.fontName != font || !Math::floatsAreEq(tf->mainStyle.fontSize, text_size * globalZoomY)) {
-			tf->setFont(font, text_size * globalZoomY);
-			needUpdate = true;
-		}
+	Uint32 color = get_color(this);
+	Uint32 outlineColor = get_outlinecolor(this);
+	bool enableOutline = get_enable_outline(this);
+	Uint8 fontStyle = get_font_style(this);
 
-		if (first_param != prevText) {
-			prevText = first_param;
-			needUpdate = true;
-		}
+	auto curParams = std::tie(
+	    first_param,
+	    width,
+	    height,
+	    color,
+	    outlineColor,
+	    enableOutline,
+	    fontStyle
+	);
+	auto prevParams = std::tie(
+	    prevText,
+	    tf->maxWidth,
+	    tf->maxHeight,
+	    tf->mainStyle.color,
+	    tf->mainStyle.outlineColor,
+	    tf->mainStyle.enableOutline,
+	    tf->mainStyle.fontStyle
+	);
 
-		if (needUpdate) {
-			tf->setText(first_param);
-		}
+	bool needUpdate = false;
+	if (prevParams != curParams) {
+		prevParams = curParams;
+		needUpdate = true;
+	}
 
-		if (needUpdate ||
-		    !Math::floatsAreEq(tf->getHAlign(), textHAlign) ||
-		    !Math::floatsAreEq(tf->getVAlign(), textVAlign) ||
-		    width != prevWidth || height != prevHeight
-		) {
-			float w = width  <= 0 ? tf->getWidth()  : float(width);
-			float h = height <= 0 ? tf->getHeight() : float(height);
-			setWidth(w);
-			setHeight(h);
+	std::string font = get_font(this);
+	float size = get_size(this) * globalZoomY;
+	if (std::tuple(font, size) != std::tuple(tf->mainStyle.fontName, tf->mainStyle.fontSize)) {
+		tf->setFont(font, size);
+		needUpdate = true;
+	}
 
-			tf->setWidth(w);
-			tf->setHeight(h);
-			tf->setAlign(textHAlign, textVAlign);
+	float halign = get_halign(this);
+	float valign = get_valign(this);
+	if (needUpdate || std::tuple(halign, valign) != std::tuple(tf->getHAlign(), tf->getVAlign())) {
+		tf->setText(first_param);
 
-			prevWidth = width;
-			prevHeight = height;
+		if (width  <= 0) width  = tf->getWidth();
+		if (height <= 0) height = tf->getHeight();
+		setWidth(width);
+		setHeight(height);
+		tf->setWidth(width);
+		tf->setHeight(height);
 
-			needUpdate = false;
-		}
+		tf->setAlign(halign, valign);
 	}
 
 	updatePos();

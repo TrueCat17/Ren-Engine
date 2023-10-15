@@ -14,8 +14,7 @@
 #include "image.h"
 #include "key.h"
 
-
-#include "utils/string.h"
+#include "parser/syntax_checker.h"
 #include "utils/utils.h"
 
 
@@ -210,20 +209,7 @@ void Container::addChildrenFromNode() {
 		}else
 
 		{
-			static const std::vector<std::string> propsVec = String::split(
-				"break, continue, $, python, "
-			    "pass, style, "
-				"has, first_param, spacing, "
-			    "xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, xzoom, yzoom, "
-			    "align, anchor, pos, size, zoom, crop, rotate, alpha, clipping, skip_mouse, "
-			    "modal, ignore_modal, save, zorder, ground, hover, "
-				"action, alternate, hovered, unhovered, activate_sound, hover_sound, mouse, "
-				"color, font, text_size, text_align, text_valign"
-			, ", ");
-
-			static const std::set<std::string> props = { propsVec.begin(), propsVec.end() };
-
-			if (!props.count(childNode->command)) {
+			if (!SyntaxChecker::isKnownScreenLeaf(childNode->command)) {
 				Utils::outMsg("Container::addChildrenFromNode",
 				              "Unknown type <" + childNode->command + ">\n" +
 							  childNode->getPlace());

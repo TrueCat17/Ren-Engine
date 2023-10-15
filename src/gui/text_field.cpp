@@ -573,8 +573,6 @@ void TextField::setText(const std::string &text) {
 	for (size_t numLine = 0; numLine < lines.size(); ++numLine) {
 		setLine(numLine, lines[numLine], styleStack);
 	}
-
-	setAlign(hAlign, vAlign);
 }
 
 void TextField::setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack) {

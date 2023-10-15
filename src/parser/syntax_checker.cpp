@@ -8,6 +8,11 @@
 #include "utils/utils.h"
 
 
+static std::set<std::string> knownScreenLeafs;
+bool SyntaxChecker::isKnownScreenLeaf(const std::string &name) {
+	return knownScreenLeafs.find(name) != knownScreenLeafs.end();
+}
+
 struct SyntaxPart {
 	std::vector<std::string> prevs;
 	int superParent;
@@ -74,7 +79,7 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 
 	auto syntaxIt = mapSyntax.find(type);
 	if (syntaxIt == mapSyntax.end()) {
-		Utils::outMsg("SyntaxChecker::getProps", "Type <" + type + "> not found");
+		Utils::outMsg("SyntaxChecker::getScreenProps", "Type <" + type + "> not found");
 		static std::vector<std::string> res;
 		return res;
 	}
@@ -114,6 +119,16 @@ void SyntaxChecker::init() {
 	const std::string textProps = ", color, outlinecolor, font, text_size, text_align, text_valign, bold, italic, underline, strikethrough, ";
 	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";
 
+	const std::string extraScreenLeafs = "pass, first_param, $, python, break, continue, spacing";
+	for (const std::string &props : {screenProps, simpleProps, textProps, buttonProps, extraScreenLeafs}) {
+		std::vector<std::string> vecProps = String::split(props, ", ");
+		for (const std::string &prop : vecProps) {
+			if (!prop.empty()) {
+				knownScreenLeafs.insert(prop);
+			}
+		}
+	}
+
 	const std::string conditions = ", if, elif if elif, else if elif for while, ";
 
 	addBlockChildren("main", "init, init---python, label, screen, translate, translate---strings");
@@ -135,6 +150,16 @@ void SyntaxChecker::init() {
 	addBlockChildren("screen" + screenElems, simpleProps);
 
 	addBlockChildren("text, textbutton", textProps);
+
+	std::vector<std::string> vecTextProps = String::split(textProps, ", ");
+	for (auto &prop : vecTextProps) {
+		if (!prop.empty()) {
+			prop.insert(0, "hover_");
+			knownScreenLeafs.insert(prop);
+			addBlockChildren("textbutton", prop);
+			setSuperParents(prop, SuperParent::SCREEN);
+		}
+	}
 
 	addBlockChildren("key", "first_delay, delay");
 	addBlockChildren("key, hotspot, button, textbutton", "action");

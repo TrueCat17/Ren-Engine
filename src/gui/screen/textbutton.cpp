@@ -98,6 +98,8 @@ void TextButton::checkEvents() {
 		btnRect.mouseRightDown = false;
 	}
 
+	curParamsIsHover = btnRect.mouseOvered || ground == hover;
+
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {
 			const Node *hoverSound = node->getProp("hover_sound");
