@@ -6,6 +6,11 @@
 * [Telegram](t.me/ren_engine),
 * [VK](vk.com/ren_engine).
 
+## \[OS]
+
+* Windows: 7+, 32-bit;
+* Linux: 32-bit and 64-bit, glibc-2.31+ (2020.02).
+
 
 
 ## \[ru]
