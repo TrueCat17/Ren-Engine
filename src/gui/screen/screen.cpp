@@ -5,7 +5,7 @@
 
 #include "logger.h"
 #include "media/py_utils.h"
-#include "parser/screen_node_utils.h"
+#include "parser/screen_code_generator.h"
 #include "utils/stage.h"
 #include "utils/utils.h"
 
@@ -279,7 +279,7 @@ void Screen::logScreenCode(std::string name) {
 	}
 
 	Node* node = getDeclared(name);
-	std::string code = ScreenNodeUtils::getScreenCode(node);
+	std::string code = ScreenCodeGenerator::get(node);
 	Logger::log("\n\n\nCode of screen <" + name + ">:\n\n" + code + "\n\n\n");
 }
 
@@ -411,7 +411,7 @@ Screen::Screen(Node *node, Screen *screen):
 {
 	if (this->screen != this) return;//not main screen, command <use>
 
-	screenCode = ScreenNodeUtils::getScreenCode(node);
+	screenCode = ScreenCodeGenerator::get(node);
 	co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 1);
 	if (!co) {
 		PyUtils::errorProcessing(screenCode);

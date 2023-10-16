@@ -24,7 +24,8 @@
 #include "media/translation.h"
 
 #include "parser/parser.h"
-#include "parser/screen_node_utils.h"
+#include "parser/screen_code_generator.h"
+#include "parser/screen_update_funcs.h"
 
 #include "utils/algo.h"
 #include "utils/file_system.h"
@@ -233,7 +234,8 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 		Translation::init();
 
-		ScreenNodeUtils::clear();
+		ScreenCodeGenerator::clear();
+		ScreenUpdateFuncs::clear();
 
 		Config::setDefaultScaleQuality();
 

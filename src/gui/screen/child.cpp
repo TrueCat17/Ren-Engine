@@ -34,7 +34,7 @@ void Child::updateStyle() {
 			node = Screen::getDeclared(node->params);
 		}
 
-		updateFuncs = ScreenNodeUtils::getUpdateFuncs(node);
+		updateFuncs = ScreenUpdateFuncs::getFuncs(node);
 
 		if (!style) {
 			style = StyleManager::getByNode(node);
@@ -53,7 +53,7 @@ void Child::updateStyle() {
 			}
 			PyTuple_SET_ITEM(props, 0, res);
 
-			ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, prop);
+			ScreenUpdateFunc func = ScreenUpdateFuncs::getFunc(node->command, prop);
 			if (func) {
 				func(this, 0);
 			}
@@ -81,7 +81,7 @@ void Child::updateStyle() {
 
 		PyTuple_SET_ITEM(props, 0, res);
 
-		ScreenUpdateFunc func = ScreenNodeUtils::getUpdateFunc(node->command, child->command);
+		ScreenUpdateFunc func = ScreenUpdateFuncs::getFunc(node->command, child->command);
 		if (func) {
 			func(this, 0);
 		}

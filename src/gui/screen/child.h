@@ -4,7 +4,7 @@
 #include "../group.h"
 
 #include "parser/node.h"
-#include "parser/screen_node_utils.h"
+#include "parser/screen_update_funcs.h"
 
 class Screen;
 class Container;
