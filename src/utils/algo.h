@@ -15,18 +15,11 @@ public:
 		return false;
 	}
 
-	static inline bool isFirstByte(const char c) {
-		//second and next bytes in UTF-8 start from 10 in binary (0b10xxxxxx)
-		return !(c & 0b10000000) || c & 0b01000000;
-	}
+	static std::string clear(std::string_view s);
+	static std::vector<std::string> getArgs(std::string_view args, const char separator = ' ');
 
-	static size_t getStartArg(const std::string &args, size_t end, const char separator = ' ');
-	static size_t getEndArg(const std::string &args, size_t start, const char separator = ' ', bool *isValid = nullptr);
-	static std::string clear(std::string s);
-	static std::vector<std::string> getArgs(std::string args, const char separator = ' ');
-
-	static bool isLexicalValid(std::string s);
-	static bool isValidPyName(const std::string &s);
+	static bool isLexicalValid(std::string_view s);
+	static bool isValidPyName(std::string_view s);
 };
 
 #endif // ALGO_H

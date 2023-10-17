@@ -533,7 +533,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 			while (index) {
 				--index;
 
-				const std::string &tmp = code[index];
+				std::string_view tmp = code[index];
 				if (tmp.empty()) continue;
 
 				const size_t tmpIndent = tmp.find_first_not_of(' ');
@@ -542,7 +542,8 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 
 				indent = tmpIndent;
 
-				if (String::startsWith(tmp, "for ", true) || String::startsWith(tmp, "while ", true)) {
+				tmp = tmp.substr(tmpIndent);
+				if (String::startsWith(tmp, "for ") || String::startsWith(tmp, "while ")) {
 					ok = true;
 					break;
 				}

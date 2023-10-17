@@ -28,6 +28,7 @@ extern "C" {
 #include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/stage.h"
+#include "utils/string.h"
 
 
 static std::map<std::string, Node*> declAts;
@@ -51,21 +52,25 @@ std::string Utils::getVersion() {
 
 void Utils::setThreadName([[maybe_unused]] std::string name) {
 #ifndef __WIN32__ //suspend on wine
-	size_t maxNameSize = 14;//if more - no change in task manager
+	size_t maxNameSize = 14;//doc. say "16 with null terminator" (15), but this does not work
 
 	if (name.empty()) {
 		name = "empty_name";
-	}else
+	}
+
 	if (name.size() > maxNameSize) {
 		std::string ending = "..";
-		name.erase(maxNameSize - ending.size());
-
-		if (!Algo::isFirstByte(name.back())) {
-			while (!Algo::isFirstByte(name.back())) {
-				name.pop_back();
-			}
-			name.pop_back();
+		size_t i = maxNameSize - ending.size();
+		--i;
+		while (!String::isFirstByte(name[i])) {
+			--i;
 		}
+		size_t last = String::getCountBytes(name[i]);
+		if (i + last > maxNameSize - ending.size()) {
+			last = 0;
+		}
+		name.erase(i + last);
+
 		while (name.back() == ' ') {
 			name.pop_back();
 		}

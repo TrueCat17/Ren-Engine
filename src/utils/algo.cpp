@@ -3,16 +3,10 @@
 #include "utils/string.h"
 #include "utils/utils.h"
 
-size_t Algo::getStartArg(const std::string &args, size_t end, const char separator) {
-	size_t res = end + 1;
-	while (res < args.size() && args[res] == separator) {
-		++res;
-	}
-	if (res < args.size()) return res;
-
-	return size_t(-1);
+static size_t getStartArg(std::string_view args, size_t end, const char separator) {
+	return args.find_first_not_of(separator, end + 1);
 }
-size_t Algo::getEndArg(const std::string &args, size_t start, const char separator, bool *isValid) {
+static size_t getEndArg(std::string_view args, size_t start, const char separator, bool *isValid) {
 	if (isValid) {
 		*isValid = true;
 	}
@@ -54,8 +48,11 @@ size_t Algo::getEndArg(const std::string &args, size_t start, const char separat
 				if (isValid) {
 					*isValid = false;
 				}else {
+					std::string cStr(1, c);
+					std::string pos = std::to_string(i);
 					Utils::outMsg("Algo::getEndArg",
-					              std::string("Invalid bracket ") + c + " in position " + std::to_string(i) + " for string:\n" + args);
+					              "Invalid bracket " + cStr + " at position " + pos + " in string:\n" +
+					              std::string(args));
 				}
 			}
 		}
@@ -68,68 +65,60 @@ size_t Algo::getEndArg(const std::string &args, size_t start, const char separat
 			            ((b1 || b2 || b3)
 			             ? std::string(b1 ? "(" :  b2 ? "[" : "{") + " bracket"
 			             : std::string(q1 ? "single" : "double") + " quote"
-			            );
+			            ) + " in string:\n" +
+			            std::string(args);
 			Utils::outMsg("Algo::getEndArg", error);
 		}
 	}
 	return i;
 }
 
-std::string Algo::clear(std::string s) {
-	s = String::strip(s);
-
-	size_t n = 0;
-	while (n < s.size() && s[n] == '(') {
-		if (s[s.size() - n - 1] == ')') {
-			++n;
-		}else{
-			Utils::outMsg("Algo::clear", "Invalid brackets:\n<" + s + ">");
-			return nullptr;
-		}
-	}
-
-	if (n) {
-		size_t start = n;
-		size_t end = s.size() - n;
-		s = s.substr(start, end - start);
-	}
-
-	return s;
-}
-
-std::vector<std::string> Algo::getArgs(std::string args, const char separator) {
-	args = String::strip(args);
+std::vector<std::string> Algo::getArgs(std::string_view args, const char separator) {
+	args = String::stripView(args);
+	if (args.empty()) return {};
 
 	std::vector<std::string> res;
 
 	size_t start = 0;
 	while (start != size_t(-1)) {
-		size_t end = Algo::getEndArg(args, start, separator);
+		size_t end = getEndArg(args, start, separator, nullptr);
 
-		std::string t = args.substr(start, end - start);
-		if (!t.empty()) {
-			res.push_back(t);
-		}
+		res.push_back(std::string(args.substr(start, end - start)));
 
-		start = Algo::getStartArg(args, end, separator);
+		start = getStartArg(args, end, separator);
 	}
 	return res;
 }
 
-bool Algo::isLexicalValid(std::string s) {
-	char separator = '\n';
-	if (s.find(separator) != size_t(-1)) {
-		return false;
+std::string Algo::clear(std::string_view s) {
+	s = String::stripView(s);
+	if (s.empty()) return {};
+
+	std::string res;
+
+	size_t start = s.find_first_not_of('(');
+	if (start == size_t(-1)) {
+		start = 0;
+	}
+	size_t end = s.find_last_not_of(')') + 1;
+	if (!end) {
+		end = s.size();
 	}
 
-	s += separator;
+	start = std::min(start, s.size() - end);
+	end = s.size() - start;
+
+	res = s.substr(start, end - start);
+	return res;
+}
+
+bool Algo::isLexicalValid(std::string_view s) {
 	bool res;
-	getEndArg(s, 0, separator, &res);
-
+	getEndArg(s, 0, 0, &res);
 	return res;
 }
 
-bool Algo::isValidPyName(const std::string &s) {
+bool Algo::isValidPyName(std::string_view s) {
 	if (s.empty()) return false;
 	if (s[0] >= '0' && s[0] <= '9') return false;
 

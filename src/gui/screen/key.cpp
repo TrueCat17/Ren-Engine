@@ -105,7 +105,7 @@ void Key::checkEvents() {
 	if (first_param != prevKeyName) {
 		prevKeyName = first_param;
 
-		const int start = String::startsWith(first_param, "K_", true) ? 2 : 0;
+		const int start = String::startsWith(first_param, "K_") ? 2 : 0;
 		key = SDL_GetKeyFromName(first_param.c_str() + start);
 
 		lastDown = 0;

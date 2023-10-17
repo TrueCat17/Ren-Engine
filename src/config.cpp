@@ -6,7 +6,6 @@
 
 #include <SDL2/SDL_hints.h>
 
-#include "utils/algo.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -174,7 +173,7 @@ void Config::save() {
 	auto getCountLetters = [](const std::string &s) {
 		size_t res = 0;
 		for (size_t i = 0; i < s.size(); ++i) {
-			if (Algo::isFirstByte(s[i])) {
+			if (String::isFirstByte(s[i])) {
 				++res;
 			}
 		}

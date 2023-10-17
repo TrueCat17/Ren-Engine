@@ -3,109 +3,84 @@
 #include "utils/utils.h"
 
 
-std::string String::repeat(const std::string &str, size_t count) {
-	size_t size = str.size() * count;
-	if (!size) return "";
-	
+std::string String::repeat(std::string_view str, size_t count) {
 	std::string res;
-	res.resize(size);
-	
-	char *dst = &res[0];
-	const char *srcEnd = str.data() + str.size();
-	
-	while (count--) {
-		const char *src = str.data();
-		while (src != srcEnd) {
-			*dst++ = *src++;
-		}
+	res.reserve(str.size() * count);
+
+	for (size_t i = 0; i < count; ++i) {
+		res += str;
 	}
-	
 	return res;
 }
 
-std::vector<std::string> String::split(const std::string &str, const std::string &separator) {
-	size_t prev = -separator.size();
+std::vector<std::string> String::split(const std::string &str, std::string_view separator) {
+	size_t prev = 0;
 	size_t n;
-	size_t start;
 	
 	size_t count = 1;
-	while ((n = str.find(separator, prev + separator.size())) != size_t(-1)) {
-		start = prev + separator.size();
-		prev = n;
-
+	while ((n = str.find(separator, prev)) != size_t(-1)) {
 		++count;
+		prev = n + separator.size();
 	}
 
 	std::vector<std::string> res;
 	res.reserve(count);
 
-	prev = -separator.size();
-	while ((n = str.find(separator, prev + separator.size())) != size_t(-1)) {
-		start = prev + separator.size();
-		res.push_back(str.substr(start, n - start));
-
-		prev = n;
+	prev = 0;
+	while ((n = str.find(separator, prev)) != size_t(-1)) {
+		res.push_back(str.substr(prev, n - prev));
+		prev = n + separator.size();
 	}
-	
-	start = prev + separator.size();
-	res.push_back(str.substr(start));
+	res.push_back(str.substr(prev));
 	
 	return res;
 }
 
-int String::toInt(const std::string &str, int base) {
+int String::toInt(std::string_view str, int base) {
 	if (str.empty()) return 0;
-	
+
 	int res = 0;
 	bool neg = str[0] == '-';
 	for (size_t i = neg; i < str.size(); ++i) {
 		char c = str[i];
 		
 		if (c >= '0' && c <= '9') c -= '0';
-		else if (c >= 'a' && c <= 'z' && base > c - 'a') c = c - 'a' + 10;
-		else if (c >= 'A' && c <= 'Z' && base > c - 'A') c = c - 'A' + 10;
+		else if (c >= 'a' && c <= 'z' && base > c - 'a' + 10) c = c - 'a' + 10;
+		else if (c >= 'A' && c <= 'Z' && base > c - 'A' + 10) c = c - 'A' + 10;
 		else {
 			c = 0;
+			std::string s(str);
+			std::string baseStr = std::to_string(base);
 			Utils::outMsg("String::toInt",
-			              "String <" + str + "> is invalid number in numeral system with base " + std::to_string(base));
+			              "String <" + s + "> is invalid number in numeral system with base " + baseStr);
 			return 0;
 		}
 		
 		res = res * base + c;
 	}
-	if (neg) {
-		res *= -1;
-	}
-	
-	return res;
+	return neg ? -res : res;
 }
-double String::toDouble(const std::string &str) {
+double String::toDouble(std::string_view str) {
 	char *end;
-	double res = strtod(str.c_str(), &end);
-	if (end != str.c_str() + str.size()) {
-		Utils::outMsg("String::toDouble", "Failed to convert <" + str + "> to double");
-	}
+	double res = strtod(str.data(), &end);
+	if (end == str.data() + str.size()) return res;
 
-	return res;
+	Utils::outMsg("String::toDouble",
+	              "Failed to convert <" + std::string(str) + "> to double");
+	return 0;
 }
 
-bool String::isNumber(const std::string &str) {
-	size_t start = 0;
-	char f = str[start];
-	while (start < str.size() && (f == ' ' || f == '\t')) {
-		++start;
-		f = str[start];
-	}
-	if (start == str.size()) return false;
+bool String::isNumber(std::string_view str) {
+	if (str.empty()) return false;
 	
-	if (f == '-' || f == '+') {
-		++start;
-		if (start == str.size()) return false;
+	if (str[0] == '-' || str[0] == '+') {
+		str = str.substr(1);
+		if (str.empty()) return false;
 	}
 	
 	bool wasDot = false;
 	bool wasE = false;
-	for (size_t i = start; i < str.size(); ++i) {
+	for (size_t i = 0; i < str.size(); ++i) {
 		const char c = str[i];
 		if (c == '.') {
 			if (wasDot) return false;
@@ -129,9 +104,9 @@ bool String::isNumber(const std::string &str) {
 	
 	return true;
 }
-bool String::isSimpleString(const std::string &str) {
+bool String::isSimpleString(std::string_view str) {
 	if (str.size() < 2) return false;
-	
+
 	char f = str.front();
 	if (f != '\'' && f != '"') return false;
 	char b = str.back();
@@ -144,7 +119,7 @@ bool String::isSimpleString(const std::string &str) {
 	return true;
 }
 
-size_t String::firstNotInQuotes(const std::string &str, char c) {
+size_t String::firstNotInQuotes(std::string_view str, char c) {
 	bool q1 = false;
 	bool q2 = false;
 	
@@ -152,9 +127,11 @@ size_t String::firstNotInQuotes(const std::string &str, char c) {
 	for (size_t i = 0; i < str.size(); ++i) {
 		char t = str[i];
 		
-		if (t == '\'' && !q2 && prev != '\\') q1 = !q1;
-		if (t == '"'  && !q1 && prev != '\\') q2 = !q2;
-		
+		if (prev != '\\') {
+			if (t == '\'' && !q2) q1 = !q1;
+			if (t == '"'  && !q1) q2 = !q2;
+		}
+
 		if (!q1 && !q2 && t == c) {
 			return i;
 		}
@@ -169,78 +146,86 @@ size_t String::firstNotInQuotes(const std::string &str, char c) {
 	return size_t(-1);
 }
 
-bool String::startsWith(const std::string &str, const std::string &substr, bool skipSpaces) {
+bool String::startsWith(std::string_view str, std::string_view substr) {
 	if (str.size() < substr.size()) return false;
 	
-	size_t k = 0;
-	if (skipSpaces) {
-		while (k < str.size() && (str[k] == ' ' || str[k] == '\t')) {
-			++k;
-		}
-		if (k == str.size()) {
-			return str.empty();
-		}
+	if (str.size() > substr.size()) {
+		str = str.substr(0, substr.size());
 	}
-	
-	for (size_t i = 0; i < substr.size(); ++i) {
-		if (str[i + k] != substr[i]) {
-			return false;
-		}
-	}
-	return true;
+	return str == substr;
 }
-bool String::endsWith(const std::string &str, const std::string &substr) {
+bool String::endsWith(std::string_view str, std::string_view substr) {
 	if (str.size() < substr.size()) return false;
-	
-	for (size_t i = 0; i < substr.size(); ++i) {
-		if (str[str.size() - i - 1] != substr[substr.size() - i - 1]) {
-			return false;
-		}
+
+	if (str.size() > substr.size()) {
+		str = str.substr(str.size() - substr.size());
 	}
-	return true;
+	return str == substr;
 }
 
-std::string String::strip(const std::string &s, char space) {
+std::string_view String::stripView(std::string_view s, char space) {
 	size_t start = s.find_first_not_of(space);
 	if (start == size_t(-1)) return {};
+
 	size_t end = s.find_last_not_of(space) + 1;
-
-	if (start || end != s.size()) {
-		return s.substr(start, end - start);
-	}
-	return s;
+	return s.substr(start, end - start);
+}
+std::string String::strip(std::string_view s, char space) {
+	s = stripView(s, space);
+	return std::string(s);
 }
 
-void String::deleteAll(std::string &str, const std::string &toRemove) {
+void String::deleteAll(std::string &str, std::string_view toRemove) {
+	size_t prev = 0;
 	size_t i;
-	while((i = str.find(toRemove)) != size_t(-1)) {
+	while ((i = str.find(toRemove, prev)) != size_t(-1)) {
 		str.erase(i, toRemove.size());
+		prev = i;
 	}
 }
-void String::replaceAll(std::string &str, const std::string &from, const std::string &to) {
-	size_t i = -to.size();
-	while((i = str.find(from, i + to.size())) != size_t(-1)) {
+void String::replaceAll(std::string &str, std::string_view from, std::string_view to) {
+	size_t i = 0;
+	while ((i = str.find(from, i)) != size_t(-1)) {
 		str.erase(i, from.size());
 		str.insert(i, to);
+		i += to.size();
 	}
 }
 
 
-std::string String::join(const std::vector<std::string> &strings, const std::string &separator) {
-	std::string res;
-	
+std::string String::join(const std::vector<std::string> &strings, std::string_view separator) {
 	size_t size = separator.size() * (strings.size() - 1);
 	for (const std::string &s : strings) {
 		size += s.size();
 	}
-	res.reserve(size);
-	
-	for (size_t i = 0; i < strings.size(); ++i) {
-		res += strings[i];
 
-		if (i != strings.size() - 1) {
-			res += separator;
-		}
+	std::string res;
+	res.reserve(size);
+
+	for (size_t i = 0; i < strings.size() - 1; ++i) {
+		res += strings[i];
+		res += separator;
 	}
+	if (!strings.empty()) {
+		res += strings.back();
+	}
+
 	return res;
+}
+
+size_t String::getCountBytes(const char first) {
+	bool isAscii = !(first & (1 << 7));
+	if (isAscii) return 1;
+
+	bool b2 = first & (1 << 6);
+	bool b3 = first & (1 << 5);
+	bool b4 = first & (1 << 4);
+	if (b2) {
+		if (b3) {
+			if (b4) return 4;
+			return 3;
+		}
+		return 2;
+	}
+	return 4;//error, <first> is not first byte of symbol
 }

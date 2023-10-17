@@ -9,7 +9,6 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 
-#include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/math.h"
 #include "utils/string.h"
@@ -420,7 +419,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 	i = 0;
 	while (i < partStr.size() && width <= partMaxWidth) {
 		size_t start = i++;
-		while (!Algo::isFirstByte(partStr[i])) ++i;
+		while (!String::isFirstByte(partStr[i])) ++i;
 		const std::string symbol = std::string(partStr.substr(start, i - start));
 
 		int w;
@@ -468,7 +467,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 				return spaceBeforePart;
 			}
 
-			while (!partStr.empty() && !Algo::isFirstByte(partStr.back())) {
+			while (!partStr.empty() && !String::isFirstByte(partStr.back())) {
 				partStr.pop_back();
 			}
 			if (!partStr.empty()) {
@@ -504,7 +503,7 @@ void TextField::setText(const std::string &text) {
 			if (firstNotSpace != size_t(-1) && wrapIndex <= firstNotSpace) {
 				line.erase(0, firstNotSpace);
 				wrapIndex = line.empty() ? 0 : 1;
-				while (!Algo::isFirstByte(line[wrapIndex])) ++wrapIndex;
+				while (!String::isFirstByte(line[wrapIndex])) ++wrapIndex;
 			}
 		}
 		if (wrapIndex != line.size()) {
