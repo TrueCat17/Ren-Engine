@@ -30,12 +30,16 @@ class Text: public Child {
 private:
 	std::string prevText;
 
-public:
-	TextField *tf;
+	const bool hasOutlineColor;
+	const bool hasHoverOutlineColor;
 
+public:
+
+	bool curParamsIsHover = false;
 	TextParams mainParams;
 	TextParams hoverParams;
-	bool curParamsIsHover = false;
+
+	TextField *tf;
 
 	Text(Node *node, Screen *screen);
 	virtual ~Text();

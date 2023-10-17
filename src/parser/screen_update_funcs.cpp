@@ -15,6 +15,7 @@
 #include "media/py_utils.h"
 #include "media/py_utils/absolute.h"
 
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -364,36 +365,124 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	} \
 }
 
+static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
+	Uint32 fail = Uint32(-1);
+	int overflow;
+
+	if (PyLong_CheckExact(prop)) {
+		long color = PyLong_AsLongAndOverflow(prop, &overflow);
+		if (overflow || color < 0 || color > 0xFFFFFF) {
+			std::string s = PyUtils::objToStr(prop);
+			error = "Expected value between 0 and 0xFFFFFF, got " + s;
+			return fail;
+		}
+		return Uint32(color);
+	}
+
+	if (PyUnicode_CheckExact(prop)) {
+		std::string str = PyUnicode_AsUTF8(prop);
+		if (String::startsWith(str, "#")) {
+			str.erase(0, 1);
+		}else
+		if (String::startsWith(str, "0x")) {
+			str.erase(0, 2);
+		}
+
+		size_t size = str.size();
+		if (size != 3 && size != 6) {
+			error = "Expected str with len 3 or 6 symbols, got " + std::to_string(size);
+			return fail;
+		}
+
+		int ints[6];
+		for (size_t i = 0; i < size; ++i) {
+			char c = str[i];
+			bool isNum        = c >= '0' && c <= '9';
+			bool isSmallAlpha = c >= 'a' && c <= 'f';
+			bool isBigAlpha   = c >= 'A' && c <= 'F';
+			if (!isNum && !isSmallAlpha && !isBigAlpha) {
+				std::string s = PyUnicode_AsUTF8(prop);
+				error = "Expected color symbols in [0-9], [a-f] and [A-F], got <" + s + ">";
+				return fail;
+			}
+
+			if (isNum) {
+				ints[i] = c - '0';
+			}else
+			if (isSmallAlpha) {
+				ints[i] = c - 'a' + 10;
+			}else {
+				ints[i] = c - 'A' + 10;
+			}
+		}
+
+		int r, g, b;
+		if (size == 3) {
+			r = ints[0] * 17;
+			g = ints[1] * 17;
+			b = ints[2] * 17;
+		}else {
+			r = ints[0] * 16 + ints[1];
+			g = ints[2] * 16 + ints[3];
+			b = ints[4] * 16 + ints[5];
+		}
+		return Uint32((r << 16) + (g << 8) + b);
+	}
+
+	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
+		std::string type = prop->ob_type->tp_name;
+		if (canBeDisabled) {
+			error = "Expected types int, str, tuple, list, None or False, got ";
+		}else {
+			error = "Expected types int, str, tuple or list, got ";
+		}
+		error += type;
+		return fail;
+	}
+	if (Py_SIZE(prop) != 3) {
+		std::string size = std::to_string(Py_SIZE(prop));
+		error = "Expected sequence with size == 3, got " + size;
+		return fail;
+	}
+
+#define partProc(ch, index) \
+	PyObject *ch##Py = PySequence_Fast_GET_ITEM(prop, index); \
+	if (!PyLong_CheckExact(ch##Py)) { \
+		std::string type = ch##Py->ob_type->tp_name; \
+		error = "Expected sequence with ints, got " + type; \
+		return fail; \
+	} \
+	long ch = PyLong_AsLongAndOverflow(ch##Py, &overflow); \
+	if (overflow || ch < 0 || ch > 255) { \
+		std::string s = PyUtils::objToStr(ch##Py); \
+		error = "Expected sequence with ints between 0 and 255, got " + s; \
+		return fail; \
+	}
+
+	partProc(r, 0);
+	partProc(g, 1);
+	partProc(b, 2);
+
+#undef partProc
+
+	return Uint32((r << 16) + (g << 8) + b);
+}
+
 #define makeUpdateTextColor(main_or_hover, propName, simpleName) \
 static void update_##propName(Child *obj, size_t propIndex) { \
-	constexpr bool isOutline = std::string_view(#simpleName) == "outlinecolor"; \
-	\
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	auto text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
+	constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
+	constexpr bool isOutline = std::string_view(#simpleName) == "outlinecolor"; \
+	constexpr bool canBeDisabled = isHoverParam || isOutline; \
+	bool disabled = (prop == Py_None || prop == Py_False); \
+	\
 	Uint32 v = Uint32(-1); \
-	if (PyLong_CheckExact(prop)) { \
-		int overflow; \
-		long d = PyLong_AsLongAndOverflow(prop, &overflow); \
-		if (overflow || d < 0 || d > 0xFFFFFF) { \
-			std::string s = PyUtils::objToStr(prop); \
-			outError(obj, #propName, propIndex, "Expected value between 0 and 0xFFFFFF, got <" + s + ">"); \
-		}else { \
-			v = Uint32(d); \
-		} \
-	}else { \
-		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
-		bool ok = (isHoverParam || isOutline) && (prop == Py_None || prop == Py_False); \
-		if (!ok) { \
-			if constexpr (isOutline) { \
-				std::string type = prop == Py_True ? "True" : prop->ob_type->tp_name; \
-				outError(obj, #propName, propIndex, "Expected type int, None or False, got " + type); \
-			}else { \
-				std::string type = prop->ob_type->tp_name; \
-				outError(obj, #propName, propIndex, "Expected type int, got " + type); \
-			} \
-		} \
+	std::string error; \
+	if (!canBeDisabled || !disabled) { \
+		v = getColor(prop, error, canBeDisabled); \
 	} \
 	\
 	if (v != Uint32(-1)) { \
@@ -402,8 +491,13 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	}else { \
 		params.simpleName = 0; \
 		params.set_##simpleName = false; \
+		\
+		if (!error.empty()) { \
+			outError(obj, #propName, propIndex, error); \
+		} \
 	} \
 }
+
 #define makeUpdateTextAlignFunc(main_or_hover, propName, funcPostfix, zero, one) \
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
