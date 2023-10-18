@@ -305,9 +305,9 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	auto text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
-	bool tmpBool; \
-	updateCondition(tmpBool, params.size, prop, #propName) \
+	updateCondition(params.sizeIsFloat, params.size, prop, #propName) \
 	else { \
+		params.sizeIsFloat = false; \
 		params.size = 0; \
 		\
 		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \

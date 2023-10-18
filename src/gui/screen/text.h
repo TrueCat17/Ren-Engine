@@ -11,9 +11,11 @@ struct TextParams {
 	Uint32 color = 0;
 	Uint32 outlinecolor = 0;
 
-	float size;
 	float halign;
 	float valign;
+
+	float size;
+	bool sizeIsFloat;
 
 	bool set_font = false;
 	bool set_color = false;

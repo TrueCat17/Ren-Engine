@@ -41,7 +41,7 @@ screen research:
 			xalign 0.5
 			color 0xFFFFFF
 			outlinecolor 0
-			text_size info.text_size * 1.5
+			text_size get_absolute(info.text_size, get_stage_height()) * 1.5
 			font 'Arial'
 		
 		hbox:

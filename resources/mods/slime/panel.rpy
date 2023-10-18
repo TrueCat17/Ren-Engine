@@ -30,7 +30,7 @@ screen panel_row(params):
 		ground im.round_rect(panel_ground_color, panel_btn_height, panel_btn_height, 4)
 		hover  im.round_rect(panel_hover_color,  panel_btn_height, panel_btn_height, 4)
 		size panel_btn_height
-		text_size style.textbutton.text_size * 1.5
+		text_size get_absolute(style.textbutton.text_size, get_stage_height()) * 1.5
 		color 0xFF0000
 		yalign 0.5
 		action minus
@@ -46,7 +46,7 @@ screen panel_row(params):
 		ground im.round_rect(panel_ground_color, panel_btn_height, panel_btn_height, 4)
 		hover  im.round_rect(panel_hover_color,  panel_btn_height, panel_btn_height, 4)
 		size panel_btn_height
-		text_size style.textbutton.text_size * 1.5
+		text_size get_absolute(style.textbutton.text_size, get_stage_height()) * 1.5
 		color 0x00FF00
 		yalign 0.5
 		action add

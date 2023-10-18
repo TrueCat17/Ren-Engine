@@ -111,6 +111,9 @@ void Text::updateRect(bool) {
 
 	std::string font = get_font(this);
 	float size = get_size(this) * globalZoomY;
+	if ((curParamsIsHover ? hoverParams : mainParams).sizeIsFloat) {
+		size *= float(Stage::height);
+	}
 	if (std::tuple(font, size) != std::tuple(tf->mainStyle.fontName, tf->mainStyle.fontSize)) {
 		tf->setFont(font, size);
 		needUpdate = true;
