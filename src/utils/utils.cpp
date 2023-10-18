@@ -198,14 +198,35 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 
 		if (!err.empty()) {
 			msg += " Error:\n" + err;
-
-			static std::set<std::string> msgErrors;
-			if (msgErrors.count(msg)) return;
-			msgErrors.insert(msg);
 		}
-		if (msg.empty()) return;
+
+		static std::set<std::string> msgErrors;
+		if (msg.empty() || msgErrors.count(msg)) return;
 
 		Logger::log(msg + "\n\n");
+
+		const size_t maxLineSize = 100;
+		const size_t maxLineCount = 30;
+		std::vector<std::string> lines = String::split(msg, "\n");
+		for (size_t i = 0; i < lines.size() && i < maxLineCount; ++i) {
+			std::string &line = lines[i];
+			if (line.size() <= maxLineSize) continue;
+
+			size_t space = line.find_last_of(' ', maxLineSize - 1);
+			if (space <= maxLineSize / 2 || space == size_t(-1)) {//small string or no spaces?
+				space = maxLineSize;//word-wrap in the middle of word
+			}
+
+			lines.insert(lines.begin() + long(i) + 1, line.substr(space));
+			lines[i].erase(space);//no just "line" (vector mb reallocated on prev line)
+		}
+		if (lines.size() > maxLineCount) {
+			lines.erase(lines.begin() + maxLineCount - 1, lines.end());
+			lines.push_back("..");
+		}
+		msg = String::join(lines, "\n");
+
+		msgErrors.insert(msg);
 	}
 
 	if (msgCloseAll) return;
