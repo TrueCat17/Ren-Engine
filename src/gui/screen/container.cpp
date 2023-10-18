@@ -15,6 +15,7 @@
 #include "key.h"
 
 #include "parser/syntax_checker.h"
+#include "utils/stage.h"
 #include "utils/utils.h"
 
 
@@ -77,7 +78,7 @@ void Container::updateRect(bool needUpdatePos) {
 			setWidth(width);
 		}
 	}else {
-		float globalSpacing = spacing * globalZoomX;
+		float globalSpacing = spacing * float(spacingIsFloat ? Stage::width : 1) * globalZoomX;
 
 		float width = 0;
 		for (DisplayObject *child : children) {
@@ -107,7 +108,7 @@ void Container::updateRect(bool needUpdatePos) {
 			setHeight(height);
 		}
 	}else {
-		float globalSpacing = spacing * globalZoomY;
+		float globalSpacing = spacing * float(spacingIsFloat ? Stage::height : 1) * globalZoomY;
 
 		float height = 0;
 		for (DisplayObject *child : children) {

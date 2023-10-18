@@ -68,6 +68,20 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 
 
 
+#define makeUpdateFuncWithBool(Type, propName, funcPostfix) \
+static void update_##funcPostfix(Child *obj, size_t propIndex) { \
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	Type *typedObj = static_cast<Type*>(obj); \
+	\
+	if (PyBool_Check(prop)) { \
+		typedObj->propName = prop == Py_True; \
+	}else { \
+		typedObj->propName = false; \
+		std::string type = prop->ob_type->tp_name; \
+		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
+	} \
+}
+
 #define updateCondition(isFloat, var, prop, propName) \
 	isFloat = PyFloat_CheckExact(prop); \
 	typedef decltype(var) DT; \
@@ -84,47 +98,27 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 	}
 
 
-#define makeUpdateFuncType(Type, propName) \
+#define makeUpdateFuncTemplate(Type, propName, isFloat) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	Type *typedObj = static_cast<Type*>(obj); \
 	\
+	[[maybe_unused]] \
 	bool tmpBool; \
-	updateCondition(tmpBool, static_cast<Type*>(obj)->propName, prop, #propName) \
+	updateCondition(isFloat, typedObj->propName, prop, #propName) \
 	else { \
-		static_cast<Type*>(obj)->propName = 0; \
+		typedObj->propName = 0; \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected types float, absolute or int, got " + type); \
 	} \
 }
 
+#define makeUpdateFuncType(Type, propName) makeUpdateFuncTemplate(Type, propName, tmpBool)
 #define makeUpdateFunc(propName) makeUpdateFuncType(Child, propName)
+#define makeUpdateFuncTypeWithIsFloat(Type, propName) makeUpdateFuncTemplate(Type, propName, typedObj->propName##IsFloat)
+#define makeUpdateFuncWithIsFloat(propName) makeUpdateFuncTypeWithIsFloat(Child, propName)
 
-#define makeUpdateFuncWithBool(Type, propName, funcPostfix) \
-static void update_##funcPostfix(Child *obj, size_t propIndex) { \
-	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	\
-	if (PyBool_Check(prop)) { \
-		static_cast<Type*>(obj)->propName = prop == Py_True; \
-	}else { \
-		static_cast<Type*>(obj)->propName = false; \
-		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
-	} \
-}
-
-#define makeUpdateFuncWithIsFloat(propName) \
-static void update_##propName(Child *obj, size_t propIndex) { \
-	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	\
-	updateCondition(obj->propName##IsFloat, obj->propName, prop, #propName) \
-	else { \
-		obj->propName = 0; \
-		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected types float, absolute or int, got " + type); \
-	} \
-}
-
-#define makeUpdateCommonFuncWithOptionalIsFloat(propName, xIsFloat, yIsFloat) \
+#define makeUpdateCommonFuncWithIsFloat(propName, xIsFloat, yIsFloat) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	\
@@ -178,8 +172,8 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	} \
 }
 
-#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, obj->x##propName##IsFloat, obj->y##propName##IsFloat)
-#define makeUpdateCommonFuncWithoutIsFloat(propName) makeUpdateCommonFuncWithOptionalIsFloat(propName, unusedBoolX, unusedBoolY)
+#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithIsFloat(propName, obj->x##propName##IsFloat, obj->y##propName##IsFloat)
+#define makeUpdateCommonFuncWithoutIsFloat(propName) makeUpdateCommonFuncWithIsFloat(propName, unusedBoolX, unusedBoolY)
 
 
 #define makeUpdateFuncWithAlign(x_or_y) \
@@ -252,11 +246,12 @@ static void update_align(Child *obj, size_t propIndex) {
 #define makeUpdateFuncWithStr(Type, propName, funcPostfix) \
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
+	Type *typedObj = static_cast<Type*>(obj); \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		static_cast<Type*>(obj)->propName = PyUnicode_AsUTF8(prop); \
+		typedObj->propName = PyUnicode_AsUTF8(prop); \
 	}else { \
-		static_cast<Type*>(obj)->propName.clear(); \
+		typedObj->propName.clear(); \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #propName, propIndex, "Expected type str, got " + type); \
 	} \
@@ -302,7 +297,7 @@ static void update_crop(Child *obj, size_t propIndex) {
 #define makeUpdateTextSize(main_or_hover, propName) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	auto text = static_cast<Text*>(obj); \
+	Text *text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
 	updateCondition(params.sizeIsFloat, params.size, prop, #propName) \
@@ -322,7 +317,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 #define makeUpdateTextFunc(main_or_hover, propName, mask) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	auto text = static_cast<Text*>(obj); \
+	Text *text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (prop == Py_None) { \
@@ -346,7 +341,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 #define makeUpdateFont(main_or_hover, funcPostfix) \
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	auto text = static_cast<Text*>(obj); \
+	Text *text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
@@ -471,7 +466,7 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 #define makeUpdateTextColor(main_or_hover, propName, simpleName) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	auto text = static_cast<Text*>(obj); \
+	Text *text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
 	constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
@@ -501,7 +496,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 #define makeUpdateTextAlignFunc(main_or_hover, propName, funcPostfix, zero, one) \
 static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
-	auto text = static_cast<Text*>(obj); \
+	Text *text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
@@ -552,6 +547,8 @@ makeUpdateFunc(rotate)
 makeUpdateFuncWithBool(Child, clipping, clipping)
 makeUpdateFuncWithBool(Child, skip_mouse, skip_mouse)
 
+makeUpdateFuncTypeWithIsFloat(Container, spacing)
+
 makeUpdateFuncWithIsFloat(xpos)
 makeUpdateFuncWithIsFloat(ypos)
 
@@ -561,8 +558,8 @@ makeUpdateFuncWithIsFloat(yanchorPre)
 makeUpdateFuncWithIsFloat(xsize)
 makeUpdateFuncWithIsFloat(ysize)
 
-makeUpdateFuncType(Child, xzoom)
-makeUpdateFuncType(Child, yzoom)
+makeUpdateFunc(xzoom)
+makeUpdateFunc(yzoom)
 
 makeUpdateCommonFunc(pos)
 makeUpdateCommonFunc(anchorPre)
@@ -581,8 +578,6 @@ makeUpdateFuncType(Screen, zorder)
 makeUpdateFuncWithBool(Screen, ignore_modal, ignore_modal)
 makeUpdateFuncWithBool(Screen, modal, modal)
 makeUpdateFuncWithBool(Screen, save, save)
-
-makeUpdateFuncType(Container, spacing)
 
 makeUpdateFuncWithStr(TextButton, ground, ground_textbutton)
 makeUpdateFuncWithStr(TextButton, hover, hover_textbutton)
