@@ -1,9 +1,13 @@
 #include "btn_rect.h"
 
-#include "gui/group.h"
+#include "gui/screen/style.h"
+
+#include "media/audio_manager.h"
+#include "media/py_utils.h"
 
 #include "utils/math.h"
 #include "utils/mouse.h"
+#include "utils/utils.h"
 
 
 static std::vector<BtnRect*> btnRects;
@@ -34,25 +38,13 @@ static bool objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 
 
 
-BtnRect::BtnRect() {
+BtnRect::BtnRect(Child *owner):
+    owner(owner)
+{
 	btnRects.push_back(this);
 }
 
-void BtnRect::init(DisplayObject *owner,
-                   const std::function<void (DisplayObject*)> &onLeftClick,
-                   const std::function<void (DisplayObject*)> &onRightClick)
-{
-	this->owner = owner;
-	_onLeftClick = onLeftClick;
-	_onRightClick = onRightClick;
-}
-
-
 BtnRect::~BtnRect() {
-	owner = nullptr;
-	_onLeftClick = nullptr;
-	_onRightClick = nullptr;
-
 	for (size_t i = 0; i < btnRects.size(); ++i) {
 		BtnRect *btnRect = btnRects[i];
 		if (btnRect == this) {
@@ -76,7 +68,7 @@ void BtnRect::checkMouseCursor() {
 
 	for (size_t i = btnRects.size() - 1; i != size_t(-1); --i) {
 		BtnRect *btnRect = btnRects[i];
-		DisplayObject *owner = btnRect->getOwner();
+		Child *owner = btnRect->owner;
 		if (!owner || !owner->enable) continue;
 
 		float x = float(mouseX) - owner->getGlobalX() - owner->calcedXanchor;
@@ -118,7 +110,7 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 
 	for (size_t i = btnRects.size() - 1; i != size_t(-1); --i) {
 		BtnRect *btnRect = btnRects[i];
-		DisplayObject *owner = btnRect->getOwner();
+		Child *owner = btnRect->owner;
 		if (!owner || !owner->enable) continue;
 		if (withKeyboard && !btnRect->buttonMode) continue;
 
@@ -148,13 +140,89 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 	return false;
 }
 
-void BtnRect::onLeftClick() const {
-	if (_onLeftClick != nullptr) {
-		_onLeftClick(owner);
+
+void BtnRect::onHovered() const {
+	const Node *node = owner->node;
+	const Style *style = owner->style;
+
+	const Node *hoverSound = node->getProp("hover_sound");
+	if (hoverSound) {
+		AudioManager::play("button_hover " + hoverSound->params,
+		                   hoverSound->getFileName(), hoverSound->getNumLine());
+	}else {
+		PyObject *hoverSoundObj = StyleManager::getProp(style, "hover_sound");
+
+		if (PyUnicode_CheckExact(hoverSoundObj)) {
+			std::string sound = PyUnicode_AsUTF8(hoverSoundObj);
+			AudioManager::play("button_hover '" + sound + "'", node->getFileName(), node->getNumLine());
+		}else if (hoverSoundObj != Py_None) {
+			std::string type = hoverSoundObj->ob_type->tp_name;
+			Utils::outMsg("BtnRect::onHovered",
+			              "In style." + style->name + ".hover_sound expected type str, got " + type);
+		}
+	}
+
+	const Node *hovered = node->getProp("hovered");
+	if (hovered) {
+		PyUtils::exec(hovered->getFileName(), hovered->getNumLine(),
+		              "exec_funcs(" + hovered->params + ")");
+	}else {
+		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "hovered");
 	}
 }
+
+void BtnRect::onUnhovered() const {
+	const Node *node = owner->node;
+	const Style *style = owner->style;
+
+	const Node *unhovered = node->getProp("unhovered");
+	if (unhovered) {
+		PyUtils::exec(unhovered->getFileName(), unhovered->getNumLine(),
+		              "exec_funcs(" + unhovered->params + ")");
+	}else {
+		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "unhovered");
+	}
+}
+
+void BtnRect::onLeftClick() const {
+	const Node *node = owner->node;
+	const Style *style = owner->style;
+
+	const Node *activateSound = node->getProp("activate_sound");
+	if (activateSound) {
+		AudioManager::play("button_click " + activateSound->params,
+		                   activateSound->getFileName(), activateSound->getNumLine());
+	}else {
+		PyObject *activateSoundObj = StyleManager::getProp(style, "activate_sound");
+
+		if (PyUnicode_CheckExact(activateSoundObj)) {
+			std::string sound = PyUnicode_AsUTF8(activateSoundObj);
+			AudioManager::play("button_click '" + sound + "'", node->getFileName(), node->getNumLine());
+		}else if (activateSoundObj != Py_None) {
+			std::string type = activateSoundObj->ob_type->tp_name;
+			Utils::outMsg("BtnRect::onLeftClick",
+			              "In style." + style->name + ".activate_sound expected type str, got " + type);
+		}
+	}
+
+	const Node *action = node->getProp("action");
+	if (action) {
+		PyUtils::exec(action->getFileName(), action->getNumLine(),
+		              "exec_funcs(" + action->params + ")");
+	}else {
+		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "action");
+	}
+}
+
 void BtnRect::onRightClick() const {
-	if (_onRightClick != nullptr) {
-		_onRightClick(owner);
+	const Node *node = owner->node;
+	const Style *style = owner->style;
+
+	const Node* alternate = node->getProp("alternate");
+	if (alternate) {
+		PyUtils::exec(alternate->getFileName(), alternate->getNumLine(),
+		              "exec_funcs(" + alternate->params + ")");
+	}else {
+		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
 	}
 }

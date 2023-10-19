@@ -1,21 +1,15 @@
 #ifndef BTNRECT_H
 #define BTNRECT_H
 
-#include <functional>
-
-#include "gui/display_object.h"
+#include "gui/screen/child.h"
 
 class BtnRect {
 private:
-	DisplayObject *owner = nullptr;
-
-	std::function<void (DisplayObject*)> _onLeftClick = nullptr;
-	std::function<void (DisplayObject*)> _onRightClick = nullptr;
+	Child *owner;
 
 public:
 	static void checkMouseCursor();
 	static bool checkMouseClick(bool left, bool withKeyboard = false);
-
 
 	bool buttonMode = true;
 
@@ -23,14 +17,11 @@ public:
 	bool mouseLeftDown = false;
 	bool mouseRightDown = false;
 
-	BtnRect();
+	BtnRect(Child *owner);
 	~BtnRect();
 
-	void init(DisplayObject *owner,
-			  const std::function<void (DisplayObject*)> &onLeftClick = nullptr,
-	          const std::function<void (DisplayObject*)> &onRightClick = nullptr);
-
-	DisplayObject* getOwner() const { return owner; }
+	void onHovered() const;
+	void onUnhovered() const;
 
 	void onLeftClick() const;
 	void onRightClick() const;
