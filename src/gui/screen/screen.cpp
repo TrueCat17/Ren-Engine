@@ -366,7 +366,7 @@ void Screen::checkScreenEvents() {
 		++num;
 		++screenStack.back().curChildNum;
 
-		if (child->node->screenNum == size_t(-1)) {
+		if (child->node->screenNum == uint32_t(-1)) {
 			child->enable = true;
 			continue;
 		}

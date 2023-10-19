@@ -145,7 +145,7 @@ static void initIsEnd(Node *node) {
 }
 
 static void initNums(Node *node) {
-	size_t i = 0;
+	uint32_t i = 0;
 	for (Node *child : node->children) {
 		if (child->isScreenConst || child->isScreenEvent ||
 		    child->command == "$" || child->command == "python") continue;
@@ -157,15 +157,15 @@ static void initNums(Node *node) {
 
 
 
-static size_t maxScreenChild(Node *node) {
+static uint32_t maxScreenChild(Node *node) {
 	for (size_t i = node->children.size() - 1; i != size_t(-1); --i) {
 		Node *child = node->children[i];
-		if (child->screenNum != size_t(-1)) {
+		if (child->screenNum != uint32_t(-1)) {
 			return child->screenNum;
 		}
 	}
 
-	return size_t(-1);
+	return uint32_t(-1);
 }
 
 
@@ -243,7 +243,7 @@ static std::string initCycleCode(Node *node) {
 	const std::string &command = node->command;
 	const std::string &params = node->params;
 
-	size_t count = maxScreenChild(node) + 1;
+	uint32_t count = maxScreenChild(node) + 1;
 
 	PyUtils::exec(node->getFileName(), node->getNumLine(), name + " = 0");
 
@@ -482,8 +482,8 @@ static std::string initCode(Node *node, const std::string& index) {
 	res += "_SL_last = [\n";
 	size_t bracketBegin = res.size() - 2;
 
-	size_t lastPropNum = size_t(-1);
-	size_t maxChildNum = maxScreenChild(node);
+	uint32_t lastPropNum = uint32_t(-1);
+	uint32_t maxChildNum = maxScreenChild(node);
 
 	//props before first obj
 	for (Node *child : node->children) {
@@ -497,7 +497,7 @@ static std::string initCode(Node *node, const std::string& index) {
 		lastPropNum = child->screenNum;
 	}
 
-	if (maxChildNum != size_t(-1)) {
+	if (maxChildNum != uint32_t(-1)) {
 		res += String::repeat(indent + "    None,\n", maxChildNum - lastPropNum);
 		res += indent + "]";
 	}else {
@@ -528,7 +528,7 @@ static std::string initCode(Node *node, const std::string& index) {
 			if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
 			if (child->isScreenEvent) continue;
 
-			if (child->screenNum <= lastPropNum && lastPropNum != size_t(-1)) continue;
+			if (child->screenNum <= lastPropNum && lastPropNum != uint32_t(-1)) continue;
 
 			initChildCode(child, res, indent, std::to_string(child->screenNum));
 

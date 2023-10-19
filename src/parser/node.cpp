@@ -1,7 +1,5 @@
 #include "node.h"
 
-#include <set>
-
 #include <Python.h>
 
 #include "gv.h"
@@ -11,17 +9,22 @@
 #include "utils/string.h"
 #include "utils/utils.h"
 
-static const size_t NODES_IN_PART = 5000;
-static size_t countNodes = 0;
+static const uint32_t NODES_IN_PART = 5000;
+static uint32_t countNodes = 0;
 static std::vector<Node*> nodes;
 
-Node::Node(const std::string &fileName, size_t numLine, size_t id):
-	fileName(fileName),
-	numLine(numLine),
-	id(id)
+Node::Node(const std::string &fileName, uint32_t numLine, uint32_t id):
+    fileName(fileName),
+    numLine(numLine),
+    id(id),
+    isScreenProp(false),
+    isScreenEvent(false),
+    withScreenEvent(false),
+    isScreenConst(false),
+    isScreenEnd(false)
 {}
 
-Node* Node::getNewNode(const std::string &fileName, size_t numLine) {
+Node* Node::getNewNode(const std::string &fileName, uint32_t numLine) {
 	if ((countNodes % NODES_IN_PART) == 0) {
 		nodes.push_back((Node*)::malloc(NODES_IN_PART * sizeof(Node)));
 	}
@@ -34,10 +37,10 @@ Node* Node::getNewNode(const std::string &fileName, size_t numLine) {
 }
 void Node::destroyAll() {
 	for (size_t i = 0; i < nodes.size(); ++i) {
-		const size_t size = (i == nodes.size() - 1) ? (countNodes % NODES_IN_PART) : NODES_IN_PART;
+		const uint32_t size = (i == nodes.size() - 1) ? (countNodes % NODES_IN_PART) : NODES_IN_PART;
 
 		Node *array = nodes[i];
-		for (size_t j = 0; j < size; ++j) {
+		for (uint32_t j = 0; j < size; ++j) {
 			array[j].~Node();//destructor
 		}
 		::free(array);
@@ -47,13 +50,15 @@ void Node::destroyAll() {
 }
 
 
+using Strings = std::initializer_list<std::string>;
+static const Strings highLevelCommands = { "image", "scene", "show", "hide" };
+static const Strings blockCommandsInImage = { "contains", "block", "parallel" };
+static const Strings spriteParams = { "at", "with", "behind", "as" };
 
 PyObject* Node::getPyList() const {
 	PyObject *res = PyList_New(0);
 
-	static const std::set<std::string> highLevelCommands = {"image", "scene", "show", "hide"};
-	bool isHighLevelCommands = highLevelCommands.count(command);
-
+	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
 	if (!isHighLevelCommands) {
 		if (!command.empty()) {
 			PyList_Append(res, PyUnicode_FromString(command.c_str()));
@@ -66,8 +71,7 @@ PyObject* Node::getPyList() const {
 	for (const Node* child : children) {
 		PyObject *childPyList = child->getPyList();
 
-		static const std::set<std::string> blockCommandsInImage = {"contains", "block", "parallel"};
-		bool childIsBlock = blockCommandsInImage.count(child->command);
+		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
 
 		if (childIsBlock) {
 			PyList_Append(res, childPyList);
@@ -149,7 +153,7 @@ static void preloadImageAt(const std::vector<std::string> &children) {
 		}
 	}
 }
-size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
+uint32_t Node::preloadImages(const Node *parent, uint32_t start, uint32_t count) {
 	for (size_t i = start; i < parent->children.size() && count; ++i) {
 		const Node *child = parent->children[i];
 		const std::string &childCommand = child->command;
@@ -157,7 +161,8 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 
 		if (childCommand == "with") {
 			count = preloadImages(child, 0, count);
-		}else
+			continue;
+		}
 
 		if (childCommand == "jump" || childCommand == "call") {
 			const std::string &label = childParams;
@@ -173,23 +178,21 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 					}
 				}
 			}
-		}else
+			continue;
+		}
 
 		if (childCommand == "if" || childCommand == "elif" || childCommand == "else") {
 			preloadImages(child, 0, 1);
-		}else
+			continue;
+		}
 
 
 
-		if ((childCommand == "show" && !String::startsWith(childParams, "screen ")) ||
-			childCommand == "scene")
-		{
-			static const std::set<std::string> words = {"at", "with", "behind", "as"};
-
+		if ((childCommand == "show" && !String::startsWith(childParams, "screen ")) || childCommand == "scene") {
 			--count;
 
 			std::vector<std::string> args = Algo::getArgs(childParams);
-			while (args.size() > 2 && words.count(args[args.size() - 2])) {
+			while (args.size() > 2 && Algo::in(args[args.size() - 2], spriteParams)) {
 				args.erase(args.end() - 2, args.end());
 			}
 			if (args.empty()) continue;

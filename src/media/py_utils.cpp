@@ -30,7 +30,7 @@
 #include "utils/utils.h"
 
 
-typedef std::tuple<const std::string, const std::string, uint32_t> PyCode;
+using PyCode = std::tuple<const std::string, const std::string, uint32_t>;
 
 static std::map<std::string, PyObject*> constObjects;
 static std::map<PyCode, PyObject*> compiledObjects;
@@ -50,8 +50,8 @@ PyObject *PyUtils::tuple1 = nullptr;
 std::recursive_mutex PyUtils::pyExecMutex;
 
 
-PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, size_t numLine) {
-	std::tuple<const std::string&, const std::string&, size_t> refPyCode(code, fileName, numLine);
+PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, uint32_t numLine) {
+	std::tuple<const std::string&, const std::string&, uint32_t> refPyCode(code, fileName, numLine);
 
 	std::lock_guard g(pyExecMutex);
 
@@ -414,7 +414,7 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 	return true;
 }
 
-std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std::string &code, bool retRes) {
+std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const std::string &code, bool retRes) {
 	if (code.empty()) return "";
 
 	if (String::isNumber(code)) {
@@ -468,7 +468,7 @@ std::string PyUtils::exec(const std::string &fileName, size_t numLine, const std
 	return res;
 }
 
-PyObject* PyUtils::execRetObj(const std::string &fileName, size_t numLine, const std::string &code) {
+PyObject* PyUtils::execRetObj(const std::string &fileName, uint32_t numLine, const std::string &code) {
 	PyObject *res = nullptr;
 	if (code.empty()) return res;
 

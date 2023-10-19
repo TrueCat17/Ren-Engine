@@ -1,6 +1,5 @@
 #include "parser.h"
 
-#include <set>
 #include <map>
 #include <fstream>
 
@@ -20,32 +19,29 @@
 
 
 static void checkPythonSyntax(Node *node) {
-	size_t line = node->getNumLine() + (node->command != "$");
+	uint32_t line = node->getNumLine() + (node->command != "$");
 	PyObject *co = PyUtils::getCompileObject(node->params, node->getFileName(), line);
 	if (!co) {
 		node->params = "";
 	}
 }
 
+using Strings = std::initializer_list<std::string>;
 
-static const std::set<std::string> eventProps({
+static const Strings eventProps = {
 	"action", "alternate", "hovered", "unhovered",
 	"activate_sound", "hover_sound"
-});
-bool Parser::isEvent(const std::string &type) {
-	return eventProps.count(type);
-}
-
-static const std::set<std::string> fakeComps({
+};
+static const Strings fakeComps = {
 	"if", "elif", "else", "for", "while", "continue", "break", "$", "python"
-});
-static const std::set<std::string> comps({
+};
+static const Strings comps = {
 	"screen", "use", "hbox", "vbox", "null", "image", "imagemap", "hotspot", "text", "textbutton", "button", "key"
-});
+};
 void Parser::getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isProp, bool &isEvent) {
-	isFake = fakeComps.count(type);
-	isProp = !isFake && !comps.count(type);
-	isEvent = isProp && Parser::isEvent(type);
+	isFake = Algo::in(type, fakeComps);
+	isProp = !isFake && !Algo::in(type, comps);
+	isEvent = isProp && Algo::in(type, eventProps);
 }
 
 
@@ -67,6 +63,9 @@ static void removeComment(std::string &s) {
 		}
 	}
 }
+
+
+static const std::string ops = "(,+-*/=[{";
 
 Parser::Parser(const std::string &dir) {
 	this->dir = dir;
@@ -153,9 +152,7 @@ Parser::Parser(const std::string &dir) {
 				code.push_back(s);
 			}
 
-			static const std::string opsStr = "(,+-*/=[{";
-			static const std::set<char> ops(opsStr.begin(), opsStr.end());
-			toPrevLine = ops.count(s.back());
+			toPrevLine = ops.find(s.back()) != size_t(-1);
 		}
 	}
 
@@ -180,8 +177,8 @@ Node* Parser::getMainNode() {
 	res->params = dir.substr(lastSlash + 1);
 
 
-	size_t start = 0;
-	size_t end = code.size();
+	uint32_t start = 0;
+	uint32_t end = uint32_t(code.size());
 	const std::string prevHeadWord = "None";
 	while (start < end) {
 		const std::string &headLine = code[start];
@@ -215,7 +212,7 @@ Node* Parser::getMainNode() {
 			              "Line: " + std::to_string(start - startFile));
 		}
 
-		size_t nextChildStart = start + 1;
+		uint32_t nextChildStart = start + 1;
 		while (nextChildStart < code.size() && (code[nextChildStart].empty() || code[nextChildStart][0] == ' ')) {
 			++nextChildStart;
 		}
@@ -265,7 +262,7 @@ Node* Parser::getMainNode() {
 			}
 
 			node->parent = res;
-			node->childNum = res->children.size();
+			node->childNum = uint32_t(res->children.size());
 			res->children.push_back(node);
 		}
 		start = nextChildStart;
@@ -276,13 +273,16 @@ Node* Parser::getMainNode() {
 	return res;
 }
 
+
+static const Strings compsWithFirstParam = { "screen", "use", "hotspot", "image", "key", "text", "textbutton" };
+
 static void initScreenNode(Node *node) {
 	ScopeExit se([&]() {
 		std::map<std::string, Node*> props;
 
 		for (size_t i = 0; i < node->children.size(); ++i) {
 			Node *child = node->children[i];
-			child->childNum = i;
+			child->childNum = uint32_t(i);
 
 			if (child->isScreenProp) {
 				auto it = props.find(child->command);
@@ -301,19 +301,21 @@ static void initScreenNode(Node *node) {
 	});
 
 
-	bool isFakeComp;
-	Parser::getIsFakeOrIsProp(node->command, isFakeComp, node->isScreenProp, node->isScreenEvent);
-	if (isFakeComp || node->isScreenProp) {
+	bool isFakeComp, isScreenProp, isScreenEvent;
+	Parser::getIsFakeOrIsProp(node->command, isFakeComp, isScreenProp, isScreenEvent);
+	node->isScreenProp = isScreenProp;
+	node->isScreenEvent = isScreenEvent;
+	if (isFakeComp || isScreenProp) {
 		return;
 	}
 
 
-	static const std::set<std::string> compsWithFirstParam({"screen", "use", "hotspot", "image", "key", "text", "textbutton"});
 	const std::vector<std::string> args = Algo::getArgs(node->params);
 
 	std::vector<Node*> toInsert;
 
-	const bool firstIsProp = compsWithFirstParam.count(node->command);
+	const bool firstIsProp = Algo::in(node->command, compsWithFirstParam);
+
 	if (firstIsProp) {
 		if (node->command != "screen" && node->command != "use") {
 			if (args.empty()) {
@@ -443,7 +445,9 @@ static void initScreenNode(Node *node) {
 	node->children.insert(node->children.begin(), toInsert.begin(), toInsert.end());
 }
 
-Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
+static const Strings childMayHaveEffect = { "scene", "show", "hide" };
+
+Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText) {
 	Node *res = Node::getNewNode(fileName, start - startFile);
 
 	std::string headLine = code[start];
@@ -570,7 +574,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		const std::vector<std::string> words = String::split(headLine, " ");
 
 		if (words.size() >= 2 && words[1] != "python") {
-			res->priority = String::toDouble(words[1]);
+			res->priority = float(String::toDouble(words[1]));
 		}else {
 			res->priority = 0;
 		}
@@ -622,7 +626,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		return res;
 	}
 
-	size_t childStart = start + 1;
+	uint32_t childStart = start + 1;
 	std::string prevHeadWord = "None";
 	while (childStart < end) {
 		headLine = code[childStart];
@@ -658,20 +662,18 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		}
 		prevHeadWord = headWord;
 
-		size_t nextChildStart = getNextStart(childStart);
+		uint32_t nextChildStart = getNextStart(childStart);
 		Node *node = getNode(childStart, nextChildStart, superParent, isText);
 		node->parent = res;
 
 		if (node->command == "with") {
 			size_t i = res->children.size() - 1;
 			while (i != size_t(-1)) {
-				const static std::set<std::string> canChildWith = {"scene", "show", "hide"};
-
 				Node *child = res->children[i];
 				const std::string &childCommand = child->command;
 				std::string &childParams = child->params;
 
-				if (canChildWith.count(childCommand) && childParams.find(" with ") == size_t(-1)) {
+				if (Algo::in(childCommand, childMayHaveEffect) && childParams.find(" with ") == size_t(-1)) {
 					childParams += " with " + node->params;
 					--i;
 				}else {
@@ -687,7 +689,7 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 		childStart = nextChildStart;
 	}
 
-	for (size_t i = 0; i < res->children.size(); ++i) {
+	for (uint32_t i = 0; i < res->children.size(); ++i) {
 		res->children[i]->childNum = i;
 	}
 
@@ -697,13 +699,13 @@ Node* Parser::getNode(size_t start, size_t end, int superParent, bool isText) {
 	return res;
 }
 
-size_t Parser::getNextStart(size_t start) const {
+uint32_t Parser::getNextStart(uint32_t start) const {
 	if (code[start].empty()) return start + 1;
 
-	const size_t countStartIndent = code[start].find_first_not_of(' ');
+	const uint32_t countStartIndent = uint32_t(code[start].find_first_not_of(' '));
 
-	size_t last = start;
-	for (size_t i = start + 1; i < code.size(); ++i) {
+	uint32_t last = start;
+	for (uint32_t i = start + 1; i < code.size(); ++i) {
 		const std::string &line = code[i];
 		if (line.empty()) continue;
 

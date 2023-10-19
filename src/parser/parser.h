@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <inttypes.h>
 #include <vector>
 #include <string>
 
@@ -13,14 +14,13 @@ private:
 
 	std::string dir;
 	std::string fileName = "NO_FILE";
-	size_t startFile = 0;
+	uint32_t startFile = 0;
 
-	size_t getNextStart(size_t start) const;
+	uint32_t getNextStart(uint32_t start) const;
 
-	Node* getNode(size_t start, size_t end, int superParent, bool isText);
+	Node* getNode(uint32_t start, uint32_t end, int superParent, bool isText);
 	Node* getMainNode();
 public:
-	static bool isEvent(const std::string &type);
 	static void getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isProp, bool &isEvent);
 
 	Parser(const std::string &dir);

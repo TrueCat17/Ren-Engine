@@ -10,32 +10,32 @@ typedef struct _object PyObject;
 
 class Node {
 private:
-	Node(const std::string &fileName, size_t numLine, size_t id);
+	Node(const std::string &fileName, uint32_t numLine, uint32_t id);
 
 	std::string fileName;
-	size_t numLine;
+	uint32_t numLine;
 
 public:
-	static Node* getNewNode(const std::string &fileName, size_t numLine);
+	static Node* getNewNode(const std::string &fileName, uint32_t numLine);
 	static void destroyAll();
 
-	static size_t preloadImages(const Node *parent, size_t start, size_t count);
+	static uint32_t preloadImages(const Node *parent, uint32_t start, uint32_t count);
 
 
-	size_t id;//unique id for each Node
-	double priority;//for init-block
+	uint32_t id;//unique id for each Node
+	float priority;//for init-block
 
+	uint32_t childNum;//index in parent Node
 	Node *parent;
-	size_t childNum;//index in parent Node
 
 	uint8_t countPropsToCalc;
 
-	bool isScreenProp = false;     //xpos, ypos, pos, ...
-	bool isScreenEvent = false;    //action, alternate, hover_sound...
-	bool withScreenEvent = false;  //some child is screen event
-	bool isScreenConst = false;    //have only const {children and props}?
-	bool isScreenEnd = false;      //all children (not props) are const
-	size_t screenNum = size_t(-1); //childNum, but skip screenConst children
+	bool isScreenProp:1;     //xpos, ypos, pos, ...
+	bool isScreenEvent:1;    //action, alternate, hover_sound...
+	bool withScreenEvent:1;  //some child is screen event
+	bool isScreenConst:1;    //have only const {children and props}?
+	bool isScreenEnd:1;      //all children (not props) are const
+	uint32_t screenNum = uint32_t(-1); //childNum, but skip screenConst children
 
 	std::string command;//$, play, image, show, ...
 	std::string params; //text to out, command to execute, condition to check, name for main/label/screen, ...
@@ -51,7 +51,7 @@ public:
 	const Node *getProp(const std::string &name) const;
 
 	const std::string& getFileName() const { return fileName; }
-	size_t getNumLine() const { return numLine; }
+	uint32_t getNumLine() const { return numLine; }
 	std::string getPlace() const;
 };
 
