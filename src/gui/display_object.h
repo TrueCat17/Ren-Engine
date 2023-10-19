@@ -54,6 +54,7 @@ public:
 	SurfacePtr surface = nullptr;
 
 	Group *parent = nullptr;
+	size_t index = size_t(-1);
 
 
 	DisplayObject();

@@ -308,6 +308,11 @@ void Screen::updateScreens() {
 		return sA->zorder < sB->zorder;
 	};
 	std::sort(Stage::screens->children.begin(), Stage::screens->children.end(), zOrderCmp);
+
+	size_t index = 0;
+	for (DisplayObject *screen : Stage::screens->children) {
+		screen->index = index++;
+	}
 }
 
 

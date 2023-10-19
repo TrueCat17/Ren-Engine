@@ -11,39 +11,43 @@ void Group::updateGlobal() {
 	}
 }
 
-size_t Group::getChildIndex(DisplayObject *child) const {
-	for (size_t i = 0; i < children.size(); ++i) {
-		if (children[i] == child) {
-			return i;
-		}
-	}
-	return size_t(-1);
-}
-
 void Group::addChildAt(DisplayObject *child, size_t index) {
 	if (child->parent) {
 		child->parent->removeChild(child);
 	}
 
-	auto to = std::min(children.begin() + long(index), children.end());
-	children.insert(to, child);
+	index = std::min(index, children.size());
+	children.insert(children.begin() + long(index), child);
+
+	child->index = index;
+	for (size_t i = index + 1; i < children.size(); ++i) {
+		++children[i]->index;
+	}
 
 	child->parent = this;
 	child->updateGlobal();
 }
 void Group::removeChild(DisplayObject *child) {
-	for (size_t i = 0; i < children.size(); ++i) {
+	if (clearing) return;
+
+	size_t i = 0;
+	for (; i < children.size(); ++i) {
 		if (children[i] == child) {
 			children.erase(children.begin() + long(i));
 			break;
 		}
 	}
+	for (; i < children.size(); ++i) {
+		--children[i]->index;
+	}
 }
 void Group::clearChildren() {
-	while (!children.empty()) {
-		DisplayObject *obj = children[0];
-		delete obj;//remove from .parent=this (thereforce from children of parent)
+	clearing = true;
+	for (DisplayObject *obj : children) {
+		delete obj;
 	}
+	children.clear();
+	clearing = false;
 }
 
 bool Group::transparentForMouse(int x, int y) const {

@@ -33,8 +33,14 @@ void Container::addChildAt(DisplayObject *child, size_t index) {
 	if (child->parent) {
 		child->parent->removeChild(child);
 	}
-	auto to = std::min(pChildren.begin() + long(index), pChildren.end());
-	pChildren.insert(to, child);
+
+	index = std::min(index, pChildren.size());
+	pChildren.insert(pChildren.begin() + long(index), child);
+
+	child->index = index;
+	for (size_t i = index + 1; i < pChildren.size(); ++i) {
+		++pChildren[i]->index;
+	}
 
 	child->parent = parent;
 }
@@ -236,13 +242,11 @@ void Container::addChildrenFromNode() {
 			if (screenParent == this) {
 				index = children.size();
 			}else {
-				Child *prev = this;
-				while (prev->isFakeContainer() &&
-					   static_cast<Container*>(prev)->screenChildren.size())
-				{
-					prev = static_cast<Container*>(prev)->screenChildren.back();
+				Container *prev = this;
+				while (prev->isFakeContainer() && !prev->screenChildren.empty()) {
+					prev = static_cast<Container*>(prev->screenChildren.back());
 				}
-				index = screenParent->getChildIndex(prev) + 1;
+				index = prev->index + 1;
 			}
 
 			addChildAt(child, index);

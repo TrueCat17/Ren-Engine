@@ -4,6 +4,8 @@
 #include "display_object.h"
 
 class Group: public DisplayObject {
+	bool clearing = false;
+
 public:
 	std::vector<DisplayObject*> children;
 
@@ -13,7 +15,6 @@ public:
 	void removeChild(DisplayObject *child);
 	void clearChildren();
 
-	size_t getChildIndex(DisplayObject *child) const;
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
 	virtual void updateGlobal();
