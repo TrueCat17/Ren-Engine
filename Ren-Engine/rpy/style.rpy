@@ -9,7 +9,7 @@ init -1002 python:
 	
 	
 	class Style(Object):
-		complex_props = ('pos', 'anchor', 'size', 'zoom', 'align', 'xalign', 'yalign')
+		complex_props = ('pos', 'anchor', 'size', 'size_min', 'size_max', 'zoom', 'align', 'xalign', 'yalign')
 		
 		def __init__(self, parent = None, properties = None):
 			Object.__init__(self, parent)
@@ -88,8 +88,12 @@ init -1001:
 		pos 0
 		anchor 0
 		size 1.0
+		size_min -1
+		size_max -1
 		zoom 1.0
 		spacing 0
+		spacing_min -1
+		spacing_max -1
 		crop (0.0, 0.0, 1.0, 1.0)
 		rotate 0
 		alpha 1
@@ -114,6 +118,8 @@ init -1001:
 	style text:
 		size -1
 		text_size 20
+		text_size_min -1
+		text_size_max -1
 		color 0xFFFFFF
 		outlinecolor None
 		font 'Calibri'

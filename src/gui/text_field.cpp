@@ -650,7 +650,7 @@ void TextField::draw() const {
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, true);
-	SDL_Point center = { int(xAnchor), int(yAnchor) };
+	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
 
 	for (size_t i = 0; i < lineSurfaces.size(); ++i) {
 		SurfacePtr surface = lineSurfaces[i];

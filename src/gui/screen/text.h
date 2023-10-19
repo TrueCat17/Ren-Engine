@@ -14,15 +14,16 @@ struct TextParams {
 	float halign;
 	float valign;
 
-	float size;
-	bool sizeIsFloat;
+	float size, size_min, size_max;
+	bool size_is_float:1;
+	bool size_min_is_float:1;
+	bool size_max_is_float:1;
 
-	bool set_font = false;
-	bool set_color = false;
-	bool set_outlinecolor = false;
-	bool set_size = false;
-	bool set_halign = false;
-	bool set_valign = false;
+	bool set_font:1;
+	bool set_color:1;
+	bool set_outlinecolor:1;
+	bool set_halign:1;
+	bool set_valign:1;
 
 	Uint8 font_style = 0;
 	Uint8 set_font_style = 0;
@@ -34,7 +35,6 @@ private:
 
 	const bool hasOutlineColor;
 	const bool hasHoverOutlineColor;
-
 public:
 
 	bool curParamsIsHover = false;

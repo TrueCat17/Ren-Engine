@@ -13,7 +13,6 @@ Text::Text(Node *node, Screen *screen):
     hasHoverOutlineColor(node->getProp("hover_outlinecolor")),
     tf(new TextField())
 {
-	tf->wordwrap = true;
 	addChildAt(tf, 0);
 }
 Text::~Text() {
@@ -31,9 +30,27 @@ decltype(TextParams::prop) get_##prop(const Text *text) { \
 makeGetFunction(font)
 makeGetFunction(color)
 makeGetFunction(outlinecolor)
-makeGetFunction(size)
 makeGetFunction(halign)
 makeGetFunction(valign)
+
+
+#define makeGetSize(postfix) \
+static inline \
+float get_size##postfix(const Text *text) { \
+	const TextParams *params = nullptr; \
+	if (text->curParamsIsHover && text->hoverParams.size##postfix > 0) { \
+		params = &text->hoverParams; \
+	} else { \
+		params = &text->mainParams; \
+	} \
+	\
+	float res = params->size##postfix; \
+	int k = params->size##postfix##_is_float ? Stage::height : 1; \
+	return res * float(k); \
+}
+makeGetSize()
+makeGetSize(_min)
+makeGetSize(_max)
 
 static inline
 bool get_enable_outline(const Text *text, bool hasOutlineColor, bool hasHoverOutlineColor) {
@@ -70,8 +87,8 @@ Uint8 get_font_style(const Text *text) {
 void Text::updateRect(bool) {
 	tf->enable = true;
 
-	float width  = xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX;
-	float height = ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY;
+	float width  = xsize * float(xsize_is_float ? Stage::width  : 1) * globalZoomX;
+	float height = ysize * float(ysize_is_float ? Stage::height : 1) * globalZoomY;
 
 	if (first_param.empty() && prevText.empty()) {
 		setWidth(std::max<float>(width, 0));
@@ -110,10 +127,14 @@ void Text::updateRect(bool) {
 	}
 
 	std::string font = get_font(this);
-	float size = get_size(this) * globalZoomY;
-	if ((curParamsIsHover ? hoverParams : mainParams).sizeIsFloat) {
-		size *= float(Stage::height);
-	}
+
+	float size = get_size(this);
+	float min = get_size_min(this);
+	float max = get_size_max(this);
+	if (min > 0 && size < min) size = min;
+	if (max > 0 && size > max) size = max;
+	size *= globalZoomY;
+
 	if (std::tuple(font, size) != std::tuple(tf->mainStyle.fontName, tf->mainStyle.fontSize)) {
 		tf->setFont(font, size);
 		needUpdate = true;

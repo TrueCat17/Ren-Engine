@@ -12,7 +12,7 @@ init -9000 python:
 	
 	atl_props = {
 		'simple': ('alpha', 'rotate'),
-		'xy': ('pos', 'anchor', 'align', 'size', 'zoom'),
+		'xy': ('pos', 'anchor', 'align', 'size', 'size_min', 'size_max', 'zoom'),
 		'crop': ['xcrop', 'ycrop', 'xsizecrop', 'ysizecrop'],
 	}
 	

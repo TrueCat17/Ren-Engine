@@ -14,14 +14,14 @@ static bool objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 			DisplayObject *child = obj->parent->children[i];
 			if (!child->enable) continue;
 
-			float x = float(mouseX) - child->getGlobalX() - child->xAnchor;
-			float y = float(mouseY) - child->getGlobalY() - child->yAnchor;
+			float x = float(mouseX) - child->getGlobalX() - child->calcedXanchor;
+			float y = float(mouseY) - child->getGlobalY() - child->calcedYanchor;
 
 			float sinA = Math::getSin(int(-child->getGlobalRotate()));
 			float cosA = Math::getCos(int(-child->getGlobalRotate()));
 
-			int rotX = int(x * cosA - y * sinA + child->xAnchor);
-			int rotY = int(x * sinA + y * cosA + child->yAnchor);
+			int rotX = int(x * cosA - y * sinA + child->calcedXanchor);
+			int rotY = int(x * sinA + y * cosA + child->calcedYanchor);
 
 			if (!child->transparentForMouse(rotX, rotY)) {
 				return false;
@@ -79,14 +79,14 @@ void BtnRect::checkMouseCursor() {
 		DisplayObject *owner = btnRect->getOwner();
 		if (!owner || !owner->enable) continue;
 
-		float x = float(mouseX) - owner->getGlobalX() - owner->xAnchor;
-		float y = float(mouseY) - owner->getGlobalY() - owner->yAnchor;
+		float x = float(mouseX) - owner->getGlobalX() - owner->calcedXanchor;
+		float y = float(mouseY) - owner->getGlobalY() - owner->calcedYanchor;
 
 		float sinA = Math::getSin(int(-owner->getGlobalRotate()));
 		float cosA = Math::getCos(int(-owner->getGlobalRotate()));
 
-		int rotX = int(x * cosA - y * sinA + owner->xAnchor);
-		int rotY = int(x * sinA + y * cosA + owner->yAnchor);
+		int rotX = int(x * cosA - y * sinA + owner->calcedXanchor);
+		int rotY = int(x * sinA + y * cosA + owner->calcedYanchor);
 
 		if (rotX >= 0 && rotX < int(owner->getWidth()) &&
 		    rotY >= 0 && rotY < int(owner->getHeight())
@@ -122,14 +122,14 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 		if (!owner || !owner->enable) continue;
 		if (withKeyboard && !btnRect->buttonMode) continue;
 
-		float x = float(mouseX) - owner->getGlobalX() - owner->xAnchor;
-		float y = float(mouseY) - owner->getGlobalY() - owner->yAnchor;
+		float x = float(mouseX) - owner->getGlobalX() - owner->calcedXanchor;
+		float y = float(mouseY) - owner->getGlobalY() - owner->calcedYanchor;
 
 		float sinA = Math::getSin(int(-owner->getGlobalRotate()));
 		float cosA = Math::getCos(int(-owner->getGlobalRotate()));
 
-		int rotX = int(x * cosA - y * sinA + owner->xAnchor);
-		int rotY = int(x * sinA + y * cosA + owner->yAnchor);
+		int rotX = int(x * cosA - y * sinA + owner->calcedXanchor);
+		int rotY = int(x * sinA + y * cosA + owner->calcedYanchor);
 
 		if (rotX >= 0 && rotX < int(owner->getWidth()) &&
 		    rotY >= 0 && rotY < int(owner->getHeight())

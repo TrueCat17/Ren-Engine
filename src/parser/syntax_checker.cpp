@@ -110,18 +110,33 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 }
 
 
+static std::string getXY(const std::string &props) {
+	std::string res;
+	std::vector<std::string> propsVec = String::split(props, ", ");
+	for (const std::string &prop : propsVec) {
+		res += ", x" + prop;
+		res += ", y" + prop;
+		res += ", " + prop;
+	}
+	return res;
+}
+
 void SyntaxChecker::init() {
 	const std::string screenElems = ", vbox, hbox, null, image, text, textbutton, button, use, ";
 
 	const std::string screenProps = ", key, has, modal, ignore_modal, save, zorder, ";
-	const std::string simpleProps = ", xalign, yalign, xanchor, yanchor, xpos, ypos, xsize, ysize, xzoom, yzoom"
-	                                ", align, anchor, pos, size, zoom, crop, rotate, alpha, clipping, skip_mouse, style, ";
-	const std::string textProps = ", color, outlinecolor, font, text_size, text_align, text_valign, bold, italic, underline, strikethrough, ";
+	const std::string spacingProps = ", spacing, spacing_min, spacing_max, ";
+	const std::string simpleProps = getXY("align, anchor, pos, size, size_min, size_max, zoom") +
+	                                ", crop, rotate, alpha, clipping, skip_mouse, style, ";
+	const std::string textProps =
+	        ", text_size, text_size_min, text_size_max"
+	        ", color, outlinecolor, font, text_align, text_valign, bold, italic, underline, strikethrough, ";
 	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";
 
-	const std::string extraScreenLeafs = "pass, first_param, $, python, break, continue, spacing";
-	for (const std::string &props : {screenProps, simpleProps, textProps, buttonProps, extraScreenLeafs}) {
-		std::vector<std::string> vecProps = String::split(props, ", ");
+	const std::string extraScreenLeafs = "pass, first_param, $, python, break, continue";
+	auto propsList = { &screenProps, &spacingProps, &simpleProps, &textProps, &buttonProps, &extraScreenLeafs };
+	for (const std::string *props : propsList) {
+		std::vector<std::string> vecProps = String::split(*props, ", ");
 		for (const std::string &prop : vecProps) {
 			if (!prop.empty()) {
 				knownScreenLeafs.insert(prop);
@@ -143,7 +158,7 @@ void SyntaxChecker::init() {
 
 	addBlockChildren("if, elif, else, for, while", screenElems + "imagemap, hotspot, " + "continue, break");
 
-	addBlockChildren("screen, vbox, hbox", "spacing");
+	addBlockChildren("screen, vbox, hbox", spacingProps);
 	addBlockChildren("screen", screenProps);
 	addBlockChildren("if, elif, else, for, while", "key");
 	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python, key");
@@ -173,8 +188,8 @@ void SyntaxChecker::init() {
 
 	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem, pause", SuperParent::LABEL);
 	setSuperParents(screenElems + "imagemap, hotspot, for, ground, hover" +
-					screenProps + simpleProps + textProps + buttonProps +
-					"spacing, action, first_delay, delay", SuperParent::SCREEN);
+	                screenProps + spacingProps + simpleProps + textProps + buttonProps +
+	                "action, first_delay, delay", SuperParent::SCREEN);
 
 	addBlockChildren("translate strings", "old, new old");
 	setSuperParents("old, new", SuperParent::TL_STRS);

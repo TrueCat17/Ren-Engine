@@ -45,8 +45,8 @@ public:
 	float rotate = 0;
 
 	//center for rotation
-	float xAnchor = 0;
-	float yAnchor = 0;
+	float calcedXanchor = 0;
+	float calcedYanchor = 0;
 
 	float xzoom = 1;
 	float yzoom = 1;

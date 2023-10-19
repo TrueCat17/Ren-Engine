@@ -130,32 +130,45 @@ void Child::updateZoom() {
 }
 
 void Child::updatePos() {
-	xAnchor = xanchorPre * (xanchorPreIsFloat ? getWidth() : globalZoomX);
-	yAnchor = yanchorPre * (yanchorPreIsFloat ? getHeight() : globalZoomY);
+	calcedXanchor = xanchor * (xanchor_is_float ? getWidth() : globalZoomX);
+	calcedYanchor = yanchor * (yanchor_is_float ? getHeight() : globalZoomY);
 
 	if (!inHBox) {
 		float parentGlobalZoomX = parent ? parent->getGlobalZoomX() : 1;
-		float endXPos = xpos * (xposIsFloat ? parent->getWidth() : parentGlobalZoomX);
-		float x = endXPos - xAnchor;
+		float endXPos = xpos * (xpos_is_float ? parent->getWidth() : parentGlobalZoomX);
+		float x = endXPos - calcedXanchor;
 		setX(x);
 	}
 	if (!inVBox) {
 		float parentGlobalZoomY = parent ? parent->getGlobalZoomY() : 1;
-		float endYPos = ypos * (yposIsFloat ? parent->getHeight() : parentGlobalZoomY);
-		float y = endYPos - yAnchor;
+		float endYPos = ypos * (ypos_is_float ? parent->getHeight() : parentGlobalZoomY);
+		float y = endYPos - calcedYanchor;
 		setY(y);
 	}
 }
 
 void Child::updateRect(bool needUpdatePos) {
-	setWidth( xsize * float(xsizeIsFloat ? Stage::width  : 1) * globalZoomX);
-	setHeight(ysize * float(ysizeIsFloat ? Stage::height : 1) * globalZoomY);
+	float size, min, max;
+
+	size = xsize * float(xsize_is_float ? Stage::width : 1);
+	min = xsize_min * float(xsize_min_is_float ? Stage::width : 1);
+	max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
+	if (min > 0 && size < min) size = min;
+	if (max > 0 && size > max) size = max;
+	setWidth(size * globalZoomX);
+
+	size = ysize * float(ysize_is_float ? Stage::height : 1);
+	min = ysize_min * float(ysize_min_is_float ? Stage::height : 1);
+	max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
+	if (min > 0 && size < min) size = min;
+	if (max > 0 && size > max) size = max;
+	setHeight(size * globalZoomY);
 
 	if (surface) {
-		crop.x = int(xcrop * float(xcropIsFloat ? surface->w : 1));
-		crop.y = int(ycrop * float(ycropIsFloat ? surface->h : 1));
-		crop.w = int(wcrop * float(wcropIsFloat ? surface->w : 1));
-		crop.h = int(hcrop * float(hcropIsFloat ? surface->h : 1));
+		crop.x = int(xcrop * float(xcrop_is_float ? surface->w : 1));
+		crop.y = int(ycrop * float(ycrop_is_float ? surface->h : 1));
+		crop.w = int(wcrop * float(wcrop_is_float ? surface->w : 1));
+		crop.h = int(hcrop * float(hcrop_is_float ? surface->h : 1));
 	}
 
 	if (needUpdatePos) {

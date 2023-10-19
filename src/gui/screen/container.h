@@ -5,11 +5,16 @@
 
 class Container: public Child {
 public:
-	bool hasVBox = false;
-	bool hasHBox = false;
+	bool hasVBox:1;
+	bool hasHBox:1;
 
-	bool spacingIsFloat;
+	bool spacing_is_float:1;
+	bool spacing_min_is_float:1;
+	bool spacing_max_is_float:1;
+
 	float spacing = 0;
+	float spacing_min = 0;
+	float spacing_max = 0;
 
 	std::vector<Child*> screenChildren;
 

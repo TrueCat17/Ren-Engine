@@ -20,7 +20,9 @@
 
 
 Container::Container(Node *node, Container *screenParent, Screen *screen):
-	Child(node, screenParent, screen)
+    Child(node, screenParent, screen),
+    hasVBox(false),
+    hasHBox(false)
 {}
 
 
@@ -78,7 +80,12 @@ void Container::updateRect(bool needUpdatePos) {
 			setWidth(width);
 		}
 	}else {
-		float globalSpacing = spacing * float(spacingIsFloat ? Stage::width : 1) * globalZoomX;
+		float size = spacing * float(spacing_is_float ? Stage::width : 1);
+		float min = spacing_min * float(spacing_min_is_float ? Stage::width : 1);
+		float max = spacing_max * float(spacing_max_is_float ? Stage::width : 1);
+		if (min > 0 && size < min) size = min;
+		if (max > 0 && size > max) size = max;
+		float globalSpacing = size * globalZoomX;
 
 		float width = 0;
 		for (DisplayObject *child : children) {
@@ -108,7 +115,12 @@ void Container::updateRect(bool needUpdatePos) {
 			setHeight(height);
 		}
 	}else {
-		float globalSpacing = spacing * float(spacingIsFloat ? Stage::height : 1) * globalZoomY;
+		float size = spacing * float(spacing_is_float ? Stage::height : 1);
+		float min = spacing_min * float(spacing_min_is_float ? Stage::height : 1);
+		float max = spacing_max * float(spacing_max_is_float ? Stage::height : 1);
+		if (min > 0 && size < min) size = min;
+		if (max > 0 && size > max) size = max;
+		float globalSpacing = size * globalZoomY;
 
 		float height = 0;
 		for (DisplayObject *child : children) {

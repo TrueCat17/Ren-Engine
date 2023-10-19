@@ -78,11 +78,11 @@ void Hotspot::checkEvents() {
 		scaleY = parentHeight / float(ground->h);
 	}
 
-	setX(xcrop * float(xcropIsFloat ? Stage::width  : 1) * scaleX);
-	setY(ycrop * float(ycropIsFloat ? Stage::height : 1) * scaleY);
+	setX(xcrop * float(xcrop_is_float ? Stage::width  : 1) * scaleX);
+	setY(ycrop * float(ycrop_is_float ? Stage::height : 1) * scaleY);
 
-	setWidth( wcrop * float(wcropIsFloat ? Stage::width  : 1) * scaleX);
-	setHeight(hcrop * float(hcropIsFloat ? Stage::height : 1) * scaleY);
+	setWidth( wcrop * float(wcrop_is_float ? Stage::width  : 1) * scaleX);
+	setHeight(hcrop * float(hcrop_is_float ? Stage::height : 1) * scaleY);
 
 
 	if (btnRect.mouseOvered) {
@@ -174,7 +174,7 @@ void Hotspot::draw() const {
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
-	SDL_Point center = { int(xAnchor), int(yAnchor) };
+	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
 
 	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, from, to, center);
 }

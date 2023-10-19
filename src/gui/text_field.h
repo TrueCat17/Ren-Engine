@@ -49,7 +49,6 @@ private:
 public:
 	TextStyle mainStyle;
 
-	bool wordwrap = false;
 	int maxWidth  = -1;
 	int maxHeight = -1;
 

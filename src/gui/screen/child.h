@@ -23,16 +23,29 @@ protected:
 	bool inHBox = false;
 
 public:
-	bool xposIsFloat       = false, yposIsFloat       = false;
-	bool xanchorPreIsFloat = false, yanchorPreIsFloat = false;
-	bool xsizeIsFloat      = false, ysizeIsFloat      = false;
+	bool xpos_is_float:1;
+	bool ypos_is_float:1;
+	bool xanchor_is_float:1;
+	bool yanchor_is_float:1;
 
-	bool xcropIsFloat = false, ycropIsFloat = false,
-	     wcropIsFloat = false, hcropIsFloat = false;
+	bool xsize_is_float:1;
+	bool ysize_is_float:1;
+	bool xsize_min_is_float:1;
+	bool ysize_min_is_float:1;
+	bool xsize_max_is_float:1;
+	bool ysize_max_is_float:1;
 
-	float xpos       = 0, ypos       = 0;
-	float xanchorPre = 0, yanchorPre = 0;
-	float xsize      = 0, ysize      = 0;
+	bool xcrop_is_float:1;
+	bool ycrop_is_float:1;
+	bool wcrop_is_float:1;
+	bool hcrop_is_float:1;
+
+	float xpos    = 0, ypos    = 0;
+	float xanchor = 0, yanchor = 0;
+
+	float xsize     = 0, ysize     = 0;
+	float xsize_min = 0, ysize_min = 0;
+	float xsize_max = 0, ysize_max = 0;
 
 	float xcrop = 0, ycrop = 0,
 	      wcrop = 0, hcrop = 0;

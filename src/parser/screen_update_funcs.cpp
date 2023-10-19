@@ -115,7 +115,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 
 #define makeUpdateFuncType(Type, propName) makeUpdateFuncTemplate(Type, propName, tmpBool)
 #define makeUpdateFunc(propName) makeUpdateFuncType(Child, propName)
-#define makeUpdateFuncTypeWithIsFloat(Type, propName) makeUpdateFuncTemplate(Type, propName, typedObj->propName##IsFloat)
+#define makeUpdateFuncTypeWithIsFloat(Type, propName) makeUpdateFuncTemplate(Type, propName, typedObj->propName##_is_float)
 #define makeUpdateFuncWithIsFloat(propName) makeUpdateFuncTypeWithIsFloat(Child, propName)
 
 #define makeUpdateCommonFuncWithIsFloat(propName, xIsFloat, yIsFloat) \
@@ -172,7 +172,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	} \
 }
 
-#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithIsFloat(propName, obj->x##propName##IsFloat, obj->y##propName##IsFloat)
+#define makeUpdateCommonFunc(propName) makeUpdateCommonFuncWithIsFloat(propName, obj->x##propName##_is_float, obj->y##propName##_is_float)
 #define makeUpdateCommonFuncWithoutIsFloat(propName) makeUpdateCommonFuncWithIsFloat(propName, unusedBoolX, unusedBoolY)
 
 
@@ -189,8 +189,8 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 		std::string type = prop->ob_type->tp_name; \
 		outError(obj, #x_or_y"align", propIndex, "Expected types float, absolute or int, got " + type); \
 	} \
-	obj->x_or_y##posIsFloat = obj->x_or_y##anchorPreIsFloat = isFloat; \
-	obj->x_or_y##pos = obj->x_or_y##anchorPre = value; \
+	obj->x_or_y##pos_is_float = obj->x_or_y##anchor_is_float = isFloat; \
+	obj->x_or_y##pos = obj->x_or_y##anchor = value; \
 }
 
 static void update_align(Child *obj, size_t propIndex) {
@@ -205,8 +205,8 @@ static void update_align(Child *obj, size_t propIndex) {
 	}
 
 	if (isNumber) {
-		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = isFloat;
-		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = value;
+		obj->xpos_is_float = obj->xanchor_is_float = obj->ypos_is_float = obj->yanchor_is_float = isFloat;
+		obj->xpos = obj->xanchor = obj->ypos = obj->yanchor = value;
 		return;
 	}
 
@@ -220,8 +220,8 @@ static void update_align(Child *obj, size_t propIndex) {
 		error = "Expected sequence with size == 2, got " + size;
 	}
 	if (!error.empty()) {
-		obj->xposIsFloat = obj->xanchorPreIsFloat = obj->yposIsFloat = obj->yanchorPreIsFloat = false;
-		obj->xpos = obj->xanchorPre = obj->ypos = obj->yanchorPre = 0;
+		obj->xpos_is_float = obj->xanchor_is_float = obj->ypos_is_float = obj->yanchor_is_float = false;
+		obj->xpos = obj->xanchor = obj->ypos = obj->yanchor = 0;
 		outError(obj, "align", propIndex, error);
 		return;
 	}
@@ -235,8 +235,8 @@ static void update_align(Child *obj, size_t propIndex) {
 		std::string type = part->ob_type->tp_name; \
 		outError(obj, "align", propIndex, "At " #part "align-prop expected types float, absolute or int, got " + type); \
 	} \
-	obj->part##posIsFloat = obj->part##anchorPreIsFloat = isFloat; \
-	obj->part##pos = obj->part##anchorPre = value;
+	obj->part##pos_is_float = obj->part##anchor_is_float = isFloat; \
+	obj->part##pos = obj->part##anchor = value;
 
 	partProc(x, 0);
 	partProc(y, 1);
@@ -270,7 +270,7 @@ static void update_crop(Child *obj, size_t propIndex) {
 		error = "Expected sequence with size == 4, got " + size;
 	}
 	if (!error.empty()) {
-		obj->xcropIsFloat = obj->ycropIsFloat = obj->wcropIsFloat = obj->hcropIsFloat = false;
+		obj->xcrop_is_float = obj->ycrop_is_float = obj->wcrop_is_float = obj->hcrop_is_float = false;
 		obj->xcrop = obj->ycrop = obj->wcrop = obj->hcrop = 0;
 		outError(obj, "crop", propIndex, error);
 		return;
@@ -278,9 +278,9 @@ static void update_crop(Child *obj, size_t propIndex) {
 
 #define partProc(part, index) \
 	PyObject *part = PySequence_Fast_GET_ITEM(prop, index); \
-	updateCondition(obj->part##cropIsFloat, obj->part##crop, part, #part "crop") \
+	updateCondition(obj->part##crop_is_float, obj->part##crop, part, #part "crop") \
 	else { \
-		obj->part##cropIsFloat = false; \
+		obj->part##crop_is_float = false; \
 		obj->part##crop = 0; \
 		std::string type = part->ob_type->tp_name; \
 		outError(obj, #part "crop", propIndex, "At " #part "crop-prop expected types float, absolute or int, got " + type); \
@@ -294,16 +294,16 @@ static void update_crop(Child *obj, size_t propIndex) {
 }
 
 
-#define makeUpdateTextSize(main_or_hover, propName) \
+#define makeUpdateTextSize(main_or_hover, propName, postfix) \
 static void update_##propName(Child *obj, size_t propIndex) { \
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex); \
 	Text *text = static_cast<Text*>(obj); \
 	auto &params = text->main_or_hover##Params; \
 	\
-	updateCondition(params.sizeIsFloat, params.size, prop, #propName) \
+	updateCondition(params.size##postfix##_is_float, params.size##postfix, prop, #propName) \
 	else { \
-		params.sizeIsFloat = false; \
-		params.size = 0; \
+		params.size##postfix##_is_float = false; \
+		params.size##postfix = 0; \
 		\
 		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
 		bool ok = isHoverParam && prop == Py_None; \
@@ -548,22 +548,30 @@ makeUpdateFuncWithBool(Child, clipping, clipping)
 makeUpdateFuncWithBool(Child, skip_mouse, skip_mouse)
 
 makeUpdateFuncTypeWithIsFloat(Container, spacing)
+makeUpdateFuncTypeWithIsFloat(Container, spacing_min)
+makeUpdateFuncTypeWithIsFloat(Container, spacing_max)
 
 makeUpdateFuncWithIsFloat(xpos)
 makeUpdateFuncWithIsFloat(ypos)
 
-makeUpdateFuncWithIsFloat(xanchorPre)
-makeUpdateFuncWithIsFloat(yanchorPre)
+makeUpdateFuncWithIsFloat(xanchor)
+makeUpdateFuncWithIsFloat(yanchor)
 
 makeUpdateFuncWithIsFloat(xsize)
 makeUpdateFuncWithIsFloat(ysize)
+makeUpdateFuncWithIsFloat(xsize_min)
+makeUpdateFuncWithIsFloat(ysize_min)
+makeUpdateFuncWithIsFloat(xsize_max)
+makeUpdateFuncWithIsFloat(ysize_max)
 
 makeUpdateFunc(xzoom)
 makeUpdateFunc(yzoom)
 
 makeUpdateCommonFunc(pos)
-makeUpdateCommonFunc(anchorPre)
+makeUpdateCommonFunc(anchor)
 makeUpdateCommonFunc(size)
+makeUpdateCommonFunc(size_min)
+makeUpdateCommonFunc(size_max)
 makeUpdateCommonFuncWithoutIsFloat(zoom)
 
 makeUpdateFuncWithAlign(x)
@@ -591,7 +599,9 @@ makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
 
 #define makeTextFuncs(main_or_hover, infix) \
 makeUpdateFont(main_or_hover, infix##font) \
-makeUpdateTextSize(main_or_hover, infix##text_size) \
+makeUpdateTextSize(main_or_hover, infix##text_size, ) \
+makeUpdateTextSize(main_or_hover, infix##text_size_min, _min) \
+makeUpdateTextSize(main_or_hover, infix##text_size_max, _max) \
 makeUpdateTextColor(main_or_hover, infix##color, color) \
 makeUpdateTextColor(main_or_hover, infix##outlinecolor, outlinecolor) \
 makeUpdateTextFunc(main_or_hover, infix##bold, TTF_STYLE_BOLD) \
@@ -606,10 +616,6 @@ makeTextFuncs(hover, hover_)
 
 
 static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
-	{ "xanchor", update_xanchorPre },
-	{ "yanchor", update_yanchorPre },
-	{ "anchor", update_anchorPre },
-
 //addProp(style) -> { "style", update_style },
 #define addProp(name) { #name, update_##name },
 	addProp(style)
@@ -625,7 +631,6 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addProp(ignore_modal)
 	addProp(modal)
 	addProp(save)
-	addProp(spacing)
 	addProp(ground_textbutton)
 	addProp(hover_textbutton)
 	addProp(mouse_textbutton)
@@ -633,9 +638,16 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addProp(ground_imagemap)
 	addProp(hover_imagemap)
 
+	addProp(spacing)
+	addProp(spacing_min)
+	addProp(spacing_max)
+
 #define addXYProp(name) addProp(x##name) addProp(y##name) addProp(name)
 	addXYProp(pos)
+	addXYProp(anchor)
 	addXYProp(size)
+	addXYProp(size_min)
+	addXYProp(size_max)
 	addXYProp(zoom)
 	addXYProp(align)
 #undef addXYProp
@@ -647,6 +659,8 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addTextProp(text_align)
 	addTextProp(text_valign)
 	addTextProp(text_size)
+	addTextProp(text_size_min)
+	addTextProp(text_size_max)
 	addTextProp(bold)
 	addTextProp(italic)
 	addTextProp(underline)
