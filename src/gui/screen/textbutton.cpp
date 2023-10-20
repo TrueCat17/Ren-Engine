@@ -22,7 +22,10 @@ void TextButton::updateRect(bool) {
 
 void TextButton::updateTexture(bool skipError) {
 	if (skipError && ground.empty()) return;
-	if (surface && prevGround == ground && prevHover == hover && prevMouseOver == btnRect.mouseOvered) return;
+
+	auto prevParams = std::tie(prevGround, prevHover, prevParamsIsHover);
+	auto curParams = std::tie(ground, hover, curParamsIsHover);
+	if (surface && prevParams == curParams) return;
 
 	if (hoverIsModifiedGround && prevGround != ground) {
 		hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__,
@@ -30,8 +33,9 @@ void TextButton::updateTexture(bool skipError) {
 	}
 	prevGround = ground;
 	prevHover = hover;
+	prevParamsIsHover = curParamsIsHover;
 
-	const std::string &path = !btnRect.mouseOvered ? ground : hover;
+	const std::string &path = curParamsIsHover ? hover : ground;
 	if (skipError && !FileSystem::exists(path)) return;
 
 	surface = ImageManipulator::getImage(path, false);
@@ -45,7 +49,7 @@ void TextButton::checkEvents() {
 		btnRect.mouseRightDown = false;
 	}
 
-	curParamsIsHover = btnRect.mouseOvered || ground == hover;
+	curParamsIsHover = btnRect.mouseOvered || selected;
 
 	if (btnRect.mouseOvered) {
 		if (!prevMouseOver) {

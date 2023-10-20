@@ -14,6 +14,7 @@ private:
 	bool prevMouseOver = false;
 
 public:
+	bool selected;
 	BtnRect btnRect;
 
 	Hotspot(Node *node, Screen *screen);

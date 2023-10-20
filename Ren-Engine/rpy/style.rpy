@@ -132,6 +132,7 @@ init -1001:
 	
 	style textbutton is text:
 		mouse True
+		selected False
 		text_align  'center' # left | center | right
 		text_valign 'center' #  top | center | bottom
 		size (175, 25)
@@ -141,12 +142,14 @@ init -1001:
 	
 	style button:
 		mouse True
+		selected False
 		size (175, 25)
 		ground style.textbutton.ground
 		hover  style.textbutton.hover
 	
 	style hotspot:
 		mouse True
+		selected False
 	
 	style imagemap:
 		ground ''

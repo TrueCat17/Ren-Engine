@@ -14,6 +14,8 @@ private:
 	const bool hoverIsModifiedGround;
 
 public:
+	bool selected;
+
 	std::string ground;
 	std::string hover;
 

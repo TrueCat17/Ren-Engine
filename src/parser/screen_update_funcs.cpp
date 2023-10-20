@@ -15,6 +15,7 @@
 #include "media/py_utils.h"
 #include "media/py_utils/absolute.h"
 
+#include "utils/algo.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -590,8 +591,10 @@ makeUpdateFuncWithBool(Screen, save, save)
 makeUpdateFuncWithStr(TextButton, ground, ground_textbutton)
 makeUpdateFuncWithStr(TextButton, hover, hover_textbutton)
 makeUpdateFuncWithBool(TextButton, btnRect.buttonMode, mouse_textbutton)
+makeUpdateFuncWithBool(TextButton, selected, selected_textbutton)
 
 makeUpdateFuncWithBool(Hotspot, btnRect.buttonMode, mouse_hotspot)
+makeUpdateFuncWithBool(Hotspot, selected, selected_hotspot)
 
 makeUpdateFuncWithStr(Imagemap, groundPath, ground_imagemap)
 makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
@@ -635,6 +638,8 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addProp(hover_textbutton)
 	addProp(mouse_textbutton)
 	addProp(mouse_hotspot)
+	addProp(selected_textbutton)
+	addProp(selected_hotspot)
 	addProp(ground_imagemap)
 	addProp(hover_imagemap)
 
@@ -711,8 +716,11 @@ void ScreenUpdateFuncs::initNodeFuncs(Node *node) {
 	updateFuncs[node] = vec;
 }
 
+using Strings = std::initializer_list<std::string>;
+static const Strings buttonProps = { "ground", "hover", "mouse", "selected" };
+
 ScreenUpdateFunc ScreenUpdateFuncs::getFunc(const std::string &type, std::string propName) {
-	if (propName == "ground" || propName == "hover" || propName == "mouse") {
+	if (Algo::in(propName, buttonProps)) {
 	    propName += "_" + (type == "button" ? "textbutton" : type);
 	}
 

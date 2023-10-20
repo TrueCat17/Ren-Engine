@@ -37,6 +37,7 @@ private:
 	const bool hasHoverOutlineColor;
 public:
 
+	bool prevParamsIsHover = false;
 	bool curParamsIsHover = false;
 	TextParams mainParams;
 	TextParams hoverParams;

@@ -131,9 +131,9 @@ void SyntaxChecker::init() {
 	const std::string textProps =
 	        ", text_size, text_size_min, text_size_max"
 	        ", color, outlinecolor, font, text_align, text_valign, bold, italic, underline, strikethrough, ";
-	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, ";
+	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, selected, ";
 
-	const std::string extraScreenLeafs = "pass, first_param, $, python, break, continue";
+	const std::string extraScreenLeafs = "pass, first_param, $, python, break, continue, ground, hover";
 	auto propsList = { &screenProps, &spacingProps, &simpleProps, &textProps, &buttonProps, &extraScreenLeafs };
 	for (const std::string *props : propsList) {
 		std::vector<std::string> vecProps = String::split(*props, ", ");

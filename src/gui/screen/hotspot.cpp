@@ -49,7 +49,7 @@ void Hotspot::checkEvents() {
 		if (prevMouseOver) {
 			btnRect.onUnhovered();
 		}
-		surface = nullptr;
+		surface = selected ? imageMap->hover : nullptr;
 	}
 	prevMouseOver = btnRect.mouseOvered;
 
