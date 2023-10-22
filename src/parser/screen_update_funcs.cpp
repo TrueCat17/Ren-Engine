@@ -591,10 +591,10 @@ makeUpdateFuncWithBool(Screen, save, save)
 makeUpdateFuncWithStr(TextButton, ground, ground_textbutton)
 makeUpdateFuncWithStr(TextButton, hover, hover_textbutton)
 makeUpdateFuncWithBool(TextButton, btnRect.buttonMode, mouse_textbutton)
-makeUpdateFuncWithBool(TextButton, selected, selected_textbutton)
 
 makeUpdateFuncWithBool(Hotspot, btnRect.buttonMode, mouse_hotspot)
-makeUpdateFuncWithBool(Hotspot, selected, selected_hotspot)
+
+makeUpdateFuncWithBool(Child, selected, selected)
 
 makeUpdateFuncWithStr(Imagemap, groundPath, ground_imagemap)
 makeUpdateFuncWithStr(Imagemap, hoverPath, hover_imagemap)
@@ -638,8 +638,7 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addProp(hover_textbutton)
 	addProp(mouse_textbutton)
 	addProp(mouse_hotspot)
-	addProp(selected_textbutton)
-	addProp(selected_hotspot)
+	addProp(selected)
 	addProp(ground_imagemap)
 	addProp(hover_imagemap)
 
@@ -717,7 +716,7 @@ void ScreenUpdateFuncs::initNodeFuncs(Node *node) {
 }
 
 using Strings = std::initializer_list<std::string>;
-static const Strings buttonProps = { "ground", "hover", "mouse", "selected" };
+static const Strings buttonProps = { "ground", "hover", "mouse" };
 
 ScreenUpdateFunc ScreenUpdateFuncs::getFunc(const std::string &type, std::string propName) {
 	if (Algo::in(propName, buttonProps)) {

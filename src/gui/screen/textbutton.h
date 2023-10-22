@@ -10,12 +10,9 @@ private:
 	std::string prevGround;
 	std::string prevHover;
 
-	bool prevMouseOver = false;
 	const bool hoverIsModifiedGround;
 
 public:
-	bool selected;
-
 	std::string ground;
 	std::string hover;
 

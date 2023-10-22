@@ -13,7 +13,9 @@ public:
 
 	bool buttonMode = true;
 
+	bool prevMouseOvered = false;
 	bool mouseOvered = false;
+
 	bool mouseLeftDown = false;
 	bool mouseRightDown = false;
 
@@ -25,6 +27,8 @@ public:
 
 	void onLeftClick() const;
 	void onRightClick() const;
+
+	void checkEvents();
 };
 
 #endif // BTNRECT_H

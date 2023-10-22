@@ -25,6 +25,8 @@ protected:
 	bool globalClipping = false;
 	bool globalSkipMouse = false;
 
+	bool clearing = false;//to speed up Group::clearChildren
+
 public:
 	static std::vector<DisplayObject*> objects;
 	static void disableAll();

@@ -23,6 +23,8 @@ protected:
 	bool inHBox = false;
 
 public:
+	bool selected = false;//for TextButton and Hotspot
+
 	bool xpos_is_float:1;
 	bool ypos_is_float:1;
 	bool xanchor_is_float:1;

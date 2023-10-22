@@ -4,8 +4,6 @@
 #include "display_object.h"
 
 class Group: public DisplayObject {
-	bool clearing = false;
-
 public:
 	std::vector<DisplayObject*> children;
 

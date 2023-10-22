@@ -51,21 +51,5 @@ void TextButton::checkEvents() {
 
 	curParamsIsHover = btnRect.mouseOvered || selected;
 
-	if (btnRect.mouseOvered) {
-		if (!prevMouseOver) {
-			btnRect.onHovered();
-		}
-	}else {
-		if (prevMouseOver) {
-			btnRect.onUnhovered();
-		}
-	}
-	prevMouseOver = btnRect.mouseOvered;
-
-	if (btnRect.mouseLeftDown) {
-		btnRect.onLeftClick();
-	}
-	if (btnRect.mouseRightDown) {
-		btnRect.onRightClick();
-	}
+	btnRect.checkEvents();
 }

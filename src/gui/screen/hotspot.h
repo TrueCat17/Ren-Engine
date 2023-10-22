@@ -11,10 +11,7 @@ private:
 	float scaleX = 1;
 	float scaleY = 1;
 
-	bool prevMouseOver = false;
-
 public:
-	bool selected;
 	BtnRect btnRect;
 
 	Hotspot(Node *node, Screen *screen);

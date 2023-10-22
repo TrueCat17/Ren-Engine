@@ -226,3 +226,23 @@ void BtnRect::onRightClick() const {
 		StyleManager::execAction(node->getFileName(), node->getNumLine(), style, "alternate");
 	}
 }
+
+void BtnRect::checkEvents() {
+	if (mouseOvered) {
+		if (!prevMouseOvered) {
+			onHovered();
+		}
+	}else {
+		if (prevMouseOvered) {
+			onUnhovered();
+		}
+	}
+	prevMouseOvered = mouseOvered;
+
+	if (mouseLeftDown) {
+		onLeftClick();
+	}
+	if (mouseRightDown) {
+		onRightClick();
+	}
+}

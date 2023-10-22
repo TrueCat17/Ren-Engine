@@ -24,13 +24,14 @@ void Hotspot::checkEvents() {
 	const Imagemap* imageMap = static_cast<Imagemap*>(parent);
 
 	SurfacePtr ground = imageMap->surface;
-	scaleX = 1;
-	scaleY = 1;
 	float parentWidth = imageMap->getWidth();
 	float parentHeight = imageMap->getHeight();
 	if (ground && parentWidth > 0 && parentHeight > 0) {
 		scaleX = parentWidth / float(ground->w);
 		scaleY = parentHeight / float(ground->h);
+	}else {
+		scaleX = 1;
+		scaleY = 1;
 	}
 
 	setX(xcrop * float(xcrop_is_float ? Stage::width  : 1) * scaleX);
@@ -39,26 +40,8 @@ void Hotspot::checkEvents() {
 	setWidth( wcrop * float(wcrop_is_float ? Stage::width  : 1) * scaleX);
 	setHeight(hcrop * float(hcrop_is_float ? Stage::height : 1) * scaleY);
 
-
-	if (btnRect.mouseOvered) {
-		if (!prevMouseOver) {
-			btnRect.onHovered();
-		}
-		surface = imageMap->hover;
-	}else {
-		if (prevMouseOver) {
-			btnRect.onUnhovered();
-		}
-		surface = selected ? imageMap->hover : nullptr;
-	}
-	prevMouseOver = btnRect.mouseOvered;
-
-	if (btnRect.mouseLeftDown) {
-		btnRect.onLeftClick();
-	}
-	if (btnRect.mouseRightDown) {
-		btnRect.onRightClick();
-	}
+	surface = (btnRect.mouseOvered || selected) ? imageMap->hover : nullptr;
+	btnRect.checkEvents();
 }
 
 
