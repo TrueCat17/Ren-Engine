@@ -74,8 +74,8 @@ bool Hotspot::transparentForMouse(int x, int y) const {
 void Hotspot::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
-	SDL_Rect from = { int(rect.x / scaleX), int(rect.y / scaleY), int(rect.w / scaleX), int(rect.h / scaleY) };
-	SDL_Rect to = { int(getGlobalX()), int(getGlobalY()), int(rect.w), int(rect.h) };
+	SDL_Rect from = { int(getX() / scaleX), int(getY() / scaleY), int(getWidth() / scaleX), int(getHeight() / scaleY) };
+	SDL_Rect to = { int(getGlobalX()), int(getGlobalY()), int(getWidth()), int(getHeight()) };
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);

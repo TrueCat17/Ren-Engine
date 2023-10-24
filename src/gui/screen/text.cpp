@@ -87,8 +87,9 @@ Uint8 get_font_style(const Text *text) {
 void Text::updateRect(bool) {
 	tf->enable = true;
 
-	float width  = xsize * float(xsize_is_float ? Stage::width  : 1) * globalZoomX;
-	float height = ysize * float(ysize_is_float ? Stage::height : 1) * globalZoomY;
+	Child::updateRect(false);
+	float width = getWidth();
+	float height = getHeight();
 
 	if (first_param.empty() && prevText.empty()) {
 		setWidth(std::max<float>(width, 0));
@@ -140,18 +141,23 @@ void Text::updateRect(bool) {
 		needUpdate = true;
 	}
 
+	if (needUpdate) {
+		tf->setText(first_param);
+	}
+
+	if (width  <= 0) width  = tf->getWidth();
+	if (height <= 0) height = tf->getHeight();
+	setWidth(width);
+	setHeight(height);
+	tf->setWidth(width);
+	tf->setHeight(height);
+
 	float halign = get_halign(this);
 	float valign = get_valign(this);
-	if (needUpdate || std::tuple(halign, valign) != std::tuple(tf->getHAlign(), tf->getVAlign())) {
-		tf->setText(first_param);
-
-		if (width  <= 0) width  = tf->getWidth();
-		if (height <= 0) height = tf->getHeight();
-		setWidth(width);
-		setHeight(height);
-		tf->setWidth(width);
-		tf->setHeight(height);
-
+	if (std::tuple(halign, valign) != std::tuple(tf->getHAlign(), tf->getVAlign())) {
+		needUpdate = true;
+	}
+	if (needUpdate) {
 		tf->setAlign(halign, valign);
 	}
 

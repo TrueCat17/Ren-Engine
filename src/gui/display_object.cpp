@@ -35,8 +35,8 @@ void DisplayObject::updateGlobal() {
 	}
 
 
-	float x = rect.x + calcedXanchor - parentXAnchor;
-	float y = rect.y + calcedYanchor - parentYAnchor;
+	float x = getX() + calcedXanchor - parentXAnchor;
+	float y = getY() + calcedYanchor - parentYAnchor;
 
 	float sinA = Math::getSin(int(parentGlobalRotate));
 	float cosA = Math::getCos(int(parentGlobalRotate));
@@ -103,7 +103,7 @@ void DisplayObject::draw() const {
 
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
 	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
-	SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, rect.w, rect.h, false);
+	SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, getWidth(), getHeight(), false);
 	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
 
 	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, crop, dstIRect, center);

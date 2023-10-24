@@ -28,7 +28,7 @@ public:
 
 	static PyObject* getProp(const Style *style, const std::string &propName);
 
-	static void execAction(const std::string &fileName, size_t numLine,
+	static void execAction(const std::string &fileName, uint32_t numLine,
 	                       const Style *style, const std::string &propName);
 };
 

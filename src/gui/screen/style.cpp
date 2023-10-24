@@ -111,7 +111,7 @@ PyObject* StyleManager::getProp(const Style *style, const std::string &propName)
 	return Py_None;
 }
 
-void StyleManager::execAction(const std::string &fileName, size_t numLine, const Style *style, const std::string &propName) {
+void StyleManager::execAction(const std::string &fileName, uint32_t numLine, const Style *style, const std::string &propName) {
 	std::lock_guard g(PyUtils::pyExecMutex);
 
 	PyDict_SetItemString(PyUtils::global, "_SL_last_style", style->pyStyle);

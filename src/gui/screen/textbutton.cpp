@@ -13,7 +13,6 @@ TextButton::TextButton(Node* node, Screen *screen):
 { }
 
 void TextButton::updateRect(bool) {
-	Child::updateRect(false);
 	Text::updateRect();
 
 	if (xsize < 0) { xsize = 0; }

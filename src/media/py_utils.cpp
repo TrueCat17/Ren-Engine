@@ -469,8 +469,7 @@ std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const s
 }
 
 PyObject* PyUtils::execRetObj(const std::string &fileName, uint32_t numLine, const std::string &code) {
-	PyObject *res = nullptr;
-	if (code.empty()) return res;
+	if (code.empty()) return nullptr;
 
 	bool isConst = isConstExpr(code);
 	if (isConst) {
@@ -482,12 +481,13 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, uint32_t numLine, con
 
 	std::lock_guard g(pyExecMutex);
 
-	PyObject *co = getCompileObject("res = " + code, fileName, numLine);
+	PyObject *res = nullptr;
+	PyObject *co = getCompileObject("_res = " + code, fileName, numLine);
 	if (co) {
 		bool ok = PyEval_EvalCode(co, global, nullptr);
 
 		if (ok) {
-			res = PyDict_GetItemString(global, "res");
+			res = PyDict_GetItemString(global, "_res");
 			Py_INCREF(res);
 
 			if (isConst) {

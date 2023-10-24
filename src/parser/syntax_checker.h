@@ -1,8 +1,8 @@
 #ifndef SYNTAXCHECKER_H
 #define SYNTAXCHECKER_H
 
-#include <vector>
 #include <string>
+#include <vector>
 
 struct SuperParent {
 	static const int NONE     = 0;

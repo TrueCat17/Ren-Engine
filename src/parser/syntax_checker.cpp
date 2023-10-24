@@ -15,7 +15,7 @@ bool SyntaxChecker::isKnownScreenLeaf(const std::string &name) {
 
 struct SyntaxPart {
 	std::vector<std::string> prevs;
-	int superParent;
+	int superParent = SuperParent::NONE;
 
 	inline bool check(const std::string &prevChild, const int superParent) const {
 		if (!(this->superParent & superParent)) return false;
@@ -48,7 +48,6 @@ static void addBlockChildren(const std::string &parents, const std::string &chil
 
 		SyntaxPart sp;
 		sp.prevs.insert(sp.prevs.begin(), wordsVec.begin() + 1, wordsVec.end());
-		sp.superParent = SuperParent::NONE;
 
 		for (const std::string &parentBlock : parentBlocks) {
 			if (parentBlock.empty()) continue;
