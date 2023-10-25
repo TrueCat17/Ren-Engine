@@ -19,7 +19,7 @@ public:
 	static Node* getNewNode(const std::string &fileName, uint32_t numLine);
 	static void destroyAll();
 
-	static uint32_t preloadImages(const Node *parent, uint32_t start, uint32_t count);
+	static size_t preloadImages(const Node *parent, size_t start, size_t count);
 
 
 	uint32_t id;//unique id for each Node

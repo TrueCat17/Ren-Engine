@@ -153,7 +153,7 @@ static void preloadImageAt(const std::vector<std::string> &children) {
 		}
 	}
 }
-uint32_t Node::preloadImages(const Node *parent, uint32_t start, uint32_t count) {
+size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 	for (size_t i = start; i < parent->children.size() && count; ++i) {
 		const Node *child = parent->children[i];
 		const std::string &childCommand = child->command;

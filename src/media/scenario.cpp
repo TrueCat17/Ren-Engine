@@ -44,7 +44,7 @@ static Node* getLabel(const std::string &name, bool outError = true) {
 	}
 	return nullptr;
 }
-static void markLabel(const std::string &fileName, size_t numLine, const std::string &label) {
+static void markLabel(const std::string &fileName, uint32_t numLine, const std::string &label) {
 	PyUtils::exec(fileName, numLine,
 	              "persistent._seen_labels[get_current_mod()]['''" + label + "'''] = True");
 }
@@ -209,9 +209,9 @@ static void restoreScreens(const std::string &loadPath) {
 static std::string jumpNextLabel;
 static bool jumpNextIsCall;
 static std::string jumpNextFileName;
-static size_t jumpNextNumLine;
+static uint32_t jumpNextNumLine;
 
-void Scenario::jumpNext(const std::string &label, bool isCall, const std::string &fileName, size_t numLine) {
+void Scenario::jumpNext(const std::string &label, bool isCall, const std::string &fileName, uint32_t numLine) {
 	jumpNextLabel = label;
 	jumpNextIsCall = isCall;
 	jumpNextFileName = fileName;
@@ -445,7 +445,7 @@ void Scenario::execute(const std::string &loadPath) {
 			argsStr += "]";
 
 			if (child->command != "hide") {
-				Node::preloadImages(obj, num, size_t(String::toInt(Config::get("count_preload_commands"))));
+				Node::preloadImages(obj, num, uint32_t(String::toInt(Config::get("count_preload_commands"))));
 
 				argsStr += ", last_show_at";
 
@@ -464,19 +464,23 @@ void Scenario::execute(const std::string &loadPath) {
 				name = child->params;
 				parent = "default";
 			}else {
-				name = words[0];
 				if (words.size() != 3 || words[1] != "is") {
 					Utils::outMsg("Scenatio::execute",
 					              "Expected 'style name [is parent]', got: style " + child->params + "\n" +
 					              child->getPlace());
 					continue;
 				}
+				name = words[0];
 				parent = words[2];
 			}
 
 			std::string code;
 			code += "if not style." + name + ":\n";
 			code += "    style." + name + " = Style(style." + parent + ")\n";
+			if (words.size() != 1) {
+				code += "else:\n";
+				code += "    style." + name + ".properties = style." + parent + "\n";
+			}
 			for (const Node* prop : child->children) {
 				code += "style." + name + "." + prop->command + " = " + prop->params + "\n";
 			}
@@ -516,7 +520,7 @@ void Scenario::execute(const std::string &loadPath) {
 
 
 		if (child->command == "$" || child->command == "python") {
-			const size_t numLine = child->getNumLine() + (child->command != "$");
+			const uint32_t numLine = child->getNumLine() + (child->command != "$");
 
 			PyUtils::exec(child->getFileName(), numLine, child->params);
 			Utils::sleep(1e-3 / 20);
