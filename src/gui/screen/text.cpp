@@ -2,7 +2,7 @@
 
 #include <tuple>
 
-#include "gui/text_field.h"
+#include "../text_field.h"
 
 #include "utils/math.h"
 #include "utils/stage.h"

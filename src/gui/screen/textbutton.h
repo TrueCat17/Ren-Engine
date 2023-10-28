@@ -1,7 +1,7 @@
 #ifndef TEXTBUTTON_H
 #define TEXTBUTTON_H
 
-#include "gui/screen/text.h"
+#include "text.h"
 #include "utils/btn_rect.h"
 
 

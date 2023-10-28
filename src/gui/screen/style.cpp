@@ -70,7 +70,7 @@ const Style* StyleManager::getByName(const Node *node, const std::string &name) 
 	return stylesByName[name] = res;
 }
 
-const Style* StyleManager::getByNode(const Node *node, PyObject *style) {
+const Style* StyleManager::getByObject(const Child* obj, PyObject *style) {
 	if (style) {
 		auto it = stylesByPy.find(style);
 		if (it != stylesByPy.end()) {
@@ -80,10 +80,15 @@ const Style* StyleManager::getByNode(const Node *node, PyObject *style) {
 
 	std::lock_guard g(PyUtils::pyExecMutex);
 
+	const Node *node = obj->node;
 	const Node *propStyle = node->getProp("style");
 	if (propStyle || style) {
 		if (!style) {
-			style = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), propStyle->params);
+			if (propStyle->screenNum != uint32_t(-1)) {//not const prop
+				style = PySequence_Fast_GET_ITEM(obj->props, propStyle->screenNum);
+			}else {
+				style = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), propStyle->params);
+			}
 		}
 
 		const Style *res;

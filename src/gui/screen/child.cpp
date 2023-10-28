@@ -1,7 +1,7 @@
 #include "child.h"
 
-#include "gui/screen/screen.h"
-#include "gui/screen/style.h"
+#include "screen.h"
+#include "style.h"
 
 #include "parser/syntax_checker.h"
 
@@ -37,7 +37,7 @@ void Child::updateStyle() {
 		updateFuncs = ScreenUpdateFuncs::getFuncs(node);
 
 		if (!style) {
-			style = StyleManager::getByNode(node);
+			style = StyleManager::getByObject(this);
 		}
 
 		const Style *defaultStyle = StyleManager::getByName(node, node->command);
@@ -51,12 +51,12 @@ void Child::updateStyle() {
 			if (res == Py_None && !isDefaultStyle) {
 				res = StyleManager::getProp(defaultStyle, prop);
 			}
-			PyTuple_SET_ITEM(props, 0, res);
 
 			ScreenUpdateFunc func = ScreenUpdateFuncs::getFunc(node->command, prop);
-			if (func) {
-				func(this, 0);
-			}
+			if (!func) continue;
+
+			PyTuple_SET_ITEM(props, 0, res);
+			func(this, 0);
 			PyTuple_SET_ITEM(props, 0, nullptr);
 		}
 	}
@@ -79,12 +79,11 @@ void Child::updateStyle() {
 		PyObject *res = PyUtils::execRetObj(child->getFileName(), child->getNumLine(), child->params);
 		if (!res) continue;
 
-		PyTuple_SET_ITEM(props, 0, res);
-
 		ScreenUpdateFunc func = ScreenUpdateFuncs::getFunc(node->command, child->command);
-		if (func) {
-			func(this, 0);
-		}
+		if (!func) continue;
+
+		PyTuple_SET_ITEM(props, 0, res);
+		func(this, 0);
 		PyTuple_SET_ITEM(props, 0, nullptr);
 	}
 	if (!inited && needAddChildren && !hasNonConstChild) {

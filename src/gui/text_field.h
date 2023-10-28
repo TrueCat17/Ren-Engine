@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include "gui/display_object.h"
+#include "display_object.h"
 
 typedef struct _TTF_Font TTF_Font;
 

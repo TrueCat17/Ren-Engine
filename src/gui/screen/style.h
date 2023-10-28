@@ -6,8 +6,8 @@
 
 #include <Python.h>
 
+#include "child.h"
 #include "parser/node.h"
-
 
 struct Style {
 	PyObject *pyStyle;
@@ -24,7 +24,7 @@ public:
 	static void destroyAll();
 
 	static const Style* getByName(const Node *node, const std::string &name);
-	static const Style* getByNode(const Node *node, PyObject *style = nullptr);
+	static const Style* getByObject(const Child* obj, PyObject *style = nullptr);
 
 	static PyObject* getProp(const Style *style, const std::string &propName);
 

@@ -539,7 +539,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 #include "gui/screen/style.h"
 static void update_style(Child *obj, size_t propIndex) {
 	PyObject *style = PySequence_Fast_GET_ITEM(obj->props, propIndex);
-	obj->style = StyleManager::getByNode(obj->node, style);
+	obj->style = StyleManager::getByObject(obj, style);
 }
 
 

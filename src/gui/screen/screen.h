@@ -1,7 +1,7 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include "gui/screen/container.h"
+#include "container.h"
 
 class Screen: public Container {
 private:

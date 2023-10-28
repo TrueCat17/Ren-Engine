@@ -1,7 +1,7 @@
 #ifndef TEXT_H
 #define TEXT_H
 
-#include "gui/screen/child.h"
+#include "child.h"
 
 class TextField;
 
