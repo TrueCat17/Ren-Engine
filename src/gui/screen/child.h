@@ -72,7 +72,7 @@ public:
 	virtual void updatePos();
 	virtual void updateRect(bool needUpdatePos = true);
 
-	virtual void updateTexture(bool skipError = false);
+	virtual void updateTexture();
 	virtual void checkEvents();
 
 	void setInBox(bool v, bool h) { inVBox = v; inHBox = h; }

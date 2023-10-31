@@ -91,7 +91,6 @@ void Child::updateStyle() {
 	}
 
 	updateRect();
-	updateTexture(true);
 }
 
 void Child::updateProps() {
@@ -119,8 +118,6 @@ void Child::updateProps() {
 			}
 		}
 	}
-
-	updateTexture();
 }
 
 void Child::updateZoom() {
@@ -175,5 +172,5 @@ void Child::updateRect(bool needUpdatePos) {
 	}
 }
 
-void Child::updateTexture(bool) {}
+void Child::updateTexture() {}
 void Child::checkEvents() {}

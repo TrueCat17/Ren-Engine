@@ -23,7 +23,6 @@ protected:
 	float globalZoomY = 1;
 
 	bool globalClipping = false;
-	bool globalSkipMouse = false;
 
 	bool clearing = false;//to speed up Group::clearChildren
 
@@ -37,9 +36,10 @@ public:
 
 	static SDL_Rect buildIntRect(float x, float y, float w, float h, bool exactSize);
 
-	bool enable = true;
+	bool enable = false;
 	bool clipping = false;
 	bool skip_mouse = false;
+	bool globalSkipMouse = false;
 
 	SDL_Rect crop = { 0, 0, 0, 0 };//int, because zoom does not work with crop
 	float alpha = 1;

@@ -27,6 +27,7 @@ public:
 	virtual void updateZoom();
 	virtual void updatePos();
 	virtual void updateRect(bool needUpdatePos = true);
+	virtual void updateTexture();
 };
 
 #endif // CONTAINER_H

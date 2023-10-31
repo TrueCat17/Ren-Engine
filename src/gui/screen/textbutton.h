@@ -20,8 +20,7 @@ public:
 
 	TextButton(Node *node, Screen *screen);
 
-	virtual void updateRect(bool needUpdatePos = true);
-	virtual void updateTexture(bool skipError = false);
+	virtual void updateTexture();
 	virtual void checkEvents();
 };
 

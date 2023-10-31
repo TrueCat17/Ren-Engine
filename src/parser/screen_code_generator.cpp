@@ -108,7 +108,7 @@ static void initConsts(Node *node) {
 	}
 
 
-	if (command == "button" || command == "textbutton") {
+	if (command == "button" || command == "textbutton" || command == "hotspot") {
 		node->withScreenEvent = true;
 		return;
 	}
@@ -265,8 +265,8 @@ static std::string initCycleCode(Node *node) {
 	if (count) {
 		res +=
 		    indent + "if " + name + " == " + idLen + ":\n" +
-		    indent + "    _SL_last += [None] * " + std::to_string(50 * count) + "\n" +
-		    indent + "    " + idLen + " += " + std::to_string(50 * count) + "\n" +
+		    indent + "    _SL_last += [None] * " + std::to_string(32 * count) + "\n" +
+		    indent + "    " + idLen + " += " + std::to_string(32 * count) + "\n" +
 		    indent + "\n";
 	}
 

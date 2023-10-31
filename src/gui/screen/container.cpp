@@ -148,6 +148,14 @@ void Container::updateRect(bool needUpdatePos) {
 	}
 }
 
+void Container::updateTexture() {
+	for (Child *child : screenChildren) {
+		if (child->enable) {
+			child->updateTexture();
+		}
+	}
+	Child::updateTexture();
+}
 
 
 

@@ -15,12 +15,6 @@ void Hotspot::updatePos() {}
 void Hotspot::updateRect(bool) {}
 
 void Hotspot::checkEvents() {
-	if (alpha <= 0 || !isModal() || globalSkipMouse) {
-		btnRect.mouseOvered = false;
-		btnRect.mouseLeftDown = false;
-		btnRect.mouseRightDown = false;
-	}
-
 	const Imagemap* imageMap = static_cast<Imagemap*>(parent);
 
 	SurfacePtr ground = imageMap->surface;
@@ -40,8 +34,8 @@ void Hotspot::checkEvents() {
 	setWidth( wcrop * float(wcrop_is_float ? Stage::width  : 1) * scaleX);
 	setHeight(hcrop * float(hcrop_is_float ? Stage::height : 1) * scaleY);
 
-	surface = (btnRect.mouseOvered || selected) ? imageMap->hover : nullptr;
 	btnRect.checkEvents();
+	surface = (btnRect.mouseOvered || selected) ? imageMap->hover : nullptr;
 }
 
 

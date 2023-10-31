@@ -48,6 +48,7 @@ void GUI::update(bool saving) {
 		const double time1 = Utils::getTimer();
 #endif
 		scr->calcProps();
+		scr->updateTexture();
 #if printTime
 		const double time2 = Utils::getTimer();
 #endif

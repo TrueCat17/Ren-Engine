@@ -228,6 +228,12 @@ void BtnRect::onRightClick() const {
 }
 
 void BtnRect::checkEvents() {
+	if (owner->alpha <= 0 || !owner->isModal() || owner->globalSkipMouse) {
+		mouseOvered = false;
+		mouseLeftDown = false;
+		mouseRightDown = false;
+	}
+
 	if (mouseOvered) {
 		if (!prevMouseOvered) {
 			onHovered();

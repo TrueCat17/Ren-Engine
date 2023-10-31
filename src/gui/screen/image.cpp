@@ -1,25 +1,24 @@
 #include "image.h"
 
 #include "media/image_manipulator.h"
+#include "utils/utils.h"
 
 
 Image::Image(Node *node, Screen *screen):
 	Container(node, this, screen)
 {}
 
-void Image::updateRect(bool) {
-	Container::updateRect();
+void Image::updateTexture() {
+	Container::updateTexture();
 
-	if (xsize < 0) { xsize = 0; }
-	if (ysize < 0) { ysize = 0; }
-}
+	if (first_param == prevImagePath) return;
 
-void Image::updateTexture(bool skipError) {
-	if (skipError && first_param.empty()) return;
+	prevImagePath = first_param;
 
-	if (!surface || first_param != prevImagePath) {
-		prevImagePath = first_param;
-
-		surface = ImageManipulator::getImage(first_param, false);
+	surface = ImageManipulator::getImage(first_param, false);
+	if (!surface) {
+		Utils::outMsg("Image::updateTexture",
+		              "Failed to load image <" + first_param + ">\n" +
+		              node->getPlace());
 	}
 }
