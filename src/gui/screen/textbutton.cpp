@@ -16,9 +16,10 @@ void TextButton::updateTexture() {
 	auto curParams = std::tie(ground, hover, curParamsIsHover);
 	if (prevParams == curParams) return;
 
+	bool changedGround = prevGround != ground;
 	prevParams = curParams;
 
-	if (hoverIsModifiedGround && prevGround != ground) {
+	if (hoverIsModifiedGround && changedGround) {
 		hover = PyUtils::exec("CPP_EMBED: textbutton.cpp", __LINE__,
 		                      "im.MatrixColor(r'" + ground + "', im.matrix.brightness(0.1))", true);
 	}
