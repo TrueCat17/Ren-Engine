@@ -23,6 +23,26 @@ init -10000 python:
 	def slots__update():
 		slots.last_update = get_game_time()
 		
+		sw, sh = get_stage_size()
+		k = get_from_hard_config("window_w_div_h", float)
+		
+		if gui.slot_width is None and gui.slot_height is None:
+			xsize = int(sw / (gui.file_slot_cols + 2))
+			ysize = int(sh / (gui.file_slot_rows + 2))
+			
+			if xsize < ysize * k:
+				ysize = int(xsize / k)
+			else:
+				xsize = int(ysize * k)
+		else:
+			if gui.slot_width is None:
+				ysize = gui.get_int('slot_height')
+				xsize = int(ysize * k)
+			else:
+				xsize = gui.get_int('slot_width')
+				ysize = int(xsize / k)
+		slots.xsize, slots.ysize = xsize, ysize
+		
 		slots.exists = {}
 		slots.cache = {}
 		for page in slots.pages:
@@ -49,6 +69,13 @@ init -10000 python:
 				else:
 					screenshot = None
 				slots.cache[(page, slot, 'screenshot')] = screenshot
+	
+	def slots__update_on_show(name):
+		if name in ('save', 'load'):
+			slots.update()
+	signals.add('show_screen', slots__update_on_show)
+	signals.add('resized_stage', slots__update)
+	
 	
 	def slots__get_page():
 		return persistent.slot_page
@@ -90,14 +117,18 @@ init -10000 python:
 		slot = slot or persistent.slot_selected
 		
 		selected = persistent.slot_selected == slot
-		over = get_back_with_color(gui.bg('slot_selected') if selected else gui.bg('slot_hover'))
+		over = gui.bg('slot_selected' if selected else 'slot_hover')
+		over = im.scale_without_borders(over, slots.xsize, slots.ysize, gui.slot_corner_sizes, need_scale = True)
 		
 		screenshot = slots.screenshot(slot, page)
 		if not screenshot:
 			return over
 		
-		w, h = get_image_size(screenshot)
-		return im.composite((w, h), (0, 0), screenshot, (0, 0), im.scale(over, w, h))
+		screenshot = im.scale(screenshot, slots.xsize, slots.ysize)
+		if gui.slot_image_processing:
+			screenshot = gui.slot_image_processing(screenshot)
+		
+		return im.composite((slots.xsize, slots.ysize), (0, 0), screenshot, (0, 0), over)
 	
 	
 	
@@ -179,8 +210,9 @@ init -10000 python:
 	
 	def slots__get(name):
 		slot = Object()
-		slot.xsize = int(get_stage_width() / (gui.file_slot_cols + 2))
-		slot.ysize = int(slot.xsize / get_from_hard_config("window_w_div_h", float))
+		
+		slot.xsize = slots.xsize
+		slot.ysize = slots.ysize
 		slot.ground = slots.image(name)
 		slot.mouse  = slots.can_load(name)
 		slot.action = [SetVariable('persistent.slot_selected', name), slots.update]

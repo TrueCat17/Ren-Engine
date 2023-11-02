@@ -1,98 +1,93 @@
 screen slots(name):
-	has hbox
-	align (0.5, 0.5)
-	spacing 30
-	
 	$ slots.check_update()
 	
 	vbox:
-		yalign 0.5
-		spacing gui.get_int('page_spacing')
+		style style[screen.name + '_pages_vbox'] or style.pages_vbox
 		
+		$ tmp_style = style[screen.name + '_page_button'] or style.page_button
 		for page in slots.pages:
 			if page == 'quick' and not config.has_quicksave:
 				continue
 			
 			textbutton page:
-				font      gui.page_button_text_font
-				text_size gui.get_int('page_button_text_size')
-				color        gui.get_int('page_button_text_color')
-				outlinecolor gui.get_int('page_button_text_outlinecolor')
-				text_align gui.page_button_text_xalign
-				
-				xsize gui.get_int('page_button_width')
-				ysize gui.get_int('page_button_height')
-				
-				ground gui.bg('page_button_' + ('ground' if page != slots.get_page() else 'hover'))
-				hover  gui.bg('page_button_hover')
+				style tmp_style
+				ground tmp_style.get_ground()
+				hover  tmp_style.get_hover()
+				selected persistent.slot_page == page
 				action slots.set_page(page)
 	
 	vbox:
-		yalign 0.5
-		spacing 20
+		style 'slots_content'
 		
 		vbox:
-			spacing gui.get_int('slot_spacing')
+			style 'slots_vbox'
 			
 			$ i = 0
 			for y in range(gui.file_slot_rows):
 				hbox:
-					spacing gui.get_int('slot_spacing')
+					style 'slots_hbox'
 					
 					for x in range(gui.file_slot_cols):
 						$ slot = slots.get(slots.slots[i])
-						$ i += 1
 						
-						null:
+						image (style.get_default_hover(None, slot.ground) if slots.hovered == i else slot.ground):
 							xsize slot.xsize
 							ysize slot.ysize
 							
-							button:
-								xsize  slot.xsize
-								ysize  slot.ysize
-								ground slot.ground
-								mouse  slot.mouse
-								action slot.action
-							
 							text slot.desc:
-								xpos gui.get_int('slot_text_xpos')
-								ypos gui.get_int('slot_text_ypos')
-								font gui.slot_text_font
-								text_size gui.get_int('slot_text_size')
-								color        gui.get_int('slot_text_color')
-								outlinecolor gui.get_int('slot_text_outlinecolor')
+								style 'slot_text'
+							
+							button:
+								style 'slot_button'
+								xsize slot.xsize
+								ysize slot.ysize
+								mouse  slot.mouse or screen.name == 'save'
+								action slot.action
+								
+								hovered 'slots.hovered = i'
+								unhovered 'if slots.hovered == i: slots.hovered = None'
+						
+						$ i += 1
 		
 		hbox:
-			xalign 0.5
-			spacing 5
+			style 'slots_buttons'
 			
 			python:
 				btns = []
 				if screen.name == 'load':
+					tmp_style_enabled = style.enabled_load_button or style.menu_button
 					if renpy.can_load():
-						btns.append(['Load game', 1.0, True, renpy.load])
+						btns.append(['Load', tmp_style_enabled, 1, True, renpy.load])
 					else:
-						btns.append(['Load game', 0.7, False, None])
+						tmp_style_disabled = style.disabled_load_button or tmp_style_enabled
+						alpha = 0.7 if tmp_style_disabled is tmp_style_enabled else 1
+						btns.append(['Load', tmp_style_disabled, alpha, False, None])
 				else:
-					btns.append(['Save game', 1.0, True, renpy.save])
+					tmp_style = style.save_button or style.menu_button
+					btns.append(['Save', tmp_style, 1, True, renpy.save])
 				
+				tmp_style_enabled = style.enabled_delete_button or style.menu_button
 				if renpy.can_load():
-					btns.append(['Delete', 1.0, True, renpy.unlink_save])
+					btns.append(['Delete', tmp_style_enabled, 1, True, renpy.unlink_save])
 				else:
-					btns.append(['Delete', 0.7, False, None])
+					tmp_style_disabled = style.disabled_delete_button or tmp_style_enabled
+					alpha = 0.7 if tmp_style_disabled is tmp_style_enabled else 1
+					btns.append(['Delete', tmp_style_disabled, alpha, False, None])
 			
-			for text, alpha, mouse, action in btns:
+			for text, tmp_style, alpha, mouse, action in btns:
 				textbutton _(text):
-					ground gui.bg('button_ground')
-					hover  gui.bg('button_hover')
-					xsize gui.get_int('button_width')
-					ysize gui.get_int('button_height')
-					font       gui.button_text_font
-					text_size  gui.get_int('button_text_size')
-					text_align gui.button_text_xalign
-					color        gui.get_int('button_text_color')
-					outlinecolor gui.get_int('button_text_outlinecolor')
-					
-					alpha  alpha
+					style tmp_style
+					ground tmp_style.get_ground()
+					hover  tmp_style.get_hover()
+					alpha  tmp_style.alpha * alpha
 					mouse  mouse
 					action action
+	
+	$ tmp_style = style[screen.name + '_return_button'] or style.return_button
+	textbutton _('Return'):
+		style tmp_style
+		ground tmp_style.get_ground()
+		hover  tmp_style.get_hover()
+		action HideMenu(screen.name)
+	
+	key 'ESCAPE' action HideMenu(screen.name)

@@ -2,40 +2,37 @@ screen choice_menu:
 	modal True
 	zorder 100
 	
-	image 'images/bg/black.jpg':
-		size  1.0
-		alpha 0.05
+	image gui.bg('choice_buttons_bg'):
+		style 'choice_buttons_bg'
 	
 	vbox:
-		align (0.5, 0.5)
-		spacing gui.get_int('choice_spacing')
+		style 'choice_buttons_vbox'
 		
 		python:
-			if gui.choice_button_width is not None:
-				choice_max_width = gui.choice_button_width
+			tmp_style = style.choice_button
+			if tmp_style.xsize > 0:
+				choice_max_width = tmp_style.get_current('xsize')
 			else:
-				choice_max_width = 0
+				choice_text_size = tmp_style.get_current('text_size')
+				if tmp_style.hover_text_size:
+					choice_text_size = max(choice_text_size, tmp_style.get_current('hover_text_size'))
+				
+				choice_max_width = max(0, tmp_style.get_current('xsize_min'))
 				for variant in choice_menu_variants:
 					if variant:
-						choice_max_width = max(choice_max_width, get_text_width(_(variant), gui.choice_button_text_size))
-			choice_max_width = max(choice_max_width, gui.choice_button_width_min)
+						choice_max_width = max(choice_max_width, get_text_width(_(variant), choice_text_size))
+				if tmp_style.xsize_max > 0:
+					choice_max_width = min(choice_max_width, tmp_style.get_current('xsize_max'))
 		
-		for i in range(len(choice_menu_variants)):
-			if choice_menu_variants[i]:
-				textbutton _(choice_menu_variants[i]):
-					font      gui.choice_button_text_font
-					text_size gui.get_int('choice_button_text_size')
-					color        gui.get_int('choice_button_text_color')
-					outlinecolor gui.get_int('choice_button_text_outlinecolor')
-					text_align gui.choice_button_text_xalign
-					
+		for i, text in enumerate(choice_menu_variants):
+			if text:
+				textbutton _(text):
+					style tmp_style
 					xsize choice_max_width
-					ysize gui.get_int('choice_button_height')
-					
-					ground gui.bg('choice_button_ground')
-					hover  gui.bg('choice_button_hover')
+					ground tmp_style.get_ground(choice_max_width)
+					hover  tmp_style.get_hover(choice_max_width)
 					action Return(i)
-			elif choice_menu_variants[i] is not None:
-				null ysize gui.choice_button_height
+			elif text is not None:
+				null style tmp_style
 	
 	use dialogue_box_buttons(disable_next_btn = True)

@@ -77,6 +77,47 @@ init -1002 python:
 			else:
 				if attr in self:
 					Object.__delattr__(self, attr)
+		
+		def get_current(self, prop, relative = None):
+			now = get_game_time()
+			if self[prop + '_last_update'] != now:
+				self[prop + '_last_update'] = now
+				
+				if relative is None:
+					if prop.startswith('x'):
+						relative = get_stage_width()
+					else:
+						relative = get_stage_height()
+						if prop not in ('text_size', 'hover_text_size') and not prop.startswith('y'):
+							out_msg('Style.get_current', 'Set <relative> param for unusual prop <' + prop + '>')
+				
+				value = get_absolute(self[prop], relative)
+				value_min = self[prop + '_min']
+				if value_min is not None and value_min > 0:
+					value = max(value, get_absolute(value_min, relative))
+				value_max = self[prop + '_max']
+				if value_max is not None and value_max > 0:
+					value = min(value, get_absolute(value_max, relative))
+				
+				self['cur_' + prop] = value
+			return self['cur_' + prop]
+		
+		def get_resized_image(self, prop, width, height):
+			now = get_game_time()
+			key = (prop + '_last_update', width, height)
+			if self[key] != now:
+				self[key] = now
+				
+				xsize = width  or self.get_current('xsize', get_stage_width())
+				ysize = height or self.get_current('ysize', get_stage_height())
+				
+				self['cur_' + prop] = im.scale_without_borders(self[prop], xsize, ysize, self.corner_sizes)
+			return self['cur_' + prop]
+		
+		def get_ground(self, width = None, height = None):
+			return self.get_resized_image('ground', width, height)
+		def get_hover(self, width = None, height = None):
+			return self.get_resized_image('hover', width, height)
 
 
 init -1001:
@@ -154,3 +195,4 @@ init -1001:
 	style imagemap:
 		ground ''
 		hover  ''
+

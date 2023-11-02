@@ -1,7 +1,7 @@
 init -1000 python:
 	sliders_v = {}
 	
-	def slider_v_init(name, length, page_length, ground = None, hover = None, value = 0.0, button_size = 25, buttons = True):
+	def slider_v_init(name, length, page_length, ground = None, hover = None, value = 0.0, button_size = 25, spacing = 4, buttons = True):
 		sliders_v[name] = {
 			'length': length,
 			'page_length': page_length,
@@ -9,7 +9,8 @@ init -1000 python:
 			'hover': hover or gui.vbar_hover,
 			'value': value,
 			'button_size': button_size,
-			'buttons': buttons
+			'spacing': spacing,
+			'buttons': buttons,
 		}
 	def slider_v_change(name, **args):
 		t = sliders_v[name]
@@ -36,7 +37,8 @@ init -1000 python:
 	
 	def slider_v_update(local_y):
 		sh = get_stage_height()
-		length = get_absolute(slider_v_cur['page_length'], sh) - (2 * slider_v_cur['button_size'] if slider_v_cur['buttons'] else 0)
+		btns_height = (2 * slider_v_cur['button_size'] + 4 * slider_v_cur['spacing']) if slider_v_cur['buttons'] else 0
+		length = get_absolute(slider_v_cur['page_length'], sh) - btns_height
 		scroll = length * tmp_scroll
 		if length <= scroll:
 			value = 0
@@ -69,30 +71,42 @@ screen slider_v:
 			align (0.97, 0.5)
 			xsize 35
 			
+			# [spacing, btn, spacing], bar, [spacing, btn, spacing]
+			
 			if slider_v_cur['buttons']:
+				null ysize slider_v_cur['spacing']
+				
+				$ tmp_btn_ground = im.scale_without_borders(style.textbutton.ground, slider_v_cur['button_size'], slider_v_cur['button_size'])
 				textbutton '/\\':
 					color 0xFFFFFF
 					text_size slider_v_cur['button_size'] - 5
 					xalign 0.5
-					size (slider_v_cur['button_size'], slider_v_cur['button_size'])
+					size slider_v_cur['button_size']
+					ground tmp_btn_ground
 					action slider_v_add_value(-0.5)
+				
+				null ysize slider_v_cur['spacing']
 			
 			python:
 				tmp_length = get_absolute(slider_v_cur['length'] or 1, get_stage_height())
-				tmp_scroll = get_absolute(slider_v_cur['page_length'], get_stage_height()) / float(tmp_length)
+				tmp_scroll = get_absolute(slider_v_cur['page_length'], get_stage_height()) / tmp_length
 				
 				tmp_image = im.bar(
 					slider_v_cur['value'] * (1 - tmp_scroll) + tmp_scroll,
 					slider_v_cur['value'] * (1 - tmp_scroll),
 					vertical = True, ground = slider_v_cur['ground'], hover = slider_v_cur['hover'])
+				
+				tmp_xsize = slider_v_cur['button_size']
+				tmp_btns_height = (2 * slider_v_cur['button_size'] + 4 * slider_v_cur['spacing']) if slider_v_cur['buttons'] else 0
+				tmp_ysize = get_absolute(slider_v_cur['page_length'], get_stage_height()) - tmp_btns_height
+				tmp_image = im.scale_without_borders(tmp_image, tmp_xsize, tmp_ysize)
 			
 			button:
 				ground tmp_image
 				hover  tmp_image
 				xalign 0.5
-				xsize slider_v_cur['button_size']
-				ysize get_absolute(slider_v_cur['page_length'], get_stage_height()) -
-				        (2 * slider_v_cur['button_size'] if slider_v_cur['buttons'] else 0)
+				xsize tmp_xsize
+				ysize tmp_ysize
 				
 				unhovered SetVariable('slider_v_hovered', False)
 				action [SetVariable('slider_v_hovered', True), slider_v_update(get_local_mouse()[1])]
@@ -108,10 +122,15 @@ screen slider_v:
 					slider_v_update(get_mouse()[1] - slider_v_y)
 			
 			if slider_v_cur['buttons']:
+				null ysize slider_v_cur['spacing']
+				
 				textbutton '\\/':
 					color 0xFFFFFF
 					text_size slider_v_cur['button_size'] - 5
 					xalign 0.5
-					size (slider_v_cur['button_size'], slider_v_cur['button_size'])
+					size slider_v_cur['button_size']
+					ground tmp_btn_ground
 					action slider_v_add_value(+0.5)
+				
+				null ysize slider_v_cur['spacing']
 

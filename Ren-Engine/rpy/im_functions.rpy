@@ -359,7 +359,10 @@ init -1001 python:
 			bottom = top
 		
 		if max(left, right, top, bottom) <= 0:
-			return im.rect(color, width, height)
+			res = im.rect(color, width, height)
+			if use_cache:
+				cache[key] = res
+			return res
 		
 		args = [(width, height)]
 		# rects
@@ -424,9 +427,78 @@ init -1001 python:
 			                (0, 0), ground,
 			                (x, y), im.crop(hover, (x, y, w, h)))
 	
+	def im__scale_without_borders(image, width, height, left = None, top = None, right = None, bottom = None, need_scale = False):
+		if type(left) in (tuple, list):
+			left, top, right, bottom = left
+		
+		cache = im__scale_without_borders.__dict__
+		key = (image, width, height, left, top, right, bottom, need_scale)
+		if key in cache:
+			return cache[key]
+		
+		w, h = get_image_size(image)
+		if left is None:
+			left = min(w, h) // 3
+		if top is None:
+			top = left
+		if right is None:
+			right = left
+		if bottom is None:
+			bottom = top
+		
+		width  = round(width)
+		height = round(height)
+		
+		left   = round(get_absolute(left, w))
+		right  = round(get_absolute(right, w))
+		top    = round(get_absolute(top, h))
+		bottom = round(get_absolute(bottom, h))
+		
+		sizes = left, right, top, bottom
+		if max(sizes) <= 0 or (w, h) == (1, 1):
+			if min(sizes) < 0:
+				out_msg('im.scale_without_borders', 'Invalid sizes %s' % (sizes, ))
+			res = im.scale(image, width, height)
+			cache[key] = res
+			return res
+		
+		# center sizes
+		cw_from = w - left - right
+		ch_from = h - top - bottom
+		
+		kw = (left + right) / (width * 0.8) # 80% for corner parts is max
+		kh = (top + bottom) / (height * 0.8)
+		k = math.ceil(max(kw, kh, 1)) # enlarge image if it is too small for these corner sizes
+		
+		cw_to = width * k - left - right
+		ch_to = height * k - top - bottom
+		
+		args = [(width * k, height * k)]
+		
+		def add(fx, fy, fw, fh, tx, ty, tw, th): # f = from, t = to
+			if tw > 0 and th > 0:
+				args.append((tx, ty))
+				args.append(im.scale(im.crop(image, fx, fy, max(fw, 1), max(fh, 1)), tw, th))
+		
+		y = y_to = 0
+		for h, h_to in ((top, top), (ch_from, ch_to), (bottom, bottom)):
+			x = x_to = 0
+			for w, w_to in ((left, left), (cw_from, cw_to), (right, right)):
+				add(x, y, w, h,     x_to, y_to, w_to, h_to)
+				x += w
+				x_to += w_to
+			y += h
+			y_to += h_to
+		
+		res = im.composite(*args)
+		if need_scale and k > 1:
+			res = im.scale(res, width, height)
+		
+		cache[key] = res
+		return res
+	
 	def im__save(image, path, width = None, height = None):
 		save_image(image, path, str(width and int(width)), str(height and int(height)))
-	
 	
 	
 	build_object('im')

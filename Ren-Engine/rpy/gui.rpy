@@ -12,17 +12,19 @@ init -10000 python:
 		obj = props.get('obj', gui)
 		default = props.get('default', None)
 		
+		res = gui[name]
 		if name.endswith('color'):
-			res = color_to_int(obj[name])
+			res = color_to_int(res)
 			return res if res is not None else default
 		
-		
-		is_x_coord = name.endswith('_xpos') or name.endswith('_width')
+		is_x_coord = name.endswith('_xpos') or name.endswith('_width') or name.endswith('_xspacing')
 		max_value = props.get('max_value', get_stage_width() if is_x_coord else get_stage_height())
 		
-		res = get_absolute(obj[name], max_value) if obj[name] is not None else default
-		min_res = obj[name + '_min'] and get_absolute(obj[name + '_min'], max_value)
-		max_res = obj[name + '_max'] and get_absolute(obj[name + '_max'], max_value)
+		res = get_absolute(res, max_value) if res is not None else default
+		min_res = gui[name + '_min']
+		min_res = min_res and get_absolute(min_res, max_value)
+		max_res = gui[name + '_max']
+		max_res = max_res and get_absolute(max_res, max_value)
 		
 		res = gui.max(res, min_res)
 		res = gui.min(res, max_res)
@@ -173,6 +175,7 @@ init -1000 python:
 	
 	# history
 	config.history_length = 50
+	gui.history_bg = im.rect('#181818BB')
 	gui.history_height = None # None = auto
 	gui.history_spacing = 5 # enable if history_height is None
 	
@@ -193,21 +196,13 @@ init -1000 python:
 	gui.history_thought_xalign = 0.0
 	
 	
-	# menu title
-	gui.title_text_font = 'Calibri'
-	gui.title_text_size = 0.1
-	gui.title_text_color        = '#FFF'
-	gui.title_text_outlinecolor = '#000'
-	
-	# interface in menus
-	gui.interface_text_font = 'Calibri'
-	gui.interface_text_size = 25
-	gui.interface_text_color        = '#FFF'
-	gui.interface_text_outlinecolor = '#000'
-	gui.interface_text_xalign = 'left'
+	gui.quick_buttons_bg = im.rect('#0000')
+	gui.choice_buttons_bg = im.rect('#0001')
 	
 	
-	# slots
+	gui.enable_title = True
+	
+	# slots (save/load)
 	gui.file_slot_cols = 4
 	gui.file_slot_rows = 3
 	gui.slot_pages = 10
@@ -217,90 +212,23 @@ init -1000 python:
 	
 	gui.slot_hover    = 'images/gui/save_load/hover.png'
 	gui.slot_selected = 'images/gui/save_load/selected.png'
-	gui.slot_spacing = 0.01
-	
-	gui.slot_text_xpos = 5
-	gui.slot_text_ypos = 5
-	gui.slot_text_font = 'Calibri'
-	gui.slot_text_size = 0.04
-	gui.slot_text_color        = '#FFF'
-	gui.slot_text_outlinecolor = '#000'
-	
-	
-	# default button in save/load/preferences screens
-	gui.button_width = 175
-	gui.button_height = 25
-	gui.button_ground = style.textbutton.ground
-	gui.button_hover  = style.textbutton.hover
-	gui.button_text_font = 'Calibri'
-	gui.button_text_size = 15
-	gui.button_text_color        = '#FFF'
-	gui.button_text_outlinecolor = None
-	gui.button_text_xalign = 0.5
-	
-	
-	# choice menu button
-	gui.choice_button_width = None # None = auto
-	gui.choice_button_width_min = 150
-	gui.choice_button_height = 34
-	gui.choice_button_ground = style.textbutton.ground
-	gui.choice_button_hover  = style.textbutton.hover
-	gui.choice_button_text_font = 'Calibri'
-	gui.choice_button_text_size = 20
-	gui.choice_button_text_color        = '#FFF'
-	gui.choice_button_text_outlinecolor = None
-	gui.choice_button_text_xalign = 0.5
-	
-	gui.choice_spacing = 10
-	
-	
-	# quick menu button
-	gui.quick_button_width  = None # None = auto
-	gui.quick_button_height = 20
-	gui.quick_button_ground = im.rect('#00000002')
-	gui.quick_button_hover  = im.rect('#00000002')
-	gui.quick_button_text_font = 'Calibri'
-	gui.quick_button_text_size = 16
-	gui.quick_button_text_color        = '#DDD'
-	gui.quick_button_text_outlinecolor = '#000'
-	gui.quick_button_text_xalign = 0.5
-	
-	
-	# page button in save/load/preferences screens
-	gui.page_button_width = 0.10
-	gui.page_button_height = 0.06
-	gui.page_button_ground = style.textbutton.ground
-	gui.page_button_hover  = style.textbutton.hover
-	gui.page_button_text_font = 'Calibri'
-	gui.page_button_text_size = 0.035
-	gui.page_button_text_color        = '#FFF'
-	gui.page_button_text_outlinecolor = None
-	gui.page_button_text_xalign = 0.5
-	gui.page_spacing = 0.007
+	gui.slot_width = None # None = auto
+	gui.slot_height = None # None = auto
+	gui.slot_image_processing = None # None or func(img) -> img
 	
 	
 	# prefs
 	gui.prefs_bg = 'images/gui/menu/main/back.png'
+	gui.prefs_enable_mods = True
+	gui.prefs_mods_in_page = 8
 	
-	# props for bool btn
-	gui.prefs_bool_width = 0.6
-	gui.prefs_bool_width_max = 400
-	gui.prefs_bool_height = 25
-	gui.prefs_bool_ground = im.rect('#00000002')
-	gui.prefs_bool_hover  = im.rect('#00000010')
-	gui.prefs_bool_text_font = 'Calibri'
-	gui.prefs_bool_text_size = 20
-	gui.prefs_bool_text_color        = '#FFF'
-	gui.prefs_bool_text_outlinecolor = '#000'
-	gui.prefs_bool_text_xalign = 0.5
+	gui.prefs_std_btn_params = (5, 1) # w_div_h, k for style.[prefs_]menu_button.ysize
 	
-	gui.prefs_bar_width = 0.3
-	gui.prefs_bar_width_max = 350
-	gui.prefs_bar_height = 25
-	gui.prefs_xindent = 0.1
-	# see  text  props in gui.interface_text_*
-	# see button props in gui.button_*
+	gui.bar_minus_text = '-'
+	gui.bar_plus_text  = '+'
 	
+	gui.back_button_text = '<-'
+	gui.next_button_text = '->'
 	
 	gui.checkbox_yes = 'images/gui/std/checkbox/yes.png'
 	gui.checkbox_no  = 'images/gui/std/checkbox/no.png'
@@ -310,3 +238,4 @@ init -1000 python:
 	
 	gui.vbar_ground = im.rotozoom(gui.bar_ground, 90, 1)
 	gui.vbar_hover  = im.rotozoom(gui.bar_hover , 90, 1)
+

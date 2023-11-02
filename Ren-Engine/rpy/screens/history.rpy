@@ -6,11 +6,13 @@ init python:
 	signals.add('show_screen', history__on_show)
 	
 	def history__close():
+		if history.hided_time:
+			dtime = get_game_time() - history.hided_time
+			if dtime < history.disappearance_time:
+				return
 		history.hided_time = get_game_time()
 	
 	build_object('history')
-	
-	history.background = im.rect('#181818BB')
 	
 	history.ysize = 0.95
 	
@@ -67,7 +69,7 @@ screen history:
 		else:
 			history.alpha = 1
 	
-	image history.background:
+	image gui.bg('history_bg'):
 		clipping True
 		alpha history.alpha
 		xpos history.x

@@ -399,7 +399,7 @@ screen dialogue_box_adv:
 				text_align   gui.dialogue_text_align
 		
 		if quick_menu:
-			null ysize gui.get_int('quick_button_height')
+			null ysize style.quick_buttons_bg.get_current('ysize')
 
 
 screen dialogue_box_nvl:
@@ -511,17 +511,17 @@ screen dialogue_box:
 					color 0xFFFFFF
 					text_size 30
 					pos (20, 20)
+		
+		button:
+			ground 'images/bg/black.jpg'
+			hover  'images/bg/black.jpg'
 			
-			button:
-				ground 'images/bg/black.jpg'
-				hover  'images/bg/black.jpg'
-				
-				size  1.0
-				alpha 0.01
-				mouse False
-				
-				action    db.on_enter
-				alternate pause_screen.show
+			size  1.0
+			alpha 0.01
+			mouse False
+			
+			action    db.on_enter
+			alternate pause_screen.show
 		
 		use dialogue_box_buttons
 	

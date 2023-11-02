@@ -49,7 +49,7 @@ init -100 python:
 	def preferences__get_resolution_buttons():
 		btns = []
 		for resolution in preferences.resolutions:
-			btns.append(['btn', '%sx%s' % resolution, (get_stage_size, resolution), Function(set_stage_size, *resolution), (100, 25)])
+			btns.append(['btn', '%sx%s' % resolution, (get_stage_size, resolution), Function(set_stage_size, *resolution), (4, 1)])
 		
 		res = []
 		last_line = None
@@ -65,7 +65,7 @@ init -100 python:
 		for i in range(len(std_mixers)):
 			mixer, mixer_name = std_mixers[i], std_mixers_names[i]
 			
-			mixer_text = ['str', '["%s"!t]:' % mixer_name, 25, 150]
+			mixer_text = ['str', '["%s"!t]:' % mixer_name, 1, 0.18]
 			mixer_bar = ['bar', None, 'config.' + mixer + '_volume', 0, 1, Function(renpy.music.add_mixer_volume, -0.1, mixer), Function(renpy.music.add_mixer_volume, +0.1, mixer)]
 			res.append([mixer_text, mixer_bar])
 		return res
@@ -92,10 +92,10 @@ init -100 python:
 	# Elem of preferences.content['Your menu name'] -> hbox form list
 	# Elems from the list:
 	#  None
-	#  ['str', 'Your text', text_size = -1, xsize = -1, text_align = 'left']
+	#  ['str',  'Your text', text_size = 1, xsize = -1, text_align = 'left']   ## text_size - k for style.menu_text.text_size
 	#  ['bool', 'Your text', function_for_get, function_for_set]
-	#  ['btn', 'Your text', (function_for_get, result) - mb None, function_for_set, size = (100, 25)]
-	#  ['bar', 'Your text', obj (None for global), 'prop' (mb func), min_value, max_value, function_for_minus, function_for_plus]
+	#  ['btn',  'Your text', (function_for_get, result) - mb None, function_for_set, size = (5, 1)]   ## size - (w_div_h, k for style.[prefs_]menu_button.ysize)
+	#  ['bar',  'Your text', obj (None for global), 'prop' (mb func), min_value, max_value, function_for_minus, function_for_plus]
 	# You can use function (that returns str) instead of 'Your text'
 	# You can use function (that returns items) instead of list of item params (see preferences__get_resolution_buttons)
 	# Tags:
@@ -122,10 +122,10 @@ init -100 python:
 	
 	
 	preferences.content['Screen'] = [
-		[['bool', '["Fullscreen"!t] [hotkeys.get_key_for(toggle_fullscreen)]', Function(get_from_hard_config, 'window_fullscreen', bool), toggle_fullscreen]],
-		None,
-		[['str', '["Resolution"!t]:', 20]],
+		[['str', '["Resolution"!t]:']],
 		preferences.get_resolution_buttons,
+		None,
+		[['bool', '["Fullscreen"!t] [hotkeys.get_key_for(toggle_fullscreen)]', Function(get_from_hard_config, 'window_fullscreen', bool), toggle_fullscreen]],
 	]
 	
 	preferences.content['Sounds'] = [
@@ -135,14 +135,14 @@ init -100 python:
 	
 	preferences.content['Other'] = [
 		[['bool', '["Show all text at once"!t]', preferences.get_text_cps_on, preferences.toggle_text_cps_on]],
-		[['str', '["Text display speed"!t]', 20]],
+		[['str', '["Text display speed"!t]', 0.9]],
 		[['bar', preferences, 'get_text_cps', 20, 220, Function(preferences.add_text_cps, -20), Function(preferences.add_text_cps, +20)]],
 		None,
-		[['str', '["Autosave"!t]', 20]],
+		[['str', '["Autosave"!t]', 0.9]],
 		[
-			['btn', '<-', None, preferences.prev_autosave_time, 25],
-			['str', preferences.get_autosave_str, 20, 130, 'center'],
-			['btn', '->', None, preferences.next_autosave_time, 25],
+			['btn', gui.back_button_text, None, preferences.prev_autosave_time, (1, 1)],
+			['str', preferences.get_autosave_str, 1, 0.15, 'center'],
+			['btn', gui.next_button_text, None, preferences.next_autosave_time, (1, 1)],
 		],
 		None,
 		[['bool', '["Show FPS"!t] [hotkeys.get_key_for(debug_screen.next_visible_mode)]', GetSetAttr('config.debug_screen_visible_mode'), debug_screen.toggle_fps]],
@@ -151,7 +151,7 @@ init -100 python:
 	preferences.content['Language'] = []
 	for lang in preferences.langs:
 		preferences.content['Language'].append(
-			[['btn', lang, None, Function(renpy.change_language, lang), (150, 25)]]
+			[['btn', lang, None, Function(renpy.change_language, lang)]]
 		)
 	del lang
 
@@ -166,65 +166,31 @@ screen preferences:
 	image gui.bg('prefs_bg'):
 		size 1.0
 	
-	text _('Preferences'):
-		align (0.5, 0.02)
-		
-		font         gui.title_text_font
-		color        gui.get_int('title_text_color')
-		outlinecolor gui.get_int('title_text_outlinecolor')
-		text_size gui.get_int('title_text_size')
+	if gui.enable_title:
+		text _('Preferences'):
+			style style.prefs_menu_title or style.menu_title
 	
 	
 	if preferences.show_mods:
-		vbox:
-			align 0.5
-			spacing gui.get_int('page_spacing')
-			
-			for name, dir_name in get_mods():
-				textbutton name:
-					ground gui.bg('button_ground')
-					hover  gui.bg('button_hover')
-					xsize gui.get_int('button_width')
-					ysize gui.get_int('button_height')
-					font         gui.button_text_font
-					color        gui.get_int('button_text_color')
-					outlinecolor gui.get_int('button_text_outlinecolor')
-					text_size   gui.get_int('button_text_size')
-					text_align  gui.button_text_xalign
-					
-					action start_mod(dir_name)
+		use mods
 	else:
-		$ content_xindent = gui.get_int('prefs_xindent') * 2 + gui.get_int('page_button_width')
 		vbox:
-			xsize content_xindent
-			yalign 0.5
-			spacing gui.get_int('page_spacing')
+			style style.prefs_pages_vbox or style.pages_vbox
 			
+			$ tmp_style = style.prefs_page_button or style.page_button
 			for tab in preferences.tabs:
 				if tab == 'Language' and len(preferences.langs) == 1:
 					continue
 				
 				textbutton (tab if tab == 'Language' else _(tab)): # no translation for tab <Language>
-					font      gui.page_button_text_font
-					text_size gui.get_int('page_button_text_size')
-					color        gui.get_int('page_button_text_color')
-					outlinecolor gui.get_int('page_button_text_outlinecolor')
-					text_align gui.page_button_text_xalign
-					
-					xsize  gui.get_int('page_button_width')
-					ysize  gui.get_int('page_button_height')
-					xalign 0.5
-					
-					ground gui.bg('page_button_ground' if tab != preferences.tab else 'page_button_hover')
-					hover  gui.bg('page_button_hover')
-					
+					style tmp_style
+					ground tmp_style.get_ground()
+					hover  tmp_style.get_hover()
+					selected preferences.tab == tab
 					action SetDict(preferences, 'tab', tab)
 		
 		vbox:
-			xpos content_xindent
-			xsize get_stage_width() - content_xindent
-			yalign 0.5
-			spacing 10
+			style 'prefs_content'
 			
 			python:
 				orig_lines = preferences.content[preferences.tab]
@@ -237,11 +203,10 @@ screen preferences:
 			
 			for elems in lines:
 				if not elems:
-					null size 10
+					null ysize 1
 				else:
 					hbox:
-						xalign 0.5
-						spacing 10
+						style 'prefs_line'
 						
 						for elem in elems:
 							if callable(elem):
@@ -260,114 +225,119 @@ screen preferences:
 							
 							if obj == 'str':
 								python:
-									if len(elem) <= 2 or elem[2] <= 0:
-										text_size = gui.get_int('interface_text_size')
-									else:
-										text_size = get_absolute(elem[2], get_stage_height())
+									tmp_style = style.menu_text
+									
+									text_size = tmp_style.get_current('text_size')
+									if len(elem) > 2 and elem[2] > 0:
+										text_size *= elem[2]
+									text_xsize = -1 if len(elem) <= 3 or elem[3] <= 0 else get_absolute(elem[3], get_stage_width())
 								
 								text text:
+									style tmp_style
 									yalign 0.5
-									font         gui.interface_text_font
-									color        gui.get_int('interface_text_color')
-									outlinecolor gui.get_int('interface_text_outlinecolor')
 									text_size  text_size
-									xsize      -1 if len(elem) <= 3 or elem[3] <= 0 else elem[3]
-									text_align gui.interface_text_xalign if len(elem) <= 4 else elem[4]
+									xsize      text_xsize
+									text_align tmp_style.text_align if len(elem) <= 4 else elem[4]
 							
 							elif obj == 'bool':
 								python:
 									value = elem[2]()
-									image = gui.checkbox_yes if value else gui.checkbox_no
-									text = '{image=' + image + '} ' + text
-								textbutton text:
-									font         gui.prefs_bool_text_font
-									color        gui.get_int('prefs_bool_text_color')
-									outlinecolor gui.get_int('prefs_bool_text_outlinecolor')
-									text_size   gui.get_int('prefs_bool_text_size')
-									text_align  gui.prefs_bool_text_xalign
-									
-									ground gui.bg('prefs_bool_ground')
-									hover  gui.bg('prefs_bool_hover')
-									
+									tmp_style = style.checkbox
+									checkbox_width  = tmp_style.get_current('xsize')
+									checkbox_height = tmp_style.get_current('ysize')
+									checkbox_image = gui['checkbox_yes' if value else 'checkbox_no']
+									checkbox_image = im.scale_without_borders(checkbox_image, checkbox_width, checkbox_height, tmp_style.corner_sizes)
+								
+								null:
+									style 'bool_button'
 									yalign 0.5
-									xsize  gui.get_int('prefs_bool_width')
-									ysize  gui.get_int('prefs_bool_height')
-									action elem[3]
+									
+									hbox:
+										style 'bool_hbox'
+										
+										image checkbox_image:
+											style 'checkbox'
+											yalign 0.5
+										
+										text text:
+											style 'bool_text'
+											yalign 0.5
+									
+									button:
+										style 'bool_button'
+										ground style.bool_button.get_ground()
+										hover  style.bool_button.get_hover()
+										action elem[3]
 							
 							elif obj == 'btn':
 								python:
+									tmp_style = style.prefs_menu_button or style.menu_button
+									
 									if elem[2]:
 										get, result_for_select = elem[2]
 										selected_btn = get() == result_for_select
 									else:
 										selected_btn = False
-								textbutton text:
-									ground gui.bg('button_hover' if selected_btn else 'button_ground')
-									hover  gui.bg('button_hover')
 									
+									btn_height = tmp_style.get_current('ysize')
+									if len(elem) > 4:
+										w_div_h, kh = elem[4]
+									else:
+										w_div_h, kh = gui.prefs_std_btn_params
+									btn_height = round(btn_height * kh)
+									btn_width  = round(btn_height * w_div_h)
+								
+								textbutton text:
+									style tmp_style
 									yalign 0.5
-									size   (gui.get_int('button_width'), gui.get_int('button_height')) if len(elem) <= 4 else elem[4]
+									xsize btn_width
+									ysize btn_height
+									ground tmp_style.get_ground(btn_width, btn_height)
+									hover  tmp_style.get_hover(btn_width, btn_height)
+									selected selected_btn
 									action elem[3]
 							
 							elif obj == 'bar':
 								python:
+									tmp_bar_style = style.bar
+									tmp_style = style.bar_menu_button
+									
 									obj, prop, min_value, max_value, function_for_minus, function_for_plus = elem[1:]
 									value = getset_attr(prop, obj = obj)
 									if callable(value):
 										value = value()
 									part = in_bounds((value - min_value) / (max_value - min_value), 0, 1)
+									
+									bar_width = tmp_bar_style.get_current('xsize')
+									bar_height = tmp_bar_style.get_current('ysize')
+									bar_image = im.scale_without_borders(im.bar(part), bar_width, bar_height, tmp_bar_style.corner_sizes)
 								
-								textbutton '-':
-									ground gui.bg('button_ground')
-									hover  gui.bg('button_hover')
-									size   gui.get_int('button_height')
-									font         gui.button_text_font
-									color        gui.get_int('button_text_color')
-									outlinecolor gui.get_int('button_text_outlinecolor')
-									text_size   gui.get_int('button_text_size')
-									text_align  gui.button_text_xalign
-									action function_for_minus
-								image im.bar(part):
-									xsize gui.get_int('prefs_bar_width')
-									ysize gui.get_int('prefs_bar_height')
-								textbutton '+':
-									ground gui.bg('button_ground')
-									hover  gui.bg('button_hover')
-									size   gui.get_int('button_height')
-									font         gui.button_text_font
-									color        gui.get_int('button_text_color')
-									outlinecolor gui.get_int('button_text_outlinecolor')
-									text_size   gui.get_int('button_text_size')
-									text_align  gui.button_text_xalign
-									action function_for_plus
+								for i in (-1, 0, 1): # btn <minus>, bar, btn <plus>
+									if i:
+										textbutton gui['bar_minus_text' if i == -1 else 'bar_plus_text']:
+											style tmp_style
+											yalign 0.5
+											ground tmp_style.get_ground()
+											hover  tmp_style.get_hover()
+											action (function_for_minus if i == -1 else function_for_plus)
+									else:
+										image bar_image:
+											style tmp_bar_style
+											yalign 0.5
 	
+	if gui.prefs_enable_mods:
+		$ tmp_style = style.mods_button
+		textbutton _('Preferences' if preferences.show_mods else 'Mods'):
+			style tmp_style
+			ground tmp_style.get_ground()
+			hover  tmp_style.get_hover()
+			action ToggleDict(preferences, 'show_mods')
 	
-	textbutton _('Preferences' if preferences.show_mods else 'Mods'):
-		ground gui.bg('button_ground')
-		hover  gui.bg('button_hover')
-		xsize gui.get_int('button_width')
-		ysize gui.get_int('button_height')
-		font         gui.button_text_font
-		color        gui.get_int('button_text_color')
-		outlinecolor gui.get_int('button_text_outlinecolor')
-		text_size   gui.get_int('button_text_size')
-		text_align  gui.button_text_xalign
-		
-		align (0.05, 0.95)
-		action ToggleDict(preferences, 'show_mods')
-	
+	$ tmp_style = style.return_button
 	textbutton _('Return'):
-		ground gui.bg('button_ground')
-		hover  gui.bg('button_hover')
-		xsize gui.get_int('button_width')
-		ysize gui.get_int('button_height')
-		font         gui.button_text_font
-		color        gui.get_int('button_text_color')
-		outlinecolor gui.get_int('button_text_outlinecolor')
-		text_size   gui.get_int('button_text_size')
-		text_align  gui.button_text_xalign
-		
-		align (0.95, 0.95)
+		style tmp_style
+		ground tmp_style.get_ground()
+		hover  tmp_style.get_hover()
 		action HideMenu('preferences')
 	
 	key 'ESCAPE' action HideMenu('preferences')

@@ -22,12 +22,6 @@ translate russian strings:
 	old 'Exit to menu'
 	new 'Выход в меню'
 	
-	old 'Load game'
-	new 'Загрузить игру'
-	
-	old 'Save game'
-	new 'Сохранить игру'
-	
 	old 'Delete'
 	new 'Удалить'
 	
@@ -92,7 +86,7 @@ translate russian strings:
 	new 'Скорость показа текста'
 	
 	old 'Show FPS'
-	new 'Показать ФПС'
+	new 'Показать FPS'
 	
 	old 'Usual moving - run'
 	new 'Обычное передвижение - бег'
