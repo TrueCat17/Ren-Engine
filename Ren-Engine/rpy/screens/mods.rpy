@@ -24,9 +24,7 @@ screen mods:
 	$ tmp_style = style.mod_button
 	
 	for i in range(gui.prefs_mods_in_page - len(mods.page_buttons)):
-		textbutton '':
-			style tmp_style
-			alpha 0
+		null style tmp_style
 	
 	for name, dir_name in mods.page_buttons:
 		textbutton name:

@@ -163,12 +163,11 @@ screen preferences:
 	zorder 10001
 	modal  True
 	
-	image gui.bg('prefs_bg'):
+	image (gui.bg('prefs_bg') or gui.bg('main_bg')):
 		size 1.0
 	
-	if gui.enable_title:
-		text _('Preferences'):
-			style style.prefs_menu_title or style.menu_title
+	text _('Preferences'):
+		style style.prefs_menu_title or style.menu_title
 	
 	
 	if preferences.show_mods:
@@ -300,7 +299,7 @@ screen preferences:
 							elif obj == 'bar':
 								python:
 									tmp_bar_style = style.bar
-									tmp_style = style.bar_menu_button
+									tmp_style = style.bar_button
 									
 									obj, prop, min_value, max_value, function_for_minus, function_for_plus = elem[1:]
 									value = getset_attr(prop, obj = obj)
@@ -325,13 +324,12 @@ screen preferences:
 											style tmp_bar_style
 											yalign 0.5
 	
-	if gui.prefs_enable_mods:
-		$ tmp_style = style.mods_button
-		textbutton _('Preferences' if preferences.show_mods else 'Mods'):
-			style tmp_style
-			ground tmp_style.get_ground()
-			hover  tmp_style.get_hover()
-			action ToggleDict(preferences, 'show_mods')
+	$ tmp_style = style.mods_button
+	textbutton _('Preferences' if preferences.show_mods else 'Mods'):
+		style tmp_style
+		ground tmp_style.get_ground()
+		hover  tmp_style.get_hover()
+		action ToggleDict(preferences, 'show_mods')
 	
 	$ tmp_style = style.return_button
 	textbutton _('Return'):

@@ -36,6 +36,11 @@ init -999:
 	style prefs_line is hbox:
 		spacing style.prefs_content.spacing
 		xalign 0.5
+	
+	style skip_text is text:
+		color 0xFFFFFF
+		text_size 30
+		pos 20
 
 init -998:
 	style mods_button is menu_button:
@@ -67,7 +72,7 @@ init -997:
 
 init -998:
 	# button for bar actions (<minus> and <plus>)
-	style bar_menu_button is menu_button:
+	style bar_button is menu_button:
 		xsize style.menu_button.ysize / get_from_hard_config('window_w_div_h', float)
 	
 	# image params for <bar> element

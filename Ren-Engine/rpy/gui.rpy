@@ -197,18 +197,18 @@ init -1000 python:
 	
 	
 	gui.quick_buttons_bg = im.rect('#0000')
+	gui.quick_buttons_top_indent = 5
+	
 	gui.choice_buttons_bg = im.rect('#0001')
 	
-	
-	gui.enable_title = True
 	
 	# slots (save/load)
 	gui.file_slot_cols = 4
 	gui.file_slot_rows = 3
 	gui.slot_pages = 10
 	
-	gui.load_bg = 'images/gui/menu/main/back.png'
-	gui.save_bg = 'images/gui/menu/main/back.png'
+	# use load_bg, save_bg and prefs_bg for specify bg on screens
+	gui.main_bg = 'images/gui/menu/main/back.png'
 	
 	gui.slot_hover    = 'images/gui/save_load/hover.png'
 	gui.slot_selected = 'images/gui/save_load/selected.png'
@@ -218,8 +218,6 @@ init -1000 python:
 	
 	
 	# prefs
-	gui.prefs_bg = 'images/gui/menu/main/back.png'
-	gui.prefs_enable_mods = True
 	gui.prefs_mods_in_page = 8
 	
 	gui.prefs_std_btn_params = (5, 1) # w_div_h, k for style.[prefs_]menu_button.ysize

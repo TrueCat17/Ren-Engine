@@ -304,8 +304,8 @@ screen dialogue_box_buttons(disable_next_btn = False):
 	vbox:
 		xalign gui.dialogue_box_xalign
 		yalign gui.dialogue_box_yalign
-		spacing 5
-	
+		spacing gui.get_int('quick_buttons_top_indent')
+		
 		if db._dialogue_button_width and db.visible:
 			hbox:
 				spacing db._dialogue_button_spacing
@@ -362,7 +362,7 @@ screen dialogue_box_adv:
 	vbox:
 		xalign gui.dialogue_box_xalign
 		yalign gui.dialogue_box_yalign
-		spacing 5
+		spacing gui.get_int('quick_buttons_top_indent')
 		
 		image db.dialogue_box_bg:
 			xsize db._dialogue_box_width
@@ -504,13 +504,11 @@ screen dialogue_box:
 			elif db.mode == 'nvl':
 				use dialogue_box_nvl
 			else:
-				$ out_msg('dialogue_box', 'Expected db.mode will be "adv" or "nvl", got "' + str(db.mode) + '"')
+				$ out_msg('dialogue_box', 'Expected db.mode will be "adv" or "nvl", got "%s"' % (str(db.mode), ))
 			
 			if db.skip:
 				text 'Skip Mode':
-					color 0xFFFFFF
-					text_size 30
-					pos (20, 20)
+					style 'skip_text'
 		
 		button:
 			ground 'images/bg/black.jpg'

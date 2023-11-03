@@ -1,6 +1,12 @@
 screen slots(name):
 	$ slots.check_update()
 	
+	image (gui.bg(screen.name + '_bg') or gui.bg('main_bg')):
+		size 1.0
+	
+	text _(screen.name.title()):
+		style style[screen.name + '_menu_title'] or style.menu_title
+	
 	vbox:
 		style style[screen.name + '_pages_vbox'] or style.pages_vbox
 		
