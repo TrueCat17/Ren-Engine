@@ -12,19 +12,22 @@ screen main_menu:
 	image back_path:
 		size 1.0
 	
-	
-	vbox:
-		align (0.5, 0.25)
-		spacing 5
-		
-		for name, dir_name in get_mods():
-			textbutton name action start_mod(dir_name)
+	use mods
 	
 	vbox:
 		align 0.95
 		spacing 5
 		
-		textbutton _('Load')        xalign 0.5 action ShowMenu('load')
-		textbutton _('Preferences') xalign 0.5 action ShowMenu('preferences')
-		textbutton _('Exit')        xalign 0.5 action exit_from_game
+		$ btn_params = (
+			(_('Load'), ShowMenu('load')),
+			(_('Preferences'), ShowMenu('preferences')),
+			(_('Exit'), exit_from_game),
+		)
+		$ tmp_style = style.menu_button
+		for text, action in btn_params:
+			textbutton text:
+				style tmp_style
+				ground tmp_style.get_ground()
+				hover  tmp_style.get_hover()
+				action action
 
