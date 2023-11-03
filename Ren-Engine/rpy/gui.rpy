@@ -197,6 +197,7 @@ init -1000 python:
 	
 	
 	gui.quick_buttons_bg = im.rect('#0000')
+	gui.quick_buttons_bg_without_window = im.rect('#0000')
 	gui.quick_buttons_top_indent = 5
 	
 	gui.choice_buttons_bg = im.rect('#0001')

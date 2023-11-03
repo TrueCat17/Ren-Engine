@@ -58,7 +58,7 @@ screen quick_menu:
 	ysize style.quick_buttons_bg.get_current('ysize')
 	
 	$ quick_menu_screen.update()
-	image gui.bg('quick_buttons_bg'):
+	image gui.bg('quick_buttons_bg' if db.visible else 'quick_buttons_bg_without_window'):
 		style 'quick_buttons_bg'
 		xsize quick_menu_screen.full_xsize
 		
