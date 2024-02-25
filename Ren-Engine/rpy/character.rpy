@@ -277,7 +277,6 @@ init -1001 python:
 				if pose != 'sit' and self.sit_object:
 					self.stand_up()
 				if pose in ('walk', 'run'):
-					g = globals()
 					for prop in ('fps', 'speed', 'acceleration'):
 						self[prop] = self[pose + '_' + prop] # for example: self.fps = self.run_fps
 				self.pose = pose
@@ -308,30 +307,39 @@ init -1001 python:
 			self.crop = (x, y, self.xsize, self.ysize)
 		
 		
-		def sit_down(self, obj):
+		def sit_down(self, obj, place_index = -1):
 			if not obj.sit_places:
 				out_msg('Character.sit_down', 'obj.sit_places is empty')
 				return False
 			
 			self.stand_up()
 			
-			place_index = -1
-			min_dist = 1e6
-			for i in range(len(obj.sit_places)):
-				if obj.on[i]:
-					continue
-				place_x, place_y, to_side = obj.sit_places[i]
-				
-				dist = get_dist(obj.x + place_x, obj.y - obj.ysize + place_y, self.x, self.y)
-				if dist < min_dist:
-					min_dist = dist
-					place_index = i
-			
 			if place_index < 0:
-				return False
+				min_dist = 1e6
+				for i in range(len(obj.sit_places)):
+					if obj.on[i]:
+						continue
+					
+					place_x, place_y, to_side, can_use = obj.sit_places[i]
+					if not can_use:
+						continue
+					
+					dist = get_dist(obj.x + place_x, obj.y - obj.ysize + place_y, self.x, self.y)
+					if dist < min_dist:
+						min_dist = dist
+						place_index = i
+				
+				if place_index < 0:
+					return False
+			else:
+				if place_index >= len(obj.on):
+					out_msg('Character.sit_down', 'place_index >= len(obj.sit_places)')
+					return False
+				if obj.on[place_index]:
+					obj.on[place_index].stand_up()
 			
 			obj.on[place_index] = self
-			place_x, place_y, to_side = obj.sit_places[place_index]
+			place_x, place_y, to_side, can_use = obj.sit_places[place_index]
 			
 			self.old_x, self.old_y = self.x, self.y
 			self.x, self.y = obj.x + place_x, obj.y - obj.ysize + place_y
@@ -497,6 +505,69 @@ init -1001 python:
 			
 			return res
 		
+		
+		def remove_path_end(self, dist):
+			if not self.paths:
+				return
+			
+			path = self.paths[-1] = list(self.paths[-1])
+			end_x = path[-2]
+			end_y = path[-1]
+			
+			def get_coords(index):
+				to_x = path[index * 2]
+				to_y = path[index * 2 + 1]
+				if type(to_x) is str:
+					location_name, place = to_x, to_y
+					if type(place) is str:
+						place = rpg_locations[location_name].places[place]
+					to_x, to_y = get_place_center(place)
+					return to_x, to_y, True
+				return to_x, to_y, False
+			
+			# points: start, before, end - dist, after, end
+			
+			index_before = len(path) // 2 - 1
+			while index_before:
+				x, y, is_new_loc = get_coords(index_before)
+				
+				if is_new_loc:
+					path[index_before * 2 + 2:] = []
+					return
+				
+				tmp_dist = get_dist(x, y, end_x, end_y)
+				if tmp_dist > dist:
+					break
+				
+				index_before -= 1
+			
+			if not index_before:
+				path[2:] = []
+				return
+			
+			index_after = index_before + 1
+			
+			before_x, before_y, _ = get_coords(index_before)
+			before_dist = get_dist(before_x, before_y, end_x, end_y)
+			after_x, after_y, _ = get_coords(index_after)
+			after_dist = get_dist(after_x, after_y, end_x, end_y)
+			
+			while before_dist - after_dist > 1:
+				mid_x = int(before_x + after_x) // 2
+				mid_y = int(before_y + after_y) // 2
+				mid_dist = get_dist(mid_x, mid_y, end_x, end_y)
+				
+				if mid_dist < dist:
+					before_x, before_y = mid_x, mid_y
+					before_dist = mid_dist
+				else:
+					after_x, after_y = mid_x, mid_y
+					after_dist = mid_dist
+			
+			path[index_after * 2 + 2:] = []
+			path[-2:] = int(after_x), int(after_y)
+		
+		
 		def update_moving(self, dtime):
 			if not self.paths:
 				if not (self is me and get_rpg_control()):
@@ -599,6 +670,9 @@ init -1001 python:
 				out_msg('Character.start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
 				return
 			
+			if self.animation is None:
+				self.orig_size = self.xsize, self.ysize
+			
 			animation = self.animation = self.animations[anim_name]
 			animation.first_update = True
 			
@@ -693,7 +767,6 @@ init -1001 python:
 							out_msg('Character.update', msg % params)
 						animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
 					
-					self.orig_size = self.xsize, self.ysize
 					self.xsize, self.ysize = animation.xsize, animation.ysize
 				
 				start_frame = animation.start_frame

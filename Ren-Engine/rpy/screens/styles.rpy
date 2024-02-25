@@ -25,7 +25,7 @@ init -999:
 		text_size 0.04
 		text_size_min 16
 	
-	# vbox conteiner for all lines (rows) of prefs
+	# vbox container for all lines (rows) of prefs
 	style prefs_content is vbox:
 		spacing 0.015
 		pos (0.62, 0.5)

@@ -62,6 +62,7 @@ init -1002 python:
 			to = None, None, None, None
 		
 		place = RpgPlace(place_name, x, y, xsize, ysize, to)
+		place.location = location
 		location.add_place(place, place_name)
 		location.path_need_update = True
 	

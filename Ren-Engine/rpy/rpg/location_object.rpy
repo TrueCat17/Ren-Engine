@@ -103,6 +103,10 @@ init -1001 python:
 			out_msg('set_sit_place', 'Object <%s> not registered' % (obj_name, ))
 			return
 		
+		for i in range(len(sit_places)):
+			if len(sit_places[i]) == 3:
+				sit_places[i] += (True, )
+		
 		obj = location_objects[obj_name]
 		obj.on = [None] * len(sit_places)
 		obj.sit_places = sit_places
@@ -509,11 +513,14 @@ init -1001 python:
 		character = character or me
 		max_dist = max_dist or std_sit_dist
 		
+		character_radius = character.radius or Character.radius
+		character_x, character_y = character.x, character.y
+		
 		sides_dpos = {
 			to_left:    (-1, 0),
 			to_right:   (+1, 0),
-			to_back:    (0, -1),
-			to_forward: (0, +1),
+			to_back:    (0, +1),
+			to_forward: (0, -1),
 		}
 		
 		res = []
@@ -527,12 +534,15 @@ init -1001 python:
 			for i in range(len(obj.sit_places)):
 				if obj.on[i]:
 					continue
-				px, py, to_side = obj.sit_places[i]
-				dx, dy = sides_dpos[to_side]
-				px = obj.x + px + dx * character.radius
-				py = obj.y - obj.ysize + py + dy * character.radius
+				px, py, to_side, can_use = obj.sit_places[i]
+				if not can_use:
+					continue
 				
-				dist = get_dist(px, py, character.x, character.y)
+				dx, dy = sides_dpos[to_side]
+				px = obj.x + px + dx * character_radius
+				py = obj.y - obj.ysize + py + dy * character_radius
+				
+				dist = get_dist(px, py, character_x, character_y)
 				if dist < min_dist:
 					min_dist = dist
 					near_point = px, py
