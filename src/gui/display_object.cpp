@@ -162,8 +162,8 @@ SDL_Rect DisplayObject::buildIntRect(float x, float y, float w, float h, bool ex
 		res.w = int(w);
 		res.h = int(h);
 	}else {
-		res.w = int(x + w) - res.x;
-		res.h = int(y + h) - res.y;
+		res.w = int(round(x + w)) - res.x;
+		res.h = int(round(y + h)) - res.y;
 	}
 
 	return res;
