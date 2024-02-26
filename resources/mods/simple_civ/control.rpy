@@ -7,6 +7,7 @@ init -1 python:
 		
 		if control.picking:
 			control.picking = False
+			hide_screen('picking')
 			info.set_msg('')
 			
 			unit = control.selected_unit
@@ -68,9 +69,11 @@ init -1 python:
 	
 	def control__pick():
 		control.picking = True
+		show_screen('picking')
 		info.set_msg('Cell selection')
 	def control__unpick():
 		control.picking = False
+		hide_screen('picking')
 		info.set_msg('Cancel selection')
 	
 	
@@ -93,5 +96,12 @@ init -1 python:
 	
 	control.unit_back = im.rect('#AAA')
 	control.unit_size = 32
-	
-	
+
+
+
+init python:
+	hotkeys.disable_key_on_screens['ESCAPE'].append('picking')
+
+# empty screen, just to disable <pause> menu
+screen picking:
+	pass
