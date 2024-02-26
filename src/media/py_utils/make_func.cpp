@@ -2,9 +2,9 @@
 
 static void clearMethodDefs();
 
+static std::vector<PyWrapperBase> pyWrappers;
 std::vector<PyWrapperBase> &getPyWrappers() {
-	static std::vector<PyWrapperBase> vec;
-	return vec;
+	return pyWrappers;
 }
 void clearPyWrappers() {
 	getPyWrappers().clear();
