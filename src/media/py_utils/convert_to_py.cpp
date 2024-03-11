@@ -1,6 +1,5 @@
 #include "convert_to_py.h"
 
-#include <string>
 
 template<>
 PyObject* convertToPy<>(PyObject *obj) {
@@ -52,7 +51,7 @@ PyObject* convertToPy<>(const char *obj) {
 }
 template<>
 PyObject* convertToPy<>(const std::string &obj) {
-	return PyUnicode_FromStringAndSize(obj.c_str(), long(obj.size()));
+	return PyUnicode_FromStringAndSize(obj.c_str(), Py_ssize_t(obj.size()));
 }
 
 

@@ -1,7 +1,7 @@
 #ifndef MODS_H
 #define MODS_H
 
-typedef struct _object PyObject;
+#include <Python.h>
 
 class Mods {
 public:

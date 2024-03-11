@@ -6,9 +6,8 @@
 #include <map>
 #include <string>
 
-#include <Python.h>
-
 #include "media/translation.h"
+#include "media/py_utils/convert_to_py.h"
 #include "utils/file_system.h"
 
 
@@ -23,8 +22,6 @@ static PyObject *pyMods = nullptr;
 
 static const std::string modsPath = "mods/";
 void Mods::init() {
-	mods.clear();
-
 	std::vector<std::string> dirs = FileSystem::getDirectories(modsPath);
 	for (const std::string &dir : dirs) {
 		if (!FileSystem::exists(dir + "/name")) continue;
@@ -89,9 +86,9 @@ static void updateList() {
 	pyMods = PyTuple_New(long(res.size()));
 	for (size_t i = 0; i < res.size(); ++i) {
 		PyObject *item = PyTuple_New(2);
-		PyTuple_SET_ITEM(item, 0, PyUnicode_FromString(res[i].first.c_str()));
-		PyTuple_SET_ITEM(item, 1, PyUnicode_FromString(res[i].second.c_str()));
-		PyTuple_SET_ITEM(pyMods, long(i), item);
+		PyTuple_SET_ITEM(item, 0, convertToPy(res[i].first));
+		PyTuple_SET_ITEM(item, 1, convertToPy(res[i].second));
+		PyTuple_SET_ITEM(pyMods, Py_ssize_t(i), item);
 	}
 }
 

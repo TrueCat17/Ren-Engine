@@ -3,7 +3,11 @@
 #include <Python.h>
 
 #include "gv.h"
+
 #include "media/image_manipulator.h"
+#include "media/py_utils/convert_to_py.h"
+#include "media/py_utils.h"
+
 #include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/string.h"
@@ -61,10 +65,14 @@ PyObject* Node::getPyList() const {
 	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
 	if (!isHighLevelCommands) {
 		if (!command.empty()) {
-			PyList_Append(res, PyUnicode_FromString(command.c_str()));
+			PyObject *pyCommand = convertToPy(command);
+			PyList_Append(res, pyCommand);
+			Py_DECREF(pyCommand);
 		}
 		if (!params.empty()) {
-			PyList_Append(res, PyUnicode_FromString(params.c_str()));
+			PyObject *pyParams = convertToPy(params);
+			PyList_Append(res, pyParams);
+			Py_DECREF(pyParams);
 		}
 	}
 
@@ -76,21 +84,12 @@ PyObject* Node::getPyList() const {
 		if (childIsBlock) {
 			PyList_Append(res, childPyList);
 		}else {
-			size_t len = size_t(Py_SIZE(childPyList));
-
-			std::vector<std::string> toJoin;
-			toJoin.reserve(len);
-
-			for (size_t i = 0; i < len; ++i) {
-				PyObject *elem = PyList_GET_ITEM(childPyList, i);
-				std::string elemStr = PyUnicode_AsUTF8(elem);
-				toJoin.push_back(elemStr);
-			}
-
-			std::string joinedStr = String::join(toJoin, " ");
-			PyObject *joined = PyUnicode_FromString(joinedStr.c_str());
+			PyTuple_SET_ITEM(PyUtils::tuple1, 0, childPyList);
+			PyObject *joined = PyObject_CallObject(PyUtils::spaceStrJoin, PyUtils::tuple1);
+			PyTuple_SET_ITEM(PyUtils::tuple1, 0, nullptr);
 
 			PyList_Append(res, joined);
+			Py_DECREF(joined);
 		}
 	}
 

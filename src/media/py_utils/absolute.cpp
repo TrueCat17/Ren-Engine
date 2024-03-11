@@ -2,15 +2,27 @@
 
 #include <string>
 
+#include "media/py_utils/convert_to_py.h"
 #include "utils/math.h"
 
 extern "C" {
 
+
+#undef PyFloat_AS_DOUBLE
+//copypaste, but without assert(type(op) is float) in debug-mode
+#define PyFloat_AS_DOUBLE(op) _Py_CAST(PyFloatObject*, op)->ob_fval
+
+
 bool PyAbsolute_PreInit() {
+#if PY_MINOR_VERSION >= 12
+	Py_SET_REFCNT(&PyAbsolute_Type, _Py_IMMORTAL_REFCNT);
+#endif
+	std::string_view roundName = "__round__";
+
 	PyMethodDef *round = nullptr;
 	PyMethodDef *methods = PyFloat_Type.tp_methods;
 	while (methods->ml_name) {
-		if (std::string(methods->ml_name) == "__round__") {
+		if (methods->ml_name == roundName) {
 			round = methods;
 			break;
 		}
@@ -20,7 +32,7 @@ bool PyAbsolute_PreInit() {
 
 	methods = PyAbsolute_Type.tp_methods;
 	while (methods->ml_name) {
-		if (std::string(methods->ml_name) == "__round__") {
+		if (methods->ml_name == roundName) {
 			*methods = *round;
 			return true;
 		}
@@ -114,9 +126,7 @@ static PyObject* reduce(PyObject *self, PyObject *) {
 static PyObject* toStr(PyObject *self) {
 	double value = PyFloat_AS_DOUBLE(self);
 	std::string str = "absolute(" + std::to_string(value) + ")";
-
-	PyObject *res = PyUnicode_FromStringAndSize(str.c_str(), long(str.size()));
-	return res;
+	return convertToPy(str);
 }
 
 static Py_hash_t hash(PyObject *self) {
@@ -359,6 +369,9 @@ PyTypeObject PyAbsolute_Type = {
     0,                                /* tp_version_tag */
     nullptr,                          /* tp_finalize */
     absolute_vectorcall,              /* tp_vectorcall */
+#if PY_MINOR_VERSION >= 12
+    0,                                /* tp_watched */
+#endif
 };
 
 

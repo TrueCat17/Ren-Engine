@@ -50,9 +50,9 @@ struct Audio {
 	double relativeVolume;
 	double curTime = -1;
 
-	std::string fileName;
-	size_t numLine;
 	std::string place;//place = fileName & numLine
+	std::string fileName;
+	uint32_t numLine;
 
 	int audioStream = -1;
 
@@ -73,7 +73,7 @@ struct Audio {
 
 
 	Audio(const std::string &url, Channel *channel, double fadeIn, double volume,
-	      const std::string &fileName, size_t numLine, const std::string &place);
+	      const std::string &place, const std::string &fileName, uint32_t numLine);
 	~Audio();
 
 	bool initCodec();

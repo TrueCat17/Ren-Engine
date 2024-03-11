@@ -8,6 +8,8 @@
 
 
 #include "media/image_manipulator.h"
+#include "media/py_utils/convert_to_py.h"
+#include "media/py_utils.h"
 
 #include "utils/file_system.h"
 #include "utils/scope_exit.h"
@@ -340,7 +342,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 			continue;
 		}
 
-		std::string objectFreePath = PyUnicode_AsUTF8(pyObjectFree);
+		std::string objectFreePath = PyUtils::objToStr(pyObjectFree);
 		int overflowX, overflowY;
 		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
 		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
@@ -367,7 +369,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 			continue;
 		}
 
-		std::string name = PyUnicode_AsUTF8(pyName);
+		std::string name = PyUtils::objToStr(pyName);
 		int overflowX, overflowY;
 		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
 		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
@@ -375,8 +377,8 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 			Utils::outMsg("PathFinder::updateLocation", "Place coordinates are overflowing");
 			continue;
 		}
-		std::string location = PyUnicode_AsUTF8(pyLocation);
-		std::string place = PyUnicode_AsUTF8(pyPlace);
+		std::string location = PyUtils::objToStr(pyLocation);
+		std::string place = PyUtils::objToStr(pyPlace);
 
 		params.places.push_back({name, startX, startY, location, place, false, false});
 	}
@@ -884,12 +886,14 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 			continue;
 		}
 
-		std::string locationName = PyUnicode_AsUTF8(pyLocationName);
+		std::string locationName = PyUtils::objToStr(pyLocationName);
 		MipMap *location = getLocation(locationName);
 		if (!location) continue;
 
+		std::string placeName = PyUtils::objToStr(pyPlaceName);
+
 		for (LocationPlace &place : location->params.places) {
-			if (place.name == PyUnicode_AsUTF8(pyPlaceName)) {
+			if (place.name == placeName) {
 				place.isBannedExit = true;
 				break;
 			}
@@ -1065,8 +1069,8 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 
 		if (x == PointInt(-1)) {
 			LocationNode &node = locationNodes[y];
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyUnicode_FromString(node.mipMap->name.c_str()));
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyUnicode_FromString(node.placeName.c_str()));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, convertToPy(node.mipMap->name));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, convertToPy(node.placeName));
 		}else {
 			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(x));
 			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(y));

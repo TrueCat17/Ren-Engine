@@ -336,36 +336,37 @@ void Utils::registerImage(Node *imageNode) {
 
 
 
-	std::lock_guard g(PyUtils::pyExecMutex);
-
-	PyObject *defaultDeclAt = PyDict_GetItemString(PyUtils::global, "default_decl_at");
-	if (!defaultDeclAt) {
-		outMsg("Utils::registerImage",
-		       "default_decl_at not defined\n" +
-		       imageNode->getPlace());
-		return;
-	}
-	if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) {
-		outMsg("Utils::registerImage",
-		       "default_decl_at is not list or tuple\n" +
-		       imageNode->getPlace());
-		return;
-	}
-
-	size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
-	for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
-		PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
-		if (!PyUnicode_CheckExact(elem)) {
+	auto workWithPython = [&]() {
+		PyObject *defaultDeclAt = PyDict_GetItemString(PyUtils::global, "default_decl_at");
+		if (!defaultDeclAt) {
 			outMsg("Utils::registerImage",
-			       "default_decl_at[" + std::to_string(i) + "] is not str\n" +
+			       "default_decl_at not defined\n" +
 			       imageNode->getPlace());
-			continue;
+			return;
+		}
+		if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) {
+			outMsg("Utils::registerImage",
+			       "default_decl_at is not list or tuple\n" +
+			       imageNode->getPlace());
+			return;
 		}
 
-		Node *node = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
-		node->params = PyUnicode_AsUTF8(elem);
-		imageNode->children.push_back(node);
-	}
+		size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
+		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
+			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
+			if (!PyUnicode_CheckExact(elem)) {
+				outMsg("Utils::registerImage",
+				       "default_decl_at[" + std::to_string(i) + "] is not str\n" +
+				       imageNode->getPlace());
+				continue;
+			}
+
+			Node *node = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
+			node->params = PyUtils::objToStr(elem);
+			imageNode->children.push_back(node);
+		}
+	};
+	PyUtils::callInPythonThread(workWithPython);
 }
 
 bool Utils::imageWasRegistered(const std::string &name) {

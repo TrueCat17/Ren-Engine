@@ -5,6 +5,7 @@
 #include <set>
 
 #include "media/py_utils.h"
+#include "media/py_utils/convert_to_py.h"
 #include "parser/mods.h"
 #include "utils/utils.h"
 
@@ -15,7 +16,7 @@ static std::set<std::string> langs;
 static std::map<std::string, std::string> map;
 
 static void update() {
-	Mods::clearList();
+	PyUtils::callInPythonThread(Mods::clearList);
 
 	map.clear();
 	for (const Node *node : GV::mainExecNode->children) {
@@ -85,7 +86,7 @@ PyObject* Translation::getKnownLanguages() {
 
 	PyObject *res = PyTuple_New(long(vec.size()));
 	for (size_t i = 0; i < vec.size(); ++i) {
-		PyTuple_SET_ITEM(res, i, PyUnicode_FromString(vec[i].c_str()));
+		PyTuple_SET_ITEM(res, Py_ssize_t(i), convertToPy(vec[i]));
 	}
 	return res;
 }

@@ -20,6 +20,11 @@
 #include "utils/utils.h"
 
 
+#undef PyFloat_AS_DOUBLE
+//copypaste, but without assert(type(op) is float) in debug-mode
+#define PyFloat_AS_DOUBLE(op) _Py_CAST(PyFloatObject*, op)->ob_fval
+
+
 static void outError(Child *obj, const std::string &propName, size_t propIndex, const std::string &expected) {
 	Node *node = obj->node;
 	if (node->command == "use") {
@@ -250,7 +255,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	Type *typedObj = static_cast<Type*>(obj); \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		typedObj->propName = PyUnicode_AsUTF8(prop); \
+		typedObj->propName = PyUtils::objToStr(prop); \
 	}else { \
 		typedObj->propName.clear(); \
 		std::string type = prop->ob_type->tp_name; \
@@ -346,7 +351,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		params.font = PyUnicode_AsUTF8(prop); \
+		params.font = PyUtils::objToStr(prop); \
 		params.set_font = true; \
 	}else { \
 		params.font.clear(); \
@@ -376,7 +381,7 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 	}
 
 	if (PyUnicode_CheckExact(prop)) {
-		std::string str = PyUnicode_AsUTF8(prop);
+		std::string str = PyUtils::objToStr(prop);
 		if (String::startsWith(str, "#")) {
 			str.erase(0, 1);
 		}else
@@ -397,7 +402,7 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 			bool isSmallAlpha = c >= 'a' && c <= 'f';
 			bool isBigAlpha   = c >= 'A' && c <= 'F';
 			if (!isNum && !isSmallAlpha && !isBigAlpha) {
-				std::string s = PyUnicode_AsUTF8(prop);
+				std::string s = PyUtils::objToStr(prop);
 				error = "Expected color symbols in [0-9], [a-f] and [A-F], got <" + s + ">";
 				return fail;
 			}
@@ -501,7 +506,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		std::string valueStr = PyUnicode_AsUTF8(prop); \
+		std::string valueStr = PyUtils::objToStr(prop); \
 		float value = 0; \
 		if (valueStr == zero) { \
 			value = 0; \

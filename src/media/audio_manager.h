@@ -39,9 +39,9 @@ struct AudioManager {
 	                                   const std::string &fileName, size_t numLine);
 
 	static void play(const std::string &desc,
-	                 const std::string &fileName, size_t numLine);
+	                 const std::string &fileName, uint32_t numLine);
 	static void stop(const std::string &desc,
-	                 const std::string &fileName, size_t numLine);
+	                 const std::string &fileName, uint32_t numLine);
 
 	static void save(std::ofstream &infoFile);
 	static void load(std::ifstream &infoFile);

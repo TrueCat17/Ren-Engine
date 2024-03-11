@@ -21,9 +21,13 @@ PyObject* GUI::getScreenTimes() {
 	Py_INCREF(screenTimes);
 	return screenTimes;
 }
+void GUI::clearScreenTimes() {
+	Py_DECREF(screenTimes);
+	screenTimes = nullptr;
+}
 
 
-void GUI::update(bool saving) {
+static void updateImpl(bool saving) {
 	if (!GV::inGame) return;
 
 	++GV::numUpdate;
@@ -34,7 +38,7 @@ void GUI::update(bool saving) {
 	DisplayObject::disableAll();
 	Stage::screens->enable = true;
 
-	std::lock_guard g(PyUtils::pyExecMutex);
+
 	PyObject *pyDict = PyDict_New();
 
 	for (DisplayObject *child : Stage::screens->children) {
@@ -75,7 +79,10 @@ void GUI::update(bool saving) {
 
 		const std::string &name = scr->getName();
 		double time = Utils::getTimer() - st;
-		PyDict_SetItemString(pyDict, name.c_str(), PyFloat_FromDouble(time));
+
+		PyObject *pyTime = PyFloat_FromDouble(time);
+		PyDict_SetItemString(pyDict, name.c_str(), pyTime);
+		Py_DECREF(pyTime);
 	}
 
 	Py_XDECREF(screenTimes);
@@ -83,4 +90,10 @@ void GUI::update(bool saving) {
 
 	Screen::updateLists();
 	Screen::updateScreens();
+}
+
+void GUI::update(bool saving) {
+	PyUtils::callInPythonThread([&]() {
+		updateImpl(saving);
+	});
 }

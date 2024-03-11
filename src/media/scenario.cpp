@@ -173,28 +173,29 @@ static void restoreScreens(const std::string &loadPath) {
 
 		startScreensVec = Game::loadInfo(loadPath);
 	}else {
-		std::lock_guard g(PyUtils::pyExecMutex);
-
-		PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
-		if (startScreens) {
-			if (PyList_CheckExact(startScreens)) {
-				size_t len = size_t(Py_SIZE(startScreens));
-				for (size_t i = 0; i < len; ++i) {
-					PyObject *elem = PyList_GET_ITEM(startScreens, i);
-					if (PyUnicode_CheckExact(elem)) {
-						std::string name = PyUnicode_AsUTF8(elem);
-						startScreensVec.push_back(name);
-					}else {
-						Utils::outMsg("Scenario::restoreScreens",
-						              "type(start_screens[" + std::to_string(i) + "]) is not str");
+		auto workWithPython = [&]() {
+			PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
+			if (startScreens) {
+				if (PyList_CheckExact(startScreens)) {
+					size_t len = size_t(Py_SIZE(startScreens));
+					for (size_t i = 0; i < len; ++i) {
+						PyObject *elem = PyList_GET_ITEM(startScreens, i);
+						if (PyUnicode_CheckExact(elem)) {
+							std::string name = PyUtils::objToStr(elem);
+							startScreensVec.push_back(name);
+						}else {
+							Utils::outMsg("Scenario::restoreScreens",
+							              "type(start_screens[" + std::to_string(i) + "]) is not str");
+						}
 					}
+				}else {
+					Utils::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
 				}
 			}else {
-				Utils::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
+				Utils::outMsg("Scenario::restoreScreens", "start_screens is not defined");
 			}
-		}else {
-			Utils::outMsg("Scenario::restoreScreens", "start_screens is not defined");
-		}
+		};
+		PyUtils::callInPythonThread(workWithPython);
 	}
 
 	for (const std::string &screenName : startScreensVec) {
@@ -449,8 +450,12 @@ void Scenario::execute(const std::string &loadPath) {
 
 				argsStr += ", last_show_at";
 
-				std::lock_guard g(PyUtils::pyExecMutex);
-				PyDict_SetItemString(PyUtils::global, "last_show_at", child->getPyList());
+				auto workWithPython = [&]() {
+					PyObject *list = child->getPyList();
+					PyDict_SetItemString(PyUtils::global, "last_show_at", list);
+					Py_DECREF(list);
+				};
+				PyUtils::callInPythonThread(workWithPython);
 			}
 
 			PyUtils::exec(child->getFileName(), child->getNumLine(), funcName + "(" + argsStr + ")");

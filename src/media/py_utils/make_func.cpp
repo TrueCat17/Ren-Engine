@@ -18,7 +18,7 @@ static PyObject* pyFuncDelegator(PyObject *indexObj, PyObject *const *args, Py_s
 		return nullptr;
 	}
 
-	std::vector<PyWrapperBase> &wrappers = getPyWrappers();
+	const std::vector<PyWrapperBase> &wrappers = getPyWrappers();
 	size_t index = size_t(PyLong_AS_LONG(indexObj));
 	if (index >= wrappers.size()) {
 		return PyErr_Format(PyExc_SystemError, "wrapperIndex %zu >= %zu", index, wrappers.size());

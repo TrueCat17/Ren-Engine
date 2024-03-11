@@ -20,6 +20,7 @@
 #include "media/audio_manager.h"
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
+#include "media/py_utils/convert_to_py.h"
 #include "media/scenario.h"
 #include "media/translation.h"
 
@@ -230,7 +231,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 		StyleManager::destroyAll();
 
-		PyUtils::init();
+		PyUtils::initInterpreter();
 
 		Translation::init();
 
@@ -317,7 +318,7 @@ PyObject* Game::getAllLabels() {
 	PyObject *res = PyList_New(0);
 	for (const Node *node : GV::mainExecNode->children) {
 		if (node->command == "label") {
-			PyObject *name = PyUnicode_FromString(node->params.c_str());
+			PyObject *name = convertToPy(node->params);
 			PyList_Append(res, name);
 			Py_DECREF(name);
 		}
@@ -362,11 +363,9 @@ std::string Game::getFromConfig(const std::string &param) {
 PyObject* Game::getArgs(const std::string &str) {
 	std::vector<std::string> vec = Algo::getArgs(str);
 
-	PyObject *res = PyList_New(long(vec.size()));
+	PyObject *res = PyList_New(Py_ssize_t(vec.size()));
 	for (size_t i = 0; i < vec.size(); ++i) {
-		const std::string &str = vec[i];
-		PyObject *pyStr = PyUnicode_FromString(str.c_str());
-		PyList_SET_ITEM(res, long(i), pyStr);
+		PyList_SET_ITEM(res, Py_ssize_t(i), convertToPy(vec[i]));
 	}
 	return res;
 }

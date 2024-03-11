@@ -637,6 +637,11 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 			continue;
 		}
 
+		uint32_t nextChildStart = getNextStart(childStart);
+		ScopeExit se([&]() {
+			childStart = nextChildStart;
+		});
+
 		if (type == "menu") {
 			headLine.insert(startLine, "menuItem ");
 			code[childStart] = headLine;
@@ -655,15 +660,21 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
 			Utils::outMsg("Parser::getNode",
 			              "Invalid syntax in string <" + headLine + ">\n"
-						  "(node: <" + headWord + ">, parentNode: <" + type + ">, prevNode: <" + prevHeadWord + ">)\n\n" +
-						  res->getPlace());
-			childStart = getNextStart(childStart);
+			              "(node: <" + headWord + ">, parentNode: <" + type + ">, prevNode: <" + prevHeadWord + ">)\n\n" +
+			              res->getPlace());
 			continue;
 		}
 		prevHeadWord = headWord;
 
-		uint32_t nextChildStart = getNextStart(childStart);
 		Node *node = getNode(childStart, nextChildStart, superParent, isText);
+		if (node->command == "has" && node->params != "vbox" && node->params != "hbox") {
+			Utils::outMsg("Parser::getNode",
+			              "Invalid syntax in string <" + headLine + ">\n"
+			              "After <has> expected <vbox> or <hbox>, got <" + node->params + ">\n\n" +
+			              node->getPlace());
+			continue;
+		}
+
 		node->parent = res;
 
 		if (node->command == "with") {
@@ -685,8 +696,6 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 			res->children.erase(res->children.begin() + long(i), res->children.end());
 		}
 		res->children.push_back(node);
-
-		childStart = nextChildStart;
 	}
 
 	for (uint32_t i = 0; i < res->children.size(); ++i) {

@@ -176,8 +176,15 @@ void Container::addChildrenFromNode() {
 			}else
 			if (childNode->params == "hbox") {
 				hasHBox = true;
+			}else
+			{//unreachable
+				Utils::outMsg("Screen::show",
+				              "<has> expected value <vbox> or <hbox>, got <" + childNode->params + ">\n" +
+				              childNode->getPlace());
 			}
-		}else
+			continue;
+		}
+
 
 		if (childCommand == "use") {
 			Node *scrNode = Screen::getDeclared(childNode->params);
@@ -185,6 +192,7 @@ void Container::addChildrenFromNode() {
 				Utils::outMsg("Screen::show",
 				              "Screen <" + childNode->params + "> is not defined\n" +
 							  childNode->getPlace());
+				continue;
 			}else {
 				child = new Screen(childNode, screen);
 			}
@@ -239,28 +247,24 @@ void Container::addChildrenFromNode() {
 				              "Unknown type <" + childNode->command + ">\n" +
 							  childNode->getPlace());
 			}
+			continue;
 		}
 
-		if (child) {
-			child->setInBox(screenParent->hasVBox, screenParent->hasHBox);
+		child->setInBox(screenParent->hasVBox, screenParent->hasHBox);
 
-			size_t index;
-			if (screenParent == this) {
-				index = children.size();
-			}else {
-				Container *prev = this;
-				while (prev->isFakeContainer() && !prev->screenChildren.empty()) {
-					prev = static_cast<Container*>(prev->screenChildren.back());
-				}
-				index = prev->index + 1;
-			}
+		size_t index;
+		if (screenParent == this) {
+			index = children.size();
+		}else {
+			Child *lastChild = screenChildren.empty() ? this : screenChildren.back();
+			index = lastChild->index + 1;
+		}
 
-			addChildAt(child, index);
-			screenChildren.push_back(child);
+		addChildAt(child, index);
+		screenChildren.push_back(child);
 
-			if (child->node->isScreenConst) {
-				child->updateProps();
-			}
+		if (child->node->isScreenConst) {
+			child->updateProps();
 		}
 	}
 }

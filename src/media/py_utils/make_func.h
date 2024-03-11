@@ -107,10 +107,10 @@ PyObject* makeFuncImpl(const char *name, Ret(*func)(Args...), PyObject *moduleNa
 	pyWrappers.push_back(wrapper);
 
 	PyMethodDef *methodDef = getMethodDef(name);
-	PyObject *res = PyCFunction_New(methodDef, PyLong_FromSize_t(pyWrappers.size() - 1));
-	if (moduleName) {
-		PyObject_SetAttrString(res, "__module__", moduleName);
-	}
+	PyObject *delegatorIndex = PyLong_FromSize_t(pyWrappers.size() - 1);
+	PyObject *res = PyCMethod_New(methodDef, delegatorIndex, moduleName, nullptr);
+	Py_DECREF(delegatorIndex);
+
 	return res;
 }
 

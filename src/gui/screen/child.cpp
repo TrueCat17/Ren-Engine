@@ -85,6 +85,8 @@ void Child::updateStyle() {
 		PyTuple_SET_ITEM(props, 0, res);
 		func(this, 0);
 		PyTuple_SET_ITEM(props, 0, nullptr);
+
+		Py_DECREF(res);
 	}
 	if (!inited && needAddChildren && !hasNonConstChild) {
 		static_cast<Container*>(this)->addChildrenFromNode();

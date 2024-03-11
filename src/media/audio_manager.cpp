@@ -25,6 +25,7 @@ std::map<std::string, double> AudioManager::mixerVolumes;
 
 static std::vector<Channel*> channels;
 static std::vector<Audio*> audios;
+static bool opened = false;
 
 
 static Channel* findChannel(const std::string &name) {
@@ -83,9 +84,13 @@ static void startAudio() {
 		return;
 	}
 	SDL_PauseAudio(0);
+	opened = true;
 }
 static void stopAudio() {
-	SDL_CloseAudio();
+	if (opened) {
+		SDL_CloseAudio();
+		opened = false;
+	}
 }
 
 static void loop() {
@@ -275,7 +280,7 @@ void AudioManager::setPauseOnChannel(bool value, const std::string &channelName,
 
 
 void AudioManager::play(const std::string &desc,
-                        const std::string &fileName, size_t numLine)
+                        const std::string &fileName, uint32_t numLine)
 {
 	const std::string place = get_place + ": <" + desc + ">";
 
@@ -323,8 +328,6 @@ void AudioManager::play(const std::string &desc,
 
 	std::lock_guard g(AudioManager::mutex);
 
-	bool wasEmpty = audios.empty();
-
 	for (size_t i = 0; i < audios.size(); ++i) {
 		Audio *audio = audios[i];
 		if (audio->channel->name == channelName) {
@@ -341,7 +344,7 @@ void AudioManager::play(const std::string &desc,
 		return;
 	}
 
-	Audio *audio = new Audio(url, channel, fadeIn, volume, fileName, numLine, place);
+	Audio *audio = new Audio(url, channel, fadeIn, volume, place, fileName, numLine);
 	if (audio->initCodec()) {
 		delete audio;
 		return;
@@ -349,7 +352,7 @@ void AudioManager::play(const std::string &desc,
 
 	PyUtils::exec(fileName, numLine, "persistent._seen_audio['" + url + "'] = True");
 
-	if (wasEmpty) {
+	if (!opened) {
 		startAudio();
 	}
 	audio->update();
@@ -357,7 +360,7 @@ void AudioManager::play(const std::string &desc,
 }
 
 void AudioManager::stop(const std::string &desc,
-                        const std::string &fileName, size_t numLine)
+                        const std::string &fileName, uint32_t numLine)
 {
 	const std::string place = get_place + ": <" + desc + ">";
 
@@ -472,7 +475,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 			continue;
 		}
 
-		size_t numLine = size_t(String::toInt(tmpVec[0]));
+		uint32_t numLine = uint32_t(String::toInt(tmpVec[0]));
 		const std::string &channel = tmpVec[1];
 		double fadeIn = String::toDouble(tmpVec[2]);
 		double fadeOut = String::toDouble(tmpVec[3]);

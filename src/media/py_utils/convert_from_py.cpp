@@ -3,6 +3,12 @@
 #include <limits>
 #include <string>
 
+
+#undef PyFloat_AS_DOUBLE
+//copypaste, but without assert(type(op) is float) in debug-mode
+#define PyFloat_AS_DOUBLE(op) _Py_CAST(PyFloatObject*, op)->ob_fval
+
+
 bool pyErrorFlag = false;
 
 
@@ -87,18 +93,24 @@ MAKE_CONVERT_FROM_PY_TO_INT( float)
 MAKE_CONVERT_FROM_PY_TO_INT(double)
 
 
-#define MAKE_CONVERT_FROM_PY_TO_STR(type) \
-template<> \
-type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) { \
-	if (PyUnicode_CheckExact(obj)) { \
-	    return PyUnicode_AsUTF8(obj); \
-	} \
-	pySetErrorType(funcName, argIndex, obj, "str"); \
-	return ""; \
+template<>
+const char* convertFromPy<const char *>(PyObject *obj, const char *funcName, size_t argIndex) {
+	if (PyUnicode_CheckExact(obj)) {
+		return PyUnicode_AsUTF8(obj);
+	}
+	pySetErrorType(funcName, argIndex, obj, "str");
+	return "";
 }
-
-MAKE_CONVERT_FROM_PY_TO_STR(const char *)
-MAKE_CONVERT_FROM_PY_TO_STR(std::string)
+template<>
+std::string convertFromPy<std::string>(PyObject *obj, const char *funcName, size_t argIndex) {
+	if (PyUnicode_CheckExact(obj)) {
+		Py_ssize_t size;
+		const char *data = PyUnicode_AsUTF8AndSize(obj, &size);
+		return std::string(data, size_t(size));
+	}
+	pySetErrorType(funcName, argIndex, obj, "str");
+	return "";
+}
 
 
 

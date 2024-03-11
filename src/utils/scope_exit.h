@@ -6,6 +6,9 @@
 struct ScopeExit {
 	std::function<void()> func;
 
+	ScopeExit(const ScopeExit&) = delete;
+	ScopeExit& operator=(const ScopeExit &) = delete;
+
 	ScopeExit(const std::function<void()>& func): func(func) {}
 	~ScopeExit() { if (func) func(); }
 };

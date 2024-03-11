@@ -8,15 +8,15 @@
 
 
 Audio::Audio(const std::string &url, Channel *channel, double fadeIn, double volume,
-             const std::string &fileName, size_t numLine, const std::string &place):
+             const std::string &place, const std::string &fileName, uint32_t numLine):
     url(url),
     channel(channel),
     startFadeInTime(Utils::getTimer()),
     fadeIn(fadeIn),
     relativeVolume(volume),
+    place(place),
     fileName(fileName),
     numLine(numLine),
-    place(place),
 
     packet(av_packet_alloc()),
     frame(av_frame_alloc()),

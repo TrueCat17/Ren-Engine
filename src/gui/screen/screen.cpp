@@ -185,7 +185,7 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 	Py_ssize_t i = 0;
 	PyObject *key, *value;
 	while (PyDict_Next(kwargs, &i, &key, &value)) {
-		std::string varName = PyUnicode_AsUTF8(key);
+		std::string varName = PyUtils::objToStr(key);
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) == argsWasSet.cend()) {
 			argsWasSet.push_back(varName);
 		}else {
@@ -211,32 +211,35 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 }
 
 void Screen::addToShow(std::string name, PyObject *args, PyObject *kwargs) {
-	//pyExecMutex need for func makeScreenVars
+	//python thread need for func makeScreenVars
 	//this order of locks need for no deadlocks
-	std::lock_guard g(PyUtils::pyExecMutex);
-	std::lock_guard g2(screenMutex);
 
-	auto it = screenMap.find(name);
-	if (it != screenMap.end()) {
-		name = screenMap[name];
-	}
+	auto workWithPython = [&]() {
+		std::lock_guard g(screenMutex);
 
-	Node *node = Screen::getDeclared(name);
-	if (!node) {
-		Utils::outMsg("Screen::addToShow", "No screen <" + name + ">");
-		return;
-	}
+		auto it = screenMap.find(name);
+		if (it != screenMap.end()) {
+			name = screenMap[name];
+		}
 
-	makeScreenVars(name, args, kwargs);
-
-	for (size_t i = 0; i < toHideList.size(); ++i) {
-		if (toHideList[i] == name) {
-			toHideList.erase(toHideList.cbegin() + long(i));
+		Node *node = Screen::getDeclared(name);
+		if (!node) {
+			Utils::outMsg("Screen::addToShow", "No screen <" + name + ">");
 			return;
 		}
-	}
 
-	toShowList.push_back(name);
+		makeScreenVars(name, args, kwargs);
+
+		for (size_t i = 0; i < toHideList.size(); ++i) {
+			if (toHideList[i] == name) {
+				toHideList.erase(toHideList.cbegin() + long(i));
+				return;
+			}
+		}
+
+		toShowList.push_back(name);
+	};
+	PyUtils::callInPythonThread(workWithPython);
 }
 void Screen::addToHide(std::string name) {
 	std::lock_guard g(screenMutex);
@@ -417,19 +420,22 @@ Screen::Screen(Node *node, Screen *screen):
 	if (this->screen != this) return;//not main screen, command <use>
 
 	screenCode = ScreenCodeGenerator::get(node);
-	co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 1);
-	if (!co) {
-		PyUtils::errorProcessing(screenCode);
-	}
+
+	auto workWithPython = [&]() {
+		co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 1);
+		if (!co) {
+			PyUtils::errorProcessing(screenCode);
+		}
+	};
+	PyUtils::callInPythonThread(workWithPython);
 }
 
+//called from python thread
 void Screen::calcProps() {
 	if (!co) return;
 
 	screenStack.clear();
 	calcedScreen = this;
-
-	std::lock_guard g(PyUtils::pyExecMutex);
 
 	if (!PyEval_EvalCode(co, PyUtils::global, nullptr)) {
 		PyUtils::errorProcessing(screenCode);

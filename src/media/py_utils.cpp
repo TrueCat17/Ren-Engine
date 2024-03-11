@@ -3,63 +3,200 @@
 #include "py_utils/absolute.h"
 
 
+#include <deque>
 #include <map>
+#include <mutex>
 
-
-#include "gv.h"
-#include "logger.h"
-#include "config.h"
 
 #include "gui/gui.h"
-#include "gui/screen/screen.h"
+#include "logger.h"
 
-#include "media/audio_manager.h"
-#include "media/image_manipulator.h"
-#include "media/scenario.h"
-#include "media/translation.h"
+#include "media/py_set_globals.h"
 
 #include "parser/mods.h"
 
-#include "utils/file_system.h"
-#include "utils/game.h"
-#include "utils/math.h"
-#include "utils/mouse.h"
-#include "utils/stage.h"
 #include "utils/string.h"
-#include "utils/path_finder.h"
 #include "utils/utils.h"
 
 
 using PyCode = std::tuple<const std::string, const std::string, uint32_t>;
+static std::map<PyCode, PyObject*> compiledObjects;
 
 static std::map<std::string, PyObject*> constObjects;
-static std::map<PyCode, PyObject*> compiledObjects;
 
 static const std::string True = "True";
 static const std::string False = "False";
 static const std::string None = "None";
 
 
-static PyObject* formatTraceback = nullptr;
-static PyObject* builtinDict = nullptr;
-static PyObject* builtinStr = nullptr;
+static PyObject *tracebackModule = nullptr;
+static PyObject *formatTraceback = nullptr;
+static PyObject *builtinDict = nullptr;
+static PyObject *builtinStr = nullptr;
 
 
 PyObject *PyUtils::global = nullptr;
 PyObject *PyUtils::tuple1 = nullptr;
-std::recursive_mutex PyUtils::pyExecMutex;
+PyObject *PyUtils::spaceStr = nullptr;
+PyObject *PyUtils::spaceStrJoin = nullptr;
 
 
-PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, uint32_t numLine) {
+
+static void finalizeInterpreterImpl() {
+	if (!Py_IsInitialized()) return;
+
+	for (auto &i : constObjects) {
+		Py_DECREF(i.second);
+	}
+	constObjects.clear();
+
+#if PY_MINOR_VERSION >= 12
+	for (auto &i : compiledObjects) {
+		Py_DECREF(i.second);
+	}
+	compiledObjects.clear();
+#endif
+
+	clearPyWrappers();
+	Mods::clearList();
+	GUI::clearScreenTimes();
+
+	if (PyUtils::tuple1) {
+		PyTuple_SET_ITEM(PyUtils::tuple1, 0, nullptr);
+		Py_DECREF(PyUtils::tuple1);
+	}
+	Py_DECREF(builtinStr);
+	Py_DECREF(tracebackModule);
+	Py_DECREF(formatTraceback);
+
+	Py_DECREF(PyUtils::spaceStr);
+	Py_DECREF(PyUtils::spaceStrJoin);
+
+	Py_Finalize();
+}
+
+static void initInterpreterImpl() {
+	finalizeInterpreterImpl();
+	Py_Initialize();
+
+	PyUtils::tuple1 = PyTuple_New(1);
+	builtinStr = PyUnicode_FromString("builtins");
+
+	tracebackModule = PyImport_ImportModule("traceback");
+	if (!tracebackModule) {
+		PyErr_Print();
+		std::abort();
+	}
+	formatTraceback = PyObject_GetAttrString(tracebackModule, "format_tb");
+	if (!formatTraceback) {
+		Utils::outMsg("PyUtils::initInterpreter", "traceback.format_tb == nullptr");
+		std::abort();
+	}
+
+	PyObject *builtinModule = PyImport_AddModule("builtins");
+	builtinDict = PyModule_GetDict(builtinModule);
+	if (!builtinDict) {
+		Utils::outMsg("PyUtils::initInterpreter", "builtins == nullptr");
+		std::abort();
+	}
+
+	PyObject *main = PyImport_AddModule("__main__");
+	PyUtils::global = PyModule_GetDict(main);
+
+	PyUtils::spaceStr = PyUnicode_FromString(" ");
+	PyUtils::spaceStrJoin = PyObject_GetAttrString(PyUtils::spaceStr, "join");
+
+	if (!PyAbsolute_PreInit()) {
+		Utils::outMsg("PyUtils::initInterpreter", "Failure on call PyAbsolute_PreInit()");
+	}
+	if (PyType_Ready(&PyAbsolute_Type) < 0) {
+		Utils::outMsg("PyUtils::initInterpreter", "Can't initialize absolute type");
+	}else {
+		PyDict_SetItemString(builtinDict, "absolute", (PyObject*)&PyAbsolute_Type);
+	}
+
+	PySetGlobals::set(PyUtils::global, builtinDict, builtinStr);
+}
+
+
+static std::thread::id pythonThreadId;
+static size_t funcsForPyThreadIndex = 0;
+static std::deque<std::pair<const std::function<void()>*, size_t>> funcsForPyThread;
+static std::deque<size_t> funcsForPyThreadCalced;
+static std::mutex funcsForPyThreadMutex;
+static std::mutex funcsForPyThreadCalcedMutex;
+
+static void initImpl() {
+	Utils::setThreadName("python");
+	pythonThreadId = std::this_thread::get_id();
+
+	while (true) {
+		if (!funcsForPyThread.empty()) {
+			const std::function<void()> *func;
+			size_t funcId;
+			{
+				std::lock_guard g(funcsForPyThreadMutex);
+				auto &p = funcsForPyThread.front();
+				func = p.first;
+				funcId = p.second;
+				funcsForPyThread.pop_front();
+			}
+			(*func)();
+			{
+				std::lock_guard g(funcsForPyThreadCalcedMutex);
+				funcsForPyThreadCalced.push_back(funcId);
+			}
+		}else {
+			Utils::sleep(50 * 1e-6);
+		}
+	}
+}
+void PyUtils::init() {
+	std::thread(initImpl).detach();
+}
+
+void PyUtils::callInPythonThread(const std::function<void()> &func) {
+	if (std::this_thread::get_id() == pythonThreadId) {
+		func();
+		return;
+	}
+
+	size_t funcId;
+	{
+		std::lock_guard g(funcsForPyThreadMutex);
+		funcId = ++funcsForPyThreadIndex;
+		funcsForPyThread.push_back({&func, funcId});
+	}
+	while (true) {
+		{
+			std::lock_guard g(funcsForPyThreadCalcedMutex);
+			if (!funcsForPyThreadCalced.empty() && funcsForPyThreadCalced.front() == funcId) {
+				funcsForPyThreadCalced.pop_front();
+				return;
+			}
+		}
+		Utils::sleep(10 * 1e-6);
+	}
+}
+
+
+void PyUtils::finalizeInterpreter() {
+	callInPythonThread(finalizeInterpreterImpl);
+}
+void PyUtils::initInterpreter() {
+	callInPythonThread(initInterpreterImpl);
+}
+
+
+
+
+static PyObject* getCompileObjectImpl(const std::string &code, const std::string &fileName, uint32_t numLine) {
 	std::tuple<const std::string&, const std::string&, uint32_t> refPyCode(code, fileName, numLine);
-
-	std::lock_guard g(pyExecMutex);
 
 	auto i = compiledObjects.find(refPyCode);
 	if (i != compiledObjects.end()) {
 		return i->second;
 	}
-
 
 	std::string indentCode;
 	indentCode.reserve(numLine - 1 + code.size());
@@ -73,185 +210,15 @@ PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &
 
 	return compiledObjects[refPyCode] = res;
 }
-
-
-static PyObject* getMouse() {
-	PyObject *res = PyTuple_New(2);
-	PyTuple_SET_ITEM(res, 0, PyLong_FromLong(Mouse::getX() - Stage::x));
-	PyTuple_SET_ITEM(res, 1, PyLong_FromLong(Mouse::getY() - Stage::y));
-	return res;
-}
-static PyObject* getLocalMouse() {
-	PyObject *res = PyTuple_New(2);
-	PyTuple_SET_ITEM(res, 0, PyLong_FromLong(Mouse::getLocalX()));
-	PyTuple_SET_ITEM(res, 1, PyLong_FromLong(Mouse::getLocalY()));
+PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &fileName, uint32_t numLine) {
+	PyObject *res;
+	callInPythonThread([&]() {
+		res = getCompileObjectImpl(code, fileName, numLine);
+	});
 	return res;
 }
 
-template<typename T>
-static void setGlobalValue(const char *key, T t) {
-	PyObject *res = convertToPy(t);
-	PyDict_SetItemString(PyUtils::global, key, res);
-	Py_DECREF(res);
-}
 
-template<typename T>
-static void setGlobalFunc(const char *key, T t) {
-	PyObject *pyFunc = makeFuncImpl(key, t, builtinStr);
-
-	PyDict_SetItemString(builtinDict, key, pyFunc);
-	--pyFunc->ob_refcnt;
-}
-
-static long ftoi(double d) {
-	return long(d);
-}
-static std::string getCurrentMod() {
-	return GV::mainExecNode->params;
-}
-
-void PyUtils::init() {
-	std::lock_guard g(pyExecMutex);
-
-	//clear
-	constObjects.clear();
-	clearPyWrappers();
-	if (tuple1) {
-		PyTuple_SET_ITEM(tuple1, 0, nullptr);
-		Py_DECREF(PyUtils::tuple1);
-	}
-	Py_XDECREF(builtinStr);
-	Mods::clearList();
-	Py_Finalize();
-
-
-	Py_Initialize();
-
-	tuple1 = PyTuple_New(1);
-	builtinStr = PyUnicode_FromString("builtins");
-
-	PyObject *tracebackModule = PyImport_ImportModule("traceback");
-	if (!tracebackModule) {
-		PyErr_Print();
-		std::abort();
-	}
-	formatTraceback = PyObject_GetAttrString(tracebackModule, "format_tb");
-	if (!formatTraceback) {
-		Utils::outMsg("PyUtils::init", "traceback.format_tb == nullptr");
-		std::abort();
-	}
-
-	PyObject *builtinModule = PyImport_AddModule("builtins");
-	builtinDict = PyModule_GetDict(builtinModule);
-	if (!builtinDict) {
-		Utils::outMsg("PyUtils::init", "builtins == nullptr");
-		std::abort();
-	}
-
-	PyObject *main = PyImport_AddModule("__main__");
-	global = PyModule_GetDict(main);
-
-	if (!PyAbsolute_PreInit()) {
-		Utils::outMsg("PyUtils::init", "Failure on call PyAbsolute_PreInit()");
-	}
-	if (PyType_Ready(&PyAbsolute_Type) < 0) {
-		Utils::outMsg("PyUtils::init", "Can't initialize absolute type");
-	}else {
-		PyDict_SetItemString(builtinDict, "absolute", (PyObject*)&PyAbsolute_Type);
-	}
-	setGlobalFunc("get_engine_version", Utils::getVersion);
-
-	setGlobalValue("need_save", false);
-	setGlobalValue("need_screenshot", false);
-	setGlobalValue("screenshot_width", 640);
-	setGlobalValue("screenshot_height", 640 / String::toDouble(Config::get("window_w_div_h")));
-
-	setGlobalFunc("ftoi", ftoi);
-	setGlobalFunc("get_md5", Utils::md5);
-
-	setGlobalFunc("get_current_mod", getCurrentMod);
-	setGlobalFunc("get_mods", Mods::getList);
-	setGlobalFunc("_out_msg", Utils::outMsg);
-
-	setGlobalFunc("_register_channel", AudioManager::registerChannel);
-	setGlobalFunc("_has_channel", AudioManager::hasChannel);
-	setGlobalFunc("_get_audio_len", AudioManager::getAudioLen);
-	setGlobalFunc("_set_mixer_volume", AudioManager::setMixerVolume);
-	setGlobalFunc("_set_volume_on_channel", AudioManager::setVolumeOnChannel);
-	setGlobalFunc("_get_pos_on_channel", AudioManager::getPosOnChannel);
-	setGlobalFunc("_set_pos_on_channel", AudioManager::setPosOnChannel);
-	setGlobalFunc("_get_pause_on_channel", AudioManager::getPauseOnChannel);
-	setGlobalFunc("_set_pause_on_channel", AudioManager::setPauseOnChannel);
-	setGlobalFunc("_play", AudioManager::play);
-	setGlobalFunc("_stop", AudioManager::stop);
-
-	setGlobalFunc("image_was_registered", Utils::imageWasRegistered);
-	setGlobalFunc("get_image", Utils::getImageDeclAt);
-
-	setGlobalFunc("replace_screen", Screen::replace);
-	setGlobalFunc("_show_screen", Screen::addToShow);
-	setGlobalFunc("hide_screen", Screen::addToHide);
-	setGlobalFunc("has_screen", Screen::hasScreen);
-	setGlobalFunc("_log_screen_code", Screen::logScreenCode);
-	setGlobalFunc("_SL_check_events", Screen::checkScreenEvents);
-
-	setGlobalFunc("start_mod", Game::startMod);
-	setGlobalFunc("get_mod_start_time", Game::getModStartTime);
-	setGlobalFunc("_load", Game::load);
-	setGlobalFunc("exit_from_game", Game::exitFromGame);
-
-	setGlobalFunc("_has_label", Game::hasLabel);
-	setGlobalFunc("_get_all_labels", Game::getAllLabels);
-	setGlobalFunc("_jump_next", Scenario::jumpNext);
-
-	setGlobalFunc("_get_from_hard_config", Game::getFromConfig);
-	setGlobalFunc("get_args", Game::getArgs);
-
-	setGlobalFunc("_sin", Math::getSin);
-	setGlobalFunc("_cos", Math::getCos);
-
-	setGlobalFunc("get_fps", Game::getFps);
-	setGlobalFunc("set_fps", Game::setFps);
-
-	setGlobalFunc("get_stage_width", Stage::getStageWidth);
-	setGlobalFunc("get_stage_height", Stage::getStageHeight);
-
-	setGlobalFunc("set_stage_size", Stage::setStageSize);
-	setGlobalFunc("set_fullscreen", Stage::setFullscreen);
-
-	setGlobalFunc("save_image", ImageManipulator::save);
-	setGlobalFunc("load_image", ImageManipulator::loadImage);
-	setGlobalFunc("get_image_width", Game::getImageWidth);
-	setGlobalFunc("get_image_height", Game::getImageHeight);
-	setGlobalFunc("get_image_pixel", Game::getImagePixel);
-
-	setGlobalFunc("get_mouse", getMouse);
-	setGlobalFunc("get_local_mouse", getLocalMouse);
-	setGlobalFunc("get_mouse_down", Mouse::getMouseDown);
-	setGlobalFunc("set_can_mouse_hide", Mouse::setCanHide);
-
-	setGlobalFunc("path_update_location", PathFinder::updateLocation);
-	setGlobalFunc("path_on_location", PathFinder::findPath);
-	setGlobalFunc("path_between_locations", PathFinder::findPathBetweenLocations);
-
-	setGlobalFunc("_set_lang", Translation::setLang);
-	setGlobalFunc("_known_languages", Translation::getKnownLanguages);
-	setGlobalFunc("_", Translation::get);
-
-	setGlobalFunc("get_last_tick", Game::getLastTick);
-	setGlobalFunc("get_game_time", Game::getGameTime);
-
-	setGlobalFunc("get_clipboard_text", Utils::getClipboardText);
-	setGlobalFunc("set_clipboard_text", Utils::setClipboardText);
-
-	setGlobalFunc("get_screen_times", GUI::getScreenTimes);
-
-	setGlobalFunc("set_scale_quality", Config::setScaleQuality);
-	setGlobalFunc("get_scale_quality", Config::getScaleQuality);
-	
-	setGlobalFunc("_get_cwd", FileSystem::getCurrentPath);
-	setGlobalFunc("_start_file_win32", FileSystem::startFile_win32);
-}
 
 
 static void getRealString(const std::string &code, std::string &fileName, std::string &numLineStr) {
@@ -289,7 +256,7 @@ static void fixToRealString(std::string &str, const std::string &code,
 	str.insert(fileNameStart, fileName);
 }
 
-void PyUtils::errorProcessing(const std::string &code) {
+static void errorProcessingImpl(const std::string &code) {
 	PyObject *pyType, *pyValue, *pyTraceback;
 	PyErr_Fetch(&pyType, &pyValue, &pyTraceback);
 	if (!pyType) {
@@ -304,14 +271,14 @@ void PyUtils::errorProcessing(const std::string &code) {
 
 	std::string traceback;
 	if (pyTraceback && pyTraceback != Py_None) {
-		PyTuple_SET_ITEM(tuple1, 0, pyTraceback);
-		PyObject *res = PyObject_Call(formatTraceback, tuple1, nullptr);
-		PyTuple_SET_ITEM(tuple1, 0, nullptr);
+		PyTuple_SET_ITEM(PyUtils::tuple1, 0, pyTraceback);
+		PyObject *res = PyObject_Call(formatTraceback, PyUtils::tuple1, nullptr);
+		PyTuple_SET_ITEM(PyUtils::tuple1, 0, nullptr);
 
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
 			PyObject *item = PyList_GET_ITEM(res, i);
-			std::string str = PyUnicode_AsUTF8(item);
+			std::string str = PyUtils::objToStr(item);
 
 			size_t fileNameStart = str.find("_SL_FILE_");
 			if (fileNameStart != size_t(-1)) {
@@ -368,8 +335,22 @@ void PyUtils::errorProcessing(const std::string &code) {
 	Py_XDECREF(pyTraceback);
 }
 
-bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
-	if (checkSimple) {
+void PyUtils::errorProcessing(const std::string &code) {
+	callInPythonThread([&]() {
+		errorProcessingImpl(code);
+	});
+}
+
+
+
+static std::map<std::string, bool> isConstExprCache;
+static bool isConstExprImpl(const std::string &code) {
+	auto it = isConstExprCache.find(code);
+	if (it != isConstExprCache.end()) {
+		return it->second;
+	}
+
+	{
 		size_t start = code.find_first_not_of(' ');
 		if (start != size_t(-1)) {
 			size_t end = code.find_last_not_of(' ');
@@ -377,7 +358,7 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 			s = s.substr(start, end - start + 1);
 
 			if (s == True || s == False || s == None) {
-				return true;
+				return isConstExprCache[code] = true;
 			}
 		}
 	}
@@ -391,13 +372,17 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 		if (c == '"'  && !q1 && prev != '\\') q2 = !q2;
 
 		if (!q1 && !q2) {
-			if (c == '_') return false;
+			if (c == '_') {
+				return isConstExprCache[code] = false;
+			}
 
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
 				if ((c == 'X' || c == 'x') && prev == '0') {
 					hex = true;
 				}else {
-					if (!hex || ((c > 'F' && c <= 'Z') || (c > 'f' && c <= 'z'))) return false;
+					if (!hex || ((c > 'F' && c <= 'Z') || (c > 'f' && c <= 'z'))) {
+						return isConstExprCache[code] = false;
+					}
 				}
 			}else
 			if (c < '0' || c > '9') {
@@ -411,10 +396,22 @@ bool PyUtils::isConstExpr(const std::string &code, bool checkSimple) {
 			prev = c;
 		}
 	}
-	return true;
+
+	return isConstExprCache[code] = true;
 }
 
-std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const std::string &code, bool retRes) {
+bool PyUtils::isConstExpr(const std::string &code) {
+	bool res;
+	callInPythonThread([&]() {
+		res = isConstExprImpl(code);
+	});
+	return res;
+}
+
+
+
+static std::map<std::string, std::string> constExprs;
+static std::string execImpl(const std::string &fileName, uint32_t numLine, const std::string &code, bool retRes) {
 	if (code.empty()) return "";
 
 	if (String::isNumber(code)) {
@@ -423,13 +420,9 @@ std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const s
 	if (String::isSimpleString(code)) {
 		return code.substr(1, code.size() - 2);
 	}
-	if (code == True || code == False || code == None) {
-		return code;
-	}
 
 
-	static std::map<std::string, std::string> constExprs;
-	bool isConst = retRes && isConstExpr(code, false);
+	bool isConst = retRes && PyUtils::isConstExpr(code);
 	if (isConst) {
 		auto i = constExprs.find(code);
 		if (i != constExprs.end()) {
@@ -439,29 +432,71 @@ std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const s
 
 	std::string res = "empty";
 
-	std::lock_guard g(pyExecMutex);
-
 	PyObject *co;
 	if (!retRes) {
-		co = getCompileObject(code, fileName, numLine);
+		co = getCompileObjectImpl(code, fileName, numLine);
 	}else {
-		co = getCompileObject("_res = str(" + code + ")", fileName, numLine);
+		co = getCompileObjectImpl("_res = str(" + code + ")", fileName, numLine);
 	}
 
 	if (co) {
-		bool ok = PyEval_EvalCode(co, global, nullptr);
+		bool ok = PyEval_EvalCode(co, PyUtils::global, nullptr);
 
 		if (ok) {
 			if (retRes) {
-				PyObject *resObj = PyDict_GetItemString(global, "_res");
-				res = PyUnicode_AsUTF8(resObj);
+				PyObject *resObj = PyDict_GetItemString(PyUtils::global, "_res");
+				res = PyUtils::objToStr(resObj);
 
 				if (isConst) {
 					constExprs[code] = res;
 				}
 			}
 		}else {
-			errorProcessing(code);
+			errorProcessingImpl(code);
+		}
+	}
+
+	return res;
+}
+
+std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const std::string &code, bool retRes) {
+	std::string res;
+	callInPythonThread([&]() {
+		res = execImpl(fileName, numLine, code, retRes);
+	});
+	return res;
+}
+
+
+
+
+static PyObject* execRetObjImpl(const std::string &fileName, uint32_t numLine, const std::string &code) {
+	if (code.empty()) return nullptr;
+
+	bool isConst = PyUtils::isConstExpr(code);
+	if (isConst) {
+		auto i = constObjects.find(code);
+		if (i != constObjects.end()) {
+			Py_INCREF(i->second);
+			return i->second;
+		}
+	}
+
+	PyObject *res = nullptr;
+	PyObject *co = getCompileObjectImpl("_res = " + code, fileName, numLine);
+	if (co) {
+		bool ok = PyEval_EvalCode(co, PyUtils::global, nullptr);
+
+		if (ok) {
+			res = PyDict_GetItemString(PyUtils::global, "_res");
+			Py_INCREF(res);
+
+			if (isConst) {
+				constObjects[code] = res;
+				Py_INCREF(res);
+			}
+		}else {
+			errorProcessingImpl(code);
 		}
 	}
 
@@ -469,42 +504,32 @@ std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const s
 }
 
 PyObject* PyUtils::execRetObj(const std::string &fileName, uint32_t numLine, const std::string &code) {
-	if (code.empty()) return nullptr;
-
-	bool isConst = isConstExpr(code);
-	if (isConst) {
-		auto i = constObjects.find(code);
-		if (i != constObjects.end()) {
-			return i->second;
-		}
-	}
-
-	std::lock_guard g(pyExecMutex);
-
-	PyObject *res = nullptr;
-	PyObject *co = getCompileObject("_res = " + code, fileName, numLine);
-	if (co) {
-		bool ok = PyEval_EvalCode(co, global, nullptr);
-
-		if (ok) {
-			res = PyDict_GetItemString(global, "_res");
-			Py_INCREF(res);
-
-			if (isConst) {
-				constObjects[code] = res;
-			}
-		}else {
-			errorProcessing(code);
-		}
-	}
-
+	PyObject *res;
+	callInPythonThread([&]() {
+		res = execRetObjImpl(fileName, numLine, code);
+	});
 	return res;
 }
 
 
-std::string PyUtils::objToStr(PyObject *obj) {
+static std::string objToStrImpl(PyObject *obj) {
+	Py_ssize_t size;
+	if (PyUnicode_CheckExact(obj)) {
+		const char *data = PyUnicode_AsUTF8AndSize(obj, &size);
+		return std::string(data, size_t(size));
+	}
+
 	PyObject *objStr = PyObject_Str(obj);
-	std::string res = PyUnicode_AsUTF8(objStr);
+	const char *data = PyUnicode_AsUTF8AndSize(objStr, &size);
+	std::string res(data, size_t(size));
 	Py_DECREF(objStr);
+	return res;
+}
+
+std::string PyUtils::objToStr(PyObject *obj) {
+	std::string res;
+	callInPythonThread([&]() {
+		res = objToStrImpl(obj);
+	});
 	return res;
 }

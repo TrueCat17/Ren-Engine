@@ -164,6 +164,7 @@ static bool init() {
 	ImageManipulator::init();
 	AudioManager::init();
 	SyntaxChecker::init();
+	PyUtils::init();
 
 	return false;
 }
@@ -223,15 +224,14 @@ static void loop() {
 
 		GV::updateMutex.lock();
 
-		{
-			std::lock_guard g(PyUtils::pyExecMutex);
-
+		auto workWithPython = [&]() { //for instant (for python) changes of 3 vars
 			GV::prevFrameStartTime = GV::frameStartTime;
 			GV::frameStartTime = Utils::getTimer();
 			GV::gameTime += Game::getLastTick();
 
 			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "if 'signals' in globals(): signals.send('enter_frame')");
-		}
+		};
+		PyUtils::callInPythonThread(workWithPython);
 
 		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;

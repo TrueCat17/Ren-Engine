@@ -80,9 +80,9 @@ link_libraries(
 	SDL2_image SDL2_ttf
 	jpeg png16 webp
 	freetype
-	brotlidec-static
-	brotlicommon-static
+	brotlidec brotlicommon
 	python3.11
+#	Hacl_Hash_SHA2.a # for python (in v3.12) module <_sha2>
 	z # z after python, because python's zlibmodule uses libz
 )
 
@@ -116,6 +116,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fopenmp")
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-pie")
