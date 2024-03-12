@@ -93,8 +93,6 @@ init python:
 			tg_snake_list.pop(0)
 		
 		tg_snake_list.append((to_x, to_y))
-		
-		tg_snake_render()
 	
 	
 	def tg_snake_render():
@@ -181,7 +179,10 @@ screen tg_snake_screen:
 	
 	if not tg_pause:
 		$ tg_snake_update()
+		$ tg_snake_render()
 	
+	$ tg_xindent = tg_text_xsize
+	$ tg_yindent = style.textbutton.ysize + 12
 	use tg_main_screen
 	
 	hbox:
@@ -192,9 +193,11 @@ screen tg_snake_screen:
 		textbutton _('Exit')                              action tg_snake_to_exit
 	
 	text (_('Score') + ': ' + str(tg_snake_score) + ' / 5' + '\n' + _('Level') + ': ' + str(tg_snake_level)):
-		align    (0.05, 0.5)
-		text_size 30
-		color     0x00AA00
+		yalign     0.5
+		text_size  30
+		color      0x00AA00
+		xsize      tg_text_xsize
+		text_align 'center'
 	
 	if tg_snake_fail:
 		text _('FAIL'):

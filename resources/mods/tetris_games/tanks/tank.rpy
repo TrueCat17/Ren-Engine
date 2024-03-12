@@ -47,7 +47,7 @@ init -1 python:
 			elif tg_tanks_get_from_level(level, x, y + 1) == step:
 				y = (y + 1) % tg_height
 			else:
-				break
+				return None
 			
 			res.insert(0, (x, y))
 			step -= 1
@@ -342,8 +342,9 @@ init -1 python:
 				return
 			
 			self.path_to_aim = tg_tanks_get_path(level, self.x, self.y)
-			self.path_to_aim.pop()
-			self.path_to_aim.reverse()
+			if self.path_to_aim:
+				self.path_to_aim.pop()
+				self.path_to_aim.reverse()
 		
 		def to_defence(self):
 			level = [0 if v == 0 else -1 for v in tg_tanks_walls]

@@ -158,8 +158,6 @@ init python:
 		
 		for bullet in tg_tanks_bullets:
 			bullet.x, bullet.y = bullet.to_x, bullet.to_y
-		
-		tg_tanks_render()
 	
 	
 	def tg_tanks_render():
@@ -305,7 +303,10 @@ screen tg_tanks_screen:
 	
 	if not tg_pause and not tg_tanks_state:
 		$ tg_tanks_update()
+		$ tg_tanks_render()
 	
+	$ tg_xindent = tg_text_xsize if tg_tanks_campaign else 0
+	$ tg_yindent = style.textbutton.ysize + 12
 	use tg_main_screen
 	
 	if tg_tanks_state:
@@ -321,14 +322,16 @@ screen tg_tanks_screen:
 	
 	if tg_tanks_campaign:
 		vbox:
-			align (0.02, 0.5)
+			yalign 0.5
 			spacing 15
 			
 			if tg_tanks_player is not None:
 				text (_('You') + ': ' + str(tg_tanks_player.hp) + ' ♥'):
-					font  'Arial'
-					color int(tg_hex_colors[tg_tanks_player.color][1:], 16)
+					font     'Arial'
+					color     tg_hex_colors[tg_tanks_player.color]
 					text_size 25
+					xsize       tg_text_xsize
+					text_align 'center'
 				null ysize 10
 			
 			$ tg_tanks_friends = tg_tanks_get_friends()
@@ -336,10 +339,14 @@ screen tg_tanks_screen:
 				text (_('Friends') + ': '):
 					color     0x00AA00
 					text_size 25
+					xsize       tg_text_xsize
+					text_align 'center'
 				for tank in tg_tanks_friends:
 					text ('  ' + str(tank.hp) + ' ♥'):
-						font  'Arial'
-						color int(tg_hex_colors[tank.color][1:], 16)
+						font 'Arial'
+						color tg_hex_colors[tank.color]
+						xsize       tg_text_xsize
+						text_align 'center'
 				null ysize 10
 			
 			$ tg_tanks_enemies = tg_tanks_get_enemies()
@@ -347,10 +354,14 @@ screen tg_tanks_screen:
 				text (_('Enemies') + ': '):
 					color	  0xAA0000
 					text_size 25
+					xsize       tg_text_xsize
+					text_align 'center'
 				for tank in tg_tanks_enemies:
 					text ('  ' + str(tank.hp) + ' ♥'):
-						font  'Arial'
-						color int(tg_hex_colors[tank.color][1:], 16)
+						font 'Arial'
+						color tg_hex_colors[tank.color]
+						xsize       tg_text_xsize
+						text_align 'center'
 
 
 

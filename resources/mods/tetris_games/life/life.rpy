@@ -29,8 +29,8 @@ init python:
 		
 		set_fps(tg_life_fps)
 		
-		tg_width = 60
-		tg_height = 30
+		tg_width = 80
+		tg_height = 40
 		
 		tg_pause = False
 		tg_life_exit = False
@@ -83,7 +83,6 @@ init python:
 				next_alifes.add(cell)
 		
 		tg_life_alives = next_alifes
-		tg_life_render()
 	
 	def tg_life_render():
 		for i in range(tg_width * tg_height):
@@ -124,8 +123,6 @@ init python:
 		tg_life_alives.add((start_x + 2, start_y + 0))
 		tg_life_alives.add((start_x + 2, start_y + 1))
 		tg_life_alives.add((start_x + 1, start_y + 2))
-		
-		tg_life_render()
 	
 	
 	def tg_life_make_r_pentamino():
@@ -139,8 +136,6 @@ init python:
 		tg_life_alives.add((start_x + 0, start_y + 1))
 		tg_life_alives.add((start_x + 1, start_y + 1))
 		tg_life_alives.add((start_x + 1, start_y + 2))
-		
-		tg_life_render()
 	
 	
 	def tg_life_make_space_ship():
@@ -158,8 +153,6 @@ init python:
 		tg_life_alives.add((start_x + 4, start_y + 2))
 		tg_life_alives.add((start_x + 0, start_y + 3))
 		tg_life_alives.add((start_x + 3, start_y + 3))
-		
-		tg_life_render()
 	
 	def tg_life_make_taxi():
 		tg_life_clear()
@@ -171,8 +164,6 @@ init python:
 			tg_life_alives.add((start_x + i * 2 + 1, start_y + 0))
 		for i in range(10):
 			tg_life_alives.add((start_x + i * 2 + 0, start_y + 1))
-		
-		tg_life_render()
 	
 	
 	def tg_life_on_left_press():
@@ -189,6 +180,11 @@ init python:
 		tg_life_rect_y = (tg_life_rect_y + 1) % tg_height
 
 
+init:
+	style tg_life_btn is textbutton:
+		xsize_max 0.17
+
+
 screen tg_life_screen:
 	key 'K_LEFT'  action tg_life_on_left_press
 	key 'K_RIGHT' action tg_life_on_right_press
@@ -203,36 +199,68 @@ screen tg_life_screen:
 	key 'K_RETURN' action tg_life_change_cell_state
 	
 	key 'c' action tg_life_clear
+	key 'r' action tg_life_init
 	
-	python:
-		if not tg_pause:
-			tg_life_update()
-		else:
-			tg_life_render()
+	if not tg_pause:
+		$ tg_life_update()
+	$ tg_life_render()
 	
+	$ tg_xindent = 0
+	$ tg_yindent = style.textbutton.ysize * 2 + 17
 	use tg_main_screen
 	
 	vbox:
-		align (0.5, 0.98)
+		align (0.5, 1.0)
 		spacing 5
 		
-		hbox:
-			xalign 0.5
-			
-			textbutton 'Wiki'                                 action tg_life_open_wiki
-			textbutton _('Restart (random)')                  action tg_life_init
-			textbutton _('Clear')                             action tg_life_clear
-			textbutton _('Continue' if tg_pause else 'Pause') action tg_change_pause_state
-			textbutton _('Exit')                              action SetVariable('tg_life_exit', True)
+		null size 1
+		
+		$ tmp_style = style.tg_life_btn
 		
 		hbox:
 			xalign 0.5
+			spacing 5
 			
-			text (_('Make') + ': ') text_size 20
-			textbutton 'Planer'      action tg_life_make_planer
-			textbutton 'SpaceShip'   action tg_life_make_space_ship
-			textbutton 'R-Pentamino' action tg_life_make_r_pentamino
-			textbutton 'Taxi'        action tg_life_make_taxi
+			$ btn_params = (
+				('Wiki', tg_life_open_wiki),
+				('Restart (random)', tg_life_init),
+				('Clear', tg_life_clear),
+				('Continue' if tg_pause else 'Pause', tg_change_pause_state),
+				('Exit', SetVariable('tg_life_exit', True)),
+			)
+			for text, action in btn_params:
+				textbutton _(text):
+					style tmp_style
+					ground tmp_style.get_ground()
+					hover  tmp_style.get_hover()
+					action action
+		
+		hbox:
+			xalign 0.5
+			spacing 5
+			
+			text (_('Make') + ': '):
+				text_size 20
+				outlinecolor 0
+				text_align 'center'
+				xsize tmp_style.xsize
+				xsize_max tmp_style.xsize_max
+				yalign 0.5
+			
+			$ btn_params = (
+				('Planer', tg_life_make_planer),
+				('SpaceShip', tg_life_make_space_ship),
+				('R-Pentamino', tg_life_make_r_pentamino),
+				('Taxi', tg_life_make_taxi),
+			)
+			for text, action in btn_params:
+				textbutton _(text):
+					style tmp_style
+					ground tmp_style.get_ground()
+					hover  tmp_style.get_hover()
+					action action
+		
+		null size 1
 
 
 label tg_life_start:

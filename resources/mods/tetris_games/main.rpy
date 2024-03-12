@@ -1,14 +1,20 @@
 # tg_
 
 init -100 python:
-	day_time()
 	quick_menu = False
+	gui.dialogue_menu_button_width = 0
 	
 	tg_pause = False
 	
+	tg_text_xsize = 170
+	
 	tg_width = 1
 	tg_height = 1
-	tg_size = 16
+	def tg_update_sizes():
+		global tg_zoom, tg_btns_ysize
+		xzoom = (get_stage_width()  - tg_xindent) // tg_width
+		yzoom = (get_stage_height() - tg_yindent) // tg_height
+		tg_zoom = min(xzoom, yzoom)
 	
 	
 	tg_colors = ('green', 'orange', 'purple', 'yellow', 'blue', 'cyan', 'black')
@@ -34,16 +40,21 @@ init -100 python:
 
 screen tg_main_screen:
 	key 'ESCAPE' action SetVariable('tg_pause', True)
+	key 'p' action tg_change_pause_state
 	
-	zoom tg_size
-	align (0.5, 0.4)
+	$ tg_update_sizes()
+	xsize get_stage_width()  - tg_xindent
+	ysize get_stage_height() - tg_yindent
+	xalign 1.0
 	
 	image im.rect('#FFF'):
-		align (0.5, 0.4)
+		align 0.5
+		zoom tg_zoom
 		size (tg_width, tg_height)
 	
 	vbox:
-		align (0.5, 0.4)
+		align 0.5
+		zoom tg_zoom
 		
 		for i in range(tg_height):
 			hbox:
