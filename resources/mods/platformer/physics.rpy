@@ -24,7 +24,7 @@ init python:
 		def to_zero(x):
 			return x if abs(x) < 1 else x + 1 if x < 0 else x - 1
 		def floor(x):
-			return int(math.floor(x))
+			return math.floor(x)
 		
 		
 		level = levels[cur_level]
@@ -36,7 +36,6 @@ init python:
 		
 		
 		if left == right:
-			me.move_kind = 'stay'
 			if left: # and right
 				me.set_direction(to_back)
 		else:
@@ -44,20 +43,17 @@ init python:
 			
 			if left:
 				me_vx -= speed * physics_step
-				if not obj_type.can_vertical:
-					me.move_kind = 'stance'
+				if not obj_type.can_vertical or y == 0:
 					me.set_direction(to_left)
 			else: # right
 				me_vx += speed * physics_step
-				if not obj_type.can_vertical:
-					me.move_kind = 'stance'
+				if not obj_type.can_vertical or y == 0:
 					me.set_direction(to_right)
 		
 		
 		no_gravity = False
 		if obj_type.can_vertical:
 			if up or down:
-				me.move_kind = 'stay'
 				me.set_direction(to_forward)
 				
 				speed = me_yspeed * cell_size
@@ -72,7 +68,7 @@ init python:
 				no_gravity = True
 		else:
 			if on_ground((xcell, ycell), (floor(x + cell_size / 2), floor(y + cell_size - 1))):
-				me_vy = gravity * 0
+				me_vy = 0
 				if space:
 					me_vy -= me_jump
 		
@@ -166,6 +162,7 @@ init python:
 		moving_dtime = get_game_time() - last_stay_time
 		fps = me.walk_fps if shift_is_down else me.run_fps
 		me.set_frame(int(moving_dtime * fps))
+		me.set_pose('walk' if moving_dtime else 'stay')
 		
 		me.update_crop()
 		
@@ -183,9 +180,9 @@ init python:
 		xcell, ycell = cell
 		x, y = pixel
 		
-		xcell += int(math.floor(x / cell_size))
+		xcell += math.floor(x / cell_size)
 		x %= cell_size
-		ycell += int(math.floor(y / cell_size))
+		ycell += math.floor(y / cell_size)
 		y %= cell_size
 		
 		if y == cell_size - 1:

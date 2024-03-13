@@ -64,7 +64,6 @@ init -1 python:
 		global me_vx, me_vy
 		me_vx = me_vy = 0
 		me.set_direction(to_back)
-		me.move_kind = 'stay'
 	
 	
 	def check_fail():
