@@ -103,16 +103,17 @@ init -1002 python:
 			return self['cur_' + prop]
 		
 		def get_resized_image(self, prop, width, height):
+			key = ('cur_' + prop, width, height)
+			key_last_update = (prop + '_last_update', width, height)
 			now = get_game_time()
-			key = (prop + '_last_update', width, height)
-			if self[key] != now:
-				self[key] = now
+			if self[key_last_update] != now:
+				self[key_last_update] = now
 				
 				xsize = width  or self.get_current('xsize', get_stage_width())
 				ysize = height or self.get_current('ysize', get_stage_height())
 				
-				self['cur_' + prop] = im.scale_without_borders(self[prop], xsize, ysize, self.corner_sizes)
-			return self['cur_' + prop]
+				self[key] = im.scale_without_borders(self[prop], xsize, ysize, self.corner_sizes)
+			return self[key]
 		
 		def get_ground(self, width = None, height = None):
 			return self.get_resized_image('ground', width, height)
