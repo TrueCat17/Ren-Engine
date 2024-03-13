@@ -16,9 +16,6 @@ init python:
 			rpg_locations[name].x, rpg_locations[name].y = locations_coords[name]
 	
 	def select_location(location):
-		global selected_location_coords
-		selected_location_coords = location.x, location.y
-		
 		hide_screen('all_locations')
 		show_screen('selected_location')
 		

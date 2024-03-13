@@ -81,8 +81,6 @@ screen points_list:
 	zorder 10
 	alpha (0.5 if me.paths else 1)
 	
-	key 'P' action make_screenshot
-	
 	image im.rect('#FFF'):
 		xalign 0.0 if points_left else 1.0
 		yalign 0.5
@@ -95,6 +93,8 @@ screen points_list:
 			textbutton _('To right' if points_left else 'To left'):
 				xalign 0.5
 				text_size 20
+				ground style.textbutton.get_ground()
+				hover  style.textbutton.get_hover()
 				action SetVariable('points_left', not points_left)
 			
 			text (_('Points aviable: %s / %s') % (max_count_points - len(points), max_count_points)):
@@ -115,30 +115,31 @@ screen points_list:
 					size (points_width - 2 * points_indent, points_btn_height)
 					
 					text ("%s: (%s, %s)" % (location_name, x, y)):
-						align (0.5, 0.2)
+						align (0.5, 0.15)
 						text_size 20
 						color 0x404040
 					
 					hbox:
-						align (0.5, 0.8)
+						align (0.5, 0.85)
+						spacing 2
 						
-						textbutton ('/\\'):
-							size (16, 16)
-							text_size 14
-							action swap_points(i - 1, i)
-						textbutton ('\\/'):
-							size (16, 16)
-							text_size 14
-							action swap_points(i, i + 1)
-						textbutton ('X'):
-							size (16, 16)
-							text_size 14
-							color 0xFF0000
-							action [SetVariable('points', points[:i] + points[i+1:]), AddVariable('i', -1)]
+						$ btn_params = (
+							('/\\', 0xFFFFFF, Function(swap_points, i - 1, i)),
+							('\\/', 0xFFFFFF, Function(swap_points, i, i + 1)),
+							('X', 0xFF0000, [SetVariable('points', points[:i] + points[i+1:]), AddVariable('i', -1)]),
+						)
+						for text, color, action in btn_params:
+							textbutton text:
+								size 21
+								text_size 14
+								color color
+								ground style.textbutton.get_ground(21, 21)
+								hover  style.textbutton.get_hover(21, 21)
+								action action
 				$ i += 1
 		
 		vbox:
-			align (0.5, 0.95)
+			align (0.5, 0.97)
 			spacing points_indent
 			
 			hbox:
@@ -158,6 +159,8 @@ screen points_list:
 			
 			textbutton _('Stop' if me.paths else 'Start'):
 				xalign 0.5
+				ground style.textbutton.get_ground()
+				hover  style.textbutton.get_hover()
 				action stop_moving if me.paths else start_moving
 			
 			text (out_text or ' '):
