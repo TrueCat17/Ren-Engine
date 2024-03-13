@@ -40,7 +40,6 @@ init -100 python:
 
 screen tg_main_screen:
 	key 'ESCAPE' action SetVariable('tg_pause', True)
-	key 'p' action tg_change_pause_state
 	
 	$ tg_update_sizes()
 	xsize get_stage_width()  - tg_xindent
