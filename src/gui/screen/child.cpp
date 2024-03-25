@@ -12,9 +12,13 @@
 
 
 Child::Child(Node *node, Container *screenParent, Screen *screen):
-	screen(screen),
-	node(node),
-	screenParent(screenParent)
+    screen(screen),
+    inited(false),
+    inVBox(false),
+    inHBox(false),
+    selected(false),
+    node(node),
+    screenParent(screenParent)
 {}
 
 bool Child::isModal() const {

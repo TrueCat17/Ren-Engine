@@ -128,7 +128,7 @@ init -1003 python:
 			
 			if cam_object_y <= indent:
 				y = 0
-			elif cam_object_y >= main_height - indent_down :
+			elif cam_object_y >= main_height - indent_down:
 				y = stage_height - main_height
 			else:
 				y = indent - cam_object_y

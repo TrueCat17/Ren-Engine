@@ -414,8 +414,8 @@ void Screen::checkScreenEvents() {
 
 
 Screen::Screen(Node *node, Screen *screen):
-	Container(node, this, screen ? screen : this),
-	name(node->params)
+    Container(node, this, screen ? screen : this),
+    name(node->params)
 {
 	if (this->screen != this) return;//not main screen, command <use>
 

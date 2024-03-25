@@ -17,13 +17,13 @@ private:
 protected:
 	Screen *screen;
 
-	bool inited = false;
+	bool inited:1;
 
-	bool inVBox = false;
-	bool inHBox = false;
+	bool inVBox:1;
+	bool inHBox:1;
 
 public:
-	bool selected = false;//for TextButton and Hotspot
+	bool selected:1;//for TextButton and Hotspot
 
 	bool xpos_is_float:1;
 	bool ypos_is_float:1;

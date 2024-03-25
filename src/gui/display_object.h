@@ -22,9 +22,9 @@ protected:
 	float globalZoomX = 1;
 	float globalZoomY = 1;
 
-	bool globalClipping = false;
+	bool globalClipping:1;
 
-	bool clearing = false;//to speed up Group::clearChildren
+	bool clearing:1;//to speed up Group::clearChildren
 
 public:
 	static std::vector<DisplayObject*> objects;
@@ -36,10 +36,15 @@ public:
 
 	static SDL_Rect buildIntRect(float x, float y, float w, float h, bool exactSize);
 
-	bool enable = false;
-	bool clipping = false;
-	bool skip_mouse = false;
-	bool globalSkipMouse = false;
+	bool enable:1;
+	bool clipping:1;
+	bool skip_mouse:1;
+	bool globalSkipMouse:1;
+
+	bool corner_sizes_left_is_float:1;
+	bool corner_sizes_top_is_float:1;
+	bool corner_sizes_right_is_float:1;
+	bool corner_sizes_bottom_is_float:1;
 
 	SDL_Rect crop = { 0, 0, 0, 0 };//int, because zoom does not work with crop
 	float alpha = 1;
@@ -52,6 +57,11 @@ public:
 
 	float xzoom = 1;
 	float yzoom = 1;
+
+	float corner_sizes_left = 0;
+	float corner_sizes_top = 0;
+	float corner_sizes_right = 0;
+	float corner_sizes_bottom = 0;
 
 	SurfacePtr surface = nullptr;
 

@@ -215,8 +215,6 @@ screen tg_life_screen:
 		
 		null size 1
 		
-		$ tmp_style = style.tg_life_btn
-		
 		hbox:
 			xalign 0.5
 			spacing 5
@@ -230,9 +228,7 @@ screen tg_life_screen:
 			)
 			for text, action in btn_params:
 				textbutton _(text):
-					style tmp_style
-					ground tmp_style.get_ground()
-					hover  tmp_style.get_hover()
+					style 'tg_life_btn'
 					action action
 		
 		hbox:
@@ -240,11 +236,9 @@ screen tg_life_screen:
 			spacing 5
 			
 			text (_('Make') + ': '):
+				style 'tg_life_btn'
 				text_size 20
 				outlinecolor 0
-				text_align 'center'
-				xsize tmp_style.xsize
-				xsize_max tmp_style.xsize_max
 				yalign 0.5
 			
 			$ btn_params = (
@@ -255,9 +249,7 @@ screen tg_life_screen:
 			)
 			for text, action in btn_params:
 				textbutton _(text):
-					style tmp_style
-					ground tmp_style.get_ground()
-					hover  tmp_style.get_hover()
+					style 'tg_life_btn'
 					action action
 		
 		null size 1

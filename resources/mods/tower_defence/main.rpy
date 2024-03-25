@@ -99,6 +99,7 @@ screen tower_defence:
 		$ td_to_delete_tower = None
 		for obj in td_towers:
 			button:
+				corner_sizes 0
 				ground obj.image
 				action SetVariable('td_to_delete_tower', obj)
 				
@@ -153,6 +154,7 @@ screen tower_defence:
 			for tower_type in ('usual', 'fast', 'frost'):
 				vbox:
 					button:
+						corner_sizes 0
 						ground td_tower_types[tower_type]['image']
 						size (td_cell_size, td_cell_size)
 						action add_tower(tower_type)

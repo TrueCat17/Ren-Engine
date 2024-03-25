@@ -23,11 +23,7 @@ screen main_menu:
 			(_('Preferences'), ShowMenu('preferences')),
 			(_('Exit'), exit_from_game),
 		)
-		$ tmp_style = style.menu_button
 		for text, action in btn_params:
 			textbutton text:
-				style tmp_style
-				ground tmp_style.get_ground()
-				hover  tmp_style.get_hover()
+				style 'menu_button'
 				action action
-

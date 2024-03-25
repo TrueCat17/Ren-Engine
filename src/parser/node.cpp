@@ -30,7 +30,8 @@ Node::Node(const std::string &fileName, uint32_t numLine, uint32_t id):
 
 Node* Node::getNewNode(const std::string &fileName, uint32_t numLine) {
 	if ((countNodes % NODES_IN_PART) == 0) {
-		nodes.push_back((Node*)::malloc(NODES_IN_PART * sizeof(Node)));
+		void *ptr = ::malloc(NODES_IN_PART * sizeof(Node));
+		nodes.push_back(reinterpret_cast<Node*>(ptr));
 	}
 
 	Node *node = nodes.back() + (countNodes % NODES_IN_PART);

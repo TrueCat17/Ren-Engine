@@ -11,7 +11,14 @@
 std::vector<DisplayObject*> DisplayObject::objects;
 
 
-DisplayObject::DisplayObject() {
+DisplayObject::DisplayObject():
+    globalClipping(false),
+    clearing(false),
+    enable(false),
+    clipping(false),
+    skip_mouse(false),
+    globalSkipMouse(false)
+{
 	objects.push_back(this);
 }
 
@@ -101,12 +108,81 @@ bool DisplayObject::transparentForMouse(int x, int y) const {
 void DisplayObject::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
-	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
-	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
-	SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, getWidth(), getHeight(), false);
-	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
+	float width = getWidth();
+	float height = getHeight();
+	if (width <= 0 || height <= 0) return;
 
-	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, crop, dstIRect, center);
+	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
+	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
+	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
+
+	//simple way
+	if (Math::floatsAreEq(corner_sizes_left, 0) &&
+	    Math::floatsAreEq(corner_sizes_top, 0) &&
+	    Math::floatsAreEq(corner_sizes_right, 0) &&
+	    Math::floatsAreEq(corner_sizes_bottom, 0)
+	) {
+		SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, width, height, false);
+		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, crop, dstIRect, center);
+		return;
+	}
+
+
+	//zoom with const corner-sizes:
+	// 1 2 3      1 2 2 3
+	// 4 5 6  ->  4 5 5 6
+	// 7 8 9      4 5 5 6
+	//            7 8 8 9
+
+	float cropW = float(crop.w);
+	float cropH = float(crop.h);
+
+#define makeSide(side, rel, defaultSize) \
+	float side = round( \
+	    corner_sizes_##side < 0 ? \
+	        defaultSize : \
+	        corner_sizes_##side * (corner_sizes_##side##_is_float ? rel : 1) \
+	)
+	makeSide(left, cropW, std::floor(std::min(cropW, cropH) / 3));
+	makeSide(top, cropH, left);
+	makeSide(right, cropW, left);
+	makeSide(bottom, cropH, top);
+#undef makeSide
+
+	float zoomX = (left + right) / (width * float(0.8));
+	float zoomY = (top + bottom) / (height * float(0.8));
+	float zoom = std::ceil(std::max(std::max(zoomX, zoomY), float(1)));
+
+	std::pair<int, float> ws[3] = {
+	    { left, left /zoom },
+	    { cropW - (left + right), (width  * zoom - (left + right)) / zoom },
+	    { right, right / zoom }
+	};
+	std::pair<int, float> hs[3] = {
+	    { top, top / zoom },
+	    { cropH - (top + bottom), (height * zoom - (top + bottom)) / zoom },
+	    { bottom, bottom / zoom }
+	};
+
+
+	int srcY = crop.y;
+	float dstY = globalY;
+	for (auto [srcH, dstH] : hs) {
+		int srcX = crop.x;
+		float dstX = globalX;
+
+		for (auto [srcW, dstW] : ws) {
+			SDL_Rect dstIRect = DisplayObject::buildIntRect(dstX, dstY, dstW, dstH, false);
+			SDL_Rect partCrop = { srcX, srcY, srcW, srcH };
+			pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, partCrop, dstIRect, center);
+
+			srcX += srcW;
+			dstX += dstW;
+		}
+
+		srcY += srcH;
+		dstY += dstH;
+	}
 }
 
 DisplayObject::~DisplayObject() {
@@ -155,8 +231,8 @@ void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 a
 
 SDL_Rect DisplayObject::buildIntRect(float x, float y, float w, float h, bool exactSize) {
 	SDL_Rect res;
-	res.x = int(x);
-	res.y = int(y);
+	res.x = int(round(x));
+	res.y = int(round(y));
 
 	if (exactSize) {
 		res.w = int(w);

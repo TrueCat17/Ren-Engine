@@ -6,7 +6,7 @@
 
 
 Imagemap::Imagemap(Node *node, Screen *screen):
-	Container(node, this, screen)
+    Container(node, this, screen)
 {}
 
 void Imagemap::updateTexture() {

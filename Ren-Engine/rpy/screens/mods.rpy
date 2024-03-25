@@ -21,31 +21,25 @@ screen mods:
 	style 'mods_vbox'
 	
 	$ mods.update()
-	$ tmp_style = style.mod_button
 	
 	for i in range(gui.prefs_mods_in_page - len(mods.page_buttons)):
-		null style tmp_style
+		null style 'mod_button'
 	
 	for name, dir_name in mods.page_buttons:
 		textbutton name:
-			style tmp_style
-			ground tmp_style.get_ground()
-			hover  tmp_style.get_hover()
+			style 'mod_button'
 			action start_mod(dir_name)
 	
 	if mods.page_count > 1:
 		hbox:
 			style 'change_mod_page_button_hbox'
 			
-			$ tmp_style = style.change_mod_page_button
 			for i in (-1, 0, +1): # prev_btn, text, next_btn
 				if i:
 					$ disable_btn = mods.page == (0 if i == -1 else mods.page_count - 1)
 					textbutton gui['back_button_text' if i == -1 else 'next_button_text']:
-						style tmp_style
+						style 'change_mod_page_button'
 						alpha 0 if disable_btn else 1
-						ground tmp_style.get_ground()
-						hover  tmp_style.get_hover()
 						yalign 0.5
 						action 'mods.page += i'
 				else:

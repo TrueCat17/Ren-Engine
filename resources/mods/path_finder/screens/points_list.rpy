@@ -93,8 +93,6 @@ screen points_list:
 			textbutton _('To right' if points_left else 'To left'):
 				xalign 0.5
 				text_size 20
-				ground style.textbutton.get_ground()
-				hover  style.textbutton.get_hover()
 				action SetVariable('points_left', not points_left)
 			
 			text (_('Points aviable: %s / %s') % (max_count_points - len(points), max_count_points)):
@@ -130,40 +128,48 @@ screen points_list:
 						)
 						for text, color, action in btn_params:
 							textbutton text:
-								size 21
+								size 23
 								text_size 14
 								color color
-								ground style.textbutton.get_ground(21, 21)
-								hover  style.textbutton.get_hover(21, 21)
 								action action
 				$ i += 1
 		
 		vbox:
-			align (0.5, 0.97)
+			align (0.5, 1.0)
 			spacing points_indent
 			
-			hbox:
+			null:
+				xsize int(points_width * 0.7)
+				ysize 25
 				xalign 0.5
-				spacing points_indent
+				
+				hbox:
+					spacing points_indent
+					align 0.5
+					
+					image gui['checkbox_yes' if brute_force else 'checkbox_no']:
+						size 20
+					
+					text 'brute_force':
+						color 0
+						yalign 0.5
+						text_size 20
 				
 				button:
-					size 20
-					
-					ground gui.checkbox_yes if brute_force else gui.checkbox_no
+					align 0.5
+					xsize int(points_width * 0.7)
+					ysize 25
+					ground style.bool_button.ground
+					hover  style.bool_button.hover
 					action SetVariable('brute_force', not brute_force)
-				
-				text 'brute_force':
-					color 0
-					yalign 0.5
-					text_size 20
 			
 			textbutton _('Stop' if me.paths else 'Start'):
 				xalign 0.5
-				ground style.textbutton.get_ground()
-				hover  style.textbutton.get_hover()
 				action stop_moving if me.paths else start_moving
 			
 			text (out_text or ' '):
 				color 0
 				xalign 0.5
+			
+			null ysize 1
 

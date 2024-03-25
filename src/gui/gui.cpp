@@ -22,7 +22,7 @@ PyObject* GUI::getScreenTimes() {
 	return screenTimes;
 }
 void GUI::clearScreenTimes() {
-	Py_DECREF(screenTimes);
+	Py_XDECREF(screenTimes);
 	screenTimes = nullptr;
 }
 

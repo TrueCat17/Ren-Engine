@@ -33,10 +33,7 @@ class Text: public Child {
 private:
 	std::string prevText;
 
-	const bool hasOutlineColor;
-	const bool hasHoverOutlineColor;
 public:
-
 	bool prevParamsIsHover = false;
 	bool curParamsIsHover = false;
 	TextParams mainParams;

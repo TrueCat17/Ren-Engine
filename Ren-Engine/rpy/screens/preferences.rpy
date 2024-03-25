@@ -183,8 +183,6 @@ screen preferences:
 				
 				textbutton (tab if tab == 'Language' else _(tab)): # no translation for tab <Language>
 					style tmp_style
-					ground tmp_style.get_ground()
-					hover  tmp_style.get_hover()
 					selected preferences.tab == tab
 					action SetDict(preferences, 'tab', tab)
 		
@@ -241,11 +239,7 @@ screen preferences:
 							elif obj == 'bool':
 								python:
 									value = elem[2]()
-									tmp_style = style.checkbox
-									checkbox_width  = tmp_style.get_current('xsize')
-									checkbox_height = tmp_style.get_current('ysize')
 									checkbox_image = gui['checkbox_yes' if value else 'checkbox_no']
-									checkbox_image = im.scale_without_borders(checkbox_image, checkbox_width, checkbox_height, tmp_style.corner_sizes)
 								
 								null:
 									style 'bool_button'
@@ -256,6 +250,7 @@ screen preferences:
 										
 										image checkbox_image:
 											style 'checkbox'
+											corner_sizes style.checkbox.corner_sizes
 											yalign 0.5
 										
 										text text:
@@ -264,8 +259,6 @@ screen preferences:
 									
 									button:
 										style 'bool_button'
-										ground style.bool_button.get_ground()
-										hover  style.bool_button.get_hover()
 										action elem[3]
 							
 							elif obj == 'btn':
@@ -291,51 +284,34 @@ screen preferences:
 									yalign 0.5
 									xsize btn_width
 									ysize btn_height
-									ground tmp_style.get_ground(btn_width, btn_height)
-									hover  tmp_style.get_hover(btn_width, btn_height)
 									selected selected_btn
 									action elem[3]
 							
 							elif obj == 'bar':
 								python:
-									tmp_bar_style = style.bar
-									tmp_style = style.bar_button
-									
 									obj, prop, min_value, max_value, function_for_minus, function_for_plus = elem[1:]
 									value = getset_attr(prop, obj = obj)
 									if callable(value):
 										value = value()
 									part = in_bounds((value - min_value) / (max_value - min_value), 0, 1)
-									
-									bar_width = tmp_bar_style.get_current('xsize')
-									bar_height = tmp_bar_style.get_current('ysize')
-									bar_image = im.scale_without_borders(im.bar(part), bar_width, bar_height, tmp_bar_style.corner_sizes)
 								
 								for i in (-1, 0, 1): # btn <minus>, bar, btn <plus>
 									if i:
 										textbutton gui['bar_minus_text' if i == -1 else 'bar_plus_text']:
-											style tmp_style
+											style 'bar_button'
 											yalign 0.5
-											ground tmp_style.get_ground()
-											hover  tmp_style.get_hover()
 											action (function_for_minus if i == -1 else function_for_plus)
 									else:
-										image bar_image:
-											style tmp_bar_style
+										image im.bar(part):
+											style 'bar'
 											yalign 0.5
 	
-	$ tmp_style = style.mods_button
 	textbutton _('Preferences' if preferences.show_mods else 'Mods'):
-		style tmp_style
-		ground tmp_style.get_ground()
-		hover  tmp_style.get_hover()
+		style 'mods_button'
 		action ToggleDict(preferences, 'show_mods')
 	
-	$ tmp_style = style.return_button
 	textbutton _('Return'):
-		style tmp_style
-		ground tmp_style.get_ground()
-		hover  tmp_style.get_hover()
+		style 'return_button'
 		action HideMenu('preferences')
 	
 	key 'ESCAPE' action HideMenu('preferences')

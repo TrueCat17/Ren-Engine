@@ -9,8 +9,6 @@
 
 Text::Text(Node *node, Screen *screen):
     Child(node, nullptr, screen),
-    hasOutlineColor(node->getProp("outlinecolor")),
-    hasHoverOutlineColor(node->getProp("hover_outlinecolor")),
     tf(new TextField())
 {
 	addChildAt(tf, 0);
@@ -53,14 +51,9 @@ makeGetSize(_min)
 makeGetSize(_max)
 
 static inline
-bool get_enable_outline(const Text *text, bool hasOutlineColor, bool hasHoverOutlineColor) {
-	if (text->curParamsIsHover) {
-		if (text->hoverParams.set_outlinecolor) {
-			return true;
-		}
-		if (hasHoverOutlineColor || !hasOutlineColor) {
-			return false;
-		}
+bool get_enable_outline(const Text *text) {
+	if (text->curParamsIsHover && text->hoverParams.set_outlinecolor) {
+		return true;
 	}
 	return text->mainParams.set_outlinecolor;
 }
@@ -99,7 +92,7 @@ void Text::updateRect(bool) {
 
 	Uint32 color = get_color(this);
 	Uint32 outlineColor = get_outlinecolor(this);
-	bool enableOutline = get_enable_outline(this, hasOutlineColor, hasHoverOutlineColor);
+	bool enableOutline = get_enable_outline(this);
 	Uint8 fontStyle = get_font_style(this);
 
 	auto curParams = std::tie(

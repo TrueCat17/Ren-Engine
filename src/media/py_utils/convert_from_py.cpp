@@ -53,29 +53,29 @@ type convertFromPy<type>(PyObject *obj, const char *funcName, size_t argIndex) {
 	bool isLong = PyLong_CheckExact(obj); \
 	bool isFloat = !isLong && PyFloat_CheckExact(obj); \
 	if (!isLong && !isFloat) { \
-	    pySetErrorType(funcName, argIndex, obj, \
-	        std::is_floating_point_v<type> ? "float" : "int"); \
-	    return 0; \
+		pySetErrorType(funcName, argIndex, obj, \
+			std::is_floating_point_v<type> ? "float" : "int"); \
+		return 0; \
 	} \
 	double tmp; \
 	if (isLong) { \
-	    tmp = PyLong_AsDouble(obj); \
-	    if (PyErr_Occurred()) { \
-	        pySetErrorOverflow(funcName, argIndex, obj, "too large to convert to "#type); \
-	        return 0; \
-	    } \
+		tmp = PyLong_AsDouble(obj); \
+		if (PyErr_Occurred()) { \
+			pySetErrorOverflow(funcName, argIndex, obj, "too large to convert to "#type); \
+			return 0; \
+		} \
 	}else { \
-	    tmp = PyFloat_AS_DOUBLE(obj); \
+		tmp = PyFloat_AS_DOUBLE(obj); \
 	} \
 	if constexpr (!std::is_floating_point_v<type>) { \
-	    if (tmp < double(std::numeric_limits<type>::min())) { \
-	        pySetErrorOverflow(funcName, argIndex, obj, "too small to convert to "#type); \
-	        return 0; \
-	    } \
-	    if (tmp > double(std::numeric_limits<type>::max())) { \
-	        pySetErrorOverflow(funcName, argIndex, obj, "too large to convert to "#type); \
-	        return 0; \
-	    } \
+		if (tmp < double(std::numeric_limits<type>::min())) { \
+			pySetErrorOverflow(funcName, argIndex, obj, "too small to convert to "#type); \
+			return 0; \
+		} \
+		if (tmp > double(std::numeric_limits<type>::max())) { \
+			pySetErrorOverflow(funcName, argIndex, obj, "too large to convert to "#type); \
+			return 0; \
+		} \
 	} \
 	return type(tmp); \
 }

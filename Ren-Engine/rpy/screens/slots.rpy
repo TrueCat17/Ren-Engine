@@ -17,8 +17,6 @@ screen slots(name):
 			
 			textbutton page:
 				style tmp_style
-				ground tmp_style.get_ground()
-				hover  tmp_style.get_hover()
 				selected persistent.slot_page == page
 				action slots.set_page(page)
 	
@@ -83,8 +81,6 @@ screen slots(name):
 			for text, tmp_style, alpha, mouse, action in btns:
 				textbutton _(text):
 					style tmp_style
-					ground tmp_style.get_ground()
-					hover  tmp_style.get_hover()
 					alpha  tmp_style.alpha * alpha
 					mouse  mouse
 					action action
@@ -92,8 +88,6 @@ screen slots(name):
 	$ tmp_style = style[screen.name + '_return_button'] or style.return_button
 	textbutton _('Return'):
 		style tmp_style
-		ground tmp_style.get_ground()
-		hover  tmp_style.get_hover()
 		action HideMenu(screen.name)
 	
 	key 'ESCAPE' action HideMenu(screen.name)

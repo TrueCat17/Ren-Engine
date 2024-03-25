@@ -32,7 +32,7 @@ static bool notReactOnEnter = false;
 static std::vector<Key*> screenKeys;
 
 Key::Key(Node *node, Screen *screen):
-	Child(node, nullptr, screen)
+    Child(node, nullptr, screen)
 {
 	screenKeys.push_back(this);
 }

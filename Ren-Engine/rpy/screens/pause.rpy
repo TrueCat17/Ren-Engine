@@ -1,5 +1,6 @@
 init -100:
 	style pause_screen_button is textbutton:
+		corner_sizes 0
 		ground 'images/gui/menu/pause/btn_ground.png'
 		hover  'images/gui/menu/pause/btn_hover.png'
 		size     (0.2, 0.1)

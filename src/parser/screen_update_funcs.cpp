@@ -463,7 +463,6 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 	partProc(r, 0);
 	partProc(g, 1);
 	partProc(b, 2);
-
 #undef partProc
 
 	return Uint32((r << 16) + (g << 8) + b);
@@ -541,11 +540,91 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	} \
 }
 
+
+static void update_corner_sizes(Child *obj, size_t propIndex) {
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
+
+	bool isFloat;
+	bool isNumber = true;
+	float value = 0;
+	updateCondition(isFloat, value, prop, "corner_sizes")
+	else {
+		isNumber = false;
+	}
+
+#define setCornerSize(side) \
+	obj->corner_sizes_##side##_is_float = isFloat; \
+	obj->corner_sizes_##side = value;
+#define setAllCornerSizes() \
+	setCornerSize(left) \
+	setCornerSize(top) \
+	setCornerSize(right) \
+	setCornerSize(bottom)
+
+	if (isNumber) {
+		setAllCornerSizes()
+		return;
+	}
+
+	std::string error;
+	size_t len = 0;
+	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
+		std::string type = prop->ob_type->tp_name;
+		error = "Expected types float, absolute, int, tuple or list, got " + type;
+	}else {
+		len = size_t(Py_SIZE(prop));
+		if (len != 2 && len != 4) {
+			std::string size = std::to_string(len);
+			error = "Expected sequence with size == 2 or size == 4, got " + size;
+		}
+	}
+	if (!error.empty()) {
+		isFloat = false;
+		value = 0;
+		setAllCornerSizes()
+		outError(obj, "corner_sizes", propIndex, error);
+		return;
+	}
+
+#define partProc(side, i) \
+	PyObject *side##Py = PySequence_Fast_GET_ITEM(prop, i); \
+	updateCondition(isFloat, value, side##Py, "corner_sizes[" #i "]") \
+	else { \
+		isFloat = false; \
+		value = 0; \
+		std::string type = side##Py->ob_type->tp_name; \
+		std::string msg = "At corner_sizes[" #i "] expected types float, absolute or int, got " + type; \
+		outError(obj, "corner_sizes", propIndex, msg); \
+	} \
+	setCornerSize(side)
+
+	{
+		partProc(left, 0);
+		partProc(top, 1);
+	}
+
+	if (len == 2) {
+		obj->corner_sizes_right_is_float = obj->corner_sizes_left_is_float;
+		obj->corner_sizes_bottom_is_float = obj->corner_sizes_top_is_float;
+		obj->corner_sizes_right = obj->corner_sizes_left;
+		obj->corner_sizes_bottom = obj->corner_sizes_top;
+	}else {
+		partProc(right, 2);
+		partProc(bottom, 3);
+	}
+
+#undef setCornerSize
+#undef setAllCornerSizes
+#undef partProc
+}
+
+
 #include "gui/screen/style.h"
 static void update_style(Child *obj, size_t propIndex) {
 	PyObject *style = PySequence_Fast_GET_ITEM(obj->props, propIndex);
 	obj->style = StyleManager::getByObject(obj, style);
 }
+
 
 
 makeUpdateFunc(alpha)
@@ -646,6 +725,7 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addProp(selected)
 	addProp(ground_imagemap)
 	addProp(hover_imagemap)
+	addProp(corner_sizes)
 
 	addProp(spacing)
 	addProp(spacing_min)

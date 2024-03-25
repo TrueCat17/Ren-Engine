@@ -297,6 +297,11 @@ init -1000 python:
 	def set_mode_nvl():
 		db.mode = 'nvl'
 		nvl_clear()
+	
+	# set clean state
+	narrator('')
+	db.read = True
+	window_hide()
 
 
 
@@ -309,8 +314,10 @@ screen dialogue_box_buttons(disable_next_btn = False):
 		if db._dialogue_button_width and db.visible:
 			hbox:
 				spacing db._dialogue_button_spacing
+				xalign 0.5
 				
 				button:
+					corner_sizes 0
 					ground db.dialogue_prev_ground
 					hover  style.get_default_hover(db.dialogue_prev_hover, db.dialogue_prev_ground)
 					action    ShowScreen('history')
@@ -324,6 +331,7 @@ screen dialogue_box_buttons(disable_next_btn = False):
 				
 				if not screen.disable_next_btn:
 					button:
+						corner_sizes 0
 						ground db.dialogue_next_ground
 						hover  style.get_default_hover(db.dialogue_next_hover, db.dialogue_next_ground)
 						action    db.on_enter
@@ -345,6 +353,7 @@ screen dialogue_box_buttons(disable_next_btn = False):
 	
 	if db._dialogue_menu_button_width:
 		button:
+			corner_sizes 0
 			ground db.dialogue_menu_button_ground
 			hover  style.get_default_hover(db.dialogue_menu_button_hover, db.dialogue_menu_button_ground)
 			action    pause_screen.show

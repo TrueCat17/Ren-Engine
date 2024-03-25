@@ -1,6 +1,6 @@
 
 # styles for menus (load, save, preferences)
-# corner_sizes: None (auto), tuple (left, top, right, bottom) or one number for all sides
+# corner_sizes: -1 (auto), tuple (left, top, right, bottom) or one number for all sides
 
 init -999:
 	style menu_title is text:
@@ -21,7 +21,7 @@ init -999:
 		xsize 0.15
 		ysize 0.055
 		ysize_min 22
-		corner_sizes None
+		corner_sizes -1
 		text_size 0.04
 		text_size_min 16
 	
@@ -52,7 +52,6 @@ init -998:
 	style page_button is menu_button:
 		xsize 0.15
 		text_size 0.04
-		corner_sizes None
 	
 	# vbox container for page buttons
 	style pages_vbox is vbox:
@@ -80,11 +79,10 @@ init -998:
 		xsize 0.3
 		xsize_max 400
 		ysize style.menu_button.ysize / 1.5
-		corner_sizes None
 	
 	# button over checkbox and text description
 	style bool_button is menu_button:
-		xsize 0.4
+		xsize 0.5
 		ysize style.menu_button.ysize * 1.2
 		ysize_min style.menu_button.ysize_min + 20
 		ground im.rect('#00000002')
@@ -96,7 +94,7 @@ init -998:
 		xsize style.menu_button.ysize / get_from_hard_config('window_w_div_h', float)
 		ysize style.menu_button.ysize
 		size_min style.menu_button.ysize_min
-		corner_sizes None
+		corner_sizes -1
 	
 	# text params for description in <bool> element
 	style bool_text is menu_text

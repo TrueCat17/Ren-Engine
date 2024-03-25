@@ -65,11 +65,8 @@ screen quick_menu:
 		hbox:
 			style 'quick_buttons_hbox'
 			
-			$ tmp_style = style.quick_button
 			for text, action, xsize in quick_menu_screen.buttons:
 				textbutton text:
-					style tmp_style
+					style 'quick_button'
 					xsize xsize
-					ground tmp_style.get_ground(xsize)
-					hover  tmp_style.get_hover(xsize)
 					action action

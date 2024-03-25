@@ -27,12 +27,10 @@ screen choice_menu:
 		for i, text in enumerate(choice_menu_variants):
 			if text:
 				textbutton _(text):
-					style tmp_style
+					style 'choice_button'
 					xsize choice_max_width
-					ground tmp_style.get_ground(choice_max_width)
-					hover  tmp_style.get_hover(choice_max_width)
 					action Return(i)
 			elif text is not None:
-				null style tmp_style
+				null style 'choice_button'
 	
 	use dialogue_box_buttons(disable_next_btn = True)

@@ -12,22 +12,13 @@ init -1000 python:
 	#gui.dialogue_button_width = 0
 	#gui.dialogue_menu_button_width = 0
 	
-	gui.choice_button_text_font = 'Calibri'
-	
-	
-	gui.title_text_font = 'Calibri'
-	gui.title_text_size = 0.1
-	gui.title_text_color        = '#FFF'
-	gui.title_text_outlinecolor = '#000'
-	
 	
 	gui.file_slot_cols = 4
 	gui.file_slot_rows = 3
 	gui.slot_pages = 10
 	
-	gui.load_bg = 'images/gui/menu/main/back.png'
-	gui.save_bg = 'images/gui/menu/main/back.png'
+	gui.menu_bg = 'images/gui/menu/main/back.png'
+	
 	gui.slot_hover    = 'images/gui/save_load/hover.png'
 	gui.slot_selected = 'images/gui/save_load/selected.png'
-	
-	gui.prefs_bg = 'images/gui/menu/main/back.png'
+

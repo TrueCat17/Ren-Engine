@@ -141,6 +141,7 @@ init -1001:
 		alpha 1
 		clipping False
 		skip_mouse False
+		corner_sizes 0
 	
 	style screen:
 		modal False
@@ -181,6 +182,7 @@ init -1001:
 		text_size 15
 		ground 'images/gui/std/btn/ground.png'
 		hover  'images/gui/std/btn/hover.png'
+		corner_sizes -1
 	
 	style button:
 		mouse True
@@ -188,6 +190,7 @@ init -1001:
 		size (175, 25)
 		ground style.textbutton.ground
 		hover  style.textbutton.hover
+		corner_sizes -1
 	
 	style hotspot:
 		mouse True
