@@ -826,10 +826,8 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	const int w = std::max(int(img->w * zoom), 1);
 	const int h = std::max(int(img->h * zoom), 1);
 
-	auto abs = [](float d) { return d < 0 ? -d : d; };
-
-	const float absSin = abs(Math::getSin(angle));
-	const float absCos = abs(Math::getCos(angle));
+	const float absSin = std::abs(Math::getSin(angle));
+	const float absCos = std::abs(Math::getCos(angle));
 	const int resW = int(float(w) * absCos + float(h) * absSin);
 	const int resH = int(float(w) * absSin + float(h) * absCos);
 

@@ -138,7 +138,7 @@ void DisplayObject::draw() const {
 	float cropH = float(crop.h);
 
 #define makeSide(side, rel, defaultSize) \
-	float side = round( \
+	float side = std::round( \
 	    corner_sizes_##side < 0 ? \
 	        defaultSize : \
 	        corner_sizes_##side * (corner_sizes_##side##_is_float ? rel : 1) \
@@ -231,15 +231,15 @@ void DisplayObject::pushToRender(const SurfacePtr &surface, float angle, Uint8 a
 
 SDL_Rect DisplayObject::buildIntRect(float x, float y, float w, float h, bool exactSize) {
 	SDL_Rect res;
-	res.x = int(round(x));
-	res.y = int(round(y));
+	res.x = int(std::round(x));
+	res.y = int(std::round(y));
 
 	if (exactSize) {
 		res.w = int(w);
 		res.h = int(h);
 	}else {
-		res.w = int(round(x + w)) - res.x;
-		res.h = int(round(y + h)) - res.y;
+		res.w = int(std::round(x + w)) - res.x;
+		res.h = int(std::round(y + h)) - res.y;
 	}
 
 	return res;

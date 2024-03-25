@@ -99,7 +99,7 @@ static std::pair<int, int> fixWindowSize(int w, int h, int dX = 1, int dY = 1) {
 			h = int(w / k);
 		}
 	}else {
-		if (abs(dX) >= abs(dY)) {
+		if (std::abs(dX) >= std::abs(dY)) {
 			h = int(w / k);
 		}else {
 			w = int(h * k);

@@ -199,7 +199,7 @@ static void updateStyle(TextStyle &textStyle) {
 	TTF_SetFontStyle(textStyle.font, textStyle.fontStyle);
 }
 static void updateFont(TextStyle &textStyle) {
-	textStyle.font = getFont(textStyle.fontName, int(round(textStyle.fontSize)));
+	textStyle.font = getFont(textStyle.fontName, int(std::round(textStyle.fontSize)));
 }
 
 static bool invisible;
