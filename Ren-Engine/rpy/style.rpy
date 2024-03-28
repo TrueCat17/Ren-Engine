@@ -8,9 +8,9 @@ init -1002 python:
 	build_object('style')
 	
 	
+	screen_lang_complex_props = ('pos', 'anchor', 'size', 'size_min', 'size_max', 'zoom', 'align', 'xalign', 'yalign')
+	
 	class Style(Object):
-		complex_props = ('pos', 'anchor', 'size', 'size_min', 'size_max', 'zoom', 'align', 'xalign', 'yalign')
-		
 		def __init__(self, parent = None, properties = None):
 			Object.__init__(self, parent)
 			if properties:
@@ -20,7 +20,7 @@ init -1002 python:
 					self.__setattr__(name, value)
 		
 		def __contains__(self, key):
-			if attr in self.complex_props:
+			if attr in screen_lang_complex_props:
 				props = get_prop_names(key)
 				for prop in props:
 					if prop not in self:
@@ -29,7 +29,7 @@ init -1002 python:
 			return Object.__contains__(self, key)
 		
 		def get(self, attr, default_value = None):
-			if attr in self.complex_props:
+			if attr in screen_lang_complex_props:
 				if attr == 'xalign':
 					return Object.get(self, 'xpos', default_value)
 				if attr == 'yalign':
@@ -40,7 +40,7 @@ init -1002 python:
 			return Object.get(self, attr, default_value)
 		
 		def __getattr__(self, attr):
-			if attr in self.complex_props:
+			if attr in screen_lang_complex_props:
 				if attr == 'xalign':
 					return Object.__getattr__(self, 'xpos')
 				if attr == 'yalign':
@@ -51,7 +51,7 @@ init -1002 python:
 			return Object.__getattr__(self, attr)
 		
 		def __setattr__(self, attr, value):
-			if attr in self.complex_props:
+			if attr in screen_lang_complex_props:
 				props = get_prop_names(attr)
 				if type(value) in (tuple, list):
 					if len(value) != len(props):
@@ -70,7 +70,7 @@ init -1002 python:
 					Object.__setattr__(self, attr, value)
 		
 		def __delattr__(self, attr):
-			if attr in self.complex_props:
+			if attr in screen_lang_complex_props:
 				props = get_prop_names(attr)
 				for prop in props:
 					self.__delattr__(prop)

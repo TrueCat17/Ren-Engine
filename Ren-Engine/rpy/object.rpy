@@ -48,10 +48,12 @@ init -100000 python:
 				return None
 		
 		def __setattr__(self, attr, value):
-			if attr in self.__dict__:
-				old = self.__dict__[attr]
-				if type(old) in simple_types:
-					dont_change = type(old) is type(value) and old == value
+			d = self.__dict__
+			if attr in d:
+				old = d[attr]
+				type_old = type(old)
+				if type_old in simple_types:
+					dont_change = type_old is type(value) and old == value
 				else:
 					dont_change = old is value
 					# 'is', not '==', because code (for example):
@@ -63,7 +65,7 @@ init -100000 python:
 				if dont_change:
 					return
 			
-			self.__dict__[attr] = value
+			d[attr] = value
 			
 			if self.in_persistent and attr not in self.not_persistent_props:
 				if isinstance(value, Object):

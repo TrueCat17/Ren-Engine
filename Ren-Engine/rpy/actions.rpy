@@ -35,7 +35,8 @@ init -10000 python:
 			res = None
 			if self.compiled:
 				try:
-					res = eval(self.compiled, globals(), globals())
+					g = globals()
+					res = eval(self.compiled, g, g)
 				except Exception as e:
 					msg = get_exception_stack_str(e, 1)
 					out_msg('EvalObject.compile', msg, show_stack = False)
@@ -44,11 +45,9 @@ init -10000 python:
 		def compile(self, depth):
 			try:
 				self.compiled = compile('\n' * (self.num_line - 1) + self.code, self.file_name, self.mode)
-				self.error = False
 			except Exception as e:
 				msg = get_exception_stack_str(e, depth + 1)
 				out_msg('EvalObject.compile', msg, show_stack = False)
-				self.error = True
 		
 		# for pickle
 		def __getstate__(self):

@@ -10,8 +10,9 @@ init -995 python:
 		
 		spacing = style.quick_buttons_hbox.get_current('spacing', get_stage_width())
 		
-		quick_menu_screen.full_xsize = 0
-		quick_menu_screen.buttons = []
+		full_xsize = 0
+		buttons = quick_menu_screen.buttons = []
+		prefixes = quick_menu_screen.prefixes
 		
 		for item in quick_menu_screen.items:
 			if len(item) == 2:
@@ -21,19 +22,18 @@ init -995 python:
 				if not condition():
 					continue
 			
-			text = quick_menu_screen.prefixes.get(text, '') + _(text)
+			text = prefixes.get(text, '') + _(text)
 			
 			xsize = std_xsize if std_xsize > 0 else get_text_width(text, text_size)
-			quick_menu_screen.full_xsize += xsize + spacing
+			full_xsize += xsize + spacing
 			
-			quick_menu_screen.buttons.append((text, action, xsize))
+			buttons.append((text, action, xsize))
 		
-		if quick_menu_screen.full_xsize > spacing:
-			quick_menu_screen.full_xsize -= spacing
+		if full_xsize > spacing:
+			full_xsize -= spacing
 		
 		tmp_style = style.quick_buttons_bg
-		if tmp_style.xsize > 0:
-			quick_menu_screen.full_xsize = tmp_style.xsize
+		quick_menu_screen.full_xsize = tmp_style.xsize if tmp_style.xsize > 0 else full_xsize
 	
 	build_object('quick_menu_screen')
 	

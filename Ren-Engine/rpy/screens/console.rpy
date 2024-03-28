@@ -218,7 +218,7 @@ init -995 python:
 	
 	def console__watch_add(code):
 		eval_obj = Eval(code, 'Console', 1, depth = 1)
-		if eval_obj.error:
+		if not eval_obj.compiled:
 			return
 		
 		if not console.to_watch:
