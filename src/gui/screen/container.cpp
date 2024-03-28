@@ -25,12 +25,10 @@ Container::Container(Node *node, Container *screenParent, Screen *screen):
 
 
 void Container::addChildAt(DisplayObject *child, size_t index) {
+	child->removeFromParent();
+
 	Group *parent = screenParent;
 	auto &pChildren = parent->children;
-
-	if (child->parent) {
-		child->parent->removeChild(child);
-	}
 
 	index = std::min(index, pChildren.size());
 	pChildren.insert(pChildren.begin() + long(index), child);
@@ -43,12 +41,19 @@ void Container::addChildAt(DisplayObject *child, size_t index) {
 	child->parent = parent;
 }
 
-void Container::updateZoom() {
-	Child::updateZoom();
+void Container::updateProps() {
+	Child::updateProps();
 	for (Child *child : screenChildren) {
 		if (child->node->isScreenConst) {
 			child->enable = true;
+			child->updateProps();
 		}
+	}
+}
+
+void Container::updateZoom() {
+	Child::updateZoom();
+	for (Child *child : screenChildren) {
 		if (child->enable) {
 			child->updateZoom();
 		}
@@ -56,22 +61,21 @@ void Container::updateZoom() {
 }
 
 void Container::updatePos() {
+	Child::updatePos();
 	for (Child *child : screenChildren) {
 		if (child->enable) {
 			child->updatePos();
 		}
 	}
-	Child::updatePos();
 }
 
-void Container::updateRect(bool needUpdatePos) {
-	bool updateChildrenPos = needUpdatePos && !(hasHBox || hasVBox);
+void Container::updateSize() {
+	Child::updateSize();
 	for (Child *child : screenChildren) {
 		if (child->enable) {
-			child->updateRect(updateChildrenPos);
+			child->updateSize();
 		}
 	}
-	Child::updateRect(false);
 
 	if (!hasHBox) {
 		if (getWidth() <= 0) {
@@ -141,10 +145,6 @@ void Container::updateRect(bool needUpdatePos) {
 			height -= globalSpacing;
 		}
 		setHeight(height);
-	}
-
-	if (needUpdatePos) {
-		updatePos();
 	}
 }
 
@@ -256,8 +256,13 @@ void Container::addChildrenFromNode() {
 		if (screenParent == this) {
 			index = children.size();
 		}else {
-			Child *lastChild = screenChildren.empty() ? this : screenChildren.back();
-			index = lastChild->index + 1;
+			Child *prev = this;
+			while (prev->isFakeContainer() &&
+			       !static_cast<Container*>(prev)->screenChildren.empty())
+			{
+				prev = static_cast<Container*>(prev)->screenChildren.back();
+			}
+			index = prev->index + 1;
 		}
 
 		addChildAt(child, index);

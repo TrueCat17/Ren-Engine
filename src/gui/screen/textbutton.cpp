@@ -12,6 +12,8 @@ TextButton::TextButton(Node* node, Screen *screen):
 { }
 
 void TextButton::updateTexture() {
+	Text::updateTexture();
+
 	auto prevParams = std::tie(prevGround, prevHover, prevParamsIsHover);
 	auto curParams = std::tie(ground, hover, curParamsIsHover);
 	if (prevParams == curParams) return;

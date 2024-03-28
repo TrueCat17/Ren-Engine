@@ -487,7 +487,7 @@ static std::string initCode(Node *node, const std::string& index) {
 
 	//props before first obj
 	for (Node *child : node->children) {
-		if (child->isScreenConst) continue;
+		if (child->isScreenConst || child->isScreenEvent) continue;
 		if (!child->isScreenProp) break;
 
 		std::string childRes = initCode(child);
@@ -539,7 +539,7 @@ static std::string initCode(Node *node, const std::string& index) {
 	}
 
 
-	if (isMainScreen) {
+	if (isMainScreen || node->withScreenEvent) {
 		res += "\n"
 		       "_SL_check_events()\n";
 	}

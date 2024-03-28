@@ -142,12 +142,13 @@ Parser::Parser(const std::string &dir) {
 			if (toPrevLine && n <= pythonIndent) {//need move to prev line and not in python-block
 				s.erase(0, n);
 
-				for (size_t i = code.size() - 1; i != size_t(-1) ; --i) {
+				for (size_t i = code.size() - 1; i != size_t(-1); --i) {
 					if (!code[i].empty()) {
 						code[i] += s;
 						break;
 					}
 				}
+				code.push_back({});
 			}else {
 				code.push_back(s);
 			}
@@ -359,8 +360,8 @@ static void initScreenNode(Node *node) {
 								value.swap(name);
 							}
 						}else {
-							name = String::strip(arg.substr(0, i));
-							value = String::strip(arg.substr(i + 1));
+							name = String::strip(std::string_view(arg).substr(0, i));
+							value = String::strip(std::string_view(arg).substr(i + 1));
 						}
 
 						if (!name.empty()) {

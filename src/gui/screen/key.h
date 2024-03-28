@@ -32,7 +32,7 @@ public:
 	Key(Node *node, Screen *screen);
 	~Key();
 
-	virtual void updateRect(bool needUpdatePos = true);
+	virtual void updateSize();
 	virtual void checkEvents();
 };
 

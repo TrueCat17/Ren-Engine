@@ -241,9 +241,10 @@ screen preferences:
 									value = elem[2]()
 									checkbox_image = gui['checkbox_yes' if value else 'checkbox_no']
 								
-								null:
+								button:
 									style 'bool_button'
 									yalign 0.5
+									action elem[3]
 									
 									hbox:
 										style 'bool_hbox'
@@ -256,10 +257,6 @@ screen preferences:
 										text text:
 											style 'bool_text'
 											yalign 0.5
-									
-									button:
-										style 'bool_button'
-										action elem[3]
 							
 							elif obj == 'btn':
 								python:

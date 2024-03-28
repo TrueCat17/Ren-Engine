@@ -12,7 +12,7 @@ Hotspot::Hotspot(Node *node, Screen *screen):
 { }
 
 void Hotspot::updatePos() {}
-void Hotspot::updateRect(bool) {}
+void Hotspot::updateSize() {}
 
 void Hotspot::checkEvents() {
 	const Imagemap* imageMap = static_cast<Imagemap*>(parent);

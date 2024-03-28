@@ -130,7 +130,8 @@ void SyntaxChecker::init() {
 	const std::string textProps =
 	        ", text_size, text_size_min, text_size_max"
 	        ", color, outlinecolor, font, text_align, text_valign, bold, italic, underline, strikethrough, ";
-	const std::string buttonProps = ", alternate, hovered, unhovered, activate_sound, hover_sound, mouse, selected, ";
+	const std::string buttonProps =
+	        ", action, alternate, hovered, unhovered, activate_sound, hover_sound, mouse, selected, ";
 
 	const std::string extraScreenLeafs = "pass, first_param, $, python, break, continue, ground, hover";
 	auto propsList = { &screenProps, &spacingProps, &simpleProps, &textProps, &buttonProps, &extraScreenLeafs };
@@ -160,8 +161,9 @@ void SyntaxChecker::init() {
 	addBlockChildren("screen, vbox, hbox", spacingProps);
 	addBlockChildren("screen", screenProps);
 	addBlockChildren("if, elif, else, for, while", "key");
-	addBlockChildren("screen, vbox, hbox, null, image", screenElems + "imagemap" + conditions + "for, while, pass, $, python, key");
-	addBlockChildren("screen" + screenElems, simpleProps);
+	addBlockChildren("screen" + screenElems,
+	                 screenElems + "imagemap" + conditions + "for, while, pass, $, python, key" + simpleProps);
+	mapSyntax.erase(mapSyntax.find("use"));
 
 	addBlockChildren("text, textbutton", textProps);
 
@@ -175,8 +177,7 @@ void SyntaxChecker::init() {
 		}
 	}
 
-	addBlockChildren("key", "first_delay, delay");
-	addBlockChildren("key, hotspot, button, textbutton", "action");
+	addBlockChildren("key", "first_delay, delay, action");
 
 	addBlockChildren("hotspot, button, textbutton", buttonProps);
 	addBlockChildren("imagemap, button, textbutton", "ground, hover");

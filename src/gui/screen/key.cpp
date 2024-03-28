@@ -91,7 +91,7 @@ void Key::setUpState(const SDL_Keycode key) {
 	}
 }
 
-void Key::updateRect(bool) {}
+void Key::updateSize() {}
 
 void Key::checkEvents() {
 	if (!isModal()) return;

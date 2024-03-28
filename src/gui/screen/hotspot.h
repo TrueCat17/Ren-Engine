@@ -17,7 +17,7 @@ public:
 	Hotspot(Node *node, Screen *screen);
 
 	virtual void updatePos();
-	virtual void updateRect(bool needUpdatePos = true);
+	virtual void updateSize();
 	virtual void checkEvents();
 
 	virtual bool transparentForMouse(int x, int y) const;

@@ -24,9 +24,10 @@ public:
 
 	virtual void addChildAt(DisplayObject *child, size_t index);
 
+	virtual void updateProps();
 	virtual void updateZoom();
 	virtual void updatePos();
-	virtual void updateRect(bool needUpdatePos = true);
+	virtual void updateSize();
 	virtual void updateTexture();
 };
 

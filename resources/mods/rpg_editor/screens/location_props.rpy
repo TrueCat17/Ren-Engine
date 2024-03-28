@@ -8,6 +8,22 @@ init:
 		size     (80, 22)
 		text_size 16
 		color     0
+	
+	style bool_btn is textbutton:
+		size (100, 16)
+		corner_sizes 0
+		ground im.rect('#00000001')
+		hover  im.rect('#00000010')
+	style bool_btn_checkbox is image:
+		corner_sizes -1
+		xpos 4
+		size 16
+		yalign 0.5
+	style bool_btn_text is text:
+		color 0
+		text_size 14
+		xpos style.bool_btn_checkbox.xpos + style.bool_btn_checkbox.xsize + 4
+		yalign 0.5
 
 init python:
 	input_allow_symbols = alphabet + alphabet.upper() + numbers + '_-+'
@@ -188,72 +204,54 @@ screen location_props:
 			else:
 				image im.Rect('#FFF'):
 					xalign 0.5
-					size (200, 60)
+					size (210, 60)
 					
 					text (_('Show') + ':'):
 						color 0
 						text_size 20
-						pos 5
+						pos 3
 					
 					hbox:
-						pos (0.1, 0.4)
+						spacing 4
+						xalign 0.5
+						ypos 22
 						
-						button:
-							size (16, 16)
-							
-							ground (gui.checkbox_no if persistent.hide_main else gui.checkbox_yes)
-							action SetDict(persistent, 'hide_main', not persistent.hide_main)
-						null xsize 10
-						text 'Main':
-							color 0
-							yalign 0.5
-							text_size 14
-					
-					if selected_location.over():
-						hbox:
-							pos (0.1, 0.7)
+						vbox:
+							spacing 4
 							
 							button:
-								size (16, 16)
+								style 'bool_btn'
+								action ToggleVariable('persistent.hide_main')
 								
-								ground (gui.checkbox_no if persistent.hide_over else gui.checkbox_yes)
-								action SetDict(persistent, 'hide_over', not persistent.hide_over)
-							null xsize 10
-							text 'Over':
-								color 0
-								yalign 0.5
-								text_size 14
-					
-					if selected_location.free():
-						hbox:
-							pos (0.5, 0.4)
+								image gui['checkbox_no' if persistent.hide_main else 'checkbox_yes'] style 'bool_btn_checkbox'
+								text 'Main' style 'bool_btn_text'
 							
 							button:
-								size (16, 16)
+								style 'bool_btn'
+								alpha 1 if selected_location.over() else 0
+								action ToggleVariable('persistent.hide_over')
 								
-								ground (gui.checkbox_yes if persistent.show_free else gui.checkbox_no)
-								action SetDict(persistent, 'show_free', not persistent.show_free)
-							null xsize 10
-							text 'Free':
-								color 0
-								yalign 0.5
-								text_size 14
-					
-					if selected_location.places:
-						hbox:
-							pos (0.5, 0.7)
-							
-							button:
-								size (16, 16)
-								
-								ground (gui.checkbox_no if persistent.hide_places else gui.checkbox_yes)
-								action SetDict(persistent, 'hide_places', not persistent.hide_places)
-							null xsize 10
-							text (_('Places') + ' (' + str(len(selected_location.places)) + ')'):
-								color 0
-								yalign 0.5
-								text_size 14
+								image gui['checkbox_no' if persistent.hide_over else 'checkbox_yes'] style 'bool_btn_checkbox'
+								text 'Over' style 'bool_btn_text'
 						
+						vbox:
+							spacing 3
+							
+							button:
+								style 'bool_btn'
+								alpha 1 if selected_location.free() else 0
+								action ToggleVariable('persistent.hide_free')
+								
+								image gui['checkbox_no' if persistent.hide_free else 'checkbox_yes'] style 'bool_btn_checkbox'
+								text 'Free' style 'bool_btn_text'
+							
+							button:
+								style 'bool_btn'
+								alpha 1 if selected_location.places else 0
+								action ToggleVariable('persistent.hide_places')
+								
+								image gui['checkbox_no' if persistent.hide_places else 'checkbox_yes'] style 'bool_btn_checkbox'
+								text (_('Places') + ' (' + str(len(selected_location.places)) + ')') style 'bool_btn_text'
 				
 				if selected_place_name is None:
 					textbutton (_('Add') + ' ' + _('Place')):

@@ -138,10 +138,13 @@ screen points_list:
 			align (0.5, 1.0)
 			spacing points_indent
 			
-			null:
+			button:
+				xalign 0.5
 				xsize int(points_width * 0.7)
 				ysize 25
-				xalign 0.5
+				ground im.rect('#00000001')
+				hover  im.rect('#00000010')
+				action ToggleVariable('brute_force')
 				
 				hbox:
 					spacing points_indent
@@ -149,19 +152,13 @@ screen points_list:
 					
 					image gui['checkbox_yes' if brute_force else 'checkbox_no']:
 						size 20
+						corner_sizes -1
+						yalign 0.5
 					
 					text 'brute_force':
 						color 0
-						yalign 0.5
 						text_size 20
-				
-				button:
-					align 0.5
-					xsize int(points_width * 0.7)
-					ysize 25
-					ground style.bool_button.ground
-					hover  style.bool_button.hover
-					action SetVariable('brute_force', not brute_force)
+						yalign 0.5
 			
 			textbutton _('Stop' if me.paths else 'Start'):
 				xalign 0.5

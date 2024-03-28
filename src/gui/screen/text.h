@@ -1,7 +1,7 @@
 #ifndef TEXT_H
 #define TEXT_H
 
-#include "child.h"
+#include "container.h"
 
 class TextField;
 
@@ -29,7 +29,7 @@ struct TextParams {
 	Uint8 set_font_style = 0;
 };
 
-class Text: public Child {
+class Text: public Container {
 private:
 	std::string prevText;
 
@@ -44,8 +44,9 @@ public:
 	Text(Node *node, Screen *screen);
 	virtual ~Text();
 
-	virtual void updateRect(bool needUpdatePos = true);
+	virtual void updateSize();
 	virtual void updateGlobal();
+	virtual void updateTexture();
 };
 
 #endif // TEXT_H

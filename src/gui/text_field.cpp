@@ -1,6 +1,7 @@
 #include "text_field.h"
 
 #include <map>
+#include <set>
 
 #include <SDL2/SDL_ttf.h>
 
@@ -26,7 +27,7 @@ inline int getCountOutlines(const TextStyle &textStyle) {
 
 
 static const int MIN_TEXT_SIZE = 8;
-static const int MAX_TEXT_SIZE = 72;
+static const int MAX_TEXT_SIZE = 128;
 static const std::string defaultFontName = "Arial";
 
 static std::map<std::string, TTF_Font*> fonts;
@@ -157,17 +158,17 @@ static SurfacePtr getImage(const std::string &path) {
 
 	return ImageManipulator::getImage(path);
 }
-static Uint32 getColor(std::string value) {
+static Uint32 getColor(std::string_view value) {
 	if (String::startsWith(value, "#")) {
-		value.erase(0, 1);
+		value.remove_prefix(1);
 	}else
 	if (String::startsWith(value, "0x")) {
-		value.erase(0, 2);
+		value.remove_prefix(2);
 	}
 
 	if (value.size() > 6) {
-		Utils::outMsg("TextField::getColor", "Expected color (format RRGGBB), got <" + value + ">");
-		value.erase(6);
+		Utils::outMsg("TextField::getColor", "Expected color (format RRGGBB), got <" + std::string(value) + ">");
+		value.remove_suffix(value.size() - 6);
 	}
 
 	bool invalid = false;
@@ -191,7 +192,7 @@ static Uint32 getColor(std::string value) {
 		res = res * 16 + Uint32(n);
 	}
 	if (invalid) {
-		Utils::outMsg("TextField::getColor", "Color <" + value + "> is invalid");
+		Utils::outMsg("TextField::getColor", "Color <" + std::string(value) + "> is invalid");
 	}
 	return res;
 }
@@ -203,6 +204,7 @@ static void updateFont(TextStyle &textStyle) {
 }
 
 static bool invisible;
+static std::set<std::string> tagsWithValue = { "color", "outlinecolor", "alpha", "size", "font", "image" };
 static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle> &styleStack, int x, int *w, int *h, SDL_Surface *surface) {
 	bool onlySize = !surface;
 
@@ -219,10 +221,8 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 
 		size_t start = line.find_first_not_of(' ', i + 1);
 		size_t end = line.find('}', start);
-		if (start >= end || end == line.size()) {
-			if (!onlySize) {
-				Utils::outMsg("TextField::makeStep", "Incomplete tag");
-			}
+		if (start >= end || end == size_t(-1)) {
+			Utils::outMsg("TextField::makeStep", "Incomplete tag");
 			return line.size();
 		}
 
@@ -238,25 +238,22 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 				styleStack.pop_back();
 				updateStyle(styleStack.back());
 			}else {
-				if (!onlySize) {
-					Utils::outMsg("TextField::makeStep", "Tag <" + tag + "> != last opened tag <" + styleStack.back().tag + ">");
-				}
+				Utils::outMsg("TextField::makeStep",
+				              "Closed tag <" + tag + "> != last opened tag <" + styleStack.back().tag + ">");
 			}
 		}else {
 			TextStyle style = styleStack.back();//copy
 
 			std::string value = getTagValue(tag);
-			if (value.empty() && (tag == "color" || tag == "outlinecolor" || tag == "alpha" || tag == "size" || tag == "font" || tag == "image")) {
-				if (!onlySize) {
-					Utils::outMsg("TextField::makeStep", "Tag <" + tag + "> must have value");
-				}
+			if (value.empty() && tagsWithValue.count(tag)) {
+				Utils::outMsg("TextField::makeStep", "Tag <" + tag + "> must have value");
 				return i + 1;
 			}
 			style.tag = tag;
 
-			auto apply = [](float &prop, std::string &value) {
+			auto apply = [](float &prop, std::string_view value) {
 				if (value[0] == '*') {
-					value.erase(0, 1);
+					value.remove_prefix(1);
 					prop *= float(String::toDouble(value));
 				}else {
 					if (value[0] == '+' || value[0] == '-') {
@@ -285,9 +282,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 
 			else if (tag != "image" && tag != "invisible") {
 				unknownTag = true;
-				if (!onlySize) {
-					Utils::outMsg("TextField::makeStep", "Unknown tag <" + tag + ">");
-				}
+				Utils::outMsg("TextField::makeStep", "Unknown tag <" + tag + ">");
 			}
 
 			if (tag == "invisible") {
@@ -296,9 +291,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			if (tag == "image") {
 				SurfacePtr image = getImage(value);
 				if (!image) {
-					if (!onlySize) {
-						Utils::outMsg("TextField::makeStep", "Failed to load image <" + value + ">");
-					}
+					Utils::outMsg("TextField::makeStep", "Failed to load image <" + value + ">");
 				}else {
 					*h = int(style.fontSize);
 					*w = int(style.fontSize * float(image->w) / float(image->h));

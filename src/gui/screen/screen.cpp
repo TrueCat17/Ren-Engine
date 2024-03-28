@@ -362,6 +362,11 @@ void Screen::checkScreenEvents() {
 			screenStack.pop_back();
 			if (screenStack.empty()) return;
 
+			if (obj->node->withScreenEvent) {
+				obj->checkEvents();
+				return;
+			}
+
 			elem = screenStack.back();
 			obj = elem.obj;
 			num = elem.curChildNum;
@@ -389,8 +394,8 @@ void Screen::checkScreenEvents() {
 
 		if (!child->props || child->props == Py_None) continue;
 		if (!PyList_CheckExact(child->props) && !PyTuple_CheckExact(child->props)) {
-			Utils::outMsg("Screen::checkEvents",
-			              std::string("Expected list or tuple, got ") + child->props->ob_type->tp_name);
+			std::string type = child->props->ob_type->tp_name;
+			Utils::outMsg("Screen::checkEvents", "Expected list or tuple, got " + type);
 			child->props = nullptr;
 			continue;
 		}

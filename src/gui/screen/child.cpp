@@ -96,7 +96,8 @@ void Child::updateStyle() {
 		static_cast<Container*>(this)->addChildrenFromNode();
 	}
 
-	updateRect();
+	updateSize();
+	updatePos();
 }
 
 void Child::updateProps() {
@@ -108,8 +109,8 @@ void Child::updateProps() {
 
 	if (!props || props == Py_None) return;
 	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
-		Utils::outMsg("Child::updateProps",
-		              std::string("Expected list or tuple, got ") + props->ob_type->tp_name);
+		std::string type = props->ob_type->tp_name;
+		Utils::outMsg("Child::updateProps", "Expected list or tuple, got " + type);
 		return;
 	}
 
@@ -149,7 +150,7 @@ void Child::updatePos() {
 	}
 }
 
-void Child::updateRect(bool needUpdatePos) {
+void Child::updateSize() {
 	float size, min, max;
 
 	size = xsize * float(xsize_is_float ? Stage::width : 1);
@@ -171,10 +172,6 @@ void Child::updateRect(bool needUpdatePos) {
 		crop.y = int(ycrop * float(ycrop_is_float ? surface->h : 1));
 		crop.w = int(wcrop * float(wcrop_is_float ? surface->w : 1));
 		crop.h = int(hcrop * float(hcrop_is_float ? surface->h : 1));
-	}
-
-	if (needUpdatePos) {
-		updatePos();
 	}
 }
 

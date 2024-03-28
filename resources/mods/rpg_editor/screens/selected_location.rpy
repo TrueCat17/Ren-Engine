@@ -96,7 +96,7 @@ screen selected_location:
 		if not persistent.hide_over and selected_location.over():
 			image selected_location.over():
 				size (w, h)
-		if persistent.show_free and selected_location.free():
+		if not persistent.hide_free and selected_location.free():
 			image selected_location.free():
 				size (w, h)
 		

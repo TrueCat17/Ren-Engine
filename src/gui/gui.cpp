@@ -60,7 +60,8 @@ static void updateImpl(bool saving) {
 #if printTime
 		const double time3 = Utils::getTimer();
 #endif
-		scr->updateRect();
+		scr->updateSize();
+		scr->updatePos();
 #if printTime
 		const double time4 = Utils::getTimer();
 #endif

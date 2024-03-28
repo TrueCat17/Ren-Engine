@@ -8,7 +8,7 @@
 #include "utils/stage.h"
 
 Text::Text(Node *node, Screen *screen):
-    Child(node, nullptr, screen),
+    Container(node, this, screen),
     tf(new TextField())
 {
 	addChildAt(tf, 0);
@@ -77,10 +77,14 @@ Uint8 get_font_style(const Text *text) {
 }
 
 
-void Text::updateRect(bool) {
-	tf->enable = true;
+void Text::updateSize() {
+	Child::updateSize();
+	for (Child *child : screenChildren) {
+		if (child->enable) {
+			child->updateSize();
+		}
+	}
 
-	Child::updateRect(false);
 	float width = getWidth();
 	float height = getHeight();
 
@@ -129,7 +133,9 @@ void Text::updateRect(bool) {
 	if (max > 0 && size > max) size = max;
 	size *= globalZoomY;
 
-	if (std::tuple(font, size) != std::tuple(tf->mainStyle.fontName, tf->mainStyle.fontSize)) {
+	if (font != tf->mainStyle.fontName ||
+	    !Math::floatsAreEq(size, tf->mainStyle.fontSize))
+	{
 		tf->setFont(font, size);
 		needUpdate = true;
 	}
@@ -147,21 +153,27 @@ void Text::updateRect(bool) {
 
 	float halign = get_halign(this);
 	float valign = get_valign(this);
-	if (std::tuple(halign, valign) != std::tuple(tf->getHAlign(), tf->getVAlign())) {
+	if (!needUpdate && (
+	    !Math::floatsAreEq(halign, tf->getHAlign()) ||
+	    !Math::floatsAreEq(valign, tf->getVAlign())
+	)) {
 		needUpdate = true;
 	}
 	if (needUpdate) {
 		tf->setAlign(halign, valign);
 	}
-
-	updatePos();
 }
 
 void Text::updateGlobal() {
 	float prevGlobalRotate = getGlobalRotate();
-	Child::updateGlobal();
+	Container::updateGlobal();
 
 	if (!prevText.empty() && !Math::floatsAreEq(prevGlobalRotate, getGlobalRotate())) {
 		tf->setAlign(tf->getHAlign(), tf->getVAlign());
 	}
+}
+
+void Text::updateTexture() {
+	tf->enable = true;
+	Container::updateTexture();
 }

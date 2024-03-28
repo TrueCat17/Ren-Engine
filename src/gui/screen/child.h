@@ -67,10 +67,10 @@ public:
 
 	Child(Node *node, Container *screenParent, Screen *screen);
 
-	void updateProps();
+	virtual void updateProps();
 	virtual void updateZoom();
 	virtual void updatePos();
-	virtual void updateRect(bool needUpdatePos = true);
+	virtual void updateSize();
 
 	virtual void updateTexture();
 	virtual void checkEvents();
