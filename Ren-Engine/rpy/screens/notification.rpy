@@ -35,18 +35,21 @@ init -980 python:
 	
 	build_object('notification')
 	
-	notification.size = (400, 150)
 	notification.align = (0.0, 0.0)
-	
-	notification.back = im.rect('#222')
-	notification.text_color = 0x0080FF
-	notification.text_size = 24
-	notification.text_align = 'center'
-	notification.text_valign = 'center'
 	
 	notification.msgs = []
 	notification.show_time = 4
 	notification.hiding_time = 1
+
+
+init:
+	style notification is textbutton:
+		ground im.rect('#222')
+		hover  im.rect('#222')
+		corner_sizes 0
+		size (400, 150)
+		text_size 24
+		color 0x0080FF
 
 
 screen notification:
@@ -78,23 +81,10 @@ screen notification:
 		
 		$ msg, start_time, alpha = notification.msgs[i]
 		
-		image notification.back:
-			size  notification.size
-			alpha alpha
-			
-			text _(msg):
-				size      notification.size
-				color     notification.text_color
-				text_size notification.text_size
-				text_align  notification.text_align
-				text_valign notification.text_valign
-			button:
-				ground notification.back
-				hover  notification.back
-				
-				size   notification.size
-				alpha  0.01
-				action [notification.remove(i), SetVariable('i', i + correcting_i)]
+		textbutton _(msg):
+			style 'notification'
+			alpha  alpha
+			action [notification.remove(i), AddVariable('i', correcting_i)]
 		
 		$ i += di
 
