@@ -102,29 +102,37 @@ init python:
 			
 			help.xsizes[name] = get_text_width(name, style.btn.text_size) + 10
 		
+		if help.groups and help.text is None:
+			help.text = help.groups[0][1]
+		
+		help.on_resize()
+	
+	def help__on_resize():
+		if not help.groups:
+			return
+		
 		help.start_index = 0
 		help.max_index = 0
 		help.count_for_index = []
-		if help.groups:
-			help.text = help.groups[0][1]
-			
-			l = len(help.groups)
-			for i in range(l):
-				width = 0
-				count = 0
-				for name, text in help.groups[i:]:
-					width += help.xsizes[name] + 10
-					if width > get_stage_width() * 0.8 - 100: break
-					count += 1
-				count = max(1, count)
-				help.count_for_index.append(count)
-			
-			i = l - 1
-			while i != -1:
-				if i + help.count_for_index[i] != l:
-					help.max_index = i + 1
+		
+		l = len(help.groups)
+		for i in range(l):
+			width = 0
+			count = 0
+			for name, text in help.groups[i:]:
+				width += help.xsizes[name] + 10
+				if width > get_stage_width() * 0.8 - 100:
 					break
-				i -= 1
+				count += 1
+			count = max(1, count)
+			help.count_for_index.append(count)
+		
+		i = l - 1
+		while i != -1:
+			if i + help.count_for_index[i] != l:
+				help.max_index = i + 1
+				break
+			i -= 1
 	
 	def help__show():
 		help.init()
@@ -132,10 +140,6 @@ init python:
 	
 	def help__close():
 		hide_screen('help')
-	
-	def help__on_resize():
-		if has_screen('help'):
-			help.init()
 	
 	
 	build_object('help')
