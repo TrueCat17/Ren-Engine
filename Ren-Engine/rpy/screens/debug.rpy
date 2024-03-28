@@ -3,18 +3,15 @@ init -995 python:
 		cur_time = get_game_time()
 		
 		array = debug_screen.fps_time_array
-		i = 0
+		array.append(cur_time)
 		for i in range(len(array)):
 			if cur_time - array[i] < 1:
-				i -= 1
 				break
-		
-		debug_screen.fps_time_array = array = array[i+1:]
-		array.append(cur_time)
+		array[:i] = []
 		
 		dtime = array[-1] - array[0]
 		fps = len(array) / (dtime or 1)
-		return str(min(int(round(fps)), get_fps()))
+		return str(min(round(fps), get_fps()))
 	
 	def debug_screen__clear_fps_time_array(screen):
 		if screen == 'debug_screen':
@@ -43,20 +40,19 @@ init -995 python:
 	
 	def debug_screen__update():
 		cur_time = get_game_time()
+		arrays = debug_screen.screen_time_arrays
 		
 		screen_times = get_screen_times()
 		for name, time in screen_times.items():
-			if name not in debug_screen.screen_time_arrays:
-				debug_screen.screen_time_arrays[name] = []
-			debug_screen.screen_time_arrays[name].append((cur_time, time * 1000))
-		
-		for name, array in debug_screen.screen_time_arrays.items():
-			i = 0
+			if name not in arrays:
+				arrays[name] = []
+			array = arrays[name]
+			array.append((cur_time, time * 1000))
+			
 			for i in range(len(array)):
 				if cur_time - array[i][0] < 1:
-					i -= 1
 					break
-			debug_screen.screen_time_arrays[name] = array[i+1:]
+			array[:i] = []
 	
 	def debug_screen__get_screen_times():
 		res = []
@@ -110,42 +106,56 @@ init -995 python:
 	debug_screen.indent = 10
 	debug_screen.ext_size = (debug_screen.size[0] + debug_screen.indent * 2, debug_screen.size[1] + debug_screen.indent * 2)
 	debug_screen.background_alpha = 0.3
-	debug_screen.font = 'Consola'
-	debug_screen.text_size = 18
-	debug_screen.color = 0xFFFFFF
-	debug_screen.outlinecolor = 0x000000
 	
-	debug_screen.fps_font = 'Alcdnova'
-	debug_screen.fps_text_size = 24
-	debug_screen.fps_color = 0xFFFF00
-	debug_screen.fps_outlinecolor = 0x800000
-	
-	debug_screen.align_btn_size = (40, 30)
-	debug_screen.align_btn_back = im.rect('#FFF')
 	debug_screen.align_btn_corner = im.rect('#F00')
-	debug_screen.align_btn_corner_zoom = 0.4
-	debug_screen.align_btn_alpha = 0.5
 	
 	debug_screen.btn_ground = im.rect('#CCC')
 	debug_screen.btn_ground_selected = im.rect('#0AF')
 	debug_screen.btn_hover = im.rect('#F80')
-	debug_screen.btn_xsize = 125
 	
 	debug_screen.fps_time_array = []
 	debug_screen.screen_time_arrays = {}
 
 
+init:
+	style debug_screen_fps_text is text:
+		font     'Alcdnova'
+		text_size 24
+		color        0xFFFF00
+		outlinecolor 0x800000
+	
+	
+	style debug_screen_mode_btn is textbutton:
+		color        0xFFFFFF
+		outlinecolor 0x000000
+		xsize 125
+	
+	style debug_screen_text is text:
+		color        0xFFFFFF
+		outlinecolor 0x000000
+		font     'Consola'
+		text_size 18
+	
+	
+	style debug_screen_align_btn is button:
+		size (40, 30)
+		ground im.rect('#FFF')
+		hover  im.rect('#FFF')
+		alpha 0.5
+	
+	style debug_screen_align_img is debug_screen_align_btn:
+		zoom 0.4
+		alpha 1
+
+
 screen debug_screen_fps_and_alignment:
 	xsize debug_screen.size[0]
-	ysize max(debug_screen.fps_text_size, debug_screen.align_btn_size[1])
+	ysize max(style.debug_screen_fps_text.get_current('text_size'), style.debug_screen_align_btn.get_current('ysize'))
 	
 	text debug_screen.get_last_fps():
-		font         debug_screen.fps_font
-		text_size    debug_screen.fps_text_size
-		color        debug_screen.fps_color
-		outlinecolor debug_screen.fps_outlinecolor
-		xalign       0.0 if config.debug_screen_align[0] < 0.5 else 1.0
-		yalign       0.5
+		style 'debug_screen_fps_text'
+		xalign 0.0 if config.debug_screen_align[0] < 0.5 else 1.0
+		yalign 0.5
 	
 	if config.debug_screen_visible_mode == 1:
 		hbox:
@@ -154,39 +164,29 @@ screen debug_screen_fps_and_alignment:
 			yalign  0.5
 			
 			for align in ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)):
-				null:
-					alpha debug_screen.align_btn_alpha
+				button:
+					style 'debug_screen_align_btn'
+					action SetVariable('config.debug_screen_align', align)
 					
-					image debug_screen.align_btn_back:
-						size debug_screen.align_btn_size
 					image debug_screen.align_btn_corner:
 						align align
-						size  debug_screen.align_btn_size
-						zoom  debug_screen.align_btn_corner_zoom
-					
-					button:
-						ground debug_screen.align_btn_back
-						size   debug_screen.align_btn_size
-						alpha  0.03
-						action SetDict(config, 'debug_screen_align', align)
+						style 'debug_screen_align_img'
 
 screen debug_screen_buttons:
 	has hbox
 	spacing debug_screen.indent
 	
-	xalign  0.5
+	xalign 0.5
 	
 	xsize debug_screen.size[0]
-	ysize style.textbutton.ysize
+	ysize style.debug_screen_mode_btn.get_current('ysize')
 	
 	for mode in ('Mean (second)', 'Max (second)', 'Last Frame'):
 		textbutton _(mode):
-			ground       debug_screen['btn_ground_selected' if debug_screen.get_show_mode() == mode else 'btn_ground']
-			hover        debug_screen.btn_hover
-			color        debug_screen.color
-			outlinecolor debug_screen.outlinecolor
-			xsize        debug_screen.btn_xsize
-			action       debug_screen.set_show_mode(mode)
+			style 'debug_screen_mode_btn'
+			ground debug_screen['btn_ground_selected' if debug_screen.get_show_mode() == mode else 'btn_ground']
+			hover  debug_screen.btn_hover
+			action debug_screen.set_show_mode(mode)
 
 screen debug_screen_text:
 	has vbox
@@ -199,11 +199,7 @@ screen debug_screen_text:
 			align 0.0 if config.debug_screen_align[0] < 0.5 else 1.0
 			
 			for text in text_parts:
-				text text:
-					font         debug_screen.font
-					text_size    debug_screen.text_size
-					color        debug_screen.color
-					outlinecolor debug_screen.outlinecolor
+				text text style 'debug_screen_text'
 
 screen debug_screen:
 	zorder 1000000
