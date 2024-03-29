@@ -40,8 +40,6 @@ struct Audio {
 	std::string url;
 	Channel *channel = nullptr;
 
-	bool decoded = false;
-
 	double startFadeInTime = 0;
 	double startFadeOutTime = 0;
 
@@ -70,6 +68,8 @@ struct Audio {
 	uint32_t audioLen = 0;
 
 	bool paused = false;
+
+	bool decoded = false;
 
 
 	Audio(const std::string &url, Channel *channel, double fadeIn, double volume,
