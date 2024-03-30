@@ -94,6 +94,9 @@ void Text::updateSize() {
 		return;
 	}
 
+	float widthWithoutMinMax = xsize * float(xsize_is_float ? Stage::width : 1);
+	float heightWithoutMinMax = ysize * float(ysize_is_float ? Stage::height : 1);
+
 	Uint32 color = get_color(this);
 	Uint32 outlineColor = get_outlinecolor(this);
 	bool enableOutline = get_enable_outline(this);
@@ -101,8 +104,8 @@ void Text::updateSize() {
 
 	auto curParams = std::tie(
 	    first_param,
-	    width,
-	    height,
+	    widthWithoutMinMax,
+	    heightWithoutMinMax,
 	    color,
 	    outlineColor,
 	    enableOutline,
@@ -144,12 +147,28 @@ void Text::updateSize() {
 		tf->setText(first_param);
 	}
 
-	if (width  <= 0) width  = tf->getWidth();
-	if (height <= 0) height = tf->getHeight();
-	setWidth(width);
-	setHeight(height);
-	tf->setWidth(width);
-	tf->setHeight(height);
+	if (widthWithoutMinMax <= 0) {
+		widthWithoutMinMax = tf->getWidth();
+		min = xsize_min * float(xsize_min_is_float ? Stage::width : 1);
+		max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
+		if (min > 0 && widthWithoutMinMax < min) widthWithoutMinMax = min;
+		if (max > 0 && widthWithoutMinMax > max) widthWithoutMinMax = max;
+	}else {
+		widthWithoutMinMax = width;
+	}
+	if (heightWithoutMinMax <= 0) {
+		heightWithoutMinMax = tf->getHeight();
+		min = ysize_min * float(ysize_min_is_float ? Stage::height : 1);
+		max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
+		if (min > 0 && heightWithoutMinMax < min) heightWithoutMinMax = min;
+		if (max > 0 && heightWithoutMinMax > max) heightWithoutMinMax = max;
+	}else {
+		heightWithoutMinMax = height;
+	}
+	setWidth(widthWithoutMinMax);
+	setHeight(heightWithoutMinMax);
+	tf->setWidth(widthWithoutMinMax);
+	tf->setHeight(heightWithoutMinMax);
 
 	float halign = get_halign(this);
 	float valign = get_valign(this);
