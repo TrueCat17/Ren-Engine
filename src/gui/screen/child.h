@@ -67,6 +67,9 @@ public:
 
 	Child(Node *node, Container *screenParent, Screen *screen);
 
+	void setWidthWithMinMax(float sizeWithoutZoom);
+	void setHeightWithMinMax(float sizeWithoutZoom);
+
 	virtual void updateProps();
 	virtual void updateZoom();
 	virtual void updatePos();

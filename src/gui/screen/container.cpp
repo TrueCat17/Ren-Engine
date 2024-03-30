@@ -77,6 +77,12 @@ void Container::updateSize() {
 		}
 	}
 
+	if (globalZoomX <= 0 || globalZoomY <= 0) {
+		setWidth(0);
+		setHeight(0);
+		return;
+	}
+
 	if (!hasHBox) {
 		if (getWidth() <= 0) {
 			float width = 0;
@@ -85,7 +91,7 @@ void Container::updateSize() {
 					width = std::max(width, child->getWidth());
 				}
 			}
-			setWidth(width);
+			setWidthWithMinMax(width / globalZoomX);
 		}
 	}else {
 		float size = spacing * float(spacing_is_float ? Stage::width : 1);
@@ -109,7 +115,7 @@ void Container::updateSize() {
 		if (width > 0) {
 			width -= globalSpacing;
 		}
-		setWidth(width);
+		setWidthWithMinMax(width / globalZoomX);
 	}
 
 	if (!hasVBox) {
@@ -120,7 +126,7 @@ void Container::updateSize() {
 					height = std::max(height, child->getHeight());
 				}
 			}
-			setHeight(height);
+			setHeightWithMinMax(height / globalZoomY);
 		}
 	}else {
 		float size = spacing * float(spacing_is_float ? Stage::height : 1);
@@ -144,7 +150,7 @@ void Container::updateSize() {
 		if (height > 0) {
 			height -= globalSpacing;
 		}
-		setHeight(height);
+		setHeightWithMinMax(height / globalZoomY);
 	}
 }
 

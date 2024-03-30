@@ -88,14 +88,26 @@ void Text::updateSize() {
 	float width = getWidth();
 	float height = getHeight();
 
-	if (first_param.empty() && prevText.empty()) {
+	if ((first_param.empty() && prevText.empty()) ||
+	    (globalZoomX <= 0 || globalZoomY <= 0))
+	{
 		setWidth(std::max<float>(width, 0));
 		setHeight(std::max<float>(height, 0));
+		tf->enable = false;
 		return;
 	}
 
-	float widthWithoutMinMax = xsize * float(xsize_is_float ? Stage::width : 1);
-	float heightWithoutMinMax = ysize * float(ysize_is_float ? Stage::height : 1);
+	float min, max;
+
+	float widthWithoutMin = xsize * float(xsize_is_float ? Stage::width : 1);
+	max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
+	if (max > 0 && widthWithoutMin > max) widthWithoutMin = max;
+	widthWithoutMin *= globalZoomX;
+
+	float heightWithoutMin = ysize * float(ysize_is_float ? Stage::height : 1);
+	max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
+	if (max > 0 && heightWithoutMin > max) heightWithoutMin = max;
+	heightWithoutMin *= globalZoomY;
 
 	Uint32 color = get_color(this);
 	Uint32 outlineColor = get_outlinecolor(this);
@@ -104,8 +116,8 @@ void Text::updateSize() {
 
 	auto curParams = std::tie(
 	    first_param,
-	    widthWithoutMinMax,
-	    heightWithoutMinMax,
+	    widthWithoutMin,
+	    heightWithoutMin,
 	    color,
 	    outlineColor,
 	    enableOutline,
@@ -130,8 +142,8 @@ void Text::updateSize() {
 	std::string font = get_font(this);
 
 	float size = get_size(this);
-	float min = get_size_min(this);
-	float max = get_size_max(this);
+	min = get_size_min(this);
+	max = get_size_max(this);
 	if (min > 0 && size < min) size = min;
 	if (max > 0 && size > max) size = max;
 	size *= globalZoomY;
@@ -147,28 +159,16 @@ void Text::updateSize() {
 		tf->setText(first_param);
 	}
 
-	if (widthWithoutMinMax <= 0) {
-		widthWithoutMinMax = tf->getWidth();
-		min = xsize_min * float(xsize_min_is_float ? Stage::width : 1);
-		max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
-		if (min > 0 && widthWithoutMinMax < min) widthWithoutMinMax = min;
-		if (max > 0 && widthWithoutMinMax > max) widthWithoutMinMax = max;
+	if (widthWithoutMin <= 0) {
+		setWidthWithMinMax(tf->getWidth() / globalZoomX);
 	}else {
-		widthWithoutMinMax = width;
+		tf->setWidth(width);
 	}
-	if (heightWithoutMinMax <= 0) {
-		heightWithoutMinMax = tf->getHeight();
-		min = ysize_min * float(ysize_min_is_float ? Stage::height : 1);
-		max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
-		if (min > 0 && heightWithoutMinMax < min) heightWithoutMinMax = min;
-		if (max > 0 && heightWithoutMinMax > max) heightWithoutMinMax = max;
+	if (heightWithoutMin <= 0) {
+		setHeightWithMinMax(tf->getHeight() / globalZoomY);
 	}else {
-		heightWithoutMinMax = height;
+		tf->setHeight(height);
 	}
-	setWidth(widthWithoutMinMax);
-	setHeight(heightWithoutMinMax);
-	tf->setWidth(widthWithoutMinMax);
-	tf->setHeight(heightWithoutMinMax);
 
 	float halign = get_halign(this);
 	float valign = get_valign(this);

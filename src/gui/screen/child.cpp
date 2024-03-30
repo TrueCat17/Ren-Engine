@@ -150,22 +150,28 @@ void Child::updatePos() {
 	}
 }
 
+
+void Child::setWidthWithMinMax(float sizeWithoutZoom) {
+	float min = xsize_min * float(xsize_min_is_float ? Stage::width : 1);
+	float max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
+	if (min > 0 && sizeWithoutZoom < min) sizeWithoutZoom = min;
+	if (max > 0 && sizeWithoutZoom > max) sizeWithoutZoom = max;
+	setWidth(sizeWithoutZoom * globalZoomX);
+}
+void Child::setHeightWithMinMax(float sizeWithoutZoom) {
+	float min = ysize_min * float(ysize_min_is_float ? Stage::height : 1);
+	float max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
+	if (min > 0 && sizeWithoutZoom < min) sizeWithoutZoom = min;
+	if (max > 0 && sizeWithoutZoom > max) sizeWithoutZoom = max;
+	setHeight(sizeWithoutZoom * globalZoomY);
+}
+
 void Child::updateSize() {
-	float size, min, max;
+	float width = xsize * float(xsize_is_float ? Stage::width : 1);
+	setWidthWithMinMax(width);
 
-	size = xsize * float(xsize_is_float ? Stage::width : 1);
-	min = xsize_min * float(xsize_min_is_float ? Stage::width : 1);
-	max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
-	if (min > 0 && size < min) size = min;
-	if (max > 0 && size > max) size = max;
-	setWidth(size * globalZoomX);
-
-	size = ysize * float(ysize_is_float ? Stage::height : 1);
-	min = ysize_min * float(ysize_min_is_float ? Stage::height : 1);
-	max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
-	if (min > 0 && size < min) size = min;
-	if (max > 0 && size > max) size = max;
-	setHeight(size * globalZoomY);
+	float height = ysize * float(ysize_is_float ? Stage::height : 1);
+	setHeightWithMinMax(height);
 
 	if (surface) {
 		crop.x = int(xcrop * float(xcrop_is_float ? surface->w : 1));
