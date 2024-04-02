@@ -22,5 +22,5 @@ translate russian strings:
 	old 'Start'
 	new 'Старт'
 	
-	old 'mods/path_finder/readme.txt'
-	new 'mods/path_finder/tl/russian/readme.txt'
+	old 'readme.txt'
+	new 'tl/russian/readme.txt'

@@ -16,7 +16,7 @@ init python:
 	
 	history.ysize = 0.95
 	
-	slider_v_init('history', 0, history.ysize)
+	slider_v_init('history', history.ysize)
 	
 	
 	history.showed_time = 0
@@ -54,13 +54,6 @@ screen history:
 		if history.x > 0:
 			history.x = 0
 		
-		if gui.history_height:
-			history.viewport_content_height = len(db.prev_texts) * gui.get_int('history_height')
-		else:
-			history.viewport_content_height = len(db.prev_texts) * (history.text_size + history.spacing) * 2 # 2 - extra space for wordwraps
-		slider_v_change('history', length = history.viewport_content_height, button_size = history.text_size)
-		history.y = int(-slider_v_get_value('history') * (history.viewport_content_height - history.ysize * get_stage_height()))
-		
 		if history.hided_time:
 			dtime = get_game_time() - history.hided_time
 			history.alpha = (history.disappearance_time - dtime) / history.disappearance_time
@@ -78,27 +71,38 @@ screen history:
 		ysize history.ysize
 		
 		vbox:
-			ypos history.y
+			ysize_min history.ysize
+			yalign slider_v_get_value('history')
 			spacing history.spacing
 			
 			null ysize 1 # for spacing before first text line
 			
-			$ _name_text_yoffset     = max(gui.get_int('dialogue_text_size') - gui.get_int('name_text_size'), 0)
-			$ _dialogue_text_yoffset = max(gui.get_int('name_text_size') - gui.get_int('dialogue_text_size'), 0)
+			python:
+				_name_text_yoffset     = max(gui.get_int('dialogue_text_size') - gui.get_int('name_text_size'), 0)
+				_dialogue_text_yoffset = max(gui.get_int('name_text_size') - gui.get_int('dialogue_text_size'), 0)
+				
+				_history_height = gui.get_int('history_height') if gui.history_height else -1
+				_history_name_xpos = gui.get_int('history_name_xpos')
+				_history_name_ypos = gui.get_int('history_name_ypos') + _name_text_yoffset
+				_history_name_width = gui.get_int('history_name_width')
+				_history_name_xalign = gui.history_name_xalign
+				_name_text_size = gui.get_int('name_text_size')
+				_dialogue_text_size = gui.get_int('dialogue_text_size')
+			
 			for _name_text, _name_font, _name_color, _name_outlinecolor, _dialogue_text, _dialogue_font, _dialogue_color, _dialogue_outlinecolor in db.prev_texts:
 				null:
-					ysize gui.get_int('history_height') if gui.history_height else -1
+					ysize _history_height
 					
 					if _name_text:
 						text _name_text:
-							xpos gui.get_int('history_name_xpos')
-							ypos gui.get_int('history_name_ypos') + _name_text_yoffset
-							xsize gui.get_int('history_name_width')
-							xanchor    gui.history_name_xalign
-							text_align gui.history_name_xalign
+							xpos _history_name_xpos
+							ypos _history_name_ypos
+							xsize _history_name_width
+							xanchor    _history_name_xalign
+							text_align _history_name_xalign
 							
 							font         _name_font
-							text_size    gui.get_int('name_text_size')
+							text_size    _name_text_size
 							color        _name_color
 							outlinecolor _name_outlinecolor
 					
@@ -111,13 +115,11 @@ screen history:
 						text_align gui[history_text_prefix + 'xalign']
 						
 						font         _dialogue_font
-						text_size    gui.get_int('dialogue_text_size')
+						text_size    _dialogue_text_size
 						color        _dialogue_color
 						outlinecolor _dialogue_outlinecolor
 		
 		null:
 			align (0.99, 0.5)
-			
-			$ slider_v_set('history')
-			use slider_v
+			use slider_v('history')
 

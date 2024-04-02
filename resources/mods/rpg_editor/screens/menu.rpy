@@ -7,5 +7,5 @@ screen menu:
 		hover  im.circle('#0B0')
 		size   25
 		align (1.0, 0.0)
-		action show_help
-	key 'F1' action show_help
+		action show_screen('help')
+	key 'F1' action show_screen('help')

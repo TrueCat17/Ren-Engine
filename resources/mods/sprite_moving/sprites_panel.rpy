@@ -196,6 +196,12 @@ screen sprites_panel:
 					mouse  panel.cur_sprite is not None
 					action panel.remove_sprite
 				
+				textbutton '?':
+					style 'change_sprite_btn'
+					color 0x00FF00
+					action show_screen('help')
+				key 'F1' action show_screen('help')
+				
 			vbox:
 				xalign 0.5
 				spacing panel.small_indent

@@ -10,6 +10,7 @@ init 10 python:
 	style.btn.text_size = 20
 	style.btn.font = 'Arial'
 	
+	style.help_button = style.btn
 	
 	
 	sc_map.bounds = {

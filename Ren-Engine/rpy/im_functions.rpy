@@ -220,7 +220,7 @@ init -1001 python:
 		return 'RendererScale|(%s)|%s|%s' % (image, int(w), int(h))
 	
 	def im__crop(image, x, y = None, w = None, h = None):
-		if y is None:
+		if type(x) in (tuple, list):
 			x, y, w, h = x
 		if w <= 0 or h <= 0:
 			out_msg('im.crop', 'Sizes are invalid: (%s, %s)' % (w, h))

@@ -104,8 +104,8 @@ screen info:
 				text_size info.text_size
 				hovered   info.set_msg('F1')
 				unhovered info.set_msg_if_prev('', 'F1')
-				action    help.show()
-			key 'F1' action help.show()
+				action    show_screen('help')
+			key 'F1' action show_screen('help')
 			
 			textbutton _('Pause'):
 				style     'btn'

@@ -79,5 +79,5 @@ translate russian strings:
 	old 'To back'
 	new 'Назад'
 	
-	old 'mods/rpg_editor/readme.txt'
-	new 'mods/rpg_editor/tl/russian/readme.txt'
+	old 'readme.txt'
+	new 'tl/russian/readme.txt'

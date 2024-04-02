@@ -66,7 +66,9 @@ ${building_cost}
 
 [Support]
 
-[{color=0x00FF00}{outlinecolor=0}Storage{/outlinecolor}{/color}] and [{color=0x00FF00}{outlinecolor=0}District{/outlinecolor}{/color}] consume base content multiplied by their level.
+[{color=0x00FF00}{outlinecolor=0}Storage{/outlinecolor}{/color}] and \
+[{color=0x00FF00}{outlinecolor=0}District{/outlinecolor}{/color}] \
+consume base content multiplied by their level.
 The rest of the buildings instead of the level use the number of residents currently working.
 For example, if 3 workers are sent to the sawmill, but there is only a level 2 storage nearby,
 then only 2 workers will work, and the base maintenance of the building will be multiplied by 2, not 3.

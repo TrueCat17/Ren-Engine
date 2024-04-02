@@ -11,3 +11,6 @@ translate russian strings:
 	
 	old 'Ctrl - do not remove previous sprite with this name'
 	new 'Ctrl - не удалять предыдущий спрайт с таким именем'
+	
+	old 'readme.txt'
+	new 'tl/russian/readme.txt'
