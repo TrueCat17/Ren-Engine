@@ -102,12 +102,12 @@ void Text::updateSize() {
 	float widthWithoutMin = xsize * float(xsize_is_float ? Stage::width : 1);
 	max = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
 	if (max > 0 && widthWithoutMin > max) widthWithoutMin = max;
-	widthWithoutMin *= globalZoomX;
+	widthWithoutMin = std::floor(widthWithoutMin * globalZoomX);
 
 	float heightWithoutMin = ysize * float(ysize_is_float ? Stage::height : 1);
 	max = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
 	if (max > 0 && heightWithoutMin > max) heightWithoutMin = max;
-	heightWithoutMin *= globalZoomY;
+	heightWithoutMin = std::floor(heightWithoutMin * globalZoomY);
 
 	Uint32 color = get_color(this);
 	Uint32 outlineColor = get_outlinecolor(this);
@@ -146,7 +146,7 @@ void Text::updateSize() {
 	max = get_size_max(this);
 	if (min > 0 && size < min) size = min;
 	if (max > 0 && size > max) size = max;
-	size *= globalZoomY;
+	size = std::floor(size * globalZoomY);
 
 	if (font != tf->mainStyle.fontName ||
 	    !Math::floatsAreEq(size, tf->mainStyle.fontSize))
