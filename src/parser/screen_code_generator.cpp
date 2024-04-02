@@ -99,8 +99,14 @@ static void initConsts(Node *node) {
 		return;
 	}
 
+	bool isCycle = command == "for" || command == "while";
 	for (Node *child : node->children) {
 		initConsts(child);
+		if (isCycle) {
+			//unable to count iterations for an empty (constant children only) cycle
+			// => cycle children must be not const
+			child->isScreenConst = false;
+		}
 
 		if (child->isScreenProp && !child->isScreenConst && !child->isScreenEvent) {
 			++node->countPropsToCalc;
@@ -113,8 +119,7 @@ static void initConsts(Node *node) {
 		return;
 	}
 
-	if (command == "if" || command == "elif" || command == "else" ||
-	    command == "for" || command == "while") return;
+	if (isCycle || command == "if" || command == "elif" || command == "else") return;
 
 	for (const Node *child : node->children) {
 		if (!child->isScreenConst) return;
