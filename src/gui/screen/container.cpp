@@ -212,10 +212,10 @@ void Container::addChildrenFromNode() {
 			Container *tmp = new Container(childNode, nullptr, screen);
 			tmp->screenParent = tmp;
 
-			if (childNode->command == "vbox") {
+			if (childCommand == "vbox") {
 				tmp->hasVBox = true;
 			}else
-			if (childNode->command == "hbox") {
+			if (childCommand == "hbox") {
 				tmp->hasHBox = true;
 			}
 			child = tmp;
@@ -248,10 +248,10 @@ void Container::addChildrenFromNode() {
 		}else
 
 		{
-			if (!SyntaxChecker::isKnownScreenLeaf(childNode->command)) {
+			if (!SyntaxChecker::isKnownScreenLeaf(childCommand)) {
 				Utils::outMsg("Container::addChildrenFromNode",
-				              "Unknown type <" + childNode->command + ">\n" +
-							  childNode->getPlace());
+				              "Unknown type <" + childCommand + ">\n" +
+				              childNode->getPlace());
 			}
 			continue;
 		}
