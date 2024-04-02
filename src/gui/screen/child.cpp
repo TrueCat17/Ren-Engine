@@ -8,6 +8,7 @@
 #include "media/py_utils.h"
 #include "utils/scope_exit.h"
 #include "utils/stage.h"
+#include "utils/string.h"
 #include "utils/utils.h"
 
 
@@ -174,10 +175,15 @@ void Child::updateSize() {
 	setHeightWithMinMax(height);
 
 	if (surface) {
-		crop.x = int(xcrop * float(xcrop_is_float ? surface->w : 1));
-		crop.y = int(ycrop * float(ycrop_is_float ? surface->h : 1));
-		crop.w = int(wcrop * float(wcrop_is_float ? surface->w : 1));
-		crop.h = int(hcrop * float(hcrop_is_float ? surface->h : 1));
+		float x = xcrop * float(xcrop_is_float ? surface->w : 1);
+		float y = ycrop * float(ycrop_is_float ? surface->h : 1);
+		float w = wcrop * float(wcrop_is_float ? surface->w : 1);
+		float h = hcrop * float(hcrop_is_float ? surface->h : 1);
+
+		crop.x = int(std::round(x));
+		crop.y = int(std::round(y));
+		crop.w = int(std::round(x + w)) - crop.x;
+		crop.h = int(std::round(y + h)) - crop.y;
 	}
 }
 
