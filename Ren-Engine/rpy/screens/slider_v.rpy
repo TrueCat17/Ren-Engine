@@ -28,7 +28,7 @@ init -1000 python:
 		sliders_v[name]['value'] = in_bounds(value, 0, 1)
 	
 	
-	def slider_v_add_value(name, k):
+	def slider_v_add_value(k):
 		slider_v_cur['value'] = in_bounds(slider_v_cur['value'] + k, 0, 1)
 	
 	def slider_v_get_bar_size():
