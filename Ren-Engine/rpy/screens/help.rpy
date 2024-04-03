@@ -18,8 +18,9 @@ init -500 python:
 		groups = content.split('\n\n\n')
 		data = help.make_vars()
 		for group in groups:
+			group = group.strip()
 			if group.startswith('['):
-				i = group.index('\n')
+				i = group.index('\n') if '\n' in group else 0
 				name = group[:i]
 				if name.startswith('[') and name.endswith(']'):
 					name = name[1:-1]
@@ -44,7 +45,7 @@ init -500 python:
 					end += len(data[var_name]) - (end + 1 - start)
 				else:
 					out_msg('help.init, section %s' % name, 'var name <' + var_name + '> is undefined')
-					end = len(text)
+					break
 			
 			help.groups.append((name, text.strip()))
 		
@@ -124,7 +125,7 @@ init -500 python:
 	# only relative sizes here
 	help.indent = 0.03
 	help.xindent = help.indent / get_from_hard_config("window_w_div_h", float)
-	help.indent_for_buttons = 0.07
+	help.indent_for_buttons = 0.1
 	help.viewport_height = help.height - help.indent_for_buttons - help.indent
 
 
@@ -140,7 +141,7 @@ init:
 		alpha 0.3
 		mouse False
 	
-	style help_button is textbutton
+	style help_button is menu_button
 	
 	style help_text is text:
 		color 0x000000

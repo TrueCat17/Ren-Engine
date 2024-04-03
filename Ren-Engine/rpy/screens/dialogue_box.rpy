@@ -285,8 +285,10 @@ init -1000 python:
 	
 	
 	
-	window_show = SetDict(db, 'visible', True)
-	window_hide = SetDict(db, 'visible', False)
+	def window_show():
+		db.visible = True
+	def window_hide():
+		db.visible = False
 	
 	def nvl_clear():
 		db.dialogue = []
@@ -464,31 +466,29 @@ screen dialogue_box_nvl:
 screen dialogue_box:
 	zorder -2
 	
-	key 'h' action SetDict(db, 'hide_interface', not db.hide_interface)
+	key 'h' action SetVariable('db.hide_interface', not db.hide_interface)
 	
 	$ db.to_next = False
 	for key in ('RETURN', 'SPACE'):
 		key key:
 			action db.enter_action
 			first_delay style.key.first_delay if config.long_next_is_skipping else 1e9
-			delay       style.key.delay       if config.long_next_is_skipping else 1e9
 	if db.to_next:
 		$ db.skip_tab = False
 	
-	key 'LEFT SHIFT'  action SetDict(db, 'last_shift_time', get_game_time()) first_delay 0
-	key 'RIGHT SHIFT' action SetDict(db, 'last_shift_time', get_game_time()) first_delay 0
-	key 'LEFT ALT'    action SetDict(db, 'last_alt_time', get_game_time()) first_delay 0
-	key 'RIGHT ALT'   action SetDict(db, 'last_alt_time', get_game_time()) first_delay 0
+	key 'LEFT SHIFT'  action SetVariable('db.last_shift_time', get_game_time()) first_delay 0
+	key 'RIGHT SHIFT' action SetVariable('db.last_shift_time', get_game_time()) first_delay 0
+	key 'LEFT ALT'    action SetVariable('db.last_alt_time', get_game_time()) first_delay 0
+	key 'RIGHT ALT'   action SetVariable('db.last_alt_time', get_game_time()) first_delay 0
 	
 	$ db.prev_ctrl = db.ctrl
 	$ db.ctrl = False
-	key 'LEFT CTRL'  action SetDict(db, 'ctrl', True) first_delay 0
-	key 'RIGHT CTRL' action SetDict(db, 'ctrl', True) first_delay 0
+	key 'LEFT CTRL'  action SetVariable('db.ctrl', True) first_delay 0
+	key 'RIGHT CTRL' action SetVariable('db.ctrl', True) first_delay 0
 	if db.ctrl and not db.prev_ctrl:
 		$ db.press_ctrl_time = get_game_time()
 	
-	if db.visible:
-		key 'TAB' action ToggleDict(db, 'skip_tab')
+	key 'TAB' action ToggleVariable('db.skip_tab')
 	
 	python:
 		db.skip = False
@@ -513,11 +513,11 @@ screen dialogue_box:
 			elif db.mode == 'nvl':
 				use dialogue_box_nvl
 			else:
-				$ out_msg('dialogue_box', 'Expected db.mode will be "adv" or "nvl", got "%s"' % (str(db.mode), ))
-			
-			if db.skip:
-				text 'Skip Mode':
-					style 'skip_text'
+				$ out_msg('dialogue_box', 'Expected db.mode will be "adv" or "nvl", got "%s"' % (db.mode, ))
+		
+		if db.skip:
+			text 'Skip Mode':
+				style 'skip_text'
 		
 		button:
 			ground 'images/bg/black.jpg'
@@ -541,5 +541,5 @@ screen dialogue_box:
 			alpha  0.01
 			mouse  False
 			
-			action SetDict(db, 'hide_interface', False)
+			action SetVariable('db.hide_interface', False)
 

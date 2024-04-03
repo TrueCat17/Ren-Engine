@@ -24,16 +24,16 @@ init -1000 python:
 label rpg_loop:
 	while True:
 		call rpg_update
-		pause 1.0 / get_fps()
+		pause 1 / get_fps()
 
 
 label rpg_update:
-	$ db.skip_tab = False
-	
 	if not get_rpg_control():
 		return
 	
 	python:
+		db.skip_tab = False
+		
 		if rpg_events:
 			rpg_event_processing = True
 			
