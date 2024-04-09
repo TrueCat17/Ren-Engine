@@ -38,10 +38,10 @@ init -1000 python:
 			
 			res = []
 			
-			ypos = int(((self.cy % 1) - 1) * ysize) + get_absolute(self.ypos, self.location.ysize)
+			ypos = ((self.cy % 1) - 1) * ysize + get_absolute(self.ypos, self.location.ysize)
 			for y in (0, 1):
 				
-				xpos = int(((self.cx % 1) - 1) * xsize) + get_absolute(self.xpos, self.location.ysize)
+				xpos = ((self.cx % 1) - 1) * xsize + get_absolute(self.xpos, self.location.ysize)
 				for x in (0, 1):
 					res.append({
 						'image':   self.image,
