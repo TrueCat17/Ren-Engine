@@ -46,6 +46,7 @@ init -1001 python:
 		obj.animations = Object()
 		obj.on = []
 		obj.sit_places = []
+		obj.is_vertical_sit_place = False
 		
 		register_location_object_animation(obj_name, None, directory, main_image, free_image, 0, 0, 1, 0, 0)
 	
@@ -113,6 +114,19 @@ init -1001 python:
 		if over:
 			obj.animations[None].over_image = over
 		
+		is_vertical_sit_place = False
+		if sit_places:
+			left = right = sit_places[0][0]
+			top = bottom = sit_places[0][1]
+			for x, y, _, _ in sit_places[1:]:
+				left = min(left, x)
+				right = max(right, x)
+				top = min(top, y)
+				bottom = max(bottom, y)
+			if bottom - top > right - left:
+				is_vertical_sit_place = True
+		obj.is_vertical_sit_place = is_vertical_sit_place
+		
 		for name, location in rpg_locations.items():
 			for obj in location.objects:
 				if obj.type != obj_name:
@@ -123,6 +137,7 @@ init -1001 python:
 						character.stand_up()
 				obj.on = [None] * len(sit_places)
 				obj.sit_places = sit_places
+				obj.is_vertical_sit_place = is_vertical_sit_place
 				if over:
 					obj.animations[None].over_image = over
 	
@@ -164,48 +179,62 @@ init -1001 python:
 			self.update()
 		
 		def __str__(self):
-			return '<RpgLocationObject ' + str(self.type) + '>'
+			return '<RpgLocationObject %s>' % (self.type, )
 		
 		def get_zorder(self):
 			return self.y + self.yoffset
 		def get_draw_data(self):
 			res = []
 			main = get_usual_location_object_data(self)
-			x, y = main['pos']
-			w, h = main['size']
-			ystart = int(y - main['anchor'][1])
-			
+				
 			characters = [character for character in self.on if character]
 			characters.sort(key = lambda character: character.get_zorder())
 			
-			top = 0
-			for character in characters + [None]:
-				bottom = absolute((character or self).get_zorder() - ystart)
-				if bottom <= top:
-					break
+			if not self.is_vertical_sit_place:
+				res.append(main)
 				
-				crop = (
-					main['crop'][0],
-					main['crop'][1] + top,
-					main['crop'][2],
-					bottom - top
-				)
-				
-				part = dict(main, crop=crop)
-				part['size'] = w, bottom - top
-				part['anchor'] = main['anchor'][0], 0
-				part['pos'] = x, ystart + top
-				part['zorder'] = ystart + bottom
-				res.append(part)
-				
-				top = bottom
-				
-				if character:
+				for character in characters:
+					main['zorder'] = min(main['zorder'], character.get_zorder())
+					
 					data = character.get_draw_data()
 					if type(data) in (list, tuple):
 						res.extend(data)
 					else:
 						res.append(data)
+			
+			else:
+				x, y = main['pos']
+				w, h = main['size']
+				ystart = int(y - main['anchor'][1])
+				
+				top = 0
+				for character in characters + [None]:
+					bottom = absolute((character or self).get_zorder() - ystart)
+					if bottom <= top:
+						break
+					
+					crop = (
+						main['crop'][0],
+						main['crop'][1] + top,
+						main['crop'][2],
+						bottom - top
+					)
+					
+					part = dict(main, crop=crop)
+					part['size'] = w, bottom - top
+					part['anchor'] = main['anchor'][0], 0
+					part['pos'] = x, ystart + top
+					part['zorder'] = ystart + bottom
+					res.append(part)
+					
+					top = bottom
+					
+					if character:
+						data = character.get_draw_data()
+						if type(data) in (list, tuple):
+							res.extend(data)
+						else:
+							res.append(data)
 				
 			over_image = self.over()
 			if over_image:
