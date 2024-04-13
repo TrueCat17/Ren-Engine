@@ -145,6 +145,50 @@ init python:
 			location_cutscene_up = location_cutscene_down = int(location_cutscene_size * cut_k * get_stage_height())
 		else:
 			location_cutscene_up = location_cutscene_down = 0
+	
+	def loc__get_list_to_draw():
+		res = []
+		for obj in draw_location.objects:
+			if obj.invisible:
+				continue
+			
+			datas = obj.get_draw_data()
+			if type(datas) not in (tuple, list):
+				datas = (datas, )
+			
+			for data in datas:
+				if not data['image']:
+					continue
+				
+				if 'size' not in data:
+					data['size'] = get_image_size(data['image'])
+				
+				if 'anchor' in data:
+					pos = data['pos']
+					anchor = data['anchor']
+					xanchor = get_absolute(anchor[0], data['size'][0])
+					data['pos'] = int(pos[0] - xanchor), pos[1]
+					data['anchor'] = 0, anchor[1]
+				else:
+					data['anchor'] = (0, 0)
+				
+				res.append(data)
+		
+		res.sort(key = lambda d: d.get('zorder', d['pos'][1]))
+		return res
+	
+	def loc__update():
+		for character in characters:
+			character.update()
+		
+		if not has_screen('pause'):
+			for obj in draw_location.objects:
+				if isinstance(obj, Character):
+					continue
+				if obj.update:
+					obj.update()
+		
+		draw_location.update_pos()
 
 
 screen location:
@@ -194,26 +238,26 @@ screen location:
 		
 		if get_rpg_control() and location_showed() and (dtime - location_fade_time) > location_time_without_control:
 			$ loc__sit_action = False
-			key 'z' delay 0.333 action SetVariable('loc__sit_action', True)
+			key 'z' delay 0.333 action 'loc__sit_action = True'
 			if loc__sit_action:
 				$ loc__process_sit_action()
 			
 			$ loc__action = False
-			key 'e' delay 0.333 action SetVariable('loc__action', True)
+			key 'e' delay 0.333 action 'loc__action = True'
 			if loc__action:
 				$ loc__process_action()
 			
-			key 'LEFT SHIFT'  action SetVariable('loc__shift_is_down', True) first_delay 0
-			key 'RIGHT SHIFT' action SetVariable('loc__shift_is_down', True) first_delay 0
+			key 'LEFT SHIFT'  action 'loc__shift_is_down = True' first_delay 0
+			key 'RIGHT SHIFT' action 'loc__shift_is_down = True' first_delay 0
 			
-			key 'LEFT'  action SetVariable('loc__left',  True) first_delay 0
-			key 'RIGHT' action SetVariable('loc__right', True) first_delay 0
-			key 'UP'    action SetVariable('loc__up',    True) first_delay 0
-			key 'DOWN'  action SetVariable('loc__down',  True) first_delay 0
-			key 'a'     action SetVariable('loc__left',  True) first_delay 0
-			key 'd'     action SetVariable('loc__right', True) first_delay 0
-			key 'w'     action SetVariable('loc__up',    True) first_delay 0
-			key 's'     action SetVariable('loc__down',  True) first_delay 0
+			key 'LEFT'  action 'loc__left  = True' first_delay 0
+			key 'RIGHT' action 'loc__right = True' first_delay 0
+			key 'UP'    action 'loc__up    = True' first_delay 0
+			key 'DOWN'  action 'loc__down  = True' first_delay 0
+			key 'a'     action 'loc__left  = True' first_delay 0
+			key 'd'     action 'loc__right = True' first_delay 0
+			key 'w'     action 'loc__up    = True' first_delay 0
+			key 's'     action 'loc__down  = True' first_delay 0
 		
 		python:
 			if config.default_moving_is_run:
@@ -264,17 +308,7 @@ screen location:
 					rpg_events.add('enter')
 					signals.send('rpg-place')
 			
-			for character in characters:
-				character.update()
-			
-			if not has_screen('pause'):
-				for obj in draw_location.objects:
-					if isinstance(obj, Character):
-						continue
-					if obj.update:
-						obj.update()
-			
-			draw_location.update_pos()
+			loc__update()
 		
 		null:
 			clipping True
@@ -282,28 +316,11 @@ screen location:
 			pos  (draw_location.x, draw_location.y)
 			size (draw_location.xsize, draw_location.ysize)
 			
-			python:
-				list_to_draw = []
-				
-				for obj in draw_location.objects:
-					if obj.invisible:
-						continue
-					
-					datas = obj.get_draw_data()
-					if type(datas) in (tuple, list):
-						list_to_draw.extend(datas)
-					else:
-						list_to_draw.append(datas)
-				
-				list_to_draw.sort(key = lambda d: d.get('zorder', d['pos'][1]))
-			
-			for obj in list_to_draw:
-				if not obj['image']:
-					continue
+			for obj in loc__get_list_to_draw():
 				image obj['image']:
 					pos    obj['pos']
-					anchor obj.get('anchor', (0, 0))
-					size   obj.get('size', get_image_size(obj['image']))
+					anchor obj['anchor']
+					size   obj['size']
 					crop   obj.get('crop', (0, 0, 1.0, 1.0))
 					alpha  obj.get('alpha', 1)
 					rotate obj.get('rotate', 0)
@@ -319,7 +336,7 @@ screen location:
 		
 		
 		image 'images/bg/black.jpg':
-			size (1.0, 1.0)
+			size 1.0
 			alpha loc__background_alpha
 		
 		python:
