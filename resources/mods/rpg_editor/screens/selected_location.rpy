@@ -42,19 +42,21 @@ init python:
 			places.append((place, image))
 		
 		objs.sort(key = lambda image_x_y: image_x_y[2])
+		places.sort(key = lambda place_and_image: place_and_image[0].xsize * place_and_image[0].ysize, reverse = True)
 		
 		return objs, places
 	
 	hotkeys.disable_key_on_screens['ESCAPE'].append('selected_location')
 
+
 screen selected_location:
 	image im.rect('#444'):
 		size 1.0
 	
-	key 'w' action AddVariable('local_cam_y', -local_speed)
-	key 'a' action AddVariable('local_cam_x', -local_speed)
-	key 's' action AddVariable('local_cam_y', +local_speed)
-	key 'd' action AddVariable('local_cam_x', +local_speed)
+	key 'w' action 'local_cam_y -= local_speed'
+	key 'a' action 'local_cam_x -= local_speed'
+	key 's' action 'local_cam_y += local_speed'
+	key 'd' action 'local_cam_x += local_speed'
 	
 	for key in '-_':
 		key key action SetVariable('local_k', max(local_k - local_k_min, local_k_min))
@@ -107,15 +109,17 @@ screen selected_location:
 				$ objs, places = get_objs_and_places()
 				
 				for obj_image, x, y in objs:
+					$ w, h = get_image_size(obj_image)
 					image obj_image:
-						pos (x, y)
-						size get_image_size(obj_image)
-						anchor (0.5, 1.0)
+						xpos int(x - w / 2)
+						ypos y
+						size (w, h)
+						yanchor 1.0
 				
 				for place, image in places:
 					button:
 						ground image
-						action SetVariable('selected_place_name', place.name)
+						action 'selected_place_name = place.name'
 						
 						pos  (place.x, place.y)
 						size (max(place.xsize, 3), max(place.ysize, 3))
