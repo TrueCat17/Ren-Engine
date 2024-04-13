@@ -123,9 +123,10 @@ init -1002 python:
 			location_was_show = False
 			cam_object = character
 		
-		show_character(character, place, auto_change_location = False)
-		if prev_location is None:
-			character.show_time = -100
+		if not (time_changing and place is character):
+			show_character(character, place, auto_change_location = False)
+			if prev_location is None:
+				character.show_time = -100
 		
 		# after show_character, because cur_loc.cam_object mb changed (if draw_loc is cur_loc)
 		cur_location.cam_object = cam_object
