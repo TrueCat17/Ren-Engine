@@ -7,8 +7,8 @@ init python:
 		half_size = size // 2 # > (radius + some_indent) * 2
 		me_x = in_bounds(me.x, 0, get_image_width(location_free) - 1)
 		me_y = in_bounds(me.y, 0, get_image_height(location_free) - 1)
-		start_x = int(round(me_x / half_size) - 1) * half_size
-		start_y = int(round(me_y / half_size) - 1) * half_size
+		start_x = (round(me_x / half_size) - 1) * half_size
+		start_y = (round(me_y / half_size) - 1) * half_size
 		
 		cs = me.xsize // 2
 		def near(x, y, width, height):
@@ -32,8 +32,12 @@ init python:
 			to_draw += [(0, 0), im.rect('#000', size, size)]
 		
 		for obj in objs:
-			obj_free = obj.free() if callable(obj.free) else None
-			if obj_free is None or isinstance(obj, RpgLocation):
+			if isinstance(obj, RpgLocation):
+				continue
+			
+			obj_free = obj.free
+			obj_free = obj_free() if callable(obj_free) else None
+			if obj_free is None:
 				continue
 			if obj.frames and obj.frames > 1:
 				obj_free = im.crop(obj_free, obj.crop)
@@ -45,7 +49,7 @@ init python:
 		
 		for character in characters:
 			if not character.invisible and near(character.x, character.y, 0, 0):
-				to_draw += [(int(character.x - cs // 2 - start_x), int(character.y - cs // 2 - start_y)), im.rect('#FFF', cs, cs)]
+				to_draw += [(character.x - cs / 2 - start_x, character.y - cs / 2 - start_y), im.rect('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]
 			return location_free, 0, 0

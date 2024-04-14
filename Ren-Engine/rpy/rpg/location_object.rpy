@@ -238,7 +238,12 @@ init -1001 python:
 				
 			over_image = self.over()
 			if over_image:
-				res.append(dict(main, image=over_image))
+				over = dict(main, image=over_image)
+				w, h = get_image_size(over_image)
+				over['size'] = (w, h)
+				over['anchor'] = get_absolute(self.xanchor, w), get_absolute(self.yanchor, h)
+				del over['crop']
+				res.append(over)
 			
 			return res
 		
