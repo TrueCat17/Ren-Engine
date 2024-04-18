@@ -48,36 +48,27 @@ init python:
 	def loc__move_character(dx, dy):
 		global loc__prev_time
 		
-		if me.get_pose() == 'sit' or not get_rpg_control():
+		try:
+			if me.get_pose() == 'sit' or not get_rpg_control():
+				return
+			
+			if dx or dy:
+				pose = 'run' if loc__shift_is_down else 'walk'
+				speed = me[pose + '_speed']
+				dtime = get_game_time() - loc__prev_time
+				
+				to_x, to_y = physics.get_end_point(me.x, me.y, dx, dy, speed * dtime)
+				dx, dy = to_x - me.x, to_y - me.y
+			
+			if dx or dy:
+				me.x = to_x
+				me.y = to_y
+				me.fps = me[pose + '_fps']
+				me.set_pose(pose)
+			else:
+				me.set_pose('stay')
+		finally:
 			loc__prev_time = get_game_time()
-			return
-		
-		if dx == 0 and dy == 0:
-			me.set_pose('stay')
-			loc__prev_time = get_game_time()
-			return
-		
-		if dx and dy:
-			dx /= 2 ** 0.5
-			dy /= 2 ** 0.5
-		
-		me.fps =      me.run_fps if loc__shift_is_down else me.walk_fps
-		me.set_pose(       'run' if loc__shift_is_down else 'walk'      )
-		speed =     me.run_speed if loc__shift_is_down else me.walk_speed
-		
-		dtime = get_game_time() - loc__prev_time
-		loc__prev_time = get_game_time()
-		
-		dx *= speed * dtime
-		dy *= speed * dtime
-		
-		to_x, to_y = get_end_point(me.x, me.y, dx, dy)
-		dx, dy = to_x - me.x, to_y - me.y
-		if dx or dy:
-			me.x = me.to_x = to_x
-			me.y = me.to_y = to_y
-		else:
-			me.set_pose('stay')
 	
 	
 	def loc__process_sit_action():
@@ -147,13 +138,16 @@ init python:
 			location_cutscene_up = location_cutscene_down = 0
 	
 	def loc__get_list_to_draw():
+		sequences = (tuple, list)
+		floor = math.floor
+		
 		res = []
 		for obj in draw_location.objects:
 			if obj.invisible:
 				continue
 			
 			datas = obj.get_draw_data()
-			if type(datas) not in (tuple, list):
+			if type(datas) not in sequences:
 				datas = (datas, )
 			
 			for data in datas:
@@ -161,16 +155,24 @@ init python:
 					continue
 				
 				if 'size' not in data:
-					data['size'] = get_image_size(data['image'])
+					size = data['size'] = get_image_size(data['image'])
+				else:
+					size = data['size']
+					if type(size) not in sequences:
+						size = (size, size)
+				
+				pos = data['pos']
+				if type(pos) not in sequences:
+					pos = data['pos'] = (pos, pos)
 				
 				if 'anchor' in data:
-					pos = data['pos']
 					anchor = data['anchor']
-					xanchor = get_absolute(anchor[0], data['size'][0])
-					data['pos'] = int(pos[0] - xanchor), pos[1]
-					data['anchor'] = 0, anchor[1]
-				else:
-					data['anchor'] = (0, 0)
+					if type(anchor) not in sequences:
+						anchor = (anchor, anchor)
+					
+					xanchor = get_absolute(anchor[0], size[0])
+					yanchor = get_absolute(anchor[1], size[1])
+					data['pos'] = floor(pos[0] - xanchor), floor(pos[1] - yanchor)
 				
 				res.append(data)
 		
@@ -182,7 +184,7 @@ init python:
 			character.update()
 		
 		if not has_screen('pause'):
-			for obj in draw_location.objects:
+			for obj in draw_location.objects.copy(): # copy for case <object removed itself>
 				if isinstance(obj, Character):
 					continue
 				if obj.update:
@@ -319,7 +321,6 @@ screen location:
 			for obj in loc__get_list_to_draw():
 				image obj['image']:
 					pos    obj['pos']
-					anchor obj['anchor']
 					size   obj['size']
 					crop   obj.get('crop', (0, 0, 1.0, 1.0))
 					alpha  obj.get('alpha', 1)

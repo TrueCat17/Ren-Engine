@@ -262,18 +262,15 @@ init -1002 python:
 			self.cam_object_old = None
 		
 		def __str__(self):
-			return '<RpgLocation ' + str(self.name) + '>'
+			return '<RpgLocation %s>' % (self.name, )
 		
 		def get_draw_data(self):
-			return [{
+			return {
 				'image':   self.main(),
 				'size':   (self.xsize, self.ysize),
 				'pos':    (0, 0),
-				'anchor': (0, 0),
-				'crop':   (0, 0, 1.0, 1.0),
-				'alpha':   1,
 				'zorder':  0,
-			}]
+			}
 		
 		def main(self):
 			return get_location_image(self, self.directory, 'main', '', location_ext, False)

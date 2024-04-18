@@ -26,9 +26,7 @@ init python:
 		def get_zorder(self):
 			return self.zorder
 		def get_draw_data(self):
-			for data in self.data:
-				data['alpha'] = self.alpha
-			return self.data
+			return [dict(data, alpha = self.alpha) for data in self.data]
 		
 		def main(self):
 			return self.image

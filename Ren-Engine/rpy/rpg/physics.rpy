@@ -1,6 +1,6 @@
 init python:
 	
-	def get_map_free():
+	def physics__get_map_free():
 		location_free = cur_location.free()
 		
 		size = 64
@@ -49,38 +49,116 @@ init python:
 		
 		for character in characters:
 			if not character.invisible and near(character.x, character.y, 0, 0):
-				to_draw += [(character.x - cs / 2 - start_x, character.y - cs / 2 - start_y), im.rect('#FFF', cs, cs)]
+				to_draw += [(character.x - cs / 2 - start_x, character.y - cs / 2 - start_y), im.circle('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]
 			return location_free, 0, 0
 		return im.composite(*to_draw), start_x, start_y
 	
-	def get_end_point(from_x, from_y, dx, dy):
-		to_x = in_bounds(from_x + dx, 0, cur_location.xsize)
-		to_y = in_bounds(from_y + dy, 0, cur_location.ysize)
-		dx, dy = to_x - from_x, to_y - from_y
-		if dx == 0 and dy == 0:
-			return to_x, to_y
+	
+	def physics__get_side_coords(side, radius):
+		side %= 8
 		
-		free, start_x, start_y = get_map_free()
+		cache = physics__get_side_coords.__dict__
+		key = (side, radius)
+		if key in cache:
+			return cache[key]
+		
+		if 'coords' not in cache:
+			size = radius * 2
+			img = im.circle('#000', size, size)
+			
+			# make sure that 4 parts of circle are equal
+			img = im.crop(img, 0, 0, radius, radius)
+			args = [
+				(size, size),
+				(0, 0), img,
+				(radius, 0), im.flip(img, True, False),
+				(0, radius), im.flip(img, False, True),
+				(radius, radius), im.flip(img, True, True),
+			]
+			img = im.composite(*args)
+			
+			# RGBA32
+			min_black = 128 # 0, 0, 0, 128
+			max_black = 255 # 0, 0, 0, 255
+			
+			def is_black(x, y):
+				if x < 0 or x >= size or y < 0 or y >= size:
+					return False
+				color = get_image_pixel(img, x, y)
+				return color >= min_black and color <= max_black
+			
+			def get_coords(dx, dy, cond_left, cond_right):
+				left_coords, right_coords = [], []
+				for y in range(size):
+					for x in range(size):
+						if is_black(x, y):
+							if not is_black(x + dx, y + dy):
+								point = (x - radius, y - radius)
+								if cond_left(x, y):
+									left_coords.append(point)
+								if cond_right(x, y):
+									right_coords.append(point)
+				return left_coords, right_coords
+			
+			corner_coords = get_coords(-1, -1, lambda x, y: x <= y, lambda x, y: x >= y)
+			line_coords   = get_coords( 0, -1, lambda x, y: x < radius, lambda x, y: x >= radius)
+			cache['coords'] = corner_coords, line_coords
+		
+		left_coords, right_coords = cache['coords'][side & 1]
+		left_coords, right_coords = left_coords.copy(), right_coords.copy()
+		
+		angle = side // 2 * 90
+		sina = int(_sin(angle))
+		cosa = int(_cos(angle))
+		for coords in (left_coords, right_coords):
+			for i, (x, y) in enumerate(coords):
+				rot_x = x * cosa - y * sina
+				rot_y = x * sina + y * cosa
+				coords[i] = (rot_x, rot_y)
+		
+		cache[key] = left_coords, right_coords
+		return cache[key]
+	
+	
+	def physics__check_side(is_black, from_x, from_y, side, radius):
+		def get_free_part(coords):
+			res = 0
+			for x, y in coords:
+				is_free = is_black(from_x + x, from_y + y)
+				if is_free:
+					res += 1
+			return res / len(coords)
+		
+		left_coords, right_coords = physics.get_side_coords(side, radius)
+		return get_free_part(left_coords), get_free_part(right_coords)
+	
+	
+	def physics__get_end_point(from_x, from_y, dx, dy, length):
+		radius = me.radius
+		if radius % 2:
+			radius += 1
+		
+		s2 = 1 / (2 ** 0.5)
+		if dx and dy:
+			dx, dy = dx * s2, dy * s2
+		
+		free, start_x, start_y = physics.get_map_free()
 		if free is None:
-			return to_x, to_y
-		
+			return from_x + dx * length, from_y + dy * length
 		from_x -= start_x
 		from_y -= start_y
-		to_x -= start_x
-		to_y -= start_y
 		
 		black_color = 255 # r, g, b, a = 0, 0, 0, 255
 		map_width, map_height = get_image_size(free)
-		
 		def is_black(x, y):
 			x, y = int(x), int(y)
 			if x < 0 or x >= map_width or y < 0 or y >= map_height:
 				return False
 			return get_image_pixel(free, x, y) == black_color
 		
-		s2 = 1 / (2 ** 0.5)
+		
 		rotations = (
 			(-s2, -s2), # left-up: x == -1, y == -1
 			(  0, -1 ), # up
@@ -89,105 +167,47 @@ init python:
 			( s2,  s2),
 			(  0,  1 ),
 			(-s2,  s2),
-			( -1,  0 )
+			( -1,  0 ),
 		)
+		forward = (dx, dy)
+		side = rotations.index(forward)
 		
+		angle45 = 1, rotations[(side - 1) % 8], rotations[(side + 1) % 8]
+		angle90 = 2, rotations[(side - 2) % 8], rotations[(side + 2) % 8]
 		
-		def to_zero(x):
-			return 0 if abs(x) < 1 else x + 1 if x < 0 else x - 1
-		
-		def part(x):
-			return sign(x) if abs(x) > 1 else x
-		
-		sdx, sdy = sign(dx), sign(dy)
-		if sdx and sdy:
-			sdx, sdy = sdx * s2, sdy * s2
-		
-		rot_index = rotations.index( (sdx, sdy) )
-		left    = rotations[(rot_index - 3) % len(rotations)]
-		forward = rotations[(rot_index    ) % len(rotations)]
-		right   = rotations[(rot_index + 3) % len(rotations)]
-		
-		left1, right1 = rotations[(rot_index - 1) % len(rotations)], rotations[(rot_index + 1) % len(rotations)]
-		left2, right2 = rotations[(rot_index - 2) % len(rotations)], rotations[(rot_index + 2) % len(rotations)]
-		
-		radius = me.radius
 		x, y = from_x, from_y
-		fx, fy = x + radius * forward[0], y + radius * forward[1]
-		while int(x + dx) != int(x) or int(y + dy) != int(y):
-			pdx, pdy = part(dx), part(dy)
+		while length:
+			length_part = sign(length) if abs(length) > 1 else length
+			pdx = dx * length_part
+			pdy = dy * length_part
 			
-			left_last_block = 0
-			left_first_block = 0
-			left_first_free = radius
-			for dist in range(1, radius):
-				is_free = is_black(fx + pdx + dist * left[0] + left1[0], fy + pdy + dist * left[1] + left1[1])
+			left_free_part, right_free_part = physics.check_side(is_black, x + dx, y + dy, side, radius)
+			if left_free_part == 1.0 and right_free_part == 1.0:
+				dpoint = forward
+			else:
+				if left_free_part == right_free_part:
+					break
 				
-				if not is_free:
-					left_last_block = dist
-					if not left_first_block:
-						left_first_block = dist
-				else:
-					if left_first_free == radius:
-						left_first_free = dist
-			
-			right_last_block = 0
-			right_first_block = 0
-			right_first_free = radius
-			for dist in range(1, radius):
-				is_free = is_black(fx + pdx + right1[0] + dist * right[0], fy + pdy + right1[1] + dist * right[1])
-				
-				if not is_free:
-					right_last_block = dist
-					if not right_first_block:
-						right_first_block = dist
-				else:
-					if right_first_free == radius:
-						right_first_free = dist
-			
-			changed = True
-			if left_first_block or right_first_block:
-				side = 'no'
-				
-				if not left_first_block and right_first_block:
-					side = 'left'
-				elif not right_first_block and left_first_block:
-					side = 'right'
-				else: # left_first_block and right_first_block
-					if left_first_free < right_first_free:
-						side = 'left'
-					elif left_first_free > right_first_free:
-						side = 'right'
+				for dside, left, right in (angle45, angle90):
+					if left_free_part > right_free_part:
+						dside = -dside
+						dpoint = left
 					else:
-						for dist in range(radius):
-							left_free = is_black(fx + pdx + left1[0] + dist * left2[0], fy + pdy + left1[1] + dist * left2[1])
-							right_free = is_black(fx + pdx + right1[0] + dist * right2[0], fy + pdy + right1[1] + dist * right2[1])
-							
-							if left_free or right_free:
-								if left_free and not right_free and left_last_block <= 1:
-									side = 'left'
-								elif right_free and not left_free and right_last_block <= 1:
-									side = 'right'
-								break
+						dpoint = right
 				
-				if side == 'left':
-					extra_free = is_black(fx + pdx + left1[0], fy + pdy + left1[1])
-					dpoint = left1 if extra_free else left2
-				elif side == 'right':
-					extra_free = is_black(fx + pdx + right1[0], fy + pdy + right1[1])
-					dpoint = right1 if extra_free else right2
-				else:
-					changed = False
-			else:
-				dpoint = (pdx, pdy)
+					left_free_part, right_free_part = physics.check_side(is_black, x + dpoint[0], y + dpoint[1], side + dside, radius)
+					if left_free_part == 1.0 and right_free_part == 1.0:
+						break
+					dpoint = None
 			
+			if not dpoint:
+				break
 			
-			if not changed:
-				dx = dy = 0
-			else:
-				dx, dy = to_zero(dx), to_zero(dy)
-				x, y = x + dpoint[0], y + dpoint[1]
-				fx, fy = x + radius * forward[0], y + radius * forward[1]
+			x += dpoint[0] * length_part
+			y += dpoint[1] * length_part
+			length -= length_part
 		
-		return start_x + x + dx, start_y + y + dy
+		return start_x + x, start_y + y
+	
+	build_object('physics')
 
