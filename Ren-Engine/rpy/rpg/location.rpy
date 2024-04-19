@@ -354,53 +354,22 @@ init -1002 python:
 		
 		return int(x - xa + get_absolute(anchor[0], w)), int(y - ya + get_absolute(anchor[1], h))
 	
-	rpg_event = None
-	rpg_event_object = None
-	rpg_events = set()
 	
-	was_out_exit = False
-	def get_location_exit(read_only = True):
-		global was_out_exit
+	def get_location_exit(character = None):
+		ch = character or me
+		ch_x, ch_y = ch.x, ch.y
 		
-		if 'action' not in rpg_events and cur_location.is_room:
-			if not read_only:
-				was_out_exit = True
-			return None
-		
-		for place in cur_location.places.values():
-			if not place.inside_exit(me.x, me.y):
-				continue
-			
-			if cur_location.is_room or rpg_locations[place.to_location_name].is_room:
-				if 'action' not in rpg_events:
-					return None
-				if not read_only:
-					rpg_events.remove('action')
-			
-			loc_place = (cur_location.name, place.name)
-			if loc_place in location_banned_exits and loc_place not in me.allowed_exits:
-				if not read_only:
-					rpg_events.add('no_exit')
-					signals.send('rpg-no_exit')
-				continue
-			
-			if not was_out_exit:
-				return None
-			
-			if not read_only:
-				was_out_exit = False
-			return place
-		
-		if not read_only:
-			was_out_exit = True
+		for place in ch.location.places.values():
+			if place.inside_exit(ch_x, ch_y):
+				return place
 		return None
 	
 	def get_location_place(character = None):
 		ch = character or me
-		location = ch.location
+		ch_x, ch_y = ch.x, ch.y
 		
-		for place in location.places.values():
-			if place.inside(ch.x, ch.y):
+		for place in ch.location.places.values():
+			if place.inside(ch_x, ch_y):
 				return place
 		return None
 	

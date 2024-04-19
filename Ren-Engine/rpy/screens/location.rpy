@@ -6,6 +6,12 @@ init python:
 	
 	loc__max_time = 1e9
 	
+	rpg_event = None
+	rpg_event_object = None
+	rpg_events = set()
+	
+	cur_exit = None
+	
 	
 	rpg_control = False
 	def get_rpg_control():
@@ -93,8 +99,32 @@ init python:
 				inventory.add_event('taking', obj.type)
 		else:
 			rpg_events.add('action')
-			if not get_location_exit():
+			if cur_exit:
+				loc__process_exit()
+			else:
 				signals.send('rpg-action')
+	
+	def loc__process_exit():
+		if not cur_exit:
+			return
+		next_loc = rpg_locations.get(cur_exit.to_location_name)
+		if not next_loc:
+			out_msg('loc__process_exit', 'Location <%s> was not registered' % (cur_exit.to_location_name, ))
+			return
+		
+		if cur_location.is_room or next_loc.is_room:
+			if 'action' not in rpg_events:
+				return
+			rpg_events.remove('action')
+		
+		loc_place = (cur_location.name, cur_exit.name)
+		if loc_place in location_banned_exits and loc_place not in me.allowed_exits:
+			rpg_events.add('no_exit')
+			signals.send('rpg-no_exit')
+			return
+		
+		set_location(cur_exit.to_location_name, cur_exit.to_place_name)
+		me.set_direction(cur_exit.to_side)
 	
 	
 	
@@ -239,15 +269,8 @@ screen location:
 				rpg_events.clear()
 		
 		if get_rpg_control() and location_showed() and (dtime - location_fade_time) > location_time_without_control:
-			$ loc__sit_action = False
-			key 'z' delay 0.333 action 'loc__sit_action = True'
-			if loc__sit_action:
-				$ loc__process_sit_action()
-			
-			$ loc__action = False
-			key 'e' delay 0.333 action 'loc__action = True'
-			if loc__action:
-				$ loc__process_action()
+			key 'z' delay 0.333 action loc__process_sit_action
+			key 'e' delay 0.333 action loc__process_action
 			
 			key 'LEFT SHIFT'  action 'loc__shift_is_down = True' first_delay 0
 			key 'RIGHT SHIFT' action 'loc__shift_is_down = True' first_delay 0
@@ -296,19 +319,18 @@ screen location:
 					loc__direction = loc__directions[min_index]
 					me.set_direction(loc__direction)
 			
-			if get_rpg_control() and (loc__character_dx or loc__character_dy or 'action' in rpg_events):
-				cur_exit = get_location_exit(read_only = False)
-				if cur_exit:
-					set_location(cur_exit.to_location_name, cur_exit.to_place_name)
-					me.set_direction(cur_exit.to_side)
-					cur_place_name = ''
-				
-				prev_place_name = cur_place_name
-				cur_place = get_location_place()
-				cur_place_name = cur_place.name if cur_place else ''
-				if cur_place_name and cur_place_name != prev_place_name:
-					rpg_events.add('enter')
-					signals.send('rpg-place')
+			prev_place_name = cur_place_name
+			
+			prev_exit = cur_exit
+			cur_exit = get_location_exit()
+			if cur_exit != prev_exit and get_rpg_control() and (loc__character_dx or loc__character_dy or 'action' in rpg_events):
+				loc__process_exit()
+			
+			cur_place = get_location_place()
+			cur_place_name = cur_place.name if cur_place else ''
+			if cur_place_name and cur_place_name != prev_place_name:
+				rpg_events.add('enter')
+				signals.send('rpg-place')
 			
 			loc__update()
 		
