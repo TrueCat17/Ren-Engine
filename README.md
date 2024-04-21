@@ -2,9 +2,9 @@
 
 ## \[links]
 
-* [Discord](discord.gg/DBagjrCWVp),
-* [Telegram](t.me/ren_engine),
-* [VK](vk.com/ren_engine).
+* [Discord](https://discord.gg/DBagjrCWVp),
+* [Telegram](https://t.me/ren_engine),
+* [VK](https://vk.com/ren_engine).
 
 ## \[OS]
 
