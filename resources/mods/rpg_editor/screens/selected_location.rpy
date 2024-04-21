@@ -111,10 +111,9 @@ screen selected_location:
 				for obj_image, x, y in objs:
 					$ w, h = get_image_size(obj_image)
 					image obj_image:
-						xpos int(x - w / 2)
-						ypos y
+						xpos math.floor(x - w / 2)
+						ypos math.floor(y - h)
 						size (w, h)
-						yanchor 1.0
 				
 				for place, image in places:
 					button:
