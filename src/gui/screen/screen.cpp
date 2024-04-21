@@ -282,6 +282,11 @@ void Screen::logScreenCode(std::string name) {
 	}
 
 	Node* node = getDeclared(name);
+	if (!node) {
+		Utils::outMsg("Screen::logScreenCode", "Screen <" + name + "> is not defined");
+		return;
+	}
+
 	std::string code = ScreenCodeGenerator::get(node);
 	Logger::log("\n\n\nCode of screen <" + name + ">:\n\n" + code + "\n\n\n");
 }

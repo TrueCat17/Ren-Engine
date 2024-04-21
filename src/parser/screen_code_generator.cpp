@@ -264,7 +264,8 @@ static std::string initCycleCode(Node *node) {
 	    idLen + " = " + name + "\n" +
 	    name + " = 0\n"
 	    "\n" +
-	    command + ' ' + params + ": # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n" +
+	    command + ' ' + params + ": # "
+	    "_SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n" +
 	    indent + "\n";
 
 	if (count) {
@@ -385,7 +386,7 @@ static std::string initCode(Node *node, const std::string& index) {
 		}
 		std::string id = std::to_string(t->id);
 
-		res = "# " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
+		res = "# _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n";
 
 		if (command == "break" &&
 		    t->childNum + 1 < t->parent->children.size() &&
@@ -412,7 +413,7 @@ static std::string initCode(Node *node, const std::string& index) {
 
 	if (node->isScreenProp) {
 		res = String::strip(params);
-		res += "# " + std::to_string(node->getNumLine()) + " " + node->getFileName();
+		res += "# _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
 		return res;
 	}
 
@@ -423,7 +424,7 @@ static std::string initCode(Node *node, const std::string& index) {
 		for (size_t i = 0; i < code.size(); ++i) {
 			if (code[i].empty()) continue;
 
-			res += code[i] + " # " + std::to_string(startLine + i) + " " + node->getFileName();
+			res += code[i] + " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(startLine + i);
 			if (i != code.size() - 1) {
 				res += "\n";
 			}
@@ -471,10 +472,10 @@ static std::string initCode(Node *node, const std::string& index) {
 
 		if (command == "else" && !String::endsWith(node->parent->children[node->childNum - 1]->command, "if")) {//prev is for/while
 			res += "if not _SL_break" + std::to_string(node->parent->children[node->childNum - 1]->id) + ":";
-			res +=   " # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
+			res +=   " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n";
 			res += indent + "_SL_last = _SL_stack[-1]\n";
 		}else {
-			res = command + " " + params + ": # " + std::to_string(node->getNumLine()) + " " + node->getFileName() + "\n";
+			res = command + " " + params + ": # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n";
 		}
 	}
 

@@ -83,6 +83,9 @@ Parser::Parser(const std::string &dir) {
 		if (fileName.find("_SL_FILE_") != size_t(-1)) {
 			Utils::outMsg("Parser::Parser", "File <" + fileName + "> must be renamed to not contain <_SL_FILE_>");
 		}
+		if (fileName.find("_SL_REAL") != size_t(-1)) {
+			Utils::outMsg("Parser::Parser", "File <" + fileName + "> must be renamed to not contain <_SL_REAL>");
+		}
 	}
 
 	double readStartTime = Utils::getTimer();

@@ -15,6 +15,7 @@
 
 #include "parser/mods.h"
 
+#include "utils/algo.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -221,7 +222,7 @@ PyObject* PyUtils::getCompileObject(const std::string &code, const std::string &
 
 
 
-static void getRealString(const std::string &code, std::string &fileName, std::string &numLineStr) {
+static void getRealString(const std::string_view &code, std::string &fileName, std::string &numLineStr) {
 	size_t numLine = size_t(String::toInt(numLineStr));
 	size_t commentEnd = 0;
 	for (size_t i = 0; i < numLine; ++i) {
@@ -231,17 +232,16 @@ static void getRealString(const std::string &code, std::string &fileName, std::s
 	if (!commentStart) return;
 
 	commentEnd = code.find('\n', commentStart);
-	std::string comment = code.substr(commentStart, commentEnd - commentStart);
+	std::string comment = Algo::clear(code.substr(commentStart, commentEnd - commentStart));
 
-	size_t numLineStart = comment.find_first_not_of(' ');
-	size_t numLineEnd = comment.find_first_of(' ', numLineStart);
-	numLineStr = comment.substr(numLineStart, numLineEnd - numLineStart);
+	std::vector<std::string> parts = String::split(comment, "|");
+	if (parts.size() != 3) return;
+	if (parts[0] != "_SL_REAL") return;
 
-	size_t fileNameStart = comment.find_first_not_of(' ', numLineEnd);
-	size_t fileNameEnd = comment.size();
-	fileName = comment.substr(fileNameStart, fileNameEnd - fileNameStart);
+	fileName = parts[1];
+	numLineStr = parts[2];
 }
-static void fixToRealString(std::string &str, const std::string &code,
+static void fixToRealString(std::string &str, const std::string_view &code,
                             size_t fileNameStart, size_t fileNameEnd,
                             size_t numLineStart, size_t numLineEnd
 ) {
@@ -309,7 +309,7 @@ static void errorProcessingImpl(const std::string &code) {
 			}
 		}
 
-		if (valueStr.find("_SL_FILE_", fileNameStart, 1) != size_t(-1)) {
+		if (String::startsWith(std::string_view(valueStr).substr(fileNameStart), "_SL_FILE_")) {
 			size_t numLineStart = valueStr.find_last_of(' ') + 1;
 			size_t numLineEnd = valueStr.size() - 1;
 
