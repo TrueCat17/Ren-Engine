@@ -23,7 +23,7 @@ init -1002 python:
 	cur_location_name = None
 	cur_exit = None
 	cur_place = None
-	cur_place_name = ''
+	cur_place_name = prev_place_name = ''
 	
 	
 	location_zoom = 1.0
