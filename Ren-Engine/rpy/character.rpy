@@ -480,7 +480,7 @@ init -1001 python:
 				to_x += pdx
 				to_y += pdy
 				
-				path = path_between_locations(from_location_name, int(from_x), int(from_y), location_name, int(to_x), int(to_y), banned, bool(brute_force))
+				path = path_between_locations(from_location_name, int(from_x), int(from_y), location_name, float(to_x), float(to_y), banned, bool(brute_force))
 				if not path:
 					res = False
 					if from_location_name == location_name:

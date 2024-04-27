@@ -170,6 +170,7 @@ init python:
 	def loc__get_list_to_draw():
 		sequences = (tuple, list)
 		floor = math.floor
+		zoom = location_zoom
 		
 		res = []
 		for obj in draw_location.objects:
@@ -184,25 +185,40 @@ init python:
 				if not data['image']:
 					continue
 				
-				if 'size' not in data:
-					size = data['size'] = get_image_size(data['image'])
-				else:
+				if 'size' in data:
 					size = data['size']
-					if type(size) not in sequences:
-						size = (size, size)
+					if type(size) in sequences:
+						w, h = size
+					else:
+						w = h = size
+				else:
+					w, h = get_image_size(data['image'])
 				
 				pos = data['pos']
-				if type(pos) not in sequences:
-					pos = data['pos'] = (pos, pos)
+				if type(pos) in sequences:
+					x, y = pos
+				else:
+					x = y = pos
 				
 				if 'anchor' in data:
 					anchor = data['anchor']
-					if type(anchor) not in sequences:
-						anchor = (anchor, anchor)
+					if type(anchor) in sequences:
+						xa, ya = anchor
+					else:
+						xa = ya = anchor
 					
-					xanchor = get_absolute(anchor[0], size[0])
-					yanchor = get_absolute(anchor[1], size[1])
-					data['pos'] = floor(pos[0] - xanchor), floor(pos[1] - yanchor)
+					x -= get_absolute(xa, w)
+					y -= get_absolute(ya, h)
+				
+				x *= zoom
+				y *= zoom
+				floor_x = floor(x)
+				floor_y = floor(y)
+				data['pos'] = floor_x, floor_y
+				
+				floor_w = floor(x + w * zoom) - floor_x
+				floor_h = floor(y + h * zoom) - floor_y
+				data['size'] = floor_w, floor_h
 				
 				res.append(data)
 		
@@ -335,9 +351,10 @@ screen location:
 		
 		null:
 			clipping True
-			zoom location_zoom
-			pos  (draw_location.x, draw_location.y)
-			size (draw_location.xsize, draw_location.ysize)
+			xpos draw_location.x
+			ypos draw_location.y
+			xsize draw_location.xsize * location_zoom
+			ysize draw_location.ysize * location_zoom
 			
 			for obj in loc__get_list_to_draw():
 				image obj['image']:

@@ -97,8 +97,8 @@ init -1003 python:
 		zoom_extra = interpolate(cam_object_zoom_old, cam_object_zoom, k)
 		location_zoom = zoom_main * zoom_extra
 		
-		cam_object_x *= location_zoom
-		cam_object_y *= location_zoom
+		cam_object_x = math.floor(cam_object_x * location_zoom)
+		cam_object_y = math.floor(cam_object_y * location_zoom)
 		
 		
 		stage_width = get_stage_width()

@@ -122,6 +122,7 @@ init -1002 python:
 			location_start_time = get_game_time()
 			location_was_show = False
 			cam_object = character
+			cur_location.last_coords = []
 		
 		if not (time_changing and place is character):
 			show_character(character, place, auto_change_location = False)
@@ -236,6 +237,9 @@ init -1002 python:
 	
 	
 	class RpgLocation(Object):
+		last_coords_count = 10
+		last_coords_min_diff = 5
+		
 		def __init__(self, name, directory, is_room, xsize, ysize):
 			Object.__init__(self)
 			
@@ -260,6 +264,8 @@ init -1002 python:
 			
 			self.cam_object = None
 			self.cam_object_old = None
+			
+			self.last_coords = []
 		
 		def __str__(self):
 			return '<RpgLocation %s>' % (self.name, )
@@ -292,7 +298,24 @@ init -1002 python:
 		
 		
 		def update_pos(self):
-			self.x, self.y = get_camera_params(self)
+			pos = get_camera_params(self)
+			if self.last_coords:
+				prev = self.last_coords[-1]
+				dx = abs(pos[0] - prev[0])
+				dy = abs(pos[1] - prev[1])
+				if max(dx, dy) < self.last_coords_min_diff:
+					pos = prev
+			self.last_coords.append(pos)
+			self.last_coords[:-self.last_coords_count] = []
+			
+			x = y = 0
+			for pos in self.last_coords:
+				x += pos[0]
+				y += pos[1]
+			l = len(self.last_coords)
+			
+			self.x = x / l
+			self.y = y / l
 	
 	
 	class RpgPlace(Object):
@@ -352,7 +375,7 @@ init -1002 python:
 			else:
 				anchor = (0.5, 0.5)
 		
-		return int(x - xa + get_absolute(anchor[0], w)), int(y - ya + get_absolute(anchor[1], h))
+		return x - xa + get_absolute(anchor[0], w), y - ya + get_absolute(anchor[1], h)
 	
 	
 	def get_location_exit(character = None):
