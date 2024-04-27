@@ -130,7 +130,7 @@ static MipMap* getLocation(const std::string &name) {
 	}
 	return it->second;
 }
-static void makeOutsideMsg(const std::string &from, PointInt xStart, PointInt yStart, PointInt xEnd, PointInt yEnd,
+static void makeOutsideMsg(const std::string &from, PointInt xStart, PointInt yStart, double xEnd, double yEnd,
                            const MipMap *startMap, const MipMap *endMap)
 {
 	std::string startPoint = std::to_string(xStart) + ',' + std::to_string(yStart);
@@ -647,19 +647,27 @@ static void getPath(Point *start, Point *end) {
 }
 
 
+static inline
+bool checkMapPoint(const MipMap *mipMap, double x, double y) {
+	if (x < 0 || x > std::numeric_limits<PointInt>::max()) return false;
+	if (y < 0 || y > std::numeric_limits<PointInt>::max()) return false;
+	if (x >= mipMap->originalWidth) return false;
+	if (y >= mipMap->originalHeight) return false;
+	return true;
+}
+
+
 static Map tmpMap;
 PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, PointInt yStart,
-                               PointInt xEnd, PointInt yEnd, PyObject* objects)
+                               double xEndFloat, double yEndFloat, PyObject* objects)
 {
 	std::lock_guard g(pathFinderMutex);
 
 	MipMap *mipMap = getLocation(location);
 	if (!mipMap) return PyTuple_New(0);
 
-	if (xStart >= mipMap->originalWidth || xEnd >= mipMap->originalWidth ||
-	    yStart >= mipMap->originalHeight || yEnd >= mipMap->originalHeight)
-	{
-		makeOutsideMsg("findPath", xStart, yStart, xEnd, yEnd, mipMap, nullptr);
+	if (!checkMapPoint(mipMap, xStart, yStart) || !checkMapPoint(mipMap, xEndFloat, yEndFloat)) {
+		makeOutsideMsg("findPath", xStart, yStart, xEndFloat, yEndFloat, mipMap, nullptr);
 		return PyTuple_New(0);
 	}
 	if (objects != Py_None && !PyList_CheckExact(objects)) {
@@ -673,6 +681,9 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 		return PyTuple_New(0);
 	}
 
+
+	PointInt xEnd = PointInt(xEndFloat);
+	PointInt yEnd = PointInt(yEndFloat);
 
 	Path *pathPtr = nullptr;
 
@@ -733,7 +744,6 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 
 			if (!path.empty()) {
 				path.back() = {xStart, yStart};
-				path.front() = {xEnd, yEnd};
 				break;
 			}
 		}
@@ -742,10 +752,14 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 
 	long resSize = long(pathPtr->size()) * 2;
 	PyObject *res = PyTuple_New(resSize);
-	for (size_t i = pathPtr->size() - 1; i != size_t(-1); --i) {
-		const SimplePoint &p = (*pathPtr)[i];
-		PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(p.x));
-		PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(p.y));
+	if (resSize) {
+		for (size_t i = pathPtr->size() - 1; i != 0; --i) {
+			const SimplePoint &p = (*pathPtr)[i];
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(p.x));
+			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(p.y));
+		}
+		PyTuple_SET_ITEM(res, resSize - 2, PyFloat_FromDouble(xEndFloat));
+		PyTuple_SET_ITEM(res, resSize - 1, PyFloat_FromDouble(yEndFloat));
 	}
 	return res;
 }
@@ -822,11 +836,11 @@ static std::vector<LocationNode> locationNodes;
 
 static Path resPath;
 PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart,
-                                               const std::string &endLocation, PointInt xEnd, PointInt yEnd,
+                                               const std::string &endLocation, double xEndFloat, double yEndFloat,
                                                PyObject *bannedExits, bool bruteForce)
 {
 	if (!bruteForce && startLocation == endLocation) {
-		return PathFinder::findPath(startLocation, xStart, yStart, xEnd, yEnd, Py_None);
+		return PathFinder::findPath(startLocation, xStart, yStart, xEndFloat, yEndFloat, Py_None);
 	}
 
 	std::lock_guard g(pathFinderMutex);
@@ -835,10 +849,8 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	MipMap *endMap = getLocation(endLocation);
 	if (!startMap || !endMap) return PyTuple_New(0);
 
-	if (xStart >= startMap->originalWidth || xEnd >= endMap->originalWidth ||
-	    yStart >= startMap->originalHeight || yEnd >= endMap->originalHeight)
-	{
-		makeOutsideMsg("findPathBetweenLocations", xStart, yStart, xEnd, yEnd, startMap, endMap);
+	if (!checkMapPoint(startMap, xStart, yStart) || !checkMapPoint(endMap, xEndFloat, yEndFloat)) {
+		makeOutsideMsg("findPathBetweenLocations", xStart, yStart, xEndFloat, yEndFloat, startMap, endMap);
 		return PyTuple_New(0);
 	}
 	if (!PyList_CheckExact(bannedExits)) {
@@ -946,6 +958,9 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 			}
 		}
 	}
+
+	PointInt xEnd = PointInt(xEndFloat);
+	PointInt yEnd = PointInt(yEndFloat);
 
 	//add start point
 	locationNodes.push_back({});
@@ -1058,24 +1073,26 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	}
 	if (resPath.size() > 1) {
 		resPath.back() = {xStart, yStart};
-		resPath.front() = {xEnd, yEnd};
 	}
 
 	//set result
 	long resSize = long(resPath.size()) * 2;
 	PyObject *res = PyTuple_New(resSize);
-	for (size_t i = resPath.size() - 1; i != size_t(-1); --i) {
-		auto [x, y] = resPath[i];
+	if (resSize) {
+		for (size_t i = resPath.size() - 1; i != 0; --i) {
+			auto [x, y] = resPath[i];
 
-		if (x == PointInt(-1)) {
-			LocationNode &node = locationNodes[y];
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, convertToPy(node.mipMap->name));
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, convertToPy(node.placeName));
-		}else {
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(x));
-			PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(y));
+			if (x == PointInt(-1)) {
+				LocationNode &node = locationNodes[y];
+				PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, convertToPy(node.mipMap->name));
+				PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, convertToPy(node.placeName));
+			}else {
+				PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 2, PyLong_FromLong(x));
+				PyTuple_SET_ITEM(res, resSize - long(i) * 2 - 1, PyLong_FromLong(y));
+			}
 		}
+		PyTuple_SET_ITEM(res, resSize - 2, PyFloat_FromDouble(xEndFloat));
+		PyTuple_SET_ITEM(res, resSize - 1, PyFloat_FromDouble(yEndFloat));
 	}
-
 	return res;
 }

@@ -15,11 +15,11 @@ public:
 
 	//using algo A-star (A*)
 	static PyObject* findPath(const std::string &location, PointInt xStart, PointInt yStart,
-	                          PointInt xEnd, PointInt yEnd, PyObject *objects);
+	                          double xEndFloat, double yEndFloat, PyObject *objects);
 
 	//using Dijkstra's algorithm
 	static PyObject* findPathBetweenLocations(const std::string &startLocation, PointInt xStart, PointInt yStart,
-	                                          const std::string &endLocation, PointInt xEnd, PointInt yEnd,
+	                                          const std::string &endLocation, double xEndFloat, double yEndFloat,
 	                                          PyObject *bannedExits, bool bruteForce);
 };
 
