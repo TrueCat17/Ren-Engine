@@ -669,11 +669,11 @@ init -1000 python:
 			self.cooldowns[action] = time
 		
 		
-		def set_random_param(self, action, min_value, max_value):
-			self.random_param_bounds[action] = (min_value, max_value)
+		def set_random_param(self, name, min_value, max_value):
+			self.random_param_bounds[name] = (min_value, max_value)
 		
-		def get_random_param(self, action):
-			min_value, max_value = self.random_param_bounds[action]
+		def get_random_param(self, name):
+			min_value, max_value = self.random_param_bounds[name]
 			return min_value + random.random() * (max_value - min_value)
 	
 	
