@@ -81,9 +81,6 @@ init -1000 python:
 		actions = character.get_actions()
 		
 		if state == 'start':
-			if get_game_time() - (actions.sit_start_time or -10) < 10:
-				return 'end'
-			
 			objs = get_near_sit_objects(character, 1e9)
 			st = time.time()
 			for obj, point in objs:
@@ -92,7 +89,7 @@ init -1000 python:
 						if random.random() < 0.2:
 							return 'end'
 						continue
-					actions.sit_start_time = get_game_time()
+					actions.sit_end_time = get_game_time() + actions.get_random_param('sit')
 					return 'sitting'
 				
 				to_x, to_y = point
@@ -110,7 +107,7 @@ init -1000 python:
 			return 'moving'
 		
 		if state == 'sitting':
-			if get_game_time() - actions.sit_start_time > 5:
+			if get_game_time() > actions.sit_end_time:
 				return 'end'
 			return 'sitting'
 		
@@ -177,7 +174,7 @@ init -1000 python:
 			rotation = character.get_direction()
 			actions.rotation = rotation
 			actions.rotation_start_time = get_game_time()
-			actions.rotation_time = random.random() * 1.1 + 0.4
+			actions.rotation_time = actions.get_random_param('look_around')
 			
 			if turn_at_the_end is None:
 				turn_at_the_end = random.random() < 0.25
@@ -227,14 +224,14 @@ init -1000 python:
 		
 		home_is_fake_location = type(home) is not str
 		
-		if home_is_fake_location:
+		if home_is_fake_location and state in ('start', 'end'):
 			if not isinstance(home, (tuple, list)) or len(home) != 2:
 				out_msg('rpg_action_home', 'data <home> is not [location, place]')
 				return 'end'
 			
 			location_name, place = home
 			if location_name not in rpg_locations:
-				out_msg('rpg_action_home', 'Location <' + str(location_name) + '> not registered')
+				out_msg('rpg_action_home', 'Location <%s> was not registered' % (location_name, ))
 				return 'end'
 			
 			location = rpg_locations[location_name]
@@ -242,14 +239,11 @@ init -1000 python:
 				place_name = place
 				place = location.get_place(place_name)
 				if place is None:
-					out_msg('rpg_action_home', 'Place ' + place + '> in location <' + location_name + '> not found')
+					out_msg('rpg_action_home', 'Place <%s> in location <%s> not found' % (place_name, location_name))
 					return 'end'
 		
 		
 		if state == 'start':
-			if 0 < get_game_time() - (actions.home_end_time or 0) < 15:
-				return 'end'
-			
 			if not home_is_fake_location:
 				if character.location.name == home:
 					actions.home_end_time = get_game_time() + 2
@@ -314,12 +308,8 @@ init -1000 python:
 		no_start_friend = friend is None
 		
 		if state == 'start':
-			if friend:
-				if not friend.location:
-					return 'end'
-			else:
-				if get_game_time() - (actions.to_friend_end_time or -2) < 2:
-					return 'end'
+			if friend and not friend.location:
+				return 'end'
 			
 			if not friend:
 				friends = []
@@ -329,8 +319,7 @@ init -1000 python:
 					friend_actions = friend.get_actions()
 					if friend_actions:
 						if not friend_actions.interruptable: continue
-						if friend_actions.allow and 'to_friend' not in friend_actions.allow: continue
-						if friend_actions.block and 'to_friend'     in friend_actions.block: continue
+						if friend_actions.blocked('to_friend'): continue
 					friends.append(friend)
 				if not friends:
 					return 'end'
@@ -370,7 +359,7 @@ init -1000 python:
 				friend.move_to_place(None)
 				friend.rotate_to(character)
 				
-				actions.to_friend_end_time = get_game_time() + 3
+				actions.to_friend_end_time = get_game_time() + actions.get_random_param('to_friend')
 				return 'conversation'
 			
 			if same_location:
@@ -402,15 +391,52 @@ init -1000 python:
 				friend_actions.stop()
 			return 'end'
 	
-	def rpg_action_follow(character, state, to):
+	# stop on min_dist, run on max_dist
+	def rpg_action_follow(character, state, to, min_dist = 50, max_dist = 150):
 		actions = character.get_actions()
 		
 		same_location = character.location is to.location
-		dist = get_dist(character.x, character.y, to.x, to.y)
-		min_dist = 50 # stop
-		max_dist = 150 # run
+		to_sit_object = to.sit_object
+		sit_object = None
+		to_x, to_y = to.x, to.y
+		if to_sit_object:
+			if to_sit_object is character.sit_object:
+				sit_object = to_sit_object
+				to_x, to_y = character.x, character.y
+			else:
+				objs = get_near_sit_objects(to, max_dist)
+				if objs:
+					sit_object, (to_x, to_y) = objs[0]
+				else:
+					to_x, to_y = to.old_x, to.old_y
+		dist = get_dist(character.x, character.y, to_x, to_y)
+		
+		if sit_object:
+			min_dist = 1
+		else:
+			if dist < min_dist * 0.7:
+				dx, dy = {
+					to_left:    (-1, 0),
+					to_right:   (+1, 0),
+					to_forward: (0, -1),
+					to_back:    (0, +1),
+				}[to.get_direction()]
+				to_x = in_bounds(to_x + dx * min_dist, 0, to.location.xsize - 1)
+				to_y = in_bounds(to_y + dy * min_dist, 0, to.location.ysize - 1)
+				
+				dist = get_dist(character.x, character.y, to_x, to_y)
+				min_dist = 1
 		
 		if state == 'start':
+			actions.interruptable = False
+			
+			if sit_object and not character.sit_object and dist < 1:
+				character.sit_down(sit_object)
+			if not sit_object and character.sit_object:
+				character.stand_up()
+			if sit_object and character.sit_object is sit_object:
+				return 'start'
+			
 			if same_location and dist <= min_dist:
 				character.move_to_place(None)
 				character.rotate_to(to)
@@ -420,7 +446,7 @@ init -1000 python:
 			actions.follow_start_time = get_game_time()
 			
 			run = dist > max_dist
-			path_found = character.move_to_place([to.location.name, to], run=run)
+			path_found = character.move_to_place([to.location.name, {'x': to_x, 'y': to_y}], run=run)
 			if path_found:
 				return 'moving'
 			character.move_to_place(None)
@@ -448,11 +474,11 @@ init -1000 python:
 			return 'moving'
 		
 		if state in ('rewind_to_min', 'rewind_to_max'):
-			path_found = character.move_to_place([to.location.name, to])
+			path_found = character.move_to_place([to.location.name, {'x': to_x, 'y': to_y}])
 			if not path_found:
 				return 'start'
-			need_dist = min_dist if 'min' in state else max_dist
-			while character.location is not to.location or get_dist(character.x, character.y, to.x, to.y) > need_dist:
+			need_dist = min_dist if state == 'rewind_to_min' else max_dist
+			while character.location is not to.location or get_dist(character.x, character.y, to_x, to_y) > need_dist:
 				character.update_moving(0.05)
 			return 'start'
 		
@@ -476,6 +502,11 @@ init -1000 python:
 			self.funcs = {}
 			self.chances = {}
 			
+			self.last_calls = {}
+			self.cooldowns = {}
+			
+			self.random_param_bounds = {}
+			
 			self.allow = []
 			self.block = []
 			
@@ -488,7 +519,7 @@ init -1000 python:
 			res = RpgActions()
 			Object.__init__(res, self)
 			res.character = character
-			for prop in ('funcs', 'chances', 'allow', 'block', 'queue'):
+			for prop in ('funcs', 'chances', 'last_calls', 'cooldowns', 'random_param_bounds', 'allow', 'block', 'queue'):
 				res[prop] = self[prop].copy()
 			return res
 		
@@ -532,14 +563,14 @@ init -1000 python:
 				if not self.next():
 					self.random()
 		
-		def set(self, action_name, *args, **kwargs):
-			if self.blocked(action_name): return
+		def set(self, action, *args, **kwargs):
+			if self.blocked(action): return
 			
 			self.interruptable = self.default_interruptable
-			if type(action_name) is str:
-				self.cur_action = self.funcs[action_name]
+			if type(action) is str:
+				self.cur_action = self.funcs[action]
 			else:
-				self.cur_action = action_name
+				self.cur_action = action
 			
 			self.save_params(args, kwargs)
 			
@@ -548,14 +579,15 @@ init -1000 python:
 			self.last_update = None
 			self.update()
 		
-		def start(self, action_name, *args, **kwargs):
-			if self.blocked(action_name): return
+		def start(self, action, *args, **kwargs):
+			if self.blocked(action): return
 			
 			self.stop()
-			self.set(action_name, *args, **kwargs)
+			self.set(action, *args, **kwargs)
 		
 		def stop(self, directly = True):
 			if self.cur_action:
+				self.last_calls[self.cur_action] = get_game_time()
 				self.state = 'end'
 				new_state = rpg_action_spent_time_exec(self.exec_action, self.cur_action)
 				
@@ -578,13 +610,23 @@ init -1000 python:
 			return self.cur_action(self.character, self.state, *self.cur_args, **self.cur_kwargs)
 		
 		def random(self):
+			now = get_game_time()
+			
 			scores = 0
 			chances = []
 			for action, (chance_min, chance_max) in self.chances.items():
-				if not self.blocked(action):
-					chance = chance_min if chance_max is None else random.randint(chance_min, chance_max)
-					scores += chance
-					chances.append((action, scores))
+				if self.blocked(action):
+					continue
+				
+				func = self.funcs[action]
+				last_call = self.last_calls.get(func, -1e9)
+				cooldown = self.cooldowns.get(func, 0)
+				if now - last_call < cooldown:
+					continue
+				
+				chance = chance_min if chance_max is None else random.randint(chance_min, chance_max)
+				scores += chance
+				chances.append((action, scores))
 			
 			r = random.random() * scores
 			for action, score in chances:
@@ -595,11 +637,10 @@ init -1000 python:
 					break
 		
 		def blocked(self, action):
-			return (
-				(self.allow and action not in self.allow)
-				or
-				(self.block and action     in self.block)
-			)
+			func = self.funcs.get(action)
+			if self.allow and action not in self.allow and func not in self.allow:
+				return True
+			return action in self.block or func in self.block
 		
 		def save_params(self, args, kwargs):
 			self.state = kwargs.get('state', 'start')
@@ -607,19 +648,33 @@ init -1000 python:
 				del kwargs['state']
 			self.cur_args, self.cur_kwargs = args, kwargs
 		
-		def add(self, action_name, *args, **kwargs):
-			self.queue.append([action_name, args, kwargs])
+		def add(self, action, *args, **kwargs):
+			self.queue.append([action, args, kwargs])
 		
 		def next(self):
 			while True:
 				if not self.queue:
 					return False
 				
-				action_name, args, kwargs = self.queue[0]
+				action, args, kwargs = self.queue[0]
 				self.queue.pop(0)
-				if not self.blocked(action_name):
-					self.start(action_name, *args, **kwargs)
+				if not self.blocked(action):
+					self.start(action, *args, **kwargs)
 					return True
+		
+		
+		def set_cooldown(self, action, time):
+			if type(action) is str:
+				action = self.funcs[action]
+			self.cooldowns[action] = time
+		
+		
+		def set_random_param(self, action, min_value, max_value):
+			self.random_param_bounds[action] = (min_value, max_value)
+		
+		def get_random_param(self, action):
+			min_value, max_value = self.random_param_bounds[action]
+			return min_value + random.random() * (max_value - min_value)
 	
 	
 	def get_std_rpg_actions():
@@ -644,6 +699,14 @@ init -1000 python:
 			chance_max = None if len(action) == 2 else action[2]
 			
 			res.set_action(name, g['rpg_action_' + name], chance_min, chance_max)
+		
+		res.set_cooldown('sit', 5)
+		res.set_cooldown('home', 10)
+		res.set_cooldown('to_friend', 2)
+		
+		res.set_random_param('sit', 5, 50)
+		res.set_random_param('look_around', 0.4, 1.5)
+		res.set_random_param('to_friend', 2, 5)
 		
 		return res
 	
