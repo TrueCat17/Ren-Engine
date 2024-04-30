@@ -8,6 +8,20 @@ init python:
 	local_speed = 25
 	
 	def get_objs_and_places():
+		zoom = absolute(local_k)
+		floor = math.floor
+		def convert_rect(x, y, w, h, xa, ya):
+			x = (x - xa * w) * zoom
+			y = (y - ya * h) * zoom
+			
+			floor_x = floor(x)
+			floor_y = floor(y)
+			
+			floor_w = floor(x + w * zoom) - floor_x
+			floor_h = floor(y + h * zoom) - floor_y
+			
+			return (floor_x, floor_y), (floor_w, floor_h)
+		
 		objs = []
 		places = []
 		
@@ -19,9 +33,12 @@ init python:
 					main_frame = obj['animations'][None]
 					obj_image = get_image_or_similar(main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext)
 					
-					x = place.x + place.xsize // 2
-					y = place.y + place.ysize // 2
-					objs.append((obj_image, x, y))
+					x = place.x + place.xsize / 2
+					y = place.y + place.ysize / 2
+					w, h = get_image_size(obj_image)
+					
+					pos, size = convert_rect(x, y, w, h, 0.5, 1.0)
+					objs.append((obj_image, pos, size))
 			
 			if place.to_location_name is None:
 				image = im.Rect('#0B0')
@@ -39,10 +56,11 @@ init python:
 				else:
 					image = im.Rect('#F00')
 			
-			places.append((place, image))
+			pos, size = convert_rect(place.x, place.y, max(place.xsize, 3), max(place.ysize, 3), 0, 0)
+			places.append((place, image, pos, size))
 		
-		objs.sort(key = lambda image_x_y: image_x_y[2])
-		places.sort(key = lambda place_and_image: place_and_image[0].xsize * place_and_image[0].ysize, reverse = True)
+		objs.sort(key = lambda image_pos_size: image_pos_size[1][1])
+		places.sort(key = lambda place_and_others: place_and_others[0].xsize * place_and_others[0].ysize, reverse = True)
 		
 		return objs, places
 	
@@ -104,24 +122,20 @@ screen selected_location:
 		
 		if not persistent.hide_places:
 			null:
-				zoom local_k
-				
 				$ objs, places = get_objs_and_places()
 				
-				for obj_image, x, y in objs:
-					$ w, h = get_image_size(obj_image)
+				for obj_image, pos, size in objs:
 					image obj_image:
-						xpos math.floor(x - w / 2)
-						ypos math.floor(y - h)
-						size (w, h)
+						pos  pos
+						size size
 				
-				for place, image in places:
+				for place, image, pos, size in places:
 					button:
 						ground image
 						action 'selected_place_name = place.name'
 						
-						pos  (place.x, place.y)
-						size (max(place.xsize, 3), max(place.ysize, 3))
+						pos  pos
+						size size
 						
 						alpha 0.5
 	
