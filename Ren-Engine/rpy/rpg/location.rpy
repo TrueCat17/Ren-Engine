@@ -397,18 +397,24 @@ init -1002 python:
 	
 	def get_location_exit(character = None):
 		ch = character or me
+		location = ch.location
+		if not location:
+			return None
 		ch_x, ch_y = ch.x, ch.y
 		
-		for place in ch.location.places.values():
+		for place in location.places.values():
 			if place.inside_exit(ch_x, ch_y):
 				return place
 		return None
 	
 	def get_location_place(character = None):
 		ch = character or me
+		location = ch.location
+		if not location:
+			return None
 		ch_x, ch_y = ch.x, ch.y
 		
-		for place in ch.location.places.values():
+		for place in location.places.values():
 			if place.inside(ch_x, ch_y):
 				return place
 		return None
