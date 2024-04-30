@@ -43,6 +43,11 @@ init -995 python:
 		arrays = debug_screen.screen_time_arrays
 		
 		screen_times = get_screen_times()
+		
+		for name in list(arrays.keys()):
+			if name not in screen_times:
+				del arrays[name]
+		
 		for name, time in screen_times.items():
 			if name not in arrays:
 				arrays[name] = []
