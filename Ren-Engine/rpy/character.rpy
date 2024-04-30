@@ -92,14 +92,79 @@ init -1001 python:
 		radius = 10 # used in physics.rpy
 		
 		def __init__(self, name, **properties):
-			Object.__init__(self)
 			characters.append(self)
 			
-			self.real_name = name
-			self.unknown_name = properties.get('unknown_name', name)
+			dynamic = properties.get('dynamic', False)
+			xsize, ysize = 48, 96
 			
-			self.dynamic = properties.get('dynamic', False)
-			self.name = Eval(name) if self.dynamic and type(name) is str else name
+			Object.__init__(self,
+				real_name = name,
+				unknown_name = properties.get('unknown_name', name),
+				dynamic = dynamic,
+				name = Eval(name) if dynamic and type(name) is str else name,
+				
+				# rpg-props:
+				
+				walk_fps =  4,
+				run_fps  = 12,
+				walk_speed =  50,
+				run_speed  = 150,
+				
+				sit_frame = 4, # first (left) = 0
+				stay_frame = 3,
+				count_of_moving_frames = 4,
+				count_of_directions = 4,
+				
+				radius = Character.radius,
+				
+				
+				show_time = 0,
+				
+				directory = None,
+				dress = None,
+				overs = [],
+				
+				frame = 0,
+				direction = 0,
+				run = False,
+				pose = 'stay', # 'sit' | 'stay' | 'walk' | 'run'
+				fps = 0,
+				
+				prev_update_time = get_game_time(),
+				moving_ended = True,
+				
+				frame_time_offset = random.random() * 10,
+				
+				x = 0,
+				y = 0,
+				xoffset = 0,
+				yoffset = 0,
+				
+				xanchor = 0.5,
+				yanchor = 0.8,
+				xsize = xsize,
+				ysize = ysize,
+				crop = (0, 0, xsize, ysize),
+				alpha = 0,
+				
+				allowed_exits = set(),
+				
+				location = None,
+				paths = [],
+				path_index = 0,
+				point_index = 0,
+				
+				animations = Object(),
+				animation = None,
+				start_anim_time = None,
+				end_wait_anim_time = None,
+				
+				auto_actions = False,
+				actions = None,
+			)
+			
+			
+			d = self.__dict__
 			
 			for prefix_from, prefix_to in [('who_', 'name_text_'), ('what_', 'dialogue_text_')]:
 				for prop in ('font', 'size', 'color', 'outlinecolor', 'background', 'prefix', 'suffix'):
@@ -114,71 +179,16 @@ init -1001 python:
 					value = properties[prop_from]
 					if prop.endswith('color'):
 						value = color_to_int(value)
-					self[prop_to] = value
+					d[prop_to] = value
 			
 			for prop, value in properties.items():
 				if prop.startswith('dialogue_'):
-					self[prop] = value
+					d[prop] = value
 			
-			# rpg-props:
-			
-			self.walk_fps =  4
-			self.run_fps  = 12
-			self.walk_speed =  50
-			self.run_speed  = 150
-			
-			self.sit_frame = 4 # first (left) = 0
-			self.stay_frame = 3
-			self.count_of_moving_frames = 4
-			self.count_of_directions = 4
-			
-			self.radius = Character.radius
-			
-			
-			self.show_time = 0
-			
-			self.directory = None
-			self.dress = None
-			self.overs = []
-			
-			self.frame = 0
-			self.direction = 0
-			self.run = False
-			self.pose = 'stay' # 'sit' | 'stay' | 'walk' | 'run'
-			self.fps = self.walk_fps
-			
-			self.prev_update_time = get_game_time()
-			self.moving_ended = True
-			
-			self.frame_time_offset = random.random() * 10
-			
-			self.x, self.y = 0, 0
-			self.xoffset, self.yoffset = 0, 0
-			
-			self.xanchor, self.yanchor = 0.5, 0.8
-			self.xsize, self.ysize = 48, 96
-			self.crop = (0, 0, self.xsize, self.ysize)
-			self.alpha = 0
-			
-			self.allowed_exits = set()
-			
-			self.location = None
-			self.paths = []
-			self.paths_index = 0
-			self.point_index = 0
-			
-			self.animations = Object()
-			self.animation = None
-			self.start_anim_time = None
-			self.end_wait_anim_time = None
-			
-			self.auto_actions = False
-			self.actions = None
-			
-			self.inventories = {}
+			inventories = d['inventories'] = {}
 			for dress, size in inventory.dress_sizes.items():
 				if dress != 'default':
-					self.inventories[dress] = [['', 0] for i in range(size)]
+					inventories[dress] = [['', 0] for i in range(size)]
 		
 		def __str__(self):
 			return str(self.name)
@@ -282,13 +292,20 @@ init -1001 python:
 				self.pose = pose
 			else:
 				self.pose = 'stay'
-				out_msg('Character.set_pose', 'Unexpected pose <' + str(pose) + '>\n' + 'Expected: ' + ', '.join(expected))
+				msg = (
+					'Unexpected pose <%s>\n'
+					'Expected: %s'
+				)
+				params = (pose, ', '.join(expected))
+				out_msg('Character.set_pose', msg % params)
 		
 		
 		def set_frame(self, frame):
 			self.frame = frame
 		
 		def update_crop(self):
+			xsize, ysize = self.xsize, self.ysize
+			
 			frame = self.frame
 			if self.start_anim_time is None:
 				pose = self.get_pose()
@@ -299,12 +316,12 @@ init -1001 python:
 				else:
 					frame %= self.count_of_moving_frames
 				
-				y = self.direction * self.ysize
+				y = self.direction * ysize
 			else:
 				y = 0
-			x = frame * self.xsize
+			x = frame * xsize
 			
-			self.crop = (x, y, self.xsize, self.ysize)
+			self.crop = (x, y, xsize, ysize)
 		
 		
 		def sit_down(self, obj, place_index = -1):
@@ -373,14 +390,14 @@ init -1001 python:
 		def allow_exit(self, location_name, place_name = None):
 			location = rpg_locations.get(location_name, None)
 			if location is None:
-				out_msg('Character.allow_exit', 'Location <' + str(location_name) + '> is not registered')
+				out_msg('Character.allow_exit', 'Location <%s> was not registered' % (location_name, ))
 				return
 			
 			if place_name is not None:
 				if place_name in location.places:
 					self.allowed_exits.add((location_name, place_name))
 				else:
-					out_msg('Character.allow_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
+					out_msg('Character.allow_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
 				return
 			
 			for place_name in location.places:
@@ -389,10 +406,10 @@ init -1001 python:
 		def disallow_exit(location_name, place_name = None):
 			location = rpg_locations.get(location_name, None)
 			if location is None:
-				out_msg('Character.disallow_exit', 'Location <' + str(location_name) + '> is not registered')
+				out_msg('Character.disallow_exit', 'Location <%s> was not registered' % (location_name, ))
 				return
 			if place_name is not None and place_name not in location.places:
-				out_msg('Character.disallow_exit', 'Place <' + str(place_name) + '> in location <' + location_name + '> not found')
+				out_msg('Character.disallow_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
 				return
 			
 			tmp_allowed_exits = set(self.allowed_exits)
@@ -409,7 +426,7 @@ init -1001 python:
 		
 		def move_to_places(self, place_names, run = False, wait_time = -1, brute_force = False):
 			self.paths = []
-			self.paths_index = 0
+			self.path_index = 0
 			self.point_index = 0
 			self.moving_ended = True
 			self.set_pose('stay')
@@ -417,7 +434,7 @@ init -1001 python:
 				return False
 			
 			if self.location is None:
-				out_msg('Character.move_to_places', str(self) + ' not on location')
+				out_msg('Character.move_to_places', '%s not on location' % (self, ))
 				return False
 			
 			if self is me:
@@ -456,22 +473,22 @@ init -1001 python:
 						if isinstance(offset, (list, tuple)) and len(offset) == 2 and type(offset[0]) is int and type(offset[1]) is int:
 							pdx, pdy = offset
 						else:
-							out_msg('Character.move_to_places', 'Expected tuple or list with 2 ints in offset of place: <' + str(place_elem) + '>')
+							out_msg('Character.move_to_places', 'Expected tuple or list with 2 ints in offset of place: <%s>' % (place_elem, ))
 					else:
-						out_msg('Character.move_to_places', 'Expected tuple or list with len 2 or 3, got <' + str(place_elem) + '>')
+						out_msg('Character.move_to_places', 'Expected tuple or list with len 2 or 3, got <%s>' % (place_elem, ))
 						return False
 				else:
 					location_name = from_location_name
 				
 				location = rpg_locations.get(location_name, None)
 				if not location:
-					out_msg('Character.move_to_places', 'Location <' + str(location_name) + '> is not registered')
+					out_msg('Character.move_to_places', 'Location <%s> was not registered' % (location_name, ))
 					return False
 				
 				if type(place_elem) is str:
 					place = location.places.get(place_elem, None)
 					if place is None:
-						out_msg('Character.move_to_places', 'Place <' + str(place_elem) + '> in location <' + location_name + '> not found')
+						out_msg('Character.move_to_places', 'Place <%s> in location <%s> not found' % (place_elem, location_name))
 						return False
 				else:
 					place = place_elem
@@ -575,7 +592,7 @@ init -1001 python:
 				self.moving_ended = True
 				return
 			
-			path = self.paths[self.paths_index]
+			path = self.paths[self.path_index]
 			location_name, place = self.location.name, None
 			
 			last_direction = self.get_direction()
@@ -624,8 +641,8 @@ init -1001 python:
 				if self.point_index == len(path):
 					self.point_index = 0
 					
-					self.paths_index += 1
-					if self.paths_index == len(self.paths):
+					self.path_index += 1
+					if self.path_index == len(self.paths):
 						self.paths = []
 						self.set_pose('stay')
 						self.moving_ended = True
@@ -634,11 +651,11 @@ init -1001 python:
 						self.prev_update_time = get_game_time()
 						break
 					
-					path = self.paths[self.paths_index]
+					path = self.paths[self.path_index]
 					if type(path) is int:
 						if path < 0:
 							path -= 1
-						self.paths_index = path
+						self.path_index = path
 						break
 			
 			self.prev_update_time -= dtime
@@ -667,7 +684,7 @@ init -1001 python:
 		
 		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
 			if anim_name not in self.animations:
-				out_msg('Character.start_animation', 'Animation <' + str(anim_name) + '> not found in character <' + str(self) + '>')
+				out_msg('Character.start_animation', 'Animation <%s> not found in character <%s>' % (anim_name, self))
 				return
 			
 			if self.animation is None:
@@ -727,6 +744,9 @@ init -1001 python:
 		
 		
 		def update(self):
+			if not self.rpg_name:
+				return
+			
 			self.x, self.y = float(self.x), float(self.y)
 			
 			dtime = get_game_time() - self.prev_update_time
@@ -734,8 +754,10 @@ init -1001 python:
 			if has_screen('pause'):
 				return
 			
-			if self.get_auto() and self.actions:
-				self.actions.update()
+			if self.get_auto():
+				actions = self.actions
+				if actions:
+					actions.update()
 			self.alpha = min((get_game_time() - self.show_time) / location_fade_time, 1)
 			
 			if self.start_anim_time is None:
@@ -761,11 +783,11 @@ init -1001 python:
 					if not animation.loaded:
 						animation.loaded = True
 						animation.xsize, animation.ysize = get_image_size(self.main())
-						if (animation.xsize / animation.count_frames) % 1:
+						if animation.xsize % animation.count_frames:
 							msg = 'Animation <%s> of character <%s> has xsize (%s) that is not divisible by the count of frames (%s)'
 							params = (animation.name, self, animation.xsize, animation.count_frames)
 							out_msg('Character.update', msg % params)
-						animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
+						animation.xsize = math.ceil(animation.xsize / animation.count_frames)
 					
 					self.xsize, self.ysize = animation.xsize, animation.ysize
 				

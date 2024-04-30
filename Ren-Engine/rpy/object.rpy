@@ -1,38 +1,43 @@
 init -100000 python:
+	object_getattribute = object.__getattribute__
+	
 	class Object:
-		def __init__(self, _obj = None, **kwords):
-			self.in_persistent = False
-			self.not_persistent_props = set()
+		def __init__(self, _obj = None, **kwargs):
+			d = object_getattribute(self, '__dict__')
 			
 			if _obj is not None:
-				for k, v in _obj.__dict__.items():
-					self.__dict__[k] = v
-			for k, v in kwords.items():
-				self.__dict__[k] = v
+				d.update(_obj.__dict__)
+			else:
+				d['in_persistent'] = False
+				d['not_persistent_props'] = set()
+			d.update(kwargs)
 		
 		def set_prop_is_not_persistent(self, prop, not_persistent = True):
+			d = object_getattribute(self, '__dict__')
+			not_persistent_props = d['not_persistent_props']
+			
 			changed = False
 			if not_persistent:
-				changed = prop not in self.not_persistent_props
+				changed = prop not in not_persistent_props
 				if changed:
-					self.not_persistent_props.add(prop)
+					not_persistent_props.add(prop)
 			else:
-				changed = prop in self.not_persistent_props
+				changed = prop in not_persistent_props
 				if changed:
-					self.not_persistent_props.remove(prop)
+					not_persistent_props.remove(prop)
 			
-			if changed and self.in_persistent:
+			if changed and d['in_persistent']:
 				global persistent_need_save
 				persistent_need_save = True
 		
 		def __contains__(self, key):
-			return key in self.__dict__
+			return key in object_getattribute(self, '__dict__')
 		
 		def get(self, attr, default_value = None):
-			return self.__dict__.get(attr, default_value)
+			return object_getattribute(self, '__dict__').get(attr, default_value)
 		
 		def __getattribute__(self, attr):
-			d = object.__getattribute__(self, '__dict__')
+			d = object_getattribute(self, '__dict__')
 			if attr == '__dict__':
 				return d
 			if attr in d:
@@ -43,12 +48,12 @@ init -100000 python:
 				if persistent_saving or not d['in_persistent']:
 					raise AttributeError(attr)
 			try:
-				return object.__getattribute__(self, attr)
+				return object_getattribute(self, attr)
 			except:
 				return None
 		
 		def __setattr__(self, attr, value):
-			d = self.__dict__
+			d = object_getattribute(self, '__dict__')
 			if attr in d:
 				old = d[attr]
 				type_old = type(old)
@@ -67,7 +72,7 @@ init -100000 python:
 			
 			d[attr] = value
 			
-			if self.in_persistent and attr not in self.not_persistent_props:
+			if d['in_persistent'] and attr not in d['not_persistent_props']:
 				if isinstance(value, Object):
 					_set_object_in_persistent(value)
 				
@@ -75,8 +80,9 @@ init -100000 python:
 				persistent_need_save = True
 		
 		def __delattr__(self, attr):
-			del self.__dict__[attr]
-			if self.in_persistent and attr not in self.not_persistent_props:
+			d = object_getattribute(self, '__dict__')
+			del d[attr]
+			if d['in_persistent'] and attr not in d['not_persistent_props']:
 				global persistent_need_save
 				persistent_need_save = True
 		
@@ -89,7 +95,7 @@ init -100000 python:
 		
 		
 		def __str__(self):
-			return '<instance of ' + self.__class__.__name__ + '>'
+			return '<instance of %s>' % (self.__class__.__name__, )
 		
 		def __repr__(self):
 			return str(self)
@@ -99,15 +105,18 @@ init -100000 python:
 			return True
 		
 		def __dir__(self):
-			return filter(_object_keys_filter, self.__dict__.keys()) # not lambda for ability to pickle
+			d = object_getattribute(self, '__dict__')
+			return filter(_object_keys_filter, d.keys()) # not lambda for ability to pickle
 		def __iter__(self):
 			return self.__dir__()
 		def keys(self):
 			return self.__dir__()
 		def items(self):
-			return filter(_object_items_filter, self.__dict__.items())
+			d = object_getattribute(self, '__dict__')
+			return filter(_object_items_filter, d.items())
 		def values(self):
-			return map(self.get, filter(_object_keys_filter, self.__dict__.keys()))
+			d = object_getattribute(self, '__dict__')
+			return map(self.get, filter(_object_keys_filter, d.keys()))
 		
 		# for pickle persistent objects not in <persistent> file
 		#  (see __getattribute__)
@@ -117,23 +126,24 @@ init -100000 python:
 		
 		# for usual pickle
 		def __getstate__(self):
-			res = dict(self.__dict__)
+			res = object_getattribute(self, '__dict__').copy()
+			not_persistent_props = res['not_persistent_props']
+			
 			if not res['in_persistent']:
 				del res['in_persistent']
 			if not res['not_persistent_props']:
 				del res['not_persistent_props']
 			
-			for prop in self.not_persistent_props:
-				if prop in res:
-					del res[prop]
+			for prop in not_persistent_props:
+				res.pop(prop, None)
 			return res
 	
 		def __setstate__(self, new_dict):
-			if 'in_persistent' not in new_dict:
-				new_dict['in_persistent'] = False
-			if 'not_persistent_props' not in new_dict:
-				new_dict['not_persistent_props'] = set()
-			self.__dict__.update(new_dict)
+			d = object_getattribute(self, '__dict__')
+			d.update(new_dict)
+			
+			d.setdefault('in_persistent', False)
+			d.setdefault('not_persistent_props', set())
 	
 	
 	def _restore_object_from_persistent(*path):
@@ -146,9 +156,7 @@ init -100000 python:
 		if parent is obj:
 			return cur_path
 		
-		if isinstance(parent, Object):
-			parent = parent.__dict__
-		if isinstance(parent, dict):
+		if isinstance(parent, (dict, Object)):
 			it = parent.items()
 		elif isinstance(parent, (list, tuple)):
 			it = enumerate(parent)
@@ -164,8 +172,8 @@ init -100000 python:
 	
 	def _set_object_in_persistent(obj):
 		if isinstance(obj, Object):
-			obj.in_persistent = True
 			obj = obj.__dict__
+			obj['in_persistent'] = True
 		
 		if isinstance(obj, dict):
 			it = obj.values()

@@ -20,7 +20,7 @@ init -1002 python:
 	
 	
 	cur_location = None
-	cur_location_name = None
+	cur_location_name = ''
 	cur_exit = None
 	cur_place = None
 	cur_place_name = prev_place_name = ''
@@ -99,12 +99,14 @@ init -1002 python:
 		real_width, real_height = get_image_size(main)
 		reg_width, reg_height = cur_location.xsize, cur_location.ysize
 		if reg_width != real_width or reg_height != real_height:
-			reg_size = str(reg_width) + 'x' + str(reg_height)
-			real_size = str(real_width) + 'x' + str(real_height)
-			out_msg('set_location', 
-					'Location sizes on registration (' + reg_size + ') not equal to real sizes (' + real_size + ')\n' + 
-					'Location: <' + cur_location.name + '>\n' + 
-					'Main image: <' + main + '>')
+			msg = (
+				'Location sizes on registration (%sx%s) not equal to real sizes (%sx%s)\n'
+				'Location: <%s>\n'
+				'Main image: <%s>'
+			)
+			params = (reg_width, reg_height, real_width, real_height, location_name, main)
+			
+			out_msg('set_location', msg % params)
 		
 		end_location_ambience(cur_location)
 		ignore_prev_rpg_control()
@@ -134,8 +136,9 @@ init -1002 python:
 		cur_location.cam_object_old = None
 		
 		if character is me:
+			me_x, me_y = me.x, me.y
 			for place in cur_location.places.values():
-				if place.inside(me.x, me.y):
+				if place.inside(me_x, me_y):
 					break
 			else:
 				global was_out_exit
@@ -143,9 +146,8 @@ init -1002 python:
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_place, cur_place_name
-		cur_location = cur_location_name = None
-		cur_place = None
-		cur_place_name = ''
+		cur_location = cur_place = None
+		cur_location_name = cur_place_name = ''
 		
 		global draw_location
 		draw_location = None
@@ -206,7 +208,7 @@ init -1002 python:
 					path = im.recolor(path, r, g, b)
 			else:
 				if need:
-					out_msg('get_location_image', 'File <' + path + '> not found')
+					out_msg('get_location_image', 'File <%s> not found' % (path, ))
 				path = None
 		
 		obj.cache[key] = path
@@ -241,31 +243,32 @@ init -1002 python:
 		last_coords_min_diff = 5
 		
 		def __init__(self, name, directory, is_room, xsize, ysize):
-			Object.__init__(self)
+			Object.__init__(self,
+				name = name,
+				directory = directory + ('' if directory.endswith('/') else '/'),
+				
+				is_room = is_room,
+				xsize = xsize,
+				ysize = ysize,
+				
+				places = {},
+				
+				ambience_paths = None,
+				ambience_volume = 1.0,
+				
+				path_need_update = True,
+				min_scale = 8,
+				count_scales = 1 if is_room else 2, # more accuracy for small space
+				
+				cam_object = None,
+				cam_object_old = None,
+				
+				last_coords = [],
+			)
 			
-			self.name = name
-			self.directory = directory + ('' if directory.endswith('/') else '/')
-			
-			self.is_room = is_room
-			self.xsize, self.ysize = xsize, ysize
-			
-			self.places = {}
-			
-			self.objects = [self]
+			objects = self.objects = [self]
 			if self.over():
-				self.objects.append(RpgLocationOver(self))
-			
-			self.ambience_paths = None
-			self.ambience_volume = 1.0
-			
-			self.path_need_update = True
-			self.min_scale = 8
-			self.count_scales = 1 if is_room else 2 # more accuracy for small space
-			
-			self.cam_object = None
-			self.cam_object_old = None
-			
-			self.last_coords = []
+				objects.append(RpgLocationOver(self))
 		
 		def __str__(self):
 			return '<RpgLocation %s>' % (self.name, )
@@ -299,20 +302,21 @@ init -1002 python:
 		
 		def update_pos(self):
 			pos = get_camera_params(self)
-			if self.last_coords:
-				prev = self.last_coords[-1]
+			last_coords = self.last_coords
+			if last_coords:
+				prev = last_coords[-1]
 				dx = abs(pos[0] - prev[0])
 				dy = abs(pos[1] - prev[1])
 				if max(dx, dy) < self.last_coords_min_diff:
 					pos = prev
-			self.last_coords.append(pos)
-			self.last_coords[:-self.last_coords_count] = []
+			last_coords.append(pos)
+			last_coords[:-self.last_coords_count] = []
 			
 			x = y = 0
-			for pos in self.last_coords:
+			for pos in last_coords:
 				x += pos[0]
 				y += pos[1]
-			l = len(self.last_coords)
+			l = len(last_coords)
 			
 			self.x = x / l
 			self.y = y / l
@@ -320,22 +324,35 @@ init -1002 python:
 	
 	class RpgPlace(Object):
 		def __init__(self, name, x, y, xsize, ysize, to):
-			Object.__init__(self)
-			self.name = name
-			self.x, self.y, self.xsize, self.ysize = x, y, xsize, ysize
-			self.exit_side, self.to_location_name, self.to_place_name, self.to_side = to
-			self.inventory = []
+			exit_side, to_location_name, to_place_name, to_side = to
+			
+			Object.__init__(self,
+				name = name,
+				x = x,
+				y = y,
+				xsize = xsize,
+				ysize = ysize,
+				
+				exit_side = exit_side,
+				to_location_name = to_location_name,
+				to_place_name = to_place_name,
+				to_side = to_side,
+				
+				inventory = [],
+			)
 		
 		def __str__(self):
-			return '<RpgPlace ' + str(self.name) + '>'
+			return '<RpgPlace %s>' % (self.name, )
 		
 		def get_rect(self, of_exit = False):
-			x, y, w, h = self.x, self.y, self.xsize, self.ysize
-			w2, h2 = w // 2, h // 2
+			rect = self.x, self.y, self.xsize, self.ysize
 			
 			side = self.exit_side
 			if not side:
-				return x, y, w, h
+				return rect
+			
+			x, y, w, h = rect
+			w2, h2 = w // 2, h // 2
 			
 			if not of_exit:
 				if   side == 'up':    side = 'down'
@@ -366,14 +383,14 @@ init -1002 python:
 			w = place.get('xsize', 0)
 			h = place.get('ysize', 0)
 		
-		xa = get_absolute(place.get('xanchor', 0), w)
-		ya = get_absolute(place.get('yanchor', 0), h)
-		
 		if anchor is None:
 			if isinstance(place, Character):
-				anchor = (xa, ya)
-			else:
-				anchor = (0.5, 0.5)
+				return x, y
+			
+			anchor = (0.5, 0.5)
+		
+		xa = get_absolute(place.get('xanchor', 0), w)
+		ya = get_absolute(place.get('yanchor', 0), h)
 		
 		return x - xa + get_absolute(anchor[0], w), y - ya + get_absolute(anchor[1], h)
 	
@@ -398,6 +415,8 @@ init -1002 python:
 	
 	
 	def path_update_locations():
+		floor = math.floor
+		
 		for location in rpg_locations.values():
 			if not location.path_need_update: continue
 			location.path_need_update = False
@@ -414,13 +433,13 @@ init -1002 python:
 				if not free_obj: continue
 				
 				xsize, ysize = get_image_size(free_obj) # not obj.[x/y]size, mb size(free) != size(main)
-				x = int(obj.x - get_absolute(obj.xanchor, xsize) + obj.xoffset)
-				y = int(obj.y - get_absolute(obj.yanchor, ysize) + obj.yoffset)
+				x = floor(obj.x - get_absolute(obj.xanchor, xsize) + obj.xoffset)
+				y = floor(obj.y - get_absolute(obj.yanchor, ysize) + obj.yoffset)
 				objects.extend((free_obj, x, y))
 			
 			places = []
 			for place in location.places.values():
-				x, y = int(place.x + place.xsize // 2), int(place.y + place.ysize // 2)
+				x, y = floor(place.x + place.xsize // 2), floor(place.y + place.ysize // 2)
 				places.extend((place.name, x, y, place.to_location_name or '', place.to_place_name or ''))
 			
 			path_update_location(location.name, free, Character.radius, objects, places, location.min_scale, location.count_scales)
@@ -431,13 +450,11 @@ init -1002 python:
 			Object.__init__(self, location = location)
 		
 		def get_draw_data(self):
+			location = self.location
 			return {
-				'image':   self.location.over(),
-				'size':   (self.location.xsize, self.location.ysize),
+				'image':   location.over(),
+				'size':   (location.xsize, location.ysize),
 				'pos':    (0, 0),
-				'anchor': (0, 0),
-				'crop':   (0, 0, 1.0, 1.0),
-				'alpha':   1,
 				'zorder':  1e6,
 			}
 

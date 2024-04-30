@@ -36,17 +36,18 @@ init -1001 python:
 	def register_location_object(obj_name, directory, main_image, free_image,
 	                             max_in_inventory_cell = 0, remove_to_location = True):
 		if obj_name in location_objects:
-			out_msg('register_location_object', 'Object <' + obj_name + '> already exists')
+			out_msg('register_location_object', 'Object <%s> already exists' % (obj_name, ))
 			return
 		
-		obj = location_objects[obj_name] = Object()
-		obj.name = obj_name
-		obj.max_in_inventory_cell = max_in_inventory_cell
-		obj.remove_to_location = remove_to_location
-		obj.animations = Object()
-		obj.on = []
-		obj.sit_places = []
-		obj.is_vertical_sit_place = False
+		obj = location_objects[obj_name] = Object(
+			name = obj_name,
+			max_in_inventory_cell = max_in_inventory_cell,
+			remove_to_location    = remove_to_location,
+			animations = {},
+			on = [],
+			sit_places = [],
+			is_vertical_sit_place = False,
+		)
 		
 		register_location_object_animation(obj_name, None, directory, main_image, free_image, 0, 0, 1, 0, 0)
 	
@@ -55,23 +56,35 @@ init -1001 python:
 	                                       xoffset, yoffset,
 	                                       count_frames, start_frame, end_frame, time = 1.0):
 		if obj_name not in location_objects:
-			out_msg('register_location_object_animation', 'Object <%s> not registered' % (obj_name, ))
+			out_msg('register_location_object_animation', 'Object <%s> was not registered' % (obj_name, ))
 			return
 		
 		if (type(xoffset), type(yoffset)) != (int, int):
-			msg = 'On registration of animation <%s> of object <%s>\n' + 'set invalid pos: <%s, %s>, expected ints'
-			out_msg('register_location_object_animation', msg % (anim_name, obj_name, xoffset, yoffset))
+			msg = (
+				'On registration of animation <%s> of object <%s>\n'
+				'set invalid pos: <%s, %s>, expected ints'
+			)
+			params = (anim_name, obj_name, xoffset, yoffset)
+			out_msg('register_location_object_animation', msg % params)
 			return
 		
 		if (type(count_frames), type(start_frame), type(end_frame)) != (int, int, int):
-			msg = 'On registration of animation <%s> of object <%s>\n'
-			msg += 'params count_frame, start_frame and end_frame must be ints\n'
-			msg += '(got %s, %s, %s)'
-			out_msg('register_location_object_animation', msg % (anim_name, obj_name, count_frames, start_frame, end_frame))
+			msg = (
+				'On registration of animation <%s> of object <%s>\n'
+				'params count_frame, start_frame and end_frame must be ints\n'
+				'(got %s, %s, %s)'
+			)
+			params = (anim_name, obj_name, count_frames, start_frame, end_frame)
+			out_msg('register_location_object_animation', msg % params)
 			return
 		if count_frames <= 0 or not (0 <= start_frame < count_frames) or not (0 <= end_frame < count_frames):
-			msg = 'On registration of animation <%s> of object <%s>\n' + 'set invalid frames:\n' + 'count, start, end = %s, %s, %s'
-			out_msg('register_location_object_animation', msg % (anim_name, obj_name, count_frames, start_frame, end_frame))
+			msg = (
+				'On registration of animation <%s> of object <%s>\n'
+				'set invalid frames:\n'
+				'count, start, end = %s, %s, %s'
+			)
+			params = (anim_name, obj_name, count_frames, start_frame, end_frame)
+			out_msg('register_location_object_animation', msg % params)
 			return
 		
 		obj = location_objects[obj_name]
@@ -101,7 +114,7 @@ init -1001 python:
 	
 	def set_sit_place(obj_name, sit_places, over = None):
 		if obj_name not in location_objects:
-			out_msg('set_sit_place', 'Object <%s> not registered' % (obj_name, ))
+			out_msg('set_sit_place', 'Object <%s> was not registered' % (obj_name, ))
 			return
 		
 		for i in range(len(sit_places)):
@@ -161,19 +174,19 @@ init -1001 python:
 	
 	class RpgLocationObject(Object):
 		def __init__(self, name, x, y):
-			Object.__init__(self, location_objects[name])
-			
-			self.type = name
-			
-			self.x, self.y = x, y
-			self.xoffset, self.yoffset = 0, 0
-			
-			self.xanchor, self.yanchor = 0.5, 1.0
-			self.xsize, self.ysize = 0, 0
-			
-			self.alpha = 1
-			
-			self.inventory = []
+			Object.__init__(self, location_objects[name],
+				type = name,
+				x = x,
+				y = y,
+				xoffset = 0,
+				yoffset = 0,
+				xanchor = 0.5,
+				yanchor = 1.0,
+				xsize = 0,
+				ysize = 0,
+				alpha = 1,
+				inventory = [],
+			)
 			
 			self.remove_animation()
 			self.update()
@@ -257,7 +270,7 @@ init -1001 python:
 		
 		def set_animation(self, anim_name):
 			if anim_name not in self.animations:
-				out_msg('set_animation', 'Animation <' + str(anim_name) + '> not found in object <' + str(self.type) + '>')
+				out_msg('set_animation', 'Animation <%s> not found in object <%s>' % (anim_name, self.type))
 				return False
 			
 			self.anim_name = anim_name
@@ -269,17 +282,20 @@ init -1001 python:
 			return True
 		
 		def main(self):
-			return get_location_image(self.animation, self.animation.directory, self.animation.main_image, '', location_object_ext, False)
+			animation = self.animation
+			return get_location_image(animation, animation.directory, animation.main_image, '', location_object_ext, False)
 		def over(self):
-			if not self.animation.over_image:
+			animation = self.animation
+			if not animation.over_image:
 				return None
-			return get_location_image(self.animation, self.animation.directory, self.animation.over_image, '', location_object_ext, False)
+			return get_location_image(animation, animation.directory, animation.over_image, '', location_object_ext, False)
 		
 		def free(self):
-			if self.animation.free_image is None:
+			animation = self.animation
+			if animation.free_image is None:
 				return None
-			res = get_location_image(self.animation, self.animation.directory, self.animation.free_image, '', location_object_ext, True, False)
-			if self.animation.count_frames != 1:
+			res = get_location_image(animation, animation.directory, animation.free_image, '', location_object_ext, True, False)
+			if animation.count_frames != 1:
 				res = im.crop(res, self.crop)
 			return res
 		
@@ -387,11 +403,11 @@ init -1001 python:
 				if not animation.loaded:
 					animation.loaded = True
 					animation.xsize, animation.ysize = get_image_size(self.main())
-					if (animation.xsize / animation.count_frames) % 1:
+					if animation.xsize % animation.count_frames:
 						msg = 'Animation <%s> of object <%s> has xsize (%s) that is not divisible by the count of frames (%s)'
 						params = (animation.name, self.type, animation.xsize, animation.count_frames)
 						out_msg('RpgLocationObject.update', msg % params)
-					animation.xsize = int(math.ceil(animation.xsize / animation.count_frames))
+					animation.xsize = math.ceil(animation.xsize / animation.count_frames)
 				
 				self.xsize, self.ysize = animation.xsize, animation.ysize
 				self.xoffset, self.yoffset = animation.xoffset, animation.yoffset
@@ -417,7 +433,7 @@ init -1001 python:
 	
 	def add_location_object(location_name, place, obj_name, **kwargs):
 		if location_name not in rpg_locations:
-			out_msg('add_location_object', 'Location <' + location_name + '> not registered')
+			out_msg('add_location_object', 'Location <%s> was not registered' % (location_name, ))
 			return
 		location = rpg_locations[location_name]
 		
@@ -428,7 +444,7 @@ init -1001 python:
 		if type(place) is str:
 			tmp_place = location.get_place(place)
 			if not tmp_place:
-				out_msg('add_location_object', 'Place <' + place + '> not found in location <' + location_name + '>')
+				out_msg('add_location_object', 'Place <%s> not found in location <%s>' % (place, location_name))
 				return
 			place = tmp_place
 			pw, ph = place.xsize, place.ysize
@@ -436,8 +452,8 @@ init -1001 python:
 		else:
 			px, py = place['x'], place['y']
 			if isinstance(place, (dict, RpgPlace)):
-				pw = place['xsize'] if 'xsize' in place else 0
-				ph = place['ysize'] if 'ysize' in place else 0
+				pw = place.get('xsize', 0)
+				ph = place.get('ysize', 0)
 			else:
 				pw = ph = 0
 		
@@ -448,7 +464,7 @@ init -1001 python:
 			if not instance.type:
 				instance.type = obj_name
 		else:
-			out_msg('add_location_object', 'Object <' + obj_name + '> not registered')
+			out_msg('add_location_object', 'Object <%s> was not registered' % (obj_name, ))
 			return
 		
 		instance.location = location
@@ -462,14 +478,14 @@ init -1001 python:
 	
 	def get_location_objects(location_name, place, obj_type, count = -1):
 		if location_name not in rpg_locations:
-			out_msg('get_location_objects', 'Location <' + location_name + '> not registered')
+			out_msg('get_location_objects', 'Location <%s> was not registered' % (location_name, ))
 			return
 		location = rpg_locations[location_name]
 		
 		if type(place) is str:
 			tmp_place = location.get_place(place)
 			if not tmp_place:
-				out_msg('get_location_objects', 'Place <' + place + '> not found in location <' + location_name + '>')
+				out_msg('get_location_objects', 'Place <%s> not found in location <%s>' % (place, location_name))
 				return
 			place = tmp_place
 			px, py = place.x + place.xsize // 2, place.y + place.ysize // 2
@@ -590,7 +606,7 @@ init -1001 python:
 	
 	def remove_location_object(location_name, place, obj_name, count = 1):
 		if location_name not in rpg_locations:
-			out_msg('remove_location_object', 'Location <' + location_name + '> not registered')
+			out_msg('remove_location_object', 'Location <%s> was not registered' % (location_name, ))
 			return
 		location = rpg_locations[location_name]
 		
@@ -600,7 +616,7 @@ init -1001 python:
 			if type(place) is str:
 				tmp_place = location.get_place(place)
 				if tmp_place is None:
-					out_msg('remove_location_object', 'Place <' + place + '> in location <' + location_name + '> not found')
+					out_msg('remove_location_object', 'Place <%s> in location <%s> not found' % (place, location_name))
 					return
 				place = tmp_place
 			px, py = place['x'], place['y']

@@ -6,8 +6,16 @@ init -100002 python:
 	setattr(__builtins__, 'module', types.ModuleType)
 	setattr(__builtins__, 'builtin_function_or_method', types.BuiltinFunctionType)
 	
-	simple_types = (type(None), bool, int, float, absolute, str, types.BuiltinFunctionType, types.ModuleType, type)
+	simple_types = (type(None), bool, int, float, absolute, str, types.BuiltinFunctionType, types.ModuleType)
 	collection_types = (list, tuple, set, dict)
+	
+	
+	class GlobalPicklingCanaryException(Exception):
+		pass
+	class GlobalPicklingCanary:
+		def __getstate__(self):
+			raise GlobalPicklingCanaryException('Trying to save global dict from globals()')
+	_global_pickling_canary = GlobalPicklingCanary()
 	
 	
 	def picklable(obj, visited = None):
@@ -15,15 +23,24 @@ init -100002 python:
 			return False
 		
 		t = type(obj)
-		if t is not type and hasattr(obj, '__getstate__'):
-			try:
-				obj = obj.__getstate__()
-			except:
-				return False
-			t = type(obj)
-		
 		if t in simple_types:
 			return True
+		
+		if t is not type:
+			try:
+				getstate = obj.__getstate__
+			except:
+				pass
+			else:
+				try:
+					state = getstate()
+				except:
+					return False
+				if state is not None:
+					obj = state
+					t = type(obj)
+					if t in simple_types:
+						return True
 		
 		
 		# removed function (or lambda)?
@@ -32,8 +49,8 @@ init -100002 python:
 		#    pass
 		#  f2 = f
 		#  del f
-		if t is types.FunctionType and getattr(sys.modules.get(obj.__module__), obj.__name__, None) is not obj:
-			return False
+		if t is types.FunctionType:
+			return getattr(sys.modules.get(obj.__module__), obj.__name__, None) is obj
 		
 		# instance.method -> class of instance
 		if t is types.MethodType:
@@ -41,8 +58,8 @@ init -100002 python:
 			t = type(obj)
 		
 		# removed class?
-		if t is type and getattr(sys.modules.get(obj.__module__), obj.__name__, None) is not obj:
-			return False
+		if t is type:
+			return getattr(sys.modules.get(obj.__module__), obj.__name__, None) is obj
 		
 		
 		if visited is None:
@@ -110,6 +127,7 @@ init -10002 python:
 			tmp_file = open(path, 'wb')
 			pickle.dump(obj, tmp_file, protocol=pickle.HIGHEST_PROTOCOL)
 			tmp_file.close()
+			return True
 		except:
 			paths_list = pickling.get_paths_to_unpicklable(obj)
 			paths = ''
@@ -119,23 +137,26 @@ init -10002 python:
 				paths = paths[:-1]
 			
 			out_msg('pickling.save_object', _('Error on saving objects to file <%s>:\n%s') % (path, paths))
-			raise
+			return False
 	
-	def pickling__get_paths_to_objects(obj, visited = None, path = ''):
-		if visited is None:
-			visited = set()
-			visited.add(id(obj))
-		
+	def pickling__get_paths_to_unpicklable_helper(obj, visit_func, visited):
 		if obj is globals(): # error
 			return [obj] # dict is ok, need return error (not dict)
 		
 		t = type(obj)
-		if t not in collection_types and t is not type and hasattr(obj, '__getstate__'):
+		if t not in collection_types:
 			try:
-				obj = obj.__getstate__()
+				getstate = obj.__getstate__
 			except:
-				return obj
-			t = type(obj)
+				pass
+			else:
+				try:
+					state = getstate()
+				except:
+					return obj
+				if state is not None:
+					obj = state
+					t = type(obj)
 		
 		if t not in collection_types:
 			return obj
@@ -148,24 +169,28 @@ init -10002 python:
 			if child_id in visited: continue
 			visited.add(child_id)
 			
-			child_path = path + ('.' if path else '') + str(i)
-			child_res = pickling.get_paths_to_objects(child, visited, child_path)
+			child_res = visit_func(child, visit_func, visited)
 			if type(child_res) is dict:
+				if not child_res: continue
+				
 				for child2_path, child2 in child_res.items():
-					res[child2_path] = child2
+					if not picklable(child2):
+						res[(i, ) + child2_path] = child2
 			else:
-				res[child_path] = child
+				if not picklable(child):
+					res[(i, )] = child
 		return res
 	
 	def pickling__get_paths_to_unpicklable(obj, path = ''):
-		paths_dict = pickling.get_paths_to_objects(obj)
-		paths = sorted(paths_dict.keys())
+		visited = set()
+		visited.add(id(obj))
 		
-		res = []
-		for path in paths:
-			if not picklable(paths_dict[path]):
-				res.append(path)
-		return res
+		visit_func = pickling.get_paths_to_unpicklable_helper
+		paths_dict = visit_func(obj, visit_func, visited)
+		
+		paths = ['.'.join(map(str, path)) for path in paths_dict.keys()]
+		paths.sort()
+		return paths
 	
 	
 	def pickling__load_global_vars(path):
@@ -195,7 +220,7 @@ init -10002 python:
 				continue
 			
 			# don't save reference to globals()
-			if o is g:
+			if o is g or o is _global_pickling_canary:
 				continue
 			
 			# skip vars of ScreenLang
@@ -204,22 +229,7 @@ init -10002 python:
 			
 			obj[k] = o
 		
-		# manual checking of unpicklable objects
-		#  because some objects can be pickled (without exceptions),
-		#  but this is an error (for example, globals() dict)
-		paths_list = pickling.get_paths_to_unpicklable(obj)
-		if paths_list:
-			paths = ''
-			for i in paths_list:
-				paths += '  ' + i + '\n'
-			if paths.endswith('\n'):
-				paths = paths[:-1]
-			
-			out_msg('pickling.save_global_vars', _('Unpicklable object paths:\n%s') % paths)
-			return False
-		
-		pickling.save_object(path, obj)
-		return True
+		return pickling.save_object(path, obj)
 	
 	build_object('pickling')
 
