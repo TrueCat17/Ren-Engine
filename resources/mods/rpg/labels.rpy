@@ -12,19 +12,19 @@ label rpg_start:
 		set_rpg_control(False)
 		make_names_unknown()
 		
-		set_location("ikarus", "sit_place")
+		set_location('ikarus', 'sit_place')
 		me.set_direction(to_right)
-		me.set_pose("sit")
+		me.set_pose('sit')
 	
 	window show
 	if config.language != 'russian':
 		"There is only russian text now."
 	"Я проснулся в икарусе."
 	
-	$ me.set_pose("stay")
+	$ me.set_pose('stay')
 	pause 1
-	$ me.move_to_place("before_sit_place")
-	$ me.move_to_place("before_sit_place-2")
+	$ me.move_to_place('before_sit_place')
+	$ me.move_to_place('before_sit_place-2')
 	
 	"Управление WASD/стрелки + Shift (бег/шаг)."
 	"Для выхода из локации-помещения подойдите к выходу и нажмите кнопку <Действие> - E."
@@ -49,27 +49,27 @@ label enter__ikarus:
 
 
 label enter__before_gates:
-	if "gates" in was:
+	if 'gates' in was:
 		return
-	$ was.append("gates")
+	$ was.append('gates')
 	
 	$ set_rpg_control(False)
 	$ location_cutscene_on(align='down')
-	$ me.move_to_place("before_gates", False)
+	$ me.move_to_place('before_gates', False)
 	$ me.set_direction(to_forward)
 	
 	window show
 	"Я подошёл к воротам"
-	$ gate_right = get_location_objects(cur_location_name, me, "gate_right", 1)[0]
-	$ gate_right.start_animation("opening")
+	$ gate_right = get_location_objects(cur_location_name, me, 'gate_right', 1)[0]
+	$ gate_right.start_animation('opening')
 	extend " и открыл их."
 	"После я хотел уже было продолжить идти, как вдруг показалась девочка."
 	window hide
 	
-	$ show_character(sl, "clubs")
+	$ show_character(sl, 'clubs')
 	$ cam_to(sl, align='up')
 	$ sl.start_animation('hello', -1)
-	$ sl.move_to_place("behind_gates", False, 2)
+	$ sl.move_to_place('behind_gates', False, 2)
 	$ sl.remove_animation()
 	
 	window show
@@ -94,7 +94,7 @@ label enter__before_gates:
 	sl "Ну ладно, я пошла тогда."
 	window hide
 	
-	$ sl.move_to_place("clubs")
+	$ sl.move_to_place('clubs')
 	$ hide_character(sl)
 	$ cam_to(me)
 	
@@ -102,45 +102,45 @@ label enter__before_gates:
 	$ set_rpg_control(True)
 
 label clubs__before_clubs:
-	if "clubs" in was:
+	if 'clubs' in was:
 		return
-	$ was.append("clubs")
+	$ was.append('clubs')
 	
 	$ set_rpg_control(False)
 	$ location_cutscene_on(align='down')
-	$ me.move_to_place("before_porch")
+	$ me.move_to_place('before_porch')
 	$ me.set_direction(to_forward)
 	
 	window show
 	"Проходя мимо здания клубов, я заметил, что тут вышла {color=" + hex(un.name_text_color) + "}какая-то девушка{/color}."
 	
-	$ show_character(un, "radio_club")
-	$ un.move_to_place("porch")
+	$ show_character(un, 'radio_club')
+	$ un.move_to_place('porch')
 	
-	$ show_character(us, "cluster")
-	$ us.move_to_place("porch_left", True, 1)
+	$ show_character(us, 'cluster')
+	$ us.move_to_place('porch_left', True, 1)
+	$ us.rotate_after_moving = to_right
 	$ un.set_direction(to_left)
 	
 	"Пока я раздумывал, стоит ли подходить к ней, появилась {color=" + hex(us.name_text_color) + "}ещё одна{/color}."
-	$ us.set_direction(to_right)
 	"Она подошла к первой."		
 	"Начала что-то рассказывать и..."
 	
-	$ us.start_animation("cricket", 0, 0.7)
-	$ us.move_to_place("porch_cleft")
+	$ us.start_animation('cricket', 0, 0.7)
+	$ us.move_to_place('porch_cleft')
 	$ un.x += 10
 	extend "напугала её!"
 	un "Иииии-ииииииииИИИИИ!!!"
 	
 	$ add_location_object('clubs', 'porch', 'key')
-	$ un.move_to_place("admin", True, 0.5)
+	$ un.move_to_place('admin', True, 0.5)
 	"Первая убежала."
 	
 	$ us.remove_animation()
 	$ us.set_direction(to_back)
 	pause 0.2
 	$ me.set_direction(to_right)
-	$ us.move_to_place("admin", True, 0.5)
+	$ us.move_to_place('admin', True, 0.5)
 	"Вторая посмотрела на меня, а потом бросилась вслед за ней."
 	$ hide_character(un)
 	$ hide_character(us)
@@ -162,7 +162,7 @@ label on__radio_club:
 		set_rpg_control(False)
 		me.set_direction(to_forward)
 		sh.set_direction(to_back)
-	$ location_cutscene_on()
+	$ location_cutscene_on(align='down')
 	
 	window show
 	
