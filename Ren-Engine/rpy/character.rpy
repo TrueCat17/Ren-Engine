@@ -403,7 +403,7 @@ init -1001 python:
 			for place_name in location.places:
 				self.allowed_exits.add((location_name, place_name))
 		
-		def disallow_exit(location_name, place_name = None):
+		def disallow_exit(self, location_name, place_name = None):
 			location = rpg_locations.get(location_name, None)
 			if location is None:
 				out_msg('Character.disallow_exit', 'Location <%s> was not registered' % (location_name, ))

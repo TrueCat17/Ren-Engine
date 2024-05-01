@@ -531,7 +531,7 @@ init -1000 python:
 			return list(self.funcs.keys())
 		
 		def update(self, state = None):
-			if self.last_update == get_game_time():
+			if self.last_update == get_game_time() and state is None:
 				return
 			self.last_update = get_game_time()
 			
