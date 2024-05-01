@@ -478,6 +478,8 @@ init -1001 python:
 					else:
 						out_msg('Character.move_to_places', 'Expected tuple or list with len 2 or 3, got <%s>' % (place_elem, ))
 						return False
+					if not location_name:
+						location_name = from_location_name
 				else:
 					location_name = from_location_name
 				
@@ -666,6 +668,11 @@ init -1001 python:
 			if self.location.name != location_name:
 				x, y = self.x, self.y
 				self.x, self.y = coords_before_exit
+				
+				exit = get_location_place(self)
+				if exit and exit.to_side:
+					last_direction = exit.to_side
+				
 				show_character(self, {'x': x, 'y': y}, location_name)
 			self.set_direction(last_direction)
 		
