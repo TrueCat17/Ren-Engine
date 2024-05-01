@@ -3,10 +3,12 @@ init -1002 python:
 	location_ext = 'png'
 	
 	
+	# params for location effect <fade>
+	# this does not apply if next_location is cur_location
+	
 	location_start_time = -100
 	location_fade_time = 0.5
 	location_time_without_control = 0.33
-	
 	
 	location_was_show = True
 	def location_showed():
@@ -17,6 +19,10 @@ init -1002 python:
 		global location_start_time
 		location_start_time = get_game_time() - location_fade_time * 2
 	can_exec_next_skip_funcs.append(location_show)
+	
+	
+	# last_set_location_time is ALWAYS updated when <set_location> is called (with correct params)
+	prev_set_location_time = last_set_location_time = -1
 	
 	
 	cur_location = None
@@ -84,6 +90,9 @@ init -1002 python:
 		
 		if not has_screen('location'):
 			show_screen('location')
+		
+		global last_set_location_time
+		last_set_location_time = get_game_time()
 		
 		global cur_location, cur_location_name, cur_place, cur_place_name
 		prev_location = cur_location
@@ -186,14 +195,13 @@ init -1002 python:
 				location_banned_exits.remove((tmp_loc, tmp_place))
 	
 	
-	def get_location_image(obj, directory, name, name_suffix, ext, is_free, need = True):
-		if obj.cache is None:
-			obj.cache = {}
+	def get_location_image(directory, name, name_suffix, ext, is_free, need = True):
+		cache = get_location_image.__dict__
 		
 		mode = times['current_name']
-		key = name, name_suffix, mode
-		if key in obj.cache:
-			return obj.cache[key]
+		key = directory, name, name_suffix, ext, is_free, mode
+		if key in cache:
+			return cache[key]
 		
 		file_name = name
 		if name_suffix:
@@ -211,7 +219,7 @@ init -1002 python:
 					out_msg('get_location_image', 'File <%s> not found' % (path, ))
 				path = None
 		
-		obj.cache[key] = path
+		cache[key] = path
 		return path
 	
 	def set_location_scales(name, min_scale, count_scales):
@@ -240,7 +248,7 @@ init -1002 python:
 	
 	class RpgLocation(Object):
 		last_coords_count = 10
-		last_coords_min_diff = 5
+		last_coords_min_diff = 3
 		
 		def __init__(self, name, directory, is_room, xsize, ysize):
 			Object.__init__(self,
@@ -270,6 +278,12 @@ init -1002 python:
 			if self.over():
 				objects.append(RpgLocationOver(self))
 		
+		def __getstate__(self):
+			res = Object.__getstate__(self)
+			res['path_need_update'] = True
+			res['last_coords'] = []
+			return res
+		
 		def __str__(self):
 			return '<RpgLocation %s>' % (self.name, )
 		
@@ -282,11 +296,11 @@ init -1002 python:
 			}
 		
 		def main(self):
-			return get_location_image(self, self.directory, 'main', '', location_ext, False)
+			return get_location_image(self.directory, 'main', '', location_ext, False)
 		def over(self):
-			return get_location_image(self, self.directory, 'over', '', location_ext, False, False)
+			return get_location_image(self.directory, 'over', '', location_ext, False, False)
 		def free(self):
-			return get_location_image(self, self.directory, 'free', '', location_ext, True, False)
+			return get_location_image(self.directory, 'free', '', location_ext, True, False)
 		
 		def preload(self):
 			for image in self.main(), self.over(), self.free():
@@ -302,7 +316,12 @@ init -1002 python:
 		
 		def update_pos(self):
 			pos = get_camera_params(self)
+			
 			last_coords = self.last_coords
+			if self.last_zoom != location_zoom:
+				self.last_zoom = location_zoom
+				last_coords[:] = []
+			
 			if last_coords:
 				prev = last_coords[-1]
 				dx = abs(pos[0] - prev[0])
@@ -318,8 +337,8 @@ init -1002 python:
 				y += pos[1]
 			l = len(last_coords)
 			
-			self.x = x / l
-			self.y = y / l
+			self.x = round(x / l)
+			self.y = round(y / l)
 	
 	
 	class RpgPlace(Object):

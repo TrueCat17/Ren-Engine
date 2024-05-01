@@ -233,8 +233,8 @@ init -1001 python:
 		
 		def main(self):
 			if self.start_anim_time is not None:
-				return get_location_image(self.animation, self.animation.path, '', '', character_ext, False)
-			return get_location_image(self, self.directory, self.rpg_name, self.dress, character_ext, False)
+				return get_location_image(self.animation.path, '', '', character_ext, False)
+			return get_location_image(self.directory, self.rpg_name, self.dress, character_ext, False)
 		
 		
 		def get_dress(self):
@@ -430,6 +430,7 @@ init -1001 python:
 			self.point_index = 0
 			self.moving_ended = True
 			self.set_pose('stay')
+			self.rotate_after_moving = None
 			if place_names is None:
 				return False
 			
@@ -646,6 +647,9 @@ init -1001 python:
 						self.paths = []
 						self.set_pose('stay')
 						self.moving_ended = True
+						
+						last_direction = self.rotate_after_moving
+						self.rotate_after_moving = None
 						
 						dtime = 0
 						self.prev_update_time = get_game_time()

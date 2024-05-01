@@ -17,7 +17,7 @@ init -1003 python:
 		if isinstance(obj, str):
 			place = cur_location.get_place(obj)
 			if not place:
-				out_msg('cam_to', 'Place <' + obj + '> not found in location <' + cur_location.name + '>')
+				out_msg('cam_to', 'Place <%s> not found in location <%s>' % (obj, cur_location_name))
 				return
 			cur_location.cam_object = place
 		else:
@@ -77,17 +77,18 @@ init -1003 python:
 			cam_object_align_old = cam_object_align
 			cam_object_zoom_old = cam_object_zoom
 		
-		if location.cam_object_old is None or location.cam_object is None or cam_object_end_moving < get_game_time():
-			if location.cam_object is None:
+		cam_object = location.cam_object
+		if location.cam_object_old is None or cam_object is None or cam_object_end_moving < get_game_time():
+			if cam_object is None:
 				cam_object_x, cam_object_y = 0, 0
 			else:
-				cam_object_x, cam_object_y = get_place_center(location.cam_object, cam_object_align)
+				cam_object_x, cam_object_y = get_place_center(cam_object, cam_object_align)
 		else:
 			ax = interpolate(cam_object_align_old[0], cam_object_align[0], k)
 			ay = interpolate(cam_object_align_old[1], cam_object_align[1], k)
 			
 			from_x, from_y = get_place_center(location.cam_object_old, (ax, ay))
-			to_x, to_y = get_place_center(location.cam_object, (ax, ay))
+			to_x, to_y = get_place_center(cam_object, (ax, ay))
 			
 			cam_object_x = interpolate(from_x, to_x, k)
 			cam_object_y = interpolate(from_y, to_y, k)
@@ -103,7 +104,7 @@ init -1003 python:
 		
 		stage_width = get_stage_width()
 		main_width = location.xsize * location_zoom
-		if main_width < stage_width or location.cam_object is None:
+		if main_width < stage_width or cam_object is None:
 			x = (stage_width - main_width) / 2
 		else:
 			xalign = interpolate(cam_object_align_old[0], cam_object_align[0], k)
@@ -119,7 +120,7 @@ init -1003 python:
 		
 		stage_height = get_stage_height() - location_cutscene_up - location_cutscene_down
 		main_height = location.ysize * location_zoom
-		if main_height < stage_height or location.cam_object is None:
+		if main_height < stage_height or cam_object is None:
 			y = (stage_height - main_height) / 2
 		else:
 			yalign = interpolate(cam_object_align_old[1], cam_object_align[1], k)

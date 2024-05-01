@@ -1,4 +1,6 @@
 init -1000 python:
+	rpg_prev_my_coords = None
+	
 	rpg_event_processing = False
 	
 	def get_place_labels():
@@ -23,6 +25,7 @@ init -1000 python:
 
 label rpg_loop:
 	while True:
+		$ db.skip_tab = False
 		call rpg_update
 		pause 1 / get_fps()
 
@@ -30,6 +33,10 @@ label rpg_loop:
 label rpg_update:
 	if not get_rpg_control():
 		return
+	
+	if (me.x, me.y) == rpg_prev_my_coords and not rpg_events:
+		return
+	$ rpg_prev_my_coords = (me.x, me.y)
 	
 	python:
 		db.skip_tab = False
@@ -42,7 +49,8 @@ label rpg_update:
 		else:
 			rpg_processing_events = None
 		
-		if cur_exit and renpy.has_label('on__' + cur_location_name):
+		if last_set_location_time != prev_set_location_time and renpy.has_label('on__' + cur_location_name):
+			prev_set_location_time = last_set_location_time
 			renpy.call('on__' + cur_location_name)
 	
 	while rpg_processing_events:

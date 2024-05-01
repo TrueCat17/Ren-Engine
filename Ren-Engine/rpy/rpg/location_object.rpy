@@ -283,18 +283,18 @@ init -1001 python:
 		
 		def main(self):
 			animation = self.animation
-			return get_location_image(animation, animation.directory, animation.main_image, '', location_object_ext, False)
+			return get_location_image(animation.directory, animation.main_image, '', location_object_ext, False)
 		def over(self):
 			animation = self.animation
 			if not animation.over_image:
 				return None
-			return get_location_image(animation, animation.directory, animation.over_image, '', location_object_ext, False)
+			return get_location_image(animation.directory, animation.over_image, '', location_object_ext, False)
 		
 		def free(self):
 			animation = self.animation
 			if animation.free_image is None:
 				return None
-			res = get_location_image(animation, animation.directory, animation.free_image, '', location_object_ext, True, False)
+			res = get_location_image(animation.directory, animation.free_image, '', location_object_ext, True, False)
 			if animation.count_frames != 1:
 				res = im.crop(res, self.crop)
 			return res
