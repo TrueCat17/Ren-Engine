@@ -4,7 +4,9 @@ init python:
 	register_place(   "clubs", "admin", 1132, 1190, 20, 130)
 	register_place(   "clubs", "before_clubs", 340, 1190, 50, 130)
 	register_place(   "clubs", "before_porch", 447, 1280, 2, 2)
+	register_place(   "clubs", "bench_right_pos", 1076, 466, 2, 2)
 	register_place(   "clubs", "cluster", 200, 1300, 2, 2)
+	register_place(   "clubs", "mus_club_bench_pos", 849, 349, 2, 2)
 	register_place(   "clubs", "mus_club_column_pos-1", 773, 400, 2, 2)
 	register_place(   "clubs", "mus_club_column_pos-2", 836, 400, 2, 2)
 	register_place(   "clubs", "mus_club_column_pos-3", 899, 400, 2, 2)
@@ -39,6 +41,11 @@ init python:
 	
 	register_location("radio_club", "images/locations/radio_club/", True, 310, 247)
 	register_place(   "radio_club", "before_computer", 185, 130, 2, 2)
+	register_place(   "radio_club", "radio_club_cupboards_pos", 10, 202, 2, 2)
+	register_place(   "radio_club", "radio_club_table_pos", 117, 198, 2, 2)
+	register_place(   "radio_club", "radio_club_tabouret_pos-1", 75, 237, 2, 2)
+	register_place(   "radio_club", "radio_club_tabouret_pos-2", 87, 217, 2, 2)
+	register_place(   "radio_club", "radio_club_tabouret_pos-3", 162, 223, 2, 2)
 	register_place(   "radio_club", "clubs", 215, 205, 60, 40, to=["down", "clubs", "radio_club"])
 	
 	
