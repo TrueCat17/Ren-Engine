@@ -433,10 +433,15 @@ init -1002 python:
 			return None
 		ch_x, ch_y = ch.x, ch.y
 		
+		res = None
+		res_square = 1e9
 		for place in location.places.values():
 			if place.inside(ch_x, ch_y):
-				return place
-		return None
+				square = place.xsize * place.ysize
+				if square < res_square:
+					res = place
+					res_square = square
+		return res
 	
 	
 	def path_update_locations():
