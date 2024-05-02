@@ -149,9 +149,6 @@ init -1002 python:
 			for place in cur_location.places.values():
 				if place.inside(me_x, me_y):
 					break
-			else:
-				global was_out_exit
-				was_out_exit = True
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_place, cur_place_name
