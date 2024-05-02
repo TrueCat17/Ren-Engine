@@ -69,10 +69,41 @@ static void restoreStack(const std::string &loadPath) {
 	Node *prevNode = nullptr;
 	size_t num = 0;
 
+	auto check = [&](bool zeroIndexIsError) {
+		if (num > prevNode->children.size() || (num == 0 && zeroIndexIsError)) {
+			std::string msg;
+			if (num) {
+				msg = "Node have only " + std::to_string(prevNode->children.size()) + " children, "
+				        "need #" + std::to_string(num);
+			}else {
+				msg = "Unexpected stack element after last element <" + prevNode->command + ">";
+			}
+			Utils::outMsg("Scenario::restoreStack",
+			              msg + "\n" +
+			              prevNode->getPlace());
+			return false;
+		}
+		return true;
+	};
+	auto getChild = [&](void) -> Node* {
+		if (check(true)) {
+			return prevNode->children[num - 1];
+		}
+		return nullptr;
+	};
+
+	//check last stack element in the end
+	ScopeExit se([&]() {
+		if (!check(false)) {
+			auto &elem = stack.back();
+			elem.second = elem.first->children.size();
+		}
+	});
+
 	while (!is.eof()) {
 		std::string tmp;
 		std::getline(is, tmp);
-		if (tmp.empty()) return;
+		if (tmp.empty()) break;
 
 		std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
@@ -85,9 +116,13 @@ static void restoreStack(const std::string &loadPath) {
 
 		Node *node;
 
-		if (String::startsWith(first, "label:")) {
-			std::string labelName = first.substr(strlen("label:"));
-			node = getLabel(labelName);
+		if (String::startsWith(first, "label:") || first == "menu") {
+			if (first != "menu") {
+				std::string labelName = first.substr(strlen("label:"));
+				node = getLabel(labelName);
+			}else {
+				node = getChild();
+			}
 			if (!node) return;
 
 			num = size_t(String::toInt(second));
@@ -103,17 +138,9 @@ static void restoreStack(const std::string &loadPath) {
 			return;
 		}
 
-		if (num - 1 >= prevNode->children.size()) {
-			Utils::outMsg(
-			    "Scenario::restoreStack",
-			    "Node have only " + std::to_string(prevNode->children.size()) + " children, "
-			      "need #" + std::to_string(num - 1) + "\n" +
-			    prevNode->getPlace()
-			);
-			return;
-		}
+		node = getChild();
+		if (!node) return;
 
-		node = prevNode->children[num - 1];
 		if (node->command != first) {
 			Utils::outMsg(
 			    "Scenario::restoreStack",
@@ -371,6 +398,8 @@ void Scenario::execute(const std::string &loadPath) {
 				              obj->getPlace());
 				res = 0;
 			}
+
+			stack.back().second = size_t(res) + 1;
 
 			obj = obj->children[size_t(res)];
 			num = 0;
