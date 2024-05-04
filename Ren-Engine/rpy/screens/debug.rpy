@@ -7,7 +7,8 @@ init -995 python:
 		for i in range(len(array)):
 			if cur_time - array[i] < 1:
 				break
-		array[:i] = []
+		if i:
+			array[:i - 1] = []
 		
 		dtime = array[-1] - array[0]
 		fps = len(array) / (dtime or 1)
