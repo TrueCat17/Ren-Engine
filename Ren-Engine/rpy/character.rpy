@@ -129,6 +129,7 @@ init -1001 python:
 				run = False,
 				pose = 'stay', # 'sit' | 'stay' | 'walk' | 'run'
 				fps = 0,
+				speed = 0,
 				
 				prev_update_time = get_game_time(),
 				moving_ended = True,

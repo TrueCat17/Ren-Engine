@@ -392,7 +392,7 @@ init -1000 python:
 			return 'end'
 	
 	# stop on min_dist, run on max_dist
-	def rpg_action_follow(character, state, to, min_dist = 50, max_dist = 150):
+	def rpg_action_follow(character, state, to, min_dist = 50, max_dist = 150, keep_dist = None):
 		actions = character.get_actions()
 		
 		same_location = character.location is to.location
@@ -411,21 +411,39 @@ init -1000 python:
 					to_x, to_y = to.old_x, to.old_y
 		dist = get_dist(character.x, character.y, to_x, to_y)
 		
+		if keep_dist is None:
+			keep_dist = min_dist * 0.7
+		
 		if sit_object:
 			min_dist = 1
 		else:
-			if dist < min_dist * 0.7:
+			if dist < keep_dist:
 				dx, dy = {
 					to_left:    (-1, 0),
 					to_right:   (+1, 0),
 					to_forward: (0, -1),
 					to_back:    (0, +1),
 				}[to.get_direction()]
-				to_x = in_bounds(to_x + dx * min_dist, 0, to.location.xsize - 1)
-				to_y = in_bounds(to_y + dy * min_dist, 0, to.location.ysize - 1)
+				to_x = in_bounds(round(to_x + dx * min_dist), 0, to.location.xsize - 1)
+				to_y = in_bounds(round(to_y + dy * min_dist), 0, to.location.ysize - 1)
 				
-				dist = get_dist(character.x, character.y, to_x, to_y)
-				min_dist = 1
+				free = to.location.free()
+				black_color = 255 # RGBA
+				if not free or get_image_pixel(free, to_x, to_y) == black_color:
+					dist = get_dist(character.x, character.y, to_x, to_y)
+					min_dist = 1
+				else:
+					to_x, to_y = character.x, character.y
+		
+		def fix_speed(need = False):
+			if need or get_game_time() - actions.last_speed_update > 1:
+				actions.last_speed_update = get_game_time()
+				run = not same_location or dist > max_dist
+				pose = 'run' if run else 'walk'
+				character.set_pose(pose)
+				character.speed = character[pose + '_speed']
+				character.fps   = character[pose + '_fps']
+		
 		
 		if state == 'start':
 			actions.interruptable = False
@@ -445,19 +463,19 @@ init -1000 python:
 				return 'start'
 			actions.follow_start_time = get_game_time()
 			
-			run = dist > max_dist
-			path_found = character.move_to_place([to.location.name, {'x': to_x, 'y': to_y}], run=run)
+			path_found = character.move_to_place([to.location.name, {'x': to_x, 'y': to_y}])
 			if path_found:
+				fix_speed(True)
 				return 'moving'
 			character.move_to_place(None)
 			return 'start'
 		
 		if state == 'moving':
-			if not same_location or dist <= min_dist:
+			if character.ended_move_waiting():
 				return 'start'
 			
 			if same_location:
-				if dist < 100:
+				if dist < max(100, keep_dist, min_dist):
 					update_time = 0.25
 				elif dist < 200:
 					update_time = 0.5
@@ -471,6 +489,7 @@ init -1000 python:
 			if get_game_time() - actions.follow_start_time > update_time:
 				return 'start'
 			
+			fix_speed()
 			return 'moving'
 		
 		if state in ('rewind_to_min', 'rewind_to_max'):
@@ -478,6 +497,8 @@ init -1000 python:
 			if not path_found:
 				return 'start'
 			need_dist = min_dist if state == 'rewind_to_min' else max_dist
+			if need_dist < keep_dist:
+				need_dist = keep_dist
 			while character.location is not to.location or get_dist(character.x, character.y, to_x, to_y) > need_dist:
 				character.update_moving(0.05)
 			return 'start'
