@@ -39,15 +39,26 @@ init -1001 python:
 			out_msg('register_location_object', 'Object <%s> already exists' % (obj_name, ))
 			return
 		
-		obj = location_objects[obj_name] = Object(
-			name = obj_name,
-			max_in_inventory_cell = max_in_inventory_cell,
-			remove_to_location    = remove_to_location,
-			animations = {},
-			on = [],
-			sit_places = [],
-			is_vertical_sit_place = False,
-		)
+		obj = location_objects[obj_name] = SimpleObject()
+		obj.name = obj_name
+		obj.max_in_inventory_cell = max_in_inventory_cell
+		obj.remove_to_location    = remove_to_location
+		obj.animations = {}
+		obj.on = []
+		obj.sit_places = []
+		obj.is_vertical_sit_place = False
+		
+		obj.xoffset = 0
+		obj.yoffset = 0
+		obj.xanchor = 0.5
+		obj.yanchor = 1.0
+		obj.xsize = 0
+		obj.ysize = 0
+		obj.alpha = 1
+		obj.inventory = []
+		
+		obj.location = None
+		obj.user_function = None
 		
 		register_location_object_animation(obj_name, None, directory, main_image, free_image, 0, 0, 1, 0, 0)
 	
@@ -93,24 +104,24 @@ init -1001 python:
 			out_msg('register_location_object_animation', 'Animation <%s> of object <%s> already exists' % (anim_name, obj_name))
 			return
 		
-		animations[anim_name] = Object(
-			name = anim_name,
+		obj = animations[anim_name] = SimpleObject()
+		obj.name = anim_name
 			
-			directory    = directory,
-			main_image   = main_image,
-			free_image   = free_image,
+		obj.directory    = directory
+		obj.main_image   = main_image
+		obj.free_image   = free_image
+		obj.over_image   = None
 			
-			count_frames = count_frames,
-			start_frame  = start_frame,
-			end_frame    = end_frame,
-			time         = float(time),
+		obj.count_frames = count_frames
+		obj.start_frame  = start_frame
+		obj.end_frame    = end_frame
+		obj.time         = float(time)
 		
-			xoffset = xoffset,
-			yoffset = yoffset,
-			xsize = 0,
-			ysize = 0,
-			loaded = False,
-		)
+		obj.xoffset = xoffset
+		obj.yoffset = yoffset
+		obj.xsize = 0
+		obj.ysize = 0
+		obj.loaded = False
 	
 	def set_sit_place(obj_name, sit_places, over = None):
 		if obj_name not in location_objects:
@@ -159,34 +170,24 @@ init -1001 python:
 		x, y = obj.x + obj.xoffset, obj.y + obj.yoffset
 		w, h = obj.xsize, obj.ysize
 		
-		obj_xanchor, obj_yanchor = get_absolute(obj.xanchor, w), get_absolute(obj.yanchor, h)
-		
 		return {
 			'image':   obj.main(),
 			'size':   (w, h),
 			'pos':    (absolute(x), absolute(y)),
-			'anchor': (obj_xanchor, obj_yanchor),
+			'anchor': (get_absolute(obj.xanchor, w), get_absolute(obj.yanchor, h)),
 			'crop':    obj.crop,
 			'alpha':   obj.alpha,
 			'zorder':  obj.get_zorder(),
 		}
 	
 	
-	class RpgLocationObject(Object):
+	class RpgLocationObject(SimpleObject):
 		def __init__(self, name, x, y):
-			Object.__init__(self, location_objects[name],
-				type = name,
-				x = x,
-				y = y,
-				xoffset = 0,
-				yoffset = 0,
-				xanchor = 0.5,
-				yanchor = 1.0,
-				xsize = 0,
-				ysize = 0,
-				alpha = 1,
-				inventory = [],
-			)
+			SimpleObject.__init__(self, location_objects[name])
+			
+			self.type = name
+			self.x = x
+			self.y = y
 			
 			self.remove_animation()
 			self.update()
@@ -292,9 +293,10 @@ init -1001 python:
 		
 		def free(self):
 			animation = self.animation
-			if animation.free_image is None:
+			free = animation.free_image
+			if free is None:
 				return None
-			res = get_location_image(animation.directory, animation.free_image, '', location_object_ext, True, False)
+			res = get_location_image(animation.directory, free, '', location_object_ext, True, False)
 			if animation.count_frames != 1:
 				res = im.crop(res, self.crop)
 			return res
@@ -563,7 +565,7 @@ init -1001 python:
 		character = character or me
 		max_dist = max_dist or std_sit_dist
 		
-		character_radius = character.radius or Character.radius
+		character_radius = character.radius
 		character_x, character_y = character.x, character.y
 		
 		sides_dpos = {
@@ -575,16 +577,19 @@ init -1001 python:
 		
 		res = []
 		for obj in character.location.objects:
-			if not obj.sit_places:
+			if isinstance(obj, Character):
+				continue
+			sit_places = obj.get('sit_places')
+			if not sit_places:
 				continue
 			
 			min_dist = max_dist
 			near_point = None
 			
-			for i in range(len(obj.sit_places)):
+			for i in range(len(sit_places)):
 				if obj.on[i]:
 					continue
-				px, py, to_side, can_use = obj.sit_places[i]
+				px, py, to_side, can_use = sit_places[i]
 				if not can_use:
 					continue
 				

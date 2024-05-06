@@ -3,13 +3,28 @@ init -100001 python:
 	class Signals:
 		def __init__(self):
 			self.funcs = {}
+			self.checking = True
+			self.queue_for_check = []
+		
+		def set_check_picklable(self, value):
+			self.checking = value
+			if value:
+				try:
+					pickle.dumps(self.queue_for_check) # fast check for all new funcs
+				except:
+					out_msg('Signals.set_check_picklable(True)', 'Some function is not picklable')
+				self.queue_for_check = []
 		
 		def add(self, event, function, priority = 0, times = -1):
 			if times == 0:
 				return
-			if not picklable(function):
-				out_msg('Signals.add', 'Function <%s> is not picklable' % function)
-				return
+			
+			if self.checking:
+				if not picklable(function):
+					out_msg('Signals.add', 'Function <%s> is not picklable' % function)
+					return
+			else:
+				self.queue_for_check.append(function)
 			
 			if not callable(function):
 				out_msg('Signals.add', '<%s> is not callable' % function)
@@ -27,6 +42,10 @@ init -100001 python:
 					break
 		
 		def send(self, event, *args, **kwargs):
+			if event == 'exit_frame' and not self.checking:
+				out_msg('You forgot to call signals.set_check_picklable(True)')
+				self.set_check_picklable(True)
+			
 			funcs = self.funcs.get(event, ())
 			
 			for priority, function, times in funcs:

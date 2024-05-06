@@ -96,7 +96,7 @@ init python:
 			left = inventory.add(obj.type, 1)
 			if left == 0:
 				remove_location_object(cur_location_name, me, obj.type, 1)
-				inventory.add_event('taking', obj.type)
+				inventory.add_event('take', obj.type)
 		else:
 			rpg_events.add('action')
 			if cur_exit:
@@ -174,7 +174,7 @@ init python:
 		
 		res = []
 		for obj in draw_location.objects:
-			if obj.invisible:
+			if obj.get('invisible'):
 				continue
 			
 			datas = obj.get_draw_data()
@@ -233,8 +233,10 @@ init python:
 			for obj in draw_location.objects.copy(): # copy for case <object removed itself>
 				if isinstance(obj, Character):
 					continue
-				if obj.update:
-					obj.update()
+				
+				obj_update = getattr(obj, 'update', None)
+				if obj_update:
+					obj_update()
 		
 		draw_location.update_pos()
 

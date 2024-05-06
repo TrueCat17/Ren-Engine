@@ -54,21 +54,20 @@ init -1001 python:
 			out_msg('register_character_animation', 'Animation <%s> of character <%s> already exists' % (anim_name, character))
 			return
 		
-		animations[anim_name] = Object(
-			name = anim_name,
-			path = path,
-			
-			count_frames = count_frames,
-			start_frame  = start_frame,
-			end_frame    = end_frame,
-			time         = float(time),
+		obj = animations[anim_name] = SimpleObject()
+		obj.name = anim_name
+		obj.path = path
 		
-			xoffset = xoffset,
-			yoffset = yoffset,
-			xsize = 0,
-			ysize = 0,
-			loaded = False
-		)
+		obj.count_frames = count_frames
+		obj.start_frame  = start_frame
+		obj.end_frame    = end_frame
+		obj.time         = float(time)
+		
+		obj.xoffset = xoffset
+		obj.yoffset = yoffset
+		obj.xsize = 0
+		obj.ysize = 0
+		obj.loaded = False
 	
 	def characters_anim_ended():
 		if cur_location:
@@ -88,84 +87,85 @@ init -1001 python:
 	
 	
 	characters = []
-	class Character(Object):
+	class Character(SimpleObject):
 		radius = 10 # used in physics.rpy
 		
 		def __init__(self, name, **properties):
 			characters.append(self)
 			
-			dynamic = properties.get('dynamic', False)
-			xsize, ysize = 48, 96
+			SimpleObject.__init__(self)
 			
-			Object.__init__(self,
-				real_name = name,
-				unknown_name = properties.get('unknown_name', name),
-				dynamic = dynamic,
-				name = Eval(name) if dynamic and type(name) is str else name,
-				
-				# rpg-props:
-				
-				walk_fps =  4,
-				run_fps  = 12,
-				walk_speed =  50,
-				run_speed  = 150,
-				
-				sit_frame = 4, # first (left) = 0
-				stay_frame = 3,
-				count_of_moving_frames = 4,
-				count_of_directions = 4,
-				
-				radius = Character.radius,
-				
-				
-				show_time = 0,
-				
-				directory = None,
-				dress = None,
-				overs = [],
-				
-				frame = 0,
-				direction = 0,
-				run = False,
-				pose = 'stay', # 'sit' | 'stay' | 'walk' | 'run'
-				fps = 0,
-				speed = 0,
-				
-				prev_update_time = get_game_time(),
-				moving_ended = True,
-				
-				frame_time_offset = random.random() * 10,
-				
-				x = 0,
-				y = 0,
-				xoffset = 0,
-				yoffset = 0,
-				
-				xanchor = 0.5,
-				yanchor = 0.8,
-				xsize = xsize,
-				ysize = ysize,
-				crop = (0, 0, xsize, ysize),
-				alpha = 0,
-				
-				allowed_exits = set(),
-				
-				location = None,
-				paths = [],
-				path_index = 0,
-				point_index = 0,
-				
-				animations = Object(),
-				animation = None,
-				start_anim_time = None,
-				end_wait_anim_time = None,
-				
-				auto_actions = False,
-				actions = None,
-			)
+			self.real_name = name
+			self.unknown_name = properties.get('unknown_name', name)
+			self.dynamic = properties.get('dynamic', False)
+			self.name = Eval(name) if self.dynamic and type(name) is str else name
 			
 			
-			d = self.__dict__
+			# rpg-props:
+			
+			self.type = None # this is not rpg-location-object
+			
+			self.walk_fps =  4
+			self.run_fps  = 12
+			self.walk_speed =  50
+			self.run_speed  = 150
+			
+			self.sit_frame = 4 # first (left) = 0
+			self.stay_frame = 3
+			self.count_of_moving_frames = 4
+			self.count_of_directions = 4
+			
+			
+			self.show_time = 0
+			
+			self.directory = None
+			self.rpg_name = None
+			self.dress = None
+			self.overs = []
+			
+			self.frame = 0
+			self.direction = 0
+			self.run = False
+			self.pose = 'stay' # 'sit' | 'stay' | 'walk' | 'run'
+			self.fps = 0
+			self.speed = 0
+			
+			self.prev_update_time = get_game_time()
+			self.end_stop_time = None
+			self.moving_ended = True
+			
+			self.frame_time_offset = random.random() * 10
+			
+			self.x = 0
+			self.y = 0
+			self.xoffset = 0
+			self.yoffset = 0
+			
+			self.xanchor = 0.5
+			self.yanchor = 0.8
+			self.xsize = 48
+			self.ysize = 96
+			self.crop = (0, 0, self.xsize, self.ysize)
+			self.alpha = 0
+			
+			self.allowed_exits = set()
+			
+			self.location = None
+			self.paths = []
+			self.path_index = 0
+			self.point_index = 0
+			
+			self.animations = {}
+			self.animation = None
+			self.start_anim_time = None
+			self.end_wait_anim_time = None
+			
+			self.auto_actions = False
+			self.actions = None
+			
+			self.sit_object = None
+			self.invisible = False
+			
 			
 			for prefix_from, prefix_to in [('who_', 'name_text_'), ('what_', 'dialogue_text_')]:
 				for prop in ('font', 'size', 'color', 'outlinecolor', 'background', 'prefix', 'suffix'):
@@ -180,16 +180,17 @@ init -1001 python:
 					value = properties[prop_from]
 					if prop.endswith('color'):
 						value = color_to_int(value)
-					d[prop_to] = value
+					self[prop_to] = value
 			
 			for prop, value in properties.items():
 				if prop.startswith('dialogue_'):
-					d[prop] = value
+					self[prop] = value
 			
-			inventories = d['inventories'] = {}
+			self.inventory = None
+			self.inventories = {}
 			for dress, size in inventory.dress_sizes.items():
 				if dress != 'default':
-					inventories[dress] = [['', 0] for i in range(size)]
+					self.inventories[dress] = [['', 0] for i in range(size)]
 		
 		def __str__(self):
 			return str(self.name)
@@ -288,8 +289,8 @@ init -1001 python:
 				if pose != 'sit' and self.sit_object:
 					self.stand_up()
 				if pose in ('walk', 'run'):
-					for prop in ('fps', 'speed', 'acceleration'):
-						self[prop] = self[pose + '_' + prop] # for example: self.fps = self.run_fps
+					self.fps   = self[pose + '_fps']
+					self.speed = self[pose + '_speed']
 				self.pose = pose
 			else:
 				self.pose = 'stay'
@@ -432,7 +433,7 @@ init -1001 python:
 			self.moving_ended = True
 			self.set_pose('stay')
 			self.rotate_after_moving = None
-			if place_names is None:
+			if not place_names:
 				return False
 			
 			if self.location is None:
@@ -445,26 +446,26 @@ init -1001 python:
 			
 			path_update_locations()
 			
-			if isinstance(place_names, tuple):
-				place_names = list(place_names)
-			
-			last = place_names[-1]
-			if type(last) is int:
-				next = place_names[last]
-				place_names.insert(-1, next)
-			
 			res = True # all paths found?
 			from_location_name = self.location.name
 			from_x, from_y = self.x, self.y
 			
 			banned = [exit for exit in location_banned_exits if exit not in self.allowed_exits]
 			
+			last_is_int = type(place_names[-1]) is int
+			if last_is_int:
+				if place_names[-1] < 0:
+					place_names[-1] = len(place_names) + place_names[-1] - 2 # 2 = 1 (int) + 1 (path from last to need place)
+			
 			for i in range(len(place_names)):
 				place_elem = place_names[i]
 				
 				if type(place_elem) is int:
-					self.paths.append((place_elem % len(place_names) + 1))
-					break
+					if i != len(place_names) - 1:
+						out_msg('Character.move_to_places', 'Index for repeated place must be in the end')
+						self.move_to_place(None)
+						return False
+					place_elem = place_names[place_elem]
 				
 				pdx = pdy = 0
 				if isinstance(place_elem, (list, tuple)):
@@ -513,6 +514,8 @@ init -1001 python:
 				from_location_name = location_name
 				from_x, from_y = to_x, to_y
 			
+			if last_is_int:
+				self.paths.append(place_names[-1])
 			
 			self.moving_ended = False
 			
@@ -598,21 +601,23 @@ init -1001 python:
 			
 			path = self.paths[self.path_index]
 			location_name, place = self.location.name, None
+			coords_before_exit = None
 			
 			last_direction = self.get_direction()
 			while dtime > 0:
 				to_x, to_y = path[self.point_index], path[self.point_index + 1]
 				
 				if type(to_x) is str:
-					place = get_location_place(self)
-					if place:
-						last_direction = place.to_side
+					exit = get_location_place(self)
+					if exit and exit.to_side is not None:
+						last_direction = exit.to_side
 					
 					location_name, place = to_x, to_y
 					if type(place) is str:
 						place = rpg_locations[location_name].places[place]
 					
-					coords_before_exit = self.x, self.y
+					if not coords_before_exit:
+						coords_before_exit = self.location, self.x, self.y
 					self.x, self.y = get_place_center(place)
 					
 				else:
@@ -651,8 +656,9 @@ init -1001 python:
 						self.set_pose('stay')
 						self.moving_ended = True
 						
-						last_direction = self.rotate_after_moving
-						self.rotate_after_moving = None
+						if self.rotate_after_moving is not None:
+							last_direction = self.rotate_after_moving
+							self.rotate_after_moving = None
 						
 						dtime = 0
 						self.prev_update_time = get_game_time()
@@ -660,26 +666,19 @@ init -1001 python:
 					
 					path = self.paths[self.path_index]
 					if type(path) is int:
-						if path < 0:
-							path -= 1
-						self.path_index = path
+						self.path_index = path + 1 # 1 for skip path from start-place to first-place
 						break
 			
 			self.prev_update_time -= dtime
-			if self.location.name != location_name:
+			if coords_before_exit:
 				x, y = self.x, self.y
-				self.x, self.y = coords_before_exit
-				
-				exit = get_location_place(self)
-				if exit and exit.to_side:
-					last_direction = exit.to_side
-				
+				self.location, self.x, self.y = coords_before_exit
 				show_character(self, {'x': x, 'y': y}, location_name)
 			self.set_direction(last_direction)
 		
 		def move_to_end(self):
 			if self.end_stop_time and self.end_stop_time > get_game_time():
-				dtime = (get_game_time() - self.prev_update_time) + (self.end_stop_time - get_game_time())
+				dtime = self.end_stop_time - self.prev_update_time
 				self.end_stop_time = get_game_time()
 			else:
 				dtime = 1000

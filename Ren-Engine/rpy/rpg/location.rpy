@@ -143,12 +143,6 @@ init -1002 python:
 		# after show_character, because cur_loc.cam_object mb changed (if draw_loc is cur_loc)
 		cur_location.cam_object = cam_object
 		cur_location.cam_object_old = None
-		
-		if character is me:
-			me_x, me_y = me.x, me.y
-			for place in cur_location.places.values():
-				if place.inside(me_x, me_y):
-					break
 	
 	def hide_location():
 		global cur_location, cur_location_name, cur_place, cur_place_name
@@ -243,40 +237,42 @@ init -1002 python:
 		location.path_need_update = True
 	
 	
-	class RpgLocation(Object):
+	class RpgLocation(SimpleObject):
 		last_coords_count = 10
 		last_coords_min_diff = 3
 		
 		def __init__(self, name, directory, is_room, xsize, ysize):
-			Object.__init__(self,
-				name = name,
-				directory = directory + ('' if directory.endswith('/') else '/'),
-				
-				is_room = is_room,
-				xsize = xsize,
-				ysize = ysize,
-				
-				places = {},
-				
-				ambience_paths = None,
-				ambience_volume = 1.0,
-				
-				path_need_update = True,
-				min_scale = 8,
-				count_scales = 1 if is_room else 2, # more accuracy for small space
-				
-				cam_object = None,
-				cam_object_old = None,
-				
-				last_coords = [],
-			)
+			SimpleObject.__init__(self)
 			
-			objects = self.objects = [self]
+			self.name = name
+			self.type = None # this is not rpg-location-object
+			self.directory = directory + ('' if directory.endswith('/') else '/')
+			
+			self.is_room = is_room
+			self.xsize = xsize
+			self.ysize = ysize
+			
+			self.places = {}
+			
+			self.ambience_paths = None
+			self.ambience_volume = 1.0
+			
+			self.path_need_update = True
+			self.min_scale = 8
+			self.count_scales = 1 if is_room else 2 # more accuracy for small space
+			
+			self.cam_object = None
+			self.cam_object_old = None
+			
+			self.last_coords = []
+			self.last_zoom = None
+			
+			self.objects = [self]
 			if self.over():
-				objects.append(RpgLocationOver(self))
+				self.objects.append(RpgLocationOver(self))
 		
 		def __getstate__(self):
-			res = Object.__getstate__(self)
+			res = SimpleObject.__getstate__(self)
 			res['path_need_update'] = True
 			res['last_coords'] = []
 			return res
@@ -338,24 +334,19 @@ init -1002 python:
 			self.y = round(y / l)
 	
 	
-	class RpgPlace(Object):
+	class RpgPlace(SimpleObject):
 		def __init__(self, name, x, y, xsize, ysize, to):
-			exit_side, to_location_name, to_place_name, to_side = to
+			SimpleObject.__init__(self)
 			
-			Object.__init__(self,
-				name = name,
-				x = x,
-				y = y,
-				xsize = xsize,
-				ysize = ysize,
-				
-				exit_side = exit_side,
-				to_location_name = to_location_name,
-				to_place_name = to_place_name,
-				to_side = to_side,
-				
-				inventory = [],
-			)
+			self.name = name
+			self.x = x
+			self.y = y
+			self.xsize = xsize
+			self.ysize = ysize
+			
+			self.exit_side, self.to_location_name, self.to_place_name, self.to_side = to
+			
+			self.inventory = []
 		
 		def __str__(self):
 			return '<RpgPlace %s>' % (self.name, )

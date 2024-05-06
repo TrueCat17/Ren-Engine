@@ -561,7 +561,7 @@ init -1000 python:
 					self.state = state
 				
 				if rpg_action_spent_time[self.cur_action] > self.MAX_ACTION_FRAME_TIME or rpg_action_spent_time[None] > self.MAX_ALL_ACTIONS_FRAME_TIME:
-					if self.state != 'end' and (self.state != 'start' or self.start_from_random) and state is None:
+					if self.state != 'end' and state is None:
 						return
 				
 				if self.state != 'end':
@@ -593,12 +593,15 @@ init -1000 python:
 			else:
 				self.cur_action = action
 			
-			self.save_params(args, kwargs)
-			
 			self.character.set_auto(True)
 			
+			state = kwargs.pop('state', None)
+			self.state = 'start'
+			self.cur_args = args
+			self.cur_kwargs = kwargs
+			
 			self.last_update = None
-			self.update()
+			self.update(state)
 		
 		def start(self, action, *args, **kwargs):
 			if self.blocked(action): return
@@ -652,9 +655,7 @@ init -1000 python:
 			r = random.random() * scores
 			for action, score in chances:
 				if r < score:
-					self.start_from_random = True
 					self.start(action)
-					self.start_from_random = False
 					break
 		
 		def blocked(self, action):
@@ -662,12 +663,6 @@ init -1000 python:
 			if self.allow and action not in self.allow and func not in self.allow:
 				return True
 			return action in self.block or func in self.block
-		
-		def save_params(self, args, kwargs):
-			self.state = kwargs.get('state', 'start')
-			if 'state' in kwargs:
-				del kwargs['state']
-			self.cur_args, self.cur_kwargs = args, kwargs
 		
 		def add(self, action, *args, **kwargs):
 			self.queue.append([action, args, kwargs])

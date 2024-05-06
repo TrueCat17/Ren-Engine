@@ -9,15 +9,26 @@ init python:
 		me_y = in_bounds(me.y, 0, get_image_height(location_free) - 1)
 		start_x = (round(me_x / half_size) - 1) * half_size
 		start_y = (round(me_y / half_size) - 1) * half_size
+		end_x = start_x + size
+		end_y = start_y + size
 		
-		cs = me.xsize // 2
-		def near(x, y, width, height):
+		cs = me.xsize // 2 # character size / 2
+		me_x_minus_cs = me_x - cs
+		me_x_plus_cs  = me_x + cs
+		me_y_minus_cs = me_y - cs
+		me_y_plus_cs  = me_y + cs
+		def near_obj(x, y, width, height):
 			return (
-				(x < me.x + cs and me.x - cs < x + width and y < me.y + cs and me.y - cs < y + height) and
-				(x < start_x + size and x + width >= start_x and y < start_y + size and y + height >= start_y)
+				(x < me_x_plus_cs and me_x_minus_cs < x + width and y < me_y_plus_cs and me_y_minus_cs < y + height) and
+				(x < end_x and x + width >= start_x and y < end_y and y + height >= start_y)
+			)
+		def near_character(x, y):
+			return (
+				(x < me_x_plus_cs and me_x_minus_cs < x and y < me_y_plus_cs and me_y_minus_cs < y) and
+				(x < end_x and x >= start_x and y < end_y and y >= start_y)
 			)
 		
-		objs = [obj for obj in cur_location.objects if not isinstance(obj, Character)]
+		objs       = [obj for obj in cur_location.objects if not isinstance(obj, Character)]
 		characters = [obj for obj in cur_location.objects if isinstance(obj, Character) and obj is not me]
 		
 		# subtract 253.9/255 from each (rgb) channel: all colors, exceptly clear-white, become black
@@ -39,16 +50,15 @@ init python:
 			obj_free = obj_free() if callable(obj_free) else None
 			if obj_free is None:
 				continue
-			if obj.frames and obj.frames > 1:
-				obj_free = im.crop(obj_free, obj.crop)
 			
 			w, h = get_image_size(obj_free)
-			x, y = obj.x + obj.xoffset - get_absolute(obj.xanchor, w), obj.y + obj.yoffset - get_absolute(obj.yanchor, h)
-			if near(x, y, w, h):
+			x = obj.x + obj.xoffset - get_absolute(obj.xanchor, w)
+			y = obj.y + obj.yoffset - get_absolute(obj.yanchor, h)
+			if near_obj(x, y, w, h):
 				to_draw += [(x - start_x, y - start_y), im.matrix_color(obj_free, matrix)]
 		
 		for character in characters:
-			if not character.invisible and near(character.x, character.y, 0, 0):
+			if not character.invisible and near_character(character.x, character.y):
 				to_draw += [(character.x - cs / 2 - start_x, character.y - cs / 2 - start_y), im.circle('#FFF', cs, cs)]
 		
 		if len(to_draw) == 3: # 3 - [size, pos0, image0]
@@ -153,7 +163,6 @@ init python:
 		black_color = 255 # r, g, b, a = 0, 0, 0, 255
 		map_width, map_height = get_image_size(free)
 		def is_black(x, y):
-			x, y = int(x), int(y)
 			if x < 0 or x >= map_width or y < 0 or y >= map_height:
 				return False
 			return get_image_pixel(free, x, y) == black_color
@@ -175,7 +184,8 @@ init python:
 		angle45 = 1, rotations[(side - 1) % 8], rotations[(side + 1) % 8]
 		angle90 = 2, rotations[(side - 2) % 8], rotations[(side + 2) % 8]
 		
-		x, y = from_x, from_y
+		x = float(from_x)
+		y = float(from_y)
 		while length:
 			length_part = sign(length) if abs(length) > 1 else length
 			pdx = dx * length_part

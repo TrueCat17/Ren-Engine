@@ -428,7 +428,7 @@ screen inventory:
 							'Use',
 							gui.get_int('inventory_use_button_text_color'),
 							gui.get_int('inventory_use_button_text_outlinecolor'),
-							'inventory.add_event("using", inventory.selected_object.name)',
+							'inventory.add_event("use", inventory.selected_object.name)',
 						),
 						(
 							'Lay out' if inventory.selected_object and inventory.selected_object['remove_to_location'] else 'Throw away',
