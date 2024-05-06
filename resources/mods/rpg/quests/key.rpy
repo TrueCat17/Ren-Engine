@@ -17,11 +17,11 @@ label key__*:
 	
 	$ set_rpg_control(False)
 	
-	if rpg_event == 'taking':
+	if rpg_event == 'take':
 		"Я подобрал ключ."
 		"Интересно, что же мне теперь с ним делать?"
 	
-	if rpg_event == 'using':
+	if rpg_event == 'use':
 		"И что я могу открыть этим ключом?"
 	
 	if rpg_event == 'remove':
