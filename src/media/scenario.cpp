@@ -70,20 +70,20 @@ static void restoreStack(const std::string &loadPath) {
 	size_t num = 0;
 
 	auto check = [&](bool zeroIndexIsError) {
-		if (num > prevNode->children.size() || (num == 0 && zeroIndexIsError)) {
-			std::string msg;
-			if (num) {
-				msg = "Node have only " + std::to_string(prevNode->children.size()) + " children, "
-				        "need #" + std::to_string(num);
-			}else {
-				msg = "Unexpected stack element after last element <" + prevNode->command + ">";
-			}
-			Utils::outMsg("Scenario::restoreStack",
-			              msg + "\n" +
-			              prevNode->getPlace());
-			return false;
+		if (!prevNode) return true;
+		if (num <= prevNode->children.size() && (num || !zeroIndexIsError)) return true;
+
+		std::string msg;
+		if (num) {
+			msg = "Node have only " + std::to_string(prevNode->children.size()) + " children, "
+			        "need #" + std::to_string(num);
+		}else {
+			msg = "Unexpected stack element after last element <" + prevNode->command + ">";
 		}
-		return true;
+		Utils::outMsg("Scenario::restoreStack",
+		              msg + "\n" +
+		              prevNode->getPlace());
+		return false;
 	};
 	auto getChild = [&](void) -> Node* {
 		if (check(true)) {
