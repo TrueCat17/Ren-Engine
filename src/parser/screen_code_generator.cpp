@@ -1,5 +1,6 @@
 #include "screen_code_generator.h"
 
+#include <algorithm>
 #include <map>
 
 #include "gui/screen/screen.h"

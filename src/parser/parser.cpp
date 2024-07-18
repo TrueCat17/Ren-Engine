@@ -1,7 +1,8 @@
 #include "parser.h"
 
-#include <map>
+#include <algorithm>
 #include <fstream>
+#include <map>
 
 #include "logger.h"
 
@@ -355,16 +356,18 @@ static void initScreenNode(Node *node) {
 					args = Algo::clear(args);
 					std::vector<std::string> vec = Algo::getArgs(args, ',');
 					for (const std::string& arg : vec) {
+						const std::string_view argSW = std::string_view(arg);
+
 						std::string name, value;
-						i = arg.find('=');
+						i = argSW.find('=');
 						if (i == size_t(-1)) {
-							name = String::strip(arg);
+							name = String::strip(argSW);
 							if (node->command == "use") {
 								value.swap(name);
 							}
 						}else {
-							name = String::strip(std::string_view(arg).substr(0, i));
-							value = String::strip(std::string_view(arg).substr(i + 1));
+							name = String::strip(argSW.substr(0, i));
+							value = String::strip(argSW.substr(i + 1));
 						}
 
 						if (!name.empty()) {
@@ -382,9 +385,9 @@ static void initScreenNode(Node *node) {
 							{
 								std::string error;
 								if (node->command == "screen") {
-									error = "Duplicate argument <" + name + "> in function definition";
+									error = "Duplicate argument <" + name + "> in screen definition";
 								}else {// node->command == "use"
-									error = "Keyworg <" + name + "> argument repeated";
+									error = "Keyword <" + name + "> argument repeated";
 								}
 								Utils::outMsg("Parser::initScreenNode",
 								              error + "\n\n" +
