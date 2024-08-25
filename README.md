@@ -3,7 +3,7 @@
 ## \[links]
 
 * [Discord](https://discord.gg/DBagjrCWVp),
-* [Telegram](https://t.me/ren_engine),
+* [Telegram](https://t.me/ren_engine_tg),
 * [VK](https://vk.com/ren_engine).
 
 ## \[OS]
