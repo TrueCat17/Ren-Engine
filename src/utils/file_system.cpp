@@ -119,6 +119,7 @@ std::string FileSystem::getFileName(const std::string &path) {
 
 std::vector<std::string> FileSystem::getDirectories(const std::string &path) {
 	std::vector<std::string> res;
+	if (!exists(path)) return res;
 
 	for (fs::directory_iterator it(clear(path)), end; it != end; ++it) {
 		std::string pathStr = clear(it->path().string());
@@ -134,6 +135,7 @@ std::vector<std::string> FileSystem::getDirectories(const std::string &path) {
 
 std::vector<std::string> FileSystem::getFiles(const std::string &path) {
 	std::vector<std::string> res;
+	if (!exists(path)) return res;
 
 	for (fs::directory_iterator it(clear(path)), end; it != end; ++it) {
 		std::string pathStr = clear(it->path().string());
@@ -149,6 +151,7 @@ std::vector<std::string> FileSystem::getFiles(const std::string &path) {
 
 std::vector<std::string> FileSystem::getFilesRecursive(const std::string &path) {
 	std::vector<std::string> res;
+	if (!exists(path)) return res;
 
 	for (fs::recursive_directory_iterator it(clear(path)), end; it != end; ++it) {
 		std::string pathStr = clear(it->path().string());
