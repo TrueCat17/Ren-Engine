@@ -4,13 +4,9 @@ init -100000 python:
 	_timeout_funcs = []
 	
 	def set_timeout(function, time_sec):
-		if not picklable(function):
-			out_msg('set_timeout', 'Function <%s> is not picklable' % function)
+		if not is_picklable_func('set_timeout', function, 'function'):
 			return 0
 		
-		if not callable(function):
-			out_msg('set_timeout', '<%s> is not callable' % function)
-			return 0
 		global _timeout_id
 		_timeout_id += 1
 		_timeout_funcs.append([_timeout_id, function, time_sec])

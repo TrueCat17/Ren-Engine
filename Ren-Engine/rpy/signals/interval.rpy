@@ -4,13 +4,9 @@ init -100000 python:
 	_interval_funcs = []
 	
 	def set_interval(function, time_sec):
-		if not picklable(function):
-			out_msg('set_interval', 'Function <%s> is not picklable' % function)
+		if not is_picklable_func('set_interval', function, 'function'):
 			return 0
 		
-		if not callable(function):
-			out_msg('set_interval', '<%s> is not callable' % function)
-			return 0
 		global _interval_id
 		_interval_id += 1
 		_interval_funcs.append([_interval_id, function, time_sec, time_sec])
