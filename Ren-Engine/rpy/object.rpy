@@ -1,4 +1,4 @@
-init -100000 python:
+init -1000010 python:
 	object_getattribute = object.__getattribute__
 	
 	class Object:
@@ -33,8 +33,11 @@ init -100000 python:
 		def __contains__(self, key):
 			return key in object_getattribute(self, '__dict__')
 		
-		def get(self, attr, default_value = None):
-			return object_getattribute(self, '__dict__').get(attr, default_value)
+		def get(self, key, default_value = None):
+			return object_getattribute(self, '__dict__').get(key, default_value)
+		
+		def setdefault(self, key, default_value):
+			return object_getattribute(self, '__dict__').setdefault(key, default_value)
 		
 		def __getattribute__(self, attr):
 			d = object_getattribute(self, '__dict__')
@@ -85,13 +88,6 @@ init -100000 python:
 			if d['in_persistent'] and attr not in d['not_persistent_props']:
 				global persistent_need_save
 				persistent_need_save = True
-		
-		def __getitem__(self, item):
-			return self.__getattribute__(item)
-		def __setitem__(self, item, value):
-			self.__setattr__(item, value)
-		def __delitem__(self, item):
-			self.__delattr__(item)
 		
 		
 		def __str__(self):
@@ -144,6 +140,10 @@ init -100000 python:
 			
 			d.setdefault('in_persistent', False)
 			d.setdefault('not_persistent_props', set())
+	
+	Object.__getitem__ = Object.__getattribute__
+	Object.__setitem__ = Object.__setattr__
+	Object.__delitem__ = Object.__delattr__
 	
 	
 	def _restore_object_from_persistent(*path):

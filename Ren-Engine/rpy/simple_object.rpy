@@ -1,4 +1,4 @@
-init -100000 python:
+init -1000000 python:
 	class SimpleObject:
 		def __init__(self, obj = None):
 			if obj:
@@ -17,6 +17,9 @@ init -100000 python:
 		
 		def get(self, prop, default_value = None):
 			return self.__dict__.get(prop, default_value)
+		
+		def setdefault(self, prop, default_value):
+			return object_getattribute(self, '__dict__').setdefault(prop, default_value)
 		
 		def __dir__(self):
 			return self.__dict__.__dir__()
