@@ -25,9 +25,9 @@ Ren-Engine - это движок для игр: Визуальных Новел�
 Самая главная особенность движка - гораздо бОльшая производительность (примерно в 130 раз быстрее).  
 Также стоит отметить компактность (13 МБ против 100), скорость запуска, потребление памяти и отсутствие подвисаний.
 
-[Отсюда](https://drive.google.com/open?id=1TUzhBevm2dRokaPw19rMbAauXFzuxjLh)
+[Отсюда](https://raw.githubusercontent.com/TrueCat17/RE-Demo-upd-sys/master/zips/demo.zip)
 можно скачать **демку** движка.  
-[Отсюда](https://drive.google.com/file/d/1f7fbKDHxvXlO6R2Gy__r4M44ZiTt1rZR/view)
+[Отсюда](https://raw.githubusercontent.com/TrueCat17/RE-Launcher-upd-sys/master/zips/RE-Launcher.zip)
 \- **лаунчер** для создания ваших проектов и управления ими.
 
 Информацию про использование движка и создание своих игр вы можете найти в документации на
@@ -54,7 +54,7 @@ git submodule update --init --depth=1
 
 На данный момент движок перешёл на Python3.11.  
 Старая версия движка, оставленная без обновлений, доступна по
-[этой ссылке](https://drive.google.com/file/d/15Ryxox5hGL6_bEt7WgXAVHPKENhuNV78/view).  
+[этой ссылке](https://raw.githubusercontent.com/TrueCat17/RE-Demo-upd-sys/master/zips/Ren-Engine-Python2.7.zip).  
 Архив содержит демку, лаунчер и документацию (в markdown и html), актуальную на 15.04.23.
 
 
@@ -71,9 +71,9 @@ But implemented almost all functions for Visual Novells based on Ren'Py.
 The most important feature of Ren-Engine - very high perfomance (x130 as to Ren'Py).  
 Also compactness (13 MB vs 100), speed of start, intake of memory and miss of hangs.
 
-[Here](https://drive.google.com/open?id=1TUzhBevm2dRokaPw19rMbAauXFzuxjLh)
+[Here](https://raw.githubusercontent.com/TrueCat17/RE-Demo-upd-sys/master/zips/demo.zip)
 you can download **demo**.  
-[Here](https://drive.google.com/file/d/1f7fbKDHxvXlO6R2Gy__r4M44ZiTt1rZR/view)
+[Here](https://raw.githubusercontent.com/TrueCat17/RE-Launcher-upd-sys/master/zips/RE-Launcher.zip)
 \- **launcher** for creating and managing your projects.
 
 Info to using Ren-Engine and creating your own games you can find on
@@ -101,5 +101,5 @@ git submodule update --init --depth=1
 
 At the moment, the engine has switched to Python3.11.  
 The old version of the engine, left without updates, is available at
-[this link](https://drive.google.com/file/d/15Ryxox5hGL6_bEt7WgXAVHPKENhuNV78/view).  
+[this link](https://raw.githubusercontent.com/TrueCat17/RE-Demo-upd-sys/master/zips/Ren-Engine-Python2.7.zip).  
 The archive contains a demo, launcher and documentation (in markdown and html) that is current as of April 15, 2023.
