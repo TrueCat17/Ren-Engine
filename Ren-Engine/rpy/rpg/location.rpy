@@ -246,7 +246,7 @@ init -1002 python:
 			
 			self.name = name
 			self.type = None # this is not rpg-location-object
-			self.directory = directory + ('' if directory.endswith('/') else '/')
+			self.directory = make_sure_dir(directory)
 			
 			self.is_room = is_room
 			self.xsize = xsize

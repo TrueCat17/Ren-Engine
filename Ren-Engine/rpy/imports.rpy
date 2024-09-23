@@ -7,7 +7,6 @@ init -1000001 python:
 		os.startfile = _start_file_win32
 		
 		def _is_abs_path(path):
-			path = path.replace('\\', '/')
 			return path.startswith('/') or path.startswith(':/', 1)
 		os.path.isabs = _is_abs_path
 	

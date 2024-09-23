@@ -3,7 +3,7 @@ init -500 python:
 	def help__set_file(path_dir = None, path_file = 'readme.txt', make_vars = dict):
 		if not path_dir:
 			path_dir = 'mods/' + get_current_mod()
-		help.path_dir = path_dir + ('' if path_dir.endswith('/') else '/')
+		help.path_dir = make_sure_dir(path_dir)
 		
 		help.path_file = path_file
 		help.make_vars = make_vars

@@ -208,7 +208,7 @@ init -1001 python:
 		# rpg-funcs:
 		
 		def make_rpg(self, directory, rpg_name, start_dress):
-			self.directory = directory + ('' if directory.endswith('/') else '/')
+			self.directory = make_sure_dir(directory)
 			self.rpg_name = rpg_name
 			self.set_dress(start_dress)
 		
