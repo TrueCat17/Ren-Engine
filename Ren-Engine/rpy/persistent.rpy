@@ -18,6 +18,12 @@ init -100002 python:
 	_global_pickling_canary = GlobalPicklingCanary()
 	
 	
+	class DontSave(SimpleObject):
+		def __reduce__(self):
+			return DontSave, ()
+	dont_save = DontSave()
+	
+	
 	def picklable(obj, visited = None):
 		if obj is globals(): # error
 			return False
@@ -80,6 +86,15 @@ init -100002 python:
 			return True
 		except:
 			return False
+	
+	def is_picklable_func(called_from, func, param_name):
+		if not callable(func):
+			out_msg(called_from, 'Param <%s> is not callable' % (param_name, ))
+			return False
+		if not picklable(func):
+			out_msg(called_from, 'Param <%s> is not picklable' % (param_name, ))
+			return False
+		return True
 	
 	
 	def _pickle_module(module):
