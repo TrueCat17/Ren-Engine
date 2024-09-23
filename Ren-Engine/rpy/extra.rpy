@@ -1,4 +1,4 @@
-init -1000000 python:
+init -1000001 python:
 	alphabet = ''.join([chr(i) for i in range(ord('a'), ord('z') + 1)]) # a-z
 	numbers = '0123456789'
 	
@@ -25,24 +25,6 @@ init -1000000 python:
 				tmp_obj = tmp_obj[sub]
 			
 			tmp_obj[prop_name] = g[orig_name]
-	
-	
-	def get_file_and_line(depth):
-		frame = sys._getframe()
-		frame = frame.f_back
-		while depth:
-			depth -= 1
-			frame = frame.f_back
-		return frame.f_code.co_filename, frame.f_lineno
-	
-	def get_filename(depth):
-		return get_file_and_line(depth + 1)[0]
-	def get_numline(depth):
-		return get_file_and_line(depth + 1)[1]
-	
-	def get_stack(depth):
-		stack = traceback.format_stack()
-		return stack[:-(depth + 1)]
 	
 	
 	def quick_load():
@@ -85,45 +67,8 @@ init -1000000 python:
 	def get_from_hard_config(param, ret_type):
 		res = _get_from_hard_config(str(param))
 		if ret_type is bool:
-			return res == "True"
+			return res == 'True'
 		return ret_type(res)
-	
-	def get_exception_stack_str(e, depth):
-		if isinstance(e, SyntaxError):
-			msg = '%s (%s, line %s)' % (e.msg, e.filename, e.lineno)
-			text = getattr(e, 'text', None)
-			if text:
-				if '\n' in text:
-					text = text[:text.index('\n')]
-				msg += '\n  ' + text
-				if e.offset:
-					end_offset = getattr(e, 'end_offset', len(text))
-					msg += '\n  ' + ' ' * (e.offset - 1) + '^' * max(1, end_offset - e.offset)
-		else:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			msg = 'Exception (type = ' + type(exc_value).__name__ + '): ' + str(exc_value)
-			if exc_traceback:
-				stack = traceback.format_tb(exc_traceback)[depth:]
-				if stack:
-					msg += '\nStack:\n'
-					for frame in stack:
-						msg += frame
-		return msg
-	
-	def out_msg(msg, err = '', show_stack = True):
-		err = str(err)
-		if show_stack:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			if exc_traceback:
-				stack = traceback.format_tb(exc_traceback)
-				err += '\n\nException (type = ' + type(exc_value).__name__ + '): ' + str(exc_value)
-			else:
-				stack = get_stack(1)
-			err += '\n\nStack:\n'
-			for frame in stack:
-				err += frame
-		
-		_out_msg(str(msg), err)
 	
 	
 	def get_k_between(start, end, value, reverse = False):
