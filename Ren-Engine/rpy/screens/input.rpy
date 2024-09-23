@@ -203,7 +203,7 @@ init:
 
 screen input:
 	modal True
-	zorder 100
+	zorder 1000000
 	
 	
 	key 'ESCAPE' action (input.close if input.cancel_btn else pause_screen.show)

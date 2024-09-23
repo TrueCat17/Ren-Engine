@@ -53,7 +53,7 @@ init:
 
 
 screen notification:
-	zorder 1000
+	zorder 1000000
 	
 	has vbox
 	spacing 10
