@@ -24,7 +24,7 @@ init -10000 python:
 		slots.last_update = get_game_time()
 		
 		sw, sh = get_stage_size()
-		k = get_from_hard_config("window_w_div_h", float)
+		k = get_from_hard_config('window_w_div_h', float)
 		
 		if gui.slot_width is None and gui.slot_height is None:
 			xsize = int(sw / (gui.file_slot_cols + 2))
@@ -43,10 +43,10 @@ init -10000 python:
 				ysize = int(xsize / k)
 		slots.xsize, slots.ysize = xsize, ysize
 		
-		slots.exists = {}
-		slots.cache = {}
+		exists = dont_save.slots_exists = {}
+		cache = dont_save.slots_cache = {}
 		for page in slots.pages:
-			exists_on_page = slots.exists[page] = []
+			exists_on_page = exists[page] = []
 			
 			for slot in slots.slots:
 				path = os.path.join(slots.directory, page, slot, 'py_globals')
@@ -55,20 +55,18 @@ init -10000 python:
 				exists_on_page.append(slot)
 				
 				mtime_utc = os.path.getmtime(path)
-				dt = time.localtime(mtime_utc)
-				data = (str(i) for i in (dt.tm_mday, dt.tm_mon, dt.tm_year % 100, dt.tm_hour, dt.tm_min))
-				data = tuple(i if len(i) == 2 else '0' + i for i in data)
+				tm = time.localtime(mtime_utc)
 				
-				mtime_formatted = '%s.%s.%s, %s:%s' % data
-				slots.cache[(page, slot, 'mtime_utc')] = mtime_utc
-				slots.cache[(page, slot, 'mtime_formatted')] = mtime_formatted
+				mtime_formatted = time.strftime('%d.%m.%y-%H:%M', tm)
+				cache[(page, slot, 'mtime_utc')] = mtime_utc
+				cache[(page, slot, 'mtime_formatted')] = mtime_formatted
 				
 				screenshot = os.path.join(slots.directory, page, slot, 'screenshot.png')
 				if os.path.exists(screenshot):
 					screenshot += '?' + str(os.path.getmtime(screenshot))
 				else:
 					screenshot = None
-				slots.cache[(page, slot, 'screenshot')] = screenshot
+				cache[(page, slot, 'screenshot')] = screenshot
 	
 	def slots__update_on_show(name):
 		if name in ('save', 'load'):
@@ -84,15 +82,15 @@ init -10000 python:
 	
 	def slots__can_load(slot = None, page = None):
 		page = page or persistent.slot_page
-		if page not in slots.exists:
-			out_msg('slots.can_load', 'For not standard page <' + str(page) + '> use function slots.list_slots(page)')
+		if page not in dont_save.slots_exists:
+			out_msg('slots.can_load', 'For a non standard page <%s> use function slots.list_slots(page)' % (page, ))
 			return False
 		slot = slot or persistent.slot_selected
-		return slot in slots.exists[page]
+		return slot in dont_save.slots_exists[page]
 	def slots__list_slots(page = None):
 		page = page or persistent.slot_page
 		if page in slots.pages:
-			return slots.exists[page]
+			return dont_save.slots_exists[page]
 		res = []
 		for slot in os.listdir(os.path.join(slots.directory, page)):
 			if os.path.exists(os.path.join(slots.directory, page, slot, 'py_globals')):
@@ -102,15 +100,15 @@ init -10000 python:
 	def slots__mtime(slot = None, page = None):
 		page = page or persistent.slot_page
 		slot = slot or persistent.slot_selected
-		return slots.cache.get((page, slot, 'mtime_utc'), None)
+		return dont_save.slots_cache.get((page, slot, 'mtime_utc'), None)
 	def slots__mtime_formatted(slot = None, page = None):
 		page = page or persistent.slot_page
 		slot = slot or persistent.slot_selected
-		return slots.cache.get((page, slot, 'mtime_formatted'), None)
+		return dont_save.slots_cache.get((page, slot, 'mtime_formatted'), None)
 	def slots__screenshot(slot = None, page = None):
 		page = page or persistent.slot_page
 		slot = slot or persistent.slot_selected
-		return slots.cache.get((page, slot, 'screenshot'), None)
+		return dont_save.slots_cache.get((page, slot, 'screenshot'), None)
 	
 	def slots__image(slot = None, page = None):
 		page = page or persistent.slot_page
