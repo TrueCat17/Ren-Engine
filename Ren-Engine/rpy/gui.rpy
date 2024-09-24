@@ -220,6 +220,7 @@ init -1000 python:
 	
 	# prefs
 	gui.prefs_mods_in_page = 8
+	gui.prefs_update_buttons_in_page = 5
 	
 	gui.prefs_std_btn_params = (5, 1) # w_div_h, k for style.[prefs_]menu_button.ysize
 	

@@ -155,3 +155,41 @@ translate russian strings:
 	
 	old 'Cancel'
 	new 'Отмена'
+	
+	
+	# reus
+	old 'Updates'
+	new 'Обновления'
+	
+	old 'No auto-updates, no reminders.\nThe update will return the edited files.'
+	new 'Нет авто-обновлений, нет напоминаний.\nОбновление вернёт отредактированные файлы.'
+	
+	old 'Check'
+	new 'Проверить'
+	
+	old 'Check all'
+	new 'Проверить всё'
+	
+	old 'Update'
+	new 'Обновить'
+	
+	old 'No updates'
+	new 'Нет обновлений'
+	
+	old 'There are updates'
+	new 'Есть обновления'
+	
+	old 'Need to download %s MB. Continue? y/n'
+	new 'Нужно загрузить %s МБ. Продолжить? y/n'
+	
+	old 'Loaded'
+	new 'Загружено'
+	
+	old 'MB'
+	new 'МБ'
+	
+	old 'File <%s> has an invalid hash'
+	new 'Файл <%s> имеет неверный хэш'
+	
+	old 'Updated'
+	new 'Обновлено'
