@@ -37,7 +37,19 @@ init -1000010 python:
 			return object_getattribute(self, '__dict__').get(key, default_value)
 		
 		def setdefault(self, key, default_value):
-			return object_getattribute(self, '__dict__').setdefault(key, default_value)
+			d = object_getattribute(self, '__dict__')
+			if key in d:
+				return d[key]
+			
+			if d['in_persistent'] and key not in d['not_persistent_props']:
+				if isinstance(default_value, Object):
+					_set_object_in_persistent(default_value)
+				
+				global persistent_need_save
+				persistent_need_save = True
+			
+			d[key] = default_value
+			return default_value
 		
 		def __getattribute__(self, attr):
 			d = object_getattribute(self, '__dict__')
