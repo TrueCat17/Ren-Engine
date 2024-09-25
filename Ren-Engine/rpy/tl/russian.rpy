@@ -156,6 +156,12 @@ translate russian strings:
 	old 'Cancel'
 	new 'Отмена'
 	
+	old 'Yes'
+	new 'Да'
+	
+	old 'No'
+	new 'Нет'
+	
 	
 	# reus
 	old 'Updates'
@@ -179,8 +185,8 @@ translate russian strings:
 	old 'There are updates'
 	new 'Есть обновления'
 	
-	old 'Need to download %s MB. Continue? y/n'
-	new 'Нужно загрузить %s МБ. Продолжить? y/n'
+	old 'Need to download %s MB. Continue?'
+	new 'Нужно загрузить %s МБ. Продолжить?'
 	
 	old 'Loaded'
 	new 'Загружено'

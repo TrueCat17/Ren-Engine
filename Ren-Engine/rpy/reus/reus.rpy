@@ -283,18 +283,15 @@ init python:
 		
 		size = info.size_to_load / (1 << 20)
 		size = '%.1f' % size
-		prompt = _('Need to download %s MB. Continue? y/n') % size
+		prompt = _('Need to download %s MB. Continue?') % size
 		
-		input.ask_str(reus.suggest_answer, prompt, allow = 'yn', length = 1, reset_btn = False)
+		input.confirm(reus.suggest_answer, prompt)
 	
-	def reus__suggest_answer(answer):
-		if answer == 'y':
+	def reus__suggest_answer(yes):
+		if yes:
 			reus.load()
 		else:
-			if answer == 'n':
-				notification.out('Cancel')
-			else:
-				reus.suggest() # just repeat
+			notification.out('Cancel')
 	
 	
 	def reus__load(recalc = True):
