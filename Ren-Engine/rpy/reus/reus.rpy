@@ -308,6 +308,7 @@ init python:
 			dont_save_reus.local_path = ''
 			persistent.setdefault('reus_unfinished_loadings', Object())
 			reus.load_next_file()
+			signals.send('reus_load')
 		else:
 			reus.replace(False)
 	
