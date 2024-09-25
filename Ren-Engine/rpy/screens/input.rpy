@@ -1,6 +1,9 @@
 init -995 python:
 	
 	def input__ask_str(callback, prompt, default = '', allow = None, exclude = '', length = None, mask = None, reset_btn = True, cancel_btn = True):
+		if not is_picklable_func('input.ask_str', callback, 'callback'):
+			return
+		
 		db.skip_tab = False
 		input.show_time = get_game_time()
 		
@@ -23,16 +26,27 @@ init -995 python:
 		if length <= 0:
 			length = 1
 		input.length = length
+		
+		input.confirming = default is None
+		default = default or ''
 		if len(default) > length:
 			default = default[:length]
 		input.default = default
 		input.reset()
 		
-		input.btns = [('Ok', input.ready)]
-		if reset_btn:
-			input.btns += [('Reset', input.reset)]
-		if cancel_btn:
-			input.btns += [('Cancel', input.close)]
+		if input.confirming:
+			input.btns = [
+				('Yes', 'input.res = True;  input.ready()'),
+				('No',  'input.res = False; input.ready()'),
+			]
+		else:
+			input.btns = [
+				('Ok', input.ready),
+			]
+			if reset_btn:
+				input.btns.append(('Reset', input.reset))
+			if cancel_btn:
+				input.btns.append(('Cancel', input.close))
 		
 		if input.reverse_btns:
 			input.btns = input.btns[::-1]
@@ -43,6 +57,9 @@ init -995 python:
 		input.ask_str(callback, prompt, default, allow or input.int_allow,   exclude, length, mask, reset_btn, cancel_btn)
 	def input__ask_float(callback, prompt, default = '', allow = None, exclude = '', length = None, mask = None, reset_btn = True, cancel_btn = True):
 		input.ask_str(callback, prompt, default, allow or input.float_allow, exclude, length, mask, reset_btn, cancel_btn)
+	
+	def input__confirm(action, msg):
+		input.ask_str(action, msg, default = None, reset_btn = False, cancel_btn = False)
 	
 	
 	def input__get_masked():
@@ -140,7 +157,9 @@ init -995 python:
 		if input.bg_height:
 			input.bg_ysize = get_absolute(input.bg_height, h)
 		else:
-			input.bg_ysize = input.tf_bg_ysize + get_absolute(style.input_button.ysize, h) + spacing * 3
+			input.bg_ysize = get_absolute(style.input_button.ysize, h) + spacing * 2
+			if not input.confirming:
+				input.bg_ysize += input.tf_bg_ysize + spacing
 			if input.prompt:
 				input.bg_ysize += style.input_prompt.text_size + spacing
 	
@@ -205,26 +224,26 @@ screen input:
 	modal True
 	zorder 1000000
 	
-	
-	key 'ESCAPE' action (input.close if input.cancel_btn else pause_screen.show)
-	
-	key 'SPACE' action input.add(' ')
-	
-	for key in text_nav.keys:
-		key key action input.add(key)
-	
-	key 'HOME'      action input.cursor_home
-	key 'END'       action input.cursor_end
-	
-	key 'LEFT'      action input.cursor_left
-	key 'RIGHT'     action input.cursor_right
-	key 'UP'        action input.cursor_home
-	key 'DOWN'      action input.cursor_end
-	
-	key 'BACKSPACE' action input.backspace
-	key 'DELETE'    action input.delete
-	
-	key 'RETURN'    action input.ready
+	if not input.confirming:
+		key 'ESCAPE' action (input.close if input.cancel_btn else pause_screen.show)
+		
+		key 'SPACE' action input.add(' ')
+		
+		for key in text_nav.keys:
+			key key action input.add(key)
+		
+		key 'HOME'      action input.cursor_home
+		key 'END'       action input.cursor_end
+		
+		key 'LEFT'      action input.cursor_left
+		key 'RIGHT'     action input.cursor_right
+		key 'UP'        action input.cursor_home
+		key 'DOWN'      action input.cursor_end
+		
+		key 'BACKSPACE' action input.backspace
+		key 'DELETE'    action input.delete
+		
+		key 'RETURN'    action input.ready
 	
 	
 	button:
@@ -273,35 +292,36 @@ screen input_content:
 	text _(input.prompt):
 		style 'input_prompt'
 	
-	vbox:
-		xalign 0.5
-		
-		image input.tf_bg_border:
-			xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
-			ysize input.tf_bg_border_size
-		
-		hbox:
-			image input.tf_bg_border:
-				xsize input.tf_bg_border_size
-				ysize input.tf_bg_ysize
+	if not input.confirming:
+		vbox:
+			xalign 0.5
 			
-			image input.tf_bg:
-				xsize input.tf_bg_xsize
-				ysize input.tf_bg_ysize
+			image input.tf_bg_border:
+				xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
+				ysize input.tf_bg_border_size
+			
+			hbox:
+				image input.tf_bg_border:
+					xsize input.tf_bg_border_size
+					ysize input.tf_bg_ysize
 				
-				text input.get_text():
-					style 'input_text'
-					xpos input.tf_side_indent
+				image input.tf_bg:
 					xsize input.tf_bg_xsize
+					ysize input.tf_bg_ysize
+					
+					text input.get_text():
+						style 'input_text'
+						xpos input.tf_side_indent
+						xsize input.tf_bg_xsize
+						ysize input.tf_bg_ysize
+				
+				image input.tf_bg_border:
+					xsize input.tf_bg_border_size
 					ysize input.tf_bg_ysize
 			
 			image input.tf_bg_border:
-				xsize input.tf_bg_border_size
-				ysize input.tf_bg_ysize
-		
-		image input.tf_bg_border:
-			xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
-			ysize input.tf_bg_border_size
+				xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
+				ysize input.tf_bg_border_size
 	
 	hbox:
 		xalign 0.5
