@@ -1,20 +1,34 @@
 init -980 python:
 	def notification__out(msg):
-		obj = [str(msg), None, 1.0]
+		if callable(msg):
+			if not is_picklable_func('notification.out', msg, 'msg'):
+				return
+			
+			obj = [msg, '', None, 1.0]
+		else:
+			obj = [None, str(msg), None, 1.0]
 		
 		show_screen('notification')
 		notification.msgs.append(obj)
-		
-		signals.add('enter_frame', SetDictFuncRes(obj, 1, get_game_time), times = 1)
 	
 	def notification__update():
+		now = get_game_time()
+		
 		i = 0
 		while i < len(notification.msgs):
-			msg, start_time, alpha = notification.msgs[i]
-			if start_time is None:
-				i += 1
-				continue
-			dtime = get_game_time() - start_time
+			msg_func, msg, start_time, alpha = obj = notification.msgs[i]
+			if msg_func:
+				new_msg = msg_func()
+				if new_msg is not None:
+					obj[1] = str(new_msg)
+				else:
+					start_time = now - notification.show_time
+					obj[:] = [None, msg, start_time, 1.0]
+			else:
+				if start_time is None:
+					start_time = obj[2] = now
+			
+			dtime = (now - start_time) if start_time is not None else 0
 			
 			if dtime < notification.show_time:
 				alpha = 1
@@ -24,7 +38,7 @@ init -980 python:
 				alpha = 0
 			
 			if alpha:
-				notification.msgs[i][2] = alpha
+				obj[3] = alpha
 				i += 1
 			else:
 				notification.msgs.pop(i)
@@ -79,7 +93,7 @@ screen notification:
 			if i < 0:
 				break
 		
-		$ msg, start_time, alpha = notification.msgs[i]
+		$ msg, start_time, alpha = notification.msgs[i][1:]
 		
 		textbutton _(msg):
 			style 'notification'
