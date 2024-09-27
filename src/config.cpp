@@ -6,6 +6,7 @@
 
 #include <SDL2/SDL_hints.h>
 
+#include "utils/file_system.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -102,6 +103,14 @@ static void setDefault() {
 }
 
 static void load() {
+	if (FileSystem::exists(pathUser)) {
+		int64_t userTime = FileSystem::getFileTime(pathUser);
+		int64_t origTime = FileSystem::getFileTime(pathOrig);
+		if (origTime > userTime) {
+			FileSystem::remove(pathUser);
+		}
+	}
+
 	std::ifstream is(pathUser, std::ios::binary);
 	if (!is.is_open()) {
 		is.open(pathOrig, std::ios::binary);

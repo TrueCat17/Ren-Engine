@@ -25,6 +25,8 @@ public:
 	static std::vector<std::string> getFiles(const std::string &path);
 	static std::vector<std::string> getFilesRecursive(const std::string &path);
 	
+	static int64_t getFileTime(const std::string &path);
+
 	static bool startFile_win32(std::string path);
 };
 

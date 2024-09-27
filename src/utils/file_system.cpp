@@ -165,6 +165,21 @@ std::vector<std::string> FileSystem::getFilesRecursive(const std::string &path) 
 	return res;
 }
 
+
+int64_t FileSystem::getFileTime(const std::string &path) {
+	std::error_code ec;
+	auto time = fs::last_write_time(path, ec);
+	if (ec.value()) {
+		Utils::outMsg("FileSystem::getFileTime", ec.message() + "\n  path: <" + path + ">");
+		return 0;
+	}
+
+	auto dur = time.time_since_epoch();
+	auto durSec = std::chrono::duration_cast<std::chrono::seconds>(dur);
+	return durSec.count();
+}
+
+
 #ifdef __CYGWIN__
 extern "C" {
 __declspec(dllimport) int __stdcall ShellExecuteW(void*, void*, const wchar_t* file, void*, void*, int show);
