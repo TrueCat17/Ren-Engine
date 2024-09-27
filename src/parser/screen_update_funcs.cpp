@@ -9,6 +9,8 @@
 #include "gui/screen/imagemap.h"
 #include "gui/screen/key.h"
 #include "gui/screen/screen.h"
+
+#include "gui/text_field.h"
 #include "gui/screen/text.h"
 #include "gui/screen/textbutton.h"
 
@@ -351,10 +353,10 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		params.font = PyUtils::objToStr(prop); \
+		params.font = String::getConstPtr(PyUtils::objToStr(prop)); \
 		params.set_font = true; \
 	}else { \
-		params.font.clear(); \
+		params.font = String::getConstPtr(TextField::DEFAULT_FONT_NAME); \
 		params.set_font = false; \
 		\
 		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \

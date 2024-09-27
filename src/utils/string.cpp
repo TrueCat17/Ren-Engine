@@ -229,3 +229,27 @@ size_t String::getCountBytes(const char first) {
 	}
 	return 4;//error, <first> is not first byte of symbol
 }
+
+
+using StringArray = std::vector<std::string>;
+const size_t STRING_ARRAY_SIZE = 128;
+
+std::vector<StringArray*> stringArrays;
+
+const std::string* String::getConstPtr(const std::string &str) {
+	for (const StringArray *array : stringArrays) {
+		for (const std::string &elem : *array) {
+			if (elem == str) return &elem;
+		}
+	}
+
+	if (stringArrays.empty() || stringArrays.back()->size() == STRING_ARRAY_SIZE) {
+		StringArray *array = new StringArray();
+		array->reserve(STRING_ARRAY_SIZE);
+		stringArrays.push_back(array);
+	}
+	StringArray *array = stringArrays.back();
+	array->push_back(str);
+
+	return &array->back();
+}

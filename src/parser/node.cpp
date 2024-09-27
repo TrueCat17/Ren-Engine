@@ -18,7 +18,7 @@ static uint32_t countNodes = 0;
 static std::vector<Node*> nodes;
 
 Node::Node(const std::string &fileName, uint32_t numLine, uint32_t id):
-    fileName(fileName),
+    fileName(String::getConstPtr(fileName)),
     numLine(numLine),
     id(id),
     isScreenProp(false),
@@ -218,7 +218,7 @@ const Node* Node::getProp(const std::string &name) const {
 
 std::string Node::getPlace() const {
 	return "Object <" + command + "> declared in:\n"
-	        "  File <" + fileName + ">\n" +
+	        "  File <" + *fileName + ">\n" +
 	        "  Line: " + std::to_string(numLine);
 }
 

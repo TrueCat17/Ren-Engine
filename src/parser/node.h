@@ -12,7 +12,7 @@ class Node {
 private:
 	Node(const std::string &fileName, uint32_t numLine, uint32_t id);
 
-	std::string fileName;
+	const std::string* fileName;
 	uint32_t numLine;
 
 public:
@@ -50,7 +50,7 @@ public:
 
 	const Node *getProp(const std::string &name) const;
 
-	const std::string& getFileName() const { return fileName; }
+	const std::string& getFileName() const { return *fileName; }
 	uint32_t getNumLine() const { return numLine; }
 	std::string getPlace() const;
 };

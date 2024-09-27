@@ -28,7 +28,8 @@ inline int getCountOutlines(const TextStyle &textStyle) {
 
 static const int MIN_TEXT_SIZE = 8;
 static const int MAX_TEXT_SIZE = 128;
-static const std::string defaultFontName = "Arial";
+
+const std::string TextField::DEFAULT_FONT_NAME = "Arial";
 
 static std::map<std::string, TTF_Font*> fonts;
 static TTF_Font* getFont(const std::string &name, int size) {
@@ -56,11 +57,13 @@ static TTF_Font* getFont(const std::string &name, int size) {
 		SDL_ClearError();
 	}
 
-	if (name != defaultFontName) {
-		Utils::outMsg("getFont", "Failed to load font <" + name + ">.\nTry to load default font.");
-		res = getFont(defaultFontName, size);
+	if (name != TextField::DEFAULT_FONT_NAME) {
+		auto msg = "Failed to load font <" + name + ">.\nTry to load default font.";
+		Utils::outMsg("getFont", msg);
+		res = getFont(TextField::DEFAULT_FONT_NAME, size);
 	}else {
-		Utils::outMsg("getFont", "Failed to load default font <" + defaultFontName + ">.\nText will not be displayed.");
+		auto msg = "Failed to load default font <" + TextField::DEFAULT_FONT_NAME + ">.\nText will not be displayed.";
+		Utils::outMsg("getFont", msg);
 		res = nullptr;
 	}
 	return fonts[t] = res;
@@ -200,7 +203,7 @@ static void updateStyle(TextStyle &textStyle) {
 	TTF_SetFontStyle(textStyle.font, textStyle.fontStyle);
 }
 static void updateFont(TextStyle &textStyle) {
-	textStyle.font = getFont(textStyle.fontName, int(std::round(textStyle.fontSize)));
+	textStyle.font = getFont(*textStyle.fontName, int(std::round(textStyle.fontSize)));
 }
 
 static bool invisible;
@@ -278,7 +281,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			}
 			else if (tag == "alpha") apply(style.alpha,    value);
 			else if (tag == "size")  apply(style.fontSize, value);
-			else if (tag == "font") style.fontName = value;
+			else if (tag == "font") style.fontName = String::getConstPtr(value);
 
 			else if (tag != "image" && tag != "invisible") {
 				unknownTag = true;
@@ -337,9 +340,9 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 	return i + 1;
 }
 
-void TextField::setFont(std::string fontName, float fontSize) {
+void TextField::setFont(const std::string *fontName, float fontSize) {
 	mainStyle.fontSize = fontSize;
-	mainStyle.fontName = fontName.empty() ? defaultFontName : fontName;
+	mainStyle.fontName = String::getConstPtr(fontName->empty() ? DEFAULT_FONT_NAME : *fontName);
 	updateFont(mainStyle);
 }
 

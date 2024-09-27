@@ -6,7 +6,7 @@
 class TextField;
 
 struct TextParams {
-	std::string font;
+	const std::string *font = nullptr;
 
 	Uint32 color = 0;
 	Uint32 outlinecolor = 0;

@@ -139,7 +139,11 @@ void Text::updateSize() {
 		needUpdate = true;
 	}
 
-	std::string font = get_font(this);
+	const std::string *fontName = get_font(this);
+	if (!fontName) {
+		printf("fontName == nullptr\n");
+		std::abort();
+	}
 
 	float size = get_size(this);
 	min = get_size_min(this);
@@ -148,10 +152,10 @@ void Text::updateSize() {
 	if (max > 0 && size > max) size = max;
 	size = std::floor(size * globalZoomY);
 
-	if (font != tf->mainStyle.fontName ||
+	if (fontName != tf->mainStyle.fontName ||
 	    !Math::floatsAreEq(size, tf->mainStyle.fontSize))
 	{
-		tf->setFont(font, size);
+		tf->setFont(fontName, size);
 		needUpdate = true;
 	}
 

@@ -13,7 +13,7 @@ struct TextStyle {
 	std::string tag;
 
 	TTF_Font *font = nullptr;
-	std::string fontName;
+	const std::string *fontName = nullptr;
 	float fontSize = 0;
 
 	float alpha = 1.0;
@@ -47,6 +47,8 @@ private:
 	void setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack);
 
 public:
+	static const std::string DEFAULT_FONT_NAME;
+
 	TextStyle mainStyle;
 
 	int maxWidth  = -1;
@@ -56,7 +58,7 @@ public:
 	float getVAlign() const { return vAlign; }
 	void setAlign(float hAlign = 0, float vAlign = 0);
 
-	void setFont(std::string fontName, float fontSize);
+	void setFont(const std::string *fontName, float fontSize);
 	void setText(const std::string &text);
 
 	virtual bool transparentForMouse(int x, int y) const;

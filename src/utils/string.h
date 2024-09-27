@@ -33,6 +33,8 @@ public:
 		return !(c & 0b10000000) || c & 0b01000000;
 	}
 	static size_t getCountBytes(const char first);
+
+	static const std::string* getConstPtr(const std::string &str);
 };
 
 #endif // STRING_H
