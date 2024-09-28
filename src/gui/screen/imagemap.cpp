@@ -12,7 +12,7 @@ Imagemap::Imagemap(Node *node, Screen *screen):
 void Imagemap::updateTexture() {
 	Container::updateTexture();
 
-	if (prevGroundPath == groundPath && prevHoverPath == hoverPath) return;
+	if (prevGroundPath == groundPath && prevHoverPath == hoverPath && surface) return;
 
 	prevGroundPath = groundPath;
 	prevHoverPath = hoverPath;

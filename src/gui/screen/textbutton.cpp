@@ -16,7 +16,7 @@ void TextButton::updateTexture() {
 
 	auto prevParams = std::tie(prevGround, prevHover, prevParamsIsHover);
 	auto curParams = std::tie(ground, hover, curParamsIsHover);
-	if (prevParams == curParams) return;
+	if (prevParams == curParams && surface) return;
 
 	bool changedGround = prevGround != ground;
 	prevParams = curParams;

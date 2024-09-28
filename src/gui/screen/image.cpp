@@ -11,7 +11,7 @@ Image::Image(Node *node, Screen *screen):
 void Image::updateTexture() {
 	Container::updateTexture();
 
-	if (first_param == prevImagePath) return;
+	if (first_param == prevImagePath && surface) return;
 
 	prevImagePath = first_param;
 

@@ -257,7 +257,7 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 			iter(iter)
 		{}
 
-		const std::string &path() const { return iter->first; }
+		const std::string& path() const { return iter->first; }
 		double time() const { return iter->second.first; }
 		const SurfacePtr& surface() const { return iter->second.second; }
 	};
