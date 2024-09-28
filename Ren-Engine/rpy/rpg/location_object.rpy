@@ -549,7 +549,7 @@ init -1001 python:
 				continue
 			if not i.inventory:
 				continue
-			if i.openable is not None:
+			if 'openable' in i:
 				openable = i.openable
 				if callable(openable):
 					openable = openable()
