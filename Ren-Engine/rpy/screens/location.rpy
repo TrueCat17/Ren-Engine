@@ -222,7 +222,13 @@ init python:
 				
 				res.append(data)
 		
-		res.sort(key = lambda d: d.get('zorder', d['pos'][1]))
+		def get_zorder(d):
+			try:
+				return d['zorder']
+			except:
+				return d['pos'][1]
+		res.sort(key = get_zorder)
+		
 		return res
 	
 	def loc__update():
