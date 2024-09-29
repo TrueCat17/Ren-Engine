@@ -38,10 +38,23 @@ init -1000001 python:
 	
 	from collections import defaultdict
 	
+	
 	def print(*args, **kwargs):
-		if 'flush' not in kwargs:
-			kwargs['flush'] = True
-		__builtins__.print(*args, **kwargs)
+		sep = kwargs.get('sep', ' ')
+		end = kwargs.get('end')
+		if end is None:
+			end = '\n'
+		
+		kwargs.setdefault('flush', True)
+		
+		data = ''
+		for arg in args:
+			data += str(arg) + sep
+		if data:
+			data = data[:-len(sep)]
+		
+		_log_str_with_end(data, end)
+		__builtins__.print(data, **kwargs)
 	
 	
 	class HashlibImporter:

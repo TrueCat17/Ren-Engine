@@ -5,6 +5,7 @@
 
 
 #include "config.h"
+#include "logger.h"
 
 #include "gui/gui.h"
 #include "gui/screen/screen.h"
@@ -83,6 +84,7 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("get_current_mod", getCurrentMod);
 	setFunc("get_mods", Mods::getList);
 	setFunc("_out_msg", Utils::outMsg);
+	setFunc("_log_str_with_end", Logger::logWithEnd);
 
 	setFunc("_register_channel", AudioManager::registerChannel);
 	setFunc("_has_channel", AudioManager::hasChannel);

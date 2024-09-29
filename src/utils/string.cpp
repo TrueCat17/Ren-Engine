@@ -229,6 +229,17 @@ size_t String::getCountBytes(const char first) {
 	}
 	return 4;//error, <first> is not first byte of symbol
 }
+size_t String::getCorrectCropIndex(std::string_view s, size_t i) {
+	size_t t = i;
+	while (!String::isFirstByte(s[t])) {
+		--t;
+	}
+	size_t last = String::getCountBytes(s[t]);
+	if (t + last > i) {
+		last = 0;
+	}
+	return t + last;
+}
 
 
 using StringArray = std::vector<std::string>;

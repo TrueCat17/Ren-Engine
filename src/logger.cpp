@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "utils/file_system.h"
+#include "utils/string.h"
 
 
 static std::ofstream out;
@@ -16,15 +17,27 @@ void Logger::init() {
 
 	time_t seconds = std::time(nullptr);
 	tm *timeInfo = std::localtime(&seconds);
-	log(std::asctime(timeInfo));
+
+	char buffer[50];
+	std::strftime(buffer, sizeof(buffer), "%Y.%m.%d-%H:%M:%S", timeInfo);
+	logWithEnd(buffer, "\n\n");
 }
 
 void Logger::log(const std::string &str) {
+	logWithEnd(str, "\n");
+}
+void Logger::logWithEnd(const std::string &str, const std::string &end) {
 	const size_t size = size_t(out.tellp());
 	const size_t maxSize = 100 << 10;//100 kB
-	if (size > maxSize) return;
+	if (size >= maxSize) return;
 
-	out << str << '\n';
+	size_t lost = maxSize - size;
+	if (lost >= str.size()) {
+		lost = str.size();
+	}else {
+		lost = String::getCorrectCropIndex(str, lost);
+	}
+	out << std::string_view(str.c_str(), lost) << end;
 	out.flush();
 }
 void Logger::logEvent(const std::string &event, double time, bool lastInGroup) {

@@ -33,6 +33,7 @@ public:
 		return !(c & 0b10000000) || c & 0b01000000;
 	}
 	static size_t getCountBytes(const char first);
+	static size_t getCorrectCropIndex(std::string_view s, size_t i);
 
 	static const std::string* getConstPtr(const std::string &str);
 };

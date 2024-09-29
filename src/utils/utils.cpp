@@ -60,20 +60,11 @@ void Utils::setThreadName([[maybe_unused]] std::string name) {
 
 	if (name.size() > maxNameSize) {
 		std::string ending = "..";
-		size_t i = maxNameSize - ending.size();
-		--i;
-		while (!String::isFirstByte(name[i])) {
+		size_t i = String::getCorrectCropIndex(name, maxNameSize - ending.size());
+		while (i > 0 && name[i - 1] == ' ') {
 			--i;
 		}
-		size_t last = String::getCountBytes(name[i]);
-		if (i + last > maxNameSize - ending.size()) {
-			last = 0;
-		}
-		name.erase(i + last);
-
-		while (name.back() == ' ') {
-			name.pop_back();
-		}
+		name.erase(i);
 		name += ending;
 	}
 
