@@ -190,9 +190,9 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path) {
 #ifndef __CYGWIN__
 	return false;
 #else
-	wchar_t *wpath = reinterpret_cast<wchar_t*>(SDL_iconv_utf8_ucs2(path.c_str()));
+	wchar_t *wpath = reinterpret_cast<wchar_t*>(SDL_iconv_string("UTF-16LE", "UTF-8", path.c_str(), path.size() + 1));
 	if (!wpath) {
-		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_utf8_ucs2", SDL_GetError());
+		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
 		return false;
 	}
 	int code = ShellExecuteW(nullptr, nullptr, wpath, nullptr, nullptr, 1);

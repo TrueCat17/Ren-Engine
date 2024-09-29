@@ -3,12 +3,28 @@ init -1000001 python:
 	
 	# Ren-Engine helpers for cygwin
 	os.getcwd = _get_cwd
-	if os.sys.platform in ('win32', 'cygwin'):
-		os.startfile = _start_file_win32
+	
+	def win32_start_file(path):
+		if path.startswith('/cygdrive/'):
+			path = path[len('/cygdrive/'):]
+			if not path:
+				return False
+			if len(path) == 1: # just disk letter
+				path += '/'
+			
+			if path[1] != '/':
+				return False
+			
+			path = path[0] + ':' + path[1:]
 		
-		def _is_abs_path(path):
-			return path.startswith('/') or path.startswith(':/', 1)
-		os.path.isabs = _is_abs_path
+		return _start_file_win32(path)
+	
+	def win32_is_abs_path(path):
+		return path.startswith('/') or path.startswith(':/', 1)
+	
+	if os.sys.platform in ('win32', 'cygwin'):
+		os.startfile = win32_start_file
+		os.path.isabs = win32_is_abs_path
 	
 	
 	import sys
