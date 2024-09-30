@@ -183,7 +183,7 @@ int64_t FileSystem::getFileTime(const std::string &path) {
 	return durSec.count();
 }
 
-bool FileSystem::startFile_win32([[maybe_unused]] std::string path, PyObject *vars) {
+bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unused]] PyObject *vars) {
 #ifndef __CYGWIN__
 	return false;
 #else
