@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+typedef struct _object PyObject;
+
 class FileSystem {
 public:
 	static std::string getCurrentPath();
@@ -27,7 +29,7 @@ public:
 	
 	static int64_t getFileTime(const std::string &path);
 
-	static bool startFile_win32(std::string path);
+	static bool startFile_win32(std::string path, PyObject *vars);
 };
 
 #endif // FILE_SYSTEM_H

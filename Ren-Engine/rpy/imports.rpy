@@ -4,7 +4,7 @@ init -1000001 python:
 	# Ren-Engine helpers for cygwin
 	os.getcwd = _get_cwd
 	
-	def win32_start_file(path):
+	def win32_start_file(path, vars = None):
 		if path.startswith('/cygdrive/'):
 			path = path[len('/cygdrive/'):]
 			if not path:
@@ -17,7 +17,7 @@ init -1000001 python:
 			
 			path = path[0] + ':' + path[1:]
 		
-		return _start_file_win32(path)
+		return _start_file_win32(path, vars or [])
 	
 	def win32_is_abs_path(path):
 		return path.startswith('/') or path.startswith(':/', 1)

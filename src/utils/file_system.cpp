@@ -7,6 +7,7 @@ namespace fs = std::filesystem;
 
 #include <SDL2/SDL.h>
 
+#include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -20,9 +21,12 @@ static std::string clear(const std::string &path) {
 
 
 #ifdef __CYGWIN__
-extern "C" {
-__declspec(dllimport) int __stdcall GetCurrentDirectoryW(int bufferLen, wchar_t* buffer);
-}
+#include <Python.h>
+
+#include <windef.h>
+#include <winbase.h>
+#include <winuser.h>
+#include <shellapi.h>
 #endif
 
 std::string FileSystem::getCurrentPath() {
@@ -179,14 +183,7 @@ int64_t FileSystem::getFileTime(const std::string &path) {
 	return durSec.count();
 }
 
-
-#ifdef __CYGWIN__
-extern "C" {
-__declspec(dllimport) int __stdcall ShellExecuteW(void*, void*, const wchar_t* file, void*, void*, int show);
-}
-#endif
-
-bool FileSystem::startFile_win32([[maybe_unused]] std::string path) {
+bool FileSystem::startFile_win32([[maybe_unused]] std::string path, PyObject *vars) {
 #ifndef __CYGWIN__
 	return false;
 #else
@@ -195,8 +192,58 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path) {
 		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
 		return false;
 	}
-	int code = ShellExecuteW(nullptr, nullptr, wpath, nullptr, nullptr, 1);
-	SDL_free(wpath);
-	return code > 32;
+
+	wchar_t *wenv = nullptr;
+
+	ScopeExit se([&]() {
+		SDL_free(wpath);
+		SDL_free(wenv);
+	});
+
+	//ShellExecuteW uses default environment - without setting and inheritting (because python and cygwin problems)
+	//  => use CreateProcessW for *.exe
+	if (!String::endsWith(path, ".exe")) {
+		HINSTANCE code = ShellExecuteW(nullptr, nullptr, wpath, nullptr, nullptr, SW_SHOWNORMAL);
+		return reinterpret_cast<DWORD>(code) > 32;
+	}
+
+	std::vector<char> v;
+	v.reserve(1024);
+
+	if (!PyList_CheckExact(vars)) {
+		std::string type = vars->ob_type->tp_name;
+		Utils::outMsg("FileSystem::startFile_win32", "Expected type(vars) is list, got " + type);
+		return false;
+	}
+
+	long size = Py_SIZE(vars);
+	for (long i = 0; i < size; ++i) {
+		PyObject *pyVar = PyList_GET_ITEM(vars, i);
+		if (!PyUnicode_CheckExact(pyVar)) {
+			std::string type = pyVar->ob_type->tp_name;
+			Utils::outMsg("FileSystem::startFile_win32", "Expected type(vars[i]) is str, got " + type);
+			return false;
+		}
+
+		const char *var = PyUnicode_AsUTF8(pyVar);
+		long varSize = Py_SIZE(pyVar);
+		v.insert(v.end(), var, var + varSize);
+		v.push_back(0);
+	}
+	v.push_back(0);
+
+	wenv = reinterpret_cast<wchar_t*>(SDL_iconv_string("UTF-16LE", "UTF-8", v.data(), v.size()));
+	if (!wenv) {
+		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
+		return false;
+	}
+
+	DWORD flags = CREATE_UNICODE_ENVIRONMENT;
+	STARTUPINFOW info = {};
+	info.cb = sizeof(STARTUPINFOW);
+	PROCESS_INFORMATION procInfo;
+
+	BOOL code = CreateProcessW(wpath, nullptr, nullptr, nullptr, FALSE, flags, wenv, nullptr, &info, &procInfo);
+	return code != FALSE;
 #endif
 }
