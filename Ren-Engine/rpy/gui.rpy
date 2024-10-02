@@ -12,7 +12,7 @@ init -10000 python:
 		obj = props.get('obj', gui)
 		default = props.get('default', None)
 		
-		res = gui[name]
+		res = obj.get(name)
 		if name.endswith('color'):
 			res = color_to_int(res)
 			return res if res is not None else default
@@ -21,9 +21,9 @@ init -10000 python:
 		max_value = props.get('max_value', get_stage_width() if is_x_coord else get_stage_height())
 		
 		res = get_absolute(res, max_value) if res is not None else default
-		min_res = gui[name + '_min']
+		min_res = obj.get(name + '_min')
 		min_res = min_res and get_absolute(min_res, max_value)
-		max_res = gui[name + '_max']
+		max_res = obj.get(name + '_max')
 		max_res = max_res and get_absolute(max_res, max_value)
 		
 		res = gui.max(res, min_res)

@@ -390,7 +390,7 @@ screen dialogue_box_adv:
 				alpha 1 if db.name_text else 0
 				
 				text db.name_text:
-					font         gui.name_text_font
+					font         db.name_text_font
 					text_size    gui.get_int('name_text_size', obj = db)
 					color        db.name_text_color
 					outlinecolor db.name_text_outlinecolor
