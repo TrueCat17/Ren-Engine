@@ -200,7 +200,7 @@ init -1001 python:
 	
 	
 	def im__scale(image, w, h):
-		if w <= 0 or h <= 0:
+		if w < 1 or h < 1:
 			out_msg('im.scale', 'Sizes are invalid: (%s, %s)' % (w, h))
 			return image
 		return 'Scale|(%s)|%s|%s' % (image, int(w), int(h))
@@ -208,13 +208,13 @@ init -1001 python:
 	def im__factor_scale(image, w, h = None):
 		if h is None:
 			h = w
-		if w <= 0 or h <= 0:
+		if w < 1 or h < 1:
 			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
 			return image
 		return 'FactorScale|(%s)|%s|%s' % (image, w, h)
 	
 	def im__renderer_scale(image, w, h):
-		if w <= 0 or h <= 0:
+		if w < 1 or h < 1:
 			out_msg('im.renderer_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
 			return image
 		return 'RendererScale|(%s)|%s|%s' % (image, int(w), int(h))
@@ -222,7 +222,7 @@ init -1001 python:
 	def im__crop(image, x, y = None, w = None, h = None):
 		if type(x) in (tuple, list):
 			x, y, w, h = x
-		if w <= 0 or h <= 0:
+		if w < 1 or h < 1:
 			out_msg('im.crop', 'Sizes are invalid: (%s, %s)' % (w, h))
 			return image
 		return 'Crop|(%s)|(%s %s %s %s)' % (image, int(x), int(y), int(w), int(h))
@@ -231,17 +231,14 @@ init -1001 python:
 	def im__composite(*args):
 		if (len(args) % 2) == 0:
 			out_msg('im.composite', 'Expected odd count of arguments')
-			return ''
-		
-		try:
-			w, h = args[0]
-			if w <= 0 or h <= 0:
-				raise ValueError()
-		except:
-			out_msg('im.composite', 'Sizes are invalid: <%s>' % (args[0], ))
 			return im.rect('#888', 100, 100)
 		
-		res = 'Composite|(%s %s)' % (int(w), int(h))
+		size = args[0]
+		if type(size) not in (tuple, list) or len(size) != 2 or size[0] < 1 or size[1] < 1:
+			out_msg('im.composite', 'Sizes are invalid: <%s>' % (size, ))
+			return im.rect('#888', 100, 100)
+		
+		res = 'Composite|(%s %s)' % (int(size[0]), int(size[1]))
 		
 		for i in range(1, len(args) - 1, 2):
 			x, y = args[i]
@@ -319,7 +316,7 @@ init -1001 python:
 		return im.blur_h(im.blur_v(image, dist_v), dist_h)
 	
 	def im__motion_blur(image, cx = 0.5, cy = 0.5, dist = 5):
-		if dist <= 0 or dist > 255:
+		if dist < 1 or dist > 255:
 			out_msg('im.motion_blur', 'Blur distance must be from 1 to 255, got: %s' % dist)
 			return image
 		return 'MotionBlur|(%s)|%s|%s|%s' % (image, cx, cy, int(dist))
@@ -418,7 +415,7 @@ init -1001 python:
 		x, y = in_bounds(int(x), 0, tw), in_bounds(int(y), 0, th)
 		w, h = in_bounds(int(w), 0, tw), in_bounds(int(h), 0, th)
 		
-		if w <= 0 or h <= 0:
+		if w < 1 or h < 1:
 			return ground
 		if (x, y, w, h) == (0, 0, tw, th):
 			return hover

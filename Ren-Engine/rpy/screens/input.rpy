@@ -207,7 +207,7 @@ init:
 	
 	
 	style input_button is textbutton:
-		size (100, 25)
+		xsize 100
 	
 	style input_text is text:
 		font 'Consola'
