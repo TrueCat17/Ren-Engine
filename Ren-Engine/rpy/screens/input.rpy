@@ -74,7 +74,7 @@ init -995 python:
 	
 	
 	def input__close():
-		hide_screen('input')
+		set_timeout(HideScreen('input'), 0.1)
 	def input__ready():
 		if get_game_time() - input.show_time > 0.5:
 			input.close()
@@ -137,12 +137,12 @@ init -995 python:
 		if input.tf_bg_width:
 			input.tf_bg_xsize = get_absolute(input.tf_bg_width, w)
 		else:
-			input.tf_bg_xsize = get_text_width('a' * input.length, style.input_text.text_size) + input.tf_side_indent * 2
+			input.tf_bg_xsize = get_text_width('a' * input.length, style.input_text.text_size) + input.tf_xindent * 2
 		
 		if input.tf_bg_height:
 			input.tf_bg_ysize = get_absolute(input.tf_bg_height, h)
 		else:
-			input.tf_bg_ysize = style.input_text.text_size
+			input.tf_bg_ysize = style.input_text.text_size + input.tf_yindent * 2
 		
 		if input.bg_width:
 			input.bg_xsize = get_absolute(input.bg_width, w)
@@ -180,9 +180,7 @@ init:
 	
 	
 	python:
-		input.fog = im.rect('#000')
-		input.fog_alpha = 0.3
-		
+		input.fog = im.rect('#0005')
 		
 		input.bg = im.rect('#FFF')
 		input.bg_width = None # None = auto
@@ -191,17 +189,25 @@ init:
 		input.bg_border = im.rect('#222')
 		input.bg_border_size = 4 # 0 - disable
 		
+		input.prompt_color = '#000'
+		
 		# tf = text field
 		input.tf_bg = input.bg
+		input.tf_color = '#000'
 		input.tf_bg_width = None # None = auto
 		input.tf_bg_height = None # None = auto
 		
 		input.tf_bg_border = input.bg_border
 		input.tf_bg_border_size = 2 # 0 - disable
 		
-		input.tf_side_indent = 5 # from left and right sides to border
+		# indent from tf to tf_border
+		input.tf_xindent = 5
+		input.tf_yindent = 3
 		
 		input.spacing = 0.05
+		
+		input.xalign = 0.5
+		input.yalign = 0.5
 		
 		input.reverse_btns = False # True - <Ok> on the right, False - <Ok> on the left
 	
@@ -212,7 +218,7 @@ init:
 	style input_text is text:
 		font 'Consola'
 		color 0x000000
-		text_size 20
+		text_size 24
 		text_align 'center'
 	
 	style input_prompt is input_text:
@@ -249,39 +255,32 @@ screen input:
 	button:
 		ground input.fog
 		hover  input.fog
-		
-		alpha input.fog_alpha
 		size 1.0
 		
 		mouse False
 		action input.close if input.cancel_btn else None
 	
 	$ input.update()
-	vbox:
-		align 0.5
+	
+	null:
+		xsize input.bg_xsize + input.bg_border_size * 2
+		ysize input.bg_ysize + input.bg_border_size * 2
+		xalign input.xalign
+		yalign input.yalign
 		
-		image input.bg_border:
-			xsize input.bg_xsize + input.bg_border_size * 2
-			ysize input.bg_border_size
-		
-		hbox:
+		if input.bg_border_size:
 			image input.bg_border:
-				xsize input.bg_border_size
-				ysize input.bg_ysize
-			
-			image input.bg:
-				xsize input.bg_xsize
-				ysize input.bg_ysize
-				
-				use input_content
-			
-			image input.bg_border:
-				xsize input.bg_border_size
-				ysize input.bg_ysize
+				corner_sizes -1
+				xsize input.bg_xsize + input.bg_border_size * 2
+				ysize input.bg_ysize + input.bg_border_size * 2
 		
-		image input.bg_border:
-			xsize input.bg_xsize + input.bg_border_size * 2
-			ysize input.bg_border_size
+		image input.bg:
+			corner_sizes -1
+			xsize input.bg_xsize
+			ysize input.bg_ysize
+			align 0.5
+			
+			use input_content
 
 
 screen input_content:
@@ -291,37 +290,33 @@ screen input_content:
 	
 	text _(input.prompt):
 		style 'input_prompt'
+		color input.prompt_color
 	
 	if not input.confirming:
-		vbox:
+		null:
 			xalign 0.5
+			xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
+			ysize input.tf_bg_ysize + input.tf_bg_border_size * 2
 			
-			image input.tf_bg_border:
-				xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
-				ysize input.tf_bg_border_size
-			
-			hbox:
+			if input.tf_bg_border_size:
 				image input.tf_bg_border:
-					xsize input.tf_bg_border_size
-					ysize input.tf_bg_ysize
+					corner_sizes -1
+					xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
+					ysize input.tf_bg_ysize + input.tf_bg_border_size * 2
 				
-				image input.tf_bg:
+			image input.tf_bg:
+				corner_sizes -1
+				xsize input.tf_bg_xsize
+				ysize input.tf_bg_ysize
+				align 0.5
+				
+				text input.get_text():
+					style 'input_text'
+					color input.tf_color
+					xpos  input.tf_xindent
+					ypos  input.tf_yindent
 					xsize input.tf_bg_xsize
 					ysize input.tf_bg_ysize
-					
-					text input.get_text():
-						style 'input_text'
-						xpos input.tf_side_indent
-						xsize input.tf_bg_xsize
-						ysize input.tf_bg_ysize
-				
-				image input.tf_bg_border:
-					xsize input.tf_bg_border_size
-					ysize input.tf_bg_ysize
-			
-			image input.tf_bg_border:
-				xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
-				ysize input.tf_bg_border_size
 	
 	hbox:
 		xalign 0.5

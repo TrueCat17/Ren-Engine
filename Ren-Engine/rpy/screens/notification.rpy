@@ -68,6 +68,7 @@ init:
 
 screen notification:
 	zorder 1000000
+	ignore_modal True
 	
 	has vbox
 	spacing 10
