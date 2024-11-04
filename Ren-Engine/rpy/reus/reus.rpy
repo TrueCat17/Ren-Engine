@@ -43,7 +43,7 @@ init -100000 python:
 				is_removed = size == ''
 				exists = os.path.exists(self.root + path)
 				
-				if is_removed != exists:
+				if is_removed and exists:
 					has_changes = True
 				
 				if is_removed: continue
