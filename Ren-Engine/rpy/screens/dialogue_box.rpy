@@ -300,10 +300,14 @@ init -1000 python:
 		db.mode = 'nvl'
 		nvl_clear()
 	
-	# set clean state
-	narrator('')
-	db.read = True
-	window_hide()
+	
+	def db__set_clean_state(screen_name):
+		if screen_name == 'dialogue_box':
+			narrator('')
+			db.read = True
+			window_hide()
+			signals.remove('show_screen', db__set_clean_state)
+	signals.add('show_screen', db__set_clean_state)
 
 
 
