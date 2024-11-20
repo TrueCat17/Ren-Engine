@@ -208,7 +208,7 @@ init -1001 python:
 	def im__factor_scale(image, w, h = None):
 		if h is None:
 			h = w
-		if w < 1 or h < 1:
+		if w <= 0 or h <= 0:
 			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
 			return image
 		return 'FactorScale|(%s)|%s|%s' % (image, w, h)
