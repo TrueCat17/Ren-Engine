@@ -4,7 +4,8 @@ init -100:
 		ground 'images/gui/menu/pause/btn_ground.png'
 		hover  'images/gui/menu/pause/btn_hover.png'
 		size     (0.2, 0.1)
-		text_size 20
+		text_size 0.03
+		text_size_min 14
 
 init -100 python:
 	pause_screen.disable = False
