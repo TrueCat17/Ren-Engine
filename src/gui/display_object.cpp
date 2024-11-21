@@ -154,7 +154,7 @@ void DisplayObject::draw() const {
 	float zoom = std::ceil(std::max(std::max(zoomX, zoomY), float(1)));
 
 	std::pair<int, float> ws[3] = {
-	    { left, left /zoom },
+	    { left, left / zoom },
 	    { cropW - (left + right), (width  * zoom - (left + right)) / zoom },
 	    { right, right / zoom }
 	};

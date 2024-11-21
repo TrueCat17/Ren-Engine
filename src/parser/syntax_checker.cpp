@@ -181,7 +181,7 @@ void SyntaxChecker::init() {
 
 	addBlockChildren("hotspot, button, textbutton", buttonProps);
 	addBlockChildren("imagemap, button, textbutton", "ground, hover");
-	addBlockChildren("imagemap", "hotspot, for, while" + conditions + simpleProps);
+	addBlockChildren("imagemap", "hotspot, $, python, for, while" + conditions + simpleProps);
 
 	addBlockChildren("imagemap, button, textbutton, image", "corner_sizes");
 	setSuperParents("corner_sizes", SuperParent::SCREEN);
