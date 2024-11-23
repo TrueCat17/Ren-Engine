@@ -273,9 +273,9 @@ init -1000 python:
 	
 	
 	db.read = True
-	def db_read_func():
+	def db__read_func():
 		return db.read
-	can_exec_next_check_funcs.append(db_read_func)
+	can_exec_next_check_funcs.append(db__read_func)
 	
 	
 	def db__disable_skipping_on_menu(screen_name):
@@ -299,15 +299,13 @@ init -1000 python:
 	def set_mode_nvl():
 		db.mode = 'nvl'
 		nvl_clear()
-	
-	
-	def db__set_clean_state(screen_name):
-		if screen_name == 'dialogue_box':
-			narrator('')
-			db.read = True
-			window_hide()
-			signals.remove('show_screen', db__set_clean_state)
-	signals.add('show_screen', db__set_clean_state)
+
+
+# after all configurations
+init 1000000 python:
+	narrator('')
+	db.read = True
+	window_hide()
 
 
 
