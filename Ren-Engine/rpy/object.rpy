@@ -182,7 +182,10 @@ init -1000010 python:
 					return res
 		return None
 	
-	def _set_object_in_persistent(obj):
+	def _set_object_in_persistent(obj, visited = None):
+		if visited is None:
+			visited = { id(obj) }
+		
 		if isinstance(obj, Object):
 			obj = obj.__dict__
 			obj['in_persistent'] = True
@@ -196,7 +199,13 @@ init -1000010 python:
 				return
 		
 		for v in it:
-			_set_object_in_persistent(v)
+			if type(v) is str: continue
+			
+			id_v = id(v)
+			if id_v in visited: continue
+			
+			visited.add(id_v)
+			_set_object_in_persistent(v, visited)
 	
 	def _object_keys_filter(key):
 		return key not in ('in_persistent', 'not_persistent_props')
