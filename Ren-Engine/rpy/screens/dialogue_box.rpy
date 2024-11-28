@@ -416,20 +416,21 @@ screen dialogue_box_adv:
 
 
 screen dialogue_box_nvl:
-	image 'images/bg/black.jpg':
+	image gui.nvl_bg:
 		size 1.0
-		alpha 0.30
 	
 	vbox:
-		ypos 0.05
+		ypos gui.get_int('nvl_top_indent')
 		
 		spacing 0 if gui.nvl_height else gui.get_int('nvl_spacing')
 		
 		python:
-			db.last_dialogue = db.dialogue + [(
-				db.name_text,     db.name_text_font,     db.name_text_color,     db.name_text_outlinecolor,
-				db.dialogue_text, db.dialogue_text_font, db.dialogue_text_color, db.dialogue_text_outlinecolor
-			)]
+			db.last_dialogue = db.dialogue.copy()
+			if db.dialogue_text:
+				db.last_dialogue.append((
+					db.name_text,     db.name_text_font,     db.name_text_color,     db.name_text_outlinecolor,
+					db.dialogue_text, db.dialogue_text_font, db.dialogue_text_color, db.dialogue_text_outlinecolor
+				))
 			_name_text_yoffset     = max(gui.get_int('dialogue_text_size') - gui.get_int('name_text_size'), 0)
 			_dialogue_text_yoffset = max(gui.get_int('name_text_size') - gui.get_int('dialogue_text_size'), 0)
 		
@@ -438,7 +439,7 @@ screen dialogue_box_nvl:
 				ysize gui.get_int('nvl_height') if gui.nvl_height else -1
 				
 				if _name_text:
-					text _name_text:
+					text (gui.nvl_name_prefix + _name_text + gui.nvl_name_suffix):
 						xpos gui.get_int('nvl_name_xpos')
 						ypos gui.get_int('nvl_name_ypos') + _name_text_yoffset
 						xsize gui.get_int('nvl_name_width')
@@ -451,7 +452,7 @@ screen dialogue_box_nvl:
 						outlinecolor _name_outlinecolor
 				
 				$ nvl_text_prefix = 'nvl_' + ('text' if _name_text else 'thought') + '_'
-				text _dialogue_text:
+				text (gui.nvl_text_prefix + _dialogue_text + gui.nvl_text_suffix):
 					xpos gui.get_int(nvl_text_prefix + 'xpos')
 					ypos gui.get_int(nvl_text_prefix + 'ypos') + (_dialogue_text_yoffset if _name_text else 0)
 					xsize gui.get_int(nvl_text_prefix + 'width')

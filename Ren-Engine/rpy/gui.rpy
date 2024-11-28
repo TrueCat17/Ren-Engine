@@ -148,14 +148,21 @@ init -1000 python:
 	
 	
 	# props for nvl-mode
+	gui.nvl_bg = im.rect('0005')
+	
+	gui.nvl_top_indent = 0.05
 	gui.nvl_height = None # None = auto
 	gui.nvl_spacing = 10 # enable if nvl_height is None
 	
+	gui.nvl_name_prefix = ''
+	gui.nvl_name_suffix = ':'
 	gui.nvl_name_xpos = 0.25
 	gui.nvl_name_ypos = 0
 	gui.nvl_name_width = 150
 	gui.nvl_name_xalign = 1.0
 	
+	gui.nvl_text_prefix = ''
+	gui.nvl_text_suffix = ''
 	gui.nvl_text_xpos = 0.27
 	gui.nvl_text_ypos = 0
 	gui.nvl_text_width = 0.6
