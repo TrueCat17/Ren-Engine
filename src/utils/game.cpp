@@ -145,7 +145,8 @@ static void saveInfo(const std::string &path) {
 	std::ofstream infoFile(path, std::ios::binary);
 
 	//mod-name
-	//fps hideMouse autosave
+	//game-time
+	//fps hideMouse
 	infoFile << GV::mainExecNode->params << '\n'
 	         << GV::gameTime << '\n'
 	         << Game::getFps() << ' '

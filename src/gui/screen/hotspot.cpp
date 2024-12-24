@@ -43,8 +43,9 @@ bool Hotspot::transparentForMouse(int x, int y) const {
 	if (!enable || globalAlpha <= 0 || globalSkipMouse) return true;
 
 	const Imagemap *imageMap = static_cast<Imagemap*>(parent);
+	SurfacePtr ground = imageMap->surface;
 	SurfacePtr hover = imageMap->hover;
-	if (!hover) return true;
+	if (!ground || !hover) return true;
 
 	float fx = float(x);
 	float fy = float(y);
@@ -59,7 +60,11 @@ bool Hotspot::transparentForMouse(int x, int y) const {
 
 	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return true;
 
-	SDL_Rect rect = DisplayObject::buildIntRect(fx + getX(), fy + getY(), imageMap->getWidth(), imageMap->getHeight(), false);
+	//sizes in prev frame (when called checkEvents)
+	float parentWidth = float(ground->w) * scaleX;
+	float parentHeight = float(ground->h) * scaleY;
+
+	SDL_Rect rect = DisplayObject::buildIntRect(fx + getX(), fy + getY(), parentWidth, parentHeight, false);
 	Uint32 color = Utils::getPixel(hover, rect, imageMap->crop);
 	Uint8 alpha = color & 0xFF;
 	return alpha == 0;
