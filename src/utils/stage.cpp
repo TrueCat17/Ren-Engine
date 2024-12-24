@@ -208,6 +208,12 @@ static void wait() {
 }
 
 void Stage::setStageSize(int width, int height) {
+	auto dm = getDisplayMode();
+	if (width >= dm.w || height >= dm.h) {
+		setFullscreen(true);
+		return;
+	}
+
 	if (width != Stage::width || height != Stage::height) {
 		SDL_RestoreWindow(Stage::window);
 		Stage::maximized = false;
