@@ -172,7 +172,7 @@ screen debug_screen_fps_and_alignment:
 			for align in ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)):
 				button:
 					style 'debug_screen_align_btn'
-					action SetVariable('config.debug_screen_align', align)
+					action 'config.debug_screen_align = align'
 					
 					image debug_screen.align_btn_corner:
 						align align

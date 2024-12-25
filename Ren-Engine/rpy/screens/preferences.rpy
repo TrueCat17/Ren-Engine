@@ -184,7 +184,7 @@ screen preferences:
 				textbutton (tab if tab == 'Language' else _(tab)): # no translation for tab <Language>
 					style tmp_style
 					selected preferences.tab == tab
-					action SetDict(preferences, 'tab', tab)
+					action 'preferences.tab = tab'
 		
 		vbox:
 			style 'prefs_content'

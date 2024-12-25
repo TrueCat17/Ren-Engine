@@ -279,7 +279,7 @@ init -1000 python:
 	
 	
 	def db__disable_skipping_on_menu(screen_name):
-		if screen_name == 'choice_menu':
+		if screen_name in ('choice_menu', 'pause'):
 			db.skip_tab = False
 	signals.add('show_screen', db__disable_skipping_on_menu)
 	
@@ -469,7 +469,7 @@ screen dialogue_box_nvl:
 screen dialogue_box:
 	zorder -2
 	
-	key 'h' action SetVariable('db.hide_interface', not db.hide_interface)
+	key 'h' action 'db.hide_interface = not db.hide_interface'
 	
 	$ db.to_next = False
 	for key in ('RETURN', 'SPACE'):
@@ -479,19 +479,19 @@ screen dialogue_box:
 	if db.to_next:
 		$ db.skip_tab = False
 	
-	key 'LEFT SHIFT'  action SetVariable('db.last_shift_time', get_game_time()) first_delay 0
-	key 'RIGHT SHIFT' action SetVariable('db.last_shift_time', get_game_time()) first_delay 0
-	key 'LEFT ALT'    action SetVariable('db.last_alt_time', get_game_time()) first_delay 0
-	key 'RIGHT ALT'   action SetVariable('db.last_alt_time', get_game_time()) first_delay 0
+	key 'LEFT SHIFT'  action 'db.last_shift_time = get_game_time()' first_delay 0
+	key 'RIGHT SHIFT' action 'db.last_shift_time = get_game_time()' first_delay 0
+	key 'LEFT ALT'    action 'db.last_alt_time = get_game_time()' first_delay 0
+	key 'RIGHT ALT'   action 'db.last_alt_time = get_game_time()' first_delay 0
 	
 	$ db.prev_ctrl = db.ctrl
 	$ db.ctrl = False
-	key 'LEFT CTRL'  action SetVariable('db.ctrl', True) first_delay 0
-	key 'RIGHT CTRL' action SetVariable('db.ctrl', True) first_delay 0
+	key 'LEFT CTRL'  action 'db.ctrl = True' first_delay 0
+	key 'RIGHT CTRL' action 'db.ctrl = True' first_delay 0
 	if db.ctrl and not db.prev_ctrl:
 		$ db.press_ctrl_time = get_game_time()
 	
-	key 'TAB' action ToggleVariable('db.skip_tab')
+	key 'TAB' action 'db.skip_tab = not db.skip_tab'
 	
 	python:
 		db.skip = False
@@ -544,5 +544,5 @@ screen dialogue_box:
 			alpha  0.01
 			mouse  False
 			
-			action SetVariable('db.hide_interface', False)
+			action 'db.hide_interface = False'
 

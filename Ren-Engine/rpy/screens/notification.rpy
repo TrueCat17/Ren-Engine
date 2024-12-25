@@ -99,7 +99,7 @@ screen notification:
 		textbutton _(msg):
 			style 'notification'
 			alpha  alpha
-			action [notification.remove(i), AddVariable('i', correcting_i)]
+			action [notification.remove(i), 'i += correcting_i']
 		
 		$ i += di
 
