@@ -198,5 +198,6 @@ init -9000 python:
 	
 	dspr = Dissolve(0.2)
 	dissolve = Dissolve(0.5)
-	dissolve2 = Dissolve(1)
+	dissolve1 = Dissolve(1)
+	dissolve2 = Dissolve(2)
 
