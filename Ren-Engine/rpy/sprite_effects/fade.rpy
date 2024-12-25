@@ -1,7 +1,7 @@
 init -9000 python:
 	
 	class Fade(Object):
-		def __init__(self, out_time, hold_time = 0, in_time = None, color = '000', spr = None):
+		def __init__(self, out_time, hold_time = 0, in_time = None, color = '#000', spr = None):
 			Object.__init__(self)
 			
 			if in_time is None:
@@ -20,7 +20,7 @@ init -9000 python:
 		def copy(self, spr):
 			sprites.screen.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, sprites.screen)
 			sprites.screen.new_data.alpha = 0
-			sprites.screen.new_data.image = im.rect(self.color, 1, 1)
+			sprites.screen.new_data.image = im.rect(self.color)
 			if spr is sprites.screen:
 				return sprites.screen.effect
 			

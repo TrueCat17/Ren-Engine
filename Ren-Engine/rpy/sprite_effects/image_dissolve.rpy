@@ -48,18 +48,19 @@ init -9000 python:
 					value = 255 - value
 				if value != 255:
 					value = int(value / ramp) * ramp
-				data.res_image = im.mask(image, mask, value, 'r', 'le', 'a', 1)
+				data.res_image = im.mask(image, mask, value, 'r', '<=', 'a', 1)
 			
-			new_data, old_data = self.sprite.new_data, self.sprite.old_data
+			sprite = self.sprite
+			new_data, old_data = sprite.new_data, sprite.old_data
 			
-			if self.sprite is sprites.scene:
+			if sprite is sprites.scene:
 				if old_data:
 					old_data.res_image = old_data.image
 				if new_data:
 					upd_spr_data(new_data, dtime / self.time, self.mask, self.ramp, self.reverse, False)
 				
 				if dtime >= self.time:
-					self.sprite.remove_effect()
+					sprite.remove_effect()
 					sprites.remove_hiding()
 			else:
 				if old_data:
@@ -68,12 +69,13 @@ init -9000 python:
 					upd_spr_data(new_data, dtime / self.time, self.mask, self.ramp, self.reverse, False)
 				
 				if dtime >= self.time:
-					self.sprite.remove_effect()
+					sprite.remove_effect()
 		
 		def remove(self):
 			self.for_not_hiding()
 		
 		def for_not_hiding(self):
-			if self.sprite.new_data:
-				self.sprite.new_data.res_image = self.sprite.new_data.image
+			new_data = self.sprite.new_data
+			if new_data:
+				new_data.res_image = new_data.image
 

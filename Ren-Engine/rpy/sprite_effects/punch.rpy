@@ -11,6 +11,9 @@ init -9000 python:
 			sprites.screen.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
 			if spr is sprites.screen:
 				return sprites.screen.effect
+			
+			spr.old_data = None
+			spr.data_list = (spr.new_data, )
 			return None 
 		
 		
@@ -30,7 +33,7 @@ init -9000 python:
 				t = 1 if t > 0.5 else -1
 				m = 1 if int(dtime / self.time_one) % 2 else -1
 				
-				sprites.screen.new_data[self.prop] = int(round(t * m * self.dist))
+				sprites.screen.new_data[self.prop] = round(t * m * self.dist)
 		
 		def remove(self):
 			sprites.screen.new_data[self.prop] = 0
