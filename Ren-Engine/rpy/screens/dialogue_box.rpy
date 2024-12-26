@@ -87,6 +87,9 @@ init -1000 python:
 				db[prop] = value
 	
 	def db__show_text(name, text, local_styles):
+		text = text.replace('%%', '%') # percent escaping from old renpy versions (see config.old_substitutions)
+		text = interpolate_tags(text)
+		
 		if name is None:
 			if db.local_styles is None:
 				name = ''
