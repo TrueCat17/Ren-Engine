@@ -256,6 +256,18 @@ init python:
 			reus.check_next()
 			return
 		
+		files_path = 'files'
+		if '\n' in dont_save_reus.tmp_version:
+			props = dont_save_reus.tmp_version.split('\n')
+			for s in props:
+				if '=' in s:
+					i = s.index('=')
+					prop, value = s[:i].strip(), s[i+1:].strip()
+					
+					if prop == 'files_path':
+						files_path = value
+		info.files_path = make_sure_dir(files_path)
+		
 		url = info.link + reus.info_fn
 		dont_save_reus.local_path = get_root_dir() + reus.var_dir + reus.info_fn
 		https.get_file(url, dont_save_reus.local_path, reus.on_info_loaded, reus.on_info_error, clean = True)
@@ -349,7 +361,7 @@ init python:
 		dont_save_reus.loaded += prev_file_size
 		
 		path = info.to_load[dont_save_reus.to_load_index]
-		url = info.link + 'files/' + path
+		url = info.link + info.files_path + path
 		dont_save_reus.to_load_index += 1
 		
 		data = info.data[path]
