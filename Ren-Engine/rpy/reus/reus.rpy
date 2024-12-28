@@ -256,7 +256,7 @@ init python:
 			reus.check_next()
 			return
 		
-		files_path = 'files'
+		files_path = ''
 		if '\n' in dont_save_reus.tmp_version:
 			props = dont_save_reus.tmp_version.split('\n')
 			for s in props:
@@ -361,7 +361,7 @@ init python:
 		dont_save_reus.loaded += prev_file_size
 		
 		path = info.to_load[dont_save_reus.to_load_index]
-		url = info.link + info.files_path + path
+		url = info.link + (info.files_path or 'files/') + path
 		dont_save_reus.to_load_index += 1
 		
 		data = info.data[path]
