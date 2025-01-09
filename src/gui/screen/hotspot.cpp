@@ -73,12 +73,29 @@ bool Hotspot::transparentForMouse(int x, int y) const {
 void Hotspot::draw() const {
 	if (!enable || globalAlpha <= 0 || !surface) return;
 
-	SDL_Rect from = buildIntRect(getX() / scaleX, getY() / scaleY, getWidth() / scaleX, getHeight() / scaleY, false);
-	SDL_Rect to = buildIntRect(getGlobalX(), getGlobalY(), getWidth(), getHeight(), false);
-
 	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
-	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
-	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
 
-	pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, from, to, center);
+	float x = globalX;
+	float y = globalY;
+	float w = getWidth();
+	float h = getHeight();
+	if (globalClipping) {
+		x = std::max(clipRect.x, x);
+		y = std::max(clipRect.y, y);
+		w = std::min(clipRect.x + clipRect.w, globalX + w) - x;
+		h = std::min(clipRect.y + clipRect.h, globalY + h) - y;
+	}
+	SDL_Rect clipIRect = DisplayObject::buildIntRect(x, y, w, h, false);
+
+	SDL_Rect dstIRect = DisplayObject::buildIntRect(
+	    parent->getGlobalX(),
+	    parent->getGlobalY(),
+	    parent->getWidth(),
+	    parent->getHeight(),
+	    false
+	);
+
+	SDL_Point center = { int(parent->calcedXanchor), int(parent->calcedYanchor) };
+
+	pushToRender(surface, globalRotate, intAlpha, true, clipIRect, parent->crop, dstIRect, center);
 }
