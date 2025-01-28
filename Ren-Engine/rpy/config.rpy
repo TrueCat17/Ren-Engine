@@ -18,12 +18,14 @@ init -1100 python:
 	config.set_prop_is_not_persistent('width')
 	config.set_prop_is_not_persistent('height')
 	
+	config.set_prop_is_not_persistent('fadeout_audio')
+	
 	
 	config.enable_language_autodetect = True
 	config.default_language = 'english'
 	
 	
-	# height calculate: width / get_from_hard_config("window_w_div_h", float)
+	# height calculate: width / get_from_hard_config('window_w_div_h', float)
 	config.thumbnail_width = 480
 	
 	
@@ -43,6 +45,9 @@ init -1100 python:
 	
 	if config.text_cps is None:
 		config.text_cps = 60 # cps - chars per second, for dialogue_box
+	
+	if config.fadeout_audio is None:
+		config.fadeout_audio = 0
 	
 	for std_mixer in std_mixers:
 		if config[std_mixer + '_volume'] is None:

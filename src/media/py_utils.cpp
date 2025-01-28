@@ -467,6 +467,20 @@ std::string PyUtils::exec(const std::string &fileName, uint32_t numLine, const s
 	return res;
 }
 
+std::string PyUtils::execWithSetTmp(const std::string &fileName, uint32_t numLine,
+                                    const std::string &code, const std::string &tmp,
+                                    bool retRes)
+{
+	std::string res;
+	callInPythonThread([&]() {
+		PyObject *pyStr = PyUnicode_FromStringAndSize(tmp.c_str(), Py_ssize_t(tmp.size()));
+		PyDict_SetItemString(PyUtils::global, "tmp", pyStr);
+		Py_DECREF(pyStr);
+
+		res = execImpl(fileName, numLine, code, retRes);
+	});
+	return res;
+}
 
 
 

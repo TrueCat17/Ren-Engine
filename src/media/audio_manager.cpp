@@ -7,42 +7,40 @@
 
 #include <SDL2/SDL_audio.h>
 
-#define ALLOW_INCLUDE_AUDIO_H
-#include "media/audio.h"
+#define ALLOW_INCLUDE_AUDIO_CHANNEL_H
+#include "media/audio_channel.h"
 #include "media/py_utils.h"
 
 #include "utils/algo.h"
+#include "utils/game.h"
 #include "utils/math.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
 
-std::mutex AudioManager::mutex;
+std::recursive_mutex AudioManager::mutex;
 double AudioManager::startUpdateTime = 0;
 std::map<std::string, double> AudioManager::mixerVolumes;
 
 
 static std::vector<Channel*> channels;
-static std::vector<Audio*> audios;
 static bool opened = false;
 
 
-static Channel* findChannel(const std::string &name) {
+static Channel* findChannelWithoutError(const std::string &name) {
 	for (Channel *channel : channels) {
 		if (channel->name == name) return channel;
 	}
 	return nullptr;
 }
-static Audio* findAudio(const std::string &channelName, const std::string &from, const std::string &place) {
-	if (!AudioManager::hasChannel(channelName)) {
-		Utils::outMsg(from, "Channel <" + channelName + "> not found\n\n" + place);
-		return nullptr;
+
+static Channel* findChannel(const std::string &name, const std::string &from, const std::string &place) {
+	for (Channel *channel : channels) {
+		if (channel->name == name) return channel;
 	}
 
-	for (Audio *audio : audios) {
-		if (audio->channel->name == channelName) return audio;
-	}
+	Utils::outMsg(from, "Channel <" + name + "> not found\n\n" + place);
 	return nullptr;
 }
 
@@ -55,19 +53,19 @@ static void fillAudio(void *, Uint8 *stream, int globalLen) {
 
 	SDL_memset(stream, 0, size_t(globalLen));
 
-	for (Audio *audio : audios) {
-		if (!audio->audioPos || audio->audioLen <= 0) continue;
-		if (audio->paused) continue;
+	for (Channel *channel : channels) {
+		if (!channel->audioPos || channel->audioLen <= 0) continue;
+		if (channel->paused) continue;
 
-		Uint32 len = std::min<Uint32>(Uint32(globalLen), audio->audioLen);
-		audio->addToCurTime(len);
+		Uint32 len = std::min<Uint32>(Uint32(globalLen), channel->audioLen);
+		channel->addToCurTime(len);
 
-		int volume = audio->getVolume();
+		int volume = channel->getVolume();
 		if (volume > 0) {
-			SDL_MixAudio(stream, audio->audioPos, len, volume);
+			SDL_MixAudio(stream, channel->audioPos, len, volume);
 		}
-		audio->audioPos += len;
-		audio->audioLen -= len;
+		channel->audioPos += len;
+		channel->audioLen -= len;
 	}
 }
 static void startAudio() {
@@ -97,30 +95,28 @@ static void loop() {
 	Utils::setThreadName("audio_loop");
 
 	while (!GV::exit) {
-		AudioManager::startUpdateTime = Utils::getTimer();
+		double st = Utils::getTimer();
+		AudioManager::startUpdateTime = Game::getGameTime();
 
 		{
 			std::lock_guard g(AudioManager::mutex);
 
-			for (size_t i = 0; i < audios.size(); ++i) {
+			bool allEmpty = true;
+			for (Channel *channel : channels) {
 				if (GV::exit) return;
 
-				Audio *audio = audios[i];
-				if (!audio->isEnded()) {
-					audio->update();
-					continue;
-				}
+				channel->update(false);
 
-				audios.erase(audios.begin() + long(i));
-				--i;
-				delete audio;
-
-				if (audios.empty()) {
-					stopAudio();
+				if (!channel->audios.empty()) {
+					allEmpty = false;
 				}
 			}
+
+			if (allEmpty) {
+				stopAudio();
+			}
 		}
-		const double spend = Utils::getTimer() - AudioManager::startUpdateTime;
+		const double spend = Utils::getTimer() - st;
 		Utils::sleep(0.010 - spend, false);
 	}
 }
@@ -140,11 +136,6 @@ void AudioManager::clear() {
 		delete t;
 	}
 	channels.clear();
-
-	for (Audio *t : audios) {
-		delete t;
-	}
-	audios.clear();
 }
 
 void AudioManager::registerChannel(const std::string &name, const std::string &mixer, bool loop,
@@ -177,28 +168,46 @@ void AudioManager::registerChannel(const std::string &name, const std::string &m
 	}
 }
 bool AudioManager::hasChannel(const std::string &name) {
-	return findChannel(name);
+	Channel *channel = findChannelWithoutError(name);
+	return channel;
 }
 
-PyObject* AudioManager::getAudioLen(const std::string &url) {
+PyObject* AudioManager::getPlaying(const std::string &name,
+                                   const std::string &fileName, size_t numLine)
+{
+	std::lock_guard g(AudioManager::mutex);
+
+	const Channel *channel = findChannel(name, "AudioManager::getPlaying", get_place);
+	const Audio *audio = channel ? channel->getAudio() : nullptr;
+	if (audio) {
+		const std::string &path = audio->path;
+		return PyUnicode_FromStringAndSize(path.c_str(), Py_ssize_t(path.size()));
+	}
+
+	Py_RETURN_NONE;
+}
+
+PyObject* AudioManager::getAudioLen(const std::string &path) {
+	std::lock_guard g(AudioManager::mutex);
+
 	AVFormatContext* formatCtx = avformat_alloc_context();
 	ScopeExit se([&]() {
 		avformat_close_input(&formatCtx);
 	});
 
-	if (int error = avformat_open_input(&formatCtx, url.c_str(), nullptr, nullptr)) {
+	if (int error = avformat_open_input(&formatCtx, path.c_str(), nullptr, nullptr)) {
 		if (error == AVERROR(ENOENT)) {
 			Utils::outMsg("AudioManager::getAudioLen: avformat_open_input",
-			              "File <" + url + "> not found");
+			              "File <" + path + "> not found");
 		}else {
 			Utils::outMsg("AudioManager::getAudioLen: avformat_open_input",
-			              "Failed to open input stream in file <" + url + ">");
+			              "Failed to open input stream in file <" + path + ">");
 		}
 		Py_RETURN_NONE;
 	}
 	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
 		Utils::outMsg("AudioManager::getAudioLen: avformat_find_stream_info",
-		              "Failed to read stream information in file <" + url + ">");
+		              "Failed to read stream information in file <" + path + ">");
 		Py_RETURN_NONE;
 	}
 
@@ -217,47 +226,68 @@ void AudioManager::setMixerVolume(double volume, const std::string &mixer,
 	}
 }
 
-void AudioManager::setVolumeOnChannel(double volume, const std::string &channelName,
-                                      const std::string &fileName, size_t numLine)
+
+PyObject* AudioManager::getVolumeOnChannel(const std::string &name,
+                                           const std::string &fileName, size_t numLine)
 {
-	Channel *channel = findChannel(channelName);
+	std::lock_guard g(AudioManager::mutex);
+
+	const Channel *channel = findChannel(name, "AudioManager::getVolumeOnChannel", get_place);
 	if (channel) {
-		channel->volume = Math::inBounds(volume, 0, 1);
-	}else {
-		Utils::outMsg("AudioManager::setVolumeOnChannel",
-		              "Channel <" + channelName + "> not found\n\n" + get_place);
+		return PyFloat_FromDouble(channel->volume);
 	}
-}
 
-
-
-PyObject* AudioManager::getPosOnChannel(const std::string &channelName,
-                                        const std::string &fileName, size_t numLine)
-{
-	Audio *audio = findAudio(channelName, "AudioManager::getPosOnChannel", get_place);
-	if (audio) {
-		return PyFloat_FromDouble(audio->getPos());
-	}
 	Py_RETURN_NONE;
 }
-void AudioManager::setPosOnChannel(double sec, const std::string &channelName,
-                                   const std::string &fileName, size_t numLine)
+
+void AudioManager::setVolumeOnChannel(double volume, const std::string &name,
+                                      const std::string &fileName, size_t numLine)
 {
-	Audio *audio = findAudio(channelName, "AudioManager::setPosOnChannel", get_place);
-	if (audio) {
-		audio->setPos(sec);
+	std::lock_guard g(AudioManager::mutex);
+
+	Channel *channel = findChannel(name, "AudioManager::setVolumeOnChannel", get_place);
+	if (channel) {
+		channel->volume = Math::inBounds(volume, 0, 1);
 	}
 }
 
 
-PyObject* AudioManager::getPauseOnChannel(const std::string &channelName,
+
+PyObject* AudioManager::getPosOnChannel(const std::string &name,
+                                        const std::string &fileName, size_t numLine)
+{
+	std::lock_guard g(AudioManager::mutex);
+
+	const Channel *channel = findChannel(name, "AudioManager::getPosOnChannel", get_place);
+	if (channel && !channel->audios.empty()) {
+		return PyFloat_FromDouble(channel->getPos());
+	}
+
+	Py_RETURN_NONE;
+}
+
+void AudioManager::setPosOnChannel(double sec, const std::string &name,
+                                   const std::string &fileName, size_t numLine)
+{
+	std::lock_guard g(AudioManager::mutex);
+
+	Channel *channel = findChannel(name, "AudioManager::setPosOnChannel", get_place);
+	if (channel && !channel->audios.empty()) {
+		channel->setPos(sec);
+	}
+}
+
+
+PyObject* AudioManager::getPauseOnChannel(const std::string &name,
                                           const std::string &fileName, size_t numLine)
 {
+	std::lock_guard g(AudioManager::mutex);
+
 	PyObject *res;
 
-	Audio *audio = findAudio(channelName, "AudioManager::getPauseOnChannel", get_place);
-	if (audio) {
-		if (audio->paused) {
+	const Channel *channel = findChannel(name, "AudioManager::getPauseOnChannel", get_place);
+	if (channel) {
+		if (channel->paused) {
 			res = Py_True;
 		}else {
 			res = Py_False;
@@ -269,162 +299,306 @@ PyObject* AudioManager::getPauseOnChannel(const std::string &channelName,
 	Py_INCREF(res);
 	return res;
 }
-void AudioManager::setPauseOnChannel(bool value, const std::string &channelName,
+void AudioManager::setPauseOnChannel(bool value, const std::string &name,
                                      const std::string &fileName, size_t numLine)
 {
-	Audio *audio = findAudio(channelName, "AudioManager::setPauseOnChannel", get_place);
-	if (audio) {
-		audio->paused = value;
+	std::lock_guard g(AudioManager::mutex);
+
+	Channel *channel = findChannel(name, "AudioManager::setPauseOnChannel", get_place);
+	if (channel) {
+		channel->paused = value;
 	}
 }
 
 
-void AudioManager::play(const std::string &desc,
+void AudioManager::play(const std::string &channelName, std::string path,
+                        double fadeOut, double fadeIn, double volume,
                         const std::string &fileName, uint32_t numLine)
 {
-	const std::string place = get_place + ": <" + desc + ">";
-
-	std::vector<std::string> args = Algo::getArgs(desc);
-	if (args.size() % 2 || args.size() < 2) {
-		Utils::outMsg("AudioManager::play",
-		              "Expected even number of arguments:\n"
-		              "channelName fileName ['fadein' time] ['volume' value]\n\n" + place);
-		return;
-	}
-
-	std::string channelName = Algo::clear(args[0]);
-	std::string url = PyUtils::exec(fileName, numLine, args[1], true);
-	String::replaceAll(url, "\\", "/");
-
-	double fadeIn = 0;
-	double volume = 1;
-	for (size_t i = 2; i < args.size(); i += 2) {
-		const std::string &name = args[i];
-		const std::string &valueCode = args[i + 1];
-		if (name != "fadein" && name != "volume") {
-			Utils::outMsg("AudioManager::play",
-			              "Expected <fadein> or <volume>, got <" + name + ">\n\n" + place);
-			return;
-		}
-		std::string valueStr = PyUtils::exec(fileName, numLine, valueCode, true);
-		if (!String::isNumber(valueStr)) {
-			Utils::outMsg("AudioManager::play",
-			              "Expected number, got <" + valueStr + ">\n\n" + place);
-			return;
-		}
-
-		double res = String::toDouble(valueStr);
-		if (name == "fadein") {
-			fadeIn = res;
-		}else {
-			volume = res;
-			if (volume < 0 || volume > 1) {
-				Utils::outMsg("AudioManager::play",
-				              "Expected volume between 0 and 1, got <" + valueStr + ">\n\n" + place);
-				volume = Math::inBounds(volume, 0, 1);
-			}
-		}
-	}
+	const std::string place = get_place;
 
 	std::lock_guard g(AudioManager::mutex);
 
-	for (size_t i = 0; i < audios.size(); ++i) {
-		Audio *audio = audios[i];
-		if (audio->channel->name == channelName) {
-			audios.erase(audios.begin() + long(i));
-			delete audio;
+	Channel *channel = findChannel(channelName, "AudioManager::play", place);
+	if (!channel) return;
 
-			break;
-		}
-	}
+	String::replaceAll(path, "\\", "/");
 
-	Channel *channel = findChannel(channelName);
-	if (!channel) {
-		Utils::outMsg("AudioManager::play", "Channel <" + channelName + "> not found\n\n" + place);
-		return;
-	}
-
-	Audio *audio = new Audio(url, channel, fadeIn, volume, place, fileName, numLine);
-	if (audio->initCodec()) {
-		delete audio;
-		return;
-	}
-
-	PyUtils::exec(fileName, numLine, "persistent._seen_audio['" + url + "'] = True");
+	Audio *audio = new Audio(path, fadeIn, volume, place, fileName, numLine);
+	channel->clearQueue(fadeOut);
+	channel->audios.push_back(audio);
 
 	if (!opened) {
 		startAudio();
 	}
-	audio->update();
-	audios.push_back(audio);
+	channel->update(true);
+
+	PyUtils::execWithSetTmp(fileName, numLine, "persistent._seen_audio[tmp] = True", path);
 }
 
-void AudioManager::stop(const std::string &desc,
-                        const std::string &fileName, uint32_t numLine)
+void AudioManager::queue(const std::string &channelName, std::string path,
+                         double fadeIn, double volume,
+                         const std::string &fileName, uint32_t numLine)
 {
-	const std::string place = get_place + ": <" + desc + ">";
-
-	std::vector<std::string> args = Algo::getArgs(desc);
-	if (args.size() != 1 && args.size() != 3) {
-		Utils::outMsg("AudioManager::stop",
-		              "Expected 1 or 3 arguments:\n"
-		              "channelName ['fadeout' time]\n\n" + place);
-		return;
-	}
-
-	double fadeOut = 0;
-	if (args.size() > 1) {
-		if (args[1] != "fadeout") {
-			Utils::outMsg("AudioManager::stop",
-			              "2 argument must be <fadeout>\n\n" + place);
-			return;
-		}
-		std::string fadeOutStr = PyUtils::exec(fileName, numLine, args[2], true);
-		if (!String::isNumber(fadeOutStr)) {
-			Utils::outMsg("AudioManager::stop",
-			              "Fadeout value expected number, got <" + args[2] + ">\n\n" + place);
-			return;
-		}
-		fadeOut = String::toDouble(fadeOutStr);
-	}
+	const std::string place = get_place;
 
 	std::lock_guard g(AudioManager::mutex);
 
-	std::string channelName = Algo::clear(args[0]);
-	Audio *audio = findAudio(channelName, "AudioManager::stop", place);
-	if (audio) {
-		audio->setFadeOut(fadeOut);
+	Channel *channel = findChannel(channelName, "AudioManager::queue", place);
+	if (!channel) return;
+
+	String::replaceAll(path, "\\", "/");
+
+	Audio *audio = new Audio(path, fadeIn, volume, place, fileName, numLine);
+	channel->audios.push_back(audio);
+
+	if (!opened) {
+		startAudio();
 	}
+	channel->update(true);
+
+	PyUtils::execWithSetTmp(fileName, numLine, "persistent._seen_audio[tmp] = True", path);
+}
+
+void AudioManager::stop(const std::string &channelName, double fadeOut,
+                        const std::string &fileName, uint32_t numLine)
+{
+	const std::string place = get_place;
+
+	std::lock_guard g(AudioManager::mutex);
+
+	Channel *channel = findChannel(channelName, "AudioManager::stop", place);
+	if (channel) {
+		channel->clearQueue(fadeOut);
+	}
+}
+
+
+struct ParseParams {
+	std::string fromFunc;
+	std::string expectedArgsMsg;
+
+	std::string channel;
+	std::vector<std::string> paths;
+	double fadeOut, fadeIn, volume;
+
+	bool usePaths, useFadeIn, useFadeOut, useVolume;
+};
+
+static bool parseParams(const std::string &desc, const std::string &fileName, uint32_t numLine, ParseParams &params) {
+	const std::string place = get_place + ": <" + desc + ">";
+
+	std::vector<std::string> args = Algo::getArgs(desc);
+
+	size_t first = 1;
+	if (params.usePaths) {
+		++first;
+	}
+
+	size_t countArgs = args.size() - first;
+	if (countArgs % 2 || args.size() < first) {
+		Utils::outMsg(params.fromFunc, params.expectedArgsMsg + "\n\n" + place);
+		return true;
+	}
+
+	params.channel = args[0];
+	if (params.usePaths) {
+		PyObject *paths = PyUtils::execRetObj(fileName, numLine, args[1]);
+		if (PyUnicode_CheckExact(paths)) {
+			Py_ssize_t size;
+			const char *data = PyUnicode_AsUTF8AndSize(paths, &size);
+			std::string path = std::string(data, size_t(size));
+			params.paths.push_back(path);
+		}else
+
+		if (PyList_CheckExact(paths) || PyTuple_CheckExact(paths)) {
+			size_t len = size_t(Py_SIZE(paths));
+			for (size_t i = 0; i < len; ++i) {
+				PyObject *pyPath = PySequence_Fast_GET_ITEM(paths, i);
+				if (!PyUnicode_CheckExact(pyPath)) {
+					std::string pos = std::to_string(i);
+					std::string type = paths->ob_type->tp_name;
+					Utils::outMsg(params.fromFunc,
+					              "Element paths[" + pos + "] must be str, got <" + type + ">\n\n" + place);
+					return true;
+				}
+
+				Py_ssize_t size;
+				const char *data = PyUnicode_AsUTF8AndSize(pyPath, &size);
+				std::string path = std::string(data, size_t(size));
+				params.paths.push_back(path);
+			}
+		}
+
+		else {
+			std::string type = paths->ob_type->tp_name;
+			Utils::outMsg(params.fromFunc, "Arg <paths> must be str, list or tuple, got <" + type + ">\n\n" + place);
+			return true;
+		}
+	}
+
+	params.fadeOut = 0;
+	params.fadeIn = 0;
+	params.volume = 1;
+
+	for (size_t i = first; i < args.size(); i += 2) {
+		const std::string &name = args[i];
+		const std::string &valueCode = args[i + 1];
+
+		std::string valueStr = PyUtils::exec(fileName, numLine, valueCode, true);
+		if (!String::isNumber(valueStr)) {
+			Utils::outMsg(params.fromFunc, "Expected number, got <" + valueStr + ">\n\n" + place);
+			return true;
+		}
+		double res = String::toDouble(valueStr);
+
+		if (params.useFadeOut && name == "fadeout") {
+			params.useFadeOut = false;
+			params.fadeOut = res;
+			continue;
+		}
+		if (params.useFadeIn && name == "fadein") {
+			params.useFadeIn = false;
+			params.fadeIn = res;
+			continue;
+		}
+		if (params.useVolume && name == "volume") {
+			params.useVolume = false;
+
+			if (res < 0 || res > 1) {
+				Utils::outMsg(params.fromFunc, "Expected volume between 0 and 1, got <" + valueStr + ">\n\n" + place);
+				res = Math::inBounds(res, 0, 1);
+			}
+
+			params.volume = res;
+			continue;
+		}
+
+		Utils::outMsg(params.fromFunc, "Unexpected param <" + name + ">\n\n" + place);
+		return true;
+	}
+
+	//set default value
+	if (params.useFadeOut) {
+		std::string valueStr = PyUtils::exec(fileName, numLine, "config.fadeout_audio", true);
+
+		if (String::isNumber(valueStr)) {
+			params.fadeOut = String::toDouble(valueStr);
+		}else {
+			Utils::outMsg(params.fromFunc,
+			              "Expected number in config.fadeout_audio, got <" + valueStr + ">\n\n" + place);
+		}
+	}
+
+	return false;
+}
+
+
+void AudioManager::playWithParsing(const std::string &desc, const std::string &fileName, uint32_t numLine) {
+	ParseParams params;
+	params.fromFunc = "AudioManager::playWithParsing";
+	params.expectedArgsMsg = "Expected even number of arguments:\n"
+	                         "channel path ['fadeout' time] ['fadein' time] ['volume' value]";
+	params.usePaths = true;
+	params.useFadeOut = true;
+	params.useFadeIn = true;
+	params.useVolume = true;
+
+	if (parseParams(desc, fileName, numLine, params)) return;
+
+	for (size_t i = 0; i < params.paths.size(); ++i) {
+		const std::string &path = params.paths[i];
+		if (i == 0) {
+			play(params.channel, path, params.fadeOut, params.fadeIn, params.volume, fileName, numLine);
+		}else {
+			queue(params.channel, path, 0, params.volume, fileName, numLine);
+		}
+	}
+}
+
+void AudioManager::queueWithParsing(const std::string &desc, const std::string &fileName, uint32_t numLine) {
+	ParseParams params;
+	params.fromFunc = "AudioManager::queueWithParsing";
+	params.expectedArgsMsg = "Expected even number of arguments:\n"
+	                         "channel path ['fadein' time] ['volume' value]";
+	params.usePaths = true;
+	params.useFadeOut = false;
+	params.useFadeIn = true;
+	params.useVolume = true;
+
+	if (parseParams(desc, fileName, numLine, params)) return;
+
+	for (size_t i = 0; i < params.paths.size(); ++i) {
+		const std::string &path = params.paths[i];
+		double fadeIn = i == 0 ? params.fadeIn : 0;
+
+		queue(params.channel, path, fadeIn, params.volume, fileName, numLine);
+	}
+}
+
+void AudioManager::stopWithParsing(const std::string &desc, const std::string &fileName, uint32_t numLine) {
+	ParseParams params;
+	params.fromFunc = "AudioManager::stopWithParsing";
+	params.expectedArgsMsg = "Expected 1 or 3 arguments:\n"
+	                         "channel ['fadeout' time]";
+	params.usePaths = false;
+	params.useFadeOut = true;
+	params.useFadeIn = false;
+	params.useVolume = false;
+
+	if (parseParams(desc, fileName, numLine, params)) return;
+
+	stop(params.channel, params.fadeOut, fileName, numLine);
 }
 
 
 
 void AudioManager::save(std::ofstream &infoFile) {
+	std::lock_guard g(AudioManager::mutex);
+
+	auto doubleToStr = [](double d) -> std::string {
+		char buf[50];
+		sprintf(buf, "%.3f", d);
+
+		std::string res = std::string(buf);
+		while (true) {
+			if (res.empty()) return "0";
+
+			char c = res.back();
+			if (c == '0' || c == '.') {
+				res.pop_back();
+			}else {
+				break;
+			}
+		}
+
+		return res;
+	};
+
 	infoFile << channels.size() << '\n';
 	for (const Channel *channel : channels) {
 		infoFile << channel->name << ' '
 		         << channel->mixer << ' '
 		         << (channel->loop ? "True" : "False") << ' '
-		         << int(channel->volume * 1000) / 1000.0 << '\n';
-	}
-	infoFile << '\n';
+		         << doubleToStr(channel->volume) << ' '
 
-	infoFile << audios.size() << '\n';
-	for (const Audio *audio : audios) {
-		std::string audioUrl = audio->url;
-		std::string audioFileName = audio->fileName;
+		         << doubleToStr(channel->curTime) << ' '
+		         << (channel->paused ? "True" : "False") << ' '
+		         << (channel->audios.size()) << '\n';
 
-		infoFile << audioUrl << '\n'
-		         << audioFileName << '\n'
-		         << audio->numLine << ' '
-		         << audio->channel->name << ' '
-		         << audio->getFadeIn() << ' '
-		         << audio->getFadeOut() << ' '
-		         << audio->relativeVolume << ' '
-		         << audio->getPos() << ' '
-		         << (audio->paused ? "True" : "False") << '\n';
+		for (const Audio *audio : channel->audios) {
+			infoFile << audio->path << '\n'
+			         << audio->fileName << '\n'
+			         << audio->numLine << ' '
+			         << doubleToStr(audio->volume) << ' '
+			         << doubleToStr(audio->fadeIn) << ' '
+			         << doubleToStr(audio->fadeOut) << ' '
+			         << doubleToStr(audio->startFadeInTime) << ' '
+			         << doubleToStr(audio->startFadeOutTime) << '\n';
+		}
+
+		infoFile << '\n';
 	}
-	infoFile << '\n';
 
 	infoFile << mixerVolumes.size() << '\n';
 	for (const auto &p : mixerVolumes) {
@@ -433,6 +607,8 @@ void AudioManager::save(std::ofstream &infoFile) {
 	infoFile << '\n';
 }
 void AudioManager::load(std::ifstream &infoFile) {
+	std::lock_guard g(AudioManager::mutex);
+
 	auto &is = infoFile;
 	std::string tmp;
 
@@ -442,76 +618,72 @@ void AudioManager::load(std::ifstream &infoFile) {
 	size_t countAudioChannels = size_t(String::toInt(tmp));
 	for (size_t i = 0; i < countAudioChannels; ++i) {
 		std::getline(is, tmp);
-		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 4) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 4 args");
-			continue;
+		std::vector<std::string> tmpVec = String::split(tmp, " ");
+		if (tmpVec.size() != 7) {
+			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 7 args");
+			return;
 		}
 
 		const std::string &name = tmpVec[0];
 		const std::string &mixer = tmpVec[1];
 		const std::string &loop = tmpVec[2];
 		double volume = String::toDouble(tmpVec[3]);
+		double curTime = String::toDouble(tmpVec[4]);
+		bool paused = tmpVec[5] == "True";
+		size_t countAudios = size_t(String::toInt(tmpVec[6]));
 
 		if (!AudioManager::hasChannel(name)) {
 			AudioManager::registerChannel(name, mixer, loop == "True", loadFile, 0);
 		}
-		AudioManager::setVolumeOnChannel(volume, name, loadFile, 0);
-	}
-	std::getline(is, tmp);
 
-	std::getline(is, tmp);
-	size_t countAudios = size_t(String::toInt(tmp));
-	for (size_t i = 0; i < countAudios; ++i) {
-		std::string url, fileName;
+		Channel *channel = findChannelWithoutError(name);
+		if (!channel) return;
 
-		std::getline(is, url);
-		std::getline(is, fileName);
+		channel->volume = volume;
+
+		channel->audios.reserve(countAudios);
+		for (size_t j = 0; j < countAudios; ++j) {
+			std::string path, fileName;
+			std::getline(is, path);
+			std::getline(is, fileName);
+
+			std::getline(is, tmp);
+			tmpVec = String::split(tmp, " ");
+			if (tmpVec.size() != 6) {
+				Utils::outMsg(loadFile, "In string <" + tmp + "> expected 6 args");
+				return;
+			}
+
+			uint32_t numLine = uint32_t(String::toInt(tmpVec[0]));
+			double volume = String::toDouble(tmpVec[1]);
+			double fadeIn  = String::toDouble(tmpVec[2]);
+			double fadeOut = String::toDouble(tmpVec[3]);
+			double startFadeInTime  = String::toDouble(tmpVec[4]);
+			double startFadeOutTime = String::toDouble(tmpVec[5]);
+
+			std::string place = get_place;
+
+			Audio *audio = new Audio(path, fadeIn, volume, place, fileName, numLine);
+			audio->fadeOut = fadeOut;
+			audio->startFadeInTime  = startFadeInTime;
+			audio->startFadeOutTime = startFadeOutTime;
+
+			channel->audios.push_back(audio);
+		}
+
+		if (countAudios) {
+			if (!channel->initCodec()) {
+				channel->paused = paused;
+				channel->setPos(curTime);
+			}else {
+				delete channel->audios[0];
+				channel->audios.erase(channel->audios.begin());
+			}
+		}
 
 		std::getline(is, tmp);
-		const std::vector<std::string> tmpVec = String::split(tmp, " ");
-		if (tmpVec.size() != 7) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 7 args");
-			continue;
-		}
-
-		uint32_t numLine = uint32_t(String::toInt(tmpVec[0]));
-		const std::string &channel = tmpVec[1];
-		double fadeIn = String::toDouble(tmpVec[2]);
-		double fadeOut = String::toDouble(tmpVec[3]);
-		double relativeVolume = String::toDouble(tmpVec[4]);
-		double pos = String::toDouble(tmpVec[5]);
-		bool paused = tmpVec[6] == "True";
-
-		AudioManager::play(channel + " '" + url + "'", fileName, numLine);
-		Audio *audio = nullptr;
-		for (Audio *i : audios) {
-			if (i->channel->name == channel) {
-				audio = i;
-				break;
-			}
-		}
-
-		if (audio) {
-			audio->setFadeIn(fadeIn);
-			if (fadeOut > 0) {
-				audio->setFadeOut(fadeOut);
-			}
-			audio->relativeVolume = relativeVolume;
-			audio->setPos(pos);
-			audio->paused = paused;
-		}else {
-			Utils::outMsg(loadFile,
-			              "Sound file <" + url + "> not restored\n"
-			              "Played from:\n"
-			              "  File <" + fileName + ">\n"
-			              "  Line " + std::to_string(numLine));
-		}
 	}
-	std::getline(is, tmp);
 
-
-	std::getline(is, tmp);
 	size_t countMixers = size_t(String::toInt(tmp));
 	for (size_t i = 0; i < countMixers; ++i) {
 		std::getline(is, tmp);
@@ -519,7 +691,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
 			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 2 args");
-			continue;
+			return;
 		}
 
 		const std::string &name = tmpVec[0];
@@ -528,4 +700,8 @@ void AudioManager::load(std::ifstream &infoFile) {
 		AudioManager::setMixerVolume(volume, name, loadFile, 0);
 	}
 	std::getline(is, tmp);
+
+	if (!opened) {
+		startAudio();
+	}
 }

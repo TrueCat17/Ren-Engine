@@ -90,13 +90,16 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("_has_channel", AudioManager::hasChannel);
 	setFunc("_get_audio_len", AudioManager::getAudioLen);
 	setFunc("_set_mixer_volume", AudioManager::setMixerVolume);
+	setFunc("_get_volume_on_channel", AudioManager::getVolumeOnChannel);
 	setFunc("_set_volume_on_channel", AudioManager::setVolumeOnChannel);
 	setFunc("_get_pos_on_channel", AudioManager::getPosOnChannel);
 	setFunc("_set_pos_on_channel", AudioManager::setPosOnChannel);
 	setFunc("_get_pause_on_channel", AudioManager::getPauseOnChannel);
 	setFunc("_set_pause_on_channel", AudioManager::setPauseOnChannel);
 	setFunc("_play", AudioManager::play);
+	setFunc("_queue", AudioManager::queue);
 	setFunc("_stop", AudioManager::stop);
+	setFunc("_get_playing", AudioManager::getPlaying);
 
 	setFunc("image_was_registered", Utils::imageWasRegistered);
 	setFunc("get_image", Utils::getImageDeclAt);

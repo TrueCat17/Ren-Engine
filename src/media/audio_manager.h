@@ -9,7 +9,7 @@
 typedef struct _object PyObject;
 
 struct AudioManager {
-	static std::mutex mutex;
+	static std::recursive_mutex mutex;
 	static double startUpdateTime;
 	static std::map<std::string, double> mixerVolumes;
 
@@ -25,8 +25,10 @@ struct AudioManager {
 	static void setMixerVolume(double volume, const std::string &mixer,
 	                           const std::string &fileName, size_t numLine);
 
-	static void setVolumeOnChannel(double volume, const std::string &channelName,
-	                               const std::string &fileName, size_t numLine);
+	static PyObject* getVolumeOnChannel(const std::string &channelName,
+	                                    const std::string &fileName, size_t numLine);
+	static void      setVolumeOnChannel(double volume, const std::string &channelName,
+	                                    const std::string &fileName, size_t numLine);
 
 	static PyObject* getPosOnChannel(const std::string &channelName,
 	                                 const std::string &fileName, size_t numLine);
@@ -38,10 +40,21 @@ struct AudioManager {
 	static void      setPauseOnChannel(bool value, const std::string &channelName,
 	                                   const std::string &fileName, size_t numLine);
 
-	static void play(const std::string &desc,
+	static void play(const std::string &channelName, std::string path,
+	                 double fadeOut, double fadeIn, double volume,
 	                 const std::string &fileName, uint32_t numLine);
-	static void stop(const std::string &desc,
+	static void queue(const std::string &channelName, std::string path,
+	                  double fadeIn, double volume,
+	                  const std::string &fileName, uint32_t numLine);
+	static void stop(const std::string &channelName, double fadeOut,
 	                 const std::string &fileName, uint32_t numLine);
+
+	static void  playWithParsing(const std::string &desc, const std::string &fileName, uint32_t numLine);
+	static void queueWithParsing(const std::string &desc, const std::string &fileName, uint32_t numLine);
+	static void  stopWithParsing(const std::string &desc, const std::string &fileName, uint32_t numLine);
+
+	static PyObject* getPlaying(const std::string &channelName,
+	                            const std::string &fileName, size_t numLine);
 
 	static void save(std::ofstream &infoFile);
 	static void load(std::ifstream &infoFile);

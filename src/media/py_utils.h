@@ -27,7 +27,12 @@ public:
 
 	static PyObject *getCompileObject(const std::string &code, const std::string &fileName, uint32_t numLine);
 	static bool isConstExpr(const std::string &code);
+
 	static std::string exec(const std::string &fileName, uint32_t numLine, const std::string &code, bool retRes = false);
+	static std::string execWithSetTmp(const std::string &fileName, uint32_t numLine,
+	                                  const std::string &code, const std::string &tmp,
+	                                  bool retRes = false);
+
 	static PyObject* execRetObj(const std::string &fileName, uint32_t numLine, const std::string &code);//returns new ref!!!
 	static void errorProcessing(const std::string &code);
 

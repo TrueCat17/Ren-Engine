@@ -45,8 +45,8 @@ static Node* getLabel(const std::string &name, bool outError = true) {
 	return nullptr;
 }
 static void markLabel(const std::string &fileName, uint32_t numLine, const std::string &label) {
-	PyUtils::exec(fileName, numLine,
-	              "persistent._seen_labels[get_current_mod()]['''" + label + "'''] = True");
+	PyUtils::execWithSetTmp(fileName, numLine,
+	                        "persistent._seen_labels[get_current_mod()][tmp] = True", label);
 }
 
 
@@ -195,31 +195,34 @@ static void checkToSaveStack() {
 static void restoreScreens(const std::string &loadPath) {
 	std::vector<std::string> startScreensVec;
 	if (!loadPath.empty()) {
-		PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__,
-		              "pickling.load_global_vars('" + loadPath + "/py_globals')");
+		PyUtils::execWithSetTmp("CPP_EMBED: scenario.cpp", __LINE__,
+		                        "pickling.load_global_vars(tmp + '/py_globals')", loadPath);
 
 		startScreensVec = Game::loadInfo(loadPath);
 	}else {
 		auto workWithPython = [&]() {
 			PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
-			if (startScreens) {
-				if (PyList_CheckExact(startScreens)) {
-					size_t len = size_t(Py_SIZE(startScreens));
-					for (size_t i = 0; i < len; ++i) {
-						PyObject *elem = PyList_GET_ITEM(startScreens, i);
-						if (PyUnicode_CheckExact(elem)) {
-							std::string name = PyUtils::objToStr(elem);
-							startScreensVec.push_back(name);
-						}else {
-							Utils::outMsg("Scenario::restoreScreens",
-							              "type(start_screens[" + std::to_string(i) + "]) is not str");
-						}
-					}
-				}else {
-					Utils::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
-				}
-			}else {
+			if (!startScreens) {
 				Utils::outMsg("Scenario::restoreScreens", "start_screens is not defined");
+				return;
+			}
+
+			if (!PyList_CheckExact(startScreens)) {
+				Utils::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
+				return;
+			}
+
+			size_t len = size_t(Py_SIZE(startScreens));
+			for (size_t i = 0; i < len; ++i) {
+				PyObject *elem = PyList_GET_ITEM(startScreens, i);
+				if (!PyUnicode_CheckExact(elem)) {
+					Utils::outMsg("Scenario::restoreScreens",
+					              "type(start_screens[" + std::to_string(i) + "]) is not str");
+					continue;
+				}
+
+				std::string name = PyUtils::objToStr(elem);
+				startScreensVec.push_back(name);
 			}
 		};
 		PyUtils::callInPythonThread(workWithPython);
@@ -644,12 +647,17 @@ void Scenario::execute(const std::string &loadPath) {
 		}
 
 		if (child->command == "play") {
-			AudioManager::play(child->params, child->getFileName(), child->getNumLine());
+			AudioManager::playWithParsing(child->params, child->getFileName(), child->getNumLine());
+			continue;
+		}
+
+		if (child->command == "queue") {
+			AudioManager::queueWithParsing(child->params, child->getFileName(), child->getNumLine());
 			continue;
 		}
 
 		if (child->command == "stop") {
-			AudioManager::stop(child->params, child->getFileName(), child->getNumLine());
+			AudioManager::stopWithParsing(child->params, child->getFileName(), child->getNumLine());
 			continue;
 		}
 

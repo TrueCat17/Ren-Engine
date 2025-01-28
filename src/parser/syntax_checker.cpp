@@ -151,7 +151,7 @@ void SyntaxChecker::init() {
 	mapSyntax["init python"] = {};
 	addBlockChildren("label, if, elif, else, for, while",
 		"pass, return, for, while" + conditions +
-		"pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, stop, with");
+		"pause, $, python, image, menu, show, hide, scene, nvl, window, jump, call, play, queue, stop, with");
 
 	addBlockChildren("menu", "menuItem");
 	mapSyntax["menuItem"] = mapSyntax["label"];
@@ -184,15 +184,19 @@ void SyntaxChecker::init() {
 	addBlockChildren("imagemap", "hotspot, $, python, for, while" + conditions + simpleProps);
 
 	addBlockChildren("imagemap, button, textbutton, image", "corner_sizes");
-	setSuperParents("corner_sizes", SuperParent::SCREEN);
+
 
 	setSuperParents("init, init python, translate, translate strings, label, screen", SuperParent::MAIN);
+
 	setSuperParents("style", SuperParent::INIT);
 
-	setSuperParents("return, play, stop, show, hide, scene, nvl, window, with, jump, call, menu, menuItem, pause", SuperParent::LABEL);
+	setSuperParents("play, queue, stop, show, hide, scene, with, pause, "
+	                "nvl, window, jump, call, return, menu, menuItem",
+	                SuperParent::LABEL);
+
 	setSuperParents(screenElems + "imagemap, hotspot, for, ground, hover" +
 	                screenProps + spacingProps + simpleProps + textProps + buttonProps +
-	                "action, first_delay, delay", SuperParent::SCREEN);
+	                "action, first_delay, delay, corner_sizes", SuperParent::SCREEN);
 
 	addBlockChildren("translate strings", "old, new old");
 	setSuperParents("old, new", SuperParent::TL_STRS);
@@ -202,8 +206,9 @@ void SyntaxChecker::init() {
 }
 
 static const std::set<std::string> blocksWithAny({"scene", "show", "image", "contains", "block", "parallel", "style"});
-bool SyntaxChecker::check(const std::string &parent, const std::string &child, const std::string &prevChild, const int superParent, bool &isText) {
-
+bool SyntaxChecker::check(const std::string &parent, const std::string &child, const std::string &prevChild,
+                          const int superParent, bool &isText)
+{
 	if ((superParent == SuperParent::INIT || superParent == SuperParent::LABEL) &&
 		blocksWithAny.count(parent))
 	{

@@ -147,14 +147,16 @@ void BtnRect::onHovered() const {
 
 	const Node *hoverSound = node->getProp("hover_sound");
 	if (hoverSound) {
-		AudioManager::play("button_hover " + hoverSound->params,
+		std::string path = PyUtils::exec(hoverSound->getFileName(), hoverSound->getNumLine(),
+		                                 hoverSound->params, true);
+		AudioManager::play("button_hover", path, 0, 0, 1.0,
 		                   hoverSound->getFileName(), hoverSound->getNumLine());
 	}else {
 		PyObject *hoverSoundObj = StyleManager::getProp(style, "hover_sound");
 
 		if (PyUnicode_CheckExact(hoverSoundObj)) {
-			std::string sound = PyUtils::objToStr(hoverSoundObj);
-			AudioManager::play("button_hover '" + sound + "'", node->getFileName(), node->getNumLine());
+			std::string path = PyUtils::objToStr(hoverSoundObj);
+			AudioManager::play("button_hover", path, 0, 0, 1.0, node->getFileName(), node->getNumLine());
 		}else if (hoverSoundObj != Py_None) {
 			std::string type = hoverSoundObj->ob_type->tp_name;
 			Utils::outMsg("BtnRect::onHovered",
@@ -190,14 +192,17 @@ void BtnRect::onLeftClick() const {
 
 	const Node *activateSound = node->getProp("activate_sound");
 	if (activateSound) {
-		AudioManager::play("button_click " + activateSound->params,
+		std::string path = PyUtils::exec(activateSound->getFileName(), activateSound->getNumLine(),
+		                                 activateSound->params, true);
+		AudioManager::play("button_click", path, 0, 0, 1.0,
 		                   activateSound->getFileName(), activateSound->getNumLine());
 	}else {
 		PyObject *activateSoundObj = StyleManager::getProp(style, "activate_sound");
 
 		if (PyUnicode_CheckExact(activateSoundObj)) {
-			std::string sound = PyUtils::objToStr(activateSoundObj);
-			AudioManager::play("button_click '" + sound + "'", node->getFileName(), node->getNumLine());
+			std::string path = PyUtils::objToStr(activateSoundObj);
+			AudioManager::play("button_click ", path, 0, 0, 1.0,
+			                   node->getFileName(), node->getNumLine());
 		}else if (activateSoundObj != Py_None) {
 			std::string type = activateSoundObj->ob_type->tp_name;
 			Utils::outMsg("BtnRect::onLeftClick",
