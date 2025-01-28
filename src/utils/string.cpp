@@ -1,5 +1,7 @@
 #include "string.h"
 
+#include <charconv>
+
 #include "utils/utils.h"
 
 
@@ -36,73 +38,38 @@ std::vector<std::string> String::split(const std::string &str, std::string_view 
 	return res;
 }
 
-int String::toInt(std::string_view str, int base) {
+
+template<typename T>
+static T convertStrTo(std::string_view str, const char *from, const char *typeName) {
 	if (str.empty()) return 0;
 
-	int res = 0;
-	bool neg = str[0] == '-';
-	for (size_t i = neg; i < str.size(); ++i) {
-		char c = str[i];
-		
-		if (c >= '0' && c <= '9') c -= '0';
-		else if (c >= 'a' && c <= 'z' && base > c - 'a' + 10) c = c - 'a' + 10;
-		else if (c >= 'A' && c <= 'Z' && base > c - 'A' + 10) c = c - 'A' + 10;
-		else {
-			c = 0;
-			std::string s(str);
-			std::string baseStr = std::to_string(base);
-			Utils::outMsg("String::toInt",
-			              "String <" + s + "> is invalid number in numeral system with base " + baseStr);
-			return 0;
-		}
-		
-		res = res * base + c;
-	}
-	return neg ? -res : res;
+	T res;
+	auto [ptr, errorCode] = std::from_chars(str.begin(), str.end(), res);
+	if (ptr == str.end() && errorCode == std::errc()) return res;
+
+	bool outOfRange = errorCode == std::errc::result_out_of_range;
+	std::string extra = outOfRange ? "out of range" : "invalid argument";
+
+	Utils::outMsg(from,
+	              "Failed to convert <" + std::string(str) + "> to " + typeName + " (" + extra + ")");
+	return 0;
+}
+
+int String::toInt(std::string_view str) {
+	return convertStrTo<int>(str, "String::toInt", "int");
 }
 double String::toDouble(std::string_view str) {
-	char *end;
-	double res = strtod(str.data(), &end);
-	if (end == str.data() + str.size()) return res;
-
-	Utils::outMsg("String::toDouble",
-	              "Failed to convert <" + std::string(str) + "> to double");
-	return 0;
+	return convertStrTo<double>(str, "String::toDouble", "double");
 }
 
 bool String::isNumber(std::string_view str) {
 	if (str.empty()) return false;
-	
-	if (str[0] == '-' || str[0] == '+') {
-		str = str.substr(1);
-		if (str.empty()) return false;
-	}
-	
-	bool wasDot = false;
-	bool wasE = false;
-	for (size_t i = 0; i < str.size(); ++i) {
-		const char c = str[i];
-		if (c == '.') {
-			if (wasDot) return false;
-			wasDot = true;
-		}else
-		if (c == 'e') {
-			if (wasE) return false;
-			wasE = true;
 
-			if (i + 1 == str.size()) return false;
-			const char n = str[i + 1];
-			if (n == '-' || n == '+') {
-				if (i + 2 == str.size()) return false;
-				++i;
-			}
-		}else
-		if (c < '0' || c > '9') {
-			return false;
-		}
-	}
-	
-	return true;
+	double res;
+	auto [ptr, errorCode] = std::from_chars(str.begin(), str.end(), res);
+
+	if (ptr != str.end()) return false;
+	return errorCode == std::errc() || errorCode == std::errc::result_out_of_range;
 }
 bool String::isSimpleString(std::string_view str) {
 	if (str.size() < 2) return false;
