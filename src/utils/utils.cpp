@@ -7,7 +7,6 @@
 #include <mutex>
 #include <set>
 #include <list>
-#include <map>
 #include <pthread.h>
 
 extern "C" {
@@ -20,18 +19,11 @@ extern "C" {
 #include "gv.h"
 #include "logger.h"
 
-#include "media/py_utils.h"
-
-#include "parser/node.h"
-
 #include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/stage.h"
 #include "utils/string.h"
-
-
-static std::map<std::string, Node*> declAts;
 
 
 static std::string versionStr;
@@ -277,116 +269,6 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 	return (Uint32(r) << 24) + (Uint32(g) << 16) + (Uint32(b) << 8) + a;
 }
 
-void Utils::registerImage(Node *imageNode) {
-	const std::string &desc = imageNode->params;
-	std::string name;
-	std::string path;
-
-	size_t i = desc.find("=");
-	if (i == size_t(-1)) {
-		name = desc;
-		path = "";
-	}else {
-		name = desc.substr(0, i - 1);
-		path = desc.substr(i + 1);
-	}
-
-	auto clear = [](const std::string &str) -> std::string {
-		size_t start = str.find_first_not_of(' ');
-		size_t end = str.find_last_not_of(' ');
-		if (start == size_t(-1) || end == size_t(-1)) {
-			return "";
-		}
-		return str.substr(start, end - start + 1);
-	};
-
-	name = clear(name);
-	if (name.empty()) {
-		outMsg("Utils::registerImage",
-		       "Empty name\n" +
-		       imageNode->getPlace());
-		return;
-	}
-	declAts[name] = imageNode;
-
-	path = clear(path);
-
-	if (path.empty()) {
-		if (!imageNode->children.empty()) return;
-	}else {
-		Node *first = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
-		first->params = path;
-
-		if (imageNode->children.empty()) {
-			imageNode->children.push_back(first);
-		}else {
-			imageNode->children.insert(imageNode->children.begin(), first);
-			return;
-		}
-	}
-
-
-
-	auto workWithPython = [&]() {
-		PyObject *defaultDeclAt = PyDict_GetItemString(PyUtils::global, "default_decl_at");
-		if (!defaultDeclAt) {
-			outMsg("Utils::registerImage",
-			       "default_decl_at not defined\n" +
-			       imageNode->getPlace());
-			return;
-		}
-		if (!PyTuple_CheckExact(defaultDeclAt) && !PyList_CheckExact(defaultDeclAt)) {
-			outMsg("Utils::registerImage",
-			       "default_decl_at is not list or tuple\n" +
-			       imageNode->getPlace());
-			return;
-		}
-
-		size_t sizeDefaultDeclAt = size_t(Py_SIZE(defaultDeclAt));
-		for (size_t i = 0; i < sizeDefaultDeclAt; ++i) {
-			PyObject *elem = PySequence_Fast_GET_ITEM(defaultDeclAt, i);
-			if (!PyUnicode_CheckExact(elem)) {
-				outMsg("Utils::registerImage",
-				       "default_decl_at[" + std::to_string(i) + "] is not str\n" +
-				       imageNode->getPlace());
-				continue;
-			}
-
-			Node *node = Node::getNewNode(imageNode->getFileName(), imageNode->getNumLine());
-			node->params = PyUtils::objToStr(elem);
-			imageNode->children.push_back(node);
-		}
-	};
-	PyUtils::callInPythonThread(workWithPython);
-}
-
-bool Utils::imageWasRegistered(const std::string &name) {
-	return declAts.find(name) != declAts.end();
-}
-void Utils::clearImages() {
-	declAts.clear();
-}
-
-PyObject* Utils::getImageDeclAt(const std::string &name) {
-	auto it = declAts.find(name);
-	if (it != declAts.end()) {
-		const Node *node = it->second;
-		return node->getPyList();
-	}
-
-	Utils::outMsg("Utils::getImageDeclAt", "Image <" + name + "> not registered");
-	return PyList_New(0);
-}
-std::vector<std::string> Utils::getVectorImageDeclAt(const std::string &name) {
-	auto it = declAts.find(name);
-	if (it != declAts.end()) {
-		const Node *node = it->second;
-		return node->getImageChildren();
-	}
-
-	Utils::outMsg("Utils::getVectorImageDeclAt", "Image <" + name + "> not registered");
-	return {};
-}
 
 static std::mutex md5_mutex;
 static const char *md5_table16 = "0123456789abcdef";

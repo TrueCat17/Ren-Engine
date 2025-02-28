@@ -54,14 +54,13 @@ void StyleManager::destroyAll() {
 		styles.insert(style);
 	}
 
-	auto workWithPython = [&]() {
+	PyUtils::callInPythonThread([&]() {
 		for (const Style* style : styles) {
 			delete style;
 		}
 		stylesByName.clear();
 		stylesByPy.clear();
-	};
-	PyUtils::callInPythonThread(workWithPython);
+	});
 }
 
 
@@ -144,9 +143,8 @@ PyObject* StyleManager::getProp(const Style *style, const std::string &propName)
 }
 
 void StyleManager::execAction(const std::string &fileName, uint32_t numLine, const Style *style, const std::string &propName) {
-	auto workWithPython = [&]() {
+	PyUtils::callInPythonThread([&]() {
 		PyDict_SetItemString(PyUtils::global, "_SL_last_style", style->pyStyle);
 		PyUtils::exec(fileName, numLine, "exec_funcs(_SL_last_style." + propName + ")");
-	};
-	PyUtils::callInPythonThread(workWithPython);
+	});
 }

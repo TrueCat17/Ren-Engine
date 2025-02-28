@@ -91,8 +91,12 @@ init -1000 python:
 		decl_at = get_image(image_name)
 		
 		if d['at'] is not None:
-			at = eval(d['at'])
-			at = at.actions if at else []
+			try:
+				at = eval(d['at'])
+				at = at.actions if at else []
+			except:
+				out_msg('sprites.show', 'Failed on eval param <at>: %s' % (d['at'], ))
+				at = []
 		else:
 			data = old_sprite and (old_sprite.new_data or old_sprite.old_data)
 			if data:
@@ -118,7 +122,7 @@ init -1000 python:
 					break
 				index += 1
 			else:
-				out_msg('sprites.show', 'Sprite <' + d['behind'] + '> not found')
+				out_msg('sprites.show', 'Sprite <%s> not found' % (d['behind'], ))
 		
 		if sprites.scene in sprites.list:
 			index = max(index, sprites.list.index(sprites.scene) + 1)
@@ -136,11 +140,11 @@ init -1000 python:
 		effect = None
 		if len(params) == 3:
 			if params[1] != 'with':
-				out_msg('hide_sprite', '2 param must be <with>, got <' + params[1] + '>')
+				out_msg('hide_sprite', '2 param must be <with>, got <%s>' % (params[1], ))
 				return
 			effect = eval(params[2])
 		elif len(params) != 1:
-			out_msg('hide_sprite', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <' + str(params) + '>')
+			out_msg('hide_sprite', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <%s>' % (params, ))
 			return
 		
 		for i in range(len(sprites.list)):
@@ -155,7 +159,7 @@ init -1000 python:
 					sprites.list.pop(i)
 				break
 		else:
-			out_msg('sprites.hide', 'Sprite <' + name + '> not found')
+			out_msg('sprites.hide', 'Sprite <%s> not found' % (name, ))
 	
 	def sprites__get_datas():
 		res = []

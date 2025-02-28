@@ -224,14 +224,13 @@ static void loop() {
 
 		GV::updateMutex.lock();
 
-		auto workWithPython = [&]() { //for instant (for python) changes of 3 vars
+		PyUtils::callInPythonThread([&]() { //for instant (for python) changes of 3 vars
 			GV::prevFrameStartTime = GV::frameStartTime;
 			GV::frameStartTime = Utils::getTimer();
 			GV::gameTime += Game::getLastTick();
 
-			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "if 'signals' in globals(): signals.send('enter_frame')");
-		};
-		PyUtils::callInPythonThread(workWithPython);
+			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "signals.send('enter_frame')");
+		});
 
 		bool resizeWithoutMouseDown = false;
 		bool mouseWasDown = false;
@@ -397,7 +396,7 @@ static void loop() {
 			Game::makeScreenshot();
 		}
 
-		PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "if 'signals' in globals(): signals.send('exit_frame')");
+		PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "signals.send('exit_frame')");
 
 		GV::updateMutex.unlock();
 

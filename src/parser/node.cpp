@@ -6,12 +6,11 @@
 
 #include "media/image_manipulator.h"
 #include "media/py_utils/convert_to_py.h"
-#include "media/py_utils.h"
+#include "media/sprite.h"
 
 #include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 static const uint32_t NODES_IN_PART = 5000;
 static uint32_t countNodes = 0;
@@ -55,77 +54,44 @@ void Node::destroyAll() {
 }
 
 
-using Strings = std::initializer_list<std::string>;
-static const Strings highLevelCommands = { "image", "scene", "show", "hide" };
-static const Strings blockCommandsInImage = { "contains", "block", "parallel" };
-static const Strings spriteParams = { "at", "with", "behind", "as" };
+static void setElem(PyObject *tuple, Py_ssize_t &index, PyObject *obj, const Node *node) {
+	PyObject *line = PyTuple_New(3);
+	PyTuple_SET_ITEM(line, 0, obj);
+	PyTuple_SET_ITEM(line, 1, convertToPy(node->getFileName()));
+	PyTuple_SET_ITEM(line, 2, convertToPy(node->getNumLine()));
 
-PyObject* Node::getPyList() const {
-	PyObject *res = PyList_New(0);
-
-	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
-	if (!isHighLevelCommands) {
-		if (!command.empty()) {
-			PyObject *pyCommand = convertToPy(command);
-			PyList_Append(res, pyCommand);
-			Py_DECREF(pyCommand);
-		}
+	PyTuple_SET_ITEM(tuple, index++, line);
+};
+PyObject* Node::getPyChildren(bool isRoot) const {
+	Py_ssize_t count = Py_ssize_t(children.size());
+	if (!isRoot) {
+		++count;
 		if (!params.empty()) {
-			PyObject *pyParams = convertToPy(params);
-			PyList_Append(res, pyParams);
-			Py_DECREF(pyParams);
+			++count;
+		}
+	}
+
+	PyObject *res = PyTuple_New(count);
+	Py_ssize_t index = 0;
+
+	if (!isRoot) {
+		setElem(res, index, convertToPy(command), this);
+		if (!params.empty()) {
+			setElem(res, index, convertToPy(params), this);
 		}
 	}
 
 	for (const Node* child : children) {
-		PyObject *childPyList = child->getPyList();
+		PyObject *obj;
 
-		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
-
+		bool childIsBlock = Algo::in(std::string_view(child->command), blockCommandsInImage);
 		if (childIsBlock) {
-			PyList_Append(res, childPyList);
+			obj = child->getPyChildren(false);
 		}else {
-			PyTuple_SET_ITEM(PyUtils::tuple1, 0, childPyList);
-			PyObject *joined = PyObject_CallObject(PyUtils::spaceStrJoin, PyUtils::tuple1);
-			PyTuple_SET_ITEM(PyUtils::tuple1, 0, nullptr);
-
-			PyList_Append(res, joined);
-			Py_DECREF(joined);
+			obj = convertToPy(Algo::clear(child->command + ' ' + child->params));
 		}
-	}
 
-	return res;
-}
-std::vector<std::string> Node::getImageChildren() const {
-	std::vector<std::string> res;
-
-	static const std::vector<std::string> highLevelCommands = {"image", "scene", "show", "hide"};
-	bool isHighLevelCommands = Algo::in(command, highLevelCommands);
-
-	if (!isHighLevelCommands) {
-		if (!command.empty()) {
-			res.push_back(command);
-		}
-		if (!params.empty()) {
-			res.push_back(params);
-		}
-	}
-
-	for (const Node* child : children) {
-		static const std::vector<std::string> blockCommandsInImage = {"contains", "block", "parallel"};
-		bool childIsBlock = Algo::in(child->command, blockCommandsInImage);
-
-		if (childIsBlock) {
-			const std::vector<std::string> childChildren = child->getImageChildren();
-			for (const std::string &str : childChildren) {
-				res.push_back(str);
-			}
-		}else {
-			if (!child->command.empty() || !child->params.empty()) {
-				const std::string str = Algo::clear(child->command + " " + child->params);
-				res.push_back(str);
-			}
-		}
+		setElem(res, index, obj, child);
 	}
 
 	return res;
@@ -133,26 +99,6 @@ std::vector<std::string> Node::getImageChildren() const {
 
 
 
-static void preloadImageAt(const std::vector<std::string> &children) {
-	auto fileExists = [](const std::string &path) -> bool {
-		return FileSystem::exists(path) && !FileSystem::isDirectory(path);
-	};
-
-	for (const std::string &str : children) {
-		if (!String::isSimpleString(str)) continue;
-
-		const std::string image = str.substr(1, str.size() - 2);
-
-		if (Utils::imageWasRegistered(image)) {
-			const std::vector<std::string> declAt = Utils::getVectorImageDeclAt(image);
-			preloadImageAt(declAt);
-		}else {
-			if (fileExists(image)) {
-				ImageManipulator::loadImage(image);
-			}
-		}
-	}
-}
 size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 	for (size_t i = start; i < parent->children.size() && count; ++i) {
 		const Node *child = parent->children[i];
@@ -192,15 +138,17 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 			--count;
 
 			std::vector<std::string> args = Algo::getArgs(childParams);
-			while (args.size() > 2 && Algo::in(args[args.size() - 2], spriteParams)) {
+			while (args.size() > 2 && Algo::in(std::string_view(args[args.size() - 2]), spriteParams)) {
 				args.erase(args.end() - 2, args.end());
 			}
 			if (args.empty()) continue;
 
 			const std::string imageName = String::join(args, " ");
 
-			std::vector<std::string> declAt = Utils::getVectorImageDeclAt(imageName);
-			preloadImageAt(declAt);
+			const std::vector<std::string> &declAt = Sprite::getChildrenImagesDeclAt(imageName);
+			for (const std::string &path : declAt) {
+				ImageManipulator::loadImage(path);
+			}
 		}
 	}
 

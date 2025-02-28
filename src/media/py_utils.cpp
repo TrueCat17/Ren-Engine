@@ -547,3 +547,19 @@ std::string PyUtils::objToStr(PyObject *obj) {
 	});
 	return res;
 }
+
+bool PyUtils::isIdentifier(std::string_view s) {
+	if (s.empty()) return false;
+	if (s[0] >= '0' && s[0] <= '9') return false;
+
+	for (char c : s) {
+		if (c >= 'a' && c <= 'z') continue;
+		if (c >= 'A' && c <= 'Z') continue;
+		if (c >= '0' && c <= '9') continue;
+		if (c == '_') continue;
+
+		return false;
+	}
+
+	return true;
+}

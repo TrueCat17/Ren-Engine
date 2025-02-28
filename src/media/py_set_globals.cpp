@@ -13,6 +13,7 @@
 #include "media/audio_manager.h"
 #include "media/image_manipulator.h"
 #include "media/scenario.h"
+#include "media/sprite.h"
 #include "media/translation.h"
 
 #include "parser/mods.h"
@@ -101,8 +102,8 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("_stop", AudioManager::stop);
 	setFunc("_get_playing", AudioManager::getPlaying);
 
-	setFunc("image_was_registered", Utils::imageWasRegistered);
-	setFunc("get_image", Utils::getImageDeclAt);
+	setFunc("image_was_registered", Sprite::imageWasRegistered);
+	setFunc("get_image", Sprite::getImageDeclAt);
 
 	setFunc("replace_screen", Screen::replace);
 	setFunc("_show_screen", Screen::addToShow);

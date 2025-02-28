@@ -9,6 +9,7 @@
 
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
+#include "media/sprite.h"
 
 #include "utils/file_system.h"
 #include "utils/math.h"
@@ -151,8 +152,8 @@ static std::string getTagValue(std::string &tag) {
 	return "";
 }
 static SurfacePtr getImage(const std::string &path) {
-	if (Utils::imageWasRegistered(path)) {
-		std::vector<std::string> commands = Utils::getVectorImageDeclAt(path);
+	if (Sprite::imageWasRegistered(path)) {
+		std::vector<std::string> commands = Sprite::getChildrenImagesDeclAt(path);
 		if (commands.empty()) return nullptr;
 
 		std::string realPath = PyUtils::exec("CPP_EMBED: text_field.cpp", __LINE__, commands.front(), true);

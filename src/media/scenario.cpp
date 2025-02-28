@@ -14,6 +14,7 @@
 
 #include "media/audio_manager.h"
 #include "media/py_utils.h"
+#include "media/sprite.h"
 #include "media/translation.h"
 
 #include "parser/node.h"
@@ -200,7 +201,7 @@ static void restoreScreens(const std::string &loadPath) {
 
 		startScreensVec = Game::loadInfo(loadPath);
 	}else {
-		auto workWithPython = [&]() {
+		PyUtils::callInPythonThread([&]() {
 			PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
 			if (!startScreens) {
 				Utils::outMsg("Scenario::restoreScreens", "start_screens is not defined");
@@ -224,8 +225,7 @@ static void restoreScreens(const std::string &loadPath) {
 				std::string name = PyUtils::objToStr(elem);
 				startScreensVec.push_back(name);
 			}
-		};
-		PyUtils::callInPythonThread(workWithPython);
+		});
 	}
 
 	for (const std::string &screenName : startScreensVec) {
@@ -233,6 +233,107 @@ static void restoreScreens(const std::string &loadPath) {
 			Screen::addToShow(screenName);
 		}
 	}
+}
+
+
+static void makeStyle(const Node *child) {
+	std::string name, parent;
+	std::vector<std::string> words = String::split(child->params, " ");
+	if (words.size() == 1) {
+		name = child->params;
+		parent = "default";
+	}else {
+		if (words.size() != 3 || words[1] != "is") {
+			Utils::outMsg("Scenatio::execute",
+			              "Expected 'style name [is parent]', got: style " + child->params + "\n" +
+			              child->getPlace());
+			return;
+		}
+		name = words[0];
+		parent = words[2];
+	}
+
+	if (!PyUtils::isIdentifier(name)) {
+		Utils::outMsg("Scenatio::execute",
+		              "Invalid style name <" + name + ">\n" +
+		              child->getPlace());
+		return;
+	}
+	if (!PyUtils::isIdentifier(parent)) {
+		Utils::outMsg("Scenatio::execute",
+		              "Invalid style name <" + parent + ">\n" +
+		              child->getPlace());
+		return;
+	}
+
+	std::string code;
+	code += "if not style." + name + ":\n";
+	code += "    style." + name + " = Style(style." + parent + ")\n";
+	if (words.size() != 1) {
+		code += "else:\n";
+		code += "    style." + name + ".properties = style." + parent + "\n";
+	}
+	for (const Node* prop : child->children) {
+		code += "style." + name + "." + prop->command + " = " + prop->params + "\n";
+	}
+
+	PyUtils::exec(child->getFileName(), child->getNumLine(), code);
+}
+
+
+static void displayCommandProcessing(const Node *child) {
+	std::string funcName;
+	if (child->command == "scene") {
+		funcName = "sprites.set_scene";
+	}else {
+		if (String::startsWith(child->params, "screen ")) {
+			const std::string screenName = child->params.substr(strlen("screen "));
+			if (child->command == "show") {
+				Screen::addToShow(screenName);
+			}else {
+				Screen::addToHide(screenName);
+			}
+			return;
+		}
+
+		funcName = "sprites." + child->command;
+	}
+
+	const std::vector<std::string> args = Algo::getArgs(child->params);
+	if (args.empty() && child->command != "scene") {
+		Utils::outMsg("Scenario::execute",
+		              "Invalid command <" + child->command + " " + child->params + ">\n" +
+		              child->getPlace());
+		return;
+	}
+
+	PyUtils::callInPythonThread([&]() {
+		PyObject *list = PyList_New(Py_ssize_t(args.size()));
+
+		for (size_t i = 0; i < args.size(); ++i) {
+			const std::string &arg = args[i];
+			PyObject *str = PyUnicode_FromStringAndSize(arg.c_str(), Py_ssize_t(arg.size()));
+			PyList_SET_ITEM(list, Py_ssize_t(i), str);
+		}
+
+		PyDict_SetItemString(PyUtils::global, "tmp", list);
+		Py_DECREF(list);
+
+		std::string argsStr = "tmp";
+
+		if (child->command != "hide") {
+			int count = String::toInt(Config::get("count_preload_commands"));
+			Node::preloadImages(child->parent, child->childNum + 1, size_t(std::max(count, 0)));
+
+			argsStr += ", last_show_at";
+
+			PyObject *actions = child->getPyChildren();
+			PyDict_SetItemString(PyUtils::global, "last_show_at", actions);
+			Py_DECREF(actions);
+		}
+
+		PyUtils::exec(child->getFileName(), child->getNumLine(), funcName + "(" + argsStr + ")");
+	});
 }
 
 
@@ -328,6 +429,7 @@ void Scenario::execute(const std::string &loadPath) {
 				if (obj->command == "init python") {
 					PyUtils::exec(obj->getFileName(), obj->getNumLine() + 1, obj->params);
 				}
+				PyUtils::exec(obj->getFileName(), obj->getNumLine(), "default_decl_at = ()");
 
 				++initNum;
 				if (initNum == initBlocks.size()) {
@@ -381,7 +483,9 @@ void Scenario::execute(const std::string &loadPath) {
 			num = elem.second;
 
 			if (String::endsWith(prevObj->command, "if")) {//<if>, <elif>
-				while (num < obj->children.size() && String::startsWith(obj->children[num]->command, "el")) {//<elif>, <else>
+				while (num < obj->children.size() &&
+				       String::startsWith(obj->children[num]->command, "el")) //<elif>, <else>
+				{
 					++num;
 					++stack.back().second;
 				}
@@ -392,12 +496,14 @@ void Scenario::execute(const std::string &loadPath) {
 
 
 		if (obj->command == "menu") {
-			const std::string resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(), "int(choice_menu_result)", true);
+			const std::string resStr = PyUtils::exec(obj->getFileName(), obj->getNumLine(),
+			                                         "int(choice_menu_result)", true);
 			int res = String::toInt(resStr);
 
 			if (res < 0 || res >= int(obj->children.size())) {
+				std::string maxSize = std::to_string(obj->children.size());
 				Utils::outMsg("Scenario::execute",
-				              "choice_menu_result = " + resStr + ", min = 0, max = " + std::to_string(obj->children.size()) + "\n" +
+				              "choice_menu_result = " + resStr + ", min = 0, max = " + maxSize + "\n" +
 				              obj->getPlace());
 				res = 0;
 			}
@@ -422,15 +528,26 @@ void Scenario::execute(const std::string &loadPath) {
 				std::lock_guard g(GV::updateMutex);
 				Screen::updateLists();
 			}
-			bool screenThereIs = Screen::getMain("choice_menu");
-			if (!screenThereIs) {
-				std::string variants;
-				for (const Node *node : child->children) {
-					variants += node->params + ", ";
-				}
+			bool screenIsShowed = Screen::getMain("choice_menu");
+			if (!screenIsShowed) {
+				PyUtils::callInPythonThread([&]() {
+					PyObject *list = PyList_New(Py_ssize_t(child->children.size()));
 
-				PyUtils::exec(child->getFileName(), child->getNumLine(), "choice_menu_variants = (" + variants + ")");
-				PyUtils::exec(child->getFileName(), child->getNumLine(), "renpy.call_screen('choice_menu', 'choice_menu_result')");
+					for (size_t i = 0; i < child->children.size(); ++i) {
+						const Node *node = child->children[i];
+						PyObject *variant = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), node->params);
+						if (!variant) {
+							variant = Py_NewRef(Py_None);
+						}
+						PyList_SET_ITEM(list, Py_ssize_t(i), variant);
+					}
+
+					PyDict_SetItemString(PyUtils::global, "choice_menu_variants", list);
+					Py_DECREF(list);
+
+					std::string code = "renpy.call_screen('choice_menu', 'choice_menu_result')";
+					PyUtils::exec(child->getFileName(), child->getNumLine(), code);
+				});
 			}
 
 			obj = child;
@@ -441,88 +558,36 @@ void Scenario::execute(const std::string &loadPath) {
 		}
 
 		if (child->command == "image") {
-			Utils::registerImage(child);
+			Sprite::registerImage(child);
 			continue;
 		}
 
 		if (child->command == "scene" || child->command == "show" || child->command == "hide") {
-			std::string funcName;
-			if (child->command == "scene") {
-				funcName = "sprites.set_scene";
-			}else {
-				if (String::startsWith(child->params, "screen ")) {
-					const std::string screenName = child->params.substr(strlen("screen "));
-					if (child->command == "show") {
-						Screen::addToShow(screenName);
-					}else {
-						Screen::addToHide(screenName);
-					}
-					continue;
-				}else {
-					funcName = "sprites." + child->command;
-				}
-			}
-
-			const std::vector<std::string> args = Algo::getArgs(child->params);
-			if (args.empty() && child->command != "scene") {
-				Utils::outMsg("Scenario::execute",
-				              "Invalid command <" + child->command + " " + child->params + ">\n" +
-				              child->getPlace());
-				continue;
-			}
-
-			std::string argsStr = "[";
-			for (const std::string &arg : args) {
-				argsStr += "'''" + arg + "''', ";
-			}
-			argsStr += "]";
-
-			if (child->command != "hide") {
-				Node::preloadImages(obj, num, uint32_t(String::toInt(Config::get("count_preload_commands"))));
-
-				argsStr += ", last_show_at";
-
-				auto workWithPython = [&]() {
-					PyObject *list = child->getPyList();
-					PyDict_SetItemString(PyUtils::global, "last_show_at", list);
-					Py_DECREF(list);
-				};
-				PyUtils::callInPythonThread(workWithPython);
-			}
-
-			PyUtils::exec(child->getFileName(), child->getNumLine(), funcName + "(" + argsStr + ")");
+			displayCommandProcessing(child);
 			continue;
 		}
 
 		if (child->command == "style") {
-			std::string name, parent;
-			std::vector<std::string> words = String::split(child->params, " ");
-			if (words.size() == 1) {
-				name = child->params;
-				parent = "default";
-			}else {
-				if (words.size() != 3 || words[1] != "is") {
-					Utils::outMsg("Scenatio::execute",
-					              "Expected 'style name [is parent]', got: style " + child->params + "\n" +
-					              child->getPlace());
-					continue;
-				}
-				name = words[0];
-				parent = words[2];
+			makeStyle(child);
+			continue;
+		}
+
+		if (child->command == "transform") {
+			if (!PyUtils::isIdentifier(child->params)) {
+				Utils::outMsg("Scenatio::execute",
+				              "Invalid transform name <" + child->params + ">\n" +
+				              child->getPlace());
+				continue;
 			}
 
-			std::string code;
-			code += "if not style." + name + ":\n";
-			code += "    style." + name + " = Style(style." + parent + ")\n";
-			if (words.size() != 1) {
-				code += "else:\n";
-				code += "    style." + name + ".properties = style." + parent + "\n";
-			}
-			for (const Node* prop : child->children) {
-				code += "style." + name + "." + prop->command + " = " + prop->params + "\n";
-			}
+			PyUtils::callInPythonThread([&]() {
+				PyObject *actions = child->getPyChildren();
+				PyDict_SetItemString(PyUtils::global, "tmp", actions);
+				Py_DECREF(actions);
 
-			PyUtils::exec(child->getFileName(), child->getNumLine(), code);
+				PyUtils::exec(child->getFileName(), child->getNumLine(),
+				              child->params + " = SpriteAnimation(tmp)");
+			});
 			continue;
 		}
 

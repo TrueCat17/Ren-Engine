@@ -1,6 +1,5 @@
 #include "game.h"
 
-#include <set>
 #include <thread>
 #include <fstream>
 #include <time.h>
@@ -22,6 +21,7 @@
 #include "media/py_utils.h"
 #include "media/py_utils/convert_to_py.h"
 #include "media/scenario.h"
+#include "media/sprite.h"
 #include "media/translation.h"
 
 #include "parser/parser.h"
@@ -217,7 +217,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 		double clearStartTime = Utils::getTimer();
 		AudioManager::clear();
 
-		Utils::clearImages();
+		Sprite::clearImages();
 		Node::destroyAll();
 
 		Screen::clear();

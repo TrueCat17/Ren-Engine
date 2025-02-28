@@ -16,6 +16,10 @@ private:
 	uint32_t numLine;
 
 public:
+	using Strings = std::initializer_list<std::string_view>;
+	static constexpr Strings blockCommandsInImage = { "contains", "block", "parallel" };
+	static constexpr Strings spriteParams = { "at", "with", "behind", "as" };
+
 	static Node* getNewNode(const std::string &fileName, uint32_t numLine);
 	static void destroyAll();
 
@@ -25,8 +29,8 @@ public:
 	uint32_t id;//unique id for each Node
 	float priority;//for init-block
 
-	uint32_t childNum;//index in parent Node
-	Node *parent;
+	uint32_t childNum = uint32_t(-1);//index in parent Node
+	Node *parent = nullptr;
 
 	uint8_t countPropsToCalc;
 
@@ -45,8 +49,7 @@ public:
 
 	std::vector<Node*> children;
 
-	PyObject* getPyList() const;
-	std::vector<std::string> getImageChildren() const;
+	PyObject* getPyChildren(bool isRoot = true) const;
 
 	const Node *getProp(const std::string &name) const;
 

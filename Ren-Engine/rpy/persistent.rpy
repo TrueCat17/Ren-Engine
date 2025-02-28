@@ -9,6 +9,8 @@ init -100002 python:
 	simple_types = (type(None), bool, int, float, absolute, str, types.BuiltinFunctionType, types.ModuleType)
 	collection_types = (list, tuple, set, dict)
 	
+	number_types = (int, float, absolute) # not for this file
+	
 	
 	class GlobalPicklingCanaryException(Exception):
 		pass

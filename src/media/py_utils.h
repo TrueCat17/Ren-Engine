@@ -37,6 +37,8 @@ public:
 	static void errorProcessing(const std::string &code);
 
 	static std::string objToStr(PyObject *obj);
+
+	static bool isIdentifier(std::string_view s);
 };
 
 #endif // PYUTILS_H

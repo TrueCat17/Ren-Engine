@@ -60,8 +60,8 @@ static void show(const std::string &name) {
 	}
 
 	for (const auto &sameName : getSameNames(name)) {
-		PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
-		              "if 'signals' in globals(): signals.send('show_screen', '" + sameName + "')");
+		PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
+		                        "signals.send('show_screen', tmp)", sameName);
 	}
 	Stage::screens->addChildAt(scr, Stage::screens->children.size());
 }
@@ -75,12 +75,12 @@ static void hide(const std::string &name) {
 	}
 
 	delete scr;
-	PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
-	              "del screen_vars['" + name + "']");
+	PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
+	                        "del screen_vars[tmp]", name);
 
 	for (const auto &sameName : getSameNames(name)) {
-		PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
-		              "if 'signals' in globals(): signals.send('hide_screen', '" + sameName + "')");
+		PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
+		                        "signals.send('hide_screen', tmp)", sameName);
 	}
 }
 
@@ -214,7 +214,7 @@ void Screen::addToShow(std::string name, PyObject *args, PyObject *kwargs) {
 	//python thread need for func makeScreenVars
 	//this order of locks need for no deadlocks
 
-	auto workWithPython = [&]() {
+	PyUtils::callInPythonThread([&]() {
 		std::lock_guard g(screenMutex);
 
 		auto it = screenMap.find(name);
@@ -238,8 +238,7 @@ void Screen::addToShow(std::string name, PyObject *args, PyObject *kwargs) {
 		}
 
 		toShowList.push_back(name);
-	};
-	PyUtils::callInPythonThread(workWithPython);
+	});
 }
 void Screen::addToHide(std::string name) {
 	std::lock_guard g(screenMutex);
@@ -431,13 +430,12 @@ Screen::Screen(Node *node, Screen *screen):
 
 	screenCode = ScreenCodeGenerator::get(node);
 
-	auto workWithPython = [&]() {
+	PyUtils::callInPythonThread([&]() {
 		co = PyUtils::getCompileObject(screenCode, "_SL_FILE_" + name, 1);
 		if (!co) {
 			PyUtils::errorProcessing(screenCode);
 		}
-	};
-	PyUtils::callInPythonThread(workWithPython);
+	});
 }
 
 //called from python thread

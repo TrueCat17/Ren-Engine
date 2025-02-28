@@ -403,38 +403,38 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 
 	params.channel = args[0];
 	if (params.usePaths) {
-		PyObject *paths = PyUtils::execRetObj(fileName, numLine, args[1]);
-		if (PyUnicode_CheckExact(paths)) {
-			Py_ssize_t size;
-			const char *data = PyUnicode_AsUTF8AndSize(paths, &size);
-			std::string path = std::string(data, size_t(size));
-			params.paths.push_back(path);
-		}else
+		bool error = false;
+		PyUtils::callInPythonThread([&]() {
+			PyObject *paths = PyUtils::execRetObj(fileName, numLine, args[1]);
+			if (PyUnicode_CheckExact(paths)) {
+				params.paths.push_back(PyUtils::objToStr(paths));
+			}else
 
-		if (PyList_CheckExact(paths) || PyTuple_CheckExact(paths)) {
-			size_t len = size_t(Py_SIZE(paths));
-			for (size_t i = 0; i < len; ++i) {
-				PyObject *pyPath = PySequence_Fast_GET_ITEM(paths, i);
-				if (!PyUnicode_CheckExact(pyPath)) {
+			if (PyList_CheckExact(paths) || PyTuple_CheckExact(paths)) {
+				size_t len = size_t(Py_SIZE(paths));
+				for (size_t i = 0; i < len; ++i) {
+					PyObject *pyPath = PySequence_Fast_GET_ITEM(paths, i);
+					if (PyUnicode_CheckExact(pyPath)) {
+						params.paths.push_back(PyUtils::objToStr(pyPath));
+						continue;
+					}
+
 					std::string pos = std::to_string(i);
 					std::string type = paths->ob_type->tp_name;
 					Utils::outMsg(params.fromFunc,
 					              "Element paths[" + pos + "] must be str, got <" + type + ">\n\n" + place);
-					return true;
+					error = true;
+					return;
 				}
-
-				Py_ssize_t size;
-				const char *data = PyUnicode_AsUTF8AndSize(pyPath, &size);
-				std::string path = std::string(data, size_t(size));
-				params.paths.push_back(path);
 			}
-		}
 
-		else {
-			std::string type = paths->ob_type->tp_name;
-			Utils::outMsg(params.fromFunc, "Arg <paths> must be str, list or tuple, got <" + type + ">\n\n" + place);
-			return true;
-		}
+			else {
+				std::string type = paths->ob_type->tp_name;
+				Utils::outMsg(params.fromFunc, "Arg <paths> must be str, list or tuple, got <" + type + ">\n\n" + place);
+				error = true;
+			}
+		});
+		if (error) return true;
 	}
 
 	params.fadeOut = 0;
