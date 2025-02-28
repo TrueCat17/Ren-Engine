@@ -105,10 +105,6 @@ static bool init() {
 		return true;
 	}
 
-	for (size_t i = 0; i < SDL_NUM_SCANCODES; ++i) {
-		Key::setPressed(SDL_Keycode(i), false);
-		Key::setPressed(SDL_Keycode(i | SDLK_SCANCODE_MASK), false);
-	}
 	Mouse::init();
 
 

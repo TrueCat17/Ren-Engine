@@ -14,15 +14,13 @@
 
 
 
-static Uint8 keycodes[SDL_NUM_SCANCODES];
-static Uint8 scancodes[SDL_NUM_SCANCODES];
+static std::map<SDL_Keycode, bool> keycodes;
+
 bool Key::getPressed(const SDL_Keycode key) {
-	Uint8 *array = key & SDLK_SCANCODE_MASK ? scancodes : keycodes;
-	return array[key & ~SDLK_SCANCODE_MASK];
+	return keycodes[key];
 }
 void Key::setPressed(const SDL_Keycode key, bool value) {
-	Uint8 *array = key & SDLK_SCANCODE_MASK ? scancodes : keycodes;
-	array[key & ~SDLK_SCANCODE_MASK] = value;
+	keycodes[key] = value;
 }
 
 
@@ -115,7 +113,7 @@ void Key::checkEvents() {
 	}
 
 	if (key == SDLK_UNKNOWN) {
-		Utils::outMsg("SDL_GetScancodeFromName",
+		Utils::outMsg("SDL_GetKeyFromName",
 					  "KeyName <" + first_param + ">\n" +
 					  SDL_GetError() + '\n' +
 					  node->getPlace());
