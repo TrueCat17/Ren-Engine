@@ -54,6 +54,9 @@ translate russian strings:
 	old 'Screen'
 	new 'Экран'
 	
+	old 'Text'
+	new 'Текст'
+	
 	old 'Sounds'
 	new 'Звуки'
 	
@@ -66,6 +69,9 @@ translate russian strings:
 	
 	old 'Resolution'
 	new 'Разрешение'
+	
+	old 'Show FPS'
+	new 'Показать FPS'
 	
 	old 'Volume'
 	new 'Громкость'
@@ -85,8 +91,11 @@ translate russian strings:
 	old 'Text display speed'
 	new 'Скорость показа текста'
 	
-	old 'Show FPS'
-	new 'Показать FPS'
+	old 'Skip after choices'
+	new 'Пропуск после выбора'
+	
+	old 'Pause before skipping on Ctrl'
+	new 'Пауза перед пропуском на Ctrl'
 	
 	old 'Usual moving - run'
 	new 'Обычное передвижение - бег'

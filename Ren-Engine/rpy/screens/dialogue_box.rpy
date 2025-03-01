@@ -251,6 +251,12 @@ init -1000 python:
 			db.dialogue_text = db.dialogue_full_text
 	
 	
+	def db__get_no_skip_time(keys):
+		if config.pause_before_skip_on_ctrl:
+			return db['no_skip_time_' + keys]
+		return 0
+	
+	
 	
 	build_object('db')
 	
@@ -259,6 +265,7 @@ init -1000 python:
 	db.pause_end = 0
 	
 	db.dialogue = []
+	db.prev_texts = []
 	
 	db.visible = False
 	db.hide_interface = False
@@ -272,8 +279,6 @@ init -1000 python:
 	db.no_skip_time_alt_shift = 0.5
 	db.no_skip_time_ctrl = 0.33
 	
-	db.prev_texts = []
-	
 	
 	db.read = True
 	def db__read_func():
@@ -282,7 +287,9 @@ init -1000 python:
 	
 	
 	def db__disable_skipping_on_menu(screen_name):
-		if screen_name in ('choice_menu', 'pause'):
+		if screen_name == 'pause':
+			db.skip_tab = False
+		elif screen_name == 'choice_menu' and not config.skip_after_choices:
 			db.skip_tab = False
 	signals.add('show_screen', db__disable_skipping_on_menu)
 	
@@ -498,8 +505,8 @@ screen dialogue_box:
 	
 	python:
 		db.skip = False
-		if get_game_time() - max(db.last_shift_time, db.last_alt_time) > db.no_skip_time_alt_shift:
-			db.skip_ctrl = db.ctrl and get_game_time() - db.press_ctrl_time > db.no_skip_time_ctrl
+		if get_game_time() - max(db.last_shift_time, db.last_alt_time) > db.get_no_skip_time('ctrl'):
+			db.skip_ctrl = db.ctrl and get_game_time() - db.press_ctrl_time > db.get_no_skip_time('alt_shift')
 			if db.skip_ctrl or db.skip_tab:
 				db.hide_interface = False
 				db.skip = True

@@ -45,6 +45,16 @@ init -100 python:
 		v = not preferences.get_text_cps_on()
 		config.text_cps = (100000 if v else 0) + (config.text_cps % 100000)
 	
+	def preferences__get_skip_after_choices():
+		return config.skip_after_choices
+	def preferences__toggle_skip_after_choices():
+		config.skip_after_choices = not config.skip_after_choices
+	
+	def preferences__get_pause_before_skip_on_ctrl():
+		return config.pause_before_skip_on_ctrl
+	def preferences__toggle_pause_before_skip_on_ctrl():
+		config.pause_before_skip_on_ctrl = not config.pause_before_skip_on_ctrl
+	
 	
 	def preferences__get_resolution_buttons():
 		btns = []
@@ -84,7 +94,7 @@ init -100 python:
 	
 	preferences.autosave_times = (0.5, 1, 2, 3, 5, 7, 10, 15, 0)
 	
-	preferences.tabs = ['Screen', 'Sounds', 'Other', 'Language']
+	preferences.tabs = ['Screen', 'Sounds', 'Text', 'Other', 'Language']
 	preferences.tab = preferences.tabs[0]
 	
 	
@@ -133,11 +143,17 @@ init -100 python:
 		preferences.get_mixer_bars,
 	]
 	
-	preferences.content['Other'] = [
+	preferences.content['Text'] = [
 		[['bool', '["Show all text at once"!t]', preferences.get_text_cps_on, preferences.toggle_text_cps_on]],
+		None,
 		[['str', '["Text display speed"!t]', 0.9]],
 		[['bar', preferences, 'get_text_cps', 20, 220, Function(preferences.add_text_cps, -20), Function(preferences.add_text_cps, +20)]],
 		None,
+		[['bool', '["Skip after choices"!t]', preferences.get_skip_after_choices, preferences.toggle_skip_after_choices]],
+		[['bool', '["Pause before skipping on Ctrl"!t]', preferences.get_pause_before_skip_on_ctrl, preferences.toggle_pause_before_skip_on_ctrl]],
+	]
+	
+	preferences.content['Other'] = [
 		[['str', '["Autosave"!t]', 0.9]],
 		[
 			['btn', gui.back_button_text, None, preferences.prev_autosave_time, (1, 1)],

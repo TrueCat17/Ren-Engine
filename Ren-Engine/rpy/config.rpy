@@ -46,6 +46,12 @@ init -1100 python:
 	if config.text_cps is None:
 		config.text_cps = 60 # cps - chars per second, for dialogue_box
 	
+	if config.skip_after_choices is None:
+		config.skip_after_choices = False
+	
+	if config.pause_before_skip_on_ctrl is None:
+		config.pause_before_skip_on_ctrl = False
+	
 	if config.fadeout_audio is None:
 		config.fadeout_audio = 0
 	
