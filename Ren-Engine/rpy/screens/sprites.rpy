@@ -53,14 +53,14 @@ init -1000 python:
 		pnames = ('at', 'with', 'behind', 'as')
 		
 		d = dict()
-		while len(params) > 2 and (params[-2] in pnames):
+		while len(params) >= 2 and (params[-2] in pnames):
 			pname, pvalue = params[-2], params[-1]
 			params = params[0:-2]
 			if pname in d:
 				out_msg('sprites.show', 'Param <' + pname + '> specified several times')
 			else:
 				d[pname] = pvalue
-		if len(params) == 0:
+		if len(params) == 0 and not is_scene:
 			out_msg('sprites.show', 'List of params does not contain name of sprite\n' + params_str)
 			return
 		
@@ -68,7 +68,7 @@ init -1000 python:
 			if pname not in d:
 				d[pname] = None
 		if d['as'] is None:
-			d['as'] = params[0]
+			d['as'] = params[0] if params else 'empty_scene'
 		
 		
 		effect = eval(d['with']) if d['with'] else None
@@ -86,17 +86,21 @@ init -1000 python:
 					break
 				index += 1
 		
-		
-		image_name = ' '.join(params)
-		decl_at = get_image(image_name)
+		if params:
+			image_name = ' '.join(params)
+			decl_at = get_image(image_name)
+		else:
+			image_name = 'empty_scene'
+			decl_at = ()
+			params_str = '%s %s' % (image_name, params_str)
 		
 		if d['at'] is not None:
 			try:
 				at = eval(d['at'])
-				at = at.actions if at else []
+				at = at.actions if at else ()
 			except:
 				out_msg('sprites.show', 'Failed on eval param <at>: %s' % (d['at'], ))
-				at = []
+				at = ()
 		else:
 			data = old_sprite and (old_sprite.new_data or old_sprite.old_data)
 			if data:
@@ -104,7 +108,7 @@ init -1000 python:
 				if not at and not show_at:
 					at = center.actions
 			else:
-				at = [] if show_at else center.actions
+				at = () if show_at else center.actions
 		
 		spr = Sprite(decl_at, at, show_at, old_sprite if effect else None)
 		spr.sprite_name = image_name

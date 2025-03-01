@@ -138,7 +138,7 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 			--count;
 
 			std::vector<std::string> args = Algo::getArgs(childParams);
-			while (args.size() > 2 && Algo::in(std::string_view(args[args.size() - 2]), spriteParams)) {
+			while (args.size() >= 2 && Algo::in(std::string_view(args[args.size() - 2]), spriteParams)) {
 				args.erase(args.end() - 2, args.end());
 			}
 			if (args.empty()) continue;
