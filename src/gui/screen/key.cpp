@@ -15,12 +15,21 @@
 
 
 static std::map<SDL_Keycode, bool> keycodes;
+static std::mutex keyMutex;
 
 bool Key::getPressed(const SDL_Keycode key) {
+	std::lock_guard g(keyMutex);
 	return keycodes[key];
 }
 void Key::setPressed(const SDL_Keycode key, bool value) {
+	std::lock_guard g(keyMutex);
 	keycodes[key] = value;
+}
+void Key::resetPressed() {
+	std::lock_guard g(keyMutex);
+	for (auto &it : keycodes) {
+		it.second = false;
+	}
 }
 
 

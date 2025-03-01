@@ -21,6 +21,7 @@ private:
 public:
 	static bool getPressed(const SDL_Keycode key);
 	static void setPressed(const SDL_Keycode key, bool value);
+	static void resetPressed();
 
 	static void setToNotReact(const SDL_Keycode key);
 	static void setFirstDownState(const SDL_Keycode key);

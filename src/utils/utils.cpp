@@ -19,6 +19,8 @@ extern "C" {
 #include "gv.h"
 #include "logger.h"
 
+#include "gui/screen/key.h"
+
 #include "utils/algo.h"
 #include "utils/file_system.h"
 #include "utils/game.h"
@@ -160,11 +162,15 @@ bool Utils::realOutMsg() {
 	data.buttons = buttons;
 	data.colorScheme = nullptr;
 
+	Key::resetPressed();
+
 	int res = 0;
 	if (SDL_ShowMessageBox(&data, &res)) {
 		std::cout << msg.str << '\n';
 		std::cout << SDL_GetError() << '\n';
 	}
+
+	Key::resetPressed();
 
 	std::lock_guard g(msgGuard);
 	if (res == 1) {
