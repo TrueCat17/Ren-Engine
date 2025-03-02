@@ -90,14 +90,14 @@ init python:
 			i = 0
 			while True:
 				i += 1
-				as_name = name + '-' + str(i)
+				tag = name + '-' + str(i)
 				
 				for spr in sprites.list:
-					if spr.as_name == as_name:
+					if spr.tag == tag:
 						break
 				else:
 					break
-			cmd += ['as', as_name]
+			cmd += ['as', tag]
 		
 		sprites.show(cmd, [])
 		panel.cur_sprite = sprites.list[-1]
@@ -109,7 +109,7 @@ init python:
 		
 		cmd = sprite.sprite_name.split(' ')
 		cmd += ['at', 'center']
-		cmd += ['as', sprite.as_name]
+		cmd += ['as', sprite.tag]
 		cmd += ['with', panel.default_effect_code]
 		
 		sprites.show(cmd, [])

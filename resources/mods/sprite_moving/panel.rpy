@@ -56,13 +56,13 @@ init -10 python:
 					return name in params
 				
 				while True:
-					as_name = '__tmp_spr__' + str(random.randint(0, 1000000))
+					tag = '__tmp_spr__' + str(random.randint(0, 1000000))
 					for spr in sprites.list:
-						if spr.as_name == as_name:
+						if spr.tag == tag:
 							break
 					else:
 						break
-				sprites.show(sprite.sprite_name.split(' ') + ['at', 'None', 'as', as_name], [])
+				sprites.show(sprite.sprite_name.split(' ') + ['at', 'None', 'as', tag], [])
 				inited_data = sprites.list[-1].new_data
 				
 				def full_equal(a, b):

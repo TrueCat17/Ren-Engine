@@ -92,7 +92,7 @@ init 1 python:
 		
 		cmd = sprite.sprite_name.split(' ')
 		cmd += ['at', place_name]
-		cmd += ['as', sprite.as_name]
+		cmd += ['as', sprite.tag]
 		cmd += ['with', panel.default_effect_code]
 		
 		sprites.show(cmd, [])
