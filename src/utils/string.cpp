@@ -1,7 +1,5 @@
 #include "string.h"
 
-#include <charconv>
-
 #include "utils/utils.h"
 
 
@@ -39,38 +37,121 @@ std::vector<std::string> String::split(const std::string &str, std::string_view 
 }
 
 
-template<typename T>
-static T convertStrTo(std::string_view str, const char *from, const char *typeName) {
+int String::toInt(std::string_view str) {
 	if (str.empty()) return 0;
 
-	T res;
-	auto [ptr, errorCode] = std::from_chars(str.begin(), str.end(), res);
-	if (ptr == str.end() && errorCode == std::errc()) return res;
+	bool neg = str[0] == '-';
+	if (neg || str[0] == '+') {
+		str = str.substr(1);
+	}
 
-	bool outOfRange = errorCode == std::errc::result_out_of_range;
-	std::string extra = outOfRange ? "out of range" : "invalid argument";
+	int res = 0;
+	for (char c : str) {
+		if (c >= '0' && c <= '9') {
+			res = res * 10 + c - '0';
+			continue;
+		}
 
-	Utils::outMsg(from,
-	              "Failed to convert <" + std::string(str) + "> to " + typeName + " (" + extra + ")");
-	return 0;
+		Utils::outMsg("String::toInt", "String <" + std::string(str) + "> is invalid number");
+		return 0;
+	}
+	return neg ? -res : res;
 }
 
-int String::toInt(std::string_view str) {
-	return convertStrTo<int>(str, "String::toInt", "int");
+
+static double strToDoubleWithError(std::string_view str, bool &error) {
+	error = true;
+
+	if (str.empty()) return 0;
+
+	bool wasSign = false;
+	bool wasNumber = false;
+
+	bool negRes = false;
+	double res = 0;
+
+	bool wasDot = false;
+	int pow = 0;
+
+	bool wasE = false;
+	bool negE = false;
+	int e = 0;
+
+	for (char c : str) {
+		if (!wasE && (c == 'e' || c == 'E')) {
+			wasE = true;
+			wasSign = false;
+			wasNumber = false;
+			continue;
+		}
+
+		if (!wasSign) {
+			wasSign = true;
+
+			if (c == '+') {
+				continue;
+			}
+			if (c == '-') {
+				if (!wasE) {
+					negRes = true;
+				}else {
+					negE = true;
+				}
+				continue;
+			}
+		}
+
+		if (!wasDot) {
+			if (c == '.') {
+				wasDot = true;
+				continue;
+			}
+		}else {
+			if (!wasE) {
+				--pow;
+			}
+		}
+
+		if (c >= '0' && c <= '9') {
+			wasNumber = true;
+			c -= '0';
+
+			if (!wasE) {
+				res = res * 10 + c;
+			}else {
+				e = e * 10 + c;
+			}
+			continue;
+		}
+
+		return 0;
+	}
+	if (!wasNumber) return 0;
+
+	error = false;
+
+	res = negRes ? -res : res;
+	pow = pow + (negE ? -e : e);
+
+	return res * std::pow(10, pow);
 }
+
 double String::toDouble(std::string_view str) {
-	return convertStrTo<double>(str, "String::toDouble", "double");
+	bool error;
+	double res = strToDoubleWithError(str, error);
+
+	if (error) {
+		Utils::outMsg("String::toDouble", "String <" + std::string(str) + "> is invalid number");
+	}
+	return res;
 }
 
 bool String::isNumber(std::string_view str) {
-	if (str.empty()) return false;
-
-	double res;
-	auto [ptr, errorCode] = std::from_chars(str.begin(), str.end(), res);
-
-	if (ptr != str.end()) return false;
-	return errorCode == std::errc() || errorCode == std::errc::result_out_of_range;
+	bool error;
+	strToDoubleWithError(str, error);
+	return !error;
 }
+
 bool String::isSimpleString(std::string_view str) {
 	if (str.size() < 2) return false;
 

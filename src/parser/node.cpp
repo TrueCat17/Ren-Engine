@@ -61,7 +61,7 @@ static void setElem(PyObject *tuple, Py_ssize_t &index, PyObject *obj, const Nod
 	PyTuple_SET_ITEM(line, 2, convertToPy(node->getNumLine()));
 
 	PyTuple_SET_ITEM(tuple, index++, line);
-};
+}
 PyObject* Node::getPyChildren(bool isRoot) const {
 	Py_ssize_t count = Py_ssize_t(children.size());
 	if (!isRoot) {
