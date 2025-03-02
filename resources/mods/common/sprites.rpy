@@ -1,7 +1,5 @@
 init -1000:
 	
-	$ default_decl_at = []
-	
 	image rn happy     = 'images/sprites/rn/happy.png'
 	image rn normal    = 'images/sprites/rn/normal.png'
 	image rn serious   = 'images/sprites/rn/serious.png'
