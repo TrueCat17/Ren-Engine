@@ -58,6 +58,10 @@ git submodule update --init --depth=1
 Архив содержит демку, лаунчер и документацию (в markdown и html), актуальную на 15.04.23.
 
 
+#### Портировано
+
+* [Бесконечное Лето](https://github.com/TrueCat17/es_vn)
+
 
 ## \[en]
 
@@ -103,3 +107,7 @@ At the moment, the engine has switched to Python3.11.
 The old version of the engine, left without updates, is available at
 [this link](https://raw.githubusercontent.com/TrueCat17/RE-Demo-upd-sys/master/zips/Ren-Engine-Python2.7.zip).  
 The archive contains a demo, launcher and documentation (in markdown and html) that is current as of April 15, 2023.
+
+#### Ported
+
+* [Everlasting Summer (only rus lang)](https://github.com/TrueCat17/es_vn)
