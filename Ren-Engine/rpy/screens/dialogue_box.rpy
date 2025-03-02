@@ -476,18 +476,9 @@ screen dialogue_box_nvl:
 
 
 
-screen dialogue_box_key_processing:
+screen dialogue_box_skip_keys:
 	ignore_modal True
-	
-	key 'h' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
-	
-	$ db.to_next = False
-	for key in ('RETURN', 'SPACE'):
-		key key:
-			action db.enter_action
-			first_delay style.key.first_delay if config.long_next_is_skipping else 1e9
-	if db.to_next:
-		$ db.skip_tab = False
+	zorder -3
 	
 	# not skip instantly (option for users with shortcuts on Ctrl+...)
 	if config.pause_before_skip_on_ctrl:
@@ -504,6 +495,37 @@ screen dialogue_box_key_processing:
 		$ db.press_ctrl_time = get_game_time()
 	
 	key 'TAB' action 'db.skip_tab = not db.skip_tab'
+
+
+screen dialogue_box_skip_text:
+	zorder 100
+	
+	if db.skip:
+		text 'Skip Mode':
+			style 'skip_text'
+	
+	python:
+		if not has_screen('dialogue_box'):
+			hide_screen('dialogue_box')
+
+
+screen dialogue_box:
+	zorder -2
+	
+	python:
+		for name in ('dialogue_box_skip_keys', 'dialogue_box_skip_text'):
+			if not has_screen(name):
+				show_screen(name)
+	
+	key 'h' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
+	
+	$ db.to_next = False
+	for key in ('RETURN', 'SPACE'):
+		key key:
+			action db.enter_action
+			first_delay style.key.first_delay if config.long_next_is_skipping else 1e9
+	if db.to_next:
+		$ db.skip_tab = False
 	
 	python:
 		db.skip = False
@@ -518,13 +540,7 @@ screen dialogue_box_key_processing:
 		
 		if db.to_next:
 			db.on_enter()
-
-
-screen dialogue_box:
-	zorder -2
 	
-	if not has_screen('dialogue_box_key_processing'):
-		$ show_screen('dialogue_box_key_processing')
 	
 	if not db.hide_interface:
 		$ db.recalc_props()
@@ -536,10 +552,6 @@ screen dialogue_box:
 				use dialogue_box_nvl
 			else:
 				$ out_msg('dialogue_box', 'Expected db.mode will be "adv" or "nvl", got "%s"' % (db.mode, ))
-		
-		if db.skip:
-			text 'Skip Mode':
-				style 'skip_text'
 		
 		button:
 			ground 'images/bg/black.jpg'
