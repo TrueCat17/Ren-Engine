@@ -16,7 +16,8 @@ private:
 	uint32_t numLine;
 
 public:
-	using Strings = std::initializer_list<std::string_view>;
+	//array, not std::initializer_list, because bug in old gcc with constexpr init-lists
+	using Strings = std::string_view[];
 	static constexpr Strings blockCommandsInImage = { "contains", "block", "parallel" };
 	static constexpr Strings spriteParams = { "at", "with", "behind", "as" };
 
