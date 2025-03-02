@@ -476,10 +476,10 @@ screen dialogue_box_nvl:
 
 
 
-screen dialogue_box:
-	zorder -2
+screen dialogue_box_key_processing:
+	ignore_modal True
 	
-	key 'h' action 'db.hide_interface = not db.hide_interface'
+	key 'h' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
 	
 	$ db.to_next = False
 	for key in ('RETURN', 'SPACE'):
@@ -489,10 +489,12 @@ screen dialogue_box:
 	if db.to_next:
 		$ db.skip_tab = False
 	
-	key 'LEFT SHIFT'  action 'db.last_shift_time = get_game_time()' first_delay 0
-	key 'RIGHT SHIFT' action 'db.last_shift_time = get_game_time()' first_delay 0
-	key 'LEFT ALT'    action 'db.last_alt_time = get_game_time()' first_delay 0
-	key 'RIGHT ALT'   action 'db.last_alt_time = get_game_time()' first_delay 0
+	# not skip instantly (option for users with shortcuts on Ctrl+...)
+	if config.pause_before_skip_on_ctrl:
+		key 'LEFT SHIFT'  action 'db.last_shift_time = get_game_time()' first_delay 0
+		key 'RIGHT SHIFT' action 'db.last_shift_time = get_game_time()' first_delay 0
+		key 'LEFT ALT'    action 'db.last_alt_time = get_game_time()' first_delay 0
+		key 'RIGHT ALT'   action 'db.last_alt_time = get_game_time()' first_delay 0
 	
 	$ db.prev_ctrl = db.ctrl
 	$ db.ctrl = False
@@ -516,6 +518,13 @@ screen dialogue_box:
 		
 		if db.to_next:
 			db.on_enter()
+
+
+screen dialogue_box:
+	zorder -2
+	
+	if not has_screen('dialogue_box_key_processing'):
+		$ show_screen('dialogue_box_key_processing')
 	
 	if not db.hide_interface:
 		$ db.recalc_props()
