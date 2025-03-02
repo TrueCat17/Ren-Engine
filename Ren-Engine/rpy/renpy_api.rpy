@@ -229,7 +229,29 @@ init -9990 python:
 		input.ask_str(renpy.input_save, prompt, default, allow, exclude, length, mask, reset_btn = reset_btn, cancel_btn = False)
 		renpy.call('input_waiting')
 	
+	
+	def renpy__has_image(image_name):
+		return image_was_registered(image_name)
+	
+	def renpy__showing(image_name):
+		tag = sprites.get_tag_of_image_name(image_name)
+		for spr in sprites.list:
+			if spr.tag == tag:
+				return True
+		return False
+	
+	def renpy__scene():
+		sprites.set_scene((), ())
+	
+	def renpy__show(image_name, tag = None, behind = None, at = None, effect = None, is_scene = False):
+		sprites.show_impl(image_name, tag, behind, at, effect, is_scene)
+	
+	def renpy__hide(image_name, effect = None):
+		tag = sprites.get_tag_of_image_name(image_name)
+		sprites.hide_impl(tag, effect)
+	
 	build_object('renpy')
+	
 	
 	renpy.config   = persistent.config
 	renpy.Keymap   = dict

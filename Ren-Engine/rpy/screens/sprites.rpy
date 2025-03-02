@@ -23,6 +23,13 @@ init -1000 python:
 					spr.effect.for_not_hiding()
 	
 	
+	def sprites__get_tag_of_image_name(image_name):
+		i = image_name.find(' ')
+		if i != -1:
+			return image_name[:i]
+		return image_name
+	
+	
 	
 	def sprites__set_scene(params, show_at):
 		if len(params):
@@ -41,9 +48,6 @@ init -1000 python:
 	
 	
 	def sprites__show(params, show_at, is_scene = False):
-		if not has_screen('sprites'):
-			show_screen('sprites')
-		
 		if len(params) == 0:
 			out_msg('sprites.show', 'List of params is empty')
 			return
@@ -55,9 +59,9 @@ init -1000 python:
 		d = dict()
 		while len(params) >= 2 and (params[-2] in pnames):
 			pname, pvalue = params[-2], params[-1]
-			params = params[0:-2]
+			params = params[:-2]
 			if pname in d:
-				out_msg('sprites.show', 'Param <' + pname + '> specified several times')
+				out_msg('sprites.show', 'Param <%s> specified several times' % (pname, ))
 			else:
 				d[pname] = pvalue
 		if len(params) == 0 and not is_scene:
@@ -68,10 +72,47 @@ init -1000 python:
 			if pname not in d:
 				d[pname] = None
 		if d['as'] is None:
-			d['as'] = params[0] if params else 'empty_scene'
+			d['as'] = params[0] if params else '<empty>'
 		
+		def eval_param(d, name):
+			code = d[name]
+			try:
+				if code:
+					return eval(code)
+			except:
+				out_msg('sprites.show', 'Failed on eval param <%s>: %s' % (name, code))
+			return None
 		
-		effect = eval(d['with']) if d['with'] else None
+		if params:
+			image_name = ' '.join(params)
+			decl_at = get_image(image_name)
+		else:
+			image_name = None
+			decl_at = ()
+			params_str = '<empty> ' + params_str
+		
+		at     = eval_param(d, 'at')
+		effect = eval_param(d, 'with')
+		
+		kwargs = dict(decl_at = decl_at, show_at = show_at, call_str = params_str)
+		sprites.show_impl(image_name, d['as'], d['behind'], at, effect, is_scene, **kwargs)
+	
+	
+	def sprites__show_impl(image_name, tag = None, behind = None, at = None, effect = None, is_scene = False, **kwargs):
+		if not has_screen('sprites'):
+			show_screen('sprites')
+		
+		if 'decl_at' in kwargs:
+			decl_at = kwargs.pop('decl_at')
+		else:
+			decl_at = get_image(image_name)
+		show_at = kwargs.pop('show_at', ())
+		call_str = kwargs.pop('call_str', image_name or '<empty>')
+		if kwargs:
+			out_msg('sprites.show_impl', 'Unexpected params: %s' % (list(kwargs.keys()), ))
+		
+		if not tag:
+			tag = sprites.get_tag_of_image_name(image_name)
 		
 		old_sprite = None
 		if is_scene:
@@ -80,53 +121,41 @@ init -1000 python:
 			index = 0
 			while index < len(sprites.list):
 				spr = sprites.list[index]
-				if spr.as_name == d['as']:
+				if spr.tag == tag:
 					old_sprite = spr
 					sprites.list.pop(index)
 					break
 				index += 1
 		
-		if params:
-			image_name = ' '.join(params)
-			decl_at = get_image(image_name)
-		else:
-			image_name = 'empty_scene'
-			decl_at = ()
-			params_str = '%s %s' % (image_name, params_str)
-		
-		if d['at'] is not None:
-			try:
-				at = eval(d['at'])
-				at = at.actions if at else ()
-			except:
-				out_msg('sprites.show', 'Failed on eval param <at>: %s' % (d['at'], ))
-				at = ()
-		else:
+		if at is None:
 			data = old_sprite and (old_sprite.new_data or old_sprite.old_data)
 			if data:
-				at = data.at.actions
-				if not at and not show_at:
-					at = center.actions
+				at = data.at
+				if not at.actions and not show_at:
+					at = center
 			else:
-				at = () if show_at else center.actions
+				at = () if show_at else center
+		
+		if type(at) is SpriteAnimation:
+			at = at.actions
 		
 		spr = Sprite(decl_at, at, show_at, old_sprite if effect else None)
-		spr.sprite_name = image_name
-		spr.as_name = d['as']
-		spr.call_str = params_str
+		spr.sprite_name = image_name or '<empty>'
+		spr.tag = tag
+		spr.call_str = call_str
 		if is_scene or old_sprite is sprites.scene:
 			sprites.scene = spr
 		spr.set_effect(effect)
 		
 		
-		if d['behind'] is not None:
+		if behind is not None:
 			index = 0
 			while index < len(sprites.list):
-				if sprites.list[index].as_name == d['behind']:
+				if sprites.list[index].tag == behind:
 					break
 				index += 1
 			else:
-				out_msg('sprites.show', 'Sprite <%s> not found' % (d['behind'], ))
+				out_msg('sprites.show', 'Sprite <%s> not found' % (behind, ))
 		
 		if sprites.scene in sprites.list:
 			index = max(index, sprites.list.index(sprites.scene) + 1)
@@ -134,26 +163,36 @@ init -1000 python:
 		sprites.list.insert(index, spr)
 		persistent._seen_images[image_name] = True
 	
+	
 	def sprites__hide(params):
 		if len(params) == 0:
 			out_msg('sprites.hide', 'List of params is empty')
 			return
 		
-		name = params[0]
+		tag = params[0]
 		
 		effect = None
 		if len(params) == 3:
 			if params[1] != 'with':
-				out_msg('hide_sprite', '2 param must be <with>, got <%s>' % (params[1], ))
+				out_msg('sprites.hide', '2 param must be <with>, got <%s>' % (params[1], ))
 				return
-			effect = eval(params[2])
+			
+			try:
+				effect = eval(params[2])
+			except:
+				out_msg('sprites.hide', 'Failed on eval param <with>: %s' % (params[2], ))
+		
 		elif len(params) != 1:
-			out_msg('hide_sprite', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <%s>' % (params, ))
+			out_msg('sprites.hide', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <%s>' % (params, ))
 			return
 		
+		sprites.hide_impl(tag, effect)
+	
+	
+	def sprites__hide_impl(tag, effect):
 		for i in range(len(sprites.list)):
 			spr = sprites.list[i]
-			if spr.as_name == name:
+			if spr.tag == tag:
 				if effect is not None:
 					spr.old_data, spr.new_data = spr.new_data, None
 					
@@ -163,7 +202,8 @@ init -1000 python:
 					sprites.list.pop(i)
 				break
 		else:
-			out_msg('sprites.hide', 'Sprite <%s> not found' % (name, ))
+			out_msg('sprites.hide', 'Sprite <%s> not found' % (tag, ))
+	
 	
 	def sprites__get_datas():
 		res = []
@@ -174,7 +214,7 @@ init -1000 python:
 				tmp_image = data.res_image or data.image
 				if not tmp_image or data.real_alpha <= 0: continue
 				
-				tmp = Object()
+				tmp = SimpleObject()
 				tmp.image  =  tmp_image
 				tmp.size   = (data.real_xsize, data.real_ysize)
 				tmp.anchor = (data.real_xanchor, data.real_yanchor)
