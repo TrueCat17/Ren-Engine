@@ -91,7 +91,10 @@ init -1000 python:
 			decl_at = ()
 			params_str = '<empty> ' + params_str
 		
-		at     = eval_param(d, 'at')
+		at = eval_param(d, 'at')
+		if at is None:
+			at = empty_transform
+		
 		effect = eval_param(d, 'with')
 		
 		kwargs = dict(decl_at = decl_at, show_at = show_at, call_str = params_str)

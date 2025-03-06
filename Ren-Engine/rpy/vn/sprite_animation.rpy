@@ -378,6 +378,9 @@ init -9000 python:
 
 
 init -9000:
+	transform empty_transform
+	
+	
 	transform fleft:
 		pos (0.16, 1.0)
 		anchor (0.5, 1.0)
