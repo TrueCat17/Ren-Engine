@@ -506,7 +506,7 @@ screen dialogue_box_skip_text:
 	
 	python:
 		if not has_screen('dialogue_box'):
-			hide_screen('dialogue_box')
+			hide_screen('dialogue_box_skip_text')
 
 
 screen dialogue_box:
