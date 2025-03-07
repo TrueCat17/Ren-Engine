@@ -17,6 +17,7 @@ init -9000 python:
 		
 		
 		def set_effect(self, effect):
+			show_screen('sprites')
 			self.effect = effect.copy(self) if effect else None
 		
 		def remove_effect(self):
