@@ -156,7 +156,7 @@ label start:
 		$ spent_answer = get_game_time() - start_answer
 		
 		show rn serious with dissolve
-		rn "Ты справился за " + str(round(spent_answer)) + " секунд."
+		rn "Ты справился за [round(spent_answer)] секунд."
 		
 		if spent_answer < 5:
 			rn "Ты просто щёлкнул на первый попавшийся ответ и угадал, не так ли?"
