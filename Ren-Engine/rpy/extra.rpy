@@ -141,8 +141,8 @@ init -1000001 python:
 			tag = tag[:i]
 		
 		for op in ops:
-			if op not in 'tiulc':
-				out_msg('interpolate_tag', 'invalid tag operator <' + op + '> in tag <' + tag + '>')
+			if op not in 'tiqulc':
+				out_msg('interpolate_tag', 'invalid tag operator <%s> in tag <%s>' % (op, tag))
 		
 		tag = str(eval(tag, kwargs, {}))
 		
