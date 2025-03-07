@@ -691,8 +691,10 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 				const std::string &childCommand = child->command;
 				std::string &childParams = child->params;
 
-				if (Algo::in(childCommand, childMayHaveEffect) && childParams.find(" with ") == size_t(-1)) {
-					childParams += " with " + node->params;
+				if (Algo::in(childCommand, childMayHaveEffect)) {
+					if (childParams.find(" with ") == size_t(-1)) {
+						childParams += " with " + node->params;
+					}
 					--i;
 				}else {
 					break;
