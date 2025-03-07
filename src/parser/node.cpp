@@ -141,9 +141,9 @@ size_t Node::preloadImages(const Node *parent, size_t start, size_t count) {
 			while (args.size() >= 2 && Algo::in(std::string_view(args[args.size() - 2]), spriteParams)) {
 				args.erase(args.end() - 2, args.end());
 			}
-			if (args.empty()) continue;
 
 			const std::string imageName = String::join(args, " ");
+			if (!Sprite::imageWasRegistered(imageName)) continue;
 
 			const std::vector<std::string> &declAt = Sprite::getChildrenImagesDeclAt(imageName);
 			for (const std::string &path : declAt) {
