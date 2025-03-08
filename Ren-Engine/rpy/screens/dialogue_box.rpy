@@ -379,6 +379,8 @@ screen dialogue_box_buttons(disable_next_btn = False):
 			yanchor gui.dialogue_menu_button_yanchor
 			xsize db._dialogue_menu_button_width
 			ysize db._dialogue_menu_button_height
+	
+	use dialogue_box_skip_keys
 
 
 screen dialogue_box_adv:
@@ -477,9 +479,6 @@ screen dialogue_box_nvl:
 
 
 screen dialogue_box_skip_keys:
-	ignore_modal True
-	zorder -3
-	
 	# not skip instantly (option for users with shortcuts on Ctrl+...)
 	if config.pause_before_skip_on_ctrl:
 		key 'LEFT SHIFT'  action 'db.last_shift_time = get_game_time()' first_delay 0
@@ -512,10 +511,7 @@ screen dialogue_box_skip_text:
 screen dialogue_box:
 	zorder -2
 	
-	python:
-		for name in ('dialogue_box_skip_keys', 'dialogue_box_skip_text'):
-			if not has_screen(name):
-				show_screen(name)
+	$ show_screen('dialogue_box_skip_text')
 	
 	key 'h' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
 	
