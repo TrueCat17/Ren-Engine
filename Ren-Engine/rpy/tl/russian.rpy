@@ -206,5 +206,5 @@ translate russian strings:
 	old 'File <%s> has an invalid hash'
 	new 'Файл <%s> имеет неверный хэш'
 	
-	old 'Updated'
-	new 'Обновлено'
+	old 'Updated\nIt is recommended to restart'
+	new 'Обновлено\nРекомендуется сделать перезапуск'

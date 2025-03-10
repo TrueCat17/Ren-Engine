@@ -559,7 +559,7 @@ init python:
 		
 		persistent.reus_last_cleaning = 0
 		
-		notification.out('Updated')
+		notification.out('Updated\nIt is recommended to restart')
 	
 	
 	def reus__clear_prev():
