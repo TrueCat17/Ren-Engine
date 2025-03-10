@@ -256,7 +256,8 @@ init python:
 			reus.check_next()
 			return
 		
-		files_path = ''
+		files_path = 'files'
+		compress_info = False
 		if '\n' in dont_save_reus.tmp_version:
 			props = dont_save_reus.tmp_version.split('\n')
 			for s in props:
@@ -266,10 +267,15 @@ init python:
 					
 					if prop == 'files_path':
 						files_path = value
+					if prop == 'compress_info':
+						compress_info = value == 'true'
 		info.files_path = make_sure_dir(files_path)
+		info.compress_info = compress_info
 		
-		url = info.link + reus.info_fn
-		dont_save_reus.local_path = get_root_dir() + reus.var_dir + reus.info_fn
+		z_ext = '.z' if compress_info else ''
+		url = info.link + reus.info_fn + z_ext
+		
+		dont_save_reus.local_path = get_root_dir() + reus.var_dir + reus.info_fn + z_ext
 		https.get_file(url, dont_save_reus.local_path, reus.on_info_loaded, reus.on_info_error, clean = True)
 	
 	
@@ -278,7 +284,11 @@ init python:
 		info.new_version = dont_save_reus.tmp_version
 		
 		with open(dont_save_reus.local_path, 'rb') as f:
-			info_content = f.read().decode('utf-8').strip()
+			info_content = f.read()
+			if info.compress_info:
+				import zlib
+				info_content = zlib.decompress(info_content)
+			info_content = info_content.decode('utf-8').strip()
 		
 		data = info.data
 		data.clear()
@@ -361,7 +371,7 @@ init python:
 		dont_save_reus.loaded += prev_file_size
 		
 		path = info.to_load[dont_save_reus.to_load_index]
-		url = info.link + (info.files_path or 'files/') + path
+		url = info.link + info.files_path + path
 		dont_save_reus.to_load_index += 1
 		
 		data = info.data[path]
