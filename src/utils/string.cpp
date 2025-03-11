@@ -242,21 +242,20 @@ void String::replaceAll(std::string &str, std::string_view from, std::string_vie
 
 
 std::string String::join(const std::vector<std::string> &strings, std::string_view separator) {
+	std::string res;
+	if (strings.empty()) return res;
+
 	size_t size = separator.size() * (strings.size() - 1);
 	for (const std::string &s : strings) {
 		size += s.size();
 	}
-
-	std::string res;
 	res.reserve(size);
 
 	for (size_t i = 0; i < strings.size() - 1; ++i) {
 		res += strings[i];
 		res += separator;
 	}
-	if (!strings.empty()) {
-		res += strings.back();
-	}
+	res += strings.back();
 
 	return res;
 }
