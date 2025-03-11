@@ -16,7 +16,7 @@ init python:
 	
 	history.ysize = 0.95
 	
-	slider_v_init('history', history.ysize)
+	slider_v_init('history', history.ysize, value = 1.0)
 	
 	
 	history.showed_time = 0
