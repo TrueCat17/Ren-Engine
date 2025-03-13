@@ -256,23 +256,21 @@ init python:
 			reus.check_next()
 			return
 		
-		files_path = 'files'
-		compress_info = False
-		if '\n' in dont_save_reus.tmp_version:
-			props = dont_save_reus.tmp_version.split('\n')
-			for s in props:
-				if '=' in s:
-					i = s.index('=')
-					prop, value = s[:i].strip(), s[i+1:].strip()
-					
-					if prop == 'files_path':
-						files_path = value
-					if prop == 'compress_info':
-						compress_info = value == 'true'
-		info.files_path = make_sure_dir(files_path)
-		info.compress_info = compress_info
+		params = dict(
+			files_path = 'files',
+			compress_info = 'false',
+		)
+		strs = dont_save_reus.tmp_version.split('\n')
+		for s in strs:
+			i = s.find('=')
+			if i != -1:
+				prop, value = s[:i].strip(), s[i+1:].strip()
+				params[prop] = value
 		
-		z_ext = '.z' if compress_info else ''
+		info.files_path = make_sure_dir(params['files_path'])
+		info.compress_info = params['compress_info'] == 'true'
+		
+		z_ext = '.z' if info.compress_info else ''
 		url = info.link + reus.info_fn + z_ext
 		
 		dont_save_reus.local_path = get_root_dir() + reus.var_dir + reus.info_fn + z_ext
@@ -519,6 +517,7 @@ init python:
 			
 			for f in fs:
 				if f == reus.info_fn: continue
+				if f == reus.info_fn + '.z': continue
 				if f == reus.version_fn: continue
 				if f.startswith('_remove_'): continue
 				
@@ -553,6 +552,26 @@ init python:
 		
 		for path in to_remove_dirs:
 			safe_fs_op('rmdir', path)
+		
+		
+		from stat import S_IEXEC
+		def mark_exec(path):
+			old_mode = os.stat(path).st_mode
+			os.chmod(path, old_mode | S_IEXEC)
+		
+		name = get_from_hard_config('window_title', str)
+		execs = [
+			'%s.exe',
+			'%s.sh',
+			'Ren-Engine/%s.exe',
+			'Ren-Engine/linux-i686',
+			'Ren-Engine/linux-x86_64',
+		]
+		for f in execs:
+			if '%s' in f:
+				f = f % name
+			mark_exec(root + f)
+		
 		
 		info.cur_version = info.new_version
 		info.recalc()
