@@ -554,20 +554,13 @@ init python:
 			safe_fs_op('rmdir', path)
 		
 		
-		from stat import S_IEXEC
 		def mark_exec(path):
-			old_mode = os.stat(path).st_mode
-			os.chmod(path, old_mode | S_IEXEC)
+			if os.path.exists(path):
+				old_mode = os.stat(path).st_mode
+				os.chmod(path, old_mode | 0o111)
 		
 		name = get_from_hard_config('window_title', str)
-		execs = [
-			'%s.exe',
-			'%s.sh',
-			'Ren-Engine/%s.exe',
-			'Ren-Engine/linux-i686',
-			'Ren-Engine/linux-x86_64',
-		]
-		for f in execs:
+		for f in reus.exec_files:
 			if '%s' in f:
 				f = f % name
 			mark_exec(root + f)
@@ -615,6 +608,14 @@ init python:
 	reus.upd_link_fn = 'upd_link.txt'
 	reus.version_fn = 'version.txt'
 	reus.info_fn = 'info.txt'
+	
+	reus.exec_files = [
+		'%s.exe',
+		'%s.sh',
+		'Ren-Engine/%s.exe',
+		'Ren-Engine/linux-i686',
+		'Ren-Engine/linux-x86_64',
+	]
 	
 	dont_save_reus = DontSave()
 	
