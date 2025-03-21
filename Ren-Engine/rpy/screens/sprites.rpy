@@ -35,14 +35,14 @@ init -1000 python:
 		if len(params):
 			old_sprites_hided = sprites.show(params, show_at, True)
 			
-			if sprites.screen.effect or sprites.scene.effect:
+			if sprites.screen.effect or (sprites.scene and sprites.scene.effect):
 				if not old_sprites_hided:
 					for spr in sprites.list:
 						if spr is not sprites.scene:
 							spr.old_data, spr.new_data = spr.new_data, None
 							spr.hiding = True
 			else:
-				sprites.list = [sprites.scene]
+				sprites.list = [sprites.scene] if sprites.scene else []
 		else:
 			sprites.list = []
 			sprites.scene = None
