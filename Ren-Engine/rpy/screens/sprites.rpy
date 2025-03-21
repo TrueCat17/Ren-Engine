@@ -93,6 +93,7 @@ init -1000 python:
 						spr.hiding = True
 				else:
 					sprites.list = []
+				sprites.scene = None
 				return True
 			
 			out_msg('sprites.show', 'List of params does not contain name of sprite\n' + params_str)
