@@ -33,13 +33,14 @@ init -1000 python:
 	
 	def sprites__set_scene(params, show_at):
 		if len(params):
-			sprites.show(params, show_at, True)
+			old_sprites_hided = sprites.show(params, show_at, True)
 			
 			if sprites.screen.effect or sprites.scene.effect:
-				for spr in sprites.list:
-					if spr is not sprites.scene:
-						spr.old_data, spr.new_data = spr.new_data, None
-						spr.hiding = True
+				if not old_sprites_hided:
+					for spr in sprites.list:
+						if spr is not sprites.scene:
+							spr.old_data, spr.new_data = spr.new_data, None
+							spr.hiding = True
 			else:
 				sprites.list = [sprites.scene]
 		else:
@@ -50,7 +51,7 @@ init -1000 python:
 	def sprites__show(params, show_at, is_scene = False):
 		if len(params) == 0:
 			out_msg('sprites.show', 'List of params is empty')
-			return
+			return False
 		
 		params_str = ' '.join(params)
 		
@@ -64,15 +65,12 @@ init -1000 python:
 				out_msg('sprites.show', 'Param <%s> specified several times' % (pname, ))
 			else:
 				d[pname] = pvalue
-		if len(params) == 0 and not is_scene:
-			out_msg('sprites.show', 'List of params does not contain name of sprite\n' + params_str)
-			return
 		
 		for pname in pnames:
 			if pname not in d and pname != 'at':
 				d[pname] = None
-		if d['as'] is None:
-			d['as'] = params[0] if params else '<empty>'
+		if d['as'] is None and params:
+			d['as'] = params[0]
 		
 		def eval_param(d, name):
 			code = d[name]
@@ -83,13 +81,25 @@ init -1000 python:
 				out_msg('sprites.show', 'Failed on eval param <%s>: %s' % (name, code))
 			return None
 		
-		if params:
-			image_name = ' '.join(params)
-			decl_at = get_image(image_name)
-		else:
-			image_name = None
-			decl_at = ()
-			params_str = '<empty> ' + params_str
+		effect = eval_param(d, 'with')
+		
+		if len(params) == 0:
+			if is_scene:
+				if effect is not None:
+					for i, spr in enumerate(sprites.list):
+						spr.old_data, spr.new_data = spr.new_data, None
+						
+						spr.set_effect(effect)
+						spr.hiding = True
+				else:
+					sprites.list = []
+				return True
+			
+			out_msg('sprites.show', 'List of params does not contain name of sprite\n' + params_str)
+			return False
+		
+		image_name = ' '.join(params)
+		decl_at = get_image(image_name)
 		
 		if 'at' in d:
 			at = eval_param(d, 'at')
@@ -98,10 +108,9 @@ init -1000 python:
 		else:
 			at = None
 		
-		effect = eval_param(d, 'with')
-		
 		kwargs = dict(decl_at = decl_at, show_at = show_at, call_str = params_str)
 		sprites.show_impl(image_name, d['as'], d['behind'], at, effect, is_scene, **kwargs)
+		return False
 	
 	
 	def sprites__show_impl(image_name, tag = None, behind = None, at = None, effect = None, is_scene = False, **kwargs):
@@ -112,7 +121,7 @@ init -1000 python:
 		else:
 			decl_at = get_image(image_name)
 		show_at = kwargs.pop('show_at', ())
-		call_str = kwargs.pop('call_str', image_name or '<empty>')
+		call_str = kwargs.pop('call_str', image_name)
 		if kwargs:
 			out_msg('sprites.show_impl', 'Unexpected params: %s' % (list(kwargs.keys()), ))
 		
@@ -147,7 +156,7 @@ init -1000 python:
 			at = at.actions
 		
 		spr = Sprite(decl_at, at, show_at, old_sprite if effect else None)
-		spr.sprite_name = image_name or '<empty>'
+		spr.sprite_name = image_name
 		spr.tag = tag
 		spr.call_str = call_str
 		if is_scene or old_sprite is sprites.scene:
@@ -162,7 +171,7 @@ init -1000 python:
 					break
 				index += 1
 			else:
-				out_msg('sprites.show', 'Sprite <%s> not found' % (behind, ))
+				out_msg('sprites.show_impl', 'Sprite <%s> not found' % (behind, ))
 		
 		if sprites.scene in sprites.list:
 			index = max(index, sprites.list.index(sprites.scene) + 1)
@@ -197,8 +206,7 @@ init -1000 python:
 	
 	
 	def sprites__hide_impl(tag, effect):
-		for i in range(len(sprites.list)):
-			spr = sprites.list[i]
+		for i, spr in enumerate(sprites.list):
 			if spr.tag == tag:
 				if effect is not None:
 					spr.old_data, spr.new_data = spr.new_data, None
@@ -209,7 +217,7 @@ init -1000 python:
 					sprites.list.pop(i)
 				break
 		else:
-			out_msg('sprites.hide', 'Sprite <%s> not found' % (tag, ))
+			out_msg('sprites.hide_impl', 'Sprite <%s> not found' % (tag, ))
 	
 	
 	def sprites__get_datas():
@@ -237,7 +245,7 @@ init -1000 python:
 	
 	sprites.list = []
 	
-	sprites.screen = Sprite([], [], [], None)
+	sprites.screen = Sprite((), (), (), None)
 	sprites.screen.new_data.xsize, sprites.screen.new_data.ysize = 1.0, 1.0
 	sprites.screen.new_data.real_xsize, sprites.screen.new_data.real_ysize = 1.0, 1.0
 	sprites.screen.call_str = 'screen'

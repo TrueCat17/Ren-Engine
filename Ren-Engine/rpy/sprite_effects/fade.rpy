@@ -24,7 +24,7 @@ init -9000 python:
 			if spr is sprites.screen:
 				return sprites.screen.effect
 			
-			spr.data_list = (spr.old_data,) if spr.old_data else ()
+			spr.data_list = (spr.old_data, ) if spr.old_data else ()
 			res = Fade(self.out_time, self.hold_time, self.in_time, self.color, spr)
 			return res
 		
@@ -58,7 +58,7 @@ init -9000 python:
 		
 		def for_not_hiding(self):
 			self.sprite.old_data = None
-			self.sprite.data_list = (self.sprite.new_data,)
+			self.sprite.data_list = (self.sprite.new_data, )
 	
 	
 	fade = Fade(0.5)

@@ -13,7 +13,7 @@ init -9000 python:
 				self.data_list = (self.old_data, self.new_data)
 			else:
 				self.old_data = None
-				self.data_list = (self.new_data,)
+				self.data_list = (self.new_data, )
 		
 		
 		def set_effect(self, effect):
@@ -27,7 +27,7 @@ init -9000 python:
 				
 				self.old_data = None
 			
-			self.data_list = (self.new_data,) if self.new_data else ()
+			self.data_list = (self.new_data, ) if self.new_data else ()
 		
 		def update(self, parent = None):
 			for data in self.data_list:
