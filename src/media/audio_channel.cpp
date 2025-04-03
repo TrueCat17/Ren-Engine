@@ -317,6 +317,8 @@ void Channel::setPos(double sec) {
 	audioPos = buffer;
 	audioLen = 0;
 
+	if (!formatCtx) return;//on error in initCodec
+
 	auto k = formatCtx->streams[audioStream]->time_base;
 	int64_t ts = int64_t(sec / k.num * k.den);
 
