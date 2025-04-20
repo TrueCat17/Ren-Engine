@@ -104,3 +104,41 @@ init -1000001 python:
 		
 		_out_msg(str(msg), err)
 	
+	
+	def get_name_from_file(path):
+		cache = get_name_from_file.__dict__
+		
+		key1 = (path, config.language)
+		if key1 in cache:
+			return cache[key1]
+		
+		key2 = (path, None)
+		if key2 in cache:
+			return cache[key2]
+		
+		key3 = (path, 'path is loaded', '?')
+		if key3 not in cache:
+			cache[key3] = True
+			
+			with open(path, 'rb') as f:
+				content = f.read().decode('utf-8')
+			
+			for s in content.split('\n'):
+				if not s: continue
+				
+				if key2 not in cache:
+					cache[key2] = s.strip()
+				else:
+					i = s.index('=')
+					lang = s[:i].strip()
+					name = s[i+1:].strip()
+					cache[(path, lang)] = name
+			
+			if key1 in cache:
+				return cache[key1]
+			
+			if key2 in cache:
+				return cache[key2]
+		
+		out_msg('get_name_from_file', 'File <%s> is incorrect')
+		return 'NoName'
