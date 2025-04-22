@@ -131,7 +131,7 @@ init -1000001 python:
 				else:
 					i = s.find('=')
 					if i == -1:
-						out_msg('get_name_from_file', 'Line %s in file %s is incorrect' % (s, path))
+						out_msg('get_name_from_file', 'Line <%s> in file <%s> is incorrect' % (s, path))
 						continue
 					
 					lang = s[:i].strip()
