@@ -43,6 +43,7 @@ static long fps = 60;
 static double frameTime = 1.0 / 60;
 
 static int modStartTime = 0;
+static int modIndex = -1;
 
 static const std::string savesPath = "../var/saves";
 
@@ -55,6 +56,9 @@ void Game::startMod(const std::string &dir) {
 }
 int Game::getModStartTime() {
 	return modStartTime;
+}
+int Game::getCurrentModIndex() {
+	return modIndex;
 }
 
 
@@ -250,6 +254,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 	GV::gameTime = 0;
 	GV::beforeFirstFrame = true;
 	GV::inGame = true;
+	modIndex += 1;
 	Scenario::execute(loadPath);
 }
 

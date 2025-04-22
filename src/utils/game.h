@@ -13,6 +13,7 @@ class Game {
 public:
 	static void startMod(const std::string &dir);
 	static int getModStartTime();
+	static int getCurrentModIndex();
 
 	static void load(const std::string &table, const std::string &name);
 	static const std::vector<std::string> loadInfo(const std::string &loadPath);

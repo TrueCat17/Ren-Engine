@@ -114,6 +114,7 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 
 	setFunc("start_mod", Game::startMod);
 	setFunc("get_mod_start_time", Game::getModStartTime);
+	setFunc("get_current_mod_index", Game::getCurrentModIndex);
 	setFunc("_load", Game::load);
 	setFunc("exit_from_game", Game::exitFromGame);
 
