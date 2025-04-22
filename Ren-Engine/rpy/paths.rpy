@@ -129,7 +129,11 @@ init -1000001 python:
 				if key2 not in cache:
 					cache[key2] = s.strip()
 				else:
-					i = s.index('=')
+					i = s.find('=')
+					if i == -1:
+						out_msg('get_name_from_file', 'Line %s in file %s is incorrect' % (s, path))
+						continue
+					
 					lang = s[:i].strip()
 					name = s[i+1:].strip()
 					cache[(path, lang)] = name
