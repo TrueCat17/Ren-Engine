@@ -8,7 +8,10 @@
 
 #include "media/translation.h"
 #include "media/py_utils/convert_to_py.h"
+
 #include "utils/file_system.h"
+#include "utils/string.h"
+#include "utils/utils.h"
 
 
 struct Mod {
@@ -24,31 +27,32 @@ static const std::string modsPath = "mods/";
 void Mods::init() {
 	std::vector<std::string> dirs = FileSystem::getDirectories(modsPath);
 	for (const std::string &dir : dirs) {
-		if (!FileSystem::exists(dir + "/name")) continue;
+		std::string file = dir + "/name";
+		if (!FileSystem::exists(file)) continue;
 
 		Mod mod;
 		mod.dir = dir.substr(modsPath.size());//lost only dirName, without "mods/"
 
-		std::ifstream namesFile(dir + "/name");
-		bool start = true;
-		while (!namesFile.eof()) {
-			std::string tmp;
-			std::getline(namesFile, tmp);
-			if (tmp.empty()) continue;
+		std::ifstream nameFile(file);
+		while (!nameFile.eof()) {
+			std::string line;
+			std::getline(nameFile, line);
+			if (line.empty()) continue;
 
-			if (start) {
-				start = false;
-				tmp.insert(0, "None = ");
+			if (mod.names.find("None") == mod.names.end()) {
+				mod.names["None"] = String::strip(line);
+				continue;
 			}
 
-			size_t separator = tmp.find('=');
-			size_t startLang = tmp.find_first_not_of(' ');
-			size_t endLang   = tmp.find_last_not_of(' ', separator - 1) + 1;
-			size_t startName = tmp.find_first_not_of(' ', separator + 1);
-			size_t endName   = tmp.find_last_not_of(' ') + 1;
+			size_t separator = line.find('=');
+			if (separator == size_t(-1)) {
+				std::string msg = "Line <" + line + "> in file <" + file + "> is incorrect";
+				Utils::outMsg("Mods::init", msg);
+				continue;
+			}
 
-			std::string lang = tmp.substr(startLang, endLang - startLang);
-			std::string name = tmp.substr(startName, endName - startName);
+			std::string lang = String::strip(line.substr(0, separator));
+			std::string name = String::strip(line.substr(separator + 1));
 			mod.names[lang] = name;
 		}
 
