@@ -85,14 +85,14 @@ void Text::updateSize() {
 		}
 	}
 
-	float width = getWidth();
-	float height = getHeight();
+	float width = xsize * float(xsize_is_float ? Stage::width : 1);
+	float height = ysize * float(ysize_is_float ? Stage::height : 1);
 
 	if ((first_param.empty() && prevText.empty()) ||
 	    (globalZoomX <= 0 || globalZoomY <= 0))
 	{
-		setWidth(std::max<float>(width, 0));
-		setHeight(std::max<float>(height, 0));
+		setWidthWithMinMax(std::max<float>(width, 0));
+		setHeightWithMinMax(std::max<float>(height, 0));
 		tf->enable = false;
 		return;
 	}
