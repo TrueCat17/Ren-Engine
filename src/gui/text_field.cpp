@@ -163,8 +163,12 @@ static SurfacePtr getImage(const std::string &path) {
 	return ImageManipulator::getImage(path);
 }
 static Uint32 getColor(std::string_view value) {
+	bool shortForm = false;
 	if (String::startsWith(value, "#")) {
 		value.remove_prefix(1);
+		if (value.size() == 3) {
+			shortForm = true;
+		}
 	}else
 	if (String::startsWith(value, "0x")) {
 		value.remove_prefix(2);
@@ -194,6 +198,9 @@ static Uint32 getColor(std::string_view value) {
 		}
 
 		res = res * 16 + Uint32(n);
+		if (shortForm) {
+			res = res * 16 + Uint32(n);
+		}
 	}
 	if (invalid) {
 		Utils::outMsg("TextField::getColor", "Color <" + std::string(value) + "> is invalid");
