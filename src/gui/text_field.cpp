@@ -566,7 +566,7 @@ void TextField::setText(const std::string &text) {
 	lineRects.swap(tmpLineRects);
 
 	setWidth(float(std::max(maxWidth, maxLineWidth)));
-	setHeight(float(currentHeight));
+	setHeight(float(std::max(maxHeight, currentHeight)));
 
 	//draw with calced sizes
 	styleStack.erase(styleStack.begin() + 1, styleStack.end());

@@ -102,10 +102,13 @@ void Text::updateSize() {
 	bool enableOutline = get_enable_outline(this);
 	Uint8 fontStyle = get_font_style(this);
 
+	int zoomedWidth  = int(width  * globalZoomX);
+	int zoomedHeight = int(height * globalZoomY);
+
 	auto curParams = std::tie(
 	    first_param,
-	    width,
-	    height,
+	    zoomedWidth,
+	    zoomedHeight,
 	    color,
 	    outlineColor,
 	    enableOutline,
@@ -147,19 +150,18 @@ void Text::updateSize() {
 		needUpdate = true;
 	}
 
+	tf->maxWidth  = zoomedWidth;
+	tf->maxHeight = zoomedHeight;
+
 	if (needUpdate) {
 		tf->setText(first_param);
 	}
 
 	if (width <= 0) {
 		setWidthWithMinMax(tf->getWidth() / globalZoomX);
-	}else {
-		tf->setWidth(width);
 	}
 	if (height <= 0) {
 		setHeightWithMinMax(tf->getHeight() / globalZoomY);
-	}else {
-		tf->setHeight(height);
 	}
 
 	float halign = get_halign(this);
