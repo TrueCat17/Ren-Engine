@@ -266,6 +266,14 @@ static void makeStyle(const Node *child) {
 		return;
 	}
 
+	if (name != "default") {
+		if (PyUtils::exec(child->getFileName(), child->getNumLine(), "style." + parent + " is None", true) == "True") {
+			Utils::outMsg("Scenario::execute",
+			              "Style <" + parent + "> does not exist\n" +
+			              child->getPlace());
+		}
+	}
+
 	std::string code;
 	code += "if not style." + name + ":\n";
 	code += "    style." + name + " = Style(style." + parent + ")\n";

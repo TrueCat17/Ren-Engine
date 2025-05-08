@@ -122,10 +122,6 @@ init -1002 python:
 
 
 init -1001:
-	style key:
-		first_delay 0.333
-		delay       0.01
-	
 	style default:
 		pos 0
 		anchor 0
@@ -142,6 +138,10 @@ init -1001:
 		clipping False
 		skip_mouse False
 		corner_sizes 0
+	
+	style key:
+		first_delay 0.333
+		delay       0.01
 	
 	style screen:
 		modal False
