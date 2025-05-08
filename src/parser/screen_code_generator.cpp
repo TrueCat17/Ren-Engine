@@ -79,14 +79,15 @@ static void initConsts(Node *node) {
 	}
 
 	if (command == "use") {
+		bool ok = false;
 		Node *screenNode = Screen::getDeclared(node->params);
 
 		if (screenNode) {
 			if (Algo::in(params, screensInInit)) {
 				Utils::outMsg("ScreenCodeGenerator::initConsts",
 				              "Using screens with recursion: " + String::join(screensInInit, " -> ") + " -> " + params);
-				node->command = "pass";
 			}else {
+				ok = true;
 				initScreen(screenNode);
 				node->isScreenConst = screenNode->isScreenConst;
 				node->countPropsToCalc = screenNode->countPropsToCalc;
@@ -95,9 +96,10 @@ static void initConsts(Node *node) {
 			Utils::outMsg("ScreenCodeGenerator::initConsts",
 			              "Screen with name <" + node->params + "> not found\n" +
 			              node->getPlace());
-			node->command = "pass";
 		}
-		return;
+		if (ok) return;
+
+		node->command = "pass";
 	}
 
 	bool isCycle = command == "for" || command == "while";
