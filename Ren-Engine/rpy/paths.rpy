@@ -146,3 +146,24 @@ init -1000001 python:
 		
 		out_msg('get_name_from_file', 'File <%s> is incorrect')
 		return 'NoName'
+	
+	
+	def get_file_with_ext(file_without_ext):
+		cache = get_file_with_ext.__dict__
+		
+		if file_without_ext in cache:
+			return cache[file_without_ext]
+		
+		directory = os.path.dirname(file_without_ext)
+		filename = os.path.basename(file_without_ext)
+		
+		for f in os.listdir(directory):
+			name, ext = os.path.splitext(f)
+			if name == filename:
+				res = make_sure_dir(directory) + f
+				break
+		else:
+			res = None
+		
+		cache[file_without_ext] = res
+		return res

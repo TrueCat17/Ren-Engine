@@ -1,8 +1,5 @@
 init -1001 python:
 	
-	character_ext = 'png'
-	
-	
 	# directions
 	to_forward = 3
 	to_back = 0
@@ -235,8 +232,8 @@ init -1001 python:
 		
 		def main(self):
 			if self.start_anim_time is not None:
-				return get_location_image(self.animation.path, '', '', character_ext, False)
-			return get_location_image(self.directory, self.rpg_name, self.dress, character_ext, False)
+				return get_location_image(self.animation.path, '', '', False)
+			return get_location_image(self.directory, self.rpg_name, self.dress, False)
 		
 		
 		def get_dress(self):

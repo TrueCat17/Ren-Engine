@@ -1,8 +1,5 @@
 init -1002 python:
 	
-	location_ext = 'png'
-	
-	
 	# params for location effect <fade>
 	# this does not apply if next_location is cur_location
 	
@@ -186,11 +183,11 @@ init -1002 python:
 				location_banned_exits.remove((tmp_loc, tmp_place))
 	
 	
-	def get_location_image(directory, name, name_suffix, ext, is_free, need = True):
+	def get_location_image(directory, name, name_suffix, is_free, need = True):
 		cache = get_location_image.__dict__
 		
 		mode = times['current_name']
-		key = directory, name, name_suffix, ext, is_free, mode
+		key = directory, name, name_suffix, is_free, mode
 		if key in cache:
 			return cache[key]
 		
@@ -198,10 +195,14 @@ init -1002 python:
 		if name_suffix:
 			file_name += '_' + name_suffix
 		
-		path = directory + file_name + '_' + mode + '.' + ext
-		if not os.path.exists(path):
-			path = directory + file_name + '.' + ext
-			if os.path.exists(path):
+		path = get_file_with_ext(directory + file_name + '_' + mode)
+		path_is_exists = path and os.path.exists(path)
+		
+		if not path_is_exists:
+			path = get_file_with_ext(directory + file_name)
+			path_is_exists = path and os.path.exists(path)
+			
+			if path_is_exists:
 				if not is_free:
 					r, g, b = location_time_rgb
 					path = im.recolor(path, r, g, b)
@@ -289,11 +290,11 @@ init -1002 python:
 			}
 		
 		def main(self):
-			return get_location_image(self.directory, 'main', '', location_ext, False)
+			return get_location_image(self.directory, 'main', '', False)
 		def over(self):
-			return get_location_image(self.directory, 'over', '', location_ext, False, False)
+			return get_location_image(self.directory, 'over', '', False, False)
 		def free(self):
-			return get_location_image(self.directory, 'free', '', location_ext, True, False)
+			return get_location_image(self.directory, 'free', '', True, False)
 		
 		def preload(self):
 			for image in self.main(), self.over(), self.free():

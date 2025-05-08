@@ -1,7 +1,5 @@
 init -1001 python:
 	
-	location_object_ext = 'png'
-	
 	std_sit_dist = 50
 	
 	location_objects = dict()
@@ -107,7 +105,7 @@ init -1001 python:
 		obj = animations[anim_name] = SimpleObject()
 		obj.name = anim_name
 			
-		obj.directory    = directory
+		obj.directory    = make_sure_dir(directory)
 		obj.main_image   = main_image
 		obj.free_image   = free_image
 		obj.over_image   = None
@@ -284,19 +282,19 @@ init -1001 python:
 		
 		def main(self):
 			animation = self.animation
-			return get_location_image(animation.directory, animation.main_image, '', location_object_ext, False)
+			return get_location_image(animation.directory, animation.main_image, '', False)
 		def over(self):
 			animation = self.animation
 			if not animation.over_image:
 				return None
-			return get_location_image(animation.directory, animation.over_image, '', location_object_ext, False)
+			return get_location_image(animation.directory, animation.over_image, '', False)
 		
 		def free(self):
 			animation = self.animation
 			free = animation.free_image
 			if free is None:
 				return None
-			res = get_location_image(animation.directory, free, '', location_object_ext, True, False)
+			res = get_location_image(animation.directory, free, '', True, False)
 			if animation.count_frames != 1:
 				res = im.crop(res, self.crop)
 			return res

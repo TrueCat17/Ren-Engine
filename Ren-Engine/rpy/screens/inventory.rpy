@@ -79,7 +79,7 @@ init -101 python:
 		
 		obj = location_objects[obj_name]
 		main_frame = obj['animations'][None]
-		image = main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext
+		image = get_file_with_ext(main_frame['directory'] + main_frame['main_image']) or im.rect('#888')
 		
 		w, h = inventory.get_cell_image_size(image)
 		x, y = (inventory.cell_xsize - w) // 2, (inventory.cell_ysize - h) // 2
@@ -200,7 +200,7 @@ init -101 python:
 			inventory.dnd_right_end(inv, index, obj_name, obj_count)
 	
 	def inventory__dnd_right_start(inv, index, obj_name, obj_count):
-		take_count = int(math.ceil(obj_count / 2.0))
+		take_count = math.ceil(obj_count / 2)
 		if take_count == obj_count:
 			inv[index] = ['', 0]
 		else:
@@ -237,7 +237,7 @@ init -101 python:
 		
 		obj = location_objects[inventory.dnd_obj_name]
 		main_frame = obj['animations'][None]
-		image = main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext
+		image = get_file_with_ext(main_frame['directory'] + main_frame['main_image']) or im.rect('#888')
 		
 		inventory.dnd_image = image
 		inventory.dnd_image_xsize, inventory.dnd_image_ysize = inventory.get_cell_image_size(image)
@@ -378,8 +378,8 @@ screen inventory:
 		inventory.default_xsize = (inventory.cell_xsize + inventory.cell_xspacing) * gui.inventory_xcount - inventory.cell_xspacing
 		inventory.default_xsize += inventory.edge_spacing * 2
 		
-		inventory.ycount1 = math.ceil(1.0 * len(inventory.inv1) / gui.inventory_xcount)
-		inventory.ycount2 = math.ceil(1.0 * len(inventory.inv2) / gui.inventory_xcount) if inventory.inv2 else 0
+		inventory.ycount1 = math.ceil(len(inventory.inv1) / gui.inventory_xcount)
+		inventory.ycount2 = math.ceil(len(inventory.inv2) / gui.inventory_xcount) if inventory.inv2 else 0
 		inventory.full_cell_ysize = inventory.cell_ysize + inventory.cell_text_ypos + inventory.cell_text_size + inventory.cell_yspacing
 		
 		inventory.default_ysize  = inventory.edge_spacing
