@@ -66,10 +66,10 @@ void BtnRect::checkMouseCursor() {
 		btnRect->mouseRightDown = false;
 	}
 
-	for (size_t i = btnRects.size() - 1; i != size_t(-1); --i) {
-		BtnRect *btnRect = btnRects[i];
+	for (BtnRect *btnRect : btnRects) {
+		if (btnRect->needIgnore()) continue;
+
 		Child *owner = btnRect->owner;
-		if (!owner || !owner->enable) continue;
 
 		float x = float(mouseX) - owner->getGlobalX() - owner->calcedXanchor;
 		float y = float(mouseY) - owner->getGlobalY() - owner->calcedYanchor;
@@ -108,11 +108,11 @@ bool BtnRect::checkMouseClick(bool left, bool withKeyboard) {
 	int mouseX = Mouse::getX();
 	int mouseY = Mouse::getY();
 
-	for (size_t i = btnRects.size() - 1; i != size_t(-1); --i) {
-		BtnRect *btnRect = btnRects[i];
-		Child *owner = btnRect->owner;
-		if (!owner || !owner->enable) continue;
+	for (BtnRect *btnRect : btnRects) {
+		if (btnRect->needIgnore()) continue;
 		if (withKeyboard && !btnRect->buttonMode) continue;
+
+		Child *owner = btnRect->owner;
 
 		float x = float(mouseX) - owner->getGlobalX() - owner->calcedXanchor;
 		float y = float(mouseY) - owner->getGlobalY() - owner->calcedYanchor;
@@ -232,8 +232,13 @@ void BtnRect::onRightClick() const {
 	}
 }
 
+
+bool BtnRect::needIgnore() const {
+	return !owner->enable || owner->alpha <= 0 || !owner->isModal() || owner->globalSkipMouse;
+}
+
 void BtnRect::checkEvents() {
-	if (owner->alpha <= 0 || !owner->isModal() || owner->globalSkipMouse) {
+	if (needIgnore()) {
 		mouseOvered = false;
 		mouseLeftDown = false;
 		mouseRightDown = false;

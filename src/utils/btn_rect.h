@@ -28,6 +28,7 @@ public:
 	void onLeftClick() const;
 	void onRightClick() const;
 
+	bool needIgnore() const;
 	void checkEvents();
 };
 

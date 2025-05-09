@@ -1,6 +1,8 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include <float.h>
+
 #include "container.h"
 
 class Screen: public Container {
@@ -35,7 +37,7 @@ public:
 	static void logScreenCode(std::string name);
 
 
-	double zorder = 0;
+	float zorder = FLT_MAX;//set new (not inited) screen on top with sorting by zorder
 	bool modal = false;
 	bool ignore_modal = false;
 	bool save = true;
