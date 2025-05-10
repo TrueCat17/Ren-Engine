@@ -37,6 +37,9 @@ private:
 	float hAlign = 0;
 	float vAlign = 0;
 
+	int prevMaxWidth = -1;
+	int prevMaxHeight = -1;
+
 	TextStyle prevMainStyle;
 	std::vector<std::string> lines;
 	std::vector<SDL_Rect> lineRects;

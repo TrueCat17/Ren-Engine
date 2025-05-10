@@ -150,9 +150,6 @@ void Text::updateSize() {
 		needUpdate = true;
 	}
 
-	tf->maxWidth  = zoomedWidth;
-	tf->maxHeight = zoomedHeight;
-
 	if (needUpdate) {
 		tf->setText(first_param);
 	}

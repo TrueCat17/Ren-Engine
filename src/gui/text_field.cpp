@@ -491,8 +491,8 @@ void TextField::setText(const std::string &text) {
 	updateStyle(mainStyle);
 
 	std::vector<std::string> tmpLines = String::split(text, "\n");
-	int maxLineWidth = 0;
-	int currentHeight = 0;
+	int curTextWidth = 0;
+	int curTextHeight = 0;
 
 	//calc sizes & apply wordwrap
 	std::vector<SDL_Rect> tmpLineRects;
@@ -507,7 +507,9 @@ void TextField::setText(const std::string &text) {
 			if (firstNotSpace != size_t(-1) && wrapIndex <= firstNotSpace) {
 				line.erase(0, firstNotSpace);
 				wrapIndex = line.empty() ? 0 : 1;
-				while (!String::isFirstByte(line[wrapIndex])) ++wrapIndex;
+				while (!String::isFirstByte(line[wrapIndex])) {
+					++wrapIndex;
+				}
 			}
 		}
 		if (wrapIndex != line.size()) {
@@ -531,7 +533,7 @@ void TextField::setText(const std::string &text) {
 			continue;
 		}
 
-		SDL_Rect lineRect = { 0, currentHeight, 0, 0};
+		SDL_Rect lineRect = { 0, curTextHeight, 0, 0};
 		int lineWidth = 0;
 		int lineHeight = TTF_FontHeight(styleStack.back().font);
 
@@ -545,28 +547,34 @@ void TextField::setText(const std::string &text) {
 		}
 
 		lineWidth = std::min(lineWidth, Renderer::info.max_texture_width);
-		maxLineWidth = std::max(maxLineWidth, lineWidth);
+		curTextWidth = std::max(curTextWidth, lineWidth);
 
 		lineRect.w = lineWidth;
 		lineRect.h = lineHeight;
 		tmpLineRects.push_back(lineRect);
 
-		currentHeight += lineHeight;
-		if (maxHeight > 0 && currentHeight >= maxHeight) {
-			tmpLineRects.back().h -= currentHeight - maxHeight;
-			currentHeight = maxHeight;
+		curTextHeight += lineHeight;
+		if (maxHeight > 0 && curTextHeight >= maxHeight) {
+			tmpLineRects.back().h -= curTextHeight - maxHeight;
+			curTextHeight = maxHeight;
 			tmpLines.erase(tmpLines.begin() + long(numLine + 1), tmpLines.end());
 			break;
 		}
 	}
 
-	if (prevMainStyle == mainStyle && tmpLines == lines && tmpLineRects == lineRects) return;
+	if (
+	    prevMainStyle == mainStyle && tmpLines == lines && tmpLineRects == lineRects &&
+	    prevMaxWidth == maxWidth && prevMaxHeight == maxHeight
+	) return;
+
 	prevMainStyle = mainStyle;
 	lines.swap(tmpLines);
 	lineRects.swap(tmpLineRects);
+	prevMaxWidth = maxWidth;
+	prevMaxHeight = maxHeight;
 
-	setWidth(float(std::max(maxWidth, maxLineWidth)));
-	setHeight(float(std::max(maxHeight, currentHeight)));
+	setWidth(float(std::max(maxWidth, curTextWidth)));
+	setHeight(float(std::max(maxHeight, curTextHeight)));
 
 	//draw with calced sizes
 	styleStack.erase(styleStack.begin() + 1, styleStack.end());
@@ -603,11 +611,6 @@ void TextField::setAlign(float hAlign, float vAlign) {
 	this->hAlign = hAlign;
 	this->vAlign = vAlign;
 
-	int maxWidth = this->maxWidth;
-	for (const SDL_Rect &lineRect : lineRects) {
-		maxWidth = std::max(maxWidth, lineRect.w);
-	}
-
 	int height = 0;
 	for (const SDL_Rect &lineRect : lineRects) {
 		height += lineRect.h;
@@ -619,7 +622,7 @@ void TextField::setAlign(float hAlign, float vAlign) {
 
 	rects = lineRects;
 	for (SDL_Rect &rect : rects) {
-		float x = float(maxWidth - rect.w) * hAlign;
+		float x = float(getWidth() - float(rect.w)) * hAlign;
 		float y = float(rect.y) + indentY;
 
 		rect.x = int(x * cosA - y * sinA);
