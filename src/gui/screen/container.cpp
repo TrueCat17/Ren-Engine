@@ -24,13 +24,13 @@ Container::Container(Node *node, Container *screenParent, Screen *screen):
 {}
 
 
-void Container::addChildAt(DisplayObject *child, size_t index) {
+void Container::addChildAt(DisplayObject *child, uint32_t index) {
 	child->removeFromParent();
 
 	Group *parent = screenParent;
 	auto &pChildren = parent->children;
 
-	index = std::min(index, pChildren.size());
+	index = std::min(index, uint32_t(pChildren.size()));
 	pChildren.insert(pChildren.begin() + long(index), child);
 
 	child->index = index;
@@ -258,9 +258,9 @@ void Container::addChildrenFromNode() {
 
 		child->setInBox(screenParent->hasVBox, screenParent->hasHBox);
 
-		size_t index;
+		uint32_t index;
 		if (screenParent == this) {
-			index = children.size();
+			index = uint32_t(children.size());
 		}else {
 			Child *prev = this;
 			while (prev->isFakeContainer() &&

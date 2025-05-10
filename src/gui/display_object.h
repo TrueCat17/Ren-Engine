@@ -63,10 +63,10 @@ public:
 	float corner_sizes_right = 0;
 	float corner_sizes_bottom = 0;
 
-	SurfacePtr surface = nullptr;
-
+	uint32_t index = uint32_t(-1);
 	Group *parent = nullptr;
-	size_t index = size_t(-1);
+
+	SurfacePtr surface = nullptr;
 
 
 	DisplayObject();

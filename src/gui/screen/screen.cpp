@@ -316,7 +316,7 @@ void Screen::updateScreens() {
 	};
 	std::stable_sort(Stage::screens->children.begin(), Stage::screens->children.end(), zOrderCmp);
 
-	size_t index = 0;
+	uint32_t index = 0;
 	for (DisplayObject *screen : Stage::screens->children) {
 		screen->index = index++;
 	}

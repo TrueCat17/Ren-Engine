@@ -22,7 +22,7 @@ public:
 	Container(Node* node, Container *screenParent, Screen *screen);
 	void addChildrenFromNode();
 
-	virtual void addChildAt(DisplayObject *child, size_t index);
+	virtual void addChildAt(DisplayObject *child, uint32_t index);
 
 	virtual void updateProps();
 	virtual void updateZoom();

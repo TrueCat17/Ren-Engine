@@ -14,7 +14,7 @@ static std::vector<BtnRect*> btnRects;
 
 static bool objInTop(DisplayObject *obj, int mouseX, int mouseY) {
 	while (obj->parent && obj->parent->enable) {
-		for (size_t i = obj->index + 1; i < obj->parent->children.size(); ++i) {
+		for (uint32_t i = uint32_t(obj->index) + 1; i < obj->parent->children.size(); ++i) {
 			DisplayObject *child = obj->parent->children[i];
 			if (!child->enable) continue;
 

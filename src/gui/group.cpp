@@ -11,10 +11,10 @@ void Group::updateGlobal() {
 	}
 }
 
-void Group::addChildAt(DisplayObject *child, size_t index) {
+void Group::addChildAt(DisplayObject *child, uint32_t index) {
 	child->removeFromParent();
 
-	index = std::min(index, children.size());
+	index = std::min(index, uint32_t(children.size()));
 	children.insert(children.begin() + long(index), child);
 
 	child->index = index;

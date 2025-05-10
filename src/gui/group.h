@@ -13,7 +13,7 @@ public:
 	void removeChild(DisplayObject *child);
 	void clearChildren();
 
-	virtual void addChildAt(DisplayObject *child, size_t index);
+	virtual void addChildAt(DisplayObject *child, uint32_t index);
 
 	virtual void updateGlobal();
 
