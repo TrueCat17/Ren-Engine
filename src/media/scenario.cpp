@@ -443,6 +443,7 @@ void Scenario::execute(const std::string &loadPath) {
 				if (initNum == initBlocks.size()) {
 					Translation::enable();
 					PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "_choose_lang()");
+					PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "signals.send('inited')");
 
 					restoreScreens(loadPath);
 					Logger::logEvent("Mod Initing (" + std::to_string(initBlocks.size()) + " blocks)",
