@@ -157,10 +157,9 @@ init -1000 python:
 		if type(at) is SpriteAnimation:
 			at = at.actions
 		
-		spr = Sprite(decl_at, at, show_at, old_sprite if effect else None)
+		spr = Sprite(call_str, decl_at, at, show_at, old_sprite if effect else None)
 		spr.sprite_name = image_name
 		spr.tag = tag
-		spr.call_str = call_str
 		if is_scene or old_sprite is sprites.scene:
 			sprites.scene = spr
 		spr.set_effect(effect)
@@ -247,10 +246,9 @@ init -1000 python:
 	
 	sprites.list = []
 	
-	sprites.screen = Sprite((), (), (), None)
+	sprites.screen = Sprite('screen', (), (), (), None)
 	sprites.screen.new_data.xsize, sprites.screen.new_data.ysize = 1.0, 1.0
 	sprites.screen.new_data.real_xsize, sprites.screen.new_data.real_ysize = 1.0, 1.0
-	sprites.screen.call_str = 'screen'
 	
 	sprites.scene = None
 

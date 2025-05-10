@@ -44,9 +44,9 @@ init -9000 python:
 		return props
 	
 	
-	class SpriteAnimation(Object):
+	class SpriteAnimation(SimpleObject):
 		def __init__(self, actions, data = None):
-			Object.__init__(self)
+			SimpleObject.__init__(self)
 			
 			self.ended = False
 			self.repeated = {}
@@ -240,8 +240,7 @@ init -9000 python:
 					if command == 'contains':
 						if self.last_command != command:
 							self.data.contains = []
-						spr = Sprite([], [], action[1:], None)
-						spr.call_str = extra_param
+						spr = Sprite(extra_param, (), (), action[1:], None)
 						self.data.contains.append(spr)
 					elif command == 'parallel':
 						if self.last_command != command:

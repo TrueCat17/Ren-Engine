@@ -1,8 +1,8 @@
 init -9000 python:
 	
-	class SpriteAnimationData(Object):
+	class SpriteAnimationData(SimpleObject):
 		def __init__(self, sprite, decl_at, at, show_at):
-			Object.__init__(self)
+			SimpleObject.__init__(self)
 			
 			self.state_num = 0
 			self.except_state_props = set()
@@ -17,6 +17,7 @@ init -9000 python:
 			
 			self.contains = []
 			self.image = None
+			self.res_image = None
 			
 			self.sprite  = sprite
 			

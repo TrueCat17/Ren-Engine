@@ -1,10 +1,15 @@
 init -9000 python:
 	
-	class Sprite(Object):
-		def __init__(self, decl_at, at, show_at, old_sprite = None):
-			Object.__init__(self)
+	class Sprite(SimpleObject):
+		def __init__(self, call_str, decl_at, at, show_at, old_sprite = None):
+			SimpleObject.__init__(self)
 			
+			self.call_str = call_str
 			self.hiding = False
+			
+			self.new_data = None
+			self.old_data = None
+			self.effect = None
 			
 			self.new_data = SpriteAnimationData(self, decl_at, at, show_at)
 			
@@ -17,7 +22,8 @@ init -9000 python:
 		
 		
 		def set_effect(self, effect):
-			show_screen('sprites')
+			if not has_screen('sprites'):
+				show_screen('sprites')
 			self.effect = effect.copy(self) if effect else None
 		
 		def remove_effect(self):
