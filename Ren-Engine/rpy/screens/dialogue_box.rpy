@@ -511,7 +511,9 @@ screen dialogue_box_skip_text:
 screen dialogue_box:
 	zorder -2
 	
-	$ show_screen('dialogue_box_skip_text')
+	python:
+		if not has_screen('dialogue_box_skip_text'):
+			show_screen('dialogue_box_skip_text')
 	
 	key 'h' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
 	

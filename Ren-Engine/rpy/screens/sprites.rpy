@@ -115,7 +115,8 @@ init -1000 python:
 	
 	
 	def sprites__show_impl(image_name, tag = None, behind = None, at = None, effect = None, is_scene = False, **kwargs):
-		show_screen('sprites')
+		if not has_screen('sprites'):
+			show_screen('sprites')
 		
 		if 'decl_at' in kwargs:
 			decl_at = kwargs.pop('decl_at')
