@@ -4,7 +4,7 @@ init python:
 		if ctrl:
 			if s == 'd':
 				lines = text.split('\n')
-				lines = lines[0:y] + lines[y+1:]
+				lines = lines[:y] + lines[y+1:]
 				y = min(y, len(lines) - 1)
 				x = len(lines[y]) if lines else 0
 				text = '\n'.join(lines)
@@ -70,4 +70,3 @@ init python:
 	text_nav.key_tag = chr(255)
 	
 	text_nav.spec_symbols = text_nav.keys[text_nav.keys.index('-'):] + text_nav.keys_shift[text_nav.keys_shift.index('!'):] + [text_nav.key_tag]
-	

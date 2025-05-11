@@ -15,33 +15,34 @@ init -10000 python:
 	
 	
 	def slots__check_update():
-		if not slots.last_update:
-			slots.last_update = get_game_time()
-		dtime = get_game_time() - slots.last_update
-		if dtime > 0.5:
+		if get_game_time() - slots.last_update > 0.5:
 			slots.update()
-	def slots__update():
-		slots.last_update = get_game_time()
-		
+	
+	def slots__update_sizes():
 		sw, sh = get_stage_size()
 		k = get_from_hard_config('window_w_div_h', float)
 		
 		if gui.slot_width is None and gui.slot_height is None:
-			xsize = int(sw / (gui.file_slot_cols + 2))
-			ysize = int(sh / (gui.file_slot_rows + 2))
+			xsize = sw / (gui.file_slot_cols + 2)
+			ysize = sh / (gui.file_slot_rows + 2)
 			
 			if xsize < ysize * k:
-				ysize = int(xsize / k)
+				ysize = xsize / k
 			else:
-				xsize = int(ysize * k)
+				xsize = ysize * k
 		else:
 			if gui.slot_width is None:
 				ysize = gui.get_int('slot_height')
-				xsize = int(ysize * k)
+				xsize = ysize * k
 			else:
 				xsize = gui.get_int('slot_width')
-				ysize = int(xsize / k)
-		slots.xsize, slots.ysize = xsize, ysize
+				ysize = xsize / k
+		slots.xsize, slots.ysize = int(xsize), int(ysize)
+	
+	def slots__update():
+		slots.last_update = get_game_time()
+		
+		slots.update_sizes()
 		
 		exists = dont_save.slots_exists = {}
 		cache = dont_save.slots_cache = {}
@@ -68,11 +69,15 @@ init -10000 python:
 					screenshot = None
 				cache[(page, slot, 'screenshot')] = screenshot
 	
-	def slots__update_on_show(name):
-		if name in ('save', 'load'):
+	def slots__update_on_show(screen_name):
+		if screen_name in ('save', 'load'):
 			slots.update()
 	signals.add('show_screen', slots__update_on_show)
-	signals.add('resized_stage', slots__update)
+	
+	def slots__update_size_on_resized_stage():
+		if has_screen('load') or has_screen('save'):
+			slots.update_sizes()
+	signals.add('resized_stage', slots__update_size_on_resized_stage)
 	
 	
 	def slots__get_page():
@@ -114,19 +119,29 @@ init -10000 python:
 		page = page or persistent.slot_page
 		slot = slot or persistent.slot_selected
 		
+		xsize, ysize = slots.xsize, slots.ysize
+		
 		selected = persistent.slot_selected == slot
 		over = gui.bg('slot_selected' if selected else 'slot_hover')
-		over = im.scale_without_borders(over, slots.xsize, slots.ysize, gui.slot_corner_sizes, need_scale = True)
+		over = im.scale_without_borders(over, xsize, ysize, gui.slot_corner_sizes, need_scale = True)
 		
 		screenshot = slots.screenshot(slot, page)
 		if not screenshot:
 			return over
 		
-		screenshot = im.scale(screenshot, slots.xsize, slots.ysize)
-		if gui.slot_image_processing:
-			screenshot = gui.slot_image_processing(screenshot)
+		slot_image_processing = gui.slot_image_processing
 		
-		return im.composite((slots.xsize, slots.ysize), (0, 0), screenshot, (0, 0), over)
+		cache = slots__image.__dict__
+		key = screenshot, over, xsize, ysize, slot_image_processing
+		if key in cache:
+			return cache[key]
+		
+		screenshot = im.scale(screenshot, xsize, ysize)
+		if slot_image_processing:
+			screenshot = slot_image_processing(screenshot)
+		
+		cache[key] = im.composite((xsize, ysize), (0, 0), screenshot, (0, 0), over)
+		return cache[key]
 	
 	
 	
@@ -144,14 +159,14 @@ init -10000 python:
 		if time.time() - screenshot_mtime < 1:
 			return
 		
-		if page in ('auto', 'quick'):
+		if page in ('auto', 'quick') and not has_screen('save'):
 			slots.sort_by_time(page)
 		
 		global need_save, save_page, save_slot, screenshot_width, screenshot_height
 		need_save = True
 		save_page, save_slot = page, slot
 		screenshot_width = config.thumbnail_width
-		screenshot_height = int(screenshot_width / get_from_hard_config("window_w_div_h", float))
+		screenshot_height = int(screenshot_width / get_from_hard_config('window_w_div_h', float))
 	
 	def slots__delete(slot = None, page = None):
 		page = page or persistent.slot_page
@@ -207,7 +222,7 @@ init -10000 python:
 	
 	
 	def slots__get(name):
-		slot = Object()
+		slot = SimpleObject()
 		
 		slot.xsize = slots.xsize
 		slot.ysize = slots.ysize
@@ -228,7 +243,5 @@ init -900 python:
 	slots.slots = [str(i + 1) for i in range(gui.file_slot_cols * gui.file_slot_rows)]
 	slots.update()
 	
-	if not persistent.slot_page:
-		persistent.slot_page = '1'
-	if not persistent.slot_selected:
-		persistent.slot_selected = '1'
+	persistent.setdefault('slot_page', '1')
+	persistent.setdefault('slot_selected', '1')

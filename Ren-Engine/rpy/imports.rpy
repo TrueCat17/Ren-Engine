@@ -5,18 +5,6 @@ init -1000001 python:
 	os.getcwd = _get_cwd
 	
 	def win32_start_file(path, vars = None):
-		if path.startswith('/cygdrive/'):
-			path = path[len('/cygdrive/'):]
-			if not path:
-				return False
-			if len(path) == 1: # just disk letter
-				path += '/'
-			
-			if path[1] != '/':
-				return False
-			
-			path = path[0] + ':' + path[1:]
-		
 		return _start_file_win32(path, vars or [])
 	
 	def win32_is_abs_path(path):
@@ -68,7 +56,7 @@ init -1000001 python:
 			import importlib
 			hashlib = importlib.import_module(fullname)
 			
-			# hashlib.md5 = hashlib.new("md5")
+			# hashlib.md5 = hashlib.new('md5')
 			def make_func(algo):
 				def tmp(*args, **kwargs):
 					return hashlib.new(algo, *args, **kwargs)

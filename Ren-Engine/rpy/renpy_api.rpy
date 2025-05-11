@@ -20,6 +20,7 @@ init -9990 python:
 	
 	def renpy__music__get_audio_len(path):
 		return _get_audio_len(path)
+	
 	def renpy__music__get_mixer_volume(mixer):
 		return config.get(mixer + '_volume', None)
 	def renpy__music__set_mixer_volume(vol, mixer, depth = 0):
@@ -91,7 +92,9 @@ init -9990 python:
 	
 	
 	def renpy__easy__color(c):
-		if type(c) is int:
+		t = type(c)
+		
+		if t is int:
 			if c >= 0x01000000:
 				r =  c >> 24
 				g = (c >> 16) & 0xFF
@@ -105,9 +108,9 @@ init -9990 python:
 			else:
 				r = g = b = 0
 				a = 255
-				out_msg('renpy.easy.color', 'Expected non-negative int (got: ' + str(c) + ')')
+				out_msg('renpy.easy.color', 'Expected non-negative int, got: %s' % c)
 		
-		elif type(c) in (tuple, list):
+		elif t in (tuple, list):
 			if len(c) == 4:
 				r, g, b, a = c
 			else:
@@ -116,9 +119,9 @@ init -9990 python:
 					r, g, b = c
 				else:
 					r = g = b = 0
-					out_msg('renpy.easy.color', 'Unexpected size of list (expected: 3 or 4, got: ' + str(len(c)) + ', c = ' + str(c) + ')')
+					out_msg('renpy.easy.color', 'Expected %s with size 3 or 4, got: %s' % (t, c))
 		
-		elif isinstance(c, str):
+		elif t is str:
 			if c[0] == '#':
 				c = c[1:]
 			elif c[0:2] == '0x':
@@ -147,11 +150,11 @@ init -9990 python:
 			else:
 				r = g = b = 0
 				a = 255
-				out_msg('renpy.easy.color', 'Unexpected size of str (expected: 3, 4, 6 or 8, got: ' + str(len(c)) + ', c = "' + c + '")')
+				out_msg('renpy.easy.color', 'Expected str with size 3, 4, 6 or 8, got: "%s"' % c)
 		else:
 			r = g = b = 0
 			a = 255
-			out_msg('renpy.easy.color', 'Unexpected argument type (expected: list, tuple or str, got: ' + str(type(c)) + ')')
+			out_msg('renpy.easy.color', 'Expected int, list, tuple or str, got: %s' % t)
 		
 		return r, g, b, a
 	
@@ -161,19 +164,19 @@ init -9990 python:
 		if who is None:
 			who = narrator
 		
-		if isinstance(who, str):
+		if type(who) is str:
 			g = globals()
 			if who in g:
 				who = g[who]
 			else:
-				out_msg('renpy.say', 'Character <' + who + '> not found')
+				out_msg('renpy.say', 'Character <%s> not found' % who)
 				tmp_character.name = who
 				who = tmp_character
 		
 		if callable(who):
 			who(what)
 		else:
-			out_msg('renpy.say', str(who) + ' is not callable')
+			out_msg('renpy.say', '%s is not callable' % (who, ))
 			narrator(what)
 	
 	
@@ -184,13 +187,13 @@ init -9990 python:
 			file_name, num_line = get_file_and_line(1)
 			_jump_next(label, False, file_name, num_line)
 		else:
-			out_msg('renpy.jump', 'Label <' + str(label) + '> not found')
+			out_msg('renpy.jump', 'Label <%s> not found' % (label, ))
 	def renpy__call(label):
 		if renpy.has_label(label):
 			file_name, num_line = get_file_and_line(1)
 			_jump_next(label, True, file_name, num_line)
 		else:
-			out_msg('renpy.call', 'Label <' + str(label) + '> not found')
+			out_msg('renpy.call', 'Label <%s> not found' % (label, ))
 	
 	
 	def renpy__call_screen(screen_name, ret_name, **kwargs):

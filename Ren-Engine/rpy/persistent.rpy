@@ -71,8 +71,7 @@ init -100002 python:
 		
 		
 		if visited is None:
-			visited = set()
-			visited.add(id(obj))
+			visited = { id(obj) }
 		if t in collection_types:
 			for child in (obj.values() if t is dict else obj):
 				child_id = id(child)
@@ -125,36 +124,33 @@ init -10002 python:
 		try:
 			if (not os.path.exists(path)) or os.path.getsize(path) == 0:
 				res = dict()
-				out_msg('pickling.load_object', _('File <%s> is not exists or empty') % path)
+				out_msg('pickling.load_object', 'File <%s> does not exist or empty' % path)
 			else:
-				tmp_file = open(path, 'rb')
-				res = pickle.load(tmp_file)
-				tmp_file.close()
+				with open(path, 'rb') as f:
+					res = pickle.load(f)
 			return res
 		except:
-			out_msg('pickling.load_object', _('Error on loading object from file <%s>') % path)
+			out_msg('pickling.load_object', 'Error on loading object from file <%s>' % (path, ))
 			raise
 	
 	def pickling__save_object(path, obj):
 		try:
-			dirname = os.path.dirname(path)
-			if dirname and not os.path.isdir(dirname):
-				os.mkdir(dirname)
+			os.makedirs(os.path.dirname(path), exist_ok = True)
 			
-			tmp_file = open(path, 'wb')
-			pickle.dump(obj, tmp_file, protocol=pickle.HIGHEST_PROTOCOL)
-			tmp_file.close()
+			with open(path, 'wb') as f:
+				pickle.dump(obj, f, protocol = pickle.HIGHEST_PROTOCOL)
 			return True
 		except:
-			paths_list = pickling.get_paths_to_unpicklable(obj)
-			paths = ''
-			for i in paths_list:
-				paths += '  ' + i + '\n'
-			if paths.endswith('\n'):
-				paths = paths[:-1]
-			
-			out_msg('pickling.save_object', _('Error on saving objects to file <%s>:\n%s') % (path, paths))
-			return False
+			pass
+		
+		paths_list = pickling.get_paths_to_unpicklable(obj)
+		paths = ''
+		for i in paths_list:
+			paths += '  ' + i + '\n'
+		paths = paths.rstrip('\n')
+		
+		out_msg('pickling.save_object', 'Error on saving objects to file <%s>:\n%s' % (path, paths))
+		return False
 	
 	def pickling__get_paths_to_unpicklable_helper(obj, visit_func, visited):
 		if obj is globals(): # error
@@ -199,8 +195,7 @@ init -10002 python:
 		return res
 	
 	def pickling__get_paths_to_unpicklable(obj, path = ''):
-		visited = set()
-		visited.add(id(obj))
+		visited = { id(obj) }
 		
 		visit_func = pickling.get_paths_to_unpicklable_helper
 		paths_dict = visit_func(obj, visit_func, visited)
@@ -219,16 +214,13 @@ init -10002 python:
 		g = globals()
 		obj = {}
 		
+		func_and_class_types = (types.FunctionType, type)
+		
 		for k, o in dict(g).items():
 			t = type(o)
 			
-			if t is types.FunctionType:
-				# don't save just func names
-				if o.__module__ == '__main__' and o.__name__ == k:
-					continue
-			
-			if t is type:
-				# don't save just class names
+			if t in func_and_class_types:
+				# don't save just func and class names
 				if o.__module__ == '__main__' and o.__name__ == k:
 					continue
 			
@@ -268,15 +260,10 @@ init -10001 python:
 init -10001 python:
 	persistent.in_persistent = True
 	
-	if 'config' not in persistent:
-		persistent.config = Object()
+	for prop in ('config', '_seen_labels', '_seen_images', '_seen_audio'):
+		persistent.setdefault(prop, Object())
 	
-	for prop in ('_seen_labels', '_seen_images', '_seen_audio'):
-		if prop not in persistent:
-			persistent[prop] = Object()
-	
-	if get_current_mod() not in persistent._seen_labels:
-		persistent._seen_labels[get_current_mod()] = Object()
+	persistent._seen_labels.setdefault(get_current_mod(), Object())
 	
 	
 	persistent_need_save = False

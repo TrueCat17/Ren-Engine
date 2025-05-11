@@ -72,15 +72,16 @@ init -1000001 python:
 			msg = '%s (%s, line %s)' % (e.msg, e.filename, e.lineno)
 			text = getattr(e, 'text', None)
 			if text:
-				if '\n' in text:
-					text = text[:text.index('\n')]
+				i = text.find('\n')
+				if i != -1:
+					text = text[:i]
 				msg += '\n  ' + text
 				if e.offset:
 					end_offset = getattr(e, 'end_offset', len(text))
 					msg += '\n  ' + ' ' * (e.offset - 1) + '^' * max(1, end_offset - e.offset)
 		else:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
-			msg = 'Exception (type = ' + type(exc_value).__name__ + '): ' + str(exc_value)
+			msg = 'Exception (type = %s): %s' % (type(exc_value).__name__, exc_value)
 			if exc_traceback:
 				stack = traceback.format_tb(exc_traceback)[depth:]
 				if stack:
@@ -95,7 +96,7 @@ init -1000001 python:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
 			if exc_traceback:
 				stack = traceback.format_tb(exc_traceback)
-				err += '\n\nException (type = ' + type(exc_value).__name__ + '): ' + str(exc_value)
+				err += '\n\nException (type = %s): %s' % (type(exc_value).__name__, exc_value)
 			else:
 				stack = get_stack(1)
 			err += '\n\nStack:\n'
@@ -144,7 +145,7 @@ init -1000001 python:
 			if key2 in cache:
 				return cache[key2]
 		
-		out_msg('get_name_from_file', 'File <%s> is incorrect')
+		out_msg('get_name_from_file', 'File <%s> is incorrect' % path)
 		return 'NoName'
 	
 	

@@ -818,14 +818,14 @@ init -1001 python:
 		g = globals()
 		if who in g:
 			return g[who].name
-		out_msg('get_name', 'Character <' + str(who) + '> not found')
+		out_msg('get_name', 'Character <%s> not found' % (who, ))
 	
 	def set_name(who, name):
 		g = globals()
 		if who in g:
 			g[who].name = str(name)
 		else:
-			out_msg('set_name', 'Character <' + str(who) + '> not found')
+			out_msg('set_name', 'Character <%s> not found' % (who, ))
 	meet = set_name
 	
 	def make_names_unknown():
@@ -854,7 +854,7 @@ init -1001 python:
 			location = cur_location
 		elif type(location) is str:
 			if location not in rpg_locations:
-				out_msg('show_character', 'Location <' + location + '> not registered')
+				out_msg('show_character', 'Location <%s> not registered' % location)
 				return
 			location = rpg_locations[location]
 		
@@ -863,7 +863,7 @@ init -1001 python:
 			place_name = place
 			place = location.get_place(place)
 			if not place:
-				out_msg('show_character', 'Place <' + place_name + '> not found in location <' + str(location.name) + '>')
+				out_msg('show_character', 'Place <%s> not found in location <%s>' % (place_name, location.name))
 				return
 		
 		if cur_location and cur_location.cam_object is character and auto_change_location:
@@ -898,7 +898,7 @@ init -1001 python:
 			character.location = None
 			character.paths = []
 		else:
-			out_msg('hide_character', 'Character <' + character.real_name + ', ' + character.unknow_name + '> not shown')
+			out_msg('hide_character', 'Character <%s, %s> not shown' % (character.real_name, character.unknow_name))
 	
 	
 	tmp_character = Character('TMP')

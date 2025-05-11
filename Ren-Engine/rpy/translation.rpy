@@ -188,10 +188,10 @@ init -1000 python:
 		locale_name = locale.getlocale()
 		if locale_name is not None:
 			locale_name = locale_name[0]
-
+		
 		if locale_name is None:
 			return None, None
-
+		
 		normalize = locale.normalize(locale_name)
 		if normalize == locale_name:
 			language = region = locale_name

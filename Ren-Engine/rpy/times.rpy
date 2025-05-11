@@ -33,18 +33,7 @@ init -1001 python:
 	
 	
 	make_time('day') # def day_time
-	make_time('night',  sprite=(160, 200, 210), location=(140, 180, 210)) # night_time
-	make_time('sunset', sprite=(240, 210, 255), location=(240, 210, 255)) # sunset_time
+	make_time('night',  sprite = (160, 200, 210), location = (140, 180, 210)) # night_time
+	make_time('sunset', sprite = (240, 210, 255), location = (240, 210, 255)) # sunset_time
 	
 	day_time()
-	
-	
-	
-	def get_timed_image(path):
-		orig_path = path
-		path, ext = os.path.splitext(path)
-		path += '_' + times['current_name'] + ext
-		if os.path.exists(path):
-			return path
-		return im.recolor(orig_path, *sprite_time_rgb)
-	

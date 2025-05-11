@@ -3,7 +3,7 @@ init -1002 python:
 	def style__get_default_hover(hover, ground, brightness = 0.1):
 		if hover:
 			return hover
-		return im.MatrixColor(ground, im.matrix.brightness(brightness))
+		return im.matrix_color(ground, im.matrix.brightness(brightness))
 	
 	build_object('style')
 	
@@ -55,7 +55,12 @@ init -1002 python:
 				props = get_prop_names(attr)
 				if type(value) in (tuple, list):
 					if len(value) != len(props):
-						out_msg('Style.__setattr__', 'As <value> got %s with len %s, but expected len %s\nAttr: %s; value: %s' % (type(value), len(value), len(props), attr, value))
+						msg = (
+							'As <value> got %s with len %s, but expected len %s\n'
+							'Attr: %s; value: %s'
+						)
+						params = type(value), len(value), len(props), attr, value
+						out_msg('Style.__setattr__', msg % params)
 						return
 					values = value
 				else:
@@ -89,7 +94,7 @@ init -1002 python:
 					else:
 						relative = get_stage_height()
 						if prop not in ('text_size', 'hover_text_size') and not prop.startswith('y'):
-							out_msg('Style.get_current', 'Set <relative> param for unusual prop <' + prop + '>')
+							out_msg('Style.get_current', 'Set <relative> param for unusual prop <%s>' % prop)
 				
 				value = get_absolute(self[prop], relative)
 				value_min = self[prop + '_min']
@@ -163,7 +168,7 @@ init -1001:
 		text_size 20
 		text_size_min -1
 		text_size_max -1
-		color 0xFFFFFF
+		color '#FFF'
 		outlinecolor None
 		font 'Calibri'
 		text_align 'left'    # left | center | right
