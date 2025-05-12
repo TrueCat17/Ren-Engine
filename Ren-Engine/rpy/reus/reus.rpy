@@ -93,7 +93,7 @@ init python:
 			sep = '://'
 			index = link.find(sep)
 			if index != -1:
-				link = link[sep + len(sep):]
+				link = link[index + len(sep):]
 			
 			info.link = make_sure_dir(link)
 		
@@ -483,8 +483,6 @@ init python:
 		to_remove = defaultdict(list)
 		to_copy = defaultdict(list)
 		
-		
-		info = dont_save_reus.cur_info
 		info_root = root + info.root
 		for path, data in info.data.items():
 			full_path = info_root + path
@@ -522,7 +520,7 @@ init python:
 				if f.startswith('_remove_'): continue
 				
 				f = path + f
-				mtime, size, hash = reus_files[f]
+				_mtime, size, hash = reus_files[f]
 				to_remove[(size, hash)].append(root + f)
 		
 		to_move = []
@@ -619,5 +617,5 @@ init python:
 	
 	dont_save_reus = DontSave()
 	
-	if get_current_mod() == 'main_menu':
+	if get_current_mod_index() == 0:
 		reus.clear_prev() # on each restart
