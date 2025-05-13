@@ -239,4 +239,3 @@ init -1000 python:
 		config.language = lang
 		_set_lang(str(lang))
 		signals.send('language')
-

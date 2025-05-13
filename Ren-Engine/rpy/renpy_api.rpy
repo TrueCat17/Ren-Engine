@@ -29,7 +29,7 @@ init -9990 python:
 		file_name, num_line = get_file_and_line(depth + 1)
 		_set_mixer_volume(vol, mixer, file_name, num_line)
 	def renpy__music__add_mixer_volume(d, mixer):
-		renpy.music.set_mixer_volume(config[mixer + '_volume'] + d, mixer, depth=1)
+		renpy.music.set_mixer_volume(config[mixer + '_volume'] + d, mixer, depth = 1)
 	
 	def renpy__music__get_volume(channel, depth = 0):
 		file_name, num_line = get_file_and_line(depth + 1)

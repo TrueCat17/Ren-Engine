@@ -104,12 +104,12 @@ init -1001 python:
 		
 		obj = animations[anim_name] = SimpleObject()
 		obj.name = anim_name
-			
+		
 		obj.directory    = make_sure_dir(directory)
 		obj.main_image   = main_image
 		obj.free_image   = free_image
 		obj.over_image   = None
-			
+		
 		obj.count_frames = count_frames
 		obj.start_frame  = start_frame
 		obj.end_frame    = end_frame
@@ -149,7 +149,7 @@ init -1001 python:
 				is_vertical_sit_place = True
 		obj.is_vertical_sit_place = is_vertical_sit_place
 		
-		for name, location in rpg_locations.items():
+		for location in rpg_locations.values():
 			for obj in location.objects:
 				if obj.type != obj_name:
 					continue
@@ -198,7 +198,7 @@ init -1001 python:
 		def get_draw_data(self):
 			res = []
 			main = get_usual_location_object_data(self)
-				
+			
 			characters = [character for character in self.on if character]
 			characters.sort(key = lambda character: character.get_zorder())
 			
@@ -232,7 +232,7 @@ init -1001 python:
 						bottom - top
 					)
 					
-					part = dict(main, crop=crop)
+					part = dict(main, crop = crop)
 					part['size'] = w, bottom - top
 					part['anchor'] = main['anchor'][0], 0
 					part['pos'] = x, ystart + top
@@ -247,10 +247,10 @@ init -1001 python:
 							res.extend(data)
 						else:
 							res.append(data)
-				
+			
 			over_image = self.over()
 			if over_image:
-				over = dict(main, image=over_image)
+				over = dict(main, image = over_image)
 				w, h = get_image_size(over_image)
 				over['size'] = (w, h)
 				over['anchor'] = get_absolute(self.xanchor, w), get_absolute(self.yanchor, h)
@@ -432,62 +432,60 @@ init -1001 python:
 	
 	
 	def add_location_object(location_name, place, obj_name, **kwargs):
-		if location_name not in rpg_locations:
+		location = rpg_locations.get(location_name)
+		if not location:
 			out_msg('add_location_object', 'Location <%s> was not registered' % (location_name, ))
 			return
-		location = rpg_locations[location_name]
 		
 		if place is None:
 			out_msg('add_location_object', 'Unexpected place <None>')
 			return
 		
 		if type(place) is str:
-			tmp_place = location.get_place(place)
-			if not tmp_place:
-				out_msg('add_location_object', 'Place <%s> not found in location <%s>' % (place, location_name))
+			place_name = place
+			place = location.get_place(place_name)
+			if not place:
+				out_msg('add_location_object', 'Place <%s> not found in location <%s>' % (place_name, location_name))
 				return
-			place = tmp_place
-			pw, ph = place.xsize, place.ysize
-			px, py = place.x, place.y
+		
+		px, py = place['x'], place['y']
+		if isinstance(place, (dict, RpgPlace)):
+			pw = place.get('xsize', 0)
+			ph = place.get('ysize', 0)
 		else:
-			px, py = place['x'], place['y']
-			if isinstance(place, (dict, RpgPlace)):
-				pw = place.get('xsize', 0)
-				ph = place.get('ysize', 0)
-			else:
-				pw = ph = 0
+			pw = ph = 0
 		
 		if obj_name in location_objects:
-			instance = RpgLocationObject(obj_name, px + pw // 2, py + ph // 2)
+			obj = RpgLocationObject(obj_name, px + pw // 2, py + ph // 2)
 		elif callable(obj_name):
-			instance = obj_name(px, py, pw, ph, **kwargs)
-			if not instance.type:
-				instance.type = obj_name
+			obj = obj_name(px, py, pw, ph, **kwargs)
+			if not obj.type:
+				obj.type = obj_name
 		else:
 			out_msg('add_location_object', 'Object <%s> was not registered' % (obj_name, ))
 			return
 		
-		instance.location = location
-		location.objects.append(instance)
+		obj.location = location
+		location.objects.append(obj)
 		
-		free = instance.free
+		free = obj.free
 		if callable(free) and free():
 			location.path_need_update = True
-		return instance
+		return obj
 	
 	
 	def get_location_objects(location_name, place, obj_type, count = -1):
-		if location_name not in rpg_locations:
+		location = rpg_locations.get(location_name)
+		if not location:
 			out_msg('get_location_objects', 'Location <%s> was not registered' % (location_name, ))
 			return
-		location = rpg_locations[location_name]
 		
 		if type(place) is str:
-			tmp_place = location.get_place(place)
-			if not tmp_place:
-				out_msg('get_location_objects', 'Place <%s> not found in location <%s>' % (place, location_name))
+			place_name = place
+			place = location.get_place(place_name)
+			if not place:
+				out_msg('get_location_objects', 'Place <%s> not found in location <%s>' % (place_name, location_name))
 				return
-			place = tmp_place
 			px, py = place.x + place.xsize // 2, place.y + place.ysize // 2
 		elif place is not None:
 			px, py = place['x'], place['y']
@@ -516,18 +514,18 @@ init -1001 python:
 		min_dist = character.radius * 3
 		res = None
 		
-		for i in character.location.objects:
-			if not isinstance(i, RpgLocationObject):
+		for obj in character.location.objects:
+			if not isinstance(obj, RpgLocationObject):
 				continue
 			
-			obj = location_objects[i.type]
-			if obj['max_in_inventory_cell'] <= 0:
+			obj_info = location_objects[obj.type]
+			if obj_info['max_in_inventory_cell'] <= 0:
 				continue
 			
-			dist = i.dist_to(x, y)
+			dist = obj.dist_to(x, y)
 			if dist < min_dist:
 				min_dist = dist
-				res = i
+				res = obj
 		return res
 	
 	def get_near_location_object_with_inventory(character = None):
@@ -566,7 +564,7 @@ init -1001 python:
 		character_radius = character.radius
 		character_x, character_y = character.x, character.y
 		
-		sides_dpos = {
+		dpos = {
 			to_left:    (-1, 0),
 			to_right:   (+1, 0),
 			to_back:    (0, +1),
@@ -591,7 +589,7 @@ init -1001 python:
 				if not can_use:
 					continue
 				
-				dx, dy = sides_dpos[to_side]
+				dx, dy = dpos[to_side]
 				px = obj.x + px + dx * character_radius
 				py = obj.y - obj.ysize + py + dy * character_radius
 				
@@ -608,29 +606,29 @@ init -1001 python:
 	
 	
 	def remove_location_object(location_name, place, obj_name, count = 1):
-		if location_name not in rpg_locations:
+		location = rpg_locations.get(location_name)
+		if not location:
 			out_msg('remove_location_object', 'Location <%s> was not registered' % (location_name, ))
 			return
-		location = rpg_locations[location_name]
 		
 		if place is None:
 			px = py = 0
 		else:
 			if type(place) is str:
-				tmp_place = location.get_place(place)
-				if tmp_place is None:
-					out_msg('remove_location_object', 'Place <%s> in location <%s> not found' % (place, location_name))
+				place_name = place
+				place = location.get_place(place_name)
+				if not place:
+					out_msg('remove_location_object', 'Place <%s> in location <%s> not found' % (place_name, location_name))
 					return
-				place = tmp_place
 			px, py = place['x'], place['y']
 		
 		if count == 0:
 			return
 		
 		to_remove = []
-		for i in location.objects:
-			if i.type == obj_name:
-				to_remove.append(i)
+		for obj in location.objects:
+			if obj.type == obj_name:
+				to_remove.append(obj)
 		
 		if count > 0:
 			def dist_sqr(obj):
@@ -638,14 +636,13 @@ init -1001 python:
 				return dx*dx + dy*dy
 			
 			to_remove.sort(key = dist_sqr)
-			to_remove = to_remove[0:count]
+			to_remove[count:] = []
 		
-		for i in to_remove:
-			i.location = None
+		for obj in to_remove:
+			obj.location = None
 			
-			if i in location.objects:
-				location.objects.remove(i)
-				
-				if callable(i.free) and i.free():
-					location.path_need_update = True
+			location.objects.remove(obj)
+			
+			if callable(obj.free) and obj.free():
+				location.path_need_update = True
 	

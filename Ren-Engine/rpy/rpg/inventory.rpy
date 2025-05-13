@@ -2,7 +2,7 @@ init -1010 python:
 	
 	def inventory__set_size(size, obj = None):
 		obj = obj or me
-		if isinstance(obj, Object) and obj.inventory is None:
+		if isinstance(obj, (Object, SimpleObject)) and obj.get('inventory') is None:
 			obj.inventory = []
 		inv = obj if type(obj) is list else obj.inventory
 		
@@ -53,9 +53,9 @@ init -1010 python:
 		obj = obj or me
 		inv = obj if type(obj) is list else obj.inventory
 		
-		loc_obj = location_objects.get(obj_name, None)
+		loc_obj = location_objects.get(obj_name)
 		if not loc_obj:
-			out_msg('inventory.add', 'Object <' + str(obj_name) + '> not registered')
+			out_msg('inventory.add', 'Object <%s> not registered' % (obj_name, ))
 			return count
 		max_count = loc_obj['max_in_inventory_cell']
 		if max_count == 0:
@@ -74,7 +74,8 @@ init -1010 python:
 					element[1] += d
 					count -= d
 					if count == 0:
-						return 0
+						break
+		
 		return count
 	
 	def inventory__has(obj_name, count = 1, obj = None):
@@ -82,7 +83,7 @@ init -1010 python:
 		inv = obj if type(obj) is list else obj.inventory
 		
 		if obj_name not in location_objects:
-			out_msg('inventory.has', 'Object <' + str(obj_name) + '> not registered')
+			out_msg('inventory.has', 'Object <%s> not registered' % (obj_name, ))
 			return False
 		
 		t = 0
@@ -98,7 +99,7 @@ init -1010 python:
 		inv = obj if type(obj) is list else obj.inventory
 		
 		if obj_name not in location_objects:
-			out_msg('inventory.remove', 'Object <' + str(obj_name) + '> not registered')
+			out_msg('inventory.remove', 'Object <%s> not registered' % (obj_name, ))
 			return count
 		
 		for element in inv:

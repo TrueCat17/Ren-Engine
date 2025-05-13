@@ -2,11 +2,15 @@ init python:
 	
 	def physics__get_map_free():
 		location_free = cur_location.free()
+		if location_free:
+			free_width, free_height = get_image_size(location_free)
+		else:
+			free_width, free_height = cur_location.xsize, cur_location.ysize
 		
 		size = 64
 		half_size = size // 2 # > (radius + some_indent) * 2
-		me_x = in_bounds(me.x, 0, get_image_width(location_free) - 1)
-		me_y = in_bounds(me.y, 0, get_image_height(location_free) - 1)
+		me_x = in_bounds(me.x, 0, free_width - 1)
+		me_y = in_bounds(me.y, 0, free_height - 1)
 		start_x = (round(me_x / half_size) - 1) * half_size
 		start_y = (round(me_y / half_size) - 1) * half_size
 		end_x = start_x + size
@@ -156,7 +160,9 @@ init python:
 		
 		free, start_x, start_y = physics.get_map_free()
 		if free is None:
-			return from_x + dx * length, from_y + dy * length
+			x = in_bounds(from_x + dx * length, 0, cur_location.xsize - 1)
+			y = in_bounds(from_y + dy * length, 0, cur_location.ysize - 1)
+			return x, y
 		from_x -= start_x
 		from_y -= start_y
 		
@@ -220,4 +226,3 @@ init python:
 		return start_x + x, start_y + y
 	
 	build_object('physics')
-

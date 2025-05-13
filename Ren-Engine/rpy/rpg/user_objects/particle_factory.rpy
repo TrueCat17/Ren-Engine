@@ -28,12 +28,12 @@ init -1000 python:
 			self.set_count(kwargs.get('count', 50))
 		
 		def __str__(self):
-			return '<ParticleFactory ' + self.type + '>'
+			return '<ParticleFactory %s>' % (self.type, )
 		
 		def set_count(self, count):
 			old_count = len(self.objs)
 			if count <= old_count:
-				self.objs = self.objs[0:count]
+				self.objs = self.objs[:count]
 			else:
 				self.objs.extend([None] * (count - old_count))
 				

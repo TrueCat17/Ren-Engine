@@ -124,7 +124,7 @@ init -1001 python:
 			return res
 		
 		@staticmethod
-		def saturation(level, desat=(0.2126, 0.7152, 0.0722)):
+		def saturation(level, desat = (0.2126, 0.7152, 0.0722)):
 			r, g, b = desat
 			def I(a, b):
 				return a + (b - a) * level
@@ -253,10 +253,10 @@ init -1001 python:
 	def im__matrix_color(image, matrix):
 		return 'MatrixColor|(%s)|(%s)' % (image, matrix)
 	
-	def im__grayscale(image, desat=(0.2126, 0.7152, 0.0722)):
+	def im__grayscale(image, desat = (0.2126, 0.7152, 0.0722)):
 		return im.matrix_color(image, im.matrix.saturation(0.0, desat))
 	
-	def im__sepia(image, tint=(1.0, 0.94, 0.76), desat=(0.2126, 0.7152, 0.0722)):
+	def im__sepia(image, tint = (1.0, 0.94, 0.76), desat = (0.2126, 0.7152, 0.0722)):
 		return im.matrix_color(image, im.matrix.saturation(0.0, desat) * im.matrix.tint(tint[0], tint[1], tint[2]))
 	
 	
@@ -533,4 +533,3 @@ init -1001 python:
 	im.Bar = im.bar
 	
 	im.Save = im.save
-

@@ -28,12 +28,11 @@ init -1000001 python:
 	
 	
 	def quick_load():
-		path = os.path.join(slots.directory, 'quick', '1', 'py_globals')
-		if os.path.exists(path):
-			slots.load('1', page='quick')
+		if os.path.exists(slots.directory + 'quick/1/py_globals'):
+			slots.load('1', page = 'quick')
 	def quick_save():
 		if get_current_mod() != 'main_menu':
-			slots.save('1', page='quick')
+			slots.save('1', page = 'quick')
 	
 	def show_screen(name, *args, **kwargs):
 		return _show_screen(name, args, kwargs)
@@ -214,4 +213,3 @@ init -1000000 python:
 	def skip_exec_current_command():
 		for func in can_exec_next_skip_funcs:
 			func()
-

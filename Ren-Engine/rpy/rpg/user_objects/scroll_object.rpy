@@ -21,7 +21,7 @@ init -1000 python:
 			self.dy = kwargs.get('dy', 0.01)
 		
 		def __str__(self):
-			return '<ScrollObject ' + self.type + '>'
+			return '<ScrollObject %s>' % (self.type, )
 		
 		def set_direction(self, dx, dy):
 			self.dx, self.dy = dx, dy

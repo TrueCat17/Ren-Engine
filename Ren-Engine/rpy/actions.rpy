@@ -1,6 +1,6 @@
 init -10000 python:
 	def exec_funcs(funcs):
-		if not isinstance(funcs, (list, tuple)):
+		if type(funcs) not in (list, tuple):
 			funcs = [funcs]
 		for func in funcs:
 			if func is None: continue
@@ -158,7 +158,7 @@ init -10000 python:
 	def FileCurrentPage():
 		return slots.get_page()
 	
-	def FilePageName(auto='a', quick='q'):
+	def FilePageName(auto = 'a', quick = 'q'):
 		if page == 'quick':
 			return quick
 		if page == 'auto':

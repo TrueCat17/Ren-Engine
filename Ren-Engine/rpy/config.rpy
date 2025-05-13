@@ -59,4 +59,3 @@ init -1100 python:
 		if config[std_mixer + '_volume'] is None:
 			config[std_mixer + '_volume'] = 1
 		renpy.music.set_mixer_volume(config[std_mixer + '_volume'], std_mixer)
-

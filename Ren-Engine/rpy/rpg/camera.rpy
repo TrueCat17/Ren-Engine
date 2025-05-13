@@ -14,7 +14,7 @@ init -1003 python:
 			return
 		
 		old = cur_location.cam_object
-		if isinstance(obj, str):
+		if type(obj) is str:
 			place = cur_location.get_place(obj)
 			if not place:
 				out_msg('cam_to', 'Place <%s> not found in location <%s>' % (obj, cur_location_name))
@@ -57,8 +57,7 @@ init -1003 python:
 		stage_width, stage_height = loc_zoom_prev_stage_size = get_stage_size()
 		
 		res = 1.0
-		for location_name in rpg_locations:
-			location = rpg_locations[location_name]
+		for location in rpg_locations.values():
 			if location.is_room:
 				zoom = min(stage_width / location.xsize, stage_height / location.ysize) # increase to width OR height
 			else:
@@ -147,4 +146,3 @@ init -1003 python:
 		cam_object_start_moving = location_cutscene_start = 0.0
 		cam_object_end_moving = location_cutscene_end = 0.0
 	can_exec_next_skip_funcs.append(cam_object_move)
-

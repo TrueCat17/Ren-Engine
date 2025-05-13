@@ -1,6 +1,6 @@
 init python:
 	location_ambience_path = None
-	renpy.music.register_channel("location_ambience", "ambience", True)
+	renpy.music.register_channel('location_ambience', 'ambience', True)
 	
 	
 	default_location_ambience_paths = { None: '' }
@@ -17,8 +17,9 @@ init python:
 		default_location_ambience_volume = volume
 	
 	def set_location_ambience(location_name, paths, volume = 1.0):
-		if location_name not in rpg_locations:
-			out_msg('set_location_ambience', 'Location <' + location_name + '> not registered')
+		location = rpg_locations.get(location_name)
+		if not location:
+			out_msg('set_location_ambience', 'Location <%s> not registered' % (location_name, ))
 			return
 		
 		if type(paths) is str:
@@ -26,7 +27,6 @@ init python:
 				None: paths
 			}
 		
-		location = rpg_locations[location_name]
 		location.ambience_paths = paths
 		location.ambience_volume = volume
 	
@@ -43,19 +43,19 @@ init python:
 		if time not in paths:
 			time = None
 		
-		return paths.get(time, None)
+		return paths.get(time)
 	
 	def start_location_ambience():
 		path = get_location_ambience(cur_location)
 		
 		global location_ambience_path
 		if path and path != location_ambience_path:
-			renpy.play(path, "location_ambience", fadein = location_fade_time)
+			renpy.play(path, 'location_ambience', fadein = location_fade_time)
 		
 		location_ambience_path = path
-		renpy.music.set_volume(cur_location.ambience_volume, "location_ambience")
+		renpy.music.set_volume(cur_location.ambience_volume, 'location_ambience')
 	
 	def end_location_ambience(next_location):
 		path = get_location_ambience(next_location)
 		if location_ambience_path and path != location_ambience_path:
-			renpy.stop("location_ambience", fadeout = location_fade_time)
+			renpy.stop('location_ambience', fadeout = location_fade_time)

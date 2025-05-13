@@ -204,4 +204,3 @@ init -1001:
 	style imagemap:
 		ground ''
 		hover  ''
-

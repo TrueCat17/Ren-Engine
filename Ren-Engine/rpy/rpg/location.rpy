@@ -153,7 +153,7 @@ init -1002 python:
 	
 	location_banned_exits = set()
 	def ban_exit(location_name, place_name = None):
-		location = rpg_locations.get(location_name, None)
+		location = rpg_locations.get(location_name)
 		if location is None:
 			out_msg('ban_exit', 'Location <%s> was not registered' % (location_name, ))
 			return
@@ -169,7 +169,7 @@ init -1002 python:
 			location_banned_exits.add((location_name, place_name))
 	
 	def unban_exit(location_name, place_name = None):
-		location = rpg_locations.get(location_name, None)
+		location = rpg_locations.get(location_name)
 		if location is None:
 			out_msg('unban_exit', 'Location <%s> was not registered' % (location_name, ))
 			return
@@ -177,8 +177,7 @@ init -1002 python:
 			out_msg('unban_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
 			return
 		
-		tmp_banned_exits = set(location_banned_exits)
-		for tmp_loc, tmp_place in tmp_banned_exits:
+		for tmp_loc, tmp_place in location_banned_exits.copy():
 			if tmp_loc == location_name and (tmp_place == place_name or place_name is None):
 				location_banned_exits.remove((tmp_loc, tmp_place))
 	
@@ -305,7 +304,7 @@ init -1002 python:
 			self.places[place_name] = place
 		
 		def get_place(self, place_name):
-			return self.places.get(place_name, None)
+			return self.places.get(place_name)
 		
 		
 		def update_pos(self):
@@ -476,4 +475,3 @@ init -1002 python:
 				'pos':    (0, 0),
 				'zorder':  1e6,
 			}
-
