@@ -9,6 +9,7 @@
 #include "gui/screen/imagemap.h"
 #include "gui/screen/key.h"
 #include "gui/screen/screen.h"
+#include "gui/screen/style.h"
 
 #include "gui/text_field.h"
 #include "gui/screen/text.h"
@@ -58,14 +59,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 			if (child->command == propName || child->command + "Pre" == propName) {
 				desc += child->getPlace();
 			}else {
-				std::string style = node->command;
-				for (const Node *child : node->children) {
-					if (child->command == "style") {
-						style = child->params;
-						break;
-					}
-				}
-				desc += "style <" + style + ">";
+				desc += "style <" + obj->style->name + ">";
 			}
 
 			Utils::outMsg(propName, desc);

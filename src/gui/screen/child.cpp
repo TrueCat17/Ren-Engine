@@ -44,17 +44,11 @@ void Child::updateStyle() {
 			style = StyleManager::getByObject(this);
 		}
 
-		const Style *defaultStyle = StyleManager::getByName(node, node->command);
-		bool isDefaultStyle = style->pyStyle == defaultStyle->pyStyle;
-
 		const std::vector<std::string> &propNames = SyntaxChecker::getScreenProps(node->command);
 
 		props = PyUtils::tuple1;
 		for (const std::string &prop : propNames) {
 			PyObject *res = StyleManager::getProp(style, prop);
-			if (res == Py_None && !isDefaultStyle) {
-				res = StyleManager::getProp(defaultStyle, prop);
-			}
 
 			ScreenUpdateFunc func = ScreenUpdateFuncs::getFunc(node->command, prop);
 			if (!func) continue;

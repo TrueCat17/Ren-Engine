@@ -154,11 +154,12 @@ init -1001:
 		zorder 0
 		ignore_modal False
 	
-	style vbox:
+	style vbox is screen:
 		size 0
-	
 	style hbox is vbox
-	style null is vbox
+	
+	style null:
+		size 0
 	
 	style image:
 		size 100
