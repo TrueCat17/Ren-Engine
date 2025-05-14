@@ -628,9 +628,9 @@ makeUpdateFunc(rotate)
 makeUpdateFuncWithBool(Child, clipping, clipping)
 makeUpdateFuncWithBool(Child, skip_mouse, skip_mouse)
 
-makeUpdateFuncTypeWithIsFloat(Container, spacing)
-makeUpdateFuncTypeWithIsFloat(Container, spacing_min)
-makeUpdateFuncTypeWithIsFloat(Container, spacing_max)
+makeUpdateFuncTypeWithIsFloat(ContainerBox, spacing)
+makeUpdateFuncTypeWithIsFloat(ContainerBox, spacing_min)
+makeUpdateFuncTypeWithIsFloat(ContainerBox, spacing_max)
 
 makeUpdateFuncWithIsFloat(xpos)
 makeUpdateFuncWithIsFloat(ypos)

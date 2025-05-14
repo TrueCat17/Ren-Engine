@@ -767,7 +767,7 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 
 
 static std::map<std::tuple<MipMap*, SimplePoint, SimplePoint>, std::pair<Path, float>> tmpPaths;
-static const std::pair<Path, float>& findAndSavePath(MipMap* mipMap, SimplePoint start, SimplePoint end, bool pathIsConst) {
+static const std::pair<Path, float>& findAndSavePath(MipMap *mipMap, SimplePoint start, SimplePoint end, bool pathIsConst) {
 	auto it1 = mipMap->exitPaths.find({start, end});
 	if (it1 != mipMap->exitPaths.end()) {
 		return it1->second;

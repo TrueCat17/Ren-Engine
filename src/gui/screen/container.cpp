@@ -13,16 +13,12 @@
 #include "key.h"
 
 #include "parser/syntax_checker.h"
-#include "utils/stage.h"
 #include "utils/utils.h"
 
 
 Container::Container(Node *node, Container *screenParent, Screen *screen):
-    Child(node, screenParent, screen),
-    hasVBox(false),
-    hasHBox(false)
+    Child(node, screenParent, screen)
 {}
-
 
 void Container::addChildAt(DisplayObject *child, uint32_t index) {
 	child->removeFromParent();
@@ -83,76 +79,10 @@ void Container::updateSize() {
 		return;
 	}
 
-	if (!hasHBox) {
-		if (getWidth() <= 0) {
-			float width = 0;
-			for (const DisplayObject *child : children) {
-				if (child->enable) {
-					width = std::max(width, child->getWidth());
-				}
-			}
-			setWidthWithMinMax(width / globalZoomX);
-		}
-	}else {
-		float size = spacing * float(spacing_is_float ? Stage::width : 1);
-		float min = spacing_min * float(spacing_min_is_float ? Stage::width : 1);
-		float max = spacing_max * float(spacing_max_is_float ? Stage::width : 1);
-		if (min > 0 && size < min) size = min;
-		if (max > 0 && size > max) size = max;
-		float globalSpacing = size * globalZoomX;
-
-		float width = 0;
-		for (DisplayObject *child : children) {
-			if (!child->enable) continue;
-
-			child->setX(width);
-
-			float w = child->getWidth();
-			if (w > 0) {
-				width += w + globalSpacing;
-			}
-		}
-		if (width > 0) {
-			width -= globalSpacing;
-		}
-		setWidthWithMinMax(width / globalZoomX);
-	}
-
-	if (!hasVBox) {
-		if (getHeight() <= 0) {
-			float height = 0;
-			for (const DisplayObject *child : children) {
-				if (child->enable) {
-					height = std::max(height, child->getHeight());
-				}
-			}
-			setHeightWithMinMax(height / globalZoomY);
-		}
-	}else {
-		float size = spacing * float(spacing_is_float ? Stage::height : 1);
-		float min = spacing_min * float(spacing_min_is_float ? Stage::height : 1);
-		float max = spacing_max * float(spacing_max_is_float ? Stage::height : 1);
-		if (min > 0 && size < min) size = min;
-		if (max > 0 && size > max) size = max;
-		float globalSpacing = size * globalZoomY;
-
-		float height = 0;
-		for (DisplayObject *child : children) {
-			if (!child->enable) continue;
-
-			child->setY(height);
-
-			float h = child->getHeight();
-			if (h > 0) {
-				height += h + globalSpacing;
-			}
-		}
-		if (height > 0) {
-			height -= globalSpacing;
-		}
-		setHeightWithMinMax(height / globalZoomY);
-	}
+	updateWidth();
+	updateHeight();
 }
+
 
 void Container::updateTexture() {
 	for (Child *child : screenChildren) {
@@ -176,25 +106,9 @@ void Container::addChildrenFromNode() {
 		Child *child = nullptr;
 		const std::string &childCommand = childNode->command;
 
-		if (childCommand == "has") {
-			if (childNode->params == "vbox") {
-				hasVBox = true;
-			}else
-			if (childNode->params == "hbox") {
-				hasHBox = true;
-			}else
-			{//unreachable
-				Utils::outMsg("Screen::show",
-				              "<has> expected value <vbox> or <hbox>, got <" + childNode->params + ">\n" +
-				              childNode->getPlace());
-			}
-			continue;
-		}
-
-
 		if (childCommand == "use") {
-			Node *scrNode = Screen::getDeclared(childNode->params);
-			if (!scrNode) {
+			Node *screenNode = Screen::getDeclared(childNode->params);
+			if (!screenNode) {
 				Utils::outMsg("Screen::show",
 				              "Screen <" + childNode->params + "> is not defined\n" +
 							  childNode->getPlace());
@@ -208,16 +122,15 @@ void Container::addChildrenFromNode() {
 			child = new Key(childNode, screen);
 		}else
 
-		if (childCommand == "vbox" || childCommand == "hbox" || childCommand == "null") {
+		if (childCommand == "vbox" || childCommand == "hbox") {
+			ContainerBox *tmp = new ContainerBox(childNode, nullptr, screen);
+			tmp->screenParent = tmp;
+			child = tmp;
+		}else
+
+		if (childCommand == "null") {
 			Container *tmp = new Container(childNode, nullptr, screen);
 			tmp->screenParent = tmp;
-
-			if (childCommand == "vbox") {
-				tmp->hasVBox = true;
-			}else
-			if (childCommand == "hbox") {
-				tmp->hasHBox = true;
-			}
 			child = tmp;
 		}else
 
@@ -256,7 +169,7 @@ void Container::addChildrenFromNode() {
 			continue;
 		}
 
-		child->setInBox(screenParent->hasVBox, screenParent->hasHBox);
+		child->setInBox(screenParent->getHasVBox(), screenParent->getHasHBox());
 
 		uint32_t index;
 		if (screenParent == this) {
@@ -277,5 +190,29 @@ void Container::addChildrenFromNode() {
 		if (child->node->isScreenConst) {
 			child->updateProps();
 		}
+	}
+}
+
+
+void Container::updateWidth() {
+	if (getWidth() <= 0) {
+		float width = 0;
+		for (const DisplayObject *child : children) {
+			if (child->enable) {
+				width = std::max(width, child->getWidth());
+			}
+		}
+		setWidthWithMinMax(width / globalZoomX);
+	}
+}
+void Container::updateHeight() {
+	if (getHeight() <= 0) {
+		float height = 0;
+		for (const DisplayObject *child : children) {
+			if (child->enable) {
+				height = std::max(height, child->getHeight());
+			}
+		}
+		setHeightWithMinMax(height / globalZoomY);
 	}
 }

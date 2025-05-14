@@ -5,7 +5,7 @@
 #include "utils/utils.h"
 
 
-TextButton::TextButton(Node* node, Screen *screen):
+TextButton::TextButton(Node *node, Screen *screen):
     Text(node, screen),
     hoverIsModifiedGround(node->getProp("ground") && !node->getProp("hover")),
     btnRect(this)

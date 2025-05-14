@@ -3,9 +3,9 @@
 
 #include <float.h>
 
-#include "container.h"
+#include "container_box.h"
 
-class Screen: public Container {
+class Screen: public ContainerBox {
 private:
 	PyObject *co;
 

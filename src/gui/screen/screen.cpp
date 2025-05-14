@@ -63,7 +63,7 @@ static void show(const std::string &name) {
 		PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
 		                        "signals.send('show_screen', tmp)", sameName);
 	}
-	Stage::screens->addChildAt(scr, Stage::screens->children.size());
+	Stage::screens->addChildAt(scr, uint32_t(Stage::screens->children.size()));
 }
 static void hide(const std::string &name) {
 	if (!Stage::screens) return;
@@ -423,7 +423,7 @@ void Screen::checkScreenEvents() {
 
 
 Screen::Screen(Node *node, Screen *screen):
-    Container(node, this, screen ? screen : this),
+    ContainerBox(node, this, screen ? screen : this),
     name(node->params)
 {
 	if (this->screen != this) return;//not main screen, command <use>
