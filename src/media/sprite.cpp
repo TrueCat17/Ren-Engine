@@ -36,13 +36,15 @@ static Node* parseAction(PyObject *action, uint32_t childNum,
 	if (!PyTuple_CheckExact(action) && !PyList_CheckExact(action)) return res;
 	if (Py_SIZE(action) != 3) return res;
 
-	PyObject *pyCommand = PySequence_Fast_GET_ITEM(action, 0);
+	PyObject **actionItems = PySequence_Fast_ITEMS(action);
+
+	PyObject *pyCommand = actionItems[0];
 	if (!PyUnicode_CheckExact(pyCommand) && !PyTuple_CheckExact(pyCommand) && !PyList_CheckExact(pyCommand)) return res;
 
-	PyObject *pyFileName = PySequence_Fast_GET_ITEM(action, 1);
+	PyObject *pyFileName = actionItems[1];
 	if (!PyUnicode_CheckExact(pyFileName)) return res;
 
-	PyObject *pyNumLine = PySequence_Fast_GET_ITEM(action, 2);
+	PyObject *pyNumLine = actionItems[2];
 	if (!PyLong_CheckExact(pyNumLine)) return res;
 
 	int overflow;
@@ -62,9 +64,11 @@ static Node* parseAction(PyObject *action, uint32_t childNum,
 		return res;
 	}
 
+	PyObject **commandItems = PySequence_Fast_ITEMS(pyCommand);
 	uint32_t blockSize = uint32_t(Py_SIZE(pyCommand));
+
 	for (uint32_t i = 0; i < blockSize; ++i) {
-		PyObject *action = PySequence_Fast_GET_ITEM(pyCommand, i);
+		PyObject *action = commandItems[i];
 		Node *child = parseAction(action, i, fileName, uint32_t(numLine));
 		if (!child) continue;
 
@@ -127,9 +131,11 @@ void Sprite::registerImage(Node *imageNode) {
 			return;
 		}
 
+		PyObject **actionItems = PySequence_Fast_ITEMS(actions);
 		uint32_t sizeDefaultDeclAt = uint32_t(Py_SIZE(actions));
+
 		for (uint32_t i = 0; i < sizeDefaultDeclAt; ++i) {
-			PyObject *elem = PySequence_Fast_GET_ITEM(actions, i);
+			PyObject *elem = actionItems[i];
 
 			Node *node = parseAction(elem, i, imageNode->getFileName(), imageNode->getNumLine());
 			if (node) {

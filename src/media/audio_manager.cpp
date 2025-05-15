@@ -411,9 +411,11 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 			}else
 
 			if (PyList_CheckExact(paths) || PyTuple_CheckExact(paths)) {
+				PyObject **pathItems = PySequence_Fast_ITEMS(paths);
 				size_t len = size_t(Py_SIZE(paths));
+
 				for (size_t i = 0; i < len; ++i) {
-					PyObject *pyPath = PySequence_Fast_GET_ITEM(paths, i);
+					PyObject *pyPath = pathItems[i];
 					if (PyUnicode_CheckExact(pyPath)) {
 						params.paths.push_back(PyUtils::objToStr(pyPath));
 						continue;

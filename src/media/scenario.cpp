@@ -230,7 +230,7 @@ static void restoreScreens(const std::string &loadPath) {
 
 	for (const std::string &screenName : startScreensVec) {
 		if (!screenName.empty()) {
-			Screen::addToShow(screenName);
+			Screen::addToShow(screenName, "CPP_EMBED: scenario.cpp", __LINE__);
 		}
 	}
 }
@@ -297,9 +297,9 @@ static void displayCommandProcessing(const Node *child) {
 		if (String::startsWith(child->params, "screen ")) {
 			const std::string screenName = child->params.substr(strlen("screen "));
 			if (child->command == "show") {
-				Screen::addToShow(screenName);
+				Screen::addToShow(screenName, child->getFileName(), child->getNumLine());
 			}else {
-				Screen::addToHide(screenName);
+				Screen::addToHide(screenName, child->getFileName(), child->getNumLine());
 			}
 			return;
 		}

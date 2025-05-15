@@ -30,8 +30,10 @@ public:
 
 	static void replace(const std::string &fromName, const std::string &toName);
 
-	static void addToShow(std::string name, PyObject *args = nullptr, PyObject *kwargs = nullptr);
-	static void addToHide(std::string name);
+	static void addToShow(std::string name,
+	                      const std::string &fileName, uint32_t numLine,
+	                      PyObject *args = nullptr, PyObject *kwargs = nullptr);
+	static void addToHide(std::string name, const std::string &fileName, uint32_t numLine);
 	static bool hasScreen(std::string name);
 
 	static void logScreenCode(std::string name);

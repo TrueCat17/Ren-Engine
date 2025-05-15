@@ -39,7 +39,7 @@ init -10000 python:
 					res = eval(self.compiled, g, g)
 				except Exception as e:
 					msg = get_exception_stack_str(e, 1)
-					out_msg('EvalObject.compile', msg, show_stack = False)
+					out_msg('EvalObject.__call__', msg, show_stack = False)
 			return res
 		
 		def compile(self, depth):
@@ -183,10 +183,10 @@ init -10000 python:
 		return renpy.can_load(slot, page)
 	
 	
-	def Show(name):
-		return Function(show_screen, name)
+	def Show(name, *args, **kwargs):
+		return Function(show_screen, name, *args, depth = 1, **kwargs)
 	def Hide(name):
-		return Function(hide_screen, name)
+		return Function(hide_screen, name, depth = 1)
 	ShowMenu = ShowScreen = Show
 	HideMenu = HideScreen = Hide
 	

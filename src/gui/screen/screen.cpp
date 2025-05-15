@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <map>
+#include <tuple>
 
 #include "logger.h"
 #include "media/py_utils.h"
@@ -47,12 +48,18 @@ static std::vector<std::string> getSameNames(const std::string &name) {
 	return res;
 }
 
-static void show(const std::string &name) {
+
+#define get_place ("File <" + fileName + ">\n" \
+                   "Line " + std::to_string(numLine))
+
+static void show(const std::string &name, const std::string &fileName, uint32_t numLine) {
 	Screen *scr = Screen::getMain(name);
 	if (!scr) {
 		Node *node = Screen::getDeclared(name);
 		if (!node) {
-			Utils::outMsg("Screen::show", "Screen <" + name + "> is not defined");
+			Utils::outMsg("Screen::show",
+			              "Screen <" + name + "> is not defined\n" +
+			              get_place);
 			return;
 		}
 
@@ -65,12 +72,14 @@ static void show(const std::string &name) {
 	}
 	Stage::screens->addChildAt(scr, uint32_t(Stage::screens->children.size()));
 }
-static void hide(const std::string &name) {
+static void hide(const std::string &name, const std::string &fileName, uint32_t numLine) {
 	if (!Stage::screens) return;
 
 	Screen *scr = Screen::getMain(name);
 	if (!scr) {
-		Utils::outMsg("Screen::hide", "Screen <" + name + "> is not shown");
+		Utils::outMsg("Screen::hide",
+		              "Screen <" + name + "> is not shown\n" +
+		              get_place);
 		return;
 	}
 
@@ -84,21 +93,21 @@ static void hide(const std::string &name) {
 	}
 }
 
-static std::vector<std::string> toShowList;
-static std::vector<std::string> toHideList;
+static std::vector<std::tuple<std::string, std::string, uint32_t>> toShowList;
+static std::vector<std::tuple<std::string, std::string, uint32_t>> toHideList;
 void Screen::updateLists() {
-	std::vector<std::string> toHideCopy, toShowCopy;
+	std::vector<std::tuple<std::string, std::string, uint32_t>> toHideCopy, toShowCopy;
 	{
 		std::lock_guard g(screenMutex);
 		toHideCopy.swap(toHideList);
 		toShowCopy.swap(toShowList);
 	}
 
-	for (const std::string &name : toHideCopy) {
-		hide(name);
+	for (const auto &[name, fileName, numLine] : toHideCopy) {
+		hide(name, fileName, numLine);
 	}
-	for (const std::string &name : toShowCopy) {
-		show(name);
+	for (const auto &[name, fileName, numLine] : toShowCopy) {
+		show(name, fileName, numLine);
 	}
 }
 
@@ -126,56 +135,56 @@ void Screen::clear() {
 }
 
 
-static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kwargs) {
+static void makeScreenVars(const std::string &name,
+                           const std::string &fileName, uint32_t numLine,
+                           PyObject *args, PyObject *kwargs)
+{
 	Node *node = Screen::getDeclared(name);
 	auto &vars = node->vars;
 	size_t countVars = vars.size();
 
 	std::string code =
-	        "if 'screen_vars' not in globals():\n"
-	        "    screen_vars = {}\n"
-	        "_SL_created_vars = False\n"
+	        "globals().setdefault('screen_vars', {})\n"
 	        "_SL_got_args = " + std::string((args && kwargs) ? "True" : "False") + "\n"
-	        "if ('" + name + "' not in screen_vars) or _SL_got_args:\n"
-	        "    screen_vars['" + name + "'] = Object()\n"
-	        "    _SL_created_vars = True\n"
-	        "screen = screen_vars['" + name + "']";
-	PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__, code);
+	        "if (tmp not in screen_vars) or _SL_got_args:\n"
+	        "    screen_vars[tmp] = SimpleObject()\n"
+	        "screen = screen_vars[tmp]";
+	PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__, code, name);
 
-	PyObject *created_vars = PyDict_GetItemString(PyUtils::global, "_SL_created_vars");
-	if (created_vars == Py_False && (!args || !kwargs)) return; //create screen on loading
+	if (!args || !kwargs) return; //create screen on loading
 
-	PyObject *screenVars = PyDict_GetItemString(PyUtils::global, "screen");
-
-	if (!args) args = Py_None;
-	if (!kwargs) kwargs = Py_None;
-
-	if (args != Py_None && !PyTuple_CheckExact(args) && !PyList_CheckExact(args)) {
+	if (!PyTuple_CheckExact(args) && !PyList_CheckExact(args)) {
 		Utils::outMsg("Screen::addToShow",
-		              "Expected type(args) is tuple or list, got <" + std::string(args->ob_type->tp_name) + ">");
+		              "Expected type(args) is tuple or list, got <" + std::string(args->ob_type->tp_name) + ">\n" +
+		              get_place);
 		return;
 	}
-	size_t argsSize = args == Py_None ? 0 : size_t(Py_SIZE(args));
+	size_t argsSize = size_t(Py_SIZE(args));
 
-	if (kwargs != Py_None && !PyDict_CheckExact(kwargs)) {
+	if (!PyDict_CheckExact(kwargs)) {
 		Utils::outMsg("Screen::addToShow",
-		              "Expected type(kwargs) is dict, got <" + std::string(kwargs->ob_type->tp_name) + ">");
+		              "Expected type(kwargs) is dict, got <" + std::string(kwargs->ob_type->tp_name) + ">\n" +
+		              get_place);
 		return;
 	}
-	size_t kwargsSize = kwargs == Py_None ? 0 : size_t(PyDict_Size(kwargs));
+	size_t kwargsSize = size_t(PyDict_Size(kwargs));
 
 	if (argsSize + kwargsSize > countVars) {
 		Utils::outMsg("Screen::addToShow",
 		              "Screen <" + name + "> takes only " + std::to_string(countVars) + " args\n"
-		              "Got " + std::to_string(argsSize) + " args and " + std::to_string(kwargsSize) + " kwargs");
+		              "Got " + std::to_string(argsSize) + " args and " + std::to_string(kwargsSize) + " kwargs\n" +
+		              get_place);
 		return;
 	}
+
+	PyObject *screenVars = PyDict_GetItemString(PyUtils::global, "screen");
 
 	std::vector<std::string> argsWasSet;
 	argsWasSet.reserve(countVars);
 
+	PyObject **argsItems = PySequence_Fast_ITEMS(args);
 	for (size_t i = 0; i < argsSize; ++i) {
-		PyObject *elem = PySequence_Fast_GET_ITEM(args, i);
+		PyObject *elem = argsItems[i];
 
 		const std::string &varName = vars[i].first;
 		argsWasSet.push_back(varName);
@@ -186,13 +195,22 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 	PyObject *key, *value;
 	while (PyDict_Next(kwargs, &i, &key, &value)) {
 		std::string varName = PyUtils::objToStr(key);
-		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) == argsWasSet.cend()) {
-			argsWasSet.push_back(varName);
-		}else {
+
+		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) {
 			Utils::outMsg("Screen::addToShow",
-			              "Keyworg <" + varName + "> argument repeated for screen <" + name + ">");
+			              "Keyworg argument <" + varName + "> repeated for screen <" + name + ">\n" +
+			              get_place);
 		}
 
+		auto it = std::find_if(vars.cbegin(), vars.cend(), [&](const auto &pair) { return pair.first == varName; });
+		if (it == vars.cend()) {
+			Utils::outMsg("Screen::addToShow",
+			              "Unexpected keyworg argument <" + varName + "> for screen <" + name + ">\n" +
+			              get_place);
+			continue;
+		}
+
+		argsWasSet.push_back(varName);
 		PyObject_SetAttrString(screenVars, varName.c_str(), value);
 	}
 
@@ -202,15 +220,22 @@ static void makeScreenVars(const std::string &name, PyObject *args, PyObject *kw
 
 		if (varDefaultCode.empty()) {
 			Utils::outMsg("Screen::addToShow",
-			              "Arg <" + varName + "> was not set for screen <" + name + ">");
-		}else {
-			PyUtils::exec("CPP_EMBED: screen.cpp", __LINE__,
-			              "screen." + varName + " = " + varDefaultCode);
+			              "Argument <" + varName + "> was not set for screen <" + name + ">\n" +
+			              get_place);
+			continue;
+		}
+
+		PyObject *obj = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), varDefaultCode);
+		if (obj) {
+			PyObject_SetAttrString(screenVars, varName.c_str(), obj);
 		}
 	}
 }
 
-void Screen::addToShow(std::string name, PyObject *args, PyObject *kwargs) {
+void Screen::addToShow(std::string name,
+                       const std::string &fileName, uint32_t numLine,
+                       PyObject *args, PyObject *kwargs)
+{
 	//python thread need for func makeScreenVars
 	//this order of locks need for no deadlocks
 
@@ -224,23 +249,25 @@ void Screen::addToShow(std::string name, PyObject *args, PyObject *kwargs) {
 
 		Node *node = Screen::getDeclared(name);
 		if (!node) {
-			Utils::outMsg("Screen::addToShow", "No screen <" + name + ">");
+			Utils::outMsg("Screen::addToShow",
+			              "No screen <" + name + ">\n" +
+			              get_place);
 			return;
 		}
 
-		makeScreenVars(name, args, kwargs);
+		makeScreenVars(name, fileName, numLine, args, kwargs);
 
 		for (size_t i = 0; i < toHideList.size(); ++i) {
-			if (toHideList[i] == name) {
+			if (std::get<0>(toHideList[i]) == name) {
 				toHideList.erase(toHideList.cbegin() + long(i));
 				return;
 			}
 		}
 
-		toShowList.push_back(name);
+		toShowList.push_back( { name, fileName, numLine } );
 	});
 }
-void Screen::addToHide(std::string name) {
+void Screen::addToHide(std::string name, const std::string &fileName, uint32_t numLine) {
 	std::lock_guard g(screenMutex);
 
 	auto it = screenMap.find(name);
@@ -249,13 +276,13 @@ void Screen::addToHide(std::string name) {
 	}
 
 	for (size_t i = 0; i < toShowList.size(); ++i) {
-		if (toShowList[i] == name) {
+		if (std::get<0>(toShowList[i]) == name) {
 			toShowList.erase(toShowList.cbegin() + long(i));
 			return;
 		}
 	}
 
-	toHideList.push_back(name);
+	toHideList.push_back( { name, fileName, numLine } );
 }
 bool Screen::hasScreen(std::string name) {
 	std::lock_guard g(screenMutex);
@@ -265,8 +292,8 @@ bool Screen::hasScreen(std::string name) {
 		name = screenMap[name];
 	}
 
-	for (const std::string &screenName : toShowList) {
-		if (screenName == name) return true;
+	for (size_t i = 0; i < toShowList.size(); ++i) {
+		if (std::get<0>(toShowList[i]) == name) return true;
 	}
 
 	return getMain(name);
@@ -350,6 +377,7 @@ void Screen::checkScreenEvents() {
 
 	StackElem elem = screenStack.back();
 	Container *obj = elem.obj;
+	PyObject **objProps = PySequence_Fast_ITEMS(obj->props);
 	size_t num = elem.curChildNum;
 	size_t index = elem.curChildIndex;
 
@@ -375,6 +403,8 @@ void Screen::checkScreenEvents() {
 			obj = elem.obj;
 			num = elem.curChildNum;
 			index = elem.curChildIndex;
+
+			objProps = PySequence_Fast_ITEMS(obj->props);
 			continue;
 		}
 
@@ -389,9 +419,9 @@ void Screen::checkScreenEvents() {
 		}
 
 		if (obj->node->countPropsToCalc) {
-			child->props = PySequence_Fast_GET_ITEM(obj->props, child->node->screenNum);
+			child->props = objProps[child->node->screenNum];
 		}else {
-			child->props = PySequence_Fast_GET_ITEM(obj->props, index);
+			child->props = objProps[index];
 			++index;
 			++screenStack.back().curChildIndex;
 		}
@@ -409,6 +439,8 @@ void Screen::checkScreenEvents() {
 			num = 0;
 			index = 0;
 			screenStack.push_back({obj, num, index});
+
+			objProps = PySequence_Fast_ITEMS(obj->props);
 			continue;
 		}
 

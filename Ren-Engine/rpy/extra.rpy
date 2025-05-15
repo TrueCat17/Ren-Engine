@@ -35,7 +35,13 @@ init -1000001 python:
 			slots.save('1', page = 'quick')
 	
 	def show_screen(name, *args, **kwargs):
-		return _show_screen(name, args, kwargs)
+		depth = kwargs.pop('depth', 0)
+		filename, numline = get_file_and_line(depth + 1)
+		return _show_screen(name, filename, numline, args, kwargs)
+	def hide_screen(name, **kwargs):
+		depth = kwargs.get('depth', 0)
+		filename, numline = get_file_and_line(depth + 1)
+		return _hide_screen(name, filename, numline)
 	
 	def make_screenshot(width = None, height = None):
 		global need_screenshot, screenshot_width, screenshot_height

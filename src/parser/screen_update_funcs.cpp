@@ -155,8 +155,9 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		return; \
 	} \
 	\
-	PyObject *x = PySequence_Fast_GET_ITEM(prop, 0); \
-	PyObject *y = PySequence_Fast_GET_ITEM(prop, 1); \
+	PyObject **propItems = PySequence_Fast_ITEMS(prop); \
+	PyObject *x = propItems[0]; \
+	PyObject *y = propItems[1]; \
 	\
 	updateCondition(xIsFloat, obj->x##propName, x, #propName) \
 	else { \
@@ -228,8 +229,10 @@ static void update_align(Child *obj, size_t propIndex) {
 		return;
 	}
 
+	PyObject **propItems = PySequence_Fast_ITEMS(prop);
+
 #define partProc(part, index) \
-	PyObject *part = PySequence_Fast_GET_ITEM(prop, index); \
+	PyObject *part = propItems[index]; \
 	updateCondition(isFloat, value, part, #part "align") \
 	else { \
 		isFloat = false; \
@@ -278,8 +281,10 @@ static void update_crop(Child *obj, size_t propIndex) {
 		return;
 	}
 
+	PyObject **propItems = PySequence_Fast_ITEMS(prop);
+
 #define partProc(part, index) \
-	PyObject *part = PySequence_Fast_GET_ITEM(prop, index); \
+	PyObject *part = propItems[index]; \
 	updateCondition(obj->part##crop_is_float, obj->part##crop, part, #part "crop") \
 	else { \
 		obj->part##crop_is_float = false; \
@@ -363,7 +368,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 }
 
 static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
-	Uint32 fail = Uint32(-1);
+	const Uint32 fail = Uint32(-1);
 	int overflow;
 
 	if (PyLong_CheckExact(prop)) {
@@ -442,8 +447,10 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 		return fail;
 	}
 
+	PyObject **propItems = PySequence_Fast_ITEMS(prop);
+
 #define partProc(ch, index) \
-	PyObject *ch##Py = PySequence_Fast_GET_ITEM(prop, index); \
+	PyObject *ch##Py = propItems[index]; \
 	if (!PyLong_CheckExact(ch##Py)) { \
 		std::string type = ch##Py->ob_type->tp_name; \
 		error = "Expected sequence with ints, got " + type; \
@@ -582,8 +589,10 @@ static void update_corner_sizes(Child *obj, size_t propIndex) {
 		return;
 	}
 
+	PyObject **propItems = PySequence_Fast_ITEMS(prop);
+
 #define partProc(side, i) \
-	PyObject *side##Py = PySequence_Fast_GET_ITEM(prop, i); \
+	PyObject *side##Py = propItems[i]; \
 	updateCondition(isFloat, value, side##Py, "corner_sizes[" #i "]") \
 	else { \
 		isFloat = false; \
