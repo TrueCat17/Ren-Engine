@@ -1,5 +1,7 @@
 #include "node.h"
 
+#include <map>
+
 #include <Python.h>
 
 #include "gv.h"
@@ -15,6 +17,9 @@
 static const uint32_t NODES_IN_PART = 5000;
 static uint32_t countNodes = 0;
 static std::vector<Node*> nodes;
+
+static std::map<uint32_t, ScreenVars> screenVars;
+
 
 Node::Node(const std::string &fileName, uint32_t numLine, uint32_t id):
     fileName(String::getConstPtr(fileName)),
@@ -51,6 +56,12 @@ void Node::destroyAll() {
 	}
 	countNodes = 0;
 	nodes.clear();
+
+	screenVars.clear();
+}
+
+ScreenVars& Node::getScreenVars() const {
+	return screenVars[id];
 }
 
 

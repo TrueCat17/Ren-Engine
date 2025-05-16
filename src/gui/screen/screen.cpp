@@ -140,7 +140,7 @@ static void makeScreenVars(const std::string &name,
                            PyObject *args, PyObject *kwargs)
 {
 	Node *node = Screen::getDeclared(name);
-	auto &vars = node->vars;
+	auto &vars = node->getScreenVars();
 	size_t countVars = vars.size();
 
 	std::string code =

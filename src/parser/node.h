@@ -7,6 +7,8 @@
 
 typedef struct _object PyObject;
 
+//elem = { varName, pyCodeForValue }
+using ScreenVars = std::vector<std::pair<std::string, std::string>>;
 
 class Node {
 private:
@@ -45,10 +47,9 @@ public:
 	std::string command;//$, play, image, show, ...
 	std::string params; //text to out, command to execute, condition to check, name for main/label/screen, ...
 
-	//for screen vars (args)
-	std::vector<std::pair<std::string, std::string>> vars;//elem = {varName, pyCodeForValue}
-
 	std::vector<Node*> children;
+
+	ScreenVars& getScreenVars() const;
 
 	PyObject* getPyChildren(bool isRoot = true) const;
 

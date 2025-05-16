@@ -338,6 +338,8 @@ static void initScreenNode(Node *node) {
 				return;
 			}
 
+			auto &vars = node->getScreenVars();
+
 			argsStr = Algo::clear(argsStr);
 			args = Algo::getArgs(argsStr, ',');
 			for (const std::string& arg : args) {
@@ -379,16 +381,13 @@ static void initScreenNode(Node *node) {
 						Utils::outMsg("Parser::initScreenNode",
 						              "Invalid default value <" + value + "> for argument <" + name + ">\n\n" +
 						              node->getPlace());
-						value = "None";
 					}
 				}
 
 				if (!name.empty() &&
-				    std::find_if(
-				        node->vars.cbegin(),
-				        node->vars.cend(),
+				    std::find_if(vars.cbegin(), vars.cend(),
 				        [&name] (const auto &p) { return p.first == name; }
-				    ) != node->vars.cend()
+				    ) != vars.cend()
 				) {
 					ok = false;
 					std::string error;
@@ -403,14 +402,14 @@ static void initScreenNode(Node *node) {
 				}
 
 				if (ok) {
-					node->vars.push_back({ name, value });
+					vars.push_back({ name, value });
 				}
 			}
 
 			// messages copypasted from same python2 errors
-			for (i = 1; i < node->vars.size(); ++i) {
-				bool prevWithDefault = !node->vars[i - 1].second.empty();
-				bool curWithDefault  = !node->vars[i].second.empty();
+			for (i = 1; i < vars.size(); ++i) {
+				bool prevWithDefault = !vars[i - 1].second.empty();
+				bool curWithDefault  = !vars[i].second.empty();
 				bool error = prevWithDefault && !curWithDefault;
 				if (!error) continue;
 

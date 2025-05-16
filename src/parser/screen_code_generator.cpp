@@ -308,59 +308,63 @@ static std::string initCycleCode(Node *node) {
 static std::string initUseCode(Node *node, const std::string &index) {
 	Node *screenNode = Screen::getDeclared(node->params);
 	if (!screenNode) return "";
-	if (screenNode->vars.size() < node->vars.size()) {
+
+	auto &nodeVars = node->getScreenVars();
+	auto &screenNodeVars = screenNode->getScreenVars();
+
+	if (screenNodeVars.size() < nodeVars.size()) {
 		Utils::outMsg("ScreenCodeGenerator::initUseCode",
-		              "Maximum " + std::to_string(screenNode->vars.size()) + " args expected"
-		              "for screen <" + node->params + ">, got " + std::to_string(node->vars.size()) + "\n\n" +
+		              "Maximum " + std::to_string(screenNodeVars.size()) + " args expected"
+		              "for screen <" + node->params + ">, got " + std::to_string(nodeVars.size()) + "\n\n" +
 		              node->getPlace());
 	}
 
 	std::string inner = initCode(screenNode, index);
 	std::string res =
 	        "_SL_screen_vars_stack.append(screen)\n"
-	        "screen = Object()\n";
+	        "screen = SimpleObject()\n";
 
 
 	std::vector<std::string> argsWasSet;
-	argsWasSet.reserve(node->vars.size());
+	argsWasSet.reserve(nodeVars.size());
 
-	for (size_t i = 0; i < node->vars.size(); ++i) {
-		auto &[varName, varCode] = node->vars[i];
+	for (size_t i = 0; i < nodeVars.size(); ++i) {
+		auto &[varName, varCode] = nodeVars[i];
 
 		const std::string *namePtr = &varName;
-		if (namePtr->empty() && i < screenNode->vars.size()) {
-			namePtr = &screenNode->vars[i].first;
+		if (namePtr->empty()) {
+			if (i >= screenNodeVars.size()) continue;//error has already been displayed
+
+			namePtr = &screenNodeVars[i].first;
 		}
 		const std::string &name = *namePtr;
 
-		if (!name.empty()) {
-			if (std::find_if(
-			        screenNode->vars.cbegin(),
-			        screenNode->vars.cend(),
-			        [&name] (const std::pair<std::string, std::string> &p) -> bool { return p.first == name; }
-			) == screenNode->vars.cend())
-			{
-				Utils::outMsg("ScreenCodeGenerator::initUseCode",
-				              "No param <" + name + "> in screen <" + node->params + ">\n\n" +
-				              node->getPlace());
-			}else {
-				argsWasSet.push_back(name);
-				res += "screen." + name + " = " + varCode + "\n";
-			}
+		if (std::find_if(screenNodeVars.cbegin(), screenNodeVars.cend(),
+		        [&name] (const auto &p) { return p.first == name; }
+		    ) == screenNodeVars.cend()
+		) {
+			Utils::outMsg("ScreenCodeGenerator::initUseCode",
+			              "No param <" + name + "> in screen <" + node->params + ">\n\n" +
+			              node->getPlace());
+			continue;
 		}
+
+		argsWasSet.push_back(name);
+		res += "screen." + name + " = " + varCode + "\n";
 	}
 
-	for (size_t i = 0; i < screenNode->vars.size(); ++i) {
-		auto &[varName, varCode] = screenNode->vars[i];
+	for (size_t i = 0; i < screenNodeVars.size(); ++i) {
+		auto &[varName, varCode] = screenNodeVars[i];
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
 
 		if (varCode.empty()) {
 			Utils::outMsg("ScreenCodeGenerator::initUseCode",
 			              "No value for param <" + varName + "> in screen <" + node->params + ">\n\n" +
 			              node->getPlace());
-		}else {
-			res += "screen." + varName + " = " + varCode + "\n";
+			continue;
 		}
+
+		res += "screen." + varName + " = " + varCode + "\n";
 	}
 
 	res += "\n" +
