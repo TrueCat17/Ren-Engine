@@ -33,7 +33,7 @@ init -995 python:
 	def console__add(s):
 		def remove_empty_lines(s):
 			lines = s.split('\n')
-			lines = filter(lambda i: i and not i.isspace(), lines)
+			lines = [i for i in lines if i.strip()]
 			return '\n'.join(lines)
 		
 		index = console.get_cursor_index()
@@ -91,10 +91,11 @@ init -995 python:
 			console.input = persistent.console_commands[-console.num_command]
 			console.cursor_y = 0
 			console.cursor_x = console.input.index('\n') if '\n' in console.input else len(console.input)
-		elif console.input != console.input_tmp:
+		else:
 			console.num_command = 0
-			console.cursor_x = console.cursor_y = 0
-			console.input = console.input_tmp
+			if console.input != console.input_tmp:
+				console.cursor_x = console.cursor_y = 0
+				console.input = console.input_tmp
 	
 	def console__backspace():
 		start_index = console.get_cursor_index()
@@ -159,9 +160,11 @@ init -995 python:
 			return
 		
 		lines = command.split('\n')
-		for i in range(len(lines)):
+		for i, line in enumerate(lines):
 			pre = '... ' if i else '>>> '
-			console.out(pre + lines[i])
+			console.out(pre + line)
+		
+		orig_command = command
 		
 		if ' ' in command:
 			index = command.index(' ')
@@ -200,7 +203,7 @@ init -995 python:
 				sprites.hide(args)
 		
 		else:
-			code = command + ' ' + params
+			code = orig_command
 			try:
 				cmpl = compile(code, 'Console', 'eval')
 			except:
@@ -217,13 +220,15 @@ init -995 python:
 	
 	
 	def console__watch_add(code):
-		eval_obj = Eval(code, 'Console', 1, depth = 1)
+		eval_obj = Eval(code, 'Console: watch', console.to_watch_index, depth = 1)
 		if not eval_obj.compiled:
 			return
 		
-		if not console.to_watch:
+		if not has_screen('console_watching'):
 			show_screen('console_watching')
+		
 		console.to_watch.append((code, eval_obj))
+		console.to_watch_index += 1
 	
 	def console__watch_del(code_to_del):
 		for code, cmpl in console.to_watch:
@@ -233,7 +238,7 @@ init -995 python:
 					hide_screen('console_watching')
 				break
 		else:
-			console.out('<' + code_to_del + '> not watched')
+			console.out('<%s> not watched' % (code_to_del, ))
 	
 	def console__watch_clear():
 		console.to_watch = []
@@ -254,33 +259,30 @@ init -995 python:
 	
 	def console__update_watching_text():
 		xsize_max_real = get_absolute(console.watching_xsize_max, get_stage_width()) - console.watching_xindent * 2
-		text_size = style.console_text.text_size
+		text_size = style.console_text.get_current('text_size')
 		
 		text = []
 		xsize_max = 0
 		ysize = 0
 		for code, eval_obj in console.to_watch:
-			res_start = code + ': '
-			try:
-				res_end = str(eval_obj()).replace('{', '{{')
-			except:
-				res_end = 'Eval Failed'
-			text.append(res_start + '{color=' + console.watching_calced_color + '}' + res_end + '{/color}')
+			res = str(eval_obj()).replace('{', '{{')
+			text.append('%s: {color=%s}%s{/color}' % (code, console.watching_calced_color, res))
 			
-			xsize = get_text_width(res_start + res_end, text_size)
+			xsize = get_text_width(code + ': ' + res, text_size)
 			if xsize > 0:
-				ysize += int(math.ceil(xsize / xsize_max_real)) * text_size
+				ysize += math.ceil(xsize / xsize_max_real) * text_size
 			xsize_max = max(xsize, xsize_max)
 		
-		console.watching_text = text
-		console.watching_xsize = min(xsize_max, xsize_max_real)
-		console.watching_ysize = ysize
+		screen_tmp.watching_text = text
+		screen_tmp.watching_xsize = min(xsize_max, xsize_max_real)
+		screen_tmp.watching_ysize = ysize
 	
 	
 	build_object('console')
 	console.help = 'commands: clear, jump, call, scene, show, hide, watch <expr>, unwatch <expr>, unwatchall or python-expr'
 	
 	console.to_watch = []
+	console.to_watch_index = 1
 	
 	console.background = im.rect('#000')
 	console.background_alpha = 0.15
@@ -300,7 +302,7 @@ init:
 	
 	style console_text is text:
 		font         'Consola'
-		color        0xFFFFFF
+		color        '#FFF'
 		outlinecolor 0
 		text_size    20
 	
@@ -313,7 +315,7 @@ init:
 		console.watching_xindent = 20
 		console.watching_yindent = 20
 		console.watching_xsize_max = 0.5
-		console.watching_calced_color = '#FFFF00'
+		console.watching_calced_color = '#FF0'
 
 
 
@@ -327,17 +329,18 @@ screen console_watching:
 		xpos get_absolute(console.watching_xalign, get_stage_width())  + console.watching_xoffset
 		ypos get_absolute(console.watching_yalign, get_stage_height()) + console.watching_yoffset
 		
+		$ screen_tmp = SimpleObject()
 		$ console.update_watching_text()
-		xsize console.watching_xsize + console.watching_xindent * 2
-		ysize console.watching_ysize + console.watching_yindent * 2
+		xsize screen_tmp.watching_xsize + console.watching_xindent * 2
+		ysize screen_tmp.watching_ysize + console.watching_yindent * 2
 		
 		vbox:
 			align 0.5
 			
-			for text in console.watching_text:
+			for text in screen_tmp.watching_text:
 				text text:
 					style 'console_text'
-					xsize console.watching_xsize
+					xsize screen_tmp.watching_xsize
 
 
 screen console:
@@ -367,21 +370,24 @@ screen console:
 	
 	
 	python:
-		console.input_height = style.console_text.text_size * console.input.count('\n')
+		screen_tmp = SimpleObject()
 		
-		console.output_height = get_stage_height() - console.input_height
-		console.output_lines = console.output_height // style.console_text.text_size
+		screen_tmp.text_size = style.console_text.get_current('text_size')
+		screen_tmp.input_height = screen_tmp.text_size * (console.input.count('\n') + 1)
 		
-		console.output = '\n'.join(persistent.console_text.split('\n')[-console.output_lines:])
+		screen_tmp.output_height = get_stage_height() - screen_tmp.input_height
+		screen_tmp.output_lines = math.ceil(screen_tmp.output_height / screen_tmp.text_size)
+		
+		screen_tmp.output = '\n'.join(persistent.console_text.split('\n')[-screen_tmp.output_lines:])
 	
 	image console.background:
 		alpha console.background_alpha
 		size 1.0
 	
 	vbox:
-		align (0.5, 1.0)
+		yalign 1.0
 		
-		text console.output:
+		text screen_tmp.output:
 			style 'console_text'
 			xpos  50
 			xsize get_stage_width() - 50
@@ -394,4 +400,3 @@ screen console:
 			text console.get_input_text():
 				style 'console_text'
 				xsize get_stage_width() - 50
-

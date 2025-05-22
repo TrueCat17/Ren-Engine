@@ -23,7 +23,7 @@ init -1010 python:
 			if not obj_name: continue
 			
 			loc_obj = location_objects[obj_name]
-			max_count = loc_obj['max_in_inventory_cell']
+			max_count = loc_obj.max_in_inventory_cell
 			
 			# move to prev cells
 			for i in range(new_size):
@@ -40,11 +40,11 @@ init -1010 python:
 			if obj_count == 0: continue
 			
 			# remove_to_location
-			if loc_obj['remove_to_location']:
+			if loc_obj.remove_to_location:
 				r = inventory.throw_radius
 				for i in range(obj_count):
 					dx, dy = random.randint(-r, r), random.randint(-r, r)
-					add_location_object(cur_location.name, {'x': me.x + dx, 'y': me.y + dy}, obj_name)
+					add_location_object(cur_location.name, { 'x': me.x + dx, 'y': me.y + dy }, obj_name)
 		
 		inv[-dsize:] = []
 	
@@ -57,7 +57,7 @@ init -1010 python:
 		if not loc_obj:
 			out_msg('inventory.add', 'Object <%s> not registered' % (obj_name, ))
 			return count
-		max_count = loc_obj['max_in_inventory_cell']
+		max_count = loc_obj.max_in_inventory_cell
 		if max_count == 0:
 			return count
 		
@@ -66,15 +66,14 @@ init -1010 python:
 				if step == 1 and element[0] != obj_name: continue
 				if step == 2 and element[0]: continue
 				
-				if not element[0]:
-					element[:] = [obj_name, 0]
-				
 				d = min(max_count - element[1], count)
 				if d > 0:
+					if not element[0]:
+						element[0] = obj_name
 					element[1] += d
 					count -= d
 					if count == 0:
-						break
+						return 0
 		
 		return count
 	
@@ -129,7 +128,7 @@ init -1010 python:
 			obj_name, obj_count = old[i]
 			if not obj_name: continue
 			
-			max_count = location_objects[obj_name]['max_in_inventory_cell']
+			max_count = location_objects[obj_name].max_in_inventory_cell
 			for j in range(new_len):
 				obj_name_new, obj_count_new = new[j]
 				if not obj_name_new:

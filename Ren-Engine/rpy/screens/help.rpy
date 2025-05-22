@@ -10,9 +10,9 @@ init -500 python:
 	
 	
 	def help__init():
-		f = open(help.path_dir + _(help.path_file))
-		content = f.read().strip().replace('\\\n', '').replace('\t', '  ')
-		f.close()
+		with open(help.path_dir + _(help.path_file), 'rb') as f:
+			content = f.read().decode('utf-8')
+			content = content.strip().replace('\\\n', '').replace('\t', '  ')
 		
 		help.groups = []
 		groups = content.split('\n\n\n')
@@ -44,7 +44,7 @@ init -500 python:
 					text = text[:start] + data[var_name] + text[end + 1:]
 					end += len(data[var_name]) - (end + 1 - start)
 				else:
-					out_msg('help.init, section %s' % name, 'var name <' + var_name + '> is undefined')
+					out_msg('help.init, section %s' % name, 'var name <%s> is undefined' % var_name)
 					break
 			
 			help.groups.append((name, text.strip()))
@@ -56,6 +56,8 @@ init -500 python:
 		if not help.groups: # not inited
 			return
 		
+		sw, sh = get_stage_size()
+		
 		help.button_width = 0
 		text_size = style.help_button.get_current('text_size')
 		for name, text in help.groups:
@@ -63,19 +65,19 @@ init -500 python:
 			help.button_width = max(help.button_width, width)
 		
 		arrow_size = help.button_spacing * 2 + style.help_button.get_current('ysize')
-		max_width = get_absolute(help.width, get_stage_width()) - arrow_size * 2
+		max_width = get_absolute(help.width, sw) - arrow_size * 2
 		help.button_count = min(len(help.groups), int(max_width / (help.button_width + help.button_spacing)))
 		
 		help.button_start_index = 0
 		help.button_max_index = len(help.groups) - help.button_count
 		
 		
-		help._xsize = get_absolute(help.width,  get_stage_width())
-		help._ysize = get_absolute(help.height, get_stage_height())
+		help._xsize = get_absolute(help.width,  sw)
+		help._ysize = get_absolute(help.height, sh)
 		
-		help._xindent = get_absolute(help.xindent, get_stage_width())
-		help._indent = get_absolute(help.indent, get_stage_height())
-		help._indent_for_buttons = get_absolute(help.indent_for_buttons, get_stage_height())
+		help._xindent = get_absolute(help.xindent, sw)
+		help._indent = get_absolute(help.indent, sh)
+		help._indent_for_buttons = get_absolute(help.indent_for_buttons, sh)
 		
 		help._viewport_xsize = help._xsize - help._xindent * 3 - help.slider_width
 		help._viewport_ysize = help._ysize - help._indent - help._indent_for_buttons
@@ -124,13 +126,13 @@ init -500 python:
 	
 	# only relative sizes here
 	help.indent = 0.03
-	help.xindent = help.indent / get_from_hard_config("window_w_div_h", float)
+	help.xindent = help.indent / get_from_hard_config('window_w_div_h', float)
 	help.indent_for_buttons = 0.1
 	help.viewport_height = help.height - help.indent_for_buttons - help.indent
-
-
-init 1000 python:
-	slider_v_init('help', help.viewport_height, button_size = help.slider_width)
+	
+	def help__init_slider():
+		slider_v_init('help', help.viewport_height, button_size = help.slider_width)
+	signals.add('inited', help__init_slider)
 
 init:
 	style help_background_button is button:
@@ -144,7 +146,7 @@ init:
 	style help_button is menu_button
 	
 	style help_text is text:
-		color 0x000000
+		color 0
 
 
 screen help:
@@ -154,12 +156,14 @@ screen help:
 	key 'ESCAPE' action hide_screen('help')
 	button:
 		style 'help_background_button'
-		action hide_screen('help')
+		action    hide_screen('help')
+		alternate hide_screen('help')
 	
 	image help.border_image:
 		align 0.5
 		xsize help._xsize + help.border_size * 2
 		ysize help._ysize + help.border_size * 2
+		corner_sizes help.border_size
 	
 	image help.background_image:
 		align 0.5
@@ -169,14 +173,13 @@ screen help:
 		hbox:
 			spacing help.button_spacing
 			xalign 0.5
-			xsize help._xsize
+			xsize help.width
 			ysize help.indent_for_buttons
 			
-			textbutton '<':
+			textbutton '←':
 				style 'help_button'
-				bold   True
 				yalign 0.5
-				xsize  style.help_button.ysize
+				xsize  style.help_button.get_current('ysize')
 				alpha  1 if help.button_start_index != 0 else 0
 				action 'help.button_start_index = max(0, help.button_start_index - 1)'
 			
@@ -189,11 +192,10 @@ screen help:
 					alpha  1 if name or len(help.groups) > 1 else 0
 					action [help.select_group(i), slider_v_set_value('help', 0)]
 			
-			textbutton '>':
+			textbutton '→':
 				style 'help_button'
-				bold   True
 				yalign 0.5
-				xsize  style.help_button.ysize
+				xsize  style.help_button.get_current('ysize')
 				alpha  1 if help.button_start_index != help.button_max_index else 0
 				action 'help.button_start_index = min(help.button_start_index + 1, help.button_max_index)'
 		
@@ -217,5 +219,5 @@ screen help:
 					yalign slider_v_get_value('help')
 			
 			null:
-				xpos help._viewport_xsize + help._xindent
+				xpos help._xindent + help._viewport_xsize
 				use slider_v('help')

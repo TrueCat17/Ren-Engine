@@ -50,9 +50,7 @@ init -995 python:
 				del arrays[name]
 		
 		for name, time in screen_times.items():
-			if name not in arrays:
-				arrays[name] = []
-			array = arrays[name]
+			array = arrays.setdefault(name, [])
 			array.append((cur_time, time * 1000))
 			
 			for i in range(len(array)):
@@ -61,57 +59,56 @@ init -995 python:
 			array[:i] = []
 	
 	def debug_screen__get_screen_times():
-		res = []
-		max_len = 0
-		for name in debug_screen.screen_time_arrays:
-			max_len = max(max_len, len(name))
-		
-		def with_spaces(name):
-			return name + ' ' * (max_len - len(name))
-		
-		names = sorted(debug_screen.screen_time_arrays.keys())
 		mode = debug_screen.get_show_mode()
+		
 		if mode == 'Last Frame':
-			for name in names:
-				array = debug_screen.screen_time_arrays[name]
-				if not array: continue
-				res.append([with_spaces(name), ': ', '%.1f' % array[-1][1], ' ms'])
+			def get_time(array):
+				return array[-1][1]
+		
 		elif mode == 'Mean (second)':
-			for name in names:
-				array = debug_screen.screen_time_arrays[name]
-				if not array: continue
+			def get_time(array):
 				sum_value = 0.0
 				for prev_time, time in array:
 					sum_value += time
-				res.append([with_spaces(name), ': ', '%.1f' % (sum_value / len(array)), ' ms'])
+				return sum_value / len(array)
+		
 		elif mode == 'Max (second)':
-			for name in names:
-				array = debug_screen.screen_time_arrays[name]
-				if not array: continue
+			def get_time(array):
 				max_value = 0.0
 				for prev_time, time in array:
 					max_value = max(max_value, time)
-				res.append([with_spaces(name), ': ', '%.1f' % max_value, ' ms'])
-		else:
-			out_msg('Unexpected debug_screen show_mode: ' + str(mode))
+				return max_value
 		
+		else:
+			out_msg('Unexpected debug_screen show_mode: %s' % (mode, ))
+			return []
+		
+		params = []
+		max_name_len = 0
+		names = sorted(debug_screen.screen_time_arrays.keys())
+		for name in names:
+			array = debug_screen.screen_time_arrays[name]
+			if array:
+				params.append((name, get_time(array)))
+				max_name_len = max(max_name_len, len(name))
+		
+		res = []
+		for name, time in params:
+			res.append('%s: %.1f ms' % (name.ljust(max_name_len), time))
 		return res
 	
 	build_object('debug_screen')
 	signals.add('show_screen', debug_screen.clear_fps_time_array)
 	
 	
-	if config.debug_screen_visible_mode is None:
-		config.debug_screen_visible_mode = 0
-	if config.debug_screen_show_mode is None:
-		config.debug_screen_show_mode = 'Mean (second)'
-	if config.debug_screen_align is None:
-		config.debug_screen_align = (0, 0)
+	config.setdefault('debug_screen_visible_mode', 0)
+	config.setdefault('debug_screen_show_mode', 'Mean (second)')
+	config.setdefault('debug_screen_align', (0, 0))
 	
 	debug_screen.size = (400, 250)
 	debug_screen.indent = 10
 	debug_screen.ext_size = (debug_screen.size[0] + debug_screen.indent * 2, debug_screen.size[1] + debug_screen.indent * 2)
-	debug_screen.background_alpha = 0.3
+	debug_screen.bg = im.rect('#0005')
 	
 	debug_screen.align_btn_corner = im.rect('#F00')
 	
@@ -123,22 +120,21 @@ init -995 python:
 	debug_screen.screen_time_arrays = {}
 
 
-init:
+init -1000:
 	style debug_screen_fps_text is text:
 		font     'Alcdnova'
 		text_size 24
-		color        0xFFFF00
-		outlinecolor 0x800000
+		color        '#FF0'
+		outlinecolor '#800'
 	
 	
 	style debug_screen_mode_btn is textbutton:
-		color        0xFFFFFF
-		outlinecolor 0x000000
-		xsize 125
+		color '#FFF'
+		outlinecolor 0
 	
 	style debug_screen_text is text:
-		color        0xFFFFFF
-		outlinecolor 0x000000
+		color '#FFF'
+		outlinecolor 0
 		font     'Consola'
 		text_size 18
 	
@@ -181,15 +177,13 @@ screen debug_screen_fps_and_alignment:
 screen debug_screen_buttons:
 	has hbox
 	spacing debug_screen.indent
-	
 	xalign 0.5
-	
-	xsize debug_screen.size[0]
-	ysize style.debug_screen_mode_btn.get_current('ysize')
 	
 	for mode in ('Mean (second)', 'Max (second)', 'Last Frame'):
 		textbutton _(mode):
 			style 'debug_screen_mode_btn'
+			xsize (debug_screen.ext_size[0] - debug_screen.indent * 4) // 3
+			
 			ground debug_screen['btn_ground_selected' if debug_screen.get_show_mode() == mode else 'btn_ground']
 			hover  debug_screen.btn_hover
 			action debug_screen.set_show_mode(mode)
@@ -200,15 +194,14 @@ screen debug_screen_text:
 	
 	xsize debug_screen.size[0]
 	
-	for text_parts in debug_screen.get_screen_times():
-		hbox:
+	for text in debug_screen.get_screen_times():
+		text text:
+			style 'debug_screen_text'
 			align 0.0 if config.debug_screen_align[0] < 0.5 else 1.0
-			
-			for text in text_parts:
-				text text style 'debug_screen_text'
 
 screen debug_screen:
 	zorder 1000000
+	ignore_modal True
 	
 	# 0, 1, 2, 3 -> off, back+fps+text, fps+text, fps
 	if config.debug_screen_visible_mode:
@@ -218,9 +211,9 @@ screen debug_screen:
 			align config.debug_screen_align
 			size  debug_screen.ext_size
 			
-			image im.rect('#000'):
+			image debug_screen.bg:
 				size  debug_screen.ext_size
-				alpha debug_screen.background_alpha if config.debug_screen_visible_mode == 1 else 0
+				alpha 1 if config.debug_screen_visible_mode == 1 else 0
 			
 			null:
 				pos  debug_screen.indent
@@ -241,4 +234,3 @@ screen debug_screen:
 							use debug_screen_text
 							use debug_screen_buttons
 						use debug_screen_fps_and_alignment
-

@@ -149,9 +149,9 @@ init -10000 python:
 	
 	
 	def QuickLoad():
-		return Function(quick_load)
+		return quick_load
 	def QuickSave():
-		return Function(quick_save)
+		return quick_save
 	
 	def FilePage(page):
 		return Function(slots.set_page, page)

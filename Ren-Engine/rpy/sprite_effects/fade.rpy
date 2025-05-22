@@ -38,7 +38,7 @@ init -9000 python:
 				dtime = get_game_time() - self.start_time
 			else:
 				dtime = 0
-				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
+				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			if dtime < self.out_time + self.hold_time:
 				sprites.screen.new_data.alpha = in_bounds(dtime / self.out_time, 0.0, 1.0)
@@ -65,7 +65,6 @@ init -9000 python:
 	fade2 = Fade(1)
 	fade3 = Fade(1.5)
 	
-	flash = Fade(1, color="#FFF")
-	flash2 = Fade(2, 2, 2, color="#FFF")
-	flash_red = Fade(1, color="#E11")
-
+	flash = Fade(1, color = "#FFF")
+	flash2 = Fade(2, 2, 2, color = "#FFF")
+	flash_red = Fade(1, color = "#E11")

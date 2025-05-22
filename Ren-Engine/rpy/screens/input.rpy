@@ -15,7 +15,7 @@ init -995 python:
 		input.cancel_btn = cancel_btn
 		
 		if type(mask) is str and len(mask) > 0:
-			input.mask = mask[0] # for like password
+			input.mask = mask[0] # for <password> mode
 			if input.mask == '{':
 				input.mask = text_nav.key_tag
 		else:
@@ -67,7 +67,7 @@ init -995 python:
 			return input.mask * len(input.res)
 		return input.res
 	def input__get_text():
-		cursor = '{alpha=' + ('1' if time.time() % 2 < 1 else '0.01') + '}' + input.cursor + '{/alpha}'
+		cursor = '{alpha=%s}%s{/alpha}' % (1 if time.time() % 2 < 1 else 0.01, input.cursor)
 		text = input.get_masked()
 		res = text[:input.index] + cursor + text[input.index:]
 		return res.replace(text_nav.key_tag, '{{')
@@ -132,36 +132,39 @@ init -995 python:
 	
 	def input__update():
 		w, h = get_stage_size()
-		spacing = input.real_spacing = get_absolute(input.spacing, h)
+		spacing = screen_tmp.spacing = get_absolute(input.spacing, h)
+		
+		input_text_size = style.input_text.get_current('text_size')
+		prompt_text_size = style.input_prompt.get_current('text_size')
 		
 		if input.tf_bg_width:
-			input.tf_bg_xsize = get_absolute(input.tf_bg_width, w)
+			screen_tmp.tf_bg_xsize = get_absolute(input.tf_bg_width, w)
 		else:
-			input.tf_bg_xsize = get_text_width('a' * input.length, style.input_text.text_size) + input.tf_xindent * 2
+			screen_tmp.tf_bg_xsize = get_text_width('a' * input.length, input_text_size) + input.tf_xindent * 2
 		
 		if input.tf_bg_height:
-			input.tf_bg_ysize = get_absolute(input.tf_bg_height, h)
+			screen_tmp.tf_bg_ysize = get_absolute(input.tf_bg_height, h)
 		else:
-			input.tf_bg_ysize = style.input_text.text_size + input.tf_yindent * 2
+			screen_tmp.tf_bg_ysize = input_text_size + input.tf_yindent * 2
 		
 		if input.bg_width:
-			input.bg_xsize = get_absolute(input.bg_width, w)
+			screen_tmp.bg_xsize = get_absolute(input.bg_width, w)
 		else:
-			prompt_xsize = get_text_width(input.prompt, style.input_prompt.text_size)
+			prompt_xsize = get_text_width(input.prompt, prompt_text_size)
 			
 			btns = len(input.btns)
-			btns_xsize = get_absolute(style.input_button.xsize, w) * btns + spacing * (btns - 1)
+			btns_xsize = style.input_button.get_current('xsize') * btns + spacing * (btns - 1)
 			
-			input.bg_xsize = max(prompt_xsize, input.tf_bg_xsize, btns_xsize) + spacing * 2
+			screen_tmp.bg_xsize = max(prompt_xsize, screen_tmp.tf_bg_xsize, btns_xsize) + spacing * 2
 		
 		if input.bg_height:
-			input.bg_ysize = get_absolute(input.bg_height, h)
+			screen_tmp.bg_ysize = get_absolute(input.bg_height, h)
 		else:
-			input.bg_ysize = get_absolute(style.input_button.ysize, h) + spacing * 2
+			screen_tmp.bg_ysize = style.input_button.get_current('ysize') + spacing * 2
 			if not input.confirming:
-				input.bg_ysize += input.tf_bg_ysize + spacing
+				screen_tmp.bg_ysize += screen_tmp.tf_bg_ysize + spacing
 			if input.prompt:
-				input.bg_ysize += style.input_prompt.text_size + spacing
+				screen_tmp.bg_ysize += prompt_text_size + spacing
 	
 	
 	build_object('input')
@@ -189,11 +192,8 @@ init:
 		input.bg_border = im.rect('#222')
 		input.bg_border_size = 4 # 0 - disable
 		
-		input.prompt_color = '#000'
-		
 		# tf = text field
 		input.tf_bg = input.bg
-		input.tf_color = '#000'
 		input.tf_bg_width = None # None = auto
 		input.tf_bg_height = None # None = auto
 		
@@ -217,7 +217,7 @@ init:
 	
 	style input_text is text:
 		font 'Consola'
-		color 0x000000
+		color 0
 		text_size 24
 		text_align 'center'
 	
@@ -229,6 +229,8 @@ init:
 screen input:
 	modal True
 	zorder 1000000
+	
+	$ screen_tmp = SimpleObject()
 	
 	if not input.confirming:
 		key 'ESCAPE' action (input.close if input.cancel_btn else pause_screen.show)
@@ -263,21 +265,20 @@ screen input:
 	$ input.update()
 	
 	null:
-		xsize input.bg_xsize + input.bg_border_size * 2
-		ysize input.bg_ysize + input.bg_border_size * 2
+		xsize screen_tmp.bg_xsize + input.bg_border_size * 2
+		ysize screen_tmp.bg_ysize + input.bg_border_size * 2
 		xalign input.xalign
 		yalign input.yalign
 		
-		if input.bg_border_size:
-			image input.bg_border:
-				corner_sizes -1
-				xsize input.bg_xsize + input.bg_border_size * 2
-				ysize input.bg_ysize + input.bg_border_size * 2
+		image input.bg_border:
+			xsize screen_tmp.bg_xsize + input.bg_border_size * 2
+			ysize screen_tmp.bg_ysize + input.bg_border_size * 2
+			corner_sizes input.bg_border_size
 		
 		image input.bg:
 			corner_sizes -1
-			xsize input.bg_xsize
-			ysize input.bg_ysize
+			xsize screen_tmp.bg_xsize
+			ysize screen_tmp.bg_ysize
 			align 0.5
 			
 			use input_content
@@ -286,41 +287,38 @@ screen input:
 screen input_content:
 	has vbox
 	align 0.5
-	spacing input.real_spacing
+	spacing screen_tmp.spacing
 	
 	text _(input.prompt):
 		style 'input_prompt'
-		color input.prompt_color
 	
 	if not input.confirming:
 		null:
 			xalign 0.5
-			xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
-			ysize input.tf_bg_ysize + input.tf_bg_border_size * 2
+			xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
+			ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
 			
-			if input.tf_bg_border_size:
-				image input.tf_bg_border:
-					corner_sizes -1
-					xsize input.tf_bg_xsize + input.tf_bg_border_size * 2
-					ysize input.tf_bg_ysize + input.tf_bg_border_size * 2
+			image input.tf_bg_border:
+				xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
+				ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
+				corner_sizes input.tf_bg_border_size
 				
 			image input.tf_bg:
 				corner_sizes -1
-				xsize input.tf_bg_xsize
-				ysize input.tf_bg_ysize
+				xsize screen_tmp.tf_bg_xsize
+				ysize screen_tmp.tf_bg_ysize
 				align 0.5
 				
 				text input.get_text():
 					style 'input_text'
-					color input.tf_color
 					xpos  input.tf_xindent
 					ypos  input.tf_yindent
-					xsize input.tf_bg_xsize
-					ysize input.tf_bg_ysize
+					xsize screen_tmp.tf_bg_xsize
+					ysize screen_tmp.tf_bg_ysize
 	
 	hbox:
 		xalign 0.5
-		spacing input.real_spacing
+		spacing screen_tmp.spacing
 		
 		for text, action in input.btns:
 			textbutton _(text):

@@ -7,4 +7,3 @@ screen save:
 	save   False
 	
 	use slots('save')
-

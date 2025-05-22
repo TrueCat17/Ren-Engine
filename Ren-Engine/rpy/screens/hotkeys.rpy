@@ -3,7 +3,6 @@ init -900 python:
 		screenshot = ['P'],
 		console = ['shift_O'],
 		
-		help = ['F1'],
 		toggle_fps_visible = ['F3'],
 		toggle_fullscreen = ['F11'],
 		
@@ -22,10 +21,10 @@ init -900 python:
 		toggle_fps_visible = debug_screen.next_visible_mode,
 		toggle_fullscreen = toggle_fullscreen,
 		
-		quicksave = QuickSave(),
-		quickload = QuickLoad(),
+		quicksave = quick_save,
+		quickload = quick_load,
 		
-		pause = 'pause_screen.show()',
+		pause = pause_screen.show,
 	))
 
 
@@ -35,12 +34,12 @@ init -901 python:
 	
 	config.underlay = []
 	
-	def hotkeys__init(screen_name = None):
+	def hotkeys__init():
 		hotkeys.prepared_keymap = {}
 		hotkeys.keys_to_listen = set(hotkeys.keypad_synonyms)
 		for name, key_list in config.keymap.items():
 			if name == 'activate_sound':
-				out_msg('hotkeys.init', _('Name <activate_sound> is disallowed for hotkey'))
+				out_msg('hotkeys.init', 'Name <activate_sound> is disallowed for hotkey')
 				continue
 			
 			for keys_str in key_list:
@@ -52,20 +51,20 @@ init -901 python:
 						keys.pop(-1)
 					keys.append('_')
 				if len(keys) > 2 and hotkeys.only_one_mod_key:
-					out_msg('hotkeys.init', _('Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>') % keys_str)
+					out_msg('hotkeys.init', 'Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>' % keys_str)
 					continue
 				
 				ok = True
 				for key in keys[:-1]:
 					if key not in ('CTRL', 'SHIFT', 'ALT'):
-						out_msg('hotkeys.init', _('Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)') % (keys[0], keys_str))
+						out_msg('hotkeys.init', 'Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)' % (keys[0], keys_str))
 						ok = False
 				if not ok:
 					continue
 				
 				main_key = keys[-1]
 				if main_key not in hotkeys.keys and main_key not in hotkeys.shift_to:
-					out_msg('hotkeys.init', _('Unexpected key <%s> in hotkey <%s>') % (main_key, keys_str))
+					out_msg('hotkeys.init', 'Unexpected key <%s> in hotkey <%s>' % (main_key, keys_str))
 					continue
 				
 				if main_key in hotkeys.shift_to:
@@ -82,7 +81,7 @@ init -901 python:
 				hotkeys.prepared_keymap[keys_str] = name
 				hotkeys.keys_to_listen.add(main_key)
 	
-	signals.add('show_screen', hotkeys__init, times=1) # after all init blocks
+	signals.add('inited', hotkeys__init)
 	
 	
 	def hotkeys__pressed(key):
@@ -97,22 +96,25 @@ init -901 python:
 			else:
 				add_shift = True
 		
+		key = key.upper()
+		
 		ctrl  = 'CTRL_'  if hotkeys.ctrl else ''
 		shift = 'SHIFT_' if add_shift    else ''
 		alt   = 'ALT_'   if hotkeys.alt  else ''
-		key = ctrl + shift + alt + key.upper()
+		keys_str = ctrl + shift + alt + key
 		
-		for screen in hotkeys.disable_on_screens + hotkeys.disable_key_on_screens[key]:
-			if renpy.has_screen(screen):
-				return
+		if key not in hotkeys.fkeys: # F-keys always work
+			for screen in hotkeys.disable_on_screens + hotkeys.disable_key_on_screens[keys_str]:
+				if renpy.has_screen(screen):
+					return
 		
 		
-		name = hotkeys.prepared_keymap.get(key, None)
+		name = hotkeys.prepared_keymap.get(keys_str)
 		if name:
 			for i in config.underlay:
-				funcs = i.get(name, None)
+				funcs = i.get(name)
 				if funcs is not None:
-					sound = i.get('activate_sound', None)
+					sound = i.get('activate_sound')
 					if sound:
 						renpy.play(sound, 'button_click')
 					exec_funcs(funcs)
@@ -139,23 +141,19 @@ init -901 python:
 	hotkeys.only_one_mod_key = True
 	hotkeys.ctrl = hotkeys.shift = hotkeys.alt = False
 	
-	hotkeys.keys = list(alphabet)
-	for i in range(12):
-		hotkeys.keys.append('F' + str(i + 1))
-	hotkeys.keys.extend([
+	hotkeys.fkeys = ['F' + str(i + 1) for i in range(12)]
+	
+	hotkeys.keys = list(alphabet.upper()) + hotkeys.fkeys + [
 		'ESCAPE', 'TAB', 'RETURN', 'SPACE', 'MENU', 'BACKSPACE', 'DELETE', 'INSERT',
 		'HOME', 'END', 'PAGEUP', 'PAGEDOWN',
 		'LEFT', 'RIGHT', 'UP', 'DOWN',
-	])
+	]
 	
 	hotkeys.keypad_synonyms = ['KEYPAD +', 'KEYPAD -', 'KEYPAD *', 'KEYPAD /', 'KEYPAD =']
 	
 	hotkeys.shift_from = list("`1234567890-=,./;'[]\\")
 	hotkeys.shift_to   = list('~!@#$%^&*()_+<>?:"{}|')
 	hotkeys.keys.extend(hotkeys.shift_from)
-	
-	for i in range(len(hotkeys.keys)):
-		hotkeys.keys[i] = hotkeys.keys[i].upper()
 	
 	
 	# disable all hotkeys, if shown 'my_screen' (need for "console", for example)

@@ -22,7 +22,7 @@ init -9000 python:
 				dtime = get_game_time() - self.start_time
 			else:
 				dtime = 0
-				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
+				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			if dtime >= self.time_all:
 				sprites.screen.new_data[self.prop] = 0
@@ -44,4 +44,3 @@ init -9000 python:
 	
 	hpunch = Punch('xpos', 10, 0.1, 0.5)
 	vpunch = Punch('ypos',  7, 0.1, 0.5)
-	

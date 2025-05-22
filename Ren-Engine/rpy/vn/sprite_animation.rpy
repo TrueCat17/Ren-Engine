@@ -184,11 +184,11 @@ init -9000 python:
 					
 					try:
 						evaled = eval(action)
-						if isinstance(evaled, number_types):
+						if type(evaled) in number_types:
 							self.end_pause_time = get_game_time() + evaled
 							return
 						
-						if isinstance(evaled, str):
+						if type(evaled) is str:
 							if image_was_registered(evaled):
 								image_actions = get_image(evaled)
 								self.action_num -= 1
@@ -262,8 +262,8 @@ init -9000 python:
 				names = get_prop_names(args[i])
 				
 				new_value = eval(args[i + 1])
-				if isinstance(names, (list, tuple)):
-					if not isinstance(new_value, (list, tuple)):
+				if type(names) in (list, tuple):
+					if type(new_value) not in (list, tuple):
 						new_value = [new_value] * len(names)
 					
 					old_props = names
@@ -284,7 +284,7 @@ init -9000 python:
 			for prop in self.change_props:
 				name, old_value, new_value = prop
 				
-				if isinstance(new_value, (list, tuple)):
+				if type(new_value) in (list, tuple):
 					value = []
 					for i in range(len(old_value)):
 						new_v = new_value[i]
@@ -300,7 +300,7 @@ init -9000 python:
 		
 		
 		def set_prop(self, prop, value):
-			if isinstance(prop, str):
+			if type(prop) is str:
 				props = get_atl_props(prop)
 				if props is None:
 					self.out_msg('SpriteAnimation.set_prop', 'Unknown property <%s>' % (prop, ))
@@ -322,7 +322,7 @@ init -9000 python:
 				self.out_msg('SpriteAnimation.set_prop', 'Expected %s, got <%s>' % (expected, type(value).__name__))
 			
 			if len(props) == 1:
-				if isinstance(value, (list, tuple)):
+				if type(value) in (list, tuple):
 					self.out_msg('SpriteAnimation.set_prop', 'Expected single value, got list: %s' % (value, ))
 				else:
 					if type(value) not in number_types:
@@ -338,7 +338,7 @@ init -9000 python:
 				def out_len_err():
 					self.out_msg('SpriteAnimation.set_prop', 'Expected list with len %s, got: %s' % (len(props), value))
 				
-				if not isinstance(value, (list, tuple)):
+				if type(value) not in (list, tuple):
 					if type(value) not in number_types:
 						out_not_number_err('int, float, absolute or list/tuple of them', value)
 						return

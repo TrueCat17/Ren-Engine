@@ -1,8 +1,8 @@
 init -1000 python:
 	
-	class ScrollObject(Object):
+	class ScrollObject(SimpleObject):
 		def __init__(self, xpos, ypos, xsize, ysize, **kwargs):
-			Object.__init__(self)
+			SimpleObject.__init__(self)
 			
 			if 'image' in kwargs:
 				self.image = kwargs['image']
@@ -43,17 +43,20 @@ init -1000 python:
 				
 				xpos = ((self.cx % 1) - 1) * xsize + get_absolute(self.xpos, self.location.ysize)
 				for x in (0, 1):
-					res.append({
-						'image':   self.image,
-						'size':   (xsize, ysize),
-						'pos':    (xpos, ypos),
-						'anchor': (0, 0),
-						'crop':   (0, 0, 1.0, 1.0),
-						'alpha':   self.alpha,
-						'zorder':  self.zorder,
-					})
+					part = SimpleObject()
+					part.image  = self.image
+					part.size   = (xsize, ysize)
+					part.pos    = (xpos, ypos)
+					part.anchor = (0, 0)
+					part.crop   = (0, 0, 1.0, 1.0)
+					part.alpha  = self.alpha
+					part.zorder = self.zorder
+					
+					res.append(part)
 					
 					xpos += xsize
 				ypos += ysize
 			return res
 		
+		def free(self):
+			return None

@@ -164,7 +164,7 @@ init -9000 python:
 				dtime = get_game_time() - self.start_time
 			else:
 				dtime = 0
-				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times=1)
+				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			new_data, old_data = self.sprite.new_data, self.sprite.old_data
 			
@@ -200,4 +200,3 @@ init -9000 python:
 	dissolve = Dissolve(0.5)
 	dissolve1 = Dissolve(1)
 	dissolve2 = Dissolve(2)
-

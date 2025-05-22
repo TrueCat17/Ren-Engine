@@ -50,8 +50,7 @@ init python:
 			if isinstance(obj, RpgLocation):
 				continue
 			
-			obj_free = obj.free
-			obj_free = obj_free() if callable(obj_free) else None
+			obj_free = obj.free()
 			if obj_free is None:
 				continue
 			

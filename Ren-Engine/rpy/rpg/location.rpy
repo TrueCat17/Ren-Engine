@@ -281,12 +281,12 @@ init -1002 python:
 			return '<RpgLocation %s>' % (self.name, )
 		
 		def get_draw_data(self):
-			return {
-				'image':   self.main(),
-				'size':   (self.xsize, self.ysize),
-				'pos':    (0, 0),
-				'zorder':  0,
-			}
+			res = SimpleObject()
+			res.image = self.main()
+			res.size = (self.xsize, self.ysize)
+			res.pos = (0, 0)
+			res.zorder = 0
+			return res
 		
 		def main(self):
 			return get_location_image(self.directory, 'main', '', False)
@@ -469,9 +469,14 @@ init -1002 python:
 		
 		def get_draw_data(self):
 			location = self.location
-			return {
-				'image':   location.over(),
-				'size':   (location.xsize, location.ysize),
-				'pos':    (0, 0),
-				'zorder':  1e6,
-			}
+			
+			res = SimpleObject()
+			res.image = location.over()
+			res.size = (location.xsize, location.ysize)
+			res.pos = (0, 0)
+			res.zorder = 1e6
+			
+			return res
+		
+		def free(self):
+			return None

@@ -9,26 +9,28 @@ screen choice_menu:
 		style 'choice_buttons_vbox'
 		
 		python:
+			screen_tmp = SimpleObject()
+			
 			tmp_style = style.choice_button
 			if tmp_style.xsize > 0:
-				choice_max_width = tmp_style.get_current('xsize')
+				screen_tmp.max_width = tmp_style.get_current('xsize')
 			else:
-				choice_text_size = tmp_style.get_current('text_size')
+				screen_tmp.text_size = tmp_style.get_current('text_size')
 				if tmp_style.hover_text_size:
-					choice_text_size = max(choice_text_size, tmp_style.get_current('hover_text_size'))
+					screen_tmp.text_size = max(screen_tmp.text_size, tmp_style.get_current('hover_text_size'))
 				
-				choice_max_width = max(0, tmp_style.get_current('xsize_min'))
+				screen_tmp.max_width = max(0, tmp_style.get_current('xsize_min'))
 				for variant in choice_menu_variants:
 					if variant:
-						choice_max_width = max(choice_max_width, get_text_width(_(variant), choice_text_size))
+						screen_tmp.max_width = max(screen_tmp.max_width, get_text_width(_(variant), screen_tmp.text_size))
 				if tmp_style.xsize_max > 0:
-					choice_max_width = min(choice_max_width, tmp_style.get_current('xsize_max'))
+					screen_tmp.max_width = min(screen_tmp.max_width, tmp_style.get_current('xsize_max'))
 		
 		for i, text in enumerate(choice_menu_variants):
 			if text:
 				textbutton _(text):
 					style 'choice_button'
-					xsize choice_max_width
+					xsize screen_tmp.max_width
 					action Return(i)
 			elif text is not None:
 				null style 'choice_button'

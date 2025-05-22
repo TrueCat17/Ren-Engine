@@ -227,7 +227,9 @@ init -1001 python:
 				if type(images) not in (list, tuple):
 					images = [images]
 				for image in images:
-					res.append(dict(main, image = image))
+					part = SimpleObject(main)
+					part.image = image
+					res.append(part)
 			return res
 		
 		def main(self):

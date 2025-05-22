@@ -1,10 +1,6 @@
 init python:
 	
-	loc__background_alpha = 0.0
-	
 	draw_location = None
-	
-	loc__max_time = 1e9
 	
 	rpg_event = None
 	rpg_event_object = None
@@ -37,44 +33,69 @@ init python:
 		global prev_rpg_control
 		prev_rpg_control = None
 	
-	loc__prev_left = loc__prev_right = loc__prev_up = loc__prev_down = False
-	loc__left = loc__right = loc__up = loc__down = False
-	
+	loc__max_time = 1e9
 	loc__directions = [to_left, to_right, to_forward, to_back]
-	loc__direction = to_back
 	loc__left_time = loc__right_time = loc__up_time = loc__down_time = loc__max_time
 	
-	loc__set_show_at_end = False
 	
-	def loc__get_min(a, b, c, d):
-		return [a, b, c, d].index(min(a, b, c, d))
-	
-	
-	loc__prev_time = 0
-	def loc__move_character(dx, dy):
-		global loc__prev_time
+	def loc__move_character():
+		dx = dy = 0
+		if screen_tmp.left:
+			dx -= 1
+		if screen_tmp.right:
+			dx += 1
+		if screen_tmp.up:
+			dy -= 1
+		if screen_tmp.down:
+			dy += 1
 		
-		try:
-			if me.get_pose() == 'sit' or not get_rpg_control():
-				return
-			
-			if dx or dy:
-				pose = 'run' if loc__shift_is_down else 'walk'
-				speed = me[pose + '_speed']
-				dtime = get_game_time() - loc__prev_time
-				
-				to_x, to_y = physics.get_end_point(me.x, me.y, dx, dy, speed * dtime)
-				dx, dy = to_x - me.x, to_y - me.y
-			
-			if dx or dy:
-				me.x = to_x
-				me.y = to_y
-				me.fps = me[pose + '_fps']
-				me.set_pose(pose)
+		if dx or dy:
+			if get_run_allow():
+				run = hotkeys.shift
+				if config.default_moving_is_run:
+					run = not run
 			else:
-				me.set_pose('stay')
-		finally:
-			loc__prev_time = get_game_time()
+				run = False
+			
+			pose = 'run' if run else 'walk'
+			speed = me[pose + '_speed']
+			
+			to_x, to_y = physics.get_end_point(me.x, me.y, dx, dy, speed * get_last_tick())
+			dx, dy = to_x - me.x, to_y - me.y
+		
+		if dx or dy:
+			me.x = to_x
+			me.y = to_y
+			me.fps = me[pose + '_fps']
+			me.set_pose(pose)
+		else:
+			me.set_pose('stay')
+	
+	
+	def loc__rotate_character():
+		global loc__left_time, loc__right_time, loc__up_time, loc__down_time
+		
+		if screen_tmp.left_pressed_now:
+			loc__left_time = get_game_time()
+		if screen_tmp.right_pressed_now:
+			loc__right_time = get_game_time()
+		if screen_tmp.up_pressed_now:
+			loc__up_time = get_game_time()
+		if screen_tmp.down_pressed_now:
+			loc__down_time = get_game_time()
+		
+		side_times = (
+			loc__left_time  if screen_tmp.left  else loc__max_time,
+			loc__right_time if screen_tmp.right else loc__max_time,
+			loc__up_time    if screen_tmp.up    else loc__max_time,
+			loc__down_time  if screen_tmp.down  else loc__max_time,
+		)
+		min_value = min(side_times)
+		
+		if min_value != loc__max_time:
+			min_index = side_times.index(min_value)
+			direction = loc__directions[min_index]
+			me.set_direction(direction)
 	
 	
 	def loc__process_sit_action():
@@ -182,26 +203,26 @@ init python:
 				datas = (datas, )
 			
 			for data in datas:
-				if not data['image']:
+				if not data.image:
 					continue
 				
 				if 'size' in data:
-					size = data['size']
+					size = data.size
 					if type(size) in sequences:
 						w, h = size
 					else:
 						w = h = size
 				else:
-					w, h = get_image_size(data['image'])
+					w, h = get_image_size(data.image)
 				
-				pos = data['pos']
+				pos = data.pos
 				if type(pos) in sequences:
 					x, y = pos
 				else:
 					x = y = pos
 				
 				if 'anchor' in data:
-					anchor = data['anchor']
+					anchor = data.anchor
 					if type(anchor) in sequences:
 						xa, ya = anchor
 					else:
@@ -214,19 +235,19 @@ init python:
 				y *= zoom
 				floor_x = floor(x)
 				floor_y = floor(y)
-				data['pos'] = floor_x, floor_y
+				data.pos = floor_x, floor_y
 				
 				floor_w = floor(x + w * zoom) - floor_x
 				floor_h = floor(y + h * zoom) - floor_y
-				data['size'] = floor_w, floor_h
+				data.size = floor_w, floor_h
 				
 				res.append(data)
 		
 		def get_zorder(d):
 			try:
-				return d['zorder']
+				return d.zorder
 			except:
-				return d['pos'][1]
+				return d.pos[1]
 		res.sort(key = get_zorder)
 		
 		return res
@@ -251,11 +272,14 @@ screen location:
 	zorder -4
 	
 	python:
+		screen_tmp = SimpleObject()
+		screen_tmp.set_show_at_end = False
+		
 		dtime = get_game_time() - location_start_time
 		
 		# fade, back.alpha: 0 -> 1
 		if dtime < location_fade_time:
-			loc__background_alpha = dtime / location_fade_time
+			screen_tmp.alpha = dtime / location_fade_time
 			
 			if cur_location:
 				cur_location.preload()
@@ -263,18 +287,17 @@ screen location:
 		# fade, back.alpha: 1 -> 0
 		else:
 			if dtime < location_fade_time * 2:
-				loc__background_alpha = 1.0 - (dtime - location_fade_time) / location_fade_time
+				screen_tmp.alpha = 1 - (dtime - location_fade_time) / location_fade_time
 			else:
-				if loc__background_alpha:
-					loc__background_alpha = 0.0
+				screen_tmp.alpha = 0
 			
 			if times['next_name']:
 				set_time_direct()
-				loc__set_show_at_end = True
+				screen_tmp.set_show_at_end = True
 			
 			if not location_was_show:
 				draw_location = cur_location
-				loc__set_show_at_end = True
+				screen_tmp.set_show_at_end = True
 				
 				start_location_ambience()
 		
@@ -284,10 +307,9 @@ screen location:
 		key 'I' action inventory.show
 		
 		python:
-			loc__shift_is_down = False
-			
-			loc__prev_left, loc__prev_right, loc__prev_up, loc__prev_down = loc__left, loc__right, loc__up, loc__down
-			loc__left = loc__right = loc__up = loc__down = False
+			for side in ('left', 'right', 'up', 'down'):
+				screen_tmp[side] = False
+				screen_tmp[side + '_pressed_now'] = False
 			
 			if rpg_event_processing:
 				rpg_events.clear()
@@ -296,56 +318,18 @@ screen location:
 			key 'z' delay 0.333 action loc__process_sit_action
 			key 'e' delay 0.333 action loc__process_action
 			
-			key 'LEFT SHIFT'  action 'loc__shift_is_down = True' first_delay 0
-			key 'RIGHT SHIFT' action 'loc__shift_is_down = True' first_delay 0
-			
-			key 'LEFT'  action 'loc__left  = True' first_delay 0
-			key 'RIGHT' action 'loc__right = True' first_delay 0
-			key 'UP'    action 'loc__up    = True' first_delay 0
-			key 'DOWN'  action 'loc__down  = True' first_delay 0
-			key 'a'     action 'loc__left  = True' first_delay 0
-			key 'd'     action 'loc__right = True' first_delay 0
-			key 'w'     action 'loc__up    = True' first_delay 0
-			key 's'     action 'loc__down  = True' first_delay 0
+			for side, key in (('left', 'A'), ('right', 'D'), ('up', 'W'), ('down', 'S')):
+				key key action 'screen_tmp[side]                  = True' first_delay 0
+				key key action 'screen_tmp[side + "_pressed_now"] = True' first_delay 1e9
 		
 		python:
-			if config.default_moving_is_run:
-				loc__shift_is_down = not loc__shift_is_down
-			if not get_run_allow():
-				loc__shift_is_down = False
-			
-			loc__character_dx = loc__character_dy = 0
-			if loc__left:
-				loc__character_dx -= 1
-			if loc__right:
-				loc__character_dx += 1
-			if loc__up:
-				loc__character_dy -= 1
-			if loc__down:
-				loc__character_dy += 1
-			loc__move_character(loc__character_dx, loc__character_dy)
-			
 			if get_rpg_control() and me.get_pose() != 'sit':
-				if loc__left and not loc__prev_left:
-					loc__left_time = get_game_time()
-				if loc__right and not loc__prev_right:
-					loc__right_time = get_game_time()
-				if loc__up and not loc__prev_up:
-					loc__up_time = get_game_time()
-				if loc__down and not loc__prev_down:
-					loc__down_time = get_game_time()
-				
-				min_index = loc__get_min(loc__left_time  if loc__left  else loc__max_time,
-				                         loc__right_time if loc__right else loc__max_time,
-				                         loc__up_time    if loc__up    else loc__max_time,
-				                         loc__down_time  if loc__down  else loc__max_time)
-				if (loc__left, loc__right, loc__up, loc__down)[min_index]:
-					loc__direction = loc__directions[min_index]
-					me.set_direction(loc__direction)
+				loc__move_character()
+				loc__rotate_character()
 			
 			prev_exit = cur_exit
 			cur_exit = get_location_exit()
-			if cur_exit != prev_exit and get_rpg_control() and (loc__character_dx or loc__character_dy or 'action' in rpg_events):
+			if cur_exit != prev_exit and get_rpg_control() and (me.pose in ('walk', 'run') or 'action' in rpg_events):
 				loc__process_exit()
 			
 			cur_place = get_location_place()
@@ -361,13 +345,13 @@ screen location:
 			clipping True
 			xpos draw_location.x
 			ypos draw_location.y
-			xsize draw_location.xsize * location_zoom
-			ysize draw_location.ysize * location_zoom
+			xsize int(draw_location.xsize * location_zoom)
+			ysize int(draw_location.ysize * location_zoom)
 			
 			for obj in loc__get_list_to_draw():
-				image obj['image']:
-					pos    obj['pos']
-					size   obj['size']
+				image obj.image:
+					pos    obj.pos
+					size   obj.size
 					crop   obj.get('crop', (0, 0, 1.0, 1.0))
 					alpha  obj.get('alpha', 1)
 					rotate obj.get('rotate', 0)
@@ -384,11 +368,9 @@ screen location:
 		
 		image 'images/bg/black.jpg':
 			size 1.0
-			alpha loc__background_alpha
+			alpha screen_tmp.alpha
 		
 		python:
-			if loc__set_show_at_end:
-				loc__set_show_at_end = False
+			if screen_tmp.set_show_at_end:
 				location_was_show = True
 				return_prev_rpg_control()
-

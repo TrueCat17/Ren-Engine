@@ -145,19 +145,6 @@ translate russian strings:
 	old 'Last Frame'
 	new 'Последний кадр'
 	
-	# hotkeys
-	old 'Name <activate_sound> is not allowed for hotkey'
-	new 'Название <activate_sound> не разрешено для сочетания клавиш'
-	
-	old 'Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>'
-	new 'Использование больше 1 клавиши-модификатора (CTRL, SHIFT или ALT) в сочетании клавиш <%s>'
-	
-	old 'Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)'
-	new 'Клавиша-модификатор <%s> в сочетании клавиш <%s> не является разрешённой (CTRL, SHIFT или ALT)'
-	
-	old 'Unexpected key <%s> in hotkey <%s>'
-	new 'Неожиданная клавиша <%s> в сочетании клавиш <%s>'
-	
 	# input
 	old 'Reset'
 	new 'Сброс'

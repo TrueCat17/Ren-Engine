@@ -6,4 +6,3 @@ screen load:
 	modal  True
 	
 	use slots('load')
-

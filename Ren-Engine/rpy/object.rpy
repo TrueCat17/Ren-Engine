@@ -1,13 +1,14 @@
 init -1000010 python:
 	object_getattribute = object.__getattribute__
+	object_setattribute = object.__setattr__
 	
 	class Object:
-		def __init__(self, _obj = None, **kwargs):
-			d = object_getattribute(self, '__dict__')
-			
-			if _obj is not None:
-				d.update(_obj.__dict__)
+		def __init__(self, obj = None, **kwargs):
+			if obj is not None:
+				d = obj.__dict__.copy()
+				object_setattribute(self, '__dict__', d)
 			else:
+				d = object_getattribute(self, '__dict__')
 				d['in_persistent'] = False
 				d['not_persistent_props'] = set()
 			d.update(kwargs)

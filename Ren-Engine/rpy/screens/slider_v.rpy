@@ -134,4 +134,3 @@ screen slider_v(name):
 				action slider_v_add_value(+0.1)
 			
 			null ysize slider_v_cur['spacing']
-

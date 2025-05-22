@@ -102,4 +102,3 @@ screen notification:
 			action [notification.remove(i), 'i += correcting_i']
 		
 		$ i += di
-

@@ -1,8 +1,8 @@
 init -1000 python:
 	
-	class ParticleFactory(Object):
+	class ParticleFactory(SimpleObject):
 		def __init__(self, xpos, ypos, xsize, ysize, **kwargs):
-			Object.__init__(self)
+			SimpleObject.__init__(self)
 			
 			if 'image' in kwargs:
 				self.image = kwargs['image']
@@ -61,21 +61,22 @@ init -1000 python:
 			res = [None] * (back + len(self.objs))
 			
 			if back:
-				res[0] = {
-					'image':   self.background,
-					'pos':    (self.xpos, self.ypos),
-					'size':   (self.xsize, self.ysize),
-					'zorder':  self.zorder,
-				}
+				res[0] = bg = SimpleObject()
+				bg.image = self.background
+				bg.pos   = (self.xpos, self.ypos)
+				bg.size  = (self.xsize, self.ysize)
+				bg.zorder = self.zorder
 			
 			for i in range(len(self.objs)):
 				x, y, dx, dy, size = self.objs[i]
-				res[back + i] = {
-					'image':   self.image,
-					'pos':    (absolute(self.xpos + x), absolute(self.ypos + y)),
-					'size':    absolute(size),
-					'zorder':  self.zorder,
-				}
+				obj = res[back + i] = SimpleObject()
+				
+				obj.image = self.image
+				obj.pos = (self.xpos + x, self.ypos + y)
+				obj.size = size
+				obj.zorder = self.zorder
 			
 			return res
 		
+		def free(self):
+			return None

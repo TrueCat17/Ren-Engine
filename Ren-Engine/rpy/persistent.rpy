@@ -216,7 +216,11 @@ init -10002 python:
 		
 		func_and_class_types = (types.FunctionType, type)
 		
-		for k, o in dict(g).items():
+		for k, o in g.copy().items():
+			# skip vars of ScreenLang
+			if k.startswith('_SL_') or k == 'screen_tmp':
+				continue
+			
 			t = type(o)
 			
 			if t in func_and_class_types:
@@ -230,10 +234,6 @@ init -10002 python:
 			
 			# don't save reference to globals()
 			if o is g or o is _global_pickling_canary:
-				continue
-			
-			# skip vars of ScreenLang
-			if k.startswith('_SL_'):
 				continue
 			
 			obj[k] = o

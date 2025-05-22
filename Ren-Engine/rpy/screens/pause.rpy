@@ -36,7 +36,7 @@ init -1000 python:
 			dtime = get_game_time() - pause_screen.showed_time
 		else:
 			dtime = 0
-			signals.add('enter_frame', Exec('pause_screen.showed_time = get_game_time()'), times=1)
+			signals.add('enter_frame', Exec('pause_screen.showed_time = get_game_time()'), times = 1)
 			# set <showed_time> in the next frame, because mb freezing (because loading image(s) for pause menu)
 		
 		if dtime > pause_screen.appearance_time:
@@ -118,4 +118,3 @@ screen pause:
 			textbutton _(text):
 				style 'pause_screen_button'
 				action action
-

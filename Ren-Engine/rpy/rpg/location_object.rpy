@@ -165,18 +165,17 @@ init -1001 python:
 	
 	
 	def get_usual_location_object_data(obj):
-		x, y = obj.x + obj.xoffset, obj.y + obj.yoffset
-		w, h = obj.xsize, obj.ysize
+		res = SimpleObject()
 		
-		return {
-			'image':   obj.main(),
-			'size':   (w, h),
-			'pos':    (absolute(x), absolute(y)),
-			'anchor': (get_absolute(obj.xanchor, w), get_absolute(obj.yanchor, h)),
-			'crop':    obj.crop,
-			'alpha':   obj.alpha,
-			'zorder':  obj.get_zorder(),
-		}
+		res.image  = obj.main()
+		res.size   = (obj.xsize, obj.ysize)
+		res.pos    = (obj.x + obj.xoffset, obj.y + obj.yoffset)
+		res.anchor = (obj.xanchor, obj.yanchor)
+		res.crop   = obj.crop
+		res.alpha  = obj.alpha
+		res.zorder = obj.get_zorder()
+		
+		return res
 	
 	
 	class RpgLocationObject(SimpleObject):
@@ -206,7 +205,7 @@ init -1001 python:
 				res.append(main)
 				
 				for character in characters:
-					main['zorder'] = min(main['zorder'], character.get_zorder())
+					main.zorder = min(main.zorder, character.get_zorder())
 					
 					data = character.get_draw_data()
 					if type(data) in (list, tuple):
@@ -215,28 +214,29 @@ init -1001 python:
 						res.append(data)
 			
 			else:
-				x, y = main['pos']
-				w, h = main['size']
-				ystart = int(y - main['anchor'][1])
+				x, y = main.pos
+				w, h = main.size
+				ystart = y - get_absolute(main.anchor[1], h)
 				
 				top = 0
 				for character in characters + [None]:
-					bottom = absolute((character or self).get_zorder() - ystart)
+					bottom = (character or self).get_zorder() - ystart
 					if bottom <= top:
 						break
 					
-					crop = (
-						main['crop'][0],
-						main['crop'][1] + top,
-						main['crop'][2],
+					part = SimpleObject(main)
+					
+					crop = main.crop
+					part.crop = (
+						crop[0],
+						crop[1] + top,
+						crop[2],
 						bottom - top
 					)
-					
-					part = dict(main, crop = crop)
-					part['size'] = w, bottom - top
-					part['anchor'] = main['anchor'][0], 0
-					part['pos'] = x, ystart + top
-					part['zorder'] = ystart + bottom
+					part.size = w, bottom - top
+					part.anchor = main.anchor[0], 0
+					part.pos = x, ystart + top
+					part.zorder = ystart + bottom
 					res.append(part)
 					
 					top = bottom
@@ -250,11 +250,11 @@ init -1001 python:
 			
 			over_image = self.over()
 			if over_image:
-				over = dict(main, image = over_image)
+				over = SimpleObject(main)
+				over.image = over_image
 				w, h = get_image_size(over_image)
-				over['size'] = (w, h)
-				over['anchor'] = get_absolute(self.xanchor, w), get_absolute(self.yanchor, h)
-				del over['crop']
+				over.size = (w, h)
+				del over.crop
 				res.append(over)
 			
 			return res
@@ -459,7 +459,7 @@ init -1001 python:
 			obj = RpgLocationObject(obj_name, px + pw // 2, py + ph // 2)
 		elif callable(obj_name):
 			obj = obj_name(px, py, pw, ph, **kwargs)
-			if not obj.type:
+			if not obj.get('type'):
 				obj.type = obj_name
 		else:
 			out_msg('add_location_object', 'Object <%s> was not registered' % (obj_name, ))
@@ -468,8 +468,7 @@ init -1001 python:
 		obj.location = location
 		location.objects.append(obj)
 		
-		free = obj.free
-		if callable(free) and free():
+		if obj.free():
 			location.path_need_update = True
 		return obj
 	
@@ -517,9 +516,7 @@ init -1001 python:
 		for obj in character.location.objects:
 			if not isinstance(obj, RpgLocationObject):
 				continue
-			
-			obj_info = location_objects[obj.type]
-			if obj_info['max_in_inventory_cell'] <= 0:
+			if obj.max_in_inventory_cell <= 0:
 				continue
 			
 			dist = obj.dist_to(x, y)
@@ -632,7 +629,8 @@ init -1001 python:
 		
 		if count > 0:
 			def dist_sqr(obj):
-				dx, dy = (obj.x or 0) - px, (obj.y or 0) - py
+				dx = obj.get('x', 0) - px
+				dy = obj.get('y', 0) - py
 				return dx*dx + dy*dy
 			
 			to_remove.sort(key = dist_sqr)
@@ -643,6 +641,6 @@ init -1001 python:
 			
 			location.objects.remove(obj)
 			
-			if callable(obj.free) and obj.free():
+			if obj.free():
 				location.path_need_update = True
 	

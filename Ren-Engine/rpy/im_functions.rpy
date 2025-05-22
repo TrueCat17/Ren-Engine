@@ -21,11 +21,14 @@ init -1001 python:
 		out_msg('ConditionSwitch', 'All conditions are failed')
 		return args[1]
 	
-	def get_back_with_color(image, color = '#000', alpha = 0.05):
+	def get_back_with_color(image, color = '#000', alpha = 0.01):
 		w, h = get_image_size(image)
-		return im.composite((w, h),
-		                    (0, 0), im.alpha(im.rect(color, w, h), alpha),
-		                    (0, 0), image)
+		r, g, b, a = renpy.easy.color(color)
+		return im.composite(
+			(w, h),
+			(0, 0), im.rect((r, g, b, 255 * alpha), w, h),
+			(0, 0), image,
+		)
 	
 	
 	class ImMatrix(list):
@@ -326,7 +329,7 @@ init -1001 python:
 		if (r, g, b, a) != (0, 0, 0, 255):
 			m = im.matrix.invert() * im.matrix.tint(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
 			res = im.matrix_color(res, m)
-		if get_image_size(res) != (width, height):
+		if width != 1 or height != 1:
 			res = im.scale(res, width, height)
 		return res
 	def im__circle(color, width = 64, height = None):

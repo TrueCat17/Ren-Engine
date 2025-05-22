@@ -178,6 +178,7 @@ init python:
 screen preferences:
 	zorder 10001
 	modal  True
+	save   False
 	
 	image (gui.bg('prefs_bg') or gui.bg('main_bg')):
 		size 1.0
