@@ -132,7 +132,7 @@ init -500 python:
 	
 	def help__init_slider():
 		slider_v_init('help', help.viewport_height, button_size = help.slider_width)
-	signals.add('inited', help__init_slider)
+	signals.add('inited', help__init_slider, times = 1)
 
 init:
 	style help_background_button is button:

@@ -81,7 +81,7 @@ init -901 python:
 				hotkeys.prepared_keymap[keys_str] = name
 				hotkeys.keys_to_listen.add(main_key)
 	
-	signals.add('inited', hotkeys__init)
+	signals.add('inited', hotkeys__init, times = 1)
 	
 	
 	def hotkeys__pressed(key):

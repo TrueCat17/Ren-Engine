@@ -23,7 +23,7 @@ init python:
 	
 	def history__init_slider():
 		slider_v_init('history', history.ysize, value = 1.0)
-	signals.add('inited', history__init_slider)
+	signals.add('inited', history__init_slider, times = 1)
 
 
 screen history:

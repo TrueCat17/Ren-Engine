@@ -325,7 +325,7 @@ init -1000 python:
 		narrator('')
 		db.read = True
 		window_hide()
-	signals.add('inited', db__on_init_end)
+	signals.add('inited', db__on_init_end, times = 1)
 
 
 
