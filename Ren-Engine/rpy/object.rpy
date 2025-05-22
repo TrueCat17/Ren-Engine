@@ -3,9 +3,10 @@ init -1000010 python:
 	object_setattribute = object.__setattr__
 	
 	class Object:
-		def __init__(self, obj = None, **kwargs):
-			if obj is not None:
-				d = obj.__dict__.copy()
+		# name <_obj> instead of <obj>, because <obj> is often used in kwargs
+		def __init__(self, _obj = None, **kwargs):
+			if _obj is not None:
+				d = _obj.__dict__.copy()
 				object_setattribute(self, '__dict__', d)
 			else:
 				d = object_getattribute(self, '__dict__')
