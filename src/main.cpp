@@ -225,7 +225,7 @@ static void loop() {
 			GV::frameStartTime = Utils::getTimer();
 			GV::gameTime += Game::getLastTick();
 
-			PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "signals.send('enter_frame')");
+			PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "signals.send('enter_frame')");
 		});
 
 		bool resizeWithoutMouseDown = false;
@@ -392,7 +392,7 @@ static void loop() {
 			Game::makeScreenshot();
 		}
 
-		PyUtils::exec("CPP_EMBED: gui.cpp", __LINE__, "signals.send('exit_frame')");
+		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "signals.send('exit_frame')");
 
 		GV::updateMutex.unlock();
 
