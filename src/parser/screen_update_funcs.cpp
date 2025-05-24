@@ -33,7 +33,8 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 	if (node->command == "use") {
 		node = Screen::getDeclared(node->params);
 		if (!node) {
-			Utils::outMsg("ScreenUpdateFuncs::outError", "Error on out error: screen <" + obj->node->params + "> not found (?)");
+			Utils::outMsg("ScreenUpdateFuncs::outError",
+			              "Error on out error: screen <" + obj->node->params + "> not found (?)");
 			Utils::outMsg(propName, expected);
 			return;
 		}
@@ -66,6 +67,8 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 			return;
 		}
 	}
+
+	Utils::outMsg(propName, "Error on out error, object place:\n" + obj->node->getPlace());
 }
 
 
@@ -519,7 +522,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		if (valueStr == one) { \
 			value = 1; \
 		}else { \
-			outError(obj, #propName, propIndex, "Expected str " zero ", center or " one ", got <" + valueStr + ">"); \
+			outError(obj, #funcPostfix, propIndex, "Expected str " zero ", center or " one ", got <" + valueStr + ">"); \
 		} \
 		params.propName = value; \
 		params.set_##propName = true; \
@@ -533,11 +536,11 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		\
 		if constexpr (std::string_view(#main_or_hover) == "main") { \
 			std::string type = prop->ob_type->tp_name; \
-			outError(obj, #propName, propIndex, "Expected types str or float, got " + type); \
+			outError(obj, #funcPostfix, propIndex, "Expected types str or float, got " + type); \
 		}else { \
 			if (prop != Py_None) { \
 				std::string type = prop->ob_type->tp_name; \
-				outError(obj, #propName, propIndex, "Expected types str, float or None, got " + type); \
+				outError(obj, #funcPostfix, propIndex, "Expected types str, float or None, got " + type); \
 			} \
 		} \
 	} \
