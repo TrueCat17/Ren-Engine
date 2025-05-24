@@ -85,30 +85,28 @@ void Text::updateSize() {
 		}
 	}
 
-	float width = xsize * float(xsize_is_float ? Stage::width : 1);
-	float height = ysize * float(ysize_is_float ? Stage::height : 1);
+	float width = getWidth();
+	float height = getHeight();
 
-	if ((first_param.empty() && prevText.empty()) ||
-	    (globalZoomX <= 0 || globalZoomY <= 0))
-	{
-		setWidthWithMinMax(std::max<float>(width, 0));
-		setHeightWithMinMax(std::max<float>(height, 0));
+	if (first_param.empty() && prevText.empty()) {
+		setWidth(std::max(width, float(0)));
+		setHeight(std::max(height, float(0)));
 		tf->enable = false;
 		return;
 	}
+
+	int widthInt = int(width);
+	int heightInt = int(height);
 
 	Uint32 color = get_color(this);
 	Uint32 outlineColor = get_outlinecolor(this);
 	bool enableOutline = get_enable_outline(this);
 	Uint8 fontStyle = get_font_style(this);
 
-	int zoomedWidth  = int(width  * globalZoomX);
-	int zoomedHeight = int(height * globalZoomY);
-
 	auto curParams = std::tie(
 	    first_param,
-	    zoomedWidth,
-	    zoomedHeight,
+	    widthInt,
+	    heightInt,
 	    color,
 	    outlineColor,
 	    enableOutline,

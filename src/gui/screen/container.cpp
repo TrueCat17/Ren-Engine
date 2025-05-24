@@ -73,12 +73,6 @@ void Container::updateSize() {
 		}
 	}
 
-	if (globalZoomX <= 0 || globalZoomY <= 0) {
-		setWidth(0);
-		setHeight(0);
-		return;
-	}
-
 	updateWidth();
 	updateHeight();
 }

@@ -122,8 +122,8 @@ void Child::updateProps() {
 }
 
 void Child::updateZoom() {
-	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * xzoom;
-	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * yzoom;
+	globalZoomX = (parent ? parent->getGlobalZoomX() : 1) * std::max(xzoom, float(1e-6));
+	globalZoomY = (parent ? parent->getGlobalZoomY() : 1) * std::max(yzoom, float(1e-6));
 }
 
 void Child::updatePos() {
