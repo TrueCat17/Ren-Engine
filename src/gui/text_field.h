@@ -47,15 +47,21 @@ private:
 	std::vector<SDL_Rect> rects;
 	std::vector<SurfacePtr> lineSurfaces;
 
+	bool prevUseMaxForWidth = false;
+	bool prevUseMaxForHeight = false;
+
 	void setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack);
 
 public:
 	static const std::string DEFAULT_FONT_NAME;
 
-	TextStyle mainStyle;
+	bool useMaxForWidth = false;
+	bool useMaxForHeight = false;
 
 	int maxWidth  = -1;
 	int maxHeight = -1;
+
+	TextStyle mainStyle;
 
 	float getHAlign() const { return hAlign; }
 	float getVAlign() const { return vAlign; }

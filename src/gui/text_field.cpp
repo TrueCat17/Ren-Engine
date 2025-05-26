@@ -564,7 +564,8 @@ void TextField::setText(const std::string &text) {
 
 	if (
 	    prevMainStyle == mainStyle && tmpLines == lines && tmpLineRects == lineRects &&
-	    prevMaxWidth == maxWidth && prevMaxHeight == maxHeight
+	    prevMaxWidth == maxWidth && prevMaxHeight == maxHeight &&
+	    prevUseMaxForWidth == useMaxForWidth && prevUseMaxForHeight == useMaxForHeight
 	) return;
 
 	prevMainStyle = mainStyle;
@@ -572,9 +573,19 @@ void TextField::setText(const std::string &text) {
 	lineRects.swap(tmpLineRects);
 	prevMaxWidth = maxWidth;
 	prevMaxHeight = maxHeight;
+	prevUseMaxForWidth = useMaxForWidth;
+	prevUseMaxForHeight = useMaxForHeight;
 
-	setWidth(float(std::max(maxWidth, curTextWidth)));
-	setHeight(float(std::max(maxHeight, curTextHeight)));
+	if (useMaxForWidth || maxWidth <= 0) {
+		setWidth(float(std::max(maxWidth, curTextWidth)));
+	}else {
+		setWidth(float(std::min(maxWidth, curTextWidth)));
+	}
+	if (useMaxForHeight || maxHeight <= 0) {
+		setHeight(float(std::max(maxHeight, curTextHeight)));
+	}else {
+		setHeight(float(std::min(maxHeight, curTextHeight)));
+	}
 
 	//draw with calced sizes
 	styleStack.erase(styleStack.begin() + 1, styleStack.end());

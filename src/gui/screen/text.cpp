@@ -5,6 +5,7 @@
 #include "../text_field.h"
 
 #include "utils/math.h"
+#include "utils/scope_exit.h"
 #include "utils/stage.h"
 
 Text::Text(Node *node, Screen *screen):
@@ -85,18 +86,52 @@ void Text::updateSize() {
 		}
 	}
 
-	float width = getWidth();
-	float height = getHeight();
+	float width, height;
+	if (xsize <= 0) {
+		if (xsize_max > 0) {
+			width = xsize_max * float(xsize_max_is_float ? Stage::width : 1);
+		}else {
+			width = -1;
+		}
+		tf->useMaxForWidth = false;
+	}else {
+		width = getWidth() / globalZoomX;
+		tf->useMaxForWidth = true;
+	}
+	if (ysize <= 0) {
+		if (ysize_max > 0) {
+			height = ysize_max * float(ysize_max_is_float ? Stage::height : 1);
+		}else {
+			height = -1;
+		}
+		tf->useMaxForHeight = false;
+	}else {
+		height = getHeight() / globalZoomY;
+		tf->useMaxForHeight = true;
+	}
+
+	ScopeExit se([&]() {
+		if (!first_param.empty()) {
+			if (xsize <= 0) {
+				width = tf->getWidth() / globalZoomX;
+			}
+			if (ysize <= 0) {
+				height = tf->getHeight() / globalZoomY;
+			}
+		}
+
+		setWidthWithMinMax(std::max(width, float(0)));
+		setHeightWithMinMax(std::max(height, float(0)));
+	});
+
 
 	if (first_param.empty() && prevText.empty()) {
-		setWidth(std::max(width, float(0)));
-		setHeight(std::max(height, float(0)));
 		tf->enable = false;
 		return;
 	}
 
-	int widthInt = int(width);
-	int heightInt = int(height);
+	int widthInt  = int(width  * globalZoomX);
+	int heightInt = int(height * globalZoomY);
 
 	Uint32 color = get_color(this);
 	Uint32 outlineColor = get_outlinecolor(this);
@@ -150,13 +185,6 @@ void Text::updateSize() {
 
 	if (needUpdate) {
 		tf->setText(first_param);
-	}
-
-	if (width <= 0) {
-		setWidthWithMinMax(tf->getWidth() / globalZoomX);
-	}
-	if (height <= 0) {
-		setHeightWithMinMax(tf->getHeight() / globalZoomY);
 	}
 
 	float halign = get_halign(this);
