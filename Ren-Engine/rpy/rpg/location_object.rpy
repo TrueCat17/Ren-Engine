@@ -64,7 +64,8 @@ init -1001 python:
 	                                       directory, main_image, free_image,
 	                                       xoffset, yoffset,
 	                                       count_frames, start_frame, end_frame, time = 1.0):
-		if obj_name not in location_objects:
+		obj = location_objects.get(obj_name)
+		if not obj:
 			out_msg('register_location_object_animation', 'Object <%s> was not registered' % (obj_name, ))
 			return
 		
@@ -96,7 +97,6 @@ init -1001 python:
 			out_msg('register_location_object_animation', msg % params)
 			return
 		
-		obj = location_objects[obj_name]
 		animations = obj.animations
 		if anim_name in animations:
 			out_msg('register_location_object_animation', 'Animation <%s> of object <%s> already exists' % (anim_name, obj_name))
@@ -141,9 +141,9 @@ init -1001 python:
 			left = right = sit_places[0][0]
 			top = bottom = sit_places[0][1]
 			for x, y, _, _ in sit_places[1:]:
-				left = min(left, x)
-				right = max(right, x)
-				top = min(top, y)
+				left   = min(left,  x)
+				right  = max(right, x)
+				top    = min(top,    y)
 				bottom = max(bottom, y)
 			if bottom - top > right - left:
 				is_vertical_sit_place = True

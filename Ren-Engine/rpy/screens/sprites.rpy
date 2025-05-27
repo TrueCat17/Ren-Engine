@@ -15,7 +15,7 @@ init -1000 python:
 	can_exec_next_skip_funcs.append(sprites__effects_to_end)
 	
 	def sprites__remove_hiding():
-		for spr in list(sprites.list): # copy
+		for spr in sprites.list.copy():
 			if spr.hiding:
 				sprites.list.remove(spr)
 			else:
@@ -32,20 +32,21 @@ init -1000 python:
 	
 	
 	def sprites__set_scene(params, show_at):
-		if len(params):
-			old_sprites_hided = sprites.show(params, show_at, True)
-			
-			if sprites.screen.effect or (sprites.scene and sprites.scene.effect):
-				if not old_sprites_hided:
-					for spr in sprites.list:
-						if spr is not sprites.scene:
-							spr.old_data, spr.new_data = spr.new_data, None
-							spr.hiding = True
-			else:
-				sprites.list = [sprites.scene] if sprites.scene else []
-		else:
+		if len(params) == 0:
 			sprites.list = []
 			sprites.scene = None
+			return
+		
+		old_sprites_hided = sprites.show(params, show_at, True)
+		
+		if sprites.screen.effect or (sprites.scene and sprites.scene.effect):
+			if not old_sprites_hided:
+				for spr in sprites.list:
+					if spr is not sprites.scene:
+						spr.old_data, spr.new_data = spr.new_data, None
+						spr.hiding = True
+		else:
+			sprites.list = [sprites.scene] if sprites.scene else []
 	
 	
 	def sprites__show(params, show_at, is_scene = False):
@@ -59,7 +60,7 @@ init -1000 python:
 		
 		d = dict()
 		while len(params) >= 2 and (params[-2] in pnames):
-			pname, pvalue = params[-2], params[-1]
+			pname, pvalue = params[-2:]
 			params = params[:-2]
 			if pname in d:
 				out_msg('sprites.show', 'Param <%s> specified several times' % (pname, ))
@@ -86,7 +87,7 @@ init -1000 python:
 		if len(params) == 0:
 			if is_scene:
 				if effect is not None:
-					for i, spr in enumerate(sprites.list):
+					for spr in sprites.list:
 						spr.old_data, spr.new_data = spr.new_data, None
 						
 						spr.set_effect(effect)
@@ -125,7 +126,7 @@ init -1000 python:
 		show_at = kwargs.pop('show_at', ())
 		call_str = kwargs.pop('call_str', image_name)
 		if kwargs:
-			out_msg('sprites.show_impl', 'Unexpected params: %s' % (list(kwargs.keys()), ))
+			out_msg('sprites.show_impl', 'Unexpected params: %s' % list(kwargs.keys()))
 		
 		if not tag:
 			tag = sprites.get_tag_of_image_name(image_name)
@@ -247,7 +248,7 @@ init -1000 python:
 	sprites.list = []
 	
 	sprites.screen = Sprite('screen', (), (), (), None)
-	sprites.screen.new_data.xsize, sprites.screen.new_data.ysize = 1.0, 1.0
+	sprites.screen.new_data.xsize,      sprites.screen.new_data.ysize      = 1.0, 1.0
 	sprites.screen.new_data.real_xsize, sprites.screen.new_data.real_ysize = 1.0, 1.0
 	
 	sprites.scene = None

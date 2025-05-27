@@ -14,9 +14,9 @@ init -980 python:
 	def notification__update():
 		now = get_game_time()
 		
-		i = 0
-		while i < len(notification.msgs):
-			msg_func, msg, start_time, alpha = obj = notification.msgs[i]
+		for obj in notification.msgs.copy():
+			msg_func, msg, start_time, alpha = obj
+			
 			if msg_func:
 				new_msg = msg_func()
 				if new_msg is not None:
@@ -39,9 +39,12 @@ init -980 python:
 			
 			if alpha:
 				obj[3] = alpha
-				i += 1
 			else:
-				notification.msgs.pop(i)
+				notification.msgs.remove(obj)
+		
+		if not notification.msgs:
+			hide_screen('notification')
+	
 	
 	def notification__remove(index):
 		notification.msgs.pop(index)
@@ -50,6 +53,7 @@ init -980 python:
 	build_object('notification')
 	
 	notification.align = (0.0, 0.0)
+	notification.spacing = 10
 	
 	notification.msgs = []
 	notification.show_time = 4
@@ -61,9 +65,17 @@ init:
 		ground im.rect('#222')
 		hover  im.rect('#222')
 		corner_sizes 0
-		size (400, 150)
-		text_size 24
-		color 0x0080FF
+		
+		size (0.33, 0.22)
+		size_min (300, 111)
+		size_max (500, 185)
+		
+		text_size 0.035
+		text_size_min 18
+		text_size_max 30
+		
+		color '#08F'
+		hover_color '#4BF'
 
 
 screen notification:
@@ -71,34 +83,18 @@ screen notification:
 	ignore_modal True
 	
 	has vbox
-	spacing 10
-	align notification.align
+	spacing notification.spacing
+	align   notification.align
 	
 	python:
 		notification.update()
 		
-		if notification.align[1] > 0.5:
-			i = 0
-			di = 1
-			correcting_i = -1
-		else:
-			i = len(notification.msgs) - 1
-			di = -1
-			correcting_i = 0
+		screen_tmp = SimpleObject()
+		screen_tmp.msgs = notification.msgs.copy()
+		screen_tmp.range_iter = iter if notification.align[1] > 0.5 else reversed
 	
-	while True:
-		if di > 0:
-			if i >= len(notification.msgs):
-				break
-		else:
-			if i < 0:
-				break
-		
-		$ msg, start_time, alpha = notification.msgs[i][1:]
-		
-		textbutton _(msg):
+	for i in screen_tmp.range_iter(range(len(screen_tmp.msgs))):
+		textbutton _(screen_tmp.msgs[i][1]):
 			style 'notification'
-			alpha  alpha
-			action [notification.remove(i), 'i += correcting_i']
-		
-		$ i += di
+			alpha  screen_tmp.msgs[i][3]
+			action notification.remove(i)

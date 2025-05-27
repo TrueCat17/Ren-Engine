@@ -238,6 +238,31 @@ init -10000 python:
 		
 		return slot
 	
+	def slots__get_btns(screen_name):
+		btns = []
+		
+		if screen_name == 'load':
+			tmp_style_enabled = style.enabled_load_button or style.menu_button
+			if renpy.can_load():
+				btns.append(['Load', tmp_style_enabled, 1, True, renpy.load])
+			else:
+				tmp_style_disabled = style.disabled_load_button or tmp_style_enabled
+				alpha = 0.7 if tmp_style_disabled is tmp_style_enabled else 1
+				btns.append(['Load', tmp_style_disabled, alpha, False, None])
+		else:
+			tmp_style = style.save_button or style.menu_button
+			btns.append(['Save', tmp_style, 1, True, renpy.save])
+		
+		tmp_style_enabled = style.enabled_delete_button or style.menu_button
+		if renpy.can_load():
+			btns.append(['Delete', tmp_style_enabled, 1, True, renpy.unlink_save])
+		else:
+			tmp_style_disabled = style.disabled_delete_button or tmp_style_enabled
+			alpha = 0.7 if tmp_style_disabled is tmp_style_enabled else 1
+			btns.append(['Delete', tmp_style_disabled, alpha, False, None])
+		
+		return btns
+	
 	
 	build_object('slots')
 	slots.directory = '../var/saves/'

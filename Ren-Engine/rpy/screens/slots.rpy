@@ -56,29 +56,7 @@ screen slots(name):
 		hbox:
 			style 'slots_buttons'
 			
-			python:
-				btns = []
-				if screen.name == 'load':
-					tmp_style_enabled = style.enabled_load_button or style.menu_button
-					if renpy.can_load():
-						btns.append(['Load', tmp_style_enabled, 1, True, renpy.load])
-					else:
-						tmp_style_disabled = style.disabled_load_button or tmp_style_enabled
-						alpha = 0.7 if tmp_style_disabled is tmp_style_enabled else 1
-						btns.append(['Load', tmp_style_disabled, alpha, False, None])
-				else:
-					tmp_style = style.save_button or style.menu_button
-					btns.append(['Save', tmp_style, 1, True, renpy.save])
-				
-				tmp_style_enabled = style.enabled_delete_button or style.menu_button
-				if renpy.can_load():
-					btns.append(['Delete', tmp_style_enabled, 1, True, renpy.unlink_save])
-				else:
-					tmp_style_disabled = style.disabled_delete_button or tmp_style_enabled
-					alpha = 0.7 if tmp_style_disabled is tmp_style_enabled else 1
-					btns.append(['Delete', tmp_style_disabled, alpha, False, None])
-			
-			for text, tmp_style, alpha, mouse, action in btns:
+			for text, tmp_style, alpha, mouse, action in slots.get_btns(screen.name):
 				textbutton _(text):
 					style tmp_style
 					alpha  tmp_style.alpha * alpha
@@ -88,6 +66,6 @@ screen slots(name):
 	$ tmp_style = style[screen.name + '_return_button'] or style.return_button
 	textbutton _('Return'):
 		style tmp_style
-		action HideMenu(screen.name)
+		action hide_screen(screen.name)
 	
-	key 'ESCAPE' action HideMenu(screen.name)
+	key 'ESCAPE' action hide_screen(screen.name)

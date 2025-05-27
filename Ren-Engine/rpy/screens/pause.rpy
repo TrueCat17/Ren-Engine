@@ -37,27 +37,30 @@ init -1000 python:
 		else:
 			dtime = 0
 			signals.add('enter_frame', Exec('pause_screen.showed_time = get_game_time()'), times = 1)
-			# set <showed_time> in the next frame, because mb freezing (because loading image(s) for pause menu)
+			# set <showed_time> in the next frame, because freezing is possible (because loading image(s) for pause menu)
+		
+		screen_tmp.x = 0
+		screen_tmp.rotate = 0
 		
 		if dtime > pause_screen.appearance_time:
-			pause_screen.y = 0
+			screen_tmp.y = 0
 			if pause_screen.hided_time:
 				dtime = get_game_time() - pause_screen.hided_time
 				if dtime < pause_screen.rotate_time:
-					pause_screen.rotate = pause_screen.rotate_before_hiding * dtime / pause_screen.rotate_time
+					screen_tmp.rotate = pause_screen.rotate_before_hiding * dtime / pause_screen.rotate_time
 				else:
-					pause_screen.rotate = pause_screen.rotate_before_hiding
-					pause_screen.x = pause_screen.y = (dtime - pause_screen.rotate_time) / pause_screen.disappearance_time
+					screen_tmp.rotate = pause_screen.rotate_before_hiding
+					screen_tmp.x = screen_tmp.y = (dtime - pause_screen.rotate_time) / pause_screen.disappearance_time
 					
-					if pause_screen.x >= 1:
-						pause_screen.x, pause_screen.y = 0, 0
-						pause_screen.rotate = 0
+					if screen_tmp.x >= 1:
+						screen_tmp.x, screen_tmp.y = 0, 0
+						screen_tmp.rotate = 0
 						pause_screen.hided_time = 0
 						
 						set_fps(pause_screen.before_fps)
 						hide_screen('pause')
 		else:
-			pause_screen.y = float(dtime - pause_screen.appearance_time) / pause_screen.appearance_time
+			screen_tmp.y = float(dtime - pause_screen.appearance_time) / pause_screen.appearance_time
 	
 	
 	def pause_screen__show(ignore_checks = False):
@@ -83,9 +86,6 @@ init -1000 python:
 	pause_screen.hided_time = 0
 	pause_screen.before_fps = None
 	pause_screen.fps = 60
-	
-	pause_screen.x, pause_screen.y = 0, 0
-	pause_screen.rotate = 0
 
 
 screen pause:
@@ -93,10 +93,11 @@ screen pause:
 	modal  True
 	save   False
 	
+	$ screen_tmp = SimpleObject()
 	$ pause_screen.update()
-	xpos   pause_screen.x
-	ypos   pause_screen.y
-	rotate pause_screen.rotate
+	xpos   screen_tmp.x
+	ypos   screen_tmp.y
+	rotate screen_tmp.rotate
 	
 	key 'ESCAPE' action pause_screen.close
 	

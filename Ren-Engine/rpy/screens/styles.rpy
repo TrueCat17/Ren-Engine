@@ -38,7 +38,7 @@ init -999:
 		xalign 0.5
 	
 	style skip_text is text:
-		color 0xFFFFFF
+		color '#FFF'
 		text_size 30
 		pos 20
 
@@ -85,7 +85,7 @@ init -998:
 		xsize 0.5
 		ysize style.menu_button.ysize * 1.2
 		ysize_min style.menu_button.ysize_min + 20
-		ground im.rect('#00000002')
+		ground im.rect('#00000001')
 		hover  im.rect('#00000010')
 		corner_sizes 0
 	

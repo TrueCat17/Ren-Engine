@@ -100,7 +100,7 @@ init -500 python:
 			count += math.ceil(width / help._viewport_xsize)
 		height = (count + 3) * text_size
 		slider_size = max(help._viewport_ysize / height, 0.1)
-		slider_v_change('help', slider_size = slider_size)
+		slider_v.change('help', slider_size = slider_size)
 	
 	
 	build_object('help')
@@ -131,7 +131,7 @@ init -500 python:
 	help.viewport_height = help.height - help.indent_for_buttons - help.indent
 	
 	def help__init_slider():
-		slider_v_init('help', help.viewport_height, button_size = help.slider_width)
+		slider_v.init('help', help.viewport_height, button_size = help.slider_width)
 	signals.add('inited', help__init_slider, times = 1)
 
 init:
@@ -190,7 +190,7 @@ screen help:
 					yalign 0.5
 					xsize  help.button_width
 					alpha  1 if name or len(help.groups) > 1 else 0
-					action [help.select_group(i), slider_v_set_value('help', 0)]
+					action [help.select_group(i), slider_v.set_value('help', 0)]
 			
 			textbutton '→':
 				style 'help_button'
@@ -216,7 +216,7 @@ screen help:
 					style 'help_text'
 					xsize help._viewport_xsize
 					ysize_min help._viewport_ysize
-					yalign slider_v_get_value('help')
+					yalign slider_v.get_value('help')
 			
 			null:
 				xpos help._xindent + help._viewport_xsize

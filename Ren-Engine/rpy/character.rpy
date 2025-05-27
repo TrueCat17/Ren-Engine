@@ -185,9 +185,6 @@ init -1001 python:
 			
 			self.inventory = None
 			self.inventories = {}
-			for dress, size in inventory.dress_sizes.items():
-				if dress != 'default':
-					self.inventories[dress] = [['', 0] for i in range(size)]
 		
 		def __str__(self):
 			return str(self.name)

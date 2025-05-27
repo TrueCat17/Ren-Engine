@@ -12,10 +12,10 @@ init -100 python:
 	
 	def preferences__get_autosave_str():
 		if config.autosave > 0:
-			return str(config.autosave / 60.0) + ' ' + _('minutes')
+			return '%s %s' % (config.autosave / 60, _('minutes'))
 		return _('Disabled')
 	def preferences__prev_autosave_time():
-		autosave = config.autosave / 60.0
+		autosave = config.autosave / 60
 		if autosave <= 0:
 			config.autosave = int(preferences.autosave_times[-2] * 60)
 		else:
@@ -24,7 +24,7 @@ init -100 python:
 				i += 1
 			config.autosave = int(preferences.autosave_times[max(i - 1, 0)] * 60)
 	def preferences__next_autosave_time():
-		autosave = config.autosave / 60.0
+		autosave = config.autosave / 60
 		if autosave > 0:
 			i = 0
 			while i < len(preferences.autosave_times) - 1 and autosave > preferences.autosave_times[i]:
@@ -45,16 +45,6 @@ init -100 python:
 		v = not preferences.get_text_cps_on()
 		config.text_cps = (100000 if v else 0) + (config.text_cps % 100000)
 	
-	def preferences__get_skip_after_choices():
-		return config.skip_after_choices
-	def preferences__toggle_skip_after_choices():
-		config.skip_after_choices = not config.skip_after_choices
-	
-	def preferences__get_pause_before_skip_on_ctrl():
-		return config.pause_before_skip_on_ctrl
-	def preferences__toggle_pause_before_skip_on_ctrl():
-		config.pause_before_skip_on_ctrl = not config.pause_before_skip_on_ctrl
-	
 	
 	def preferences__get_resolution_buttons():
 		btns = []
@@ -63,11 +53,11 @@ init -100 python:
 		
 		res = []
 		last_line = None
-		for i in range(len(btns)):
+		for i, btn in enumerate(btns):
 			if (i % 3) == 0:
 				last_line = []
 				res.append(last_line)
-			last_line.append(btns[i])
+			last_line.append(btn)
 		return res
 	
 	def preferences__get_mixer_bars():
@@ -84,7 +74,7 @@ init -100 python:
 	build_object('preferences')
 	
 	
-	k = get_from_hard_config("window_w_div_h", float)
+	k = get_from_hard_config('window_w_div_h', float)
 	preferences.resolutions = tuple((i, int(i/k)) for i in (640, 960, 1200, 1366, 1920))
 	del k
 	
@@ -149,8 +139,8 @@ init -100 python:
 		[['str', '["Text display speed"!t]', 0.9]],
 		[['bar', preferences, 'get_text_cps', 20, 220, Function(preferences.add_text_cps, -20), Function(preferences.add_text_cps, +20)]],
 		None,
-		[['bool', '["Skip after choices"!t]', preferences.get_skip_after_choices, preferences.toggle_skip_after_choices]],
-		[['bool', '["Pause before skipping on Ctrl"!t]', preferences.get_pause_before_skip_on_ctrl, preferences.toggle_pause_before_skip_on_ctrl]],
+		[['bool', '["Skip after choices"!t]',            GetSetAttr('config.skip_after_choices'),        ToggleVariable('config.skip_after_choices')]],
+		[['bool', '["Pause before skipping on Ctrl"!t]', GetSetAttr('config.pause_before_skip_on_ctrl'), ToggleVariable('config.pause_before_skip_on_ctrl')]],
 	]
 	
 	preferences.content['Other'] = [
@@ -226,7 +216,7 @@ screen preferences:
 							if callable(elem):
 								$ elem = elem()
 							if not preferences.check_elem(elem):
-								$ out_msg('Screen <preferences>', 'Failed preferences.check_elem(elem)\nFor <' + str(elem) + '>\nIn tab <' + preferences.tab + '>')
+								$ out_msg('Screen <preferences>', 'Failed preferences.check_elem(elem)\nFor <%s>\nIn tab <%s>' % (elem, preferences.tab))
 								continue
 							
 							python:
@@ -268,7 +258,6 @@ screen preferences:
 										
 										image checkbox_image:
 											style 'checkbox'
-											corner_sizes style.checkbox.corner_sizes
 											yalign 0.5
 										
 										text text:
@@ -322,10 +311,10 @@ screen preferences:
 	
 	textbutton _('Preferences' if preferences.show_mods else 'Mods'):
 		style 'mods_button'
-		action ToggleDict(preferences, 'show_mods')
+		action ToggleVariable('preferences.show_mods')
 	
 	textbutton _('Return'):
 		style 'return_button'
-		action HideMenu('preferences')
+		action hide_screen('preferences')
 	
-	key 'ESCAPE' action HideMenu('preferences')
+	key 'ESCAPE' action hide_screen('preferences')

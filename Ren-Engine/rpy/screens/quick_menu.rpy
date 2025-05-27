@@ -11,7 +11,7 @@ init -995 python:
 		spacing = style.quick_buttons_hbox.get_current('spacing', get_stage_width())
 		
 		full_xsize = 0
-		buttons = quick_menu_screen.buttons = []
+		buttons = screen_tmp.buttons = []
 		prefixes = quick_menu_screen.prefixes
 		
 		for item in quick_menu_screen.items:
@@ -33,7 +33,7 @@ init -995 python:
 			full_xsize -= spacing
 		
 		tmp_style = style.quick_buttons_bg
-		quick_menu_screen.full_xsize = tmp_style.xsize if tmp_style.xsize > 0 else full_xsize
+		screen_tmp.full_xsize = tmp_style.get_current('xsize') if tmp_style.xsize > 0 else full_xsize
 	
 	build_object('quick_menu_screen')
 	
@@ -42,7 +42,7 @@ init -995 python:
 	quick_menu_screen.items = [
 		# text, action, [condition function (not lambda!)]
 		['History', ShowScreen('history')],
-		['Skip',    ToggleDict(db, 'skip_tab')],
+		['Skip',    ToggleVariable('db.skip_tab')],
 		['Save',    ShowScreen('save')],
 		['Q.Save',  QuickSave(), Eval('config.has_quicksave')],
 		['Q.Load',  QuickLoad(), Eval('config.has_quicksave')],
@@ -57,15 +57,17 @@ init -995 python:
 screen quick_menu:
 	ysize style.quick_buttons_bg.get_current('ysize')
 	
+	$ screen_tmp = SimpleObject()
 	$ quick_menu_screen.update()
+	
 	image gui.bg('quick_buttons_bg' if db.visible else 'quick_buttons_bg_without_window'):
 		style 'quick_buttons_bg'
-		xsize quick_menu_screen.full_xsize
+		xsize screen_tmp.full_xsize
 		
 		hbox:
 			style 'quick_buttons_hbox'
 			
-			for text, action, xsize in quick_menu_screen.buttons:
+			for text, action, xsize in screen_tmp.buttons:
 				textbutton text:
 					style 'quick_button'
 					xsize xsize
