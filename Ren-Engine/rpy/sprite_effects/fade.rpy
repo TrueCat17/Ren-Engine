@@ -65,6 +65,6 @@ init -9000 python:
 	fade2 = Fade(1)
 	fade3 = Fade(1.5)
 	
-	flash = Fade(1, color = "#FFF")
-	flash2 = Fade(2, 2, 2, color = "#FFF")
-	flash_red = Fade(1, color = "#E11")
+	flash = Fade(1, color = '#FFF')
+	flash2 = Fade(2, 2, 2, color = '#FFF')
+	flash_red = Fade(1, color = '#E11')

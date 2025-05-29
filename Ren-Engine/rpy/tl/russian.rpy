@@ -28,12 +28,6 @@ translate russian strings:
 	old 'Return'
 	new 'Вернуться'
 	
-	old 'Continue'
-	new 'Продолжить'
-	
-	old 'Exit to menu'
-	new 'Выход в меню'
-	
 	old 'History'
 	new 'История'
 	
@@ -122,17 +116,6 @@ translate russian strings:
 	
 	old 'Throw away'
 	new 'Выбросить'
-	
-	
-	# rpg
-	old 'taking'
-	new 'взятие'
-	
-	old 'using'
-	new 'использование'
-	
-	old 'remove'
-	new 'выбрасывание'
 	
 	
 	# debug_screen

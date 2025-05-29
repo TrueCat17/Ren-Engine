@@ -61,18 +61,15 @@ init -10000 python:
 		spent_time = st - interruptable_cycles_enter_frame_time
 		have_time = max(1 / get_fps() - spent_time, 0.005)
 		
-		while True:
+		while time.time() - st < have_time and interruptable_cycles_tasks:
 			if interruptable_cycles_task_index >= len(interruptable_cycles_tasks):
 				interruptable_cycles_task_index = 0
-				
+			
 			done = interruptable_cycles_update_one()
 			if done:
 				interruptable_cycles_tasks.pop(interruptable_cycles_task_index)
 			else:
 				interruptable_cycles_task_index += 1
-			
-			if time.time() - st > have_time or not interruptable_cycles_tasks:
-				break
 		
 		if not interruptable_cycles_tasks:
 			signals.remove('enter_frame', interruptable_cycles_update_pre)

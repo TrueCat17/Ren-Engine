@@ -178,6 +178,8 @@ init -1001 python:
 		return res
 	
 	
+	rpg_location_object_free_rect_cache = DontSave()
+	
 	class RpgLocationObject(SimpleObject):
 		def __init__(self, name, x, y):
 			SimpleObject.__init__(self, location_objects[name])
@@ -304,7 +306,7 @@ init -1001 python:
 			if not free:
 				return 0, 0, self.xsize, self.ysize
 			
-			cache = RpgLocationObject.get_free_rect.__dict__
+			cache = rpg_location_object_free_rect_cache
 			if free not in cache:
 				w, h = get_image_size(free)
 				black_color = 0x000000FF # 0xRRGGBBAA

@@ -28,7 +28,7 @@ init -9000 python:
 			def rotate_point(x, y, xcenter, ycenter, sina, cosa):
 				tx, ty = x - xcenter, y - ycenter
 				rx, ry = tx * cosa - ty * sina, tx * sina + ty * cosa
-				return int(round(rx + xcenter)), int(round(ry + ycenter))
+				return round(rx + xcenter), round(ry + ycenter)
 			def rotate_rect(xmin, ymin, xmax, ymax, xcenter, ycenter, angle):
 				sina, cosa = _sin(angle), _cos(angle)
 				points = (
@@ -52,8 +52,8 @@ init -9000 python:
 					return cache[data]
 				
 				xanchor, yanchor = data.real_xanchor, data.real_yanchor
-				x, y             = data.real_xpos, data.real_ypos
-				xsize, ysize     = data.real_xsize, data.real_ysize
+				x, y             = data.real_xpos,    data.real_ypos
+				xsize, ysize     = data.real_xsize,   data.real_ysize
 				
 				xmin, ymin = x, y
 				xmax, ymax = x + xsize, y + ysize
@@ -121,7 +121,7 @@ init -9000 python:
 					if not image or data.real_alpha <= 0:
 						continue
 					
-					image_xsize, image_ysize = get_image_size(data.image)
+					image_xsize, image_ysize = get_image_size(image)
 					res_xsize, res_ysize = data.real_xsize, data.real_ysize
 					
 					crop = [data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop]
@@ -148,12 +148,12 @@ init -9000 python:
 			new_image = im.composite(*new_args)
 			old_image = im.composite(*old_args)
 			
-			common_data = SpriteAnimationData(self.sprite, [], [], [])
-			common_data.image = im.mask(new_image, old_image, 1, 'a', 'ge', 'a', 1)
+			common_data = SpriteAnimationData(self.sprite, (), (), ())
+			common_data.image = im.mask(new_image, old_image, 1, 'a', '>=', 'a', 1)
 			load_image(common_data.image)
 			common_data.xanchor, common_data.yanchor = new_data.xanchor, new_data.yanchor
-			common_data.xpos, common_data.ypos = xmin + get_absolute(new_data.xanchor, width), ymin + get_absolute(new_data.yanchor, height)
-			common_data.xsize, common_data.ysize = width, height
+			common_data.xpos,    common_data.ypos    = xmin + get_absolute(new_data.xanchor, width), ymin + get_absolute(new_data.yanchor, height)
+			common_data.xsize,   common_data.ysize   = width, height
 			
 			self.sprite.data_list = (common_data, self.sprite.old_data, self.sprite.new_data)
 			self.state_num = sum(data.state_num for data in all_datas)
@@ -175,7 +175,7 @@ init -9000 python:
 				state_num = sum(data.state_num for data in new_datas + old_datas if data.image)
 				if self.state_num != state_num:
 					self.set_data_list()
-					self.sprite.calculate_props(None)
+					self.sprite.calculate_props()
 			
 			alpha = in_bounds(dtime / self.time, 0.0, 1.0)
 			anti_alpha = 1 - alpha

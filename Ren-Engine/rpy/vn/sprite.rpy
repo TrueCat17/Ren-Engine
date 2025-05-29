@@ -35,18 +35,18 @@ init -9000 python:
 			
 			self.data_list = (self.new_data, ) if self.new_data else ()
 		
-		def update(self, parent = None):
+		def update(self):
 			for data in self.data_list:
 				data.update()
 			
 			if self.effect:
 				self.effect.update()
 			
-			self.calculate_props(parent)
+			self.calculate_props()
 		
-		def calculate_props(self, parent):
+		def calculate_props(self):
 			for data in self.data_list:
-				data.calculate_props(parent)
+				data.calculate_props()
 		
 		def get_all_data(self):
 			res = []
@@ -56,5 +56,3 @@ init -9000 python:
 		
 		def __str__(self):
 			return str(self.call_str)
-
-

@@ -26,7 +26,8 @@ init -9000 python:
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			def upd_spr_data(data, k_time, mask, ramp, reverse, hiding):
-				if not data.image:
+				image = data.image
+				if not image:
 					data.res_image = data.image = None
 					return
 				
@@ -34,13 +35,14 @@ init -9000 python:
 					reverse = not reverse
 					mask = im.matrix_color(mask, im.matrix.invert())
 				
-				w, h = get_image_size(data.image)
+				w, h = orig_w, orig_h = get_image_size(image)
 				if data.xsize:
 					w = min(get_absolute(data.xsize, config.width  or get_stage_width()),  w)
 				if data.ysize:
 					h = min(get_absolute(data.ysize, config.height or get_stage_height()), h)
 				
-				image = im.renderer_scale(data.image, w, h)
+				if (w, h) != (orig_w, orig_h):
+					image = im.renderer_scale(image, w, h)
 				mask = im.scale(mask, w, h)
 				
 				value = in_bounds(int(k_time * 255), 0, 255)
@@ -51,25 +53,21 @@ init -9000 python:
 				data.res_image = im.mask(image, mask, value, 'r', '<=', 'a', 1)
 			
 			sprite = self.sprite
+			is_scene = sprite is sprites.scene
 			new_data, old_data = sprite.new_data, sprite.old_data
 			
-			if sprite is sprites.scene:
-				if old_data:
-					old_data.res_image = old_data.image
-				if new_data:
-					upd_spr_data(new_data, dtime / self.time, self.mask, self.ramp, self.reverse, False)
-				
-				if dtime >= self.time:
-					sprite.remove_effect()
+			if old_data and not is_scene:
+				for data in old_data.get_all_data():
+					upd_spr_data(data, dtime / self.time, self.mask, self.ramp, self.reverse, True)
+			
+			if new_data:
+				for data in new_data.get_all_data():
+					upd_spr_data(data, dtime / self.time, self.mask, self.ramp, self.reverse, False)
+			
+			if dtime >= self.time:
+				sprite.remove_effect()
+				if is_scene:
 					sprites.remove_hiding()
-			else:
-				if old_data:
-					upd_spr_data(old_data, dtime / self.time, self.mask, self.ramp, self.reverse, True)
-				if new_data:
-					upd_spr_data(new_data, dtime / self.time, self.mask, self.ramp, self.reverse, False)
-				
-				if dtime >= self.time:
-					sprite.remove_effect()
 		
 		def remove(self):
 			self.for_not_hiding()
@@ -77,4 +75,5 @@ init -9000 python:
 		def for_not_hiding(self):
 			new_data = self.sprite.new_data
 			if new_data:
-				new_data.res_image = new_data.image
+				for data in new_data.get_all_data():
+					data.res_image = None

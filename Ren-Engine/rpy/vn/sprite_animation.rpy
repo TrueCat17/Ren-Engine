@@ -3,16 +3,16 @@ init -9000 python:
 	def linear(t):
 		return t
 	def ease(t):
-		return 0.5 - math.cos(math.pi * t) / 2.0
+		return 0.5 - math.cos(math.pi * t) / 2
 	def easein(t):
-		return math.cos((1.0 - t) * math.pi / 2.0)
+		return math.cos((1.0 - t) * math.pi / 2)
 	def easeout(t):
-		return 1.0 - math.cos(t * math.pi / 2.0)
+		return 1.0 - math.cos(t * math.pi / 2)
 	
 	
 	atl_props = {
 		'simple': ('alpha', 'rotate'),
-		'xy': ('pos', 'anchor', 'align', 'size', 'size_min', 'size_max', 'zoom'),
+		'xy': ('pos', 'anchor', 'align', 'size', 'size_min', 'size_max', 'zoom'), # size_min and size_max - just for class <Style>, not for ATL
 		'crop': ['xcrop', 'ycrop', 'xsizecrop', 'ysizecrop'],
 	}
 	
@@ -33,16 +33,19 @@ init -9000 python:
 	
 	def get_prop_names(prop):
 		props = get_atl_props(prop)
+		if props is None:
+			return props
 		
 		if len(props) == 1:
 			if prop == 'xalign':
 				return ('xpos', 'xanchor')
 			if prop == 'yalign':
 				return ('ypos', 'yanchor')
-			return prop
 		
 		return props
 	
+	
+	sprite_animation_code_cache = DontSave()
 	
 	class SpriteAnimation(SimpleObject):
 		def __init__(self, actions, data = None):
@@ -67,14 +70,16 @@ init -9000 python:
 			self.start_changing_time = None
 			self.end_changing_time = None
 		
-		
-		def copy(self, data):
-			return SpriteAnimation(self.actions, data = data)
-		
-		
 		def out_msg(self, func, msg):
 			out_msg(func, 'Place of transform command: %s:%s\n\n%s' % (self.action_filename, self.action_numline, msg))
 		
+		
+		def eval(self, code):
+			compiled = sprite_animation_code_cache.get(code)
+			if not compiled:
+				compiled = sprite_animation_code_cache[code] = compile(code, 'None', 'eval')
+			
+			return eval(compiled)
 		
 		def update(self):
 			now = get_game_time()
@@ -82,11 +87,11 @@ init -9000 python:
 				return
 			
 			if self.start_changing_time is not None:
-				self.update_changing()
+				self.update_changing_params()
 				if now <= self.end_changing_time:
 					return
-				else:
-					self.start_changing_time = None
+				
+				self.start_changing_time = None
 			
 			
 			if self.block:
@@ -110,17 +115,19 @@ init -9000 python:
 				return
 			
 			
+			actions = self.actions
+			len_actions = len(actions)
 			
-			if self.action_num >= len(self.actions):
+			if self.action_num >= len_actions:
 				self.ended = True
 				return
 			
 			
 			
-			while self.action_num < len(self.actions):
+			while self.action_num < len_actions:
 				action = ''
-				while not action and self.action_num < len(self.actions):
-					action, self.action_filename, self.action_numline = self.actions[self.action_num]
+				while not action and self.action_num < len_actions:
+					action, self.action_filename, self.action_numline = actions[self.action_num]
 					self.action_num += 1
 				
 				if not action:
@@ -144,7 +151,7 @@ init -9000 python:
 					if command == 'pause':
 						if len(args) == 2:
 							try:
-								pause_time = eval(args[1])
+								pause_time = self.eval(args[1])
 							except Exception as e:
 								self.out_msg('SpriteAnimation.update', 'On Eval: %s, exception: %s' % (args[1], e))
 							else:
@@ -157,7 +164,7 @@ init -9000 python:
 						if len(args) > 2:
 							self.out_msg('SpriteAnimation.update', '<repeat> expected 1 optional argument: count of repeats\n' + action)
 						
-						count = int(10e9 if len(args) == 1 else args[1])
+						count = int(1e9 if len(args) == 1 else args[1])
 						num = self.action_num - 1
 						repeated = self.repeated.get(num, 0)
 						
@@ -172,18 +179,18 @@ init -9000 python:
 					
 					is_prop = get_atl_props(command) is not None
 					if is_prop:
-						name = args[0]
-						expr = ' '.join(args[1:])
+						i = action.index(command)
+						expr = action[i + len(command):].strip()
 						try:
-							value = eval(expr)
+							value = self.eval(expr)
 						except Exception as e:
 							self.out_msg('SpriteAnimation.update', 'On Eval: %s, exception: %s' % (expr, e))
 						else:
-							self.set_prop(name, value)
+							self.set_prop(command, value)
 						continue
 					
 					try:
-						evaled = eval(action)
+						evaled = self.eval(action)
 						if type(evaled) in number_types:
 							self.end_pause_time = get_game_time() + evaled
 							return
@@ -192,7 +199,8 @@ init -9000 python:
 							if image_was_registered(evaled):
 								image_actions = get_image(evaled)
 								self.action_num -= 1
-								self.actions = self.actions[:self.action_num] + image_actions + self.actions[self.action_num+1:]
+								actions = self.actions = actions[:self.action_num] + image_actions + actions[self.action_num+1:]
+								len_actions = len(actions)
 							else:
 								self.data.contains = []
 								self.data.image = evaled
@@ -200,7 +208,7 @@ init -9000 python:
 							self.out_msg('SpriteAnimation.update', 'Unknown command:\n' + action)
 					except:
 						try:
-							evaled = eval(command)
+							evaled = self.eval(command)
 							if callable(evaled):
 								if len(args) % 2:
 									desc = command + ' expected odd count of arguments: time, [param value]+\n' + action
@@ -208,8 +216,8 @@ init -9000 python:
 								else:
 									self.change_func = evaled
 									self.start_changing_time = get_game_time()
-									self.end_changing_time = get_game_time() + eval(args[1])
-									self.save_change_params(args[2:])
+									self.end_changing_time = get_game_time() + self.eval(args[1])
+									self.save_changing_params(args[2:])
 								return
 							self.out_msg('SpriteAnimation.update', 'Unknown command:\n' + action)
 						except:
@@ -220,9 +228,9 @@ init -9000 python:
 				if type(action) in (tuple, list):
 					first, self.action_filename, self.action_numline = action[0]
 					if ' ' in first:
-						index = first.index(' ')
-						command = first[:index]
-						extra_param = first[index+1:]
+						i = first.index(' ')
+						command = first[:i]
+						extra_param = first[i+1:]
 						action = [command, extra_param, action[1:]]
 					else:
 						command = first
@@ -240,7 +248,9 @@ init -9000 python:
 					if command == 'contains':
 						if self.last_command != command:
 							self.data.contains = []
+						self.data.sprite.calculate_props()
 						spr = Sprite(extra_param, (), (), action[1:], None)
+						spr.new_data.parent_data = self.data
 						self.data.contains.append(spr)
 					elif command == 'parallel':
 						if self.last_command != command:
@@ -255,90 +265,124 @@ init -9000 python:
 				
 				self.out_msg('SpriteAnimation.update', 'Command type is not str or list:\ntype = %s\n%s' % (type(action), action))
 		
-		def save_change_params(self, args):
+		def save_changing_params(self, args):
 			self.change_props = []
 			
+			sequences = (list, tuple)
 			for i in range(0, len(args), 2):
 				names = get_prop_names(args[i])
+				if names is None:
+					self.out_msg('SpriteAnimation.save_changing_params', 'Unknown property <%s>' % (args[i], ))
+					continue
 				
-				new_value = eval(args[i + 1])
-				if type(names) in (list, tuple):
-					if type(new_value) not in (list, tuple):
-						new_value = [new_value] * len(names)
-					
-					old_props = names
-					if old_props == ('xalign', 'yalign'):
-						old_props = ('xpos', 'ypos')
-					old_value = [self.data[name] for name in old_props]
-				else:
-					old_value = self.data[names]
+				new_values = self.eval(args[i + 1])
+				if type(new_values) not in sequences:
+					new_values = [new_values] * len(names)
+				elif len(names) == 1:
+					self.out_msg('SpriteAnimation.save_changing_params', 'Expected single value, got list: %s' % (new_values, ))
+				elif len(names) != len(new_values):
+					self.out_msg('SpriteAnimation.save_changing_params', 'Expected %s values, got: %s' % (len(names), new_values))
 				
-				self.change_props.append((names, old_value, new_value))
+				if names == ['xalign', 'yalign']:
+					names = ['xpos', 'ypos', 'xanchor', 'yanchor']
+					new_values *= 2
+				old_values = [self.data[name] for name in names]
+				
+				self.change_props.append((names, old_values, new_values))
 		
-		def update_changing(self):
+		def update_changing_params(self):
 			dtime = get_game_time() - self.start_changing_time
 			all_time = max(self.end_changing_time - self.start_changing_time, 0.001)
 			
 			t = in_bounds(dtime / all_time, 0.0, 1.0)
 			t = in_bounds(self.change_func(t), 0.0, 1.0)
-			for prop in self.change_props:
-				name, old_value, new_value = prop
+			
+			
+			def get_abs(prop, value):
+				side = prop[0]
+				prop = prop[1:]
+				if type(value) is not float or side not in 'xy' or prop not in ('anchor', 'pos', 'size'):
+					return absolute(value)
 				
-				if type(new_value) in (list, tuple):
-					value = []
-					for i in range(len(old_value)):
-						new_v = new_value[i]
-						old_v = old_value[i]
-						type_v = float if type(old_v) is float else type(new_v)
-						
-						v = type_v((new_v - old_v) * t + old_v)
-						value.append(v)
+				# see SpriteAnimationData.calculate_props
+				
+				data = self.data
+				
+				if prop == 'anchor':
+					zoom = data['real_' + side + 'zoom']
+					max = data['real_' + side + 'size'] / zoom
+				
 				else:
-					type_v = float if type(old_value) is float else type(new_value)
-					value = type_v((new_value - old_value) * t + old_value)
-				self.set_prop(name, value)
+					parent_data = data.parent_data
+					if parent_data:
+						p_zoom = parent_data['real_' + side + 'zoom']
+						p_size = parent_data['real_' + side + 'size'] / p_zoom
+					else:
+						if side == 'x':
+							p_size = config.width or get_stage_width()
+						else:
+							p_size = config.height or get_stage_height()
+					
+					max = p_size
+				
+				return absolute(value * max)
+			
+			
+			for prop in self.change_props:
+				for name, old_value, new_value in zip(*prop):
+					if t == 1.0:
+						value = new_value
+					else:
+						old_value = get_abs(name, old_value)
+						new_value = get_abs(name, new_value)
+						value = old_value + (new_value - old_value) * t
+					
+					self.set_prop(name, value)
 		
 		
 		def set_prop(self, prop, value):
+			sequences = (list, tuple)
+			
 			if type(prop) is str:
 				props = get_atl_props(prop)
 				if props is None:
 					self.out_msg('SpriteAnimation.set_prop', 'Unknown property <%s>' % (prop, ))
 					return
 			else:
+				if type(prop) not in sequences:
+					self.out_msg('SpriteAnimation.set_prop', 'Expected str, list or tuple as type(prop), got %s' % (type(prop), ))
+					return
+				
 				props = prop
 			
-			if props == ['xalign']:
-				self.data.xalign = value
-				props = ['xpos', 'xanchor']
-				value = [value, value]
-			elif props == ['yalign']:
-				self.data.yalign = value
-				props = ['ypos', 'yanchor']
-				value = [value, value]
+			if len(props) == 1:
+				if prop == 'xalign':
+					props = ['xpos', 'xanchor']
+					value = [value, value]
+				elif prop == 'yalign':
+					props = ['ypos', 'yanchor']
+					value = [value, value]
 			
 			
 			def out_not_number_err(expected, value):
 				self.out_msg('SpriteAnimation.set_prop', 'Expected %s, got <%s>' % (expected, type(value).__name__))
 			
 			if len(props) == 1:
-				if type(value) in (list, tuple):
+				if type(value) in sequences:
 					self.out_msg('SpriteAnimation.set_prop', 'Expected single value, got list: %s' % (value, ))
 				else:
 					if type(value) not in number_types:
 						out_not_number_err('int, float or absolute', value)
 						return
 					
-					if self.data[prop] != value:
-						self.data[prop] = value
+					data = self.data
+					if data[prop] != value:
+						data[prop] = value
 						
-						if prop not in self.data.except_state_props:
-							self.data.state_num += 1
+						if prop not in data.except_state_props:
+							data.state_num += 1
 			else:
-				def out_len_err():
-					self.out_msg('SpriteAnimation.set_prop', 'Expected list with len %s, got: %s' % (len(props), value))
-				
-				if type(value) not in (list, tuple):
+				if type(value) not in sequences:
 					if type(value) not in number_types:
 						out_not_number_err('int, float, absolute or list/tuple of them', value)
 						return
@@ -347,13 +391,13 @@ init -9000 python:
 						self.set_prop(props[0], value)
 						self.set_prop(props[1], value)
 					else:
-						out_len_err()
+						self.out_msg('SpriteAnimation.set_prop', 'Expected 1 or 2 props, got: %s' % (props, ))
 				else:
 					if len(props) == len(value):
-						for i in range(len(props)):
-							self.set_prop(props[i], value[i])
+						for prop, value in zip(props, value):
+							self.set_prop(prop, value)
 					else:
-						out_len_err()
+						self.out_msg('SpriteAnimation.set_prop', 'Expected list with len %s, got: %s' % (len(props), value))
 	
 	def get_default_transform_actions():
 		at = globals().get('default_decl_at')
@@ -411,6 +455,6 @@ init -9000:
 	transform left_center:
 		pos (0.28, 0.5)
 		anchor (0.5, 0.5)
-	transform true_center:
+	transform right_center:
 		pos (0.72, 0.5)
 		anchor (0.5, 0.5)

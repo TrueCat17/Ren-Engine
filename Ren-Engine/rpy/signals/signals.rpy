@@ -30,10 +30,9 @@ init -100001 python:
 				out_msg('Signals.add', '<%s> is not callable' % function)
 				return
 			
-			if event not in self.funcs:
-				self.funcs[event] = []
-			self.funcs[event].append([priority, function, times])
-			self.funcs[event].sort(key = lambda l: l[0])
+			funcs = self.funcs.setdefault(event, [])
+			funcs.append([priority, function, times if times > 0 else -1])
+			funcs.sort(key = lambda l: l[0])
 		
 		def remove(self, event, function):
 			for obj in self.funcs.get(event, ()):
@@ -62,11 +61,12 @@ init -100001 python:
 			while i < len(funcs):
 				func = funcs[i]
 				
-				func[2] -= 1
+				if func[2] > 0:
+					func[2] -= 1
+				
 				if func[1] and func[2]:
 					i += 1
 				else:
 					funcs.pop(i)
 	
 	signals = Signals()
-	

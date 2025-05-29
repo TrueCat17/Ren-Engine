@@ -223,6 +223,9 @@ init -10002 python:
 			
 			t = type(o)
 			
+			if t is DontSave:
+				continue
+			
 			if t in func_and_class_types:
 				# don't save just func and class names
 				if o.__module__ == '__main__' and o.__name__ == k:

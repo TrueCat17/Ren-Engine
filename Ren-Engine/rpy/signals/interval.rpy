@@ -16,6 +16,7 @@ init -100000 python:
 		if id <= 0:
 			out_msg('clear_interval', 'Invalid id <%s>' % id)
 			return
+		
 		i = 0
 		while i < len(_interval_funcs):
 			if _interval_funcs[i][0] == id:
@@ -45,4 +46,3 @@ init -100000 python:
 				_interval_funcs.pop(i)
 	
 	signals.add('enter_frame', exec_intervals)
-

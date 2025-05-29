@@ -7,10 +7,10 @@ init -9000 python:
 			self.state_num = 0
 			self.except_state_props = set()
 			
-			self.xpos = self.ypos = 0
+			self.xpos    = self.ypos    = 0
 			self.xanchor = self.yanchor = 0
-			self.xsize = self.ysize = None
-			self.xzoom = self.yzoom = 1.0
+			self.xsize   = self.ysize   = None
+			self.xzoom   = self.yzoom   = 1.0
 			self.xcrop, self.ycrop, self.xsizecrop, self.ysizecrop = 0.0, 0.0, 1.0, 1.0
 			self.alpha = 1.0
 			self.rotate = 0
@@ -20,13 +20,11 @@ init -9000 python:
 			self.res_image = None
 			
 			self.sprite  = sprite
+			self.parent_data = None
 			
 			self.decl_at = SpriteAnimation(decl_at, self)
 			self.at      = SpriteAnimation(at,      self)
 			self.show_at = SpriteAnimation(show_at, self)
-			
-			self.update()
-			self.calculate_props()
 		
 		def update(self):
 			self.decl_at.update()
@@ -36,7 +34,8 @@ init -9000 python:
 			for spr in self.contains:
 				spr.update()
 		
-		def calculate_props(self, parent = None):
+		def calculate_props(self):
+			parent = self.parent_data
 			if parent is not None:
 				p_xzoom,   p_yzoom   = parent.real_xzoom,   parent.real_yzoom
 				p_xsize,   p_ysize   = parent.real_xsize,   parent.real_ysize
@@ -77,19 +76,19 @@ init -9000 python:
 			self.real_xanchor = get_absolute(self.xanchor, xsize) * self.real_xzoom
 			self.real_yanchor = get_absolute(self.yanchor, ysize) * self.real_yzoom
 			
-			x = get_absolute(self.xpos, p_xsize) * p_xzoom - p_xanchor
-			y = get_absolute(self.ypos, p_ysize) * p_yzoom - p_yanchor
-			sina = _sin(p_rotate)
-			cosa = _cos(p_rotate)
-			xrot = absolute(x * cosa - y * sina)
-			yrot = absolute(x * sina + y * cosa)
+			x = get_absolute(self.xpos, p_xsize / p_xzoom) * p_xzoom - p_xanchor
+			y = get_absolute(self.ypos, p_ysize / p_yzoom) * p_yzoom - p_yanchor
+			sina = _sin(int(p_rotate))
+			cosa = _cos(int(p_rotate))
+			xrot = x * cosa - y * sina
+			yrot = x * sina + y * cosa
 			
 			self.real_xpos = p_xpos + p_xanchor + xrot - self.real_xanchor
 			self.real_ypos = p_ypos + p_yanchor + yrot - self.real_yanchor
 			
 			
 			for spr in self.contains:
-				spr.calculate_props(self)
+				spr.calculate_props()
 		
 		
 		def get_all_data(self):
@@ -99,5 +98,3 @@ init -9000 python:
 					res.extend(spr_data.get_all_data())
 			
 			return res
-	
-	
