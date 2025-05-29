@@ -189,11 +189,6 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 			msg += " Error:\n" + err;
 		}
 
-		static std::set<std::string> msgErrors;
-		if (msg.empty() || msgErrors.count(msg)) return;
-
-		Logger::log(msg + "\n\n");
-
 		const size_t maxLineSize = 100;
 		const size_t maxLineCount = 30;
 		std::vector<std::string> lines = String::split(msg, "\n");
@@ -214,6 +209,11 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 			lines.push_back("..");
 		}
 		msg = String::join(lines, "\n");
+
+		static std::set<std::string> msgErrors;
+		if (msg.empty() || msgErrors.count(msg)) return;
+
+		Logger::log(msg + "\n\n");
 
 		msgErrors.insert(msg);
 	}
