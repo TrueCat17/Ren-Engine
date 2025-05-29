@@ -80,7 +80,7 @@ init -995 python:
 				return max_value
 		
 		else:
-			out_msg('Unexpected debug_screen show_mode: %s' % (mode, ))
+			out_msg('Unexpected debug_screen show_mode: %s', mode)
 			return []
 		
 		params = []

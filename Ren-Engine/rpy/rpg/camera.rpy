@@ -17,7 +17,7 @@ init -1003 python:
 		if type(obj) is str:
 			place = cur_location.get_place(obj)
 			if not place:
-				out_msg('cam_to', 'Place <%s> not found in location <%s>' % (obj, cur_location_name))
+				out_msg('cam_to', 'Place <%s> not found in location <%s>', obj, cur_location_name)
 				return
 			cur_location.cam_object = place
 		else:

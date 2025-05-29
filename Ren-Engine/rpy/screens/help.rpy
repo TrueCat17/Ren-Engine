@@ -44,7 +44,7 @@ init -500 python:
 					text = text[:start] + data[var_name] + text[end + 1:]
 					end += len(data[var_name]) - (end + 1 - start)
 				else:
-					out_msg('help.init, section %s' % name, 'var name <%s> is undefined' % var_name)
+					out_msg('help.init, section %s' % name, 'var name <%s> is undefined', var_name)
 					break
 			
 			help.groups.append((name, text.strip()))

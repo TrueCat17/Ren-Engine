@@ -34,7 +34,7 @@ init -1001 python:
 	def register_location_object(obj_name, directory, main_image, free_image,
 	                             max_in_inventory_cell = 0, remove_to_location = True):
 		if obj_name in location_objects:
-			out_msg('register_location_object', 'Object <%s> already exists' % (obj_name, ))
+			out_msg('register_location_object', 'Object <%s> already exists', obj_name)
 			return
 		
 		obj = location_objects[obj_name] = SimpleObject()
@@ -66,7 +66,7 @@ init -1001 python:
 	                                       count_frames, start_frame, end_frame, time = 1.0):
 		obj = location_objects.get(obj_name)
 		if not obj:
-			out_msg('register_location_object_animation', 'Object <%s> was not registered' % (obj_name, ))
+			out_msg('register_location_object_animation', 'Object <%s> was not registered', obj_name)
 			return
 		
 		if (type(xoffset), type(yoffset)) != (int, int):
@@ -75,7 +75,7 @@ init -1001 python:
 				'set invalid pos: <%s, %s>, expected ints'
 			)
 			params = (anim_name, obj_name, xoffset, yoffset)
-			out_msg('register_location_object_animation', msg % params)
+			out_msg('register_location_object_animation', msg, *params)
 			return
 		
 		if (type(count_frames), type(start_frame), type(end_frame)) != (int, int, int):
@@ -85,7 +85,7 @@ init -1001 python:
 				'(got %s, %s, %s)'
 			)
 			params = (anim_name, obj_name, count_frames, start_frame, end_frame)
-			out_msg('register_location_object_animation', msg % params)
+			out_msg('register_location_object_animation', msg, *params)
 			return
 		if count_frames <= 0 or not (0 <= start_frame < count_frames) or not (0 <= end_frame < count_frames):
 			msg = (
@@ -94,12 +94,12 @@ init -1001 python:
 				'count, start, end = %s, %s, %s'
 			)
 			params = (anim_name, obj_name, count_frames, start_frame, end_frame)
-			out_msg('register_location_object_animation', msg % params)
+			out_msg('register_location_object_animation', msg, *params)
 			return
 		
 		animations = obj.animations
 		if anim_name in animations:
-			out_msg('register_location_object_animation', 'Animation <%s> of object <%s> already exists' % (anim_name, obj_name))
+			out_msg('register_location_object_animation', 'Animation <%s> of object <%s> already exists', anim_name, obj_name)
 			return
 		
 		obj = animations[anim_name] = SimpleObject()
@@ -123,7 +123,7 @@ init -1001 python:
 	
 	def set_sit_place(obj_name, sit_places, over = None):
 		if obj_name not in location_objects:
-			out_msg('set_sit_place', 'Object <%s> was not registered' % (obj_name, ))
+			out_msg('set_sit_place', 'Object <%s> was not registered', obj_name)
 			return
 		
 		for i in range(len(sit_places)):
@@ -271,7 +271,7 @@ init -1001 python:
 		
 		def set_animation(self, anim_name):
 			if anim_name not in self.animations:
-				out_msg('set_animation', 'Animation <%s> not found in object <%s>' % (anim_name, self.type))
+				out_msg('set_animation', 'Animation <%s> not found in object <%s>', anim_name, self.type)
 				return False
 			
 			self.anim_name = anim_name
@@ -408,7 +408,7 @@ init -1001 python:
 					if animation.xsize % animation.count_frames:
 						msg = 'Animation <%s> of object <%s> has xsize (%s) that is not divisible by the count of frames (%s)'
 						params = (animation.name, self.type, animation.xsize, animation.count_frames)
-						out_msg('RpgLocationObject.update', msg % params)
+						out_msg('RpgLocationObject.update', msg, *params)
 					animation.xsize = math.ceil(animation.xsize / animation.count_frames)
 				
 				self.xsize, self.ysize = animation.xsize, animation.ysize
@@ -436,7 +436,7 @@ init -1001 python:
 	def add_location_object(location_name, place, obj_name, **kwargs):
 		location = rpg_locations.get(location_name)
 		if not location:
-			out_msg('add_location_object', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('add_location_object', 'Location <%s> was not registered', location_name)
 			return
 		
 		if place is None:
@@ -447,7 +447,7 @@ init -1001 python:
 			place_name = place
 			place = location.get_place(place_name)
 			if not place:
-				out_msg('add_location_object', 'Place <%s> not found in location <%s>' % (place_name, location_name))
+				out_msg('add_location_object', 'Place <%s> not found in location <%s>', place_name, location_name)
 				return
 		
 		px, py = place['x'], place['y']
@@ -464,7 +464,7 @@ init -1001 python:
 			if not obj.get('type'):
 				obj.type = obj_name
 		else:
-			out_msg('add_location_object', 'Object <%s> was not registered' % (obj_name, ))
+			out_msg('add_location_object', 'Object <%s> was not registered', obj_name)
 			return
 		
 		obj.location = location
@@ -478,14 +478,14 @@ init -1001 python:
 	def get_location_objects(location_name, place, obj_type, count = -1):
 		location = rpg_locations.get(location_name)
 		if not location:
-			out_msg('get_location_objects', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('get_location_objects', 'Location <%s> was not registered', location_name)
 			return
 		
 		if type(place) is str:
 			place_name = place
 			place = location.get_place(place_name)
 			if not place:
-				out_msg('get_location_objects', 'Place <%s> not found in location <%s>' % (place_name, location_name))
+				out_msg('get_location_objects', 'Place <%s> not found in location <%s>', place_name, location_name)
 				return
 			px, py = place.x + place.xsize // 2, place.y + place.ysize // 2
 		elif place is not None:
@@ -607,7 +607,7 @@ init -1001 python:
 	def remove_location_object(location_name, place, obj_name, count = 1):
 		location = rpg_locations.get(location_name)
 		if not location:
-			out_msg('remove_location_object', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('remove_location_object', 'Location <%s> was not registered', location_name)
 			return
 		
 		if place is None:
@@ -617,7 +617,7 @@ init -1001 python:
 				place_name = place
 				place = location.get_place(place_name)
 				if not place:
-					out_msg('remove_location_object', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+					out_msg('remove_location_object', 'Place <%s> in location <%s> not found', place_name, location_name)
 					return
 			px, py = place['x'], place['y']
 		

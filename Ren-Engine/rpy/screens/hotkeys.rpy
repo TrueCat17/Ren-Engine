@@ -51,20 +51,20 @@ init -901 python:
 						keys.pop(-1)
 					keys.append('_')
 				if len(keys) > 2 and hotkeys.only_one_mod_key:
-					out_msg('hotkeys.init', 'Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>' % keys_str)
+					out_msg('hotkeys.init', 'Using more than 1 modifier key (CTRL, SHIFT or ALT) in hotkey <%s>', keys_str)
 					continue
 				
 				ok = True
 				for key in keys[:-1]:
 					if key not in ('CTRL', 'SHIFT', 'ALT'):
-						out_msg('hotkeys.init', 'Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)' % (keys[0], keys_str))
+						out_msg('hotkeys.init', 'Modifier key <%s> in hotkey <%s> is not allowed (CTRL, SHIFT or ALT)', keys[0], keys_str)
 						ok = False
 				if not ok:
 					continue
 				
 				main_key = keys[-1]
 				if main_key not in hotkeys.keys and main_key not in hotkeys.shift_to:
-					out_msg('hotkeys.init', 'Unexpected key <%s> in hotkey <%s>' % (main_key, keys_str))
+					out_msg('hotkeys.init', 'Unexpected key <%s> in hotkey <%s>', main_key, keys_str)
 					continue
 				
 				if main_key in hotkeys.shift_to:

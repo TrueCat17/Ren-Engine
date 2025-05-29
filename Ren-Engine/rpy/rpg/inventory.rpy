@@ -55,7 +55,7 @@ init -1010 python:
 		
 		loc_obj = location_objects.get(obj_name)
 		if not loc_obj:
-			out_msg('inventory.add', 'Object <%s> not registered' % (obj_name, ))
+			out_msg('inventory.add', 'Object <%s> not registered', obj_name)
 			return count
 		max_count = loc_obj.max_in_inventory_cell
 		if max_count == 0:
@@ -82,7 +82,7 @@ init -1010 python:
 		inv = obj if type(obj) is list else obj.inventory
 		
 		if obj_name not in location_objects:
-			out_msg('inventory.has', 'Object <%s> not registered' % (obj_name, ))
+			out_msg('inventory.has', 'Object <%s> not registered', obj_name)
 			return False
 		
 		t = 0
@@ -98,7 +98,7 @@ init -1010 python:
 		inv = obj if type(obj) is list else obj.inventory
 		
 		if obj_name not in location_objects:
-			out_msg('inventory.remove', 'Object <%s> not registered' % (obj_name, ))
+			out_msg('inventory.remove', 'Object <%s> not registered', obj_name)
 			return count
 		
 		for element in inv:

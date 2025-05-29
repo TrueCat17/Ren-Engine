@@ -216,7 +216,7 @@ screen preferences:
 							if callable(elem):
 								$ elem = elem()
 							if not preferences.check_elem(elem):
-								$ out_msg('Screen <preferences>', 'Failed preferences.check_elem(elem)\nFor <%s>\nIn tab <%s>' % (elem, preferences.tab))
+								$ out_msg('Screen <preferences>', 'Failed preferences.check_elem(elem)\nFor <%s>\nIn tab <%s>', elem, preferences.tab)
 								continue
 							
 							python:

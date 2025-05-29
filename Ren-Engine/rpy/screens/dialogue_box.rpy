@@ -117,7 +117,7 @@ init -1000 python:
 					try:
 						db.pause_after_text = float(value)
 					except:
-						out_msg('db.show_text', 'Pause time <%s> is not float' % value)
+						out_msg('db.show_text', 'Pause time <%s> is not float', value)
 				
 				db.dialogue_text_after_pause = text[index:]
 				text = text[:prev_index]
@@ -576,7 +576,7 @@ screen dialogue_box:
 			elif db.mode == 'nvl':
 				use dialogue_box_nvl
 			else:
-				$ out_msg('dialogue_box', "Expected db.mode will be 'adv' or 'nvl', got %r" % (db.mode, ))
+				$ out_msg('dialogue_box', "Expected db.mode will be 'adv' or 'nvl', got %r", db.mode)
 		
 		button:
 			ground 'images/bg/black.jpg'

@@ -90,18 +90,30 @@ init -1000001 python:
 						msg += frame
 		return msg
 	
-	def out_msg(msg, err = '', show_stack = True):
-		err = str(err)
+	def out_msg(msg, err = '', *args, **kwargs):
+		show_stack = kwargs.pop('show_stack', True)
+		if kwargs:
+			_out_msg('out_msg', 'Unexpected kwargs: %s' % list(kwargs.keys()))
+		
+		exc_desc = ''
 		if show_stack:
 			exc_type, exc_value, exc_traceback = sys.exc_info()
 			if exc_traceback:
 				stack = traceback.format_tb(exc_traceback)
-				err += '\n\nException (type = %s): %s' % (type(exc_value).__name__, exc_value)
+				exc_desc += '\n\nException (type = %s): %s' % (type(exc_value).__name__, exc_value)
 			else:
 				stack = get_stack(1)
-			err += '\n\nStack:\n'
+			exc_desc += '\n\nStack:\n'
 			for frame in stack:
-				err += frame
+				exc_desc += frame
+		
+		err = str(err)
+		try:
+			err = err % tuple(args)
+		except:
+			_out_msg('out_msg', 'Failed to format string')
+		
+		err += exc_desc
 		
 		_out_msg(str(msg), err)
 	
@@ -132,7 +144,7 @@ init -1000001 python:
 				else:
 					i = s.find('=')
 					if i == -1:
-						out_msg('get_name_from_file', 'Line <%s> in file <%s> is incorrect' % (s, path))
+						out_msg('get_name_from_file', 'Line <%s> in file <%s> is incorrect', s, path)
 						continue
 					
 					lang = s[:i].strip()
@@ -145,7 +157,7 @@ init -1000001 python:
 			if key2 in cache:
 				return cache[key2]
 		
-		out_msg('get_name_from_file', 'File <%s> is incorrect' % path)
+		out_msg('get_name_from_file', 'File <%s> is incorrect', path)
 		return 'NoName'
 	
 	

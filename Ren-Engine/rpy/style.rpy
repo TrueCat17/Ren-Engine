@@ -60,7 +60,7 @@ init -1002 python:
 							'Attr: %s; value: %s'
 						)
 						params = type(value), len(value), len(props), attr, value
-						out_msg('Style.__setattr__', msg % params)
+						out_msg('Style.__setattr__', msg, *params)
 						return
 					values = value
 				else:
@@ -94,7 +94,7 @@ init -1002 python:
 					else:
 						relative = get_stage_height()
 						if prop not in ('text_size', 'hover_text_size') and not prop.startswith('y'):
-							out_msg('Style.get_current', 'Set <relative> param for unusual prop <%s>' % prop)
+							out_msg('Style.get_current', 'Set <relative> param for unusual prop <%s>', prop)
 				
 				value = get_absolute(self[prop], relative)
 				value_min = self[prop + '_min']

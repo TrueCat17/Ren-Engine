@@ -135,7 +135,7 @@ init -1000001 python:
 	
 	def interpolate_tag(tag, kwargs, in_recursion = False):
 		if type(tag) is not str or len(tag) < 3 or tag[0] != '[' or tag[-1] != ']':
-			out_msg('interpolate_tag', 'invalid tag <%s>' % (tag, ))
+			out_msg('interpolate_tag', 'invalid tag <%s>', tag)
 			return tag
 		tag = tag[1:-1]
 		
@@ -147,7 +147,7 @@ init -1000001 python:
 		
 		for op in ops:
 			if op not in 'tiqulc':
-				out_msg('interpolate_tag', 'invalid tag operator <%s> in tag <%s>' % (op, tag))
+				out_msg('interpolate_tag', 'invalid tag operator <%s> in tag <%s>', op, tag)
 		
 		tag = str(eval(tag, kwargs, {}))
 		

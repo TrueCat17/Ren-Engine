@@ -36,18 +36,18 @@ init -1002 python:
 	
 	def register_location(name, path_to_images, is_room, xsize, ysize):
 		if name in rpg_locations:
-			out_msg('register_location', 'Location <%s> is already registered' % (name, ))
+			out_msg('register_location', 'Location <%s> is already registered', name)
 		else:
 			rpg_locations[name] = RpgLocation(name, path_to_images, is_room, xsize, ysize)
 	
 	def register_place(location_name, place_name, x, y, xsize, ysize, to = None):
 		location = rpg_locations.get(location_name)
 		if not location:
-			out_msg('register_place', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('register_place', 'Location <%s> was not registered', location_name)
 			return
 		
 		if location.get_place(place_name):
-			out_msg('register_place', 'Place <%s> in location <%s> is already exists' % (place_name, location_name))
+			out_msg('register_place', 'Place <%s> in location <%s> is already exists', place_name, location_name)
 			return
 		
 		
@@ -75,14 +75,14 @@ init -1002 python:
 		
 		location = rpg_locations.get(location_name)
 		if not location:
-			out_msg('set_location', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('set_location', 'Location <%s> was not registered', location_name)
 			return
 		
 		if type(place) is str:
 			place_name = place
 			place = location.get_place(place)
 			if not place:
-				out_msg('set_location', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+				out_msg('set_location', 'Place <%s> in location <%s> not found', place_name, location_name)
 				return
 		
 		if not has_screen('location'):
@@ -112,7 +112,7 @@ init -1002 python:
 			)
 			params = (reg_width, reg_height, real_width, real_height, location_name, main)
 			
-			out_msg('set_location', msg % params)
+			out_msg('set_location', msg, *params)
 		
 		end_location_ambience(cur_location)
 		ignore_prev_rpg_control()
@@ -155,14 +155,14 @@ init -1002 python:
 	def ban_exit(location_name, place_name = None):
 		location = rpg_locations.get(location_name)
 		if location is None:
-			out_msg('ban_exit', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('ban_exit', 'Location <%s> was not registered', location_name)
 			return
 		
 		if place_name is not None:
 			if place_name in location.places:
 				location_banned_exits.add((location_name, place_name))
 			else:
-				out_msg('ban_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+				out_msg('ban_exit', 'Place <%s> in location <%s> not found', place_name, location_name)
 			return
 		
 		for place_name in location.places:
@@ -171,10 +171,10 @@ init -1002 python:
 	def unban_exit(location_name, place_name = None):
 		location = rpg_locations.get(location_name)
 		if location is None:
-			out_msg('unban_exit', 'Location <%s> was not registered' % (location_name, ))
+			out_msg('unban_exit', 'Location <%s> was not registered', location_name)
 			return
 		if place_name is not None and place_name not in location.places:
-			out_msg('unban_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+			out_msg('unban_exit', 'Place <%s> in location <%s> not found', place_name, location_name)
 			return
 		
 		for tmp_loc, tmp_place in location_banned_exits.copy():
@@ -207,7 +207,7 @@ init -1002 python:
 					path = im.recolor(path, r, g, b)
 			else:
 				if need:
-					out_msg('get_location_image', 'File <%s> not found' % (path, ))
+					out_msg('get_location_image', 'File <%s> not found', path)
 				path = None
 		
 		cache[key] = path
@@ -215,7 +215,7 @@ init -1002 python:
 	
 	def set_location_scales(name, min_scale, count_scales):
 		if name not in rpg_locations:
-			out_msg('set_location_scales', 'Location <%s> was not registered' % (name, ))
+			out_msg('set_location_scales', 'Location <%s> was not registered', name)
 			return
 		
 		if type(min_scale) is not int or type(count_scales) is not int:

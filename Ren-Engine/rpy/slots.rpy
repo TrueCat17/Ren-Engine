@@ -91,7 +91,7 @@ init -10000 python:
 	def slots__can_load(slot = None, page = None):
 		page = page or persistent.slot_page
 		if page not in dont_save.slots_exists:
-			out_msg('slots.can_load', 'For a non standard page <%s> use function slots.list_slots(page)' % (page, ))
+			out_msg('slots.can_load', 'For a non standard page <%s> use function slots.list_slots(page)', page)
 			return False
 		slot = slot or persistent.slot_selected
 		return slot in dont_save.slots_exists[page]

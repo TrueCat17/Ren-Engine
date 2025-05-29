@@ -14,7 +14,7 @@ init -100000 python:
 	
 	def clear_interval(id):
 		if id <= 0:
-			out_msg('clear_interval', 'Invalid id <%s>' % id)
+			out_msg('clear_interval', 'Invalid id <%s>', id)
 			return
 		
 		i = 0
@@ -35,7 +35,7 @@ init -100000 python:
 					function()
 				except:
 					func_name = getattr(function, '__name__', str(function))
-					out_msg('exec_intervals', 'Id = %s, Function = %s' % (id, func_name))
+					out_msg('exec_intervals', 'Id = %s, Function = %s', id, func_name)
 			interval_obj[3] = before_exec_time
 		
 		i = 0

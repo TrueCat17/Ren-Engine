@@ -63,7 +63,7 @@ init -1000 python:
 			pname, pvalue = params[-2:]
 			params = params[:-2]
 			if pname in d:
-				out_msg('sprites.show', 'Param <%s> specified several times' % (pname, ))
+				out_msg('sprites.show', 'Param <%s> specified several times', pname)
 			else:
 				d[pname] = pvalue
 		
@@ -79,7 +79,7 @@ init -1000 python:
 				if code:
 					return eval(code)
 			except:
-				out_msg('sprites.show', 'Failed on eval param <%s>: %s' % (name, code))
+				out_msg('sprites.show', 'Failed to eval param <%s>: %s', name, code)
 			return None
 		
 		effect = eval_param(d, 'with')
@@ -97,7 +97,7 @@ init -1000 python:
 				sprites.scene = None
 				return True
 			
-			out_msg('sprites.show', 'List of params does not contain name of sprite\n' + params_str)
+			out_msg('sprites.show', 'List of params does not contain name of sprite\n%s', params_str)
 			return False
 		
 		image_name = ' '.join(params)
@@ -126,7 +126,7 @@ init -1000 python:
 		show_at = kwargs.pop('show_at', ())
 		call_str = kwargs.pop('call_str', image_name)
 		if kwargs:
-			out_msg('sprites.show_impl', 'Unexpected params: %s' % list(kwargs.keys()))
+			out_msg('sprites.show_impl', 'Unexpected params: %s', list(kwargs.keys()))
 		
 		if not tag:
 			tag = sprites.get_tag_of_image_name(image_name)
@@ -173,7 +173,7 @@ init -1000 python:
 					break
 				index += 1
 			else:
-				out_msg('sprites.show_impl', 'Sprite <%s> not found' % (behind, ))
+				out_msg('sprites.show_impl', 'Sprite <%s> not found', behind)
 		
 		if sprites.scene in sprites.list:
 			index = max(index, sprites.list.index(sprites.scene) + 1)
@@ -192,16 +192,16 @@ init -1000 python:
 		effect = None
 		if len(params) == 3:
 			if params[1] != 'with':
-				out_msg('sprites.hide', '2 param must be <with>, got <%s>' % (params[1], ))
+				out_msg('sprites.hide', '2 param must be <with>, got <%s>', params[1])
 				return
 			
 			try:
 				effect = eval(params[2])
 			except:
-				out_msg('sprites.hide', 'Failed on eval param <with>: %s' % (params[2], ))
+				out_msg('sprites.hide', 'Failed to eval param <with>: %s', params[2])
 		
 		elif len(params) != 1:
-			out_msg('sprites.hide', 'Expected 1 or 3 params: name ["with" effect]\n' + 'Got: <%s>' % (params, ))
+			out_msg('sprites.hide', 'Expected 1 or 3 params: name ["with" effect]\nGot: <%s>', params)
 			return
 		
 		sprites.hide_impl(tag, effect)
@@ -219,7 +219,7 @@ init -1000 python:
 					sprites.list.pop(i)
 				break
 		else:
-			out_msg('sprites.hide_impl', 'Sprite <%s> not found' % (tag, ))
+			out_msg('sprites.hide_impl', 'Sprite <%s> not found', tag)
 	
 	
 	def sprites__get_datas():

@@ -40,7 +40,7 @@ init -1001 python:
 				size = len(args)
 			
 			if size != 0 and size != 20 and size != 25:
-				out_msg('ImMatrix', 'Expected 20 or 25 values, got %s' % len(args))
+				out_msg('ImMatrix', 'Expected 20 or 25 values, got %s', len(args))
 			args = list(args) + [0] * (25 - size)
 			
 			return list.__new__(cls, args)
@@ -53,7 +53,7 @@ init -1001 python:
 				size = len(args)
 			
 			if size != 0 and size != 20 and size != 25:
-				out_msg('ImMatrix', 'Expected 20 or 25 values, got %s' % len(args))
+				out_msg('ImMatrix', 'Expected 20 or 25 values, got %s', len(args))
 			args = list(args) + [0] * (25 - size)
 			
 			list.__init__(self, args)
@@ -202,7 +202,7 @@ init -1001 python:
 	
 	def im__scale(image, w, h):
 		if w < 1 or h < 1:
-			out_msg('im.scale', 'Sizes are invalid: (%s, %s)' % (w, h))
+			out_msg('im.scale', 'Sizes are invalid: (%s, %s)', w, h)
 			return image
 		return 'Scale|(%s)|%i|%i' % (image, w, h)
 	
@@ -210,13 +210,13 @@ init -1001 python:
 		if h is None:
 			h = w
 		if w <= 0 or h <= 0:
-			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
+			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)', w, h)
 			return image
 		return 'FactorScale|(%s)|%s|%s' % (image, w, h)
 	
 	def im__renderer_scale(image, w, h):
 		if w < 1 or h < 1:
-			out_msg('im.renderer_scale', 'Sizes are invalid: (%s, %s)' % (w, h))
+			out_msg('im.renderer_scale', 'Sizes are invalid: (%s, %s)', w, h)
 			return image
 		return 'RendererScale|(%s)|%i|%i' % (image, w, h)
 	
@@ -224,7 +224,7 @@ init -1001 python:
 		if type(x) in (tuple, list):
 			x, y, w, h = x
 		if w < 1 or h < 1:
-			out_msg('im.crop', 'Sizes are invalid: (%s, %s)' % (w, h))
+			out_msg('im.crop', 'Sizes are invalid: (%s, %s)', w, h)
 			return image
 		return 'Crop|(%s)|(%i %i %i %i)' % (image, x, y, w, h)
 	
@@ -236,7 +236,7 @@ init -1001 python:
 		
 		size = args[0]
 		if type(size) not in (tuple, list) or len(size) != 2 or size[0] < 1 or size[1] < 1:
-			out_msg('im.composite', 'Sizes are invalid: <%s>' % (size, ))
+			out_msg('im.composite', 'Sizes are invalid: <%s>', size)
 			return im.rect('#888', 100, 100)
 		
 		res = 'Composite|(%i %i)' % tuple(size)
@@ -282,18 +282,18 @@ init -1001 python:
 	
 	
 	def im__mask(image, mask, value, channel = 'r', cmp_func_name = '<=', alpha_channel = 'a', alpha_image = 1):
-		if channel not in 'rgba':
-			out_msg('im.mask', '<channel> must be r, g, b or a, got %s' % (channel, ))
+		if channel not in ('r', 'g', 'b', 'a'):
+			out_msg('im.mask', '<channel> must be r, g, b or a, got <%s>', channel)
 			channel = 'r'
 		cmp_func_name_variants = ('l', 'g', 'e', 'ne', 'le', 'ge', '<', '>', '==', '!=', '<=', '>=')
 		if cmp_func_name not in cmp_func_name_variants:
-			out_msg('im.mask', '<cmp_func_name> must be in %s, got %s' % (cmp_func_name_variants, cmp_func_name))
+			out_msg('im.mask', '<cmp_func_name> must be in %s, got <%s>', cmp_func_name_variants, cmp_func_name)
 			cmp_func_name = '<='
-		if alpha_channel not in 'rgba':
-			out_msg('im.mask', '<alpha_channel> must be r, g, b or a, got %s' % (alpha_channel, ))
+		if alpha_channel not in ('r', 'g', 'b', 'a'):
+			out_msg('im.mask', '<alpha_channel> must be r, g, b or a, got <%s>', alpha_channel)
 			alpha_channel = 'r'
 		if alpha_image not in (1, 2, '1', '2'):
-			out_msg('im.mask', '<alpha_image> must be 1 or 2, got %s' % (alpha_image, ))
+			out_msg('im.mask', '<alpha_image> must be 1 or 2, got <%s>', alpha_image)
 			alpha_image = '1'
 		return 'Mask|(%s)|(%s)|(%s)|%i|%s|%s|%s' % (image, mask, channel, value, cmp_func_name, alpha_channel, alpha_image)
 	def im__alpha_mask(image, mask):
@@ -302,23 +302,23 @@ init -1001 python:
 	
 	def im__blur_h(image, dist = 5):
 		if dist < 0:
-			out_msg('im.blur_h', 'Blur distance must be >= 0, got: %s' % dist)
+			out_msg('im.blur_h', 'Blur distance must be >= 0, got: %s', dist)
 			return image
 		return 'BlurH|(%s)|%i' % (image, dist)
 	def im__blur_v(image, dist = 5):
 		if dist < 0:
-			out_msg('im.blur_v', 'Blur distance must be >= 0, got: %s' % dist)
+			out_msg('im.blur_v', 'Blur distance must be >= 0, got: %s', dist)
 			return image
 		return 'BlurV|(%s)|%i' % (image, dist)
 	def im__blur(image, dist_h = 5, dist_v = 5):
 		if dist_h < 0 or dist_v < 0:
-			out_msg('im.blur', 'Blur distances must be >= 0, got: %s' % (dist_h, dist_v))
+			out_msg('im.blur', 'Blur distances must be >= 0, got: %s', (dist_h, dist_v))
 			return image
 		return im.blur_h(im.blur_v(image, dist_v), dist_h)
 	
 	def im__motion_blur(image, cx = 0.5, cy = 0.5, dist = 5):
 		if dist < 1 or dist > 255:
-			out_msg('im.motion_blur', 'Blur distance must be from 1 to 255, got: %s' % dist)
+			out_msg('im.motion_blur', 'Blur distance must be from 1 to 255, got: %s', dist)
 			return image
 		return 'MotionBlur|(%s)|%s|%s|%i' % (image, cx, cy, dist)
 	
@@ -455,7 +455,7 @@ init -1001 python:
 		sizes = left, right, top, bottom
 		if max(sizes) <= 0 or (w, h) == (1, 1):
 			if min(sizes) < 0:
-				out_msg('im.scale_without_borders', 'Invalid sizes %s' % (sizes, ))
+				out_msg('im.scale_without_borders', 'Invalid sizes %s', sizes)
 			res = im.scale(image, width, height)
 			cache[key] = res
 			return res

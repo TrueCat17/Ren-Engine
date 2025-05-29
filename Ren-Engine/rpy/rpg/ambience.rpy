@@ -19,7 +19,7 @@ init python:
 	def set_location_ambience(location_name, paths, volume = 1.0):
 		location = rpg_locations.get(location_name)
 		if not location:
-			out_msg('set_location_ambience', 'Location <%s> not registered' % (location_name, ))
+			out_msg('set_location_ambience', 'Location <%s> not registered', location_name)
 			return
 		
 		if type(paths) is str:

@@ -21,13 +21,13 @@ init -100001 python:
 			
 			if self.checking:
 				if not picklable(function):
-					out_msg('Signals.add', 'Function <%s> is not picklable' % function)
+					out_msg('Signals.add', 'Function <%s> is not picklable', function)
 					return
 			else:
 				self.queue_for_check.append(function)
 			
 			if not callable(function):
-				out_msg('Signals.add', '<%s> is not callable' % function)
+				out_msg('Signals.add', '<%s> is not callable', function)
 				return
 			
 			funcs = self.funcs.setdefault(event, [])
@@ -55,7 +55,7 @@ init -100001 python:
 					function(*args, **kwargs)
 				except:
 					func_name = getattr(function, '__name__', str(function))
-					out_msg('Signals.send', 'Event = %s, Function = %s' % (event, func_name))
+					out_msg('Signals.send', 'Event = %s, Function = %s', event, func_name)
 			
 			i = 0
 			while i < len(funcs):

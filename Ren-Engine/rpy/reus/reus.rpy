@@ -442,7 +442,7 @@ init python:
 					ok = False
 					break
 			if not ok:
-				out_msg('reus.safe_fs_op (%s)' % (op, ), 'Path <%s> is not safe' % (path, ))
+				out_msg('reus.safe_fs_op (%s)' % (op, ), 'Path <%s> is not safe', path)
 				return
 			
 			if op in ('mv', 'cp'):
@@ -462,7 +462,7 @@ init python:
 					os.rmdir(path)
 			
 			else:
-				out_msg('reus.safe_fs_op', 'Unknown operation %s' % (op, ))
+				out_msg('reus.safe_fs_op', 'Unknown operation %s', op)
 		
 		# simple and incorrect way: 1 -> 2 with deleting 2 if exists
 		#   problem case: 1, 2 -> 2, 1

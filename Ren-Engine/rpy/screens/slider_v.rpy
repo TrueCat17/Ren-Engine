@@ -20,7 +20,7 @@ init -1000 python:
 		
 		for key, value in args.items():
 			if key not in data:
-				out_msg('slider_v.change', 'Unexpected param <%s>' % (key, ))
+				out_msg('slider_v.change', 'Unexpected param <%s>', key)
 			else:
 				data[key] = value
 	

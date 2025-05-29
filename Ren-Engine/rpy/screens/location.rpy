@@ -130,7 +130,7 @@ init python:
 			return
 		next_loc = rpg_locations.get(cur_exit.to_location_name)
 		if not next_loc:
-			out_msg('loc__process_exit', 'Location <%s> was not registered' % (cur_exit.to_location_name, ))
+			out_msg('loc__process_exit', 'Location <%s> was not registered', cur_exit.to_location_name)
 			return
 		
 		if cur_location.is_room or next_loc.is_room:

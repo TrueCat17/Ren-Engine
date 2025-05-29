@@ -108,7 +108,7 @@ init -9990 python:
 			else:
 				r = g = b = 0
 				a = 255
-				out_msg('renpy.easy.color', 'Expected non-negative int, got: %s' % c)
+				out_msg('renpy.easy.color', 'Expected non-negative int, got: %s', c)
 		
 		elif t in (tuple, list):
 			if len(c) == 4:
@@ -119,12 +119,12 @@ init -9990 python:
 					r, g, b = c
 				else:
 					r = g = b = 0
-					out_msg('renpy.easy.color', 'Expected %s with size 3 or 4, got: %s' % (t, c))
+					out_msg('renpy.easy.color', 'Expected %s with size 3 or 4, got: %s', t, c)
 		
 		elif t is str:
-			if c[0] == '#':
+			if c.startswith('#'):
 				c = c[1:]
-			elif c[0:2] == '0x':
+			elif c.startswith('0x'):
 				c = c[2:]
 			
 			if len(c) == 6:
@@ -150,11 +150,11 @@ init -9990 python:
 			else:
 				r = g = b = 0
 				a = 255
-				out_msg('renpy.easy.color', 'Expected str with size 3, 4, 6 or 8, got: "%s"' % c)
+				out_msg('renpy.easy.color', 'Expected str with size 3, 4, 6 or 8, got: %r', c)
 		else:
 			r = g = b = 0
 			a = 255
-			out_msg('renpy.easy.color', 'Expected int, list, tuple or str, got: %s' % t)
+			out_msg('renpy.easy.color', 'Expected int, list, tuple or str, got: %s', t.__name__)
 		
 		return r, g, b, a
 	
@@ -169,14 +169,14 @@ init -9990 python:
 			if who in g:
 				who = g[who]
 			else:
-				out_msg('renpy.say', 'Character <%s> not found' % who)
+				out_msg('renpy.say', 'Character <%s> not found', who)
 				tmp_character.name = who
 				who = tmp_character
 		
 		if callable(who):
 			who(what)
 		else:
-			out_msg('renpy.say', '%s is not callable' % (who, ))
+			out_msg('renpy.say', '%s is not callable', who)
 			narrator(what)
 	
 	
@@ -187,13 +187,13 @@ init -9990 python:
 			file_name, num_line = get_file_and_line(1)
 			_jump_next(label, False, file_name, num_line)
 		else:
-			out_msg('renpy.jump', 'Label <%s> not found' % (label, ))
+			out_msg('renpy.jump', 'Label <%s> not found', label)
 	def renpy__call(label):
 		if renpy.has_label(label):
 			file_name, num_line = get_file_and_line(1)
 			_jump_next(label, True, file_name, num_line)
 		else:
-			out_msg('renpy.call', 'Label <%s> not found' % (label, ))
+			out_msg('renpy.call', 'Label <%s> not found', label)
 	
 	
 	def renpy__call_screen(screen_name, ret_name, **kwargs):

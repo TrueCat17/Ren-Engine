@@ -32,23 +32,23 @@ init -1001 python:
 	                                 count_frames, start_frame, end_frame, time = 1.0):
 		if (type(xoffset), type(yoffset)) != (int, int):
 			msg = 'On registration of animation <%s> of character <%s>\n' + 'set invalid pos: <%s, %s>, expected ints'
-			out_msg('register_character_animation', msg % (anim_name, character, xoffset, yoffset))
+			out_msg('register_character_animation', msg, anim_name, character, xoffset, yoffset)
 			return
 		
 		if (type(count_frames), type(start_frame), type(end_frame)) != (int, int, int):
 			msg = 'On registration of animation <%s> of character <%s>\n'
 			msg += 'params count_frame, start_frame and end_frame must be ints\n'
 			msg += '(got %s, %s, %s)'
-			out_msg('register_character_animation', msg % (anim_name, character, count_frames, start_frame, end_frame))
+			out_msg('register_character_animation', msg, anim_name, character, count_frames, start_frame, end_frame)
 			return
 		if count_frames <= 0 or not (0 <= start_frame < count_frames) or not (0 <= end_frame < count_frames):
 			msg = 'On registration of animation <%s> of character <%s>\n' + 'set invalid frames:\n' + 'count, start, end = %s, %s, %s'
-			out_msg('register_character_animation', msg % (anim_name, character, count_frames, start_frame, end_frame))
+			out_msg('register_character_animation', msg, anim_name, character, count_frames, start_frame, end_frame)
 			return
 		
 		animations = character.animations
 		if anim_name in animations:
-			out_msg('register_character_animation', 'Animation <%s> of character <%s> already exists' % (anim_name, character))
+			out_msg('register_character_animation', 'Animation <%s> of character <%s> already exists', anim_name, character)
 			return
 		
 		obj = animations[anim_name] = SimpleObject()
@@ -294,8 +294,7 @@ init -1001 python:
 					'Unexpected pose <%s>\n'
 					'Expected: %s'
 				)
-				params = (pose, ', '.join(expected))
-				out_msg('Character.set_pose', msg % params)
+				out_msg('Character.set_pose', msg, pose, ', '.join(expected))
 		
 		
 		def set_frame(self, frame):
@@ -388,14 +387,14 @@ init -1001 python:
 		def allow_exit(self, location_name, place_name = None):
 			location = rpg_locations.get(location_name, None)
 			if location is None:
-				out_msg('Character.allow_exit', 'Location <%s> was not registered' % (location_name, ))
+				out_msg('Character.allow_exit', 'Location <%s> was not registered', location_name)
 				return
 			
 			if place_name is not None:
 				if place_name in location.places:
 					self.allowed_exits.add((location_name, place_name))
 				else:
-					out_msg('Character.allow_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+					out_msg('Character.allow_exit', 'Place <%s> in location <%s> not found', place_name, location_name)
 				return
 			
 			for place_name in location.places:
@@ -404,10 +403,10 @@ init -1001 python:
 		def disallow_exit(self, location_name, place_name = None):
 			location = rpg_locations.get(location_name, None)
 			if location is None:
-				out_msg('Character.disallow_exit', 'Location <%s> was not registered' % (location_name, ))
+				out_msg('Character.disallow_exit', 'Location <%s> was not registered', location_name)
 				return
 			if place_name is not None and place_name not in location.places:
-				out_msg('Character.disallow_exit', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+				out_msg('Character.disallow_exit', 'Place <%s> in location <%s> not found', place_name, location_name)
 				return
 			
 			tmp_allowed_exits = set(self.allowed_exits)
@@ -433,7 +432,7 @@ init -1001 python:
 				return False
 			
 			if self.location is None:
-				out_msg('Character.move_to_places', '%s not on location' % (self, ))
+				out_msg('Character.move_to_places', '%s not on location', self)
 				return False
 			
 			if self is me:
@@ -472,9 +471,9 @@ init -1001 python:
 						if type(offset) in (list, tuple) and len(offset) == 2 and type(offset[0]) is int and type(offset[1]) is int:
 							pdx, pdy = offset
 						else:
-							out_msg('Character.move_to_places', 'Expected tuple or list with 2 ints in offset of place: <%s>' % (place_elem, ))
+							out_msg('Character.move_to_places', 'Expected tuple or list with 2 ints in offset of place: <%s>', place_elem)
 					else:
-						out_msg('Character.move_to_places', 'Expected tuple or list with len 2 or 3, got <%s>' % (place_elem, ))
+						out_msg('Character.move_to_places', 'Expected tuple or list with len 2 or 3, got <%s>', place_elem)
 						return False
 					if not location_name:
 						location_name = from_location_name
@@ -483,13 +482,13 @@ init -1001 python:
 				
 				location = rpg_locations.get(location_name, None)
 				if not location:
-					out_msg('Character.move_to_places', 'Location <%s> was not registered' % (location_name, ))
+					out_msg('Character.move_to_places', 'Location <%s> was not registered', location_name)
 					return False
 				
 				if type(place_elem) is str:
 					place = location.places.get(place_elem, None)
 					if place is None:
-						out_msg('Character.move_to_places', 'Place <%s> in location <%s> not found' % (place_elem, location_name))
+						out_msg('Character.move_to_places', 'Place <%s> in location <%s> not found', place_elem, location_name)
 						return False
 				else:
 					place = place_elem
@@ -691,7 +690,7 @@ init -1001 python:
 		
 		def start_animation(self, anim_name, repeat = 0, wait_time = -1):
 			if anim_name not in self.animations:
-				out_msg('Character.start_animation', 'Animation <%s> not found in character <%s>' % (anim_name, self))
+				out_msg('Character.start_animation', 'Animation <%s> not found in character <%s>', anim_name, self)
 				return
 			
 			if self.animation is None:
@@ -817,14 +816,14 @@ init -1001 python:
 		g = globals()
 		if who in g:
 			return g[who].name
-		out_msg('get_name', 'Character <%s> not found' % (who, ))
+		out_msg('get_name', 'Character <%s> not found', who)
 	
 	def set_name(who, name):
 		g = globals()
 		if who in g:
 			g[who].name = str(name)
 		else:
-			out_msg('set_name', 'Character <%s> not found' % (who, ))
+			out_msg('set_name', 'Character <%s> not found', who)
 	meet = set_name
 	
 	def make_names_unknown():
@@ -853,7 +852,7 @@ init -1001 python:
 			location = cur_location
 		elif type(location) is str:
 			if location not in rpg_locations:
-				out_msg('show_character', 'Location <%s> not registered' % location)
+				out_msg('show_character', 'Location <%s> not registered', location)
 				return
 			location = rpg_locations[location]
 		
@@ -862,7 +861,7 @@ init -1001 python:
 			place_name = place
 			place = location.get_place(place)
 			if not place:
-				out_msg('show_character', 'Place <%s> not found in location <%s>' % (place_name, location.name))
+				out_msg('show_character', 'Place <%s> not found in location <%s>', place_name, location.name)
 				return
 		
 		if cur_location and cur_location.cam_object is character and auto_change_location:
@@ -897,7 +896,7 @@ init -1001 python:
 			character.location = None
 			character.paths = []
 		else:
-			out_msg('hide_character', 'Character <%s, %s> not shown' % (character.real_name, character.unknow_name))
+			out_msg('hide_character', 'Character <%s, %s> not shown', character.real_name, character.unknow_name)
 	
 	
 	tmp_character = Character('TMP')

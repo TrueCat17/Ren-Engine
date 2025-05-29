@@ -73,7 +73,7 @@ init -1000 python:
 				show_character(character, {'x': x, 'y': y}, location_name)
 				return 'end'
 		
-		out_msg('rpg_action_spawn', 'Spawn point for <%s> not found' % character)
+		out_msg('rpg_action_spawn', 'Spawn point for <%s> not found', character)
 		return 'end'
 	
 	
@@ -226,12 +226,12 @@ init -1000 python:
 		
 		if home_is_fake_location and state in ('start', 'end'):
 			if type(home) not in (tuple, list) or len(home) != 2:
-				out_msg('rpg_action_home', 'Data <home> of character <%s> is not [location, place] (got %s)' % (character, home))
+				out_msg('rpg_action_home', 'Data <home> of character <%s> is not [location, place] (got %s)', character, home)
 				return 'end'
 			
 			location_name, place = home
 			if location_name not in rpg_locations:
-				out_msg('rpg_action_home', 'Location <%s> was not registered' % (location_name, ))
+				out_msg('rpg_action_home', 'Location <%s> was not registered', location_name)
 				return 'end'
 			
 			location = rpg_locations[location_name]
@@ -239,7 +239,7 @@ init -1000 python:
 				place_name = place
 				place = location.get_place(place_name)
 				if place is None:
-					out_msg('rpg_action_home', 'Place <%s> in location <%s> not found' % (place_name, location_name))
+					out_msg('rpg_action_home', 'Place <%s> in location <%s> not found', place_name, location_name)
 					return 'end'
 		
 		
@@ -573,7 +573,7 @@ init -1000 python:
 					if type(new_state) is not str:
 						msg = 'Action <%s> of character <%s> returned non-str new state <%s> (old state = <%s>)'
 						params = (old_action, self.character, new_state, old_state)
-						out_msg('RpgActions.update', msg % params)
+						out_msg('RpgActions.update', msg, *params)
 						new_state = 'end'
 					self.state = new_state
 				

@@ -90,10 +90,10 @@ init -100002 python:
 	
 	def is_picklable_func(called_from, func, param_name):
 		if not callable(func):
-			out_msg(called_from, 'Param <%s> is not callable' % (param_name, ))
+			out_msg(called_from, 'Param <%s> is not callable', param_name)
 			return False
 		if not picklable(func):
-			out_msg(called_from, 'Param <%s> is not picklable' % (param_name, ))
+			out_msg(called_from, 'Param <%s> is not picklable', param_name)
 			return False
 		return True
 	
@@ -124,13 +124,13 @@ init -10002 python:
 		try:
 			if (not os.path.exists(path)) or os.path.getsize(path) == 0:
 				res = dict()
-				out_msg('pickling.load_object', 'File <%s> does not exist or empty' % path)
+				out_msg('pickling.load_object', 'File <%s> does not exist or empty', path)
 			else:
 				with open(path, 'rb') as f:
 					res = pickle.load(f)
 			return res
 		except:
-			out_msg('pickling.load_object', 'Error on loading object from file <%s>' % (path, ))
+			out_msg('pickling.load_object', 'Error on loading object from file <%s>', path)
 			raise
 	
 	def pickling__save_object(path, obj):
@@ -149,7 +149,7 @@ init -10002 python:
 			paths += '  ' + i + '\n'
 		paths = paths.rstrip('\n')
 		
-		out_msg('pickling.save_object', 'Error on saving objects to file <%s>:\n%s' % (path, paths))
+		out_msg('pickling.save_object', 'Error on saving objects to file <%s>:\n%s', path, paths)
 		return False
 	
 	def pickling__get_paths_to_unpicklable_helper(obj, visit_func, visited):
