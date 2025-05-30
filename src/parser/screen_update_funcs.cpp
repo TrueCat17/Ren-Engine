@@ -82,8 +82,9 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		typedObj->propName = prop == Py_True; \
 	}else { \
 		typedObj->propName = false; \
+		std::string exactPropName = std::string_view(#propName) == "btnRect.buttonMode" ? "mouse" : #propName; \
 		std::string type = prop->ob_type->tp_name; \
-		outError(obj, #propName, propIndex, "Expected type bool, got " + type); \
+		outError(obj, exactPropName, propIndex, "Expected type bool, got " + type); \
 	} \
 }
 
