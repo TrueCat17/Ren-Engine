@@ -190,8 +190,8 @@ init -10000 python:
 	ShowMenu = ShowScreen = Show
 	HideMenu = HideScreen = Hide
 	
-	def Notify(msg):
-		return Function(notification.out, str(msg))
+	def Notify(msg, *args):
+		return Function(notification.out, msg, *args)
 	
 	def Language(lang):
 		return Function(renpy.change_language, lang)

@@ -1,12 +1,12 @@
 init -980 python:
-	def notification__out(msg):
+	def notification__out(msg, *args):
 		if callable(msg):
 			if not is_picklable_func('notification.out', msg, 'msg'):
 				return
 			
-			obj = [msg, '', None, 1.0]
+			obj = [msg, '', tuple(args), None, 1.0]
 		else:
-			obj = [None, str(msg), None, 1.0]
+			obj = [None, str(msg) % tuple(args), None, None, 1.0]
 		
 		show_screen('notification')
 		notification.msgs.append(obj)
@@ -15,18 +15,18 @@ init -980 python:
 		now = get_game_time()
 		
 		for obj in notification.msgs.copy():
-			msg_func, msg, start_time, alpha = obj
+			msg_func, msg, args, start_time, alpha = obj
 			
 			if msg_func:
 				new_msg = msg_func()
 				if new_msg is not None:
-					obj[1] = str(new_msg)
+					obj[1] = str(new_msg) % args
 				else:
 					start_time = now - notification.show_time
-					obj[:] = [None, msg, start_time, 1.0]
+					obj[:] = [None, msg, None, start_time, 1.0]
 			else:
 				if start_time is None:
-					start_time = obj[2] = now
+					start_time = obj[3] = now
 			
 			dtime = (now - start_time) if start_time is not None else 0
 			
@@ -38,7 +38,7 @@ init -980 python:
 				alpha = 0
 			
 			if alpha:
-				obj[3] = alpha
+				obj[4] = alpha
 			else:
 				notification.msgs.remove(obj)
 		
@@ -96,5 +96,5 @@ screen notification:
 	for i in screen_tmp.range_iter(range(len(screen_tmp.msgs))):
 		textbutton _(screen_tmp.msgs[i][1]):
 			style 'notification'
-			alpha  screen_tmp.msgs[i][3]
+			alpha  screen_tmp.msgs[i][4]
 			action notification.remove(i)
