@@ -32,8 +32,9 @@ static void update() {
 				}
 			}
 			if (!prevValue.empty()) {
-				Utils::outMsg("Translation::update",
-				              "Expected <new> before end of translation block\n" + node->getPlace());
+				Utils::outError("Translation::update",
+				                "Expected <new> before end of translation block\n%",
+				                node->getPlace());
 			}
 		}
 	}

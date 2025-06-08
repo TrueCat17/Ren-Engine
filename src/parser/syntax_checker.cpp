@@ -78,7 +78,7 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 
 	auto syntaxIt = mapSyntax.find(type);
 	if (syntaxIt == mapSyntax.end()) {
-		Utils::outMsg("SyntaxChecker::getScreenProps", "Type <" + type + "> not found");
+		Utils::outError("SyntaxChecker::getScreenProps", "Type <%> not found", type);
 		static std::vector<std::string> res;
 		return res;
 	}

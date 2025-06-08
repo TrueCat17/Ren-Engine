@@ -24,14 +24,14 @@ void Imagemap::updateTexture() {
 
 	surface = ImageManipulator::getImage(groundPath, false);
 	if (!surface) {
-		Utils::outMsg("Imagemap::updateTexture",
-		              "Failed to load ground image <" + groundPath + ">\n" +
-		              node->getPlace());
+		Utils::outError("Imagemap::updateTexture",
+		                "Failed to load ground image <%>\n%",
+		                groundPath, node->getPlace());
 	}
 	hover = ImageManipulator::getImage(hoverPath, false);
 	if (!hover) {
-		Utils::outMsg("Imagemap::updateTexture",
-		              "Failed to load hover image <" + hoverPath + ">\n" +
-		              node->getPlace());
+		Utils::outError("Imagemap::updateTexture",
+		                "Failed to load hover image <%>\n%",
+		                hoverPath, node->getPlace());
 	}
 }

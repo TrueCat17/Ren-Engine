@@ -27,9 +27,9 @@ static Node* parseAction(PyObject *action, uint32_t childNum,
 
 	ScopeExit se([&] {
 		if (!res) {
-			std::string num = std::to_string(childNum);
-			std::string place = '(' + parentFileName + ':' + std::to_string(parentNumLine) + ')';
-			Utils::outMsg("Sprite, parseAction", "Failed parse child <" + num + "> of " + place);
+			Utils::outError("Sprite, parseAction",
+			                "Failed to parse child <%> of (%:%)",
+			                childNum, parentFileName, parentNumLine);
 		}
 	});
 
@@ -100,9 +100,8 @@ void Sprite::registerImage(Node *imageNode) {
 
 	name = String::strip(name);
 	if (name.empty()) {
-		Utils::outMsg("Utils::registerImage",
-		              "Empty name\n" +
-		              imageNode->getPlace());
+		Utils::outError("Utils::registerImage",
+		                "Empty name\n%", imageNode->getPlace());
 		return;
 	}
 	declAts[name] = imageNode;
@@ -125,9 +124,9 @@ void Sprite::registerImage(Node *imageNode) {
 		if (!actions) return;
 
 		if (!PyTuple_CheckExact(actions) && !PyList_CheckExact(actions)) {
-			std::string type = actions->ob_type->tp_name;
-			Utils::outMsg("Sprite::registerImage",
-			              "type(get_default_transform_actions()) expected tuple or list, got <" + type + ">");
+			Utils::outError("Sprite::registerImage",
+			                "type(get_default_transform_actions()) expected tuple or list, got %",
+			                actions->ob_type->tp_name);
 			return;
 		}
 
@@ -161,7 +160,7 @@ PyObject* Sprite::getImageDeclAt(const std::string &name) {
 		return node->getPyChildren();
 	}
 
-	Utils::outMsg("Sprite::getImageDeclAt", "Image <" + name + "> not registered");
+	Utils::outError("Sprite::getImageDeclAt", "Image <%> not registered", name);
 	return PyTuple_New(0);
 }
 
@@ -208,7 +207,7 @@ const std::vector<std::string>& Sprite::getChildrenImagesDeclAt(const std::strin
 		const Node *node = it->second;
 		getChildrenImages(res, node);
 	}else {
-		Utils::outMsg("Sprite::getVectorImageDeclAt", "Image <" + name + "> not registered");
+		Utils::outError("Sprite::getVectorImageDeclAt", "Image <%> not registered", name);
 	}
 
 	return res;

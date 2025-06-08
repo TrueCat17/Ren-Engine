@@ -158,9 +158,9 @@ void BtnRect::onHovered() const {
 			std::string path = PyUtils::objToStr(hoverSoundObj);
 			AudioManager::play("button_hover", path, 0, 0, 1.0, node->getFileName(), node->getNumLine());
 		}else if (hoverSoundObj != Py_None) {
-			std::string type = hoverSoundObj->ob_type->tp_name;
-			Utils::outMsg("BtnRect::onHovered",
-			              "In style." + style->name + ".hover_sound expected type str, got " + type);
+			Utils::outError("BtnRect::onHovered",
+			                "In style.%.hover_sound expected type str, got %",
+			                style->name, hoverSoundObj->ob_type->tp_name);
 		}
 	}
 
@@ -204,9 +204,9 @@ void BtnRect::onLeftClick() const {
 			AudioManager::play("button_click ", path, 0, 0, 1.0,
 			                   node->getFileName(), node->getNumLine());
 		}else if (activateSoundObj != Py_None) {
-			std::string type = activateSoundObj->ob_type->tp_name;
-			Utils::outMsg("BtnRect::onLeftClick",
-			              "In style." + style->name + ".activate_sound expected type str, got " + type);
+			Utils::outError("BtnRect::onLeftClick",
+			                "In style.%.activate_sound expected type str, got %",
+			                style->name, activateSoundObj->ob_type->tp_name);
 		}
 	}
 

@@ -68,8 +68,10 @@ void Game::load(const std::string &table, const std::string &name) {
 
 	for (const std::string &path : {savesPath, tablePath, fullPath}) {
 		if (!FileSystem::exists(path)) {
-			Utils::outMsg("Failed to open save <" + table + "_" + name + ">\n"
-			              "Directory <" + path + "> not found");
+			Utils::outError("Game::load",
+			                "Failed to open save <%_%>\n"
+			                "Directory <%> not found",
+			                table, name, path);
 			return;
 		}
 	}
@@ -79,7 +81,7 @@ void Game::load(const std::string &table, const std::string &name) {
 	};
 	for (const char *fileName : {"/stack", "/info", "/py_globals"}) {
 		if (!fileExists(fullPath + fileName)) {
-			Utils::outMsg("File <" + fullPath + fileName + "> not exists or empty");
+			Utils::outError("Game::load", "File <%%> not exists or empty", fullPath, fileName);
 			return;
 		}
 	}
@@ -96,7 +98,7 @@ void Game::load(const std::string &table, const std::string &name) {
 const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	std::vector<std::string> startScreensVec;
 
-	const char *loadFile = "CPP_Embed: Game::loadInfo";
+	const char *loadFunc = "CPP_Embed: Game::loadInfo";
 	std::string tmp;
 
 
@@ -114,7 +116,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 		std::getline(is, tmp);
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
-			Utils::outMsg(loadFile, "In string <" + tmp + "> expected 2 args");
+			Utils::outError(loadFunc, "In string <%> expected 2 args", tmp);
 			fps = 60;
 			hideMouse = true;
 		}else {

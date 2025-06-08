@@ -479,7 +479,7 @@ static void destroy() {
 
 static bool argsProcessing(int argc, char **argv, std::string &resources) {
 	if (argc > 2) {
-		Utils::outMsg("argsProcessing", "Expected max 1 arg, got: " + std::to_string(argc - 1));
+		Utils::outError("argsProcessing", "Expected max 1 arg, got: %", argc - 1);
 		return true;
 	}
 

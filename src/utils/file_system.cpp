@@ -7,7 +7,6 @@ namespace fs = std::filesystem;
 
 #include <SDL2/SDL.h>
 
-#include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -27,6 +26,8 @@ static std::string clear(const std::string &path) {
 #include <winbase.h>
 #include <winuser.h>
 #include <shellapi.h>
+
+#include "utils/scope_exit.h"
 #endif
 
 std::string FileSystem::getCurrentPath() {
@@ -57,7 +58,7 @@ std::string FileSystem::setCurrentPath(std::string path) {
 	fs::current_path(path.c_str(), ec);
 
 	if (!ec.value()) return "";
-	return "Set current path to <" + path + "> failed\n" + ec.message();
+	return Utils::format("Set current path to <%> failed\n%", path, ec.message());
 }
 
 
@@ -78,7 +79,7 @@ void FileSystem::createDirectory(const std::string &path) {
 	std::error_code ec;
 	fs::create_directory(clear(path), ec);
 	if (ec.value()) {
-		Utils::outMsg("FileSystem::createDirectory", ec.message() + "\n  path: <" + path + ">");
+		Utils::outError("FileSystem::createDirectory", "%\n  path: <%>", ec.message(), path);
 	}
 }
 
@@ -86,7 +87,7 @@ void FileSystem::remove(const std::string &path) {
 	std::error_code ec;
 	fs::remove_all(clear(path), ec);
 	if (ec.value()) {
-		Utils::outMsg("FileSystem::remove", ec.message() + "\n  path: <" + path + ">");
+		Utils::outError("FileSystem::remove", "%\n  path: <%>", ec.message(), path);
 	}
 }
 
@@ -94,7 +95,7 @@ void FileSystem::rename(const std::string &oldPath, const std::string &newPath) 
 	std::error_code ec;
 	fs::rename(clear(oldPath), clear(newPath), ec);
 	if (ec.value()) {
-		Utils::outMsg("FileSystem::rename", ec.message() + "\n  oldPath: <" + oldPath + ">\n  newPath: <" + newPath + ">");
+		Utils::outError("FileSystem::rename", "%\n  oldPath: <%>\n  newPath: <%>", ec.message(), oldPath, newPath);
 	}
 }
 
@@ -174,7 +175,7 @@ int64_t FileSystem::getFileTime(const std::string &path) {
 	std::error_code ec;
 	auto time = fs::last_write_time(path, ec);
 	if (ec.value()) {
-		Utils::outMsg("FileSystem::getFileTime", ec.message() + "\n  path: <" + path + ">");
+		Utils::outError("FileSystem::getFileTime", "%\n  path: <%>", ec.message(), path);
 		return 0;
 	}
 
@@ -212,7 +213,7 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unus
 
 	if (!PyList_CheckExact(vars)) {
 		std::string type = vars->ob_type->tp_name;
-		Utils::outMsg("FileSystem::startFile_win32", "Expected type(vars) is list, got " + type);
+		Utils::outError("FileSystem::startFile_win32", "Expected type(vars) is list, got %", type);
 		return false;
 	}
 
@@ -221,7 +222,7 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unus
 		PyObject *pyVar = PyList_GET_ITEM(vars, i);
 		if (!PyUnicode_CheckExact(pyVar)) {
 			std::string type = pyVar->ob_type->tp_name;
-			Utils::outMsg("FileSystem::startFile_win32", "Expected type(vars[i]) is str, got " + type);
+			Utils::outError("FileSystem::startFile_win32", "Expected type(vars[i]) is str, got %", type);
 			return false;
 		}
 

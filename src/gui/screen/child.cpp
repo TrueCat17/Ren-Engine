@@ -104,7 +104,7 @@ void Child::updateProps() {
 	if (!props || props == Py_None) return;
 	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
 		std::string type = props->ob_type->tp_name;
-		Utils::outMsg("Child::updateProps", "Expected list or tuple, got " + type);
+		Utils::outError("Child::updateProps", "Expected list or tuple, got %", type);
 		return;
 	}
 

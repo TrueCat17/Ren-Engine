@@ -84,8 +84,9 @@ static void initConsts(Node *node) {
 
 		if (screenNode) {
 			if (Algo::in(params, screensInInit)) {
-				Utils::outMsg("ScreenCodeGenerator::initConsts",
-				              "Using screens with recursion: " + String::join(screensInInit, " -> ") + " -> " + params);
+				Utils::outError("ScreenCodeGenerator::initConsts",
+				                "Using screens with recursion: % -> %",
+				                String::join(screensInInit, " -> "), params);
 			}else {
 				ok = true;
 				initScreen(screenNode);
@@ -93,9 +94,9 @@ static void initConsts(Node *node) {
 				node->countPropsToCalc = screenNode->countPropsToCalc;
 			}
 		}else {
-			Utils::outMsg("ScreenCodeGenerator::initConsts",
-			              "Screen with name <" + node->params + "> not found\n" +
-			              node->getPlace());
+			Utils::outError("ScreenCodeGenerator::initConsts",
+			                "Screen with name <%> not found\n%",
+			                node->params, node->getPlace());
 		}
 		if (ok) return;
 
@@ -313,10 +314,9 @@ static std::string initUseCode(Node *node, const std::string &index) {
 	auto &screenNodeVars = screenNode->getScreenVars();
 
 	if (screenNodeVars.size() < nodeVars.size()) {
-		Utils::outMsg("ScreenCodeGenerator::initUseCode",
-		              "Maximum " + std::to_string(screenNodeVars.size()) + " args expected"
-		              "for screen <" + node->params + ">, got " + std::to_string(nodeVars.size()) + "\n\n" +
-		              node->getPlace());
+		Utils::outError("ScreenCodeGenerator::initUseCode",
+		                "Maximum % args expected for screen <%>, got %\n\n%",
+		                screenNodeVars.size(), node->params, nodeVars.size(), node->getPlace());
 	}
 
 	std::string inner = initCode(screenNode, index);
@@ -343,9 +343,9 @@ static std::string initUseCode(Node *node, const std::string &index) {
 		        [&name] (const auto &p) { return p.first == name; }
 		    ) == screenNodeVars.cend()
 		) {
-			Utils::outMsg("ScreenCodeGenerator::initUseCode",
-			              "No param <" + name + "> in screen <" + node->params + ">\n\n" +
-			              node->getPlace());
+			Utils::outError("ScreenCodeGenerator::initUseCode",
+			                "No param <%> in screen <%>\n\n%",
+			                name, node->params, node->getPlace());
 			continue;
 		}
 
@@ -358,9 +358,9 @@ static std::string initUseCode(Node *node, const std::string &index) {
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
 
 		if (varCode.empty()) {
-			Utils::outMsg("ScreenCodeGenerator::initUseCode",
-			              "No value for param <" + varName + "> in screen <" + node->params + ">\n\n" +
-			              node->getPlace());
+			Utils::outError("ScreenCodeGenerator::initUseCode",
+			                "No value for param <%> in screen <%>\n\n%",
+			                varName, node->params, node->getPlace());
 			continue;
 		}
 

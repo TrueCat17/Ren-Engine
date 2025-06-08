@@ -31,9 +31,9 @@ ContainerBox::ContainerBox(Node *node, Container *screenParent, Screen *screen):
 			hasHBox = true;
 		}else
 		{//unreachable
-			Utils::outMsg("ContainerBox::ContainerBox",
-			              "<has> expected value <vbox> or <hbox>, got <" + hasNode->params + ">\n" +
-			              hasNode->getPlace());
+			Utils::outError("ContainerBox::ContainerBox",
+			                "<has> expected value <vbox> or <hbox>, got <%>\n%",
+			                hasNode->params, hasNode->getPlace());
 		}
 	}
 }

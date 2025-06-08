@@ -17,8 +17,8 @@ void Image::updateTexture() {
 
 	surface = ImageManipulator::getImage(first_param, false);
 	if (!surface) {
-		Utils::outMsg("Image::updateTexture",
-		              "Failed to load image <" + first_param + ">\n" +
-		              node->getPlace());
+		Utils::outError("Image::updateTexture",
+		                "Failed to load image <%>\n%",
+		                first_param, node->getPlace());
 	}
 }

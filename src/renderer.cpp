@@ -76,7 +76,8 @@ static void checkErrorsImpl(const char *from, const char *glFuncName) {
 	Renderer::renderMutex.unlock();
 
 	fastOpenGL = false;
-	Utils::outMsg("Renderer::" + std::string(from) + ", " + glFuncName, "Using OpenGL failed");
+	std::string fromStr = Utils::format("Renderer::%, %", from, glFuncName);
+	Utils::outMsg(fromStr, "Using OpenGL failed");
 	ImageCaches::clearTextures();
 
 	const char *str = "Unknown";
@@ -87,7 +88,7 @@ static void checkErrorsImpl(const char *from, const char *glFuncName) {
 	else if (error == GL_STACK_UNDERFLOW)   str = "GL_STACK_UNDERFLOW";
 	else if (error == GL_OUT_OF_MEMORY)     str = "GL_OUT_OF_MEMORY";
 
-	Utils::outMsg("Renderer::" + std::string(from) + ", " + glFuncName, str);
+	Utils::outMsg(fromStr, str);
 
 	if (mutexWasLocked) {
 		Renderer::renderMutex.lock();

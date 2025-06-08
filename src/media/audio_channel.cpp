@@ -79,17 +79,20 @@ bool Channel::initCodec() {
 	formatCtx = avformat_alloc_context();
 	if (int error = avformat_open_input(&formatCtx, path.c_str(), nullptr, nullptr)) {
 		if (error == AVERROR(ENOENT)) {
-			Utils::outMsg("Channel::initCodec: avformat_open_input",
-			              "File <" + path + "> not found\n\n" + place);
+			Utils::outError("Channel::initCodec: avformat_open_input",
+			                "File <%> not found\n\n%",
+			                path, place);
 		}else {
-			Utils::outMsg("Channel::initCodec: avformat_open_input",
-			              "Failed to open input stream in file <" + path + ">\n\n" + place);
+			Utils::outError("Channel::initCodec: avformat_open_input",
+			                "Failed to open input stream in file <%>\n\n%",
+			                path, place);
 		}
 		return true;
 	}
 	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
-		Utils::outMsg("Channel::initCodec: avformat_find_stream_info",
-		              "Failed to read stream information in file <" + path + ">\n\n" + place);
+		Utils::outError("Channel::initCodec: avformat_find_stream_info",
+		                "Failed to read stream information in file <%>\n\n%",
+		                path, place);
 		return true;
 	}
 
@@ -101,16 +104,18 @@ bool Channel::initCodec() {
 		}
 	}
 	if (audioStream == -1) {
-		Utils::outMsg("Channel::initCodec",
-		              "Failed to find audio-stream in file <" + path + ">\n\n" + place);
+		Utils::outError("Channel::initCodec",
+		                "Failed to find audio-stream in file <%>\n\n%",
+		                path, place);
 		return true;
 	}
 
 	AVCodecParameters *codecPars = formatCtx->streams[audioStream]->codecpar;
 	const AVCodec *codec = avcodec_find_decoder(codecPars->codec_id);
 	if (!codec) {
-		Utils::outMsg("Channel::initCodec: avcodec_find_decoder",
-		              "Codec for file <" + path + "> not found\n\n" + place);
+		Utils::outError("Channel::initCodec: avcodec_find_decoder",
+		                "Codec for file <%> not found\n\n%",
+		                path, place);
 		return true;
 	}
 
@@ -118,8 +123,9 @@ bool Channel::initCodec() {
 	avcodec_parameters_to_context(codecCtx, codecPars);
 
 	if (avcodec_open2(codecCtx, codec, nullptr)) {
-		Utils::outMsg("Channel::initCodec: avcodec_open2",
-		              "Failed to open codec for file <" + path + ">\n\n" + place);
+		Utils::outError("Channel::initCodec: avcodec_open2",
+		                "Failed to open codec for file <%>\n\n%",
+		                path, place);
 		return true;
 	}
 
@@ -133,13 +139,15 @@ bool Channel::initCodec() {
 	                        &in, codecCtx->sample_fmt, codecCtx->sample_rate,
 	                        0, nullptr))
 	{
-		Utils::outMsg("Channel::initCodec: swr_alloc_set_opts2",
-		              "Failed to create SwrContext for convert stream of file <" + path + ">\n\n" + place);
+		Utils::outError("Channel::initCodec: swr_alloc_set_opts2",
+		                "Failed to create SwrContext for convert stream of file <%>\n\n%",
+		                path, place);
 		return true;
 	}
 	if (swr_init(convertCtx)) {
-		Utils::outMsg("Channel::initCodec: swr_init",
-		              "Failed to init SwrContext for convert stream of file <" + path + ">\n\n" + place);
+		Utils::outError("Channel::initCodec: swr_init",
+		                "Failed to init SwrContext for convert stream of file <%>\n\n%",
+		                path, place);
 		return true;
 	}
 
@@ -206,8 +214,9 @@ void Channel::loadNextFrame() {
 
 	if (int error = av_read_frame(formatCtx, packet)) {
 		if (error != AVERROR_EOF) {
-			Utils::outMsg("Channel::loadNextFrame: av_read_frame",
-			              "Failed to read frame from file <" + path + ">\n\n" + place);
+			Utils::outError("Channel::loadNextFrame: av_read_frame",
+			                "Failed to read frame from file <%>\n\n%",
+			                path, place);
 			return;
 		}
 
@@ -220,8 +229,9 @@ void Channel::loadNextFrame() {
 
 		avcodec_send_packet(codecCtx, nullptr);
 		if (av_seek_frame(formatCtx, audioStream, 0, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD) < 0) {
-			Utils::outMsg("Channel::loadNextFrame",
-			              "Error on restart, playing from:\n" + place);
+			Utils::outError("Channel::loadNextFrame, av_seek_frame",
+			                "Error on restart, playing file <%> from:\n%",
+			                path, place);
 			return;
 		}
 		avcodec_flush_buffers(codecCtx);
@@ -232,16 +242,18 @@ void Channel::loadNextFrame() {
 
 	if (int error = avcodec_send_packet(codecCtx, packet)) {
 		if (error != AVERROR(EAGAIN)) {
-			Utils::outMsg("Channel::loadNextFrame: avcodec_send_packet",
-			              "Failed to send packet to codec of file <" + path + ">\n\n" + place);
+			Utils::outError("Channel::loadNextFrame: avcodec_send_packet",
+			                "Failed to send packet to codec of file <%>\n\n%",
+			                path, place);
 		}
 		return;
 	}
 
 	if (int error = avcodec_receive_frame(codecCtx, frame)) {
 		if (error != AVERROR(EAGAIN)) {
-			Utils::outMsg("Channel::loadNextFrame: avcodec_receive_frame",
-			              "Failed to receive frame from codec of file <" + path + ">\n\n" + place);
+			Utils::outError("Channel::loadNextFrame: avcodec_receive_frame",
+			                "Failed to receive frame from codec of file <%>\n\n%",
+			                path, place);
 		}
 		return;
 	}
@@ -250,8 +262,9 @@ void Channel::loadNextFrame() {
 	                              &tmpBuffer, SAMPLES_PER_PART,
 	                              frame->data, frame->nb_samples);
 	if (sampleCount < 0) {
-		Utils::outMsg("Channel::loadNextFrame: swr_convert",
-		              "Failed to convert frame of file <" + path + ">\n\n" + place);
+		Utils::outError("Channel::loadNextFrame: swr_convert",
+		                "Failed to convert frame of file <%>\n\n%",
+		                path, place);
 		return;
 	}
 
@@ -323,7 +336,7 @@ void Channel::setPos(double sec) {
 	int64_t ts = int64_t(sec / k.num * k.den);
 
 	if (av_seek_frame(formatCtx, audioStream, ts, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD) < 0) {
-		Utils::outMsg("Channel::setPos", "Failed to rewind file <" + audio->path + ">");
+		Utils::outError("Channel::setPos", "Failed to rewind file <%>", audio->path);
 		return;
 	}
 	avcodec_flush_buffers(codecCtx);

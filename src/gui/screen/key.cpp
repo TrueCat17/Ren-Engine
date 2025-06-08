@@ -122,10 +122,9 @@ void Key::checkEvents() {
 	}
 
 	if (key == SDLK_UNKNOWN) {
-		Utils::outMsg("SDL_GetKeyFromName",
-					  "KeyName <" + first_param + ">\n" +
-					  SDL_GetError() + '\n' +
-					  node->getPlace());
+		Utils::outError("SDL_GetKeyFromName",
+		                "KeyName <%>\n%\n%",
+		                first_param, SDL_GetError(), node->getPlace());
 	}else {
 		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 

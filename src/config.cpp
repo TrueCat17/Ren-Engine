@@ -44,7 +44,7 @@ std::string Config::get(const std::string &name) {
 		if (param.name == name) return param.value;
 	}
 
-	Utils::outMsg("Config::get", "Unknown param <" + name + ">");
+	Utils::outError("Config::get", "Unknown param <%>", name);
 	return "";
 }
 
@@ -71,7 +71,7 @@ void Config::set(const std::string &name, const std::string &value, const std::s
 	if (initing) {
 		params.push_back({name, value, comment});
 	}else {
-		Utils::outMsg("Config::set", "Unknown param <" + name + ">");
+		Utils::outError("Config::set", "Unknown param <%>", name);
 	}
 }
 
@@ -115,8 +115,10 @@ static void load() {
 	if (!is.is_open()) {
 		is.open(pathOrig, std::ios::binary);
 		if (!is.is_open()) {
-			Utils::outMsg("Config::load", "Failed to load file <" + std::string(pathOrig) + ">\n"
-			                              "Using default settings");
+			Utils::outError("Config::load",
+			                "Failed to load file <%>\n"
+			                "Using default settings",
+			                pathOrig);
 			return;
 		}
 	}
@@ -149,13 +151,13 @@ static void load() {
 
 		size_t indexAssign = line.find('=');
 		if (indexAssign == size_t(-1)) {
-			Utils::outMsg("Config::load", "Expected symbol '=' in <" + line + ">");
+			Utils::outError("Config::load", "Expected symbol '=' in <%>", line);
 			continue;
 		}
 		if (indexComment == size_t(-1)) {
 			indexComment = line.size();
 		}else if (indexComment < indexAssign) {
-			Utils::outMsg("Config::load", "First symbol '=' in <" + line + "> is commented");
+			Utils::outError("Config::load", "First symbol '=' in <%> is commented", line);
 			continue;
 		}
 
@@ -229,7 +231,7 @@ void Config::setDefaultScaleQuality() {
 bool Config::setScaleQuality(std::string value) {
 	bool ok = true;
 	if (value != "0" && value != "1" && value != "2") {
-		Utils::outMsg("Config::setScaleQuality", "Expected 0, 1 or 2, got <" + value + ">");
+		Utils::outError("Config::setScaleQuality", "Expected 0, 1 or 2, got <%>", value);
 		value = "0";
 		ok = false;
 	}

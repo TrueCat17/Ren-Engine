@@ -59,14 +59,19 @@ static TTF_Font* getFont(const std::string &name, int size) {
 	}
 
 	if (name != TextField::DEFAULT_FONT_NAME) {
-		auto msg = "Failed to load font <" + name + ">.\nTry to load default font.";
-		Utils::outMsg("getFont", msg);
+		Utils::outError("getFont",
+		                "Failed to load font <%>.\n"
+		                "Try to load default font.",
+		                name);
 		res = getFont(TextField::DEFAULT_FONT_NAME, size);
 	}else {
-		auto msg = "Failed to load default font <" + TextField::DEFAULT_FONT_NAME + ">.\nText will not be displayed.";
-		Utils::outMsg("getFont", msg);
+		Utils::outError("getFont",
+		                "Failed to load default font <%>.\n"
+		                "Text will not be displayed.",
+		                name);
 		res = nullptr;
 	}
+
 	return fonts[t] = res;
 }
 
@@ -175,7 +180,7 @@ static Uint32 getColor(std::string_view value) {
 	}
 
 	if (value.size() > 6) {
-		Utils::outMsg("TextField::getColor", "Expected color (format RRGGBB), got <" + std::string(value) + ">");
+		Utils::outError("TextField::getColor", "Expected color (format RRGGBB), got <%>", value);
 		value.remove_suffix(value.size() - 6);
 	}
 
@@ -203,7 +208,7 @@ static Uint32 getColor(std::string_view value) {
 		}
 	}
 	if (invalid) {
-		Utils::outMsg("TextField::getColor", "Color <" + std::string(value) + "> is invalid");
+		Utils::outError("TextField::getColor", "Color <%> is invalid", value);
 	}
 	return res;
 }
@@ -249,15 +254,16 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 				styleStack.pop_back();
 				updateStyle(styleStack.back());
 			}else {
-				Utils::outMsg("TextField::makeStep",
-				              "Closed tag <" + tag + "> != last opened tag <" + styleStack.back().tag + ">");
+				Utils::outError("TextField::makeStep",
+				                "Closed tag <%> != last opened tag <%>",
+				                tag, styleStack.back().tag);
 			}
 		}else {
 			TextStyle style = styleStack.back();//copy
 
 			std::string value = getTagValue(tag);
 			if (value.empty() && tagsWithValue.count(tag)) {
-				Utils::outMsg("TextField::makeStep", "Tag <" + tag + "> must have value");
+				Utils::outError("TextField::makeStep", "Tag <%> must have value", tag);
 				return i + 1;
 			}
 			style.tag = tag;
@@ -293,7 +299,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 
 			else if (tag != "image" && tag != "invisible") {
 				unknownTag = true;
-				Utils::outMsg("TextField::makeStep", "Unknown tag <" + tag + ">");
+				Utils::outError("TextField::makeStep", "Unknown tag <%>", tag);
 			}
 
 			if (tag == "invisible") {
@@ -302,7 +308,7 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			if (tag == "image") {
 				SurfacePtr image = getImage(value);
 				if (!image) {
-					Utils::outMsg("TextField::makeStep", "Failed to load image <" + value + ">");
+					Utils::outError("TextField::makeStep", "Failed to load image <%>", value);
 				}else {
 					*h = int(style.fontSize);
 					*w = int(style.fontSize * float(image->w) / float(image->h));

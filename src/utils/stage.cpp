@@ -85,9 +85,10 @@ static std::pair<int, int> fixWindowSize(int w, int h, int dX = 1, int dY = 1) {
 	double k = String::toDouble(Config::get("window_w_div_h"));
 	if (k < 0.1) {
 		k = 1.777;
-		Utils::outMsg("fixWindowSize",
-		              "Invalid <window_w_div_h> in <params.conf>:\n"
-		              "<" + Config::get("window_w_div_h") + ">");
+		Utils::outError("fixWindowSize",
+		                "Invalid <window_w_div_h> in <params.conf>:\n"
+		                "<%>",
+		                Config::get("window_w_div_h"));
 	}
 
 	if (Stage::maximized || Stage::fullscreen) {//can only scale down

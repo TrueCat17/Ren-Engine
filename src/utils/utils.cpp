@@ -22,7 +22,6 @@ extern "C" {
 #include "gui/screen/key.h"
 
 #include "utils/algo.h"
-#include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/stage.h"
 #include "utils/string.h"
@@ -63,7 +62,7 @@ void Utils::setThreadName([[maybe_unused]] std::string name) {
 	}
 
 	if (pthread_setname_np(pthread_self(), name.c_str())) {
-		outMsg("pthread_setname_np", "Error on set process name <" + name + ">");
+		outError("pthread_setname_np", "Error on set process name <%>", name);
 	}
 #endif
 }
@@ -87,19 +86,6 @@ bool Utils::setClipboardText(const std::string &text) {
 		return false;
 	}
 	return true;
-}
-
-std::vector<std::string> Utils::getFileNames(const std::string &path) {
-	if (!FileSystem::exists(path)) {
-		outMsg("Utils::getFileNames", "Directory <" + path + "> not found");
-		static const std::string mainMenu = "mods/main_menu";
-		if (path != mainMenu) {
-			return getFileNames(mainMenu);
-		}
-		return {};
-	}
-
-	return FileSystem::getFilesRecursive(path);
 }
 
 double Utils::getTimer() {
@@ -242,6 +228,46 @@ void Utils::outMsg(std::string msg, const std::string &err) {
 	}
 }
 
+std::string Utils::formatImpl(std::string_view format, const std::string *strs, size_t n) {
+	std::string msg;
+	size_t msgSize = format.size() - n;
+	for (size_t i = 0; i < n; ++i) {
+		msgSize += strs[i].size();
+	}
+	msg.reserve(msgSize);
+
+	size_t start = 0;
+	size_t index = format.find('%');
+	size_t strIndex = 0;
+	while (index != size_t(-1)) {
+		msg += format.substr(start, index - start);
+		start = index + 1;
+		index = format.find('%', start);
+
+		if (strIndex < n) {
+			msg += strs[strIndex++];
+		}else {
+			Utils::outMsg("Utils::formatImpl", "Need more args to format msg");
+			break;
+		}
+	}
+	msg += format.substr(start);
+
+	if (strIndex != n) {
+		Utils::outMsg("Utils::formatImpl", "Need more placeholders to format msg");
+		msg += "\n(";
+		while (strIndex < n) {
+			msg += strs[strIndex++];
+			if (strIndex != n) {
+				msg += ", ";
+			}
+		}
+		msg += ')';
+	}
+
+	return msg;
+}
+
 
 Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
 	if (!surface) {
@@ -253,11 +279,9 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 	int y = crop.y + draw.y * crop.h / draw.h;
 
 	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
-		Utils::outMsg("Utils::getPixel",
-		              "Point (" +
-		                  std::to_string(x) + ", " + std::to_string(y) +
-		              ") is invalid for image with size " +
-		                  std::to_string(surface->w) + "x" + std::to_string(surface->h));
+		Utils::outError("Utils::getPixel",
+		                "Point (%, %) is invalid for image with size %x%",
+		                x, y, surface->w, surface->h);
 		return 0;
 	}
 

@@ -49,10 +49,9 @@ static size_t getEndArg(std::string_view args, size_t start, const char separato
 					*isValid = false;
 				}else {
 					std::string cStr(1, c);
-					std::string pos = std::to_string(i);
-					Utils::outMsg("Algo::getEndArg",
-					              "Invalid bracket " + cStr + " at position " + pos + " in string:\n" +
-					              std::string(args));
+					Utils::outError("Algo::getEndArg",
+					                "Invalid bracket % at position % in string:\n%",
+					                cStr, i, args);
 				}
 			}
 		}
@@ -61,13 +60,12 @@ static size_t getEndArg(std::string_view args, size_t start, const char separato
 		if (isValid) {
 			*isValid = false;
 		}else {
-			std::string error = "Not closed " +
-			            ((b1 || b2 || b3)
-			             ? std::string(b1 ? "(" :  b2 ? "[" : "{") + " bracket"
-			             : std::string(q1 ? "single" : "double") + " quote"
-			            ) + " in string:\n" +
-			            std::string(args);
-			Utils::outMsg("Algo::getEndArg", error);
+			bool b = b1 || b2 || b3;
+			Utils::outError("Algo::getEndArg",
+			                "Not closed % % in string:\n%",
+			                b ? (b1 ? "(" : b2 ? "[" : "{") : (q1 ? "single" : "double"),
+			                b ? "bracket" : "quote",
+			                args);
 		}
 	}
 	return i;

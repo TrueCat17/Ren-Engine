@@ -125,7 +125,7 @@ static std::map<std::string, MipMap*> mipMaps;
 static MipMap* getLocation(const std::string &name) {
 	auto it = mipMaps.find(name);
 	if (it == mipMaps.end()) {
-		Utils::outMsg("PathFinder::getLocation", "Location <" + name + "> not found");
+		Utils::outError("PathFinder::getLocation", "Location <%> not found", name);
 		return nullptr;
 	}
 	return it->second;
@@ -133,17 +133,19 @@ static MipMap* getLocation(const std::string &name) {
 static void makeOutsideMsg(const std::string &from, PointInt xStart, PointInt yStart, double xEnd, double yEnd,
                            const MipMap *startMap, const MipMap *endMap)
 {
-	std::string startPoint = std::to_string(xStart) + ',' + std::to_string(yStart);
-	std::string endPoint = std::to_string(xEnd) + ',' + std::to_string(yEnd);
-	std::string startSize = std::to_string(startMap->originalWidth) + 'x' + std::to_string(startMap->originalHeight);
-	std::string endSize = endMap
-	        ? std::to_string(endMap->originalWidth) + 'x' + std::to_string(endMap->originalHeight)
-	        : "";
+	std::string extra;
+	if (endMap) {
+		extra = Utils::format("start=%x%, end=%x%",
+		                      startMap->originalWidth, startMap->originalHeight,
+		                      endMap->originalWidth, endMap->originalHeight);
+	}else {
+		extra = Utils::format("%x%", startMap->originalWidth, startMap->originalHeight);
+	}
 
-	Utils::outMsg("PathFinder::" + from,
-	                "Start (" + startPoint + ") or/and End (" + endPoint + ") point outside\n" +
-	                "location (" + (endMap ? ("start=" + startSize + ", end=" + endSize) : startSize) + ")"
-	);
+	Utils::outError("PathFinder::" + from,
+	                "Start (%, %) or/and End (%, %) point outside\n"
+	                "location (%)",
+	                xStart, yStart, xEnd, yEnd, extra);
 }
 
 struct Point {
@@ -308,10 +310,9 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 	}
 
 	if (!minScale || minScale > MipMap::MAX_SCALE || (minScale & (minScale - 1))) {
-		Utils::outMsg("PathFinder::updateLocation",
-		              "minScale (" + std::to_string(minScale) + ") == 0, "
-		              "more than " + std::to_string(MipMap::MAX_SCALE) + " or "
-		              "is not a power of 2");
+		Utils::outError("PathFinder::updateLocation",
+		                "minScale (%) == 0, more than % or is not a power of 2",
+		                minScale, MipMap::MAX_SCALE);
 		return;
 	}
 	if (!countScales) {

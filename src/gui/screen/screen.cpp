@@ -57,9 +57,9 @@ static void show(const std::string &name, const std::string &fileName, uint32_t 
 	if (!scr) {
 		Node *node = Screen::getDeclared(name);
 		if (!node) {
-			Utils::outMsg("Screen::show",
-			              "Screen <" + name + "> is not defined\n" +
-			              get_place);
+			Utils::outError("Screen::show",
+			                "Screen <%> is not defined\n%",
+			                name, get_place);
 			return;
 		}
 
@@ -77,9 +77,9 @@ static void hide(const std::string &name, const std::string &fileName, uint32_t 
 
 	Screen *scr = Screen::getMain(name);
 	if (!scr) {
-		Utils::outMsg("Screen::hide",
-		              "Screen <" + name + "> is not shown\n" +
-		              get_place);
+		Utils::outError("Screen::hide",
+		                "Screen <%> is not shown\n%",
+		                name, get_place);
 		return;
 	}
 
@@ -154,26 +154,26 @@ static void makeScreenVars(const std::string &name,
 	if (!args || !kwargs) return; //create screen on loading
 
 	if (!PyTuple_CheckExact(args) && !PyList_CheckExact(args)) {
-		Utils::outMsg("Screen::addToShow",
-		              "Expected type(args) is tuple or list, got <" + std::string(args->ob_type->tp_name) + ">\n" +
-		              get_place);
+		Utils::outError("Screen::addToShow",
+		                "Expected type(args) is tuple or list, got %\n%",
+		                args->ob_type->tp_name, get_place);
 		return;
 	}
 	size_t argsSize = size_t(Py_SIZE(args));
 
 	if (!PyDict_CheckExact(kwargs)) {
-		Utils::outMsg("Screen::addToShow",
-		              "Expected type(kwargs) is dict, got <" + std::string(kwargs->ob_type->tp_name) + ">\n" +
-		              get_place);
+		Utils::outError("Screen::addToShow",
+		                "Expected type(kwargs) is dict, got %\n%",
+		                kwargs->ob_type->tp_name, get_place);
 		return;
 	}
 	size_t kwargsSize = size_t(PyDict_Size(kwargs));
 
 	if (argsSize + kwargsSize > countVars) {
-		Utils::outMsg("Screen::addToShow",
-		              "Screen <" + name + "> takes only " + std::to_string(countVars) + " args\n"
-		              "Got " + std::to_string(argsSize) + " args and " + std::to_string(kwargsSize) + " kwargs\n" +
-		              get_place);
+		Utils::outError("Screen::addToShow",
+		                "Screen <%> takes only % args\n"
+		                "Got % args and % kwargs\n%",
+		                name, countVars, argsSize, kwargsSize, get_place);
 		return;
 	}
 
@@ -197,16 +197,16 @@ static void makeScreenVars(const std::string &name,
 		std::string varName = PyUtils::objToStr(key);
 
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) {
-			Utils::outMsg("Screen::addToShow",
-			              "Keyworg argument <" + varName + "> repeated for screen <" + name + ">\n" +
-			              get_place);
+			Utils::outError("Screen::addToShow",
+			                "Keyworg argument <%> repeated for screen <%>\n%",
+			                varName, name, get_place);
 		}
 
 		auto it = std::find_if(vars.cbegin(), vars.cend(), [&](const auto &pair) { return pair.first == varName; });
 		if (it == vars.cend()) {
-			Utils::outMsg("Screen::addToShow",
-			              "Unexpected keyworg argument <" + varName + "> for screen <" + name + ">\n" +
-			              get_place);
+			Utils::outError("Screen::addToShow",
+			                "Unexpected keyworg argument <%> for screen <%>\n%",
+			                varName, name, get_place);
 			continue;
 		}
 
@@ -219,9 +219,9 @@ static void makeScreenVars(const std::string &name,
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
 
 		if (varDefaultCode.empty()) {
-			Utils::outMsg("Screen::addToShow",
-			              "Argument <" + varName + "> was not set for screen <" + name + ">\n" +
-			              get_place);
+			Utils::outError("Screen::addToShow",
+			                "Argument <%> was not set for screen <%>\n%",
+			                varName, name, get_place);
 			continue;
 		}
 
@@ -249,9 +249,9 @@ void Screen::addToShow(std::string name,
 
 		Node *node = Screen::getDeclared(name);
 		if (!node) {
-			Utils::outMsg("Screen::addToShow",
-			              "No screen <" + name + ">\n" +
-			              get_place);
+			Utils::outError("Screen::addToShow",
+			                "No screen <%>\n%",
+			                name, get_place);
 			return;
 		}
 
@@ -309,7 +309,7 @@ void Screen::logScreenCode(std::string name) {
 
 	Node* node = getDeclared(name);
 	if (!node) {
-		Utils::outMsg("Screen::logScreenCode", "Screen <" + name + "> is not defined");
+		Utils::outError("Screen::logScreenCode", "Screen <%> is not defined", name);
 		return;
 	}
 
@@ -364,7 +364,7 @@ void Screen::checkScreenEvents() {
 		std::string rootVar = "_SL_" + calcedScreen->name;
 		calcedScreen->props = PyDict_GetItemString(PyUtils::global, rootVar.c_str());
 		if (!calcedScreen->props) {
-			Utils::outMsg("Screen::checkEvents", rootVar + " not found");
+			Utils::outError("Screen::checkEvents", "% not found", rootVar);
 			return;
 		}
 		if (!PyList_CheckExact(calcedScreen->props) && !PyTuple_CheckExact(calcedScreen->props)) {
@@ -429,7 +429,7 @@ void Screen::checkScreenEvents() {
 		if (!child->props || child->props == Py_None) continue;
 		if (!PyList_CheckExact(child->props) && !PyTuple_CheckExact(child->props)) {
 			std::string type = child->props->ob_type->tp_name;
-			Utils::outMsg("Screen::checkEvents", "Expected list or tuple, got " + type);
+			Utils::outError("Screen::checkEvents", "Expected list or tuple, got %", type);
 			child->props = nullptr;
 			continue;
 		}

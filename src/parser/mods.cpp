@@ -46,8 +46,7 @@ void Mods::init() {
 
 			size_t separator = line.find('=');
 			if (separator == size_t(-1)) {
-				std::string msg = "Line <" + line + "> in file <" + file + "> is incorrect";
-				Utils::outMsg("Mods::init", msg);
+				Utils::outError("Mods::init", "Line <%> in file <%> is incorrect", line, file);
 				continue;
 			}
 

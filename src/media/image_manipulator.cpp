@@ -200,7 +200,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 
 	auto it = functions.find(command);
 	if (it == functions.end()) {
-		Utils::outMsg("ImageManipulator::getImage", "Unknown command <" + command + ">");
+		Utils::outError("ImageManipulator::getImage", "Unknown command <%>", command);
 	}else {
 		auto func = it->second;
 		res = func(args);
@@ -214,11 +214,18 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 }
 
 
-static SurfacePtr scale(const std::vector<std::string> &args) {
-	if (args.size() != 4) {
-		Utils::outMsg("ImageManipulator::scale", "Expected 3 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
+static bool incorrectCountImpl(const std::string &fromFunc, const std::vector<std::string> &args, size_t expected) {
+	if (args.size() != expected + 1) {
+		Utils::outError(fromFunc, "Expected % arguments:\n<%>", expected, String::join(args, ", "));
+		return true;
 	}
+	return false;
+}
+#define incorrectCount(expected) incorrectCountImpl("ImageManipulator::" + std::string(__func__), args, expected)
+
+
+static SurfacePtr scale(const std::vector<std::string> &args) {
+	if (incorrectCount(3)) return nullptr;
 
 	SurfacePtr img = getNotPaletteImage(args[1]);
 	if (!img) return nullptr;
@@ -226,7 +233,7 @@ static SurfacePtr scale(const std::vector<std::string> &args) {
 	const int w = String::toInt(Algo::clear(args[2]));
 	const int h = String::toInt(Algo::clear(args[3]));
 	if (w <= 0 || h <= 0) {
-		Utils::outMsg("ImageManipulator::scale", "Sizes are invalid:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::scale", "Sizes are invalid:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -242,10 +249,7 @@ static SurfacePtr scale(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr factorScale(const std::vector<std::string> &args) {
-	if (args.size() != 4) {
-		Utils::outMsg("ImageManipulator::factorScale", "Expected 3 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(3)) return nullptr;
 
 	SurfacePtr img = getNotPaletteImage(args[1]);
 	if (!img) return nullptr;
@@ -253,7 +257,8 @@ static SurfacePtr factorScale(const std::vector<std::string> &args) {
 	const double width = String::toDouble(Algo::clear(args[2]));
 	const double height = String::toDouble(Algo::clear(args[3]));
 	if (width <= 0 || height <= 0) {
-		Utils::outMsg("ImageManipulator::factorScale", "Scale factors must be > 0:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::factorScale",
+		                "Scale factors must be > 0:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -271,10 +276,7 @@ static SurfacePtr factorScale(const std::vector<std::string> &args) {
 	return res;
 }
 static SurfacePtr rendererScale(const std::vector<std::string> &args) {
-	if (args.size() != 4) {
-		Utils::outMsg("ImageManipulator::rendererScale", "Expected 3 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(3)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -282,7 +284,7 @@ static SurfacePtr rendererScale(const std::vector<std::string> &args) {
 	const int w = String::toInt(Algo::clear(args[2]));
 	const int h = String::toInt(Algo::clear(args[3]));
 	if (w <= 0 || h <= 0) {
-		Utils::outMsg("ImageManipulator::rendererScale", "Sizes are invalid:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::rendererScale", "Sizes are invalid:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -298,18 +300,16 @@ static SurfacePtr rendererScale(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr crop(const std::vector<std::string> &args) {
-	if (args.size() != 3) {
-		Utils::outMsg("ImageManipulator::crop", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(2)) return nullptr;
+
 	SurfacePtr img = getNotPaletteImage(args[1]);
 	if (!img) return nullptr;
 
 	const std::string rectStr = Algo::clear(args[2]);
 	const std::vector<std::string> rectVec = String::split(rectStr, " ");
 	if (rectVec.size() != 4) {
-		Utils::outMsg("ImageManipulator::crop",
-		              "Expected rect as a sequence with size 4:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::crop",
+		                "Expected rect as a sequence with size 4:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -319,7 +319,7 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 	const int h = String::toInt(rectVec[3]);
 
 	if (w <= 0 || h <= 0) {
-		Utils::outMsg("ImageManipulator::crop", "Sizes are invalid:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::crop", "Sizes are invalid:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -339,7 +339,8 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 
 static SurfacePtr composite(const std::vector<std::string> &args) {
 	if (args.size() % 2) {
-		Utils::outMsg("ImageManipulator::composite", "Expected odd count of arguments:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::composite",
+		                "Expected odd count of arguments:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -349,7 +350,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 	const int resW = sizeVec.size() == 2 ? String::toInt(sizeVec[0]) : 0;
 	const int resH = sizeVec.size() == 2 ? String::toInt(sizeVec[1]) : 0;
 	if (sizeVec.size() != 2 || resW <= 0 || resH <= 0) {
-		Utils::outMsg("ImageManipulator::composite", "Sizes are invalid <" + sizeStr + ">");
+		Utils::outError("ImageManipulator::composite", "Sizes are invalid <%>", sizeStr);
 		return nullptr;
 	}
 
@@ -359,12 +360,11 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		SurfacePtr image = ImageManipulator::getImage(imagePath);
 
 		if (!image) {
-			Utils::outMsg("ImageManipulator::composite", "Failed to get image <" + imagePath + ">");
+			Utils::outError("ImageManipulator::composite", "Failed to get image <%>", imagePath);
 			return image;
 		}
 
-		const std::string imSizeStr = std::to_string(image->w) + ' ' + std::to_string(image->h);
-		if (posStr == "0 0" && imSizeStr == sizeStr) {
+		if (posStr == "0 0" && resW == image->w && resH == image->h) {
 			return image;
 		}
 	}
@@ -405,15 +405,15 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 	SurfacePtr firstImg = firstImgStr.empty() ? nullptr : ImageManipulator::getImage(firstImgStr);
 	if (!firstImg) {
 		if (args.size() > 2) {
-			Utils::outMsg("ImageManipulator::composite", "Failed to get image <" + firstImgStr + ">");
+			Utils::outError("ImageManipulator::composite", "Failed to get image <%>", firstImgStr);
 		}
 		::memset(resPixels, 0, size_t(resH * resPitch));
 	}else {
 		const std::string firstPosStr = Algo::clear(args[2]);
 		const std::vector<std::string> firstPosVec = String::split(firstPosStr, " ");
 		if (firstPosVec.size() != 2) {
-			Utils::outMsg("ImageManipulator::composite",
-			              "Expected pos as a sequence with size 2:\n<" + String::join(args, ", ") + ">");
+			Utils::outError("ImageManipulator::composite",
+			                "Expected pos as a sequence with size 2:\n<%>", String::join(args, ", "));
 			return nullptr;
 		}
 
@@ -471,15 +471,15 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		const std::string posStr = Algo::clear(args[i]);
 		const std::vector<std::string> posVec = String::split(posStr, " ");
 		if (posVec.size() != 2) {
-			Utils::outMsg("ImageManipulator::composite",
-			              "Expected pos as a sequence with size 2:\n<" + String::join(args, ", ") + ">");
+			Utils::outError("ImageManipulator::composite",
+			                 "Expected pos as a sequence with size 2:\n<%>", String::join(args, ", "));
 			return nullptr;
 		}
 
 		const std::string imgStr = Algo::clear(args[i + 1]);
 		SurfacePtr img = ImageManipulator::getImage(imgStr);
 		if (!img) {
-			Utils::outMsg("ImageManipulator::composite", "Failed to get image <" + imgStr + ">");
+			Utils::outError("ImageManipulator::composite", "Failed to get image <%>", imgStr);
 			continue;
 		}
 
@@ -564,10 +564,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr flip(const std::vector<std::string> &args) {
-	if (args.size() != 4) {
-		Utils::outMsg("ImageManipulator::flip", "Expected 3 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(3)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -618,10 +615,7 @@ static SurfacePtr flip(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr matrixColor(const std::vector<std::string> &args) {
-	if (args.size() != 3) {
-		Utils::outMsg("ImageManipulator::matrixColor", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(2)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -629,9 +623,10 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 	const std::string matrixStr = Algo::clear(args[2]);
 	const std::vector<std::string> matrixVec = String::split(matrixStr, " ");
 	if (matrixVec.size() != 25) {
-		Utils::outMsg("ImageManipulator::matrixColor",
-		              "Expected matrix size is 25,\n"
-		              "Matrix: <" + matrixStr + ">");
+		Utils::outError("ImageManipulator::matrixColor",
+		                "Expected matrix size is 25,\n"
+		                "Matrix: <%>",
+		                matrixStr);
 		return img;
 	}
 
@@ -689,16 +684,18 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 				const Uint8 oldB = src[Bshift / 8];
 				const Uint8 oldA = src[Ashift / 8];
 
-				const Uint8 newA = Uint8(Math::inBounds(matrix[15] * oldR + matrix[16] * oldG + matrix[17] * oldB + matrix[18] * oldA + extraA, 0, 255));
-				if (newA) {
-					const Uint8 newR = Uint8(Math::inBounds(matrix[ 0] * oldR + matrix[ 1] * oldG + matrix[ 2] * oldB + matrix[ 3] * oldA + extraR, 0, 255));
-					const Uint8 newG = Uint8(Math::inBounds(matrix[ 5] * oldR + matrix[ 6] * oldG + matrix[ 7] * oldB + matrix[ 8] * oldA + extraG, 0, 255));
-					const Uint8 newB = Uint8(Math::inBounds(matrix[10] * oldR + matrix[11] * oldG + matrix[12] * oldB + matrix[13] * oldA + extraB, 0, 255));
+#define getCh(o, extra) matrix[o] * oldR + matrix[o + 1] * oldG + matrix[o + 2] * oldB + matrix[o + 3] * oldA + extra
+#define getChBounded(o, extra) Uint8(Math::inBounds(getCh(o, extra), 0, 255))
 
-					dst[Rshift / 8] = newR;
-					dst[Gshift / 8] = newG;
-					dst[Bshift / 8] = newB;
+				const Uint8 newA = getChBounded(15, extraA);
+				if (newA) {
+					dst[Rshift / 8] = getChBounded( 0, extraR);
+					dst[Gshift / 8] = getChBounded( 5, extraG);
+					dst[Bshift / 8] = getChBounded(10, extraB);
 					dst[Ashift / 8] = newA;
+#undef getCh
+#undef getChBounded
+
 				}else {
 					*(Uint32*)dst = 0;
 				}
@@ -726,10 +723,7 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr reColor(const std::vector<std::string> &args) {
-	if (args.size() != 3) {
-		Utils::outMsg("ImageManipulator::reColor", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(2)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -737,7 +731,7 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 	const std::string colorsStr = Algo::clear(args[2]);
 	const std::vector<std::string> colorsVec = String::split(colorsStr, " ");
 	if (colorsVec.size() != 4) {
-		Utils::outMsg("ImageManipulator::reColor", "Expected 4 colors:\n<" + colorsStr + ">");
+		Utils::outError("ImageManipulator::reColor", "Expected 4 colors:\n<%>", colorsStr);
 		return img;
 	}
 
@@ -798,10 +792,7 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 }
 
 static SurfacePtr rotozoom(const std::vector<std::string> &args) {
-	if (args.size() != 4) {
-		Utils::outMsg("ImageManipulator::rotozoom", "Expected 3 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(3)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1], false);
 	if (!img) return nullptr;
@@ -979,10 +970,7 @@ static void maskChooseAlpha(const char alphaChannel, bool alphaFromImage,
 }
 
 static SurfacePtr mask(const std::vector<std::string> &args) {
-	if (args.size() != 8) {
-		Utils::outMsg("ImageManipulator::mask", "Expected 7 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(7)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -991,43 +979,53 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 	if (!mask) return nullptr;
 
 	if (img->w != mask->w || img->h != mask->h) {
-		const std::string imgSize = std::to_string(img->w) + "x" + std::to_string(img->h);
-		const std::string maskSize = std::to_string(mask->w) + "x" + std::to_string(mask->h);
-		Utils::outMsg("ImageManipulator::mask", "Mask sizes " + maskSize + " is not equal to image sizes " + imgSize + ":\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::mask",
+		                "Mask sizes (%x%) != image sizes (%x%):\n<%>",
+		                mask->w, mask->h, img->w, img->h, String::join(args, ", "));
 		return nullptr;
 	}
 
 	const std::string channelStr = Algo::clear(args[3]);
 	if (channelStr != "r" && channelStr != "g" && channelStr != "b" && channelStr != "a") {
-		Utils::outMsg("ImageManipulator::mask", "Unexpected channel <" + channelStr + ">, expected r, g, b or a:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::mask",
+		                "Unexpected channel <%>, expected r, g, b or a:\n<%>",
+		                channelStr, String::join(args, ", "));
 		return nullptr;
 	}
 	const char channel = channelStr[0];
 
 	const std::string valueStr = Algo::clear(args[4]);
 	if (!String::isNumber(valueStr)) {
-		Utils::outMsg("ImageManipulator::mask", "Value <" + valueStr + "> must be a number:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::mask",
+		                "Value <%> must be a number:\n<%>",
+		                valueStr, String::join(args, ", "));
 		return nullptr;
 	}
 	const int value = int(String::toDouble(valueStr));
 
 	const std::string cmp = Algo::clear(args[5]);
-	static const std::vector<std::string> cmps = {"l", "g", "e", "ne", "le", "ge", "<", ">", "==", "!=", "<=", ">="};
+	static const std::vector<std::string> cmps = { "l", "g", "e", "ne", "le", "ge", "<", ">", "==", "!=", "<=", ">=" };
 	if (!Algo::in(cmp, cmps)) {
-		Utils::outMsg("ImageManipulator::mask", "Unexpected compare function <" + cmp + ">, expected l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::mask",
+		                "Unexpected compare function <%>, expected l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<%>",
+		                cmp, String::join(args, ", "));
 		return nullptr;
 	}
 
 	const std::string alphaStr = Algo::clear(args[6]);
 	if (alphaStr != "r" && alphaStr != "g" && alphaStr != "b" && alphaStr != "a") {
-		Utils::outMsg("ImageManipulator::mask", "Unexpected channel <" + alphaStr + ">, expected r, g, b or a:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::mask",
+		                "Unexpected channel <%>, expected r, g, b or a:\n<%>",
+		                alphaStr, String::join(args, ", "));
 		return nullptr;
 	}
 	const char alphaChannel = alphaStr[0];
 
 	const std::string alphaImage = Algo::clear(args[7]);
 	if (alphaImage != "1" && alphaImage != "2") {
-		Utils::outMsg("ImageManipulator::mask", "Unexpected image num <" + alphaStr + ">, expected 1 (image) or 2 (mask):\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::mask",
+		                "Unexpected image num <%>, expected 1 (image) or 2 (mask):\n<%>",
+		                alphaImage, String::join(args, ", "));
 		return nullptr;
 	}
 	bool alphaFromImage = alphaImage == "1";
@@ -1055,10 +1053,7 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 
 
 static SurfacePtr blurH(const std::vector<std::string> &args) {
-	if (args.size() != 3) {
-		Utils::outMsg("ImageManipulator::blurH", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(2)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -1071,7 +1066,8 @@ static SurfacePtr blurH(const std::vector<std::string> &args) {
 
 	const int dist = std::min(String::toInt(args[2]), w);
 	if (dist < 0) {
-		Utils::outMsg("ImageManipulator::blurH", "Blur distance must be >= 0:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::blurH",
+		                "Blur distance must be >= 0:\n<%>", String::join(args, ", "));
 		return img;
 	}
 	if (!dist) {
@@ -1096,10 +1092,12 @@ static SurfacePtr blurH(const std::vector<std::string> &args) {
 			const Uint8 *pixel = src + xStart * 4;
 			const Uint8 *endPixel = src + (xEnd - (count % 8)) * 4;
 			while (pixel != endPixel) {
-				r += (pixel[Rshift / 8] + pixel[Rshift / 8 + 4]) + (pixel[Rshift / 8 + 8] + pixel[Rshift / 8 + 12]) + (pixel[Rshift / 8 + 16] + pixel[Rshift / 8 + 20]) + (pixel[Rshift / 8 + 24] + pixel[Rshift / 8 + 28]);
-				g += (pixel[Gshift / 8] + pixel[Gshift / 8 + 4]) + (pixel[Gshift / 8 + 8] + pixel[Gshift / 8 + 12]) + (pixel[Gshift / 8 + 16] + pixel[Gshift / 8 + 20]) + (pixel[Gshift / 8 + 24] + pixel[Gshift / 8 + 28]);
-				b += (pixel[Bshift / 8] + pixel[Bshift / 8 + 4]) + (pixel[Bshift / 8 + 8] + pixel[Bshift / 8 + 12]) + (pixel[Bshift / 8 + 16] + pixel[Bshift / 8 + 20]) + (pixel[Bshift / 8 + 24] + pixel[Bshift / 8 + 28]);
-				a += (pixel[Ashift / 8] + pixel[Ashift / 8 + 4]) + (pixel[Ashift / 8 + 8] + pixel[Ashift / 8 + 12]) + (pixel[Ashift / 8 + 16] + pixel[Ashift / 8 + 20]) + (pixel[Ashift / 8 + 24] + pixel[Ashift / 8 + 28]);
+#define get4(o) (pixel[o] + pixel[o + 4]) + (pixel[o + 8] + pixel[o + 12])
+				r += get4(Rshift / 8) + get4(Rshift / 8 + 16);
+				g += get4(Gshift / 8) + get4(Gshift / 8 + 16);
+				b += get4(Bshift / 8) + get4(Bshift / 8 + 16);
+				a += get4(Ashift / 8) + get4(Ashift / 8 + 16);
+#undef get4
 
 				pixel += 32;
 			}
@@ -1138,10 +1136,7 @@ static SurfacePtr blurH(const std::vector<std::string> &args) {
 	return res;
 }
 static SurfacePtr blurV(const std::vector<std::string> &args) {
-	if (args.size() != 3) {
-		Utils::outMsg("ImageManipulator::blurV", "Expected 2 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(2)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -1154,7 +1149,8 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 
 	const int dist = std::min(String::toInt(args[2]), w);
 	if (dist < 0) {
-		Utils::outMsg("ImageManipulator::blurV", "Blur distance must be >= 0:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::blurV",
+		                "Blur distance must be >= 0:\n<%>", String::join(args, ", "));
 		return img;
 	}
 	if (!dist) {
@@ -1211,10 +1207,12 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 			const Uint8 *pixel = src + xStart * 4;
 			const Uint8 *endPixel = src + (xEnd - (count % 8)) * 4;
 			while (pixel != endPixel) {
-				r += (pixel[Rshift / 8] + pixel[Rshift / 8 + 4]) + (pixel[Rshift / 8 + 8] + pixel[Rshift / 8 + 12]) + (pixel[Rshift / 8 + 16] + pixel[Rshift / 8 + 20]) + (pixel[Rshift / 8 + 24] + pixel[Rshift / 8 + 28]);
-				g += (pixel[Gshift / 8] + pixel[Gshift / 8 + 4]) + (pixel[Gshift / 8 + 8] + pixel[Gshift / 8 + 12]) + (pixel[Gshift / 8 + 16] + pixel[Gshift / 8 + 20]) + (pixel[Gshift / 8 + 24] + pixel[Gshift / 8 + 28]);
-				b += (pixel[Bshift / 8] + pixel[Bshift / 8 + 4]) + (pixel[Bshift / 8 + 8] + pixel[Bshift / 8 + 12]) + (pixel[Bshift / 8 + 16] + pixel[Bshift / 8 + 20]) + (pixel[Bshift / 8 + 24] + pixel[Bshift / 8 + 28]);
-				a += (pixel[Ashift / 8] + pixel[Ashift / 8 + 4]) + (pixel[Ashift / 8 + 8] + pixel[Ashift / 8 + 12]) + (pixel[Ashift / 8 + 16] + pixel[Ashift / 8 + 20]) + (pixel[Ashift / 8 + 24] + pixel[Ashift / 8 + 28]);
+#define get4(o) (pixel[o] + pixel[o + 4]) + (pixel[o + 8] + pixel[o + 12])
+				r += get4(Rshift / 8) + get4(Rshift / 8 + 16);
+				g += get4(Gshift / 8) + get4(Gshift / 8 + 16);
+				b += get4(Bshift / 8) + get4(Bshift / 8 + 16);
+				a += get4(Ashift / 8) + get4(Ashift / 8 + 16);
+#undef get4
 
 				pixel += 32;
 			}
@@ -1286,10 +1284,7 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 
 
 static SurfacePtr motionBlur(const std::vector<std::string> &args) {
-	if (args.size() != 5) {
-		Utils::outMsg("ImageManipulator::motionBlur", "Expected 4 arguments:\n<" + String::join(args, ", ") + ">");
-		return nullptr;
-	}
+	if (incorrectCount(4)) return nullptr;
 
 	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
@@ -1306,7 +1301,8 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 
 	int dist = String::toInt(args[4]);
 	if (dist <= 0 || dist > 255) {
-		Utils::outMsg("ImageManipulator::motionBlur", "Blur distance must be from 1 to 255:\n<" + String::join(args, ", ") + ">");
+		Utils::outError("ImageManipulator::motionBlur",
+		                "Blur distance must be from 1 to 255:\n<%>", String::join(args, ", "));
 		dist = Math::inBounds(dist, 5, 255);
 	}
 	if (dist == 1) {

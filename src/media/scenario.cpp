@@ -41,7 +41,7 @@ static Node* getLabel(const std::string &name, bool outError = true) {
 	if (it != declaredLabels.end()) return it->second;
 
 	if (outError) {
-		Utils::outMsg("Scenario::getLabel", "Label <" + name + "> not found");
+		Utils::outError("Scenario::getLabel", "Label <%> not found", name);
 	}
 	return nullptr;
 }
@@ -74,16 +74,15 @@ static void restoreStack(const std::string &loadPath) {
 		if (!prevNode) return true;
 		if (num <= prevNode->children.size() && (num || !zeroIndexIsError)) return true;
 
-		std::string msg;
 		if (num) {
-			msg = "Node have only " + std::to_string(prevNode->children.size()) + " children, "
-			        "need #" + std::to_string(num);
+			Utils::outError("Scenario::restoreStack",
+			                "Node have only % children, need #%\n%",
+			                prevNode->children.size(), num, prevNode->getPlace());
 		}else {
-			msg = "Unexpected stack element after last element <" + prevNode->command + ">";
+			Utils::outError("Scenario::restoreStack",
+			                "Unexpected stack element after last element <%>\n%",
+			                prevNode->command, prevNode->getPlace());
 		}
-		Utils::outMsg("Scenario::restoreStack",
-		              msg + "\n" +
-		              prevNode->getPlace());
 		return false;
 	};
 	auto getChild = [&](void) -> Node* {
@@ -108,7 +107,7 @@ static void restoreStack(const std::string &loadPath) {
 
 		std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
-			Utils::outMsg("Scenario::restoreStack", "In string <" + tmp + "> expected 2 arguments");
+			Utils::outError("Scenario::restoreStack", "In string <%> expected 2 args", tmp);
 			return;
 		}
 
@@ -143,11 +142,9 @@ static void restoreStack(const std::string &loadPath) {
 		if (!node) return;
 
 		if (node->command != first) {
-			Utils::outMsg(
-			    "Scenario::restoreStack",
-			    "Expected command <" + first + ">, got <" + node->command + ">\n" +
-			    node->getPlace()
-			);
+			Utils::outError("Scenario::restoreStack",
+			                "Expected command <%>, got <%>\n%",
+			                first, node->command, node->getPlace());
 			return;
 		}
 
@@ -217,8 +214,8 @@ static void restoreScreens(const std::string &loadPath) {
 			for (size_t i = 0; i < len; ++i) {
 				PyObject *elem = PyList_GET_ITEM(startScreens, i);
 				if (!PyUnicode_CheckExact(elem)) {
-					Utils::outMsg("Scenario::restoreScreens",
-					              "type(start_screens[" + std::to_string(i) + "]) is not str");
+					Utils::outError("Scenario::restoreScreens",
+					                "type(start_screens[%]) is not str", i);
 					continue;
 				}
 
@@ -244,9 +241,9 @@ static void makeStyle(const Node *child) {
 		parent = "default";
 	}else {
 		if (words.size() != 3 || words[1] != "is") {
-			Utils::outMsg("Scenatio::execute",
-			              "Expected 'style name [is parent]', got: style " + child->params + "\n" +
-			              child->getPlace());
+			Utils::outError("Scenatio::execute",
+			                "Expected 'style name [is parent]', got: style %\n%",
+			                child->params, child->getPlace());
 			return;
 		}
 		name = words[0];
@@ -254,23 +251,23 @@ static void makeStyle(const Node *child) {
 	}
 
 	if (!PyUtils::isIdentifier(name)) {
-		Utils::outMsg("Scenatio::execute",
-		              "Invalid style name <" + name + ">\n" +
-		              child->getPlace());
+		Utils::outError("Scenatio::execute",
+		                "Invalid style name <%>\n%",
+		                name, child->getPlace());
 		return;
 	}
 	if (!PyUtils::isIdentifier(parent)) {
-		Utils::outMsg("Scenatio::execute",
-		              "Invalid style name <" + parent + ">\n" +
-		              child->getPlace());
+		Utils::outError("Scenatio::execute",
+		                "Invalid style name <%>\n%",
+		                parent, child->getPlace());
 		return;
 	}
 
 	if (name != "default") {
 		if (PyUtils::exec(child->getFileName(), child->getNumLine(), "style." + parent + " is None", true) == "True") {
-			Utils::outMsg("Scenario::execute",
-			              "Style <" + parent + "> does not exist\n" +
-			              child->getPlace());
+			Utils::outError("Scenario::execute",
+			                "Style <%> does not exist\n%",
+			                parent, child->getPlace());
 		}
 	}
 
@@ -309,9 +306,9 @@ static void displayCommandProcessing(const Node *child) {
 
 	const std::vector<std::string> args = Algo::getArgs(child->params);
 	if (args.empty() && child->command != "scene") {
-		Utils::outMsg("Scenario::execute",
-		              "Invalid command <" + child->command + " " + child->params + ">\n" +
-		              child->getPlace());
+		Utils::outError("Scenario::execute",
+		                "Invalid command <% %>\n%",
+		                child->command, child->params, child->getPlace());
 		return;
 	}
 
@@ -510,10 +507,9 @@ void Scenario::execute(const std::string &loadPath) {
 			int res = String::toInt(resStr);
 
 			if (res < 0 || res >= int(obj->children.size())) {
-				std::string maxSize = std::to_string(obj->children.size());
-				Utils::outMsg("Scenario::execute",
-				              "choice_menu_result = " + resStr + ", min = 0, max = " + maxSize + "\n" +
-				              obj->getPlace());
+				Utils::outError("Scenario::execute",
+				                "choice_menu_result = %, min = 0, max = %\n%",
+				                resStr, obj->children.size(), obj->getPlace());
 				res = 0;
 			}
 
@@ -583,9 +579,9 @@ void Scenario::execute(const std::string &loadPath) {
 
 		if (child->command == "transform") {
 			if (!PyUtils::isIdentifier(child->params)) {
-				Utils::outMsg("Scenatio::execute",
-				              "Invalid transform name <" + child->params + ">\n" +
-				              child->getPlace());
+				Utils::outError("Scenatio::execute",
+				                "Invalid transform name <%>\n%",
+				                child->params, child->getPlace());
 				continue;
 			}
 
@@ -737,23 +733,29 @@ void Scenario::execute(const std::string &loadPath) {
 
 
 		if (child->command == "continue" || child->command == "break") {
-			while (obj->command != "while") {
-				stack.pop_back();
-				if (stack.empty()) {
-					Utils::outMsg("Scenario::execute", child->command + " outside loop\n" + child->getPlace());
-					break;
-				}
-
-				elem = stack.back();
-				obj = elem.first;
+			size_t i = stack.size() - 1;
+			while (i && stack[i].first->command != "while") {
+				--i;
+			}
+			if (!i) {
+				Utils::outError("Scenario::execute",
+				                "% outside loop\n%",
+				                child->command, child->getPlace());
+				continue;
 			}
 
+			stack.erase(stack.begin() + long(i + 1), stack.end());
+
 			if (child->command == "continue") {
-				num = stack.back().second = obj->children.size();
+				elem = stack.back();
+				obj = elem.first;
+				num = elem.second = obj->children.size();
 			}else {
 				stack.pop_back();
-				if (stack.empty()) {
-					Utils::outMsg("Scenario::execute", child->command + " outside loop\n" + child->getPlace());
+				if (stack.empty()) {//unreachable (top level - <label>, for example, not <while>), but...
+					Utils::outError("Scenario::execute",
+					                "% outside loop\n%",
+					                child->command, child->getPlace());
 					break;
 				}
 
@@ -763,30 +765,26 @@ void Scenario::execute(const std::string &loadPath) {
 
 				if (num < obj->children.size() && obj->children[num]->command == "else") {
 					++num;
-					++stack.back().second;
+					++elem.second;
 				}
 			}
 			continue;
 		}
 
 		if (child->command == "return") {
-			while (obj->command != "label") {
-				stack.pop_back();
-				if (stack.empty()) {
-					Utils::outMsg("Scenario::execute", "return outside label\n" + child->getPlace());
-					break;
-				}
-
-				elem = stack.back();
-				obj = elem.first;
-				num = elem.second;
+			size_t i = stack.size() - 1;
+			while (i != size_t(-1) && stack[i].first->command != "label") {
+				--i;
 			}
-
-			stack.pop_back();
-			if (stack.empty()) {
-				obj = nullptr;
+			if (i == size_t(-1)) {
+				Utils::outError("Scenario::execute",
+				                "return outside label\n%", child->getPlace());
 				continue;
 			}
+
+			stack.erase(stack.begin() + long(i), stack.end());
+
+			if (stack.empty()) break;
 
 			elem = stack.back();
 			obj = elem.first;
@@ -803,9 +801,9 @@ void Scenario::execute(const std::string &loadPath) {
 		}
 
 		if (child->command != "pass") {
-			Utils::outMsg("Scenario::execute",
-			              "Unexpected command <" + child->command + ">\n" +
-			              child->getPlace());
+			Utils::outError("Scenario::execute",
+			                "Unexpected command <%>\n%",
+			                child->command, child->getPlace());
 		}
 	}
 

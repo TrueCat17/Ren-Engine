@@ -52,7 +52,7 @@ int String::toInt(std::string_view str) {
 			continue;
 		}
 
-		Utils::outMsg("String::toInt", "String <" + std::string(str) + "> is invalid number");
+		Utils::outError("String::toInt", "String <%> is an invalid number", str);
 		return 0;
 	}
 	return neg ? -res : res;
@@ -141,7 +141,7 @@ double String::toDouble(std::string_view str) {
 	double res = strToDoubleWithError(str, error);
 
 	if (error) {
-		Utils::outMsg("String::toDouble", "String <" + std::string(str) + "> is invalid number");
+		Utils::outError("String::toDouble", "String <%> is an invalid number", str);
 	}
 	return res;
 }

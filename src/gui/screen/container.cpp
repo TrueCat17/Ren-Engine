@@ -103,9 +103,9 @@ void Container::addChildrenFromNode() {
 		if (childCommand == "use") {
 			Node *screenNode = Screen::getDeclared(childNode->params);
 			if (!screenNode) {
-				Utils::outMsg("Screen::show",
-				              "Screen <" + childNode->params + "> is not defined\n" +
-							  childNode->getPlace());
+				Utils::outError("Screen::show",
+				                "Screen <%> is not defined\n%",
+				                childNode->params, childNode->getPlace());
 				continue;
 			}else {
 				child = new Screen(childNode, screen);
@@ -156,9 +156,9 @@ void Container::addChildrenFromNode() {
 
 		{
 			if (!SyntaxChecker::isKnownScreenLeaf(childCommand)) {
-				Utils::outMsg("Container::addChildrenFromNode",
-				              "Unknown type <" + childCommand + ">\n" +
-				              childNode->getPlace());
+				Utils::outError("Container::addChildrenFromNode",
+				                "Unknown type <%>\n%",
+				                childCommand, childNode->getPlace());
 			}
 			continue;
 		}

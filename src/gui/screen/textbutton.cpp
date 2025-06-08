@@ -29,10 +29,10 @@ void TextButton::updateTexture() {
 	const std::string &path = curParamsIsHover ? hover : ground;
 	surface = ImageManipulator::getImage(path, false);
 	if (!surface) {
-		std::string desc = curParamsIsHover ? "hover" : "ground";
-		Utils::outMsg("TextButton::updateTexture",
-		              "Failed to load " + desc + " image <" + path + ">\n" +
-		              node->getPlace());
+		std::string prop = curParamsIsHover ? "hover" : "ground";
+		Utils::outError("TextButton::updateTexture",
+		                "Failed to load % image <%>\n%",
+		                prop, path, node->getPlace());
 	}
 }
 
