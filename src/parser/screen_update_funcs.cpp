@@ -89,7 +89,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 
 #define updateCondition(isFloat, var, prop, propName) \
 	isFloat = PyFloat_CheckExact(prop); \
-	typedef decltype(var) DT; \
+	using DT = decltype(var); \
 	if (isFloat || PyAbsolute_CheckExact(prop)) { \
 		var = DT(PyFloat_AS_DOUBLE(prop)); \
 	}else \

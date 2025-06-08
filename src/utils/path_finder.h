@@ -5,7 +5,7 @@
 #include <string>
 
 
-typedef uint16_t PointInt;
+using PointInt = uint16_t;
 
 class PathFinder {
 public:

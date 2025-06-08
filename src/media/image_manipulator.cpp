@@ -1,11 +1,11 @@
 #include "image_manipulator.h"
 
-#include <thread>
-#include <mutex>
 #include <algorithm>
+#include <deque>
 #include <fstream>
 #include <map>
-#include <deque>
+#include <mutex>
+#include <thread>
 
 #include <cmath>
 #include <cstring>
@@ -24,7 +24,8 @@
 #include "utils/utils.h"
 
 
-static std::map<std::string, std::function<SurfacePtr(const std::vector<std::string>&)>> functions;
+using ImageFunc = SurfacePtr(*)(const std::vector<std::string>&);
+static std::map<std::string, ImageFunc> functions;
 
 static std::deque<std::string> toLoadImages;
 static std::deque<std::tuple<SurfacePtr, std::string, std::string, std::string>> toSaveImages;
@@ -379,7 +380,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		}
 	}
 	if (!images.empty()) {
-		typedef std::pair<std::string, size_t> P;
+		using P = std::pair<std::string, size_t>;
 		std::vector<P> imagesPairs(images.begin(), images.end());
 
 		std::sort(imagesPairs.begin(), imagesPairs.end(),

@@ -14,15 +14,15 @@
 
 template<typename T>
 struct remove_rc {
-	typedef T type;
+	using type = T;
 };
 template<typename T>
 struct remove_rc<const T> {
-	typedef T type;
+	using type = T;
 };
 template<typename T>
 struct remove_rc<const T&> {
-	typedef T type;
+	using type = T;
 };
 template<typename T>
 struct remove_rc<T&> {
@@ -31,7 +31,7 @@ struct remove_rc<T&> {
 
 
 class PyWrapperBase;
-typedef PyObject* (*PyWrapperCallType)(const PyWrapperBase&, PyObject *const *args, Py_ssize_t nargs);
+using PyWrapperCallType = PyObject*(*)(const PyWrapperBase&, PyObject *const *args, Py_ssize_t nargs);
 
 class PyWrapperBase {
 public:
@@ -113,9 +113,6 @@ PyObject* makeFuncImpl(const char *name, Ret(*func)(Args...), PyObject *moduleNa
 
 	return res;
 }
-
-
-#define makePyFunc(...) makeFuncImpl(#__VA_ARGS__, __VA_ARGS__)
 
 
 #endif // MAKE_FUNC_H

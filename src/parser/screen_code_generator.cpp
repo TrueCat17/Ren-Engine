@@ -70,12 +70,11 @@ static void initConsts(Node *node) {
 	}
 	if (command == "$" || command == "python") return;
 
-	ScopeExit se(nullptr);
+	ScopeExit se([&]() { screensInInit.pop_back(); });
+	se.enable = false;
 	if (command == "screen") {
 		screensInInit.push_back(params);
-		se.func = [&]() {
-			screensInInit.pop_back();
-		};
+		se.enable = true;
 	}
 
 	if (command == "use") {

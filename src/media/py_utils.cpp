@@ -25,9 +25,9 @@ static std::map<PyCode, PyObject*> compiledObjects;
 
 static std::map<std::string, PyObject*> constObjects;
 
-static const std::string True = "True";
-static const std::string False = "False";
-static const std::string None = "None";
+static const std::string_view True = "True";
+static const std::string_view False = "False";
+static const std::string_view None = "None";
 
 
 static PyObject *tracebackModule = nullptr;
@@ -38,8 +38,6 @@ static PyObject *builtinStr = nullptr;
 
 PyObject *PyUtils::global = nullptr;
 PyObject *PyUtils::tuple1 = nullptr;
-PyObject *PyUtils::spaceStr = nullptr;
-PyObject *PyUtils::spaceStrJoin = nullptr;
 
 
 
@@ -69,9 +67,6 @@ static void finalizeInterpreterImpl() {
 	Py_DECREF(builtinStr);
 	Py_DECREF(tracebackModule);
 	Py_DECREF(formatTraceback);
-
-	Py_DECREF(PyUtils::spaceStr);
-	Py_DECREF(PyUtils::spaceStrJoin);
 
 	Py_Finalize();
 }
@@ -103,9 +98,6 @@ static void initInterpreterImpl() {
 
 	PyObject *main = PyImport_AddModule("__main__");
 	PyUtils::global = PyModule_GetDict(main);
-
-	PyUtils::spaceStr = PyUnicode_FromString(" ");
-	PyUtils::spaceStrJoin = PyObject_GetAttrString(PyUtils::spaceStr, "join");
 
 	if (!PyAbsolute_PreInit()) {
 		Utils::outMsg("PyUtils::initInterpreter", "Failure on call PyAbsolute_PreInit()");

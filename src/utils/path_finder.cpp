@@ -71,7 +71,7 @@ struct SimplePoint {
 		return std::tie(x, y) < std::tie(o.x, o.y);
 	}
 };
-typedef std::vector<SimplePoint> Path;
+using Path = std::vector<SimplePoint>;
 
 struct LocationPlace {
 	std::string name;

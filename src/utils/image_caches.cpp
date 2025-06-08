@@ -1,8 +1,8 @@
 #include "image_caches.h"
 
-#include <vector>
-#include <map>
 #include <algorithm>
+#include <map>
+#include <vector>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -17,7 +17,12 @@
 #include "utils/utils.h"
 
 
-static std::vector<std::string> supportedExts = {"png", "jpg", "jpeg", "webp"};
+static std::vector<std::string> supportedExts = { "png", "jpg", "jpeg", "webp" };
+
+static std::map<SurfacePtr, std::pair<double, TexturePtr>> textures;
+
+static std::recursive_mutex surfaceMutex;
+static std::map<std::string, std::pair<double, SurfacePtr>> surfaces;
 
 
 SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
@@ -134,12 +139,6 @@ SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
 
 
 
-static std::map<SurfacePtr, std::pair<double, TexturePtr>> textures;
-
-static std::recursive_mutex surfaceMutex;
-static std::map<std::string, std::pair<double, SurfacePtr>> surfaces;
-
-
 static void trimTexturesCache(const SurfacePtr &last) {
 	/* If texture-cache size overpass need, then remove unused now textures while cache size more needed
 	 * Textures removes in order last using
@@ -150,9 +149,9 @@ static void trimTexturesCache(const SurfacePtr &last) {
 	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//in MegaBytes
 	size_t cacheSize = size_t(last->h * last->pitch);
 
-	typedef std::map<SurfacePtr, std::pair<double, TexturePtr>>::const_iterator Iter;
+	using Iter = std::map<SurfacePtr, std::pair<double, TexturePtr>>::const_iterator;
 
-	for (Iter it = textures.begin(); it != textures.end(); ++it) {
+	for (Iter it = textures.cbegin(); it != textures.cend(); ++it) {
 		const SurfacePtr &surface = it->first;
 		cacheSize += size_t(surface->h * surface->pitch);
 	}
@@ -176,7 +175,7 @@ static void trimTexturesCache(const SurfacePtr &last) {
 	std::vector<SurfacePtr> toDelete;
 	std::vector<KV> candidatesToDelete;
 
-	for (Iter it = textures.begin(); it != textures.end(); ++it) {
+	for (Iter it = textures.cbegin(); it != textures.cend(); ++it) {
 		KV kv(it);
 		const SurfacePtr &surface = kv.surface();
 
@@ -236,10 +235,10 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_surfaces_cache"))) * (1 << 20);
 	size_t cacheSize = size_t(last->h * last->pitch);
 
-	typedef std::map<std::string, std::pair<double, SurfacePtr>>::const_iterator Iter;
+	using Iter = std::map<std::string, std::pair<double, SurfacePtr>>::const_iterator;
 
 	std::map<SDL_Surface*, int> countSurfaces;
-	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
+	for (Iter it = surfaces.cbegin(); it != surfaces.cend(); ++it) {
 		const SurfacePtr &surface = it->second.second;
 		if (countSurfaces.find(surface.get()) == countSurfaces.end()) {
 			cacheSize += size_t(surface->h * surface->pitch);
@@ -268,13 +267,13 @@ static void trimSurfacesCache(const SurfacePtr &last) {
 
 	std::map<SDL_Surface*, std::vector<DisplayObject*>> objs;
 
-	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
+	for (Iter it = surfaces.cbegin(); it != surfaces.cend(); ++it) {
 		KV kv(it);
 		const SurfacePtr &surface = kv.surface();
 		paths[surface.get()].push_back(kv.path());
 	}
 
-	for (Iter it = surfaces.begin(); it != surfaces.end(); ++it) {
+	for (Iter it = surfaces.cbegin(); it != surfaces.cend(); ++it) {
 		KV kv(it);
 		const SurfacePtr &surface = kv.surface();
 

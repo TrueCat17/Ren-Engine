@@ -16,9 +16,6 @@ public:
 	static PyObject *global;
 	static PyObject *tuple1;
 
-	static PyObject* spaceStr;
-	static PyObject* spaceStrJoin;
-
 	static void init();
 	static void callInPythonThread(const std::function<void()> &func);
 

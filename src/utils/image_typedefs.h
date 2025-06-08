@@ -86,7 +86,7 @@ public:
 	}
 };
 
-typedef SmartPtr<SDL_Surface, SDL_FreeSurface> SurfacePtr;
-typedef SmartPtr<SDL_Texture, SDL_DestroyTexture> TexturePtr;
+using SurfacePtr = SmartPtr<SDL_Surface, SDL_FreeSurface>;
+using TexturePtr = SmartPtr<SDL_Texture, SDL_DestroyTexture>;
 
 #endif // IMAGETYPEDEFS_H

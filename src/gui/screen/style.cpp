@@ -104,14 +104,16 @@ const Style* StyleManager::getByObject(const Child* obj, PyObject *style) {
 	}
 
 
-	ScopeExit se(nullptr);
+	ScopeExit se([&]() { Py_DECREF(style); });
+	se.enable = false;
+
 	if (!style) {
 		if (propStyle->screenNum != uint32_t(-1)) {//not const prop
 			style = PySequence_Fast_GET_ITEM(obj->props, propStyle->screenNum);
 		}else {
 			style = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), propStyle->params);
 			if (style) {
-				se.func = [&]() { Py_DECREF(style); };
+				se.enable = true;
 			}else {
 				style = Py_None;
 			}

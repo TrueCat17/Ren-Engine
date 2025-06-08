@@ -4,7 +4,7 @@
 #include "parser/node.h"
 
 class Child;
-typedef void(*ScreenUpdateFunc)(Child *obj, size_t propIndex);
+using ScreenUpdateFunc = void(*)(Child *obj, size_t propIndex);
 
 
 class ScreenUpdateFuncs {
