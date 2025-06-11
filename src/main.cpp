@@ -20,6 +20,7 @@
 #include "media/audio_manager.h"
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
+#include "media/py_utils/py_code_disk_cache.h"
 #include "media/scenario.h"
 
 #include "parser/mods.h"
@@ -395,6 +396,8 @@ static void loop() {
 		PyUtils::exec("CPP_EMBED: main.cpp", __LINE__, "signals.send('exit_frame')");
 
 		GV::updateMutex.unlock();
+
+		PyUtils::callInPythonThread(PyCodeDiskCache::checkSaving);
 
 		const double spent = Utils::getTimer() - GV::frameStartTime;
 		const double timeToSleep = Game::getFrameTime() - spent;

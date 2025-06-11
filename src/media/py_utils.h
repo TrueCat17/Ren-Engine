@@ -16,6 +16,9 @@ public:
 	static PyObject *global;
 	static PyObject *tuple1;
 
+	static PyObject *marshalDumps;
+	static PyObject *marshalLoads;
+
 	static void init();
 	static void callInPythonThread(const std::function<void()> &func);
 

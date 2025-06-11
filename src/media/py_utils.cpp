@@ -12,6 +12,7 @@
 #include "logger.h"
 
 #include "media/py_set_globals.h"
+#include "media/py_utils/py_code_disk_cache.h"
 
 #include "parser/mods.h"
 
@@ -39,6 +40,9 @@ static PyObject *builtinStr = nullptr;
 PyObject *PyUtils::global = nullptr;
 PyObject *PyUtils::tuple1 = nullptr;
 
+PyObject *PyUtils::marshalDumps = nullptr;
+PyObject *PyUtils::marshalLoads = nullptr;
+
 
 
 static void finalizeInterpreterImpl() {
@@ -64,6 +68,10 @@ static void finalizeInterpreterImpl() {
 		PyTuple_SET_ITEM(PyUtils::tuple1, 0, nullptr);
 		Py_DECREF(PyUtils::tuple1);
 	}
+
+	Py_DECREF(PyUtils::marshalDumps);
+	Py_DECREF(PyUtils::marshalLoads);
+
 	Py_DECREF(builtinStr);
 	Py_DECREF(tracebackModule);
 	Py_DECREF(formatTraceback);
@@ -96,6 +104,14 @@ static void initInterpreterImpl() {
 		std::abort();
 	}
 
+	PyObject *marshalModule = PyImport_AddModule("marshal");
+	PyUtils::marshalDumps = PyObject_GetAttrString(marshalModule, "dumps");
+	PyUtils::marshalLoads = PyObject_GetAttrString(marshalModule, "loads");
+	if (!PyUtils::marshalDumps || !PyUtils::marshalLoads) {
+		Utils::outMsg("PyUtils::initInterpreter", "marshal == nullptr");
+		std::abort();
+	}
+
 	PyObject *main = PyImport_AddModule("__main__");
 	PyUtils::global = PyModule_GetDict(main);
 
@@ -122,6 +138,8 @@ static std::mutex funcsForPyThreadCalcedMutex;
 static void initImpl() {
 	Utils::setThreadName("python");
 	pythonThreadId = std::this_thread::get_id();
+
+	PyCodeDiskCache::init();
 
 	while (true) {
 		if (!funcsForPyThread.empty()) {
@@ -191,13 +209,18 @@ static PyObject* getCompileObjectImpl(const std::string &code, const std::string
 		return i->second;
 	}
 
+	PyObject *res = PyCodeDiskCache::get(code, fileName, numLine);
+	if (res) return res;
+
 	std::string indentCode;
 	indentCode.reserve(numLine - 1 + code.size());
 	indentCode.insert(0, numLine - 1, '\n');
 	indentCode += code;
 
-	PyObject *res = Py_CompileStringFlags(indentCode.c_str(), fileName.c_str(), Py_file_input, nullptr);
-	if (!res) {
+	res = Py_CompileStringFlags(indentCode.c_str(), fileName.c_str(), Py_file_input, nullptr);
+	if (res) {
+		PyCodeDiskCache::set(code, fileName, numLine, res);
+	}else {
 		PyUtils::errorProcessing(code);
 	}
 
@@ -263,9 +286,7 @@ static void errorProcessingImpl(const std::string &code) {
 
 	std::string traceback;
 	if (pyTraceback && pyTraceback != Py_None) {
-		PyTuple_SET_ITEM(PyUtils::tuple1, 0, pyTraceback);
-		PyObject *res = PyObject_Call(formatTraceback, PyUtils::tuple1, nullptr);
-		PyTuple_SET_ITEM(PyUtils::tuple1, 0, nullptr);
+		PyObject *res = PyObject_CallFunction(formatTraceback, "O", pyTraceback);
 
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
