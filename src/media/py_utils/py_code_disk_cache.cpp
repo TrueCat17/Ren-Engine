@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <mutex>
 #include <vector>
 
 #include "media/py_utils.h"
@@ -14,7 +13,6 @@ const uint32_t MAX_SIZE = 5 << 20; //5 MB
 const uint32_t VERSION = PY_VERSION_HEX;
 
 static bool changed = false;
-static std::mutex mutex;
 
 
 struct PyCode {
@@ -126,8 +124,6 @@ static bool isSmallCode(const std::string code) {
 PyObject* PyCodeDiskCache::get(const std::string &code, const std::string &fileName, uint32_t numLine) {
 	if (isSmallCode(code)) return nullptr;
 
-	std::lock_guard g(mutex);
-
 	PyCode *pyCode = nullptr;
 	for (PyCode &t : serializedCodes) {
 		if (t.code == code && t.fileName == fileName && t.numLine == numLine) {
@@ -155,8 +151,6 @@ void PyCodeDiskCache::set(const std::string &code, const std::string&fileName, u
                           PyObject *pyCodeObject)
 {
 	if (isSmallCode(code)) return;
-
-	std::lock_guard g(mutex);
 
 	changed = true;
 	serializedCodes.push_back(PyCode(code, fileName, numLine, float(Utils::getTimer()), pyCodeObject));
@@ -195,8 +189,6 @@ static void write4(std::ofstream &os, T v32) {
 
 void PyCodeDiskCache::checkSaving() {
 	if (!changed) return;
-
-	std::lock_guard g(mutex);
 
 	double st = Utils::getTimer();
 	for (PyCode &pyCode : serializedCodes) {
