@@ -48,7 +48,7 @@ init -9000 python:
 	sprite_animation_code_cache = DontSave()
 	
 	class SpriteAnimation(SimpleObject):
-		def __init__(self, actions, data = None):
+		def __init__(self, actions, sprite = None):
 			SimpleObject.__init__(self)
 			
 			self.ended = False
@@ -63,7 +63,7 @@ init -9000 python:
 			self.block = None
 			self.parallels = []
 			
-			self.data = data
+			self.sprite = sprite
 			
 			self.end_pause_time = 0
 			
@@ -202,8 +202,8 @@ init -9000 python:
 								actions = self.actions = actions[:self.action_num] + image_actions + actions[self.action_num+1:]
 								len_actions = len(actions)
 							else:
-								self.data.contains = []
-								self.data.image = evaled
+								self.sprite.contains = []
+								self.sprite.image = evaled
 						else:
 							self.out_msg('SpriteAnimation.update', 'Unknown command:\n%s', action)
 					except:
@@ -234,7 +234,7 @@ init -9000 python:
 						action = [command, extra_param, action[1:]]
 					else:
 						command = first
-						extra_param = '%s: %s_%s' % (self.data.sprite, command, self.action_num)
+						extra_param = '%s: %s_%s' % (self.sprite, command, self.action_num)
 					
 					
 					if self.parallels and command != 'parallel':
@@ -242,20 +242,20 @@ init -9000 python:
 						return
 					
 					if command == 'block':
-						self.block = SpriteAnimation(action[1:], self.data)
+						self.block = SpriteAnimation(action[1:], self.sprite)
 						return
 					
 					if command == 'contains':
 						if self.last_command != command:
-							self.data.contains = []
-						self.data.sprite.calculate_props()
-						spr = Sprite(extra_param, (), (), action[1:], None)
-						spr.new_data.parent_data = self.data
-						self.data.contains.append(spr)
+							self.sprite.contains = []
+						self.sprite.calculate_props()
+						spr = Sprite(None, extra_param, (), (), action[1:], None)
+						spr.parent = self.sprite
+						self.sprite.contains.append(spr)
 					elif command == 'parallel':
 						if self.last_command != command:
 							self.parallels = []
-						self.parallels.append(SpriteAnimation(action[1:], self.data))
+						self.parallels.append(SpriteAnimation(action[1:], self.sprite))
 					else:
 						self.out_msg('SpriteAnimation.update', 'Expected blocks <contains>, <block> or <parallel>, got <%s>', command)
 					
@@ -286,7 +286,7 @@ init -9000 python:
 				if names == ['xalign', 'yalign']:
 					names = ['xpos', 'ypos', 'xanchor', 'yanchor']
 					new_values *= 2
-				old_values = [self.data[name] for name in names]
+				old_values = [self.sprite[name] for name in names]
 				
 				self.change_props.append((names, old_values, new_values))
 		
@@ -304,19 +304,19 @@ init -9000 python:
 				if type(value) is not float or side not in 'xy' or prop not in ('anchor', 'pos', 'size'):
 					return absolute(value)
 				
-				# see SpriteAnimationData.calculate_props
+				# see Sprite.calculate_props
 				
-				data = self.data
+				sprite = self.sprite
 				
 				if prop == 'anchor':
-					zoom = data['real_' + side + 'zoom']
-					max = data['real_' + side + 'size'] / zoom
+					zoom = sprite['real_' + side + 'zoom']
+					max = sprite['real_' + side + 'size'] / zoom
 				
 				else:
-					parent_data = data.parent_data
-					if parent_data:
-						p_zoom = parent_data['real_' + side + 'zoom']
-						p_size = parent_data['real_' + side + 'size'] / p_zoom
+					parent = sprite.parent
+					if parent:
+						p_zoom = parent['real_' + side + 'zoom']
+						p_size = parent['real_' + side + 'size'] / p_zoom
 					else:
 						if side == 'x':
 							p_size = config.width or get_stage_width()
@@ -375,12 +375,9 @@ init -9000 python:
 						out_not_number_err('int, float or absolute', value)
 						return
 					
-					data = self.data
-					if data[prop] != value:
-						data[prop] = value
-						
-						if prop not in data.except_state_props:
-							data.state_num += 1
+					sprite = self.sprite
+					if sprite[prop] != value:
+						sprite[prop] = value
 			else:
 				if type(value) not in sequences:
 					if type(value) not in number_types:

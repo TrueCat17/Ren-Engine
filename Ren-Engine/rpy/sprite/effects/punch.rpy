@@ -1,19 +1,21 @@
 init -9000 python:
 	
-	class Punch(Object):
+	class Punch(SimpleObject):
 		def __init__(self, prop, dist, time_one, time_all):
-			Object.__init__(self)
+			SimpleObject.__init__(self)
 			
-			self.prop, self.dist, self.time_one, self.time_all = prop, dist, time_one, time_all
+			self.prop = prop
+			self.dist = dist
+			self.time_one = time_one
+			self.time_all = time_all
+			
 			self.start_time = None
 		
-		def copy(self, spr):
+		def copy(self, old_sprite, new_sprite):
+			sprites.remove_hiding()
 			sprites.screen.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
-			if spr is sprites.screen:
+			if new_sprite is sprites.screen:
 				return sprites.screen.effect
-			
-			spr.old_data = None
-			spr.data_list = (spr.new_data, )
 			return None 
 		
 		
@@ -25,7 +27,6 @@ init -9000 python:
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			if dtime >= self.time_all:
-				sprites.screen.new_data[self.prop] = 0
 				sprites.screen.remove_effect()
 			else:
 				t = (dtime % self.time_one) / self.time_one # 0.0 -> 1.0
@@ -33,14 +34,11 @@ init -9000 python:
 				t = 1 if t > 0.5 else -1
 				m = 1 if int(dtime / self.time_one) % 2 else -1
 				
-				sprites.screen.new_data[self.prop] = round(t * m * self.dist)
+				sprites.screen[self.prop] = round(t * m * self.dist)
 		
 		def remove(self):
-			sprites.screen.new_data[self.prop] = 0
-		
-		def for_not_hiding(self):
-			pass
+			sprites.screen[self.prop] = 0
 	
 	
-	hpunch = Punch('xpos', 10, 0.1, 0.5)
-	vpunch = Punch('ypos',  7, 0.1, 0.5)
+	hpunch = Punch('xpos', 15, 0.07, 0.275)
+	vpunch = Punch('ypos', 10, 0.07, 0.275)

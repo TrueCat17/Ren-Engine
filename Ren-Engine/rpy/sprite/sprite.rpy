@@ -1,11 +1,19 @@
 init -9000 python:
 	
-	class SpriteAnimationData(SimpleObject):
-		def __init__(self, sprite, decl_at, at, show_at):
+	next_sprite_tag = 0
+	def get_next_sprite_tag():
+		global next_sprite_tag
+		next_sprite_tag += 1
+		return 'tmp_tag_' + str(next_sprite_tag)
+	
+	
+	class Sprite(SimpleObject):
+		def __init__(self, tag, call_str, decl_at, at, show_at, old_sprite = None):
 			SimpleObject.__init__(self)
 			
-			self.state_num = 0
-			self.except_state_props = set()
+			self.tag = tag or get_next_sprite_tag()
+			self.call_str = call_str
+			self.hiding = False
 			
 			self.xpos    = self.ypos    = 0
 			self.xanchor = self.yanchor = 0
@@ -19,12 +27,31 @@ init -9000 python:
 			self.image = None
 			self.res_image = None
 			
-			self.sprite  = sprite
-			self.parent_data = None
+			self.old_sprite = old_sprite
+			self.parent = None
 			
 			self.decl_at = SpriteAnimation(decl_at, self)
 			self.at      = SpriteAnimation(at,      self)
 			self.show_at = SpriteAnimation(show_at, self)
+			
+			self.effect = None
+		
+		def __str__(self):
+			return str(self.call_str)
+		
+		def set_effect(self, effect):
+			if not effect:
+				return
+			self.effect = effect.copy(self, None) if self.hiding else effect.copy(self.old_sprite, self)
+			
+			if not has_screen('sprites'):
+				show_screen('sprites')
+		
+		def remove_effect(self):
+			if self.effect:
+				self.effect.remove()
+				self.effect = None
+				self.old_sprite = None
 		
 		def update(self):
 			self.decl_at.update()
@@ -33,9 +60,14 @@ init -9000 python:
 			
 			for spr in self.contains:
 				spr.update()
+			
+			if self.effect:
+				self.effect.update()
+			
+			self.calculate_props()
 		
 		def calculate_props(self):
-			parent = self.parent_data
+			parent = self.parent
 			if parent is not None:
 				p_xzoom,   p_yzoom   = parent.real_xzoom,   parent.real_yzoom
 				p_xsize,   p_ysize   = parent.real_xsize,   parent.real_ysize
@@ -57,16 +89,13 @@ init -9000 python:
 			self.real_xzoom  = absolute(self.xzoom * p_xzoom)
 			self.real_yzoom  = absolute(self.yzoom * p_yzoom)
 			
-			
-			main_data = self.sprite.new_data or self.sprite.old_data
-			
 			if self.xsize is None:
-				xsize = (main_data and main_data.xsize) or (get_image_width(self.image) if self.image else 0)
+				xsize = get_image_width(self.image) if self.image else 0
 			else:
 				xsize = get_absolute(self.xsize, config.width or get_stage_width())
 			
 			if self.ysize is None:
-				ysize = (main_data and main_data.ysize) or (get_image_height(self.image) if self.image else 0)
+				ysize = get_image_height(self.image) if self.image else 0
 			else:
 				ysize = get_absolute(self.ysize, config.height or get_stage_height())
 			
@@ -86,15 +115,11 @@ init -9000 python:
 			self.real_xpos = p_xpos + p_xanchor + xrot - self.real_xanchor
 			self.real_ypos = p_ypos + p_yanchor + yrot - self.real_yanchor
 			
-			
 			for spr in self.contains:
 				spr.calculate_props()
 		
-		
-		def get_all_data(self):
+		def get_all_sprites(self):
 			res = [self]
 			for spr in self.contains:
-				for spr_data in spr.data_list:
-					res.extend(spr_data.get_all_data())
-			
+				res.extend(spr.get_all_sprites())
 			return res

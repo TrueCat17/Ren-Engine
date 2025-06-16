@@ -8,19 +8,16 @@ init -1000 python:
 	can_exec_next_check_funcs.append(sprites__effects_ended)
 	
 	def sprites__effects_to_end():
-		for spr in sprites.list:
+		sprites.remove_hiding()
+		for spr in sprites.list.copy():
 			spr.remove_effect()
 		sprites.screen.remove_effect()
-		sprites.remove_hiding()
 	can_exec_next_skip_funcs.append(sprites__effects_to_end)
 	
 	def sprites__remove_hiding():
 		for spr in sprites.list.copy():
 			if spr.hiding:
 				sprites.list.remove(spr)
-			else:
-				if spr.effect is not None:
-					spr.effect.for_not_hiding()
 	
 	
 	def sprites__get_tag_of_image_name(image_name):
@@ -43,7 +40,6 @@ init -1000 python:
 			if not old_sprites_hided:
 				for spr in sprites.list:
 					if spr is not sprites.scene:
-						spr.old_data, spr.new_data = spr.new_data, None
 						spr.hiding = True
 		else:
 			sprites.list = [sprites.scene] if sprites.scene else []
@@ -88,10 +84,8 @@ init -1000 python:
 			if is_scene:
 				if effect is not None:
 					for spr in sprites.list:
-						spr.old_data, spr.new_data = spr.new_data, None
-						
-						spr.set_effect(effect)
 						spr.hiding = True
+						spr.set_effect(effect)
 				else:
 					sprites.list = []
 				sprites.scene = None
@@ -135,21 +129,21 @@ init -1000 python:
 		if is_scene:
 			index = len(sprites.list)
 		else:
-			index = 0
-			while index < len(sprites.list):
-				spr = sprites.list[index]
-				if spr.tag != tag:
-					index += 1
-					continue
-				
-				old_sprite = spr
-				sprites.list.pop(index)
-				break
+			index = -1
+			for index, spr in enumerate(sprites.list):
+				if spr.tag == tag:
+					if effect:
+						old_sprite = spr
+						spr.hiding = True
+					else:
+						sprites.list.pop(index)
+						index -= 1
+					break
+			index += 1
 		
 		if at is None:
-			data = old_sprite and (old_sprite.new_data or old_sprite.old_data)
-			if data:
-				at = data.at
+			if old_sprite:
+				at = old_sprite.at
 				if not at.actions and not show_at:
 					at = center
 			else:
@@ -158,20 +152,17 @@ init -1000 python:
 		if type(at) is SpriteAnimation:
 			at = at.actions
 		
-		spr = Sprite(call_str, decl_at, at, show_at, old_sprite if effect else None)
+		spr = Sprite(tag, call_str, decl_at, at, show_at, old_sprite if effect else None)
 		spr.sprite_name = image_name
-		spr.tag = tag
 		if is_scene or old_sprite is sprites.scene:
 			sprites.scene = spr
-		spr.set_effect(effect)
 		
 		
 		if behind is not None:
 			index = 0
-			while index < len(sprites.list):
-				if sprites.list[index].tag == behind:
+			for index, tmp_spr in enumerate(sprites.list):
+				if tmp_spr.tag == behind:
 					break
-				index += 1
 			else:
 				out_msg('sprites.show_impl', 'Sprite <%s> not found', behind)
 		
@@ -179,6 +170,8 @@ init -1000 python:
 			index = max(index, sprites.list.index(sprites.scene) + 1)
 		
 		sprites.list.insert(index, spr)
+		spr.set_effect(effect)
+		
 		persistent._seen_images[image_name] = True
 	
 	
@@ -211,10 +204,8 @@ init -1000 python:
 		for i, spr in enumerate(sprites.list):
 			if spr.tag == tag:
 				if effect is not None:
-					spr.old_data, spr.new_data = spr.new_data, None
-					
-					spr.set_effect(effect)
 					spr.hiding = True
+					spr.set_effect(effect)
 				else:
 					sprites.list.pop(i)
 				break
@@ -222,23 +213,23 @@ init -1000 python:
 			out_msg('sprites.hide_impl', 'Sprite <%s> not found', tag)
 	
 	
-	def sprites__get_datas():
+	def sprites__get_draw_data():
 		res = []
-		for spr in sprites.list + [sprites.screen]: # new list, because in update something can be removed from sprites.list
-			spr.update()
+		for sprite in sprites.list + [sprites.screen]: # new list, because in update something can be removed from sprites.list
+			sprite.update()
 			
-			for data in spr.get_all_data():
-				tmp_image = data.res_image or data.image
-				if not tmp_image or data.real_alpha <= 0: continue
+			for spr in sprite.get_all_sprites():
+				tmp_image = spr.res_image or spr.image
+				if not tmp_image or spr.real_alpha <= 0: continue
 				
 				tmp = SimpleObject()
 				tmp.image  =  tmp_image
-				tmp.size   = (data.real_xsize, data.real_ysize)
-				tmp.anchor = (data.real_xanchor, data.real_yanchor)
-				tmp.pos    = (data.real_xpos + data.real_xanchor, data.real_ypos + data.real_yanchor) # real_pos already taked anchor, cancel it
-				tmp.crop   = (data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop)
-				tmp.alpha  =  data.real_alpha
-				tmp.rotate =  data.real_rotate
+				tmp.size   = (spr.real_xsize, spr.real_ysize)
+				tmp.anchor = (spr.real_xanchor, spr.real_yanchor)
+				tmp.pos    = (spr.real_xpos + spr.real_xanchor, spr.real_ypos + spr.real_yanchor) # real_pos already taked anchor, cancel it
+				tmp.crop   = (spr.xcrop, spr.ycrop, spr.xsizecrop, spr.ysizecrop)
+				tmp.alpha  =  spr.real_alpha
+				tmp.rotate =  spr.real_rotate
 				res.append(tmp)
 		return res
 	
@@ -247,9 +238,9 @@ init -1000 python:
 	
 	sprites.list = []
 	
-	sprites.screen = Sprite('screen', (), (), (), None)
-	sprites.screen.new_data.xsize,      sprites.screen.new_data.ysize      = 1.0, 1.0
-	sprites.screen.new_data.real_xsize, sprites.screen.new_data.real_ysize = 1.0, 1.0
+	sprites.screen = Sprite('screen', 'screen', (), (), (), None)
+	sprites.screen.xsize,      sprites.screen.ysize      = 1.0, 1.0
+	sprites.screen.real_xsize, sprites.screen.real_ysize = 1.0, 1.0
 	
 	sprites.scene = None
 
@@ -257,14 +248,14 @@ init -1000 python:
 screen sprites:
 	zorder -3
 	
-	$ sprites.images = sprites.get_datas()
+	$ sprites.images = sprites.get_draw_data()
 	
 	xzoom get_stage_width()  / (config.width  or get_stage_width())
 	yzoom get_stage_height() / (config.height or get_stage_height())
 	
-	pos    (sprites.screen.new_data.xpos,       sprites.screen.new_data.ypos)
-	anchor (sprites.screen.new_data.xanchor,    sprites.screen.new_data.yanchor)
-	size   (sprites.screen.new_data.real_ysize, sprites.screen.new_data.real_xsize)
+	pos    (sprites.screen.xpos,       sprites.screen.ypos)
+	anchor (sprites.screen.xanchor,    sprites.screen.yanchor)
+	size   (sprites.screen.real_ysize, sprites.screen.real_xsize)
 	
 	for tmp in sprites.images:
 		image tmp.image:

@@ -1,28 +1,33 @@
 init -9000 python:
 	
-	class Dissolve(Object):
-		def __init__(self, t, spr = None):
-			Object.__init__(self)
+	class Dissolve(SimpleObject):
+		def __init__(self, t, old_sprite = None, new_sprite = None):
+			SimpleObject.__init__(self)
 			
 			self.start_time = None
 			self.time = max(t, 0.001)
 			
-			self.sprite = spr
-			if spr:
-				if spr.old_data:
-					spr.old_data.except_state_props.add('alpha')
-				if spr.new_data:
-					spr.new_data.except_state_props.add('alpha')
-				
-				spr.update()
-				self.set_data_list()
+			self.common_sprite = None
+			self.old_sprite = old_sprite
+			self.new_sprite = new_sprite
+			
+			if old_sprite:
+				old_sprite.update()
+			if new_sprite:
+				new_sprite.update()
+			
+			self.set_common_sprite()
 		
-		def copy(self, spr):
-			res = Dissolve(self.time, spr)
+		def copy(self, old_sprite, new_sprite):
+			res = Dissolve(self.time, old_sprite, new_sprite)
 			return res
 		
-		def set_data_list(self):
-			if self.sprite is sprites.scene:
+		def set_common_sprite(self):
+			new_sprite, old_sprite = self.new_sprite, self.old_sprite
+			
+			if new_sprite is None or old_sprite is None:
+				return
+			if new_sprite is sprites.scene:
 				return
 			
 			def rotate_point(x, y, xcenter, ycenter, sina, cosa):
@@ -47,46 +52,45 @@ init -9000 python:
 				return xmin, ymin, xmax, ymax
 			
 			cache = {}
-			def get_rect(data):
-				if data in cache:
-					return cache[data]
+			def get_rect(spr):
+				if spr in cache:
+					return cache[spr]
 				
-				xanchor, yanchor = data.real_xanchor, data.real_yanchor
-				x, y             = data.real_xpos,    data.real_ypos
-				xsize, ysize     = data.real_xsize,   data.real_ysize
+				xanchor, yanchor = spr.real_xanchor, spr.real_yanchor
+				x, y             = spr.real_xpos,    spr.real_ypos
+				xsize, ysize     = spr.real_xsize,   spr.real_ysize
 				
 				xmin, ymin = x, y
 				xmax, ymax = x + xsize, y + ysize
 				
-				rotate = int(data.real_rotate) % 360
+				rotate = int(spr.real_rotate) % 360
 				if rotate:
 					res = rotate_rect(xmin, ymin, xmax, ymax, x + xanchor, y + yanchor, rotate)
 				else:
 					res = xmin, ymin, xmax, ymax
 				
-				cache[data] = res
+				cache[spr] = res
 				return res
 			
 			def intersection_rects(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2):
 				return xmax1 > xmin2 and xmax2 > xmin1 and ymax1 > ymin2 and ymax2 > ymin1
 			
-			new_data, old_data = self.sprite.new_data, self.sprite.old_data
 			
-			new_datas = self.sprite.new_data.get_all_data() if new_data else ()
-			old_datas = self.sprite.old_data.get_all_data() if old_data else ()
+			new_sprites = new_sprite.get_all_sprites()
+			old_sprites = old_sprite.get_all_sprites()
 			
 			make_common = False
-			for new_data in new_datas:
-				if not new_data.image:
+			for new_spr in new_sprites:
+				if not new_spr.image:
 					continue
 				
-				xmin1, ymin1, xmax1, ymax1 = get_rect(new_data)
+				xmin1, ymin1, xmax1, ymax1 = get_rect(new_spr)
 				
-				for old_data in old_datas:
-					if not old_data.image:
+				for old_spr in old_sprites:
+					if not old_spr.image:
 						continue
 					
-					xmin2, ymin2, xmax2, ymax2 = get_rect(old_data)
+					xmin2, ymin2, xmax2, ymax2 = get_rect(old_spr)
 					
 					if intersection_rects(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2):
 						make_common = True
@@ -97,8 +101,8 @@ init -9000 python:
 			if not make_common:
 				return
 			
-			all_datas = [data for data in new_datas + old_datas if data.image]
-			all_rects = [get_rect(data) for data in all_datas]
+			all_sprites = [spr for spr in new_sprites + old_sprites if spr.image]
+			all_rects = [get_rect(spr) for spr in all_sprites]
 			
 			xmin, ymin, xmax, ymax = all_rects[0]
 			for rect in all_rects[1:]:
@@ -109,22 +113,21 @@ init -9000 python:
 			
 			width, height = xmax - xmin, ymax - ymin
 			if width <= 0 or height <= 0 or (xmin, ymin, xmax, ymax) == (0, 0, get_stage_width(), get_stage_height()):
-				self.sprite.data_list = (old_data, new_data)
 				return
 			
 			new_args = [(width, height)]
 			old_args = [(width, height)]
 			
-			for args, datas in ((new_args, new_datas), (old_args, old_datas)):
-				for data in datas:
-					image = data.image
-					if not image or data.real_alpha <= 0:
+			for args, new_or_old_sprites in ((new_args, new_sprites), (old_args, old_sprites)):
+				for spr in new_or_old_sprites:
+					image = spr.image
+					if not image or spr.real_alpha <= 0:
 						continue
 					
 					image_xsize, image_ysize = get_image_size(image)
-					res_xsize, res_ysize = data.real_xsize, data.real_ysize
+					res_xsize, res_ysize = spr.real_xsize, spr.real_ysize
 					
-					crop = [data.xcrop, data.ycrop, data.xsizecrop, data.ysizecrop]
+					crop = [spr.xcrop, spr.ycrop, spr.xsizecrop, spr.ysizecrop]
 					if crop != [0, 0, 1, 1] and crop != [0, 0, image_xsize, image_ysize]:
 						for i in range(4):
 							crop[i] = get_absolute(crop[i], image_ysize if i % 2 else image_xsize)
@@ -134,29 +137,32 @@ init -9000 python:
 					if (res_xsize, res_ysize) != (image_xsize, image_ysize):
 						image = im.renderer_scale(image, res_xsize, res_ysize)
 					
-					if data.real_alpha < 1:
-						image = im.alpha(image, data.real_alpha)
+					if spr.real_alpha < 1:
+						image = im.alpha(image, spr.real_alpha)
 					
-					rotate = int(data.real_rotate) % 360
+					rotate = int(spr.real_rotate) % 360
 					if rotate:
 						image = im.rotozoom(image, -rotate, 1)
 					
-					_xmin, _ymin, _xmax, _ymax = get_rect(data)
+					_xmin, _ymin, _xmax, _ymax = get_rect(spr)
 					args.append((_xmin - xmin, _ymin - ymin))
 					args.append(image)
 			
 			new_image = im.composite(*new_args)
 			old_image = im.composite(*old_args)
 			
-			common_data = SpriteAnimationData(self.sprite, (), (), ())
-			common_data.image = im.mask(new_image, old_image, 1, 'a', '>=', 'a', 1)
-			load_image(common_data.image)
-			common_data.xanchor, common_data.yanchor = new_data.xanchor, new_data.yanchor
-			common_data.xpos,    common_data.ypos    = xmin + get_absolute(new_data.xanchor, width), ymin + get_absolute(new_data.yanchor, height)
-			common_data.xsize,   common_data.ysize   = width, height
+			common_sprite = Sprite(None, '<common for %s and %s>' % (new_sprite, old_sprite), (), (), ())
+			common_sprite.hiding = True
+			common_sprite.image = im.mask(new_image, old_image, 1, 'a', '>=', 'a', 1)
+			load_image(common_sprite.image)
 			
-			self.sprite.data_list = (common_data, self.sprite.old_data, self.sprite.new_data)
-			self.state_num = sum(data.state_num for data in all_datas)
+			index = sprites.list.index(old_sprite)
+			sprites.list.insert(index, common_sprite)
+			
+			common_sprite.xanchor, common_sprite.yanchor = new_sprite.xanchor, new_sprite.yanchor
+			common_sprite.xpos,    common_sprite.ypos    = xmin + get_absolute(new_sprite.xanchor, width), ymin + get_absolute(new_sprite.yanchor, height)
+			common_sprite.xsize,   common_sprite.ysize   = width, height
+			common_sprite.calculate_props()
 		
 		
 		def update(self):
@@ -166,34 +172,23 @@ init -9000 python:
 				dtime = 0
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
-			new_data, old_data = self.sprite.new_data, self.sprite.old_data
+			new_sprite, old_sprite = self.new_sprite, self.old_sprite
 			
-			if len(self.sprite.data_list) == 3:
-				new_datas = new_data.get_all_data()
-				old_datas = old_data.get_all_data()
-				
-				state_num = sum(data.state_num for data in new_datas + old_datas if data.image)
-				if self.state_num != state_num:
-					self.set_data_list()
-					self.sprite.calculate_props()
-			
-			alpha = in_bounds(dtime / self.time, 0.0, 1.0)
+			alpha = in_bounds(dtime / self.time, 0, 1)
 			anti_alpha = 1 - alpha
 			
-			if new_data:
-				new_data.alpha = alpha
-			if old_data:
-				old_data.alpha = anti_alpha
+			if new_sprite:
+				new_sprite.alpha = alpha
+			if old_sprite:
+				old_sprite.alpha = anti_alpha
 			
 			if alpha == 1:
-				self.sprite.remove_effect()
+				(new_sprite or old_sprite).remove_effect()
 		
 		def remove(self):
 			sprites.remove_hiding()
-		
-		def for_not_hiding(self):
-			if self.sprite.new_data:
-				self.sprite.new_data.alpha = 1.0
+			if self.new_sprite:
+				self.new_sprite.alpha = 1.0
 	
 	
 	dspr = Dissolve(0.2)
