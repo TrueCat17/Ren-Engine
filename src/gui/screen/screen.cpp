@@ -147,8 +147,7 @@ static void makeScreenVars(const std::string &name,
 	        "globals().setdefault('screen_vars', {})\n"
 	        "_SL_got_args = " + std::string((args && kwargs) ? "True" : "False") + "\n"
 	        "if (tmp not in screen_vars) or _SL_got_args:\n"
-	        "    screen_vars[tmp] = SimpleObject()\n"
-	        "screen = screen_vars[tmp]";
+	        "    screen_vars[tmp] = SimpleObject()";
 	PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__, code, name);
 
 	if (!args || !kwargs) return; //create screen on loading
@@ -177,7 +176,17 @@ static void makeScreenVars(const std::string &name,
 		return;
 	}
 
-	PyObject *screenVars = PyDict_GetItemString(PyUtils::global, "screen");
+	PyObject *screenVarsStorage = PyDict_GetItemString(PyUtils::global, "screen_vars");
+	if (!screenVarsStorage || !PyDict_CheckExact(screenVarsStorage)) {
+		Utils::outMsg("Screen::addToShow", "<screen_vars> not found");
+		return;
+	}
+
+	PyObject *screenVars = PyDict_GetItemString(screenVarsStorage, name.c_str());
+	if (!screenVars) {
+		Utils::outMsg("Screen::addToShow", "screen_vars[name] not found");
+		return;
+	}
 
 	std::vector<std::string> argsWasSet;
 	argsWasSet.reserve(countVars);
