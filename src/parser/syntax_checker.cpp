@@ -202,7 +202,9 @@ void SyntaxChecker::init() {
 	setSuperParents("old, new", SuperParent::TL_STRS);
 
 	const int ALL = SuperParent::INIT | SuperParent::LABEL | SuperParent::SCREEN;
-	setSuperParents("$, pass, break, continue, python, if, elif, else, while, image", ALL);
+	setSuperParents("$, pass, break, continue, python, if, elif, else, while", ALL);
+
+	setSuperParents("image", SuperParent::INIT | SuperParent::SCREEN);
 }
 
 static const std::set<std::string> blocksWithAny = {
