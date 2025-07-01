@@ -13,15 +13,26 @@ init -9000 python:
 			
 			self.tag = tag or get_next_sprite_tag()
 			self.call_str = call_str
-			self.hiding = False
 			
-			self.xpos    = self.ypos    = 0
-			self.xanchor = self.yanchor = 0
-			self.xsize   = self.ysize   = None
-			self.xzoom   = self.yzoom   = 1.0
-			self.xcrop, self.ycrop, self.xsizecrop, self.ysizecrop = 0.0, 0.0, 1.0, 1.0
-			self.alpha = 1.0
-			self.rotate = 0
+			if not old_sprite:
+				self.xpos    = self.ypos    = 0
+				self.xanchor = self.yanchor = 0
+				self.xsize   = self.ysize   = None
+				self.xzoom   = self.yzoom   = 1.0
+				self.xcrop, self.ycrop, self.xsizecrop, self.ysizecrop = 0.0, 0.0, 1.0, 1.0
+				self.alpha = 1.0
+				self.rotate = 0
+			else:
+				for prop in ('xpos', 'ypos', 'xanchor', 'yanchor', 'xsize', 'ysize', 'xzoom', 'yzoom', 'xcrop', 'ycrop', 'xsizecrop', 'ysizecrop', 'alpha', 'rotate'):
+					self[prop] = old_sprite[prop]
+				for prop in old_sprite.keys():
+					if prop.startswith('real_'):
+						self[prop] = old_sprite[prop]
+			
+			self.extra_xpos  = self.extra_ypos  = 0
+			self.extra_xzoom = self.extra_yzoom = 1.0
+			self.extra_alpha = 1.0
+			self.extra_rotate = 0
 			
 			self.contains = []
 			self.image = None
@@ -32,17 +43,28 @@ init -9000 python:
 			
 			self.decl_at = SpriteAnimation(decl_at, self)
 			self.at      = SpriteAnimation(at,      self)
-			self.show_at = SpriteAnimation(show_at, self)
+			if show_at or not old_sprite:
+				self.show_at = SpriteAnimation(show_at, self)
+			else:
+				self.show_at = old_sprite.show_at.copy(self)
 			
 			self.effect = None
 		
 		def __str__(self):
 			return str(self.call_str)
 		
-		def set_effect(self, effect):
+		def set_effect(self, effect, hiding):
 			if not effect:
 				return
-			self.effect = effect.copy(self, None) if self.hiding else effect.copy(self.old_sprite, self)
+			
+			if hiding:
+				old, new = self, None
+			else:
+				old, new = self.old_sprite, self
+			
+			self.effect = effect.copy(old, new)
+			if self.effect and old:
+				self.effect.removing_sprites.append(old)
 			
 			if not has_screen('sprites'):
 				show_screen('sprites')
@@ -84,10 +106,10 @@ init -9000 python:
 				p_alpha              = 1.0
 			
 			
-			self.real_rotate = self.rotate + p_rotate
-			self.real_alpha  = self.alpha * p_alpha
-			self.real_xzoom  = absolute(self.xzoom * p_xzoom)
-			self.real_yzoom  = absolute(self.yzoom * p_yzoom)
+			self.real_rotate = self.rotate + self.extra_rotate + p_rotate
+			self.real_alpha  = self.alpha * self.extra_alpha * p_alpha
+			self.real_xzoom  = absolute(self.xzoom * self.extra_xzoom * p_xzoom)
+			self.real_yzoom  = absolute(self.yzoom * self.extra_yzoom * p_yzoom)
 			
 			if self.xsize is None:
 				xsize = get_image_width(self.image) if self.image else 0
@@ -105,8 +127,14 @@ init -9000 python:
 			self.real_xanchor = get_absolute(self.xanchor, xsize) * self.real_xzoom
 			self.real_yanchor = get_absolute(self.yanchor, ysize) * self.real_yzoom
 			
-			x = get_absolute(self.xpos, p_xsize / p_xzoom) * p_xzoom - p_xanchor
-			y = get_absolute(self.ypos, p_ysize / p_yzoom) * p_yzoom - p_yanchor
+			xpos = get_absolute(self.xpos, p_xsize / p_xzoom) * p_xzoom
+			ypos = get_absolute(self.ypos, p_ysize / p_yzoom) * p_yzoom
+			
+			extra_xpos = get_absolute(self.extra_xpos, p_xsize / p_xzoom) * p_xzoom
+			extra_ypos = get_absolute(self.extra_ypos, p_ysize / p_yzoom) * p_yzoom
+			
+			x = xpos + extra_xpos - p_xanchor
+			y = ypos + extra_ypos - p_yanchor
 			sina = _sin(int(p_rotate))
 			cosa = _cos(int(p_rotate))
 			xrot = x * cosa - y * sina

@@ -13,6 +13,8 @@ init -9000 python:
 			
 			self.old_sprite = old_sprite
 			self.new_sprite = new_sprite
+			
+			self.removing_sprites = []
 		
 		def copy(self, old_sprite, new_sprite):
 			load_image(self.mask)
@@ -65,10 +67,10 @@ init -9000 python:
 			if dtime >= self.time:
 				(new_sprite or old_sprite).remove_effect()
 				if is_scene:
-					sprites.remove_hiding()
+					sprites.remove_effect_sprites(self)
 		
 		def remove(self):
-			sprites.remove_hiding()
+			sprites.remove_effect_sprites(self)
 			
 			if self.new_sprite:
 				for spr in self.new_sprite.get_all_sprites():

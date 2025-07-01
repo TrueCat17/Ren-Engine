@@ -445,7 +445,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		}
 
 		const int left = xOn * 4;
-		const int center = firstImg->pitch;
+		const int center = w * 4;
 		const int right = res->pitch - (left + center);
 
 		//image - center

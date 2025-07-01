@@ -4,20 +4,20 @@ init -1000 python:
 		for spr in sprites.list:
 			if spr.effect is not None:
 				return False
-		return sprites.screen.effect is None
+		return sprites.overlay.effect is None
 	can_exec_next_check_funcs.append(sprites__effects_ended)
 	
 	def sprites__effects_to_end():
-		sprites.remove_hiding()
 		for spr in sprites.list.copy():
 			spr.remove_effect()
-		sprites.screen.remove_effect()
+		sprites.overlay.remove_effect()
 	can_exec_next_skip_funcs.append(sprites__effects_to_end)
 	
-	def sprites__remove_hiding():
-		for spr in sprites.list.copy():
-			if spr.hiding:
+	def sprites__remove_effect_sprites(effect):
+		for spr in effect.removing_sprites:
+			if spr in sprites.list:
 				sprites.list.remove(spr)
+		effect.removing_sprites.clear()
 	
 	
 	def sprites__get_tag_of_image_name(image_name):
@@ -28,6 +28,9 @@ init -1000 python:
 	
 	
 	
+	def sprites__just_effect(effect):
+		sprites.overlay.set_effect(effect, hiding = False)
+	
 	def sprites__set_scene(params, show_at):
 		if len(params) == 0:
 			sprites.list = []
@@ -36,11 +39,12 @@ init -1000 python:
 		
 		old_sprites_hided = sprites.show(params, show_at, True)
 		
-		if sprites.screen.effect or (sprites.scene and sprites.scene.effect):
+		if sprites.overlay.effect or (sprites.scene and sprites.scene.effect):
 			if not old_sprites_hided:
+				effect = sprites.overlay.effect or sprites.scene.effect
 				for spr in sprites.list:
 					if spr is not sprites.scene:
-						spr.hiding = True
+						effect.removing_sprites.append(spr)
 		else:
 			sprites.list = [sprites.scene] if sprites.scene else []
 	
@@ -84,8 +88,7 @@ init -1000 python:
 			if is_scene:
 				if effect is not None:
 					for spr in sprites.list:
-						spr.hiding = True
-						spr.set_effect(effect)
+						spr.set_effect(effect, hiding = True)
 				else:
 					sprites.list = []
 				sprites.scene = None
@@ -134,7 +137,6 @@ init -1000 python:
 				if spr.tag == tag:
 					if effect:
 						old_sprite = spr
-						spr.hiding = True
 					else:
 						sprites.list.pop(index)
 						index -= 1
@@ -142,12 +144,7 @@ init -1000 python:
 			index += 1
 		
 		if at is None:
-			if old_sprite:
-				at = old_sprite.at
-				if not at.actions and not show_at:
-					at = center
-			else:
-				at = () if show_at else center
+			at = () if show_at or old_sprite else center
 		
 		if type(at) is SpriteAnimation:
 			at = at.actions
@@ -170,7 +167,7 @@ init -1000 python:
 			index = max(index, sprites.list.index(sprites.scene) + 1)
 		
 		sprites.list.insert(index, spr)
-		spr.set_effect(effect)
+		spr.set_effect(effect, hiding = False)
 		
 		persistent._seen_images[image_name] = True
 	
@@ -204,8 +201,7 @@ init -1000 python:
 		for i, spr in enumerate(sprites.list):
 			if spr.tag == tag:
 				if effect is not None:
-					spr.hiding = True
-					spr.set_effect(effect)
+					spr.set_effect(effect, hiding = True)
 				else:
 					sprites.list.pop(i)
 				break
@@ -215,22 +211,19 @@ init -1000 python:
 	
 	def sprites__get_draw_data():
 		res = []
-		for sprite in sprites.list + [sprites.screen]: # new list, because in update something can be removed from sprites.list
-			sprite.update()
-			
+		def add_sprite(res, sprite):
 			for spr in sprite.get_all_sprites():
-				tmp_image = spr.res_image or spr.image
-				if not tmp_image or spr.real_alpha <= 0: continue
-				
-				tmp = SimpleObject()
-				tmp.image  =  tmp_image
-				tmp.size   = (spr.real_xsize, spr.real_ysize)
-				tmp.anchor = (spr.real_xanchor, spr.real_yanchor)
-				tmp.pos    = (spr.real_xpos + spr.real_xanchor, spr.real_ypos + spr.real_yanchor) # real_pos already taked anchor, cancel it
-				tmp.crop   = (spr.xcrop, spr.ycrop, spr.xsizecrop, spr.ysizecrop)
-				tmp.alpha  =  spr.real_alpha
-				tmp.rotate =  spr.real_rotate
-				res.append(tmp)
+				if (spr.res_image or spr.image) and spr.real_alpha > 0:
+					res.append(spr)
+		
+		sprites.overlay.update()
+		for sprite in sprites.list.copy():
+			sprite.update()
+		
+		for sprite in sprites.list:
+			add_sprite(res, sprite)
+		add_sprite(res, sprites.overlay)
+		
 		return res
 	
 	
@@ -238,9 +231,13 @@ init -1000 python:
 	
 	sprites.list = []
 	
-	sprites.screen = Sprite('screen', 'screen', (), (), (), None)
-	sprites.screen.xsize,      sprites.screen.ysize      = 1.0, 1.0
-	sprites.screen.real_xsize, sprites.screen.real_ysize = 1.0, 1.0
+	sprites.xsize   = sprites.ysize   = 1.0
+	sprites.xanchor = sprites.yanchor = 0.0
+	sprites.xpos    = sprites.ypos    = 0.0
+	
+	sprites.overlay = Sprite('_overlay', '_overlay', (), (), (), None)
+	sprites.overlay.xsize,      sprites.overlay.ysize      = 1.0, 1.0
+	sprites.overlay.real_xsize, sprites.overlay.real_ysize = 1.0, 1.0
 	
 	sprites.scene = None
 
@@ -253,15 +250,15 @@ screen sprites:
 	xzoom get_stage_width()  / (config.width  or get_stage_width())
 	yzoom get_stage_height() / (config.height or get_stage_height())
 	
-	pos    (sprites.screen.xpos,       sprites.screen.ypos)
-	anchor (sprites.screen.xanchor,    sprites.screen.yanchor)
-	size   (sprites.screen.real_ysize, sprites.screen.real_xsize)
+	size   (sprites.xsize,   sprites.ysize)
+	pos    (sprites.xpos,    sprites.ypos)
+	anchor (sprites.xanchor, sprites.yanchor)
 	
-	for tmp in sprites.images:
-		image tmp.image:
-			pos    tmp.pos
-			anchor tmp.anchor
-			size   tmp.size
-			crop   tmp.crop
-			alpha  tmp.alpha
-			rotate tmp.rotate
+	for spr in sprites.images:
+		image (spr.res_image or spr.image):
+			size   (spr.real_xsize, spr.real_ysize)
+			anchor (spr.real_xanchor, spr.real_yanchor)
+			pos    (spr.real_xpos + spr.real_xanchor, spr.real_ypos + spr.real_yanchor) # real_pos already taked anchor, cancel it
+			crop   (spr.xcrop, spr.ycrop, spr.xsizecrop, spr.ysizecrop)
+			alpha   spr.real_alpha
+			rotate  spr.real_rotate

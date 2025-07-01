@@ -570,7 +570,7 @@ screen dialogue_box:
 	if not db.hide_interface:
 		$ db.recalc_props()
 		
-		if db.visible:
+		if db.visible and db.local_styles:
 			if db.mode == 'adv':
 				use dialogue_box_adv
 			elif db.mode == 'nvl':

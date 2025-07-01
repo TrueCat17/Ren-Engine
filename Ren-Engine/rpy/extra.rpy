@@ -214,6 +214,7 @@ init -1000000 python:
 			if not func():
 				func_that_stopped_scenario = func
 				return False
+		func_that_stopped_scenario = None
 		return True
 	
 	def skip_exec_current_command():

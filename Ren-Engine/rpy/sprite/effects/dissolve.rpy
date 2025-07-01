@@ -11,6 +11,8 @@ init -9000 python:
 			self.old_sprite = old_sprite
 			self.new_sprite = new_sprite
 			
+			self.removing_sprites = []
+			
 			if old_sprite:
 				old_sprite.update()
 			if new_sprite:
@@ -22,6 +24,10 @@ init -9000 python:
 			res = Dissolve(self.time, old_sprite, new_sprite)
 			return res
 		
+		
+		def get_sprite_params(self, sprite):
+			return [sprite['real_' + prop] for prop in ('xpos', 'ypos', 'xsize', 'ysize', 'alpha', 'rotate')]
+		
 		def set_common_sprite(self):
 			new_sprite, old_sprite = self.new_sprite, self.old_sprite
 			
@@ -30,46 +36,15 @@ init -9000 python:
 			if new_sprite is sprites.scene:
 				return
 			
-			def rotate_point(x, y, xcenter, ycenter, sina, cosa):
-				tx, ty = x - xcenter, y - ycenter
-				rx, ry = tx * cosa - ty * sina, tx * sina + ty * cosa
-				return round(rx + xcenter), round(ry + ycenter)
-			def rotate_rect(xmin, ymin, xmax, ymax, xcenter, ycenter, angle):
-				sina, cosa = _sin(angle), _cos(angle)
-				points = (
-					rotate_point(xmin, ymin, xcenter, ycenter, sina, cosa),
-					rotate_point(xmin, ymax, xcenter, ycenter, sina, cosa),
-					rotate_point(xmax, ymin, xcenter, ycenter, sina, cosa),
-					rotate_point(xmax, ymax, xcenter, ycenter, sina, cosa),
-				)
-				xmin = xmax = points[0][0]
-				ymin = ymax = points[0][1]
-				for point in points[1:]:
-					xmin = min(xmin, point[0])
-					ymin = min(ymin, point[1])
-					xmax = max(xmax, point[0])
-					ymax = max(ymax, point[1])
-				return xmin, ymin, xmax, ymax
-			
 			cache = {}
 			def get_rect(spr):
 				if spr in cache:
 					return cache[spr]
 				
-				xanchor, yanchor = spr.real_xanchor, spr.real_yanchor
-				x, y             = spr.real_xpos,    spr.real_ypos
-				xsize, ysize     = spr.real_xsize,   spr.real_ysize
+				x, y         = spr.real_xpos,  spr.real_ypos
+				xsize, ysize = spr.real_xsize, spr.real_ysize
 				
-				xmin, ymin = x, y
-				xmax, ymax = x + xsize, y + ysize
-				
-				rotate = int(spr.real_rotate) % 360
-				if rotate:
-					res = rotate_rect(xmin, ymin, xmax, ymax, x + xanchor, y + yanchor, rotate)
-				else:
-					res = xmin, ymin, xmax, ymax
-				
-				cache[spr] = res
+				res = cache[spr] = (x, y, x + xsize, y + ysize)
 				return res
 			
 			def intersection_rects(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2):
@@ -84,11 +59,17 @@ init -9000 python:
 				if not new_spr.image:
 					continue
 				
+				if round(new_spr.real_rotate % 360) != 0:
+					return
+				
 				xmin1, ymin1, xmax1, ymax1 = get_rect(new_spr)
 				
 				for old_spr in old_sprites:
 					if not old_spr.image:
 						continue
+					
+					if round(old_spr.real_rotate % 360) != 0:
+						return
 					
 					xmin2, ymin2, xmax2, ymax2 = get_rect(old_spr)
 					
@@ -118,8 +99,8 @@ init -9000 python:
 			new_args = [(width, height)]
 			old_args = [(width, height)]
 			
-			for args, new_or_old_sprites in ((new_args, new_sprites), (old_args, old_sprites)):
-				for spr in new_or_old_sprites:
+			for args, sprite_list in ((new_args, new_sprites), (old_args, old_sprites)):
+				for spr in sprite_list:
 					image = spr.image
 					if not image or spr.real_alpha <= 0:
 						continue
@@ -137,32 +118,25 @@ init -9000 python:
 					if (res_xsize, res_ysize) != (image_xsize, image_ysize):
 						image = im.renderer_scale(image, res_xsize, res_ysize)
 					
-					if spr.real_alpha < 1:
-						image = im.alpha(image, spr.real_alpha)
-					
-					rotate = int(spr.real_rotate) % 360
-					if rotate:
-						image = im.rotozoom(image, -rotate, 1)
-					
 					_xmin, _ymin, _xmax, _ymax = get_rect(spr)
 					args.append((_xmin - xmin, _ymin - ymin))
 					args.append(image)
 			
+			common_sprite = self.common_sprite = Sprite(None, '<common for %s and %s>' % (new_sprite, old_sprite), (), (), (), new_sprite)
+			self.removing_sprites.append(common_sprite)
+			
 			new_image = im.composite(*new_args)
 			old_image = im.composite(*old_args)
 			
-			common_sprite = Sprite(None, '<common for %s and %s>' % (new_sprite, old_sprite), (), (), ())
-			common_sprite.hiding = True
-			common_sprite.image = im.mask(new_image, old_image, 1, 'a', '>=', 'a', 1)
+			common_sprite.image = im.mask(old_image, new_image, 1, 'a', '>=', 'a', 1)
 			load_image(common_sprite.image)
+			common_sprite.contains = []
 			
 			index = sprites.list.index(old_sprite)
 			sprites.list.insert(index, common_sprite)
 			
-			common_sprite.xanchor, common_sprite.yanchor = new_sprite.xanchor, new_sprite.yanchor
-			common_sprite.xpos,    common_sprite.ypos    = xmin + get_absolute(new_sprite.xanchor, width), ymin + get_absolute(new_sprite.yanchor, height)
-			common_sprite.xsize,   common_sprite.ysize   = width, height
-			common_sprite.calculate_props()
+			self.start_new_params = self.get_sprite_params(new_sprite)
+			self.start_old_params = self.get_sprite_params(old_sprite)
 		
 		
 		def update(self):
@@ -173,22 +147,30 @@ init -9000 python:
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			new_sprite, old_sprite = self.new_sprite, self.old_sprite
+			if self.common_sprite:
+				new_params = self.get_sprite_params(new_sprite)
+				old_params = self.get_sprite_params(old_sprite)
+				if new_params != self.start_new_params or old_params != self.start_old_params:
+					old_sprite.extra_alpha = 0
+					old_sprite = self.old_sprite = None
+					self.common_sprite = None
 			
 			alpha = in_bounds(dtime / self.time, 0, 1)
 			anti_alpha = 1 - alpha
 			
 			if new_sprite:
-				new_sprite.alpha = alpha
+				new_sprite.extra_alpha = alpha
 			if old_sprite:
-				old_sprite.alpha = anti_alpha
+				old_sprite.extra_alpha = anti_alpha
 			
 			if alpha == 1:
 				(new_sprite or old_sprite).remove_effect()
 		
 		def remove(self):
-			sprites.remove_hiding()
+			sprites.remove_effect_sprites(self)
+			
 			if self.new_sprite:
-				self.new_sprite.alpha = 1.0
+				self.new_sprite.extra_alpha = 1
 	
 	
 	dspr = Dissolve(0.2)

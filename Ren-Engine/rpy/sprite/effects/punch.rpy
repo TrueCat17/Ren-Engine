@@ -10,12 +10,13 @@ init -9000 python:
 			self.time_all = time_all
 			
 			self.start_time = None
+			
+			self.removing_sprites = []
 		
 		def copy(self, old_sprite, new_sprite):
-			sprites.remove_hiding()
-			sprites.screen.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
-			if new_sprite is sprites.screen:
-				return sprites.screen.effect
+			sprites.overlay.effect = Punch(self.prop, self.dist, self.time_one, self.time_all)
+			if new_sprite is sprites.overlay:
+				return sprites.overlay.effect
 			return None 
 		
 		
@@ -25,19 +26,20 @@ init -9000 python:
 			else:
 				dtime = 0
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
+				sprites.remove_effect_sprites(self)
 			
 			if dtime >= self.time_all:
-				sprites.screen.remove_effect()
+				sprites.overlay.remove_effect()
 			else:
 				t = (dtime % self.time_one) / self.time_one # 0.0 -> 1.0
 				
 				t = 1 if t > 0.5 else -1
 				m = 1 if int(dtime / self.time_one) % 2 else -1
 				
-				sprites.screen[self.prop] = round(t * m * self.dist)
+				sprites[self.prop] = round(t * m * self.dist)
 		
 		def remove(self):
-			sprites.screen[self.prop] = 0
+			sprites[self.prop] = 0
 	
 	
 	hpunch = Punch('xpos', 15, 0.07, 0.275)

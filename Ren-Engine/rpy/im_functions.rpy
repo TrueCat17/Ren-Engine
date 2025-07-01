@@ -212,7 +212,7 @@ init -1001 python:
 		if w <= 0 or h <= 0:
 			out_msg('im.factor_scale', 'Sizes are invalid: (%s, %s)', w, h)
 			return image
-		return 'FactorScale|(%s)|%s|%s' % (image, w, h)
+		return 'FactorScale|(%s)|%f|%f' % (image, w, h)
 	
 	def im__renderer_scale(image, w, h):
 		if w < 1 or h < 1:
@@ -278,7 +278,7 @@ init -1001 python:
 		if zoom == 0:
 			out_msg('im.rotozoom', 'Zoom must not be 0')
 			zoom = 1
-		return 'Rotozoom|(%s)|%s|%s' % (image, int(angle) % 360, zoom)
+		return 'Rotozoom|(%s)|%s|%f' % (image, int(angle) % 360, zoom)
 	
 	
 	def im__mask(image, mask, value, channel = 'r', cmp_func_name = '<=', alpha_channel = 'a', alpha_image = 1):

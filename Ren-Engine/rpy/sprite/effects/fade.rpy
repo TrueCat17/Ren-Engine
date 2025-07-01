@@ -19,30 +19,32 @@ init -9000 python:
 			self.new_sprite = new_sprite
 			if new_sprite:
 				new_sprite.alpha = 0
+			
+			self.removing_sprites = []
 		
 		def copy(self, old_sprite, new_sprite):
-			screen = sprites.screen
-			if type(screen.effect) is not Fade:
-				screen.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, screen)
-				screen.image = im.rect(self.color)
-				screen.alpha = 0
-			if old_sprite is screen:
-				return screen.effect
+			overlay = sprites.overlay
+			if type(overlay.effect) is not Fade:
+				overlay.effect = Fade(self.out_time, self.hold_time, self.in_time, self.color, None, overlay)
+				overlay.image = im.rect(self.color)
+				overlay.alpha = 0
+			if old_sprite is overlay:
+				return overlay.effect
 			
 			res = Fade(self.out_time, self.hold_time, self.in_time, self.color, old_sprite, new_sprite)
 			return res
 		
 		def update(self):
-			screen = sprites.screen
+			overlay = sprites.overlay
+			sprite = self.new_sprite or self.old_sprite
 			
-			if self.old_sprite is not screen:
-				if self.new_sprite:
-					effect = screen.effect
-					if effect:
-						if effect.after_middle:
-							self.new_sprite.alpha = 1
-					else:
-						self.new_sprite.remove_effect()
+			if sprite is not overlay:
+				effect = overlay.effect
+				if effect:
+					if effect.after_middle:
+						sprite.remove_effect()
+				else:
+					sprite.remove_effect()
 				return
 			
 			if self.start_time is not None:
@@ -52,23 +54,24 @@ init -9000 python:
 				signals.add('enter_frame', SetDictFuncRes(self, 'start_time', get_game_time), times = 1)
 			
 			if dtime < self.out_time + self.hold_time:
-				screen.alpha = in_bounds(dtime / self.out_time, 0, 1)
+				overlay.alpha = in_bounds(dtime / self.out_time, 0, 1)
 			else:
 				if not self.after_middle:
 					self.after_middle = True
-					sprites.remove_hiding()
+					sprites.remove_effect_sprites(self)
 				
-				screen.alpha = 1 - in_bounds((dtime - self.out_time - self.hold_time) / self.in_time, 0, 1)
-				if screen.alpha == 0:
-					screen.remove_effect()
+				overlay.alpha = 1 - in_bounds((dtime - self.out_time - self.hold_time) / self.in_time, 0, 1)
+				if overlay.alpha == 0:
+					overlay.remove_effect()
 		
 		def remove(self):
-			screen = sprites.screen
-			if screen.effect:
-				screen.effect = None
-				screen.image = ''
-				screen.alpha = 1
+			overlay = sprites.overlay
+			if self.new_sprite is overlay:
+				overlay.effect = None
+				overlay.image = ''
+				overlay.alpha = 1
 			
+			sprites.remove_effect_sprites(self)
 			if self.new_sprite:
 				self.new_sprite.alpha = 1
 	

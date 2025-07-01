@@ -70,6 +70,18 @@ init -9000 python:
 			self.start_changing_time = None
 			self.end_changing_time = None
 		
+		def copy(self, sprite):
+			res = SpriteAnimation.__new__(SpriteAnimation)
+			SimpleObject.__init__(res, obj = self)
+			res.sprite = sprite
+			
+			if res.block:
+				res.block = res.block.copy(sprite)
+			res.parallels = [parallel.copy(sprite) for parallel in res.parallels]
+			
+			return res
+		
+		
 		def out_msg(self, func, msg, *args):
 			out_msg(func, 'Place of transform command: %s:%s\n\n%s', self.action_filename, self.action_numline, msg % tuple(args))
 		

@@ -795,7 +795,7 @@ void Scenario::execute(const std::string &loadPath) {
 
 		if (child->command == "with") {
 			const std::string &effectName = child->params;
-			const std::string code = "sprites.screen.set_effect(" + effectName + ")";
+			const std::string code = "sprites.just_effect(" + effectName + ")";
 			PyUtils::exec(child->getFileName(), child->getNumLine(), code);
 			continue;
 		}
