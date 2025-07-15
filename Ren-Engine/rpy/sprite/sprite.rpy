@@ -63,8 +63,11 @@ init -9000 python:
 				old, new = self.old_sprite, self
 			
 			self.effect = effect.copy(old, new)
-			if self.effect and old:
-				self.effect.removing_sprites.append(old)
+			if old:
+				if self.effect:
+					self.effect.removing_sprites.append(old)
+				else:
+					sprites.list.remove(old)
 			
 			if not has_screen('sprites'):
 				show_screen('sprites')
