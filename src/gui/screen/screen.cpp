@@ -489,4 +489,15 @@ void Screen::calcProps() {
 	if (!PyEval_EvalCode(co, PyUtils::global, nullptr)) {
 		PyUtils::errorProcessing(screenCode);
 	}
+
+	calcedScreen = nullptr;
+}
+
+void Screen::allowArrowsForCalcedScreen(const std::string &fileName, uint32_t numLine) {
+	if (calcedScreen) {
+		calcedScreen->allowArrows = true;
+	}else {
+		Utils::outError("Screen::allowArrowsForCalcedScreen",
+		                "Calling allow_arrows() outside screen\n%:%", fileName, numLine);
+	}
 }

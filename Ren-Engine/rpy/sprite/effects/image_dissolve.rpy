@@ -54,7 +54,7 @@ init -9000 python:
 				spr.res_image = im.mask(image, mask, value, 'r', cmp_func, 'a', 1)
 			
 			old_sprite, new_sprite = self.old_sprite, self.new_sprite
-			is_scene = new_sprite is sprites.scene
+			is_scene = new_sprite and new_sprite is sprites.scene
 			
 			if old_sprite and not is_scene:
 				for spr in old_sprite.get_all_sprites():

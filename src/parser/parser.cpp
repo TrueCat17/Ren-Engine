@@ -317,7 +317,7 @@ static void initScreenNode(Node *node) {
 					Node *orig = it->second;
 					Utils::outError("Parser::initScreenNode",
 					                "Redefinition %:\n"
-					                "%\n",
+					                "%\n"
 					                "Previous definition:\n"
 					                "%",
 					                child->command, child->getPlace(), orig->getPlace());

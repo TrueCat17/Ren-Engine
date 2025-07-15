@@ -29,6 +29,7 @@
 #include "parser/screen_update_funcs.h"
 
 #include "utils/algo.h"
+#include "utils/btn_rect.h"
 #include "utils/file_system.h"
 #include "utils/math.h"
 #include "utils/mouse.h"
@@ -209,6 +210,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 	double waitingStartTime = Utils::getTimer();
 
 	GV::inGame = false;
+	BtnRect::disableSelectMode(true);
 
 	std::lock_guard g(modMutex);
 

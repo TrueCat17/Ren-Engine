@@ -43,6 +43,10 @@ init -1000001 python:
 		filename, numline = get_file_and_line(depth + 1)
 		return _hide_screen(name, filename, numline)
 	
+	def allow_arrows():
+		filename, numline = get_file_and_line(1)
+		return _allow_arrows(filename, numline)
+	
 	def make_screenshot(width = None, height = None):
 		global need_screenshot, screenshot_width, screenshot_height
 		need_screenshot = True

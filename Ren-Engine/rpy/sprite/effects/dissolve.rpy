@@ -26,7 +26,12 @@ init -9000 python:
 		
 		
 		def get_sprite_params(self, sprite):
-			return [sprite['real_' + prop] for prop in ('xpos', 'ypos', 'xsize', 'ysize', 'alpha', 'rotate')]
+			return [
+				sprite[prop] for prop in (
+					'xpos', 'ypos', 'xanchor', 'yanchor', 'xsize', 'ysize', 'xzoom', 'yzoom',
+					'xcrop', 'ycrop', 'xsizecrop', 'ysizecrop', 'alpha', 'rotate',
+				)
+			]
 		
 		def set_common_sprite(self):
 			new_sprite, old_sprite = self.new_sprite, self.old_sprite
@@ -59,17 +64,11 @@ init -9000 python:
 				if not new_spr.image:
 					continue
 				
-				if round(new_spr.real_rotate % 360) != 0:
-					return
-				
 				xmin1, ymin1, xmax1, ymax1 = get_rect(new_spr)
 				
 				for old_spr in old_sprites:
 					if not old_spr.image:
 						continue
-					
-					if round(old_spr.real_rotate % 360) != 0:
-						return
 					
 					xmin2, ymin2, xmax2, ymax2 = get_rect(old_spr)
 					
@@ -82,11 +81,10 @@ init -9000 python:
 			if not make_common:
 				return
 			
-			all_sprites = [spr for spr in new_sprites + old_sprites if spr.image]
-			all_rects = [get_rect(spr) for spr in all_sprites]
+			new_rects = [get_rect(spr) for spr in new_sprites if spr.image]
 			
-			xmin, ymin, xmax, ymax = all_rects[0]
-			for rect in all_rects[1:]:
+			xmin, ymin, xmax, ymax = new_rects[0]
+			for rect in new_rects[1:]:
 				xmin = min(xmin, rect[0])
 				ymin = min(ymin, rect[1])
 				xmax = max(xmax, rect[2])
@@ -115,20 +113,24 @@ init -9000 python:
 						image = im.crop(image, crop)
 						image_xsize, image_ysize = crop[2] - crop[0], crop[3] - crop[1]
 					
-					if (res_xsize, res_ysize) != (image_xsize, image_ysize):
+					if int(res_xsize) != image_xsize or int(res_ysize) != image_ysize:
 						image = im.renderer_scale(image, res_xsize, res_ysize)
 					
 					_xmin, _ymin, _xmax, _ymax = get_rect(spr)
 					args.append((_xmin - xmin, _ymin - ymin))
 					args.append(image)
 			
-			common_sprite = self.common_sprite = Sprite(None, '<common for %s and %s>' % (new_sprite, old_sprite), (), (), (), new_sprite)
+			name = '<common for %s and %s>' % (new_sprite, old_sprite)
+			common_sprite = self.common_sprite = Sprite(None, name, (), (), (), new_sprite)
+			common_sprite.extra_xpos = xmin - new_sprite.real_xpos
+			common_sprite.extra_ypos = ymin - new_sprite.real_ypos
 			self.removing_sprites.append(common_sprite)
 			
 			new_image = im.composite(*new_args)
 			old_image = im.composite(*old_args)
 			
-			common_sprite.image = im.mask(old_image, new_image, 1, 'a', '>=', 'a', 1)
+			min_alpha = 10 # ignore opaque, but almost transparent areas
+			common_sprite.image = im.mask(old_image, new_image, min_alpha, 'a', '>=', 'a', 1)
 			load_image(common_sprite.image)
 			common_sprite.contains = []
 			

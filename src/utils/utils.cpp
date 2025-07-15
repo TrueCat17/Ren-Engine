@@ -6,7 +6,6 @@
 #include <thread>
 #include <mutex>
 #include <set>
-#include <list>
 #include <pthread.h>
 
 extern "C" {
@@ -120,7 +119,7 @@ struct Message {
 	bool operator==(const Message& msg) const { return id == msg.id; }
 };
 
-static std::list<Message> messagesToOut;
+static std::vector<Message> messagesToOut;
 static bool msgCloseAll = false;
 static std::mutex msgGuard;
 
@@ -131,7 +130,7 @@ bool Utils::realOutMsg() {
 	{
 		std::lock_guard g(msgGuard);
 		msg = messagesToOut.front();
-		messagesToOut.pop_front();
+		messagesToOut.erase(messagesToOut.begin());
 	}
 
 	static const SDL_MessageBoxButtonData buttons[] = {

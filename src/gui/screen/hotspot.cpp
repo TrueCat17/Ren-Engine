@@ -35,7 +35,7 @@ void Hotspot::checkEvents() {
 	setHeight(hcrop * float(hcrop_is_float ? Stage::height : 1) * scaleY);
 
 	btnRect.checkEvents();
-	surface = (btnRect.mouseOvered || selected) ? imageMap->hover : nullptr;
+	surface = (btnRect.isHovered() || selected) ? imageMap->hover : nullptr;
 }
 
 

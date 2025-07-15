@@ -115,6 +115,17 @@ void Key::checkEvents() {
 		const int start = String::startsWith(first_param, "K_") ? 2 : 0;
 		key = SDL_GetKeyFromName(first_param.c_str() + start);
 
+		if ((key == SDLK_RIGHT || key == SDLK_LEFT || key == SDLK_UP || key == SDLK_DOWN) && !screen->allowArrows) {
+			static bool outedAllowArrowsError = false;
+			if (!outedAllowArrowsError) {
+				outedAllowArrowsError = true;
+				Utils::outError("Key::checkEvents",
+				                "Don't use keys <LEFT>, <RIGHT>, <UP> and <DOWN> without calling <allow_arrows()>\n%",
+				                node->getPlace());
+			}
+			key = SDLK_QUESTION;
+		}
+
 		lastDown = 0;
 		prevIsDown = false;
 		inFirstDown = false;
@@ -132,7 +143,7 @@ void Key::checkEvents() {
 			const double dTime = GV::frameStartTime - lastDown;
 			const double needDelay = !wasFirstDelay ? first_delay : delay;
 
-			if (dTime >= needDelay || Math::doublesAreEq(lastDown, 0.0)) {
+			if (dTime >= needDelay || Math::doublesAreEq(lastDown, 0)) {
 				if (!inFirstDown) {
 					wasFirstDelay = true;
 				}

@@ -243,6 +243,7 @@ screen input:
 		key 'HOME'      action input.cursor_home
 		key 'END'       action input.cursor_end
 		
+		$ allow_arrows()
 		key 'LEFT'      action input.cursor_left
 		key 'RIGHT'     action input.cursor_right
 		key 'UP'        action input.cursor_home

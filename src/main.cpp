@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
-#include <list>
 
 #include <SDL2/SDL.h>
 #undef main //for cancel declare spec. start-func on Windows
@@ -195,13 +194,16 @@ static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
 	return key;
 }
 
-static std::list<SDL_Event> events;
+static std::vector<SDL_Event> events;
 static std::mutex eventMutex;
 
 static void loop() {
 	Utils::setThreadName("loop");
 
-	bool mouseOut = false;
+	bool leftShift = false;
+	bool rightShift = false;
+
+	bool &mouseOut = Mouse::out;
 	bool mouseOutPrevDown = false;
 	int startWindowWidth = 0;
 	int startWindowHeight = 0;
@@ -211,6 +213,8 @@ static void loop() {
 	double resizedTime = -1;
 	double restoredTime = -1;
 	double maxTimeForUnmaximized = 0.1;
+
+	std::vector<SDL_Event> tmpEvents;
 
 	while (true) {
 		while ((!GV::inGame || Scenario::initing) && !GV::exit) {
@@ -233,110 +237,150 @@ static void loop() {
 		bool mouseWasDown = false;
 		bool mouseWasUp = false;
 
+		tmpEvents.clear();
+		{
+			auto g = std::lock_guard(eventMutex);
+			events.swap(tmpEvents);
+		}
+
+		for (const SDL_Event &event : tmpEvents) {
+			const int MOUSE_EVENTS = SDL_MOUSEMOTION | SDL_MOUSEBUTTONDOWN | SDL_MOUSEBUTTONUP | SDL_MOUSEWHEEL;
+			if ((event.type & MOUSE_EVENTS) != event.type) continue;
+
+			Mouse::setLastAction();
+			if (event.type == SDL_MOUSEBUTTONDOWN) {
+				BtnRect::disableSelectMode();
+			}
+		}
+
 		Mouse::update();
 		BtnRect::checkMouseCursor();
 
-		{
-			auto g = std::lock_guard(eventMutex);
+		for (const SDL_Event &event : tmpEvents) {
+			if (GV::exit) return;
 
-			while (!events.empty()) {
-				if (GV::exit) return;
+			if (event.type == SDL_WINDOWEVENT) {
+				int type = event.window.event;
 
-				SDL_Event event = events.front();
-				events.pop_front();
+				if (type == SDL_WINDOWEVENT_EXPOSED || type == SDL_WINDOWEVENT_FOCUS_GAINED) {
+					Renderer::needToRedraw = true;
+					Stage::minimized = false;
+				}else
+				if (type == SDL_WINDOWEVENT_ENTER) {
+					mouseOut = false;
+				}else
+				if (type == SDL_WINDOWEVENT_LEAVE) {
+					mouseOut = true;
+				}else
 
-				if ((event.type & (SDL_MOUSEMOTION | SDL_MOUSEBUTTONDOWN | SDL_MOUSEBUTTONUP | SDL_MOUSEWHEEL)) == event.type) {
-					Mouse::setLastAction();
-				}
-
-				if (event.type == SDL_WINDOWEVENT) {
-					int type = event.window.event;
-
-					if (type == SDL_WINDOWEVENT_EXPOSED || type == SDL_WINDOWEVENT_FOCUS_GAINED) {
-						Renderer::needToRedraw = true;
-						Stage::minimized = false;
-					}else
-					if (type == SDL_WINDOWEVENT_ENTER) {
-						mouseOut = false;
-					}else
-					if (type == SDL_WINDOWEVENT_LEAVE) {
-						mouseOut = true;
-					}else
-
-					if (type == SDL_WINDOWEVENT_MOVED) {
-						int x, y;
-						SDL_GetWindowPosition(Stage::window, &x, &y);
-						if (x || y) {//if x and y are 0 - then probably it error, ignore
-							int leftBorderSize = 0;
-							int captionHeight = 0;
+				if (type == SDL_WINDOWEVENT_MOVED) {
+					int x, y;
+					SDL_GetWindowPosition(Stage::window, &x, &y);
+					if (x || y) {//if x and y are 0 - then probably it error, ignore
+						int leftBorderSize = 0;
+						int captionHeight = 0;
 #ifdef __LINUX__
-							//fix for SDL_GetWindowPosition on linux (x11? wm?)
-							SDL_GetWindowBordersSize(Stage::window, &captionHeight, &leftBorderSize, nullptr, nullptr);
+						//fix for SDL_GetWindowPosition on linux (x11? wm?)
+						SDL_GetWindowBordersSize(Stage::window, &captionHeight, &leftBorderSize, nullptr, nullptr);
 #endif
-							x = std::max(x - leftBorderSize, 1);
-							y = std::max(y - captionHeight, 1);
+						x = std::max(x - leftBorderSize, 1);
+						y = std::max(y - captionHeight, 1);
 
-							Config::set("window_x", std::to_string(x));
-							Config::set("window_y", std::to_string(y));
-						}
-					}else
-
-					if (type == SDL_WINDOWEVENT_MINIMIZED) {
-						Stage::minimized = true;
-					}else
-					if (type == SDL_WINDOWEVENT_MAXIMIZED || type == SDL_WINDOWEVENT_RESTORED) {
-						Renderer::needToRedraw = true;
-						Stage::minimized = false;
-						if (type == SDL_WINDOWEVENT_MAXIMIZED) {
-							Stage::needResize = true;
-							Stage::maximized = true;
-							resizeWithoutMouseDown = true;
-						}else {
-							restoredTime = Utils::getTimer();
-						}
-					}else
-
-					if (type == SDL_WINDOWEVENT_RESIZED || type == SDL_WINDOWEVENT_SIZE_CHANGED) {
-						resizedTime = Utils::getTimer();
-						if (!Stage::fullscreen && !startWindowWidth && !startWindowHeight) {
-							resizeWithoutMouseDown = true;
-						}
+						Config::set("window_x", std::to_string(x));
+						Config::set("window_y", std::to_string(y));
 					}
 				}else
 
-				if (event.type == SDL_MOUSEBUTTONDOWN) {
-					bool left = event.button.button == SDL_BUTTON_LEFT;
-					bool right = event.button.button == SDL_BUTTON_RIGHT;
-					if (left || right) {
-						if (left) {
-							mouseWasDown = true;
-						}
-						BtnRect::checkMouseClick(left, false);
-					}
+				if (type == SDL_WINDOWEVENT_MINIMIZED) {
+					Stage::minimized = true;
 				}else
-				if (event.type == SDL_MOUSEBUTTONUP) {
-					mouseWasUp = true;
-					Mouse::setMouseDown(false);
-				}else
-
-				if (event.type == SDL_KEYDOWN) {
-					SDL_Keycode key = getKeyCode(event.key.keysym);
-					if (!Key::getPressed(key)) {
-						if (key == SDLK_RETURN || key == SDLK_SPACE) {
-							if (BtnRect::checkMouseClick(true, true)) {
-								Key::setToNotReact(key);
-							}else {
-								Key::setFirstDownState(key);
-							}
-						}else {
-							Key::setFirstDownState(key);
-						}
+				if (type == SDL_WINDOWEVENT_MAXIMIZED || type == SDL_WINDOWEVENT_RESTORED) {
+					Renderer::needToRedraw = true;
+					Stage::minimized = false;
+					if (type == SDL_WINDOWEVENT_MAXIMIZED) {
+						Stage::needResize = true;
+						Stage::maximized = true;
+						resizeWithoutMouseDown = true;
+					}else {
+						restoredTime = Utils::getTimer();
 					}
 				}else
 
-				if (event.type == SDL_KEYUP) {
-					SDL_Keycode key = getKeyCode(event.key.keysym);
-					Key::setUpState(key);
+				if (type == SDL_WINDOWEVENT_RESIZED || type == SDL_WINDOWEVENT_SIZE_CHANGED) {
+					resizedTime = Utils::getTimer();
+					if (!Stage::fullscreen && !startWindowWidth && !startWindowHeight) {
+						resizeWithoutMouseDown = true;
+					}
+				}
+			}else
+
+			if (event.type == SDL_MOUSEBUTTONDOWN) {
+				bool left = event.button.button == SDL_BUTTON_LEFT;
+				bool right = event.button.button == SDL_BUTTON_RIGHT;
+				if (left || right) {
+					if (left) {
+						mouseWasDown = true;
+					}
+					BtnRect::checkMouseClick(left, false);
+				}
+			}else
+			if (event.type == SDL_MOUSEBUTTONUP) {
+				mouseWasUp = true;
+				Mouse::setMouseDown(false);
+			}else
+
+			if (event.type == SDL_KEYDOWN) {
+				SDL_Keycode key = getKeyCode(event.key.keysym);
+				if (Key::getPressed(key)) continue;
+
+				if (key == SDLK_RETURN || key == SDLK_SPACE) {
+					if (BtnRect::checkMouseClick(true, true)) {
+						Key::setToNotReact(key);
+					}else {
+						Key::setFirstDownState(key);
+					}
+				}else {
+					bool isModKey = false;
+					if (key == SDLK_LCTRL || key == SDLK_RCTRL || key == SDLK_LALT || key == SDLK_RALT) {
+						isModKey = true;
+					}else
+					if (key == SDLK_LSHIFT) {
+						isModKey = true;
+						leftShift = true;
+					}else
+					if (key == SDLK_RSHIFT) {
+						isModKey = true;
+						rightShift = true;
+					}
+
+					bool isFKey = key >= SDLK_F1 && key <= SDLK_F12;
+
+					bool selectMode;
+					if (isModKey || isFKey) {
+						selectMode = false;
+					}else {
+						selectMode = BtnRect::getSelectMode();
+						BtnRect::processKey(key, leftShift || rightShift);
+						if (BtnRect::getSelectMode()) {
+							selectMode = true;
+						}
+					}
+
+					if (!selectMode) {
+						Key::setFirstDownState(key);
+					}
+				}
+			}else
+
+			if (event.type == SDL_KEYUP) {
+				SDL_Keycode key = getKeyCode(event.key.keysym);
+				Key::setUpState(key);
+
+				if (key == SDLK_LSHIFT) {
+					leftShift = false;
+				}else
+				if (key == SDLK_RSHIFT) {
+					rightShift = false;
 				}
 			}
 		}
@@ -369,12 +413,15 @@ static void loop() {
 
 		GUI::update();
 
+		BtnRect::checkSelectedBtn();
+
 		if (!Stage::minimized) {
 			while (Renderer::needToRender) {
 				Utils::sleep(0.001, false);
 			}
 
 			std::lock_guard g(Renderer::renderDataMutex);
+			Renderer::updateSelectedRect();
 			Renderer::renderData.clear();
 			if (Stage::screens) {
 				Stage::screens->draw();

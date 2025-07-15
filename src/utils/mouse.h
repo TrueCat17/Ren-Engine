@@ -3,6 +3,8 @@
 
 class Mouse {
 public:
+	static bool out;
+
 	static void init();
 	static void update();
 
@@ -19,6 +21,7 @@ public:
 	static bool getMouseDown();
 	static void setMouseDown(bool value);
 
+	static bool haveActionInLastFrame();
 	static void setLastAction();
 	static void checkCursorVisible();
 

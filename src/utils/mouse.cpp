@@ -1,13 +1,15 @@
 #include "mouse.h"
 
-#include <SDL2/SDL.h>
 #include <SDL2/SDL_mouse.h>
 
 #include "config.h"
 #include "utils/image_caches.h"
 #include "utils/image_typedefs.h"
+#include "utils/math.h"
 #include "utils/string.h"
-#include "utils/utils.h"
+
+
+bool Mouse::out = false;
 
 
 static SDL_Cursor *usualModeCursor = nullptr;
@@ -59,7 +61,11 @@ static int x = 0;
 static int y = 0;
 
 void Mouse::update() {
-	SDL_GetMouseState(&x, &y);
+	if (out) {
+		x = y = -1000000;
+	}else {
+		SDL_GetMouseState(&x, &y);
+	}
 }
 
 int Mouse::getX() {
@@ -101,16 +107,19 @@ void Mouse::setCanHide(bool value) {
 }
 
 
-static double lastAction = Utils::getTimer();
+static double lastAction = 0;
+bool Mouse::haveActionInLastFrame() {
+	return Math::doublesAreEq(lastAction, GV::frameStartTime);
+}
 void Mouse::setLastAction() {
-	lastAction = Utils::getTimer();
+	lastAction = GV::frameStartTime;
 }
 void Mouse::checkCursorVisible() {
 	bool show = true;
 	if (canHided) {
 		const double timeToHide = String::toDouble(Config::get("mouse_hide_time"));
 		if (timeToHide > 0) {
-			show = Utils::getTimer() - lastAction < timeToHide;
+			show = GV::frameStartTime - lastAction < timeToHide;
 		}
 	}
 	SDL_ShowCursor(show);

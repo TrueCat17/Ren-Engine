@@ -358,6 +358,7 @@ screen console:
 	key 'HOME'      action console.cursor_home
 	key 'END'       action console.cursor_end
 	
+	$ allow_arrows()
 	key 'LEFT'      action console.cursor_left
 	key 'RIGHT'     action console.cursor_right
 	key 'UP'        action console.cursor_up

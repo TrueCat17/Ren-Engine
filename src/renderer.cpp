@@ -1,8 +1,8 @@
 #include "renderer.h"
 
-#include <thread>
-#include <map>
 #include <cmath>
+#include <map>
+#include <thread>
 
 #define USE_OPENGL32
 #include <SDL2/SDL_opengl.h>
@@ -12,6 +12,7 @@
 #include "config.h"
 #include "media/image_manipulator.h"
 
+#include "utils/btn_rect.h"
 #include "utils/math.h"
 #include "utils/image_caches.h"
 #include "utils/scope_exit.h"
@@ -19,29 +20,31 @@
 #include "utils/utils.h"
 
 
+//not static, also used in "gui/text_field.cpp"
 bool operator==(const SDL_Rect &a, const SDL_Rect &b) {
 	return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
 }
+static
 bool operator!=(const SDL_Rect &a, const SDL_Rect &b) {
 	return !(a == b);
 }
 
-bool operator==(const SDL_FRect &a, const SDL_FRect &b) {
-	return Math::floatsAreEq(a.x, b.x) && Math::floatsAreEq(a.y, b.y) &&
-	       Math::floatsAreEq(a.w, b.w) && Math::floatsAreEq(a.h, b.h);
-}
-bool operator!=(const SDL_FRect &a, const SDL_FRect &b) {
-	return !(a == b);
-}
 
+static
 bool operator==(const SDL_Point &a, const SDL_Point &b) {
 	return a.x == b.x && a.y == b.y;
 }
+static
+bool operator!=(const SDL_Point &a, const SDL_Point &b) {
+	return !(a == b);
+}
 
-bool RenderStruct::operator==(const RenderStruct &o) const {
-	auto a = std::tie(  surface,   angle,   alpha,   clip,   clipRect,   srcRect,   dstRect,   center);
-	auto b = std::tie(o.surface, o.angle, o.alpha, o.clip, o.clipRect, o.srcRect, o.dstRect, o.center);
-	return a == b;
+[[maybe_unused]]//USED in std::vector<RenderStruct>::operator==, need to remove clang warning
+static
+bool operator==(const RenderStruct &a, const RenderStruct &b) {
+	auto at = std::tie(a.surface, a.angle, a.alpha, a.clip, a.clipRect, a.srcRect, a.dstRect, a.center);
+	auto bt = std::tie(b.surface, b.angle, b.alpha, b.clip, b.clipRect, b.srcRect, b.dstRect, b.center);
+	return at == bt;
 }
 
 
@@ -483,6 +486,13 @@ static void scale() {
 
 
 
+static const SDL_Point NULL_POINT = { 0, 0 };
+static std::array<SDL_Point, 4> selectedRect = { NULL_POINT, NULL_POINT, NULL_POINT, NULL_POINT };
+void Renderer::updateSelectedRect() {
+	selectedRect = BtnRect::getPointsOfSelectedRect();
+}
+
+
 static SurfacePtr screenshot;
 static bool screenshoted = true;
 
@@ -518,6 +528,7 @@ static void loop() {
 	static std::vector<TexturePtr> textures;
 	static std::vector<TexturePtr> prevTextures;
 
+	std::array<SDL_Point, 4> prevSelectedRect = { NULL_POINT, NULL_POINT, NULL_POINT, NULL_POINT };
 
 	while (!GV::exit) {
 		if (!scaled) {
@@ -530,15 +541,17 @@ static void loop() {
 		}
 
 
+		curRenderData.clear();
 		{
 			std::lock_guard g(Renderer::renderDataMutex);
-			curRenderData.clear();
 			Renderer::renderData.swap(curRenderData);
 		}
 		Renderer::needToRender = false;
 
-		if (!Renderer::needToRedraw && curRenderData == prevRenderData) continue;
+		if (!Renderer::needToRedraw && curRenderData == prevRenderData && selectedRect == prevSelectedRect) continue;
 		Renderer::needToRedraw = false;
+
+		prevSelectedRect = selectedRect;
 
 
 		Renderer::renderMutex.lock();
@@ -653,6 +666,38 @@ static void loop() {
 				}
 			}
 		}
+		disableClipRect();
+
+		bool haveSelectedRect = selectedRect[0] != selectedRect[1];
+		if (haveSelectedRect) {
+			if (fastOpenGL) {
+				glColor4f(0, 0.25, 1, 1);
+			}else {
+				if (SDL_SetRenderDrawColor(renderer, 0, 64, 255, 255)) {
+					Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
+				}
+			}
+
+			for (size_t i = 0; i < 4; ++i) {
+				SDL_Point start = selectedRect[i];
+				SDL_Point end = selectedRect[(i + 1) % 4];
+
+				if (fastOpenGL) {
+					glBegin(GL_LINES);
+					glVertex2i(start.x, start.y);
+					glVertex2i(end.x, end.y);
+					glEnd();
+				}else {
+					if (SDL_RenderDrawLine(renderer, start.x, start.y, end.x, end.y)) {
+						Utils::outMsg("SDL_RenderDrawLine", SDL_GetError());
+					}
+				}
+			}
+
+			if (fastOpenGL) {
+				checkErrors("drawing select rect");
+			}
+		}
 
 		if (Stage::screens) {
 			SDL_Rect empties[2];
@@ -664,9 +709,7 @@ static void loop() {
 				empties[1] = { 0, Stage::y + Stage::height, Stage::width, windowHeight - Stage::y - Stage::height };
 			}
 
-			disableClipRect();
-			for (size_t i = 0; i < 2; ++i) {
-				const SDL_Rect &empty = empties[i];
+			for (const SDL_Rect &empty : empties) {
 				if (!empty.w || !empty.h) continue;
 
 				if (fastOpenGL) {
@@ -689,6 +732,10 @@ static void loop() {
 			}else {
 				SDL_RenderPresent(renderer);
 			}
+		}
+
+		if (fastOpenGL) {
+			checkErrors("End");
 		}
 
 		prevRenderData.swap(curRenderData);

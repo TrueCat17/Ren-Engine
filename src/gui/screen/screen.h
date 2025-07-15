@@ -38,9 +38,12 @@ public:
 
 	static void logScreenCode(std::string name);
 
+	static void allowArrowsForCalcedScreen(const std::string &fileName, uint32_t numLine);
+
 
 	float zorder = FLT_MAX;//set new (not inited) screen on top with sorting by zorder
 	bool modal = false;
+	bool allowArrows = false;
 	bool ignore_modal = false;
 	bool save = true;
 

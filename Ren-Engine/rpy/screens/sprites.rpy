@@ -151,7 +151,7 @@ init -1000 python:
 		
 		spr = Sprite(tag, call_str, decl_at, at, show_at, old_sprite if effect else None)
 		spr.sprite_name = image_name
-		if is_scene or old_sprite is sprites.scene:
+		if is_scene or (old_sprite and old_sprite is sprites.scene):
 			sprites.scene = spr
 		
 		

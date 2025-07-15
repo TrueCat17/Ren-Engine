@@ -38,5 +38,5 @@ void TextButton::updateTexture() {
 
 void TextButton::checkEvents() {
 	btnRect.checkEvents();
-	curParamsIsHover = btnRect.mouseOvered || selected;
+	curParamsIsHover = btnRect.isHovered() || selected;
 }

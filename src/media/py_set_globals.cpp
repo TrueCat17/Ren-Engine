@@ -108,6 +108,7 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("replace_screen", Screen::replace);
 	setFunc("_show_screen", Screen::addToShow);
 	setFunc("_hide_screen", Screen::addToHide);
+	setFunc("_allow_arrows", Screen::allowArrowsForCalcedScreen);
 	setFunc("has_screen", Screen::hasScreen);
 	setFunc("_log_screen_code", Screen::logScreenCode);
 	setFunc("_SL_check_events", Screen::checkScreenEvents);

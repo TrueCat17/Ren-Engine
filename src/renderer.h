@@ -19,8 +19,6 @@ struct RenderStruct {
 	SDL_Rect dstRect;
 
 	SDL_Point center;
-
-	bool operator==(const RenderStruct &o) const;
 };
 
 class Renderer {
@@ -36,6 +34,8 @@ public:
 
 	static SDL_RendererInfo info;
 	static bool init();
+
+	static void updateSelectedRect();
 
 	static void needMakeScreenshot();
 	static SurfacePtr getScreenshot();

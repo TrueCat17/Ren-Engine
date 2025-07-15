@@ -146,7 +146,6 @@ init -901 python:
 	hotkeys.keys = list(alphabet.upper()) + hotkeys.fkeys + [
 		'ESCAPE', 'TAB', 'RETURN', 'SPACE', 'MENU', 'BACKSPACE', 'DELETE', 'INSERT',
 		'HOME', 'END', 'PAGEUP', 'PAGEDOWN',
-		'LEFT', 'RIGHT', 'UP', 'DOWN',
 	]
 	
 	hotkeys.keypad_synonyms = ['KEYPAD +', 'KEYPAD -', 'KEYPAD *', 'KEYPAD /', 'KEYPAD =']
