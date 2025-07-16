@@ -135,9 +135,8 @@ init -1000 python:
 			index = -1
 			for index, spr in enumerate(sprites.list):
 				if spr.tag == tag:
-					if effect:
-						old_sprite = spr
-					else:
+					old_sprite = spr
+					if not effect:
 						sprites.list.pop(index)
 						index -= 1
 					break
@@ -149,7 +148,7 @@ init -1000 python:
 		if type(at) is SpriteAnimation:
 			at = at.actions
 		
-		spr = Sprite(tag, call_str, decl_at, at, show_at, old_sprite if effect else None)
+		spr = Sprite(tag, call_str, decl_at, at, show_at, old_sprite)
 		spr.sprite_name = image_name
 		if is_scene or (old_sprite and old_sprite is sprites.scene):
 			sprites.scene = spr
