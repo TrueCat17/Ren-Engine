@@ -19,85 +19,90 @@ init python:
 		global mask_start_time
 		mask_start_time = get_game_time()
 	
-	style.textbutton.ground = im.rect('#08F')
-	style.textbutton.hover  = im.rect('#F80')
+	btn_size = 30
+	indent = 5
+
+init:
+	style text:
+		size (135, btn_size)
+		color '#FFF'
+		outlinecolor 0
+		text_align 'center'
+		text_valign 'center'
+	
+	style textbutton:
+		ground im.round_rect('#08F', 20, 20, 6)
+		hover  im.round_rect('#F80', 20, 20, 6)
+		color       '#EEE'
+		hover_color '#111'
+		size btn_size
 
 screen masks:
 	python:
-		mask_value = in_bounds((get_game_time() - mask_start_time) * 255 / duration, 0, 255)
+		mask_value = in_bounds((get_game_time() - mask_start_time) / duration, 0, 1) * 255
 		if mask_value != 255:
 			mask_value = int(mask_value / step) * step
 		
 		w, h = get_stage_size()
-		base_image = im.Scale('images/bg/bus_stop.jpg', w, h)
-		mask_image = im.Scale(mask_dir + mask_images[num_mask], w, h)
+		base_image = im.scale('images/bg/bus_stop.jpg', w, h)
+		mask_image = im.scale(mask_dir + mask_images[num_mask], w, h)
 	
 	
-	image im.Mask(base_image, mask_image, mask_value, 'r', mask_cmp):
+	image im.mask(base_image, mask_image, mask_value, 'r', mask_cmp):
 		size 1.0
 	
-	vbox:
-		spacing 5
-		align (0.05, 0.95)
+	null:
+		xalign 0.5
+		xsize get_stage_width() - btn_size * 2
+		
+		ypos get_stage_height() - btn_size // 2
+		yanchor 1.0
+		
+		vbox:
+			spacing indent
+			align (0.0, 1.0)
+			
+			hbox:
+				spacing indent
+				
+				textbutton '←':
+					action ['duration = max(0.5, duration - 0.5)', restart_mask]
+				
+				text ('Time: %s' % duration)
+				
+				textbutton '→':
+					action ['duration = min(duration + 0.5, 10.0)', restart_mask]
+			
+			hbox:
+				spacing indent
+				
+				textbutton '←':
+					action ['step = max(1, step - 1)', restart_mask]
+				
+				text ('Step: %s' % step)
+				
+				textbutton '→':
+					action ['step = min(step + 1, 20)', restart_mask]
 		
 		hbox:
-			spacing 5
+			spacing indent
+			align (0.5, 1.0)
 			
-			textbutton '<-':
-				size 30
-				action ['duration = max(0.5, duration - 0.5)', restart_mask]
+			textbutton '←':
+				action ['num_mask = max(0, num_mask - 1)', restart_mask]
 			
-			text (' Time: %s ' % duration):
-				size (100, 30)
-				color 0xFFFFFF
-				outlinecolor 0x000000
-				text_align 'center'
-				text_valign 'center'
+			textbutton mask_images[num_mask]:
+				xsize 150
+				action restart_mask
 			
-			textbutton '->':
-				size 30
-				action ['duration = min(duration + 0.5, 10.0)', restart_mask]
+			textbutton '→':
+				action ['num_mask = min(num_mask + 1, len(mask_images) - 1)', restart_mask]
+		
 		hbox:
-			spacing 5
+			spacing indent
+			align (1.0, 1.0)
 			
-			textbutton '<-':
-				size 30
-				action ['step = max(1, step - 1)', restart_mask]
-			
-			text (' Step: %s ' % step):
-				size (100, 30)
-				color 0xFFFFFF
-				outlinecolor 0x000000
-				text_align 'center'
-				text_valign 'center'
-			
-			textbutton '->':
-				size 30
-				action ['step = min(step + 1, 20)', restart_mask]
-	
-	hbox:	
-		spacing 5
-		align (0.35, 0.95)
-		
-		textbutton '<-':
-			size 30
-			action ['num_mask = max(0, num_mask - 1)', restart_mask]
-		
-		textbutton mask_images[num_mask]:
-			size (150, 30)
-			action restart_mask
-		
-		textbutton '->':
-			size 30
-			action ['num_mask = min(num_mask + 1, len(mask_images) - 1)', restart_mask]
-	
-	hbox:
-		spacing 5
-		align (0.95, 0.95)
-		
-		for mask_cmp_name in ('<', '>', '==', '!=', '<=', '>='):
-			textbutton mask_cmp_name:
-				ground style.textbutton['ground' if mask_cmp != mask_cmp_name else 'hover']
-				size 30
-				action ['mask_cmp = mask_cmp_name', restart_mask]
-
+			for mask_cmp_name in ('<', '>', '==', '!=', '<=', '>='):
+				textbutton mask_cmp_name:
+					selected mask_cmp == mask_cmp_name
+					action ['mask_cmp = mask_cmp_name', restart_mask]
