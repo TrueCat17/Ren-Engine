@@ -157,7 +157,7 @@ init -1000001 python:
 		
 		if 't' in ops:
 			tag = _(tag)
-			
+		
 		if 'i' in ops and not in_recursion:
 			tag = interpolate_tags(tag, kwargs, in_recursion = True)
 		

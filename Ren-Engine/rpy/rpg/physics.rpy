@@ -209,7 +209,7 @@ init python:
 						dpoint = left
 					else:
 						dpoint = right
-				
+					
 					left_free_part, right_free_part = physics.check_side(is_black, x + dpoint[0], y + dpoint[1], side + dside, radius)
 					if left_free_part == 1.0 and right_free_part == 1.0:
 						break

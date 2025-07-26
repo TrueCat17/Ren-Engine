@@ -645,4 +645,3 @@ init -1001 python:
 			
 			if obj.free():
 				location.path_need_update = True
-	

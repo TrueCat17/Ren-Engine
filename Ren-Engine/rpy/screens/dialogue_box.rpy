@@ -542,7 +542,7 @@ screen dialogue_box:
 		if not has_screen('dialogue_box_skip_text'):
 			show_screen('dialogue_box_skip_text')
 	
-	key 'h' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
+	key 'H' action 'db.hide_interface = not db.hide_interface; db.skip_tab = False'
 	
 	$ db.to_next = False
 	for key in ('RETURN', 'SPACE'):

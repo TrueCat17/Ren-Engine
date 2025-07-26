@@ -153,7 +153,7 @@ init -9000 python:
 					args = get_args(action)
 					if len(args) == 0:
 						continue
-				
+					
 					command = args[0]
 					self.last_command = command
 					

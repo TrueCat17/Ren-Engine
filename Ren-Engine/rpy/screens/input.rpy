@@ -303,7 +303,7 @@ screen input_content:
 				xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
 				ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
 				corner_sizes input.tf_bg_border_size
-				
+			
 			image input.tf_bg:
 				corner_sizes -1
 				xsize screen_tmp.tf_bg_xsize

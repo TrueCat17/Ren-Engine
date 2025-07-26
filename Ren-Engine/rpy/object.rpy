@@ -147,7 +147,7 @@ init -1000010 python:
 			for prop in not_persistent_props:
 				res.pop(prop, None)
 			return res
-	
+		
 		def __setstate__(self, new_dict):
 			d = object_getattribute(self, '__dict__')
 			d.update(new_dict)

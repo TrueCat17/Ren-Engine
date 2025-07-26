@@ -59,13 +59,13 @@ label rpg_update:
 			rpg_event_object = None
 			if type(rpg_event) in (tuple, list):
 				rpg_event, rpg_event_object = rpg_event
-			
+		
 		$ rpg_event_label_index = 0
 		while rpg_event_label_index < len(rpg_cur_labels):
 			python:
 				rpg_cur_label = rpg_cur_labels[rpg_event_label_index]
 				rpg_event_label_index += 1
-			
+				
 				rpg_event_stop = True
 				renpy.call(rpg_cur_label)
 			if rpg_event_stop:
@@ -74,4 +74,3 @@ label rpg_update:
 	python:
 		rpg_event = rpg_event_object = None
 		rpg_event_processing = False
-	

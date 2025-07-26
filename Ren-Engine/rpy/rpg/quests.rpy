@@ -22,4 +22,3 @@ init -1000 python:
 		quests.remove(quest)
 		if renpy.has_label(quest + '__end'):
 			renpy.call(quest + '__end')
-	

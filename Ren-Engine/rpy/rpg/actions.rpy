@@ -725,4 +725,3 @@ init -1000 python:
 		res.set_random_param('to_friend', 2, 5)
 		
 		return res
-	

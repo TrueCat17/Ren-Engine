@@ -315,8 +315,8 @@ screen location:
 				rpg_events.clear()
 		
 		if get_rpg_control() and location_showed() and (dtime - location_fade_time) > location_time_without_control:
-			key 'z' delay 0.333 action loc__process_sit_action
-			key 'e' delay 0.333 action loc__process_action
+			key 'Z' delay 0.333 action loc__process_sit_action
+			key 'E' delay 0.333 action loc__process_action
 			
 			for side, key in (('left', 'A'), ('right', 'D'), ('up', 'W'), ('down', 'S')):
 				key key action 'screen_tmp[side]                  = True' first_delay 0

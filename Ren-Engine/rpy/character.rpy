@@ -614,7 +614,7 @@ init -1001 python:
 					if not coords_before_exit:
 						coords_before_exit = self.location, self.x, self.y
 					self.x, self.y = get_place_center(place)
-					
+				
 				else:
 					dx, dy = to_x - self.x, to_y - self.y
 					if dx or dy:
