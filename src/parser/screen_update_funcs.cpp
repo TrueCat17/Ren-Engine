@@ -116,6 +116,12 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		typedObj->propName = 0; \
 		std::string msg = Utils::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
 		outError(obj, #propName, propIndex, msg); \
+		return; \
+	} \
+	\
+	if constexpr (std::string_view(#propName) == "alpha") { \
+		typedObj->alpha = std::max<float>(typedObj->alpha, 0); \
+		typedObj->alpha = std::min<float>(typedObj->alpha, 1); \
 	} \
 }
 
