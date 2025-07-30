@@ -27,7 +27,7 @@ init:
 		size (135, btn_size)
 		color '#FFF'
 		outlinecolor 0
-		text_align 'center'
+		text_align  'center'
 		text_valign 'center'
 	
 	style textbutton:
