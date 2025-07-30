@@ -1,7 +1,7 @@
 init -200 python:
 	def guitar_hero__set_song(song):
 		if song not in guitar_hero.cur_songs:
-			out_msg('guitar_hero.set_song', 'Song <%s> not found or not allowed' % (song, ))
+			out_msg('guitar_hero.set_song', 'Song <%s> not found or not allowed', song)
 			return
 		
 		guitar_hero.song_index = guitar_hero.cur_songs.index(song)

@@ -23,12 +23,12 @@ screen guitar_hero_panel:
 						key 'C' action (guitar_hero.unpause if guitar_hero.paused else guitar_hero.pause)
 						textbutton (_('Unpause' if guitar_hero.paused else 'Pause') + ' (C)'):
 							style 'guitar_hero_btn'
-							action guitar_hero.unpause if guitar_hero.paused else guitar_hero.pause
+							action guitar_hero['unpause' if guitar_hero.paused else 'pause']
 					elif guitar_hero.record_btn:
 						null:
 							ysize style.guitar_hero_btn.ysize
 					
-					textbutton (_('Stop') + ' (S)'):
+					textbutton (_('Stop') + ' (E)'):
 						style 'guitar_hero_btn'
 						alpha 1 if guitar_hero.stop_btn or (guitar_hero.record_btn and guitar_hero.recording) else 0
 						action guitar_hero.stop
@@ -42,11 +42,11 @@ screen guitar_hero_panel:
 						null:
 							ysize style.guitar_hero_btn.ysize
 					
-					textbutton (_('Play') + ' (S)'):
+					textbutton (_('Play') + ' (E)'):
 						style 'guitar_hero_btn'
 						action guitar_hero.play
 				
-				key 'S' action guitar_hero['stop_by_key' if guitar_hero.playing() else 'play']
+				key 'E' action guitar_hero['stop_by_key' if guitar_hero.playing() else 'play']
 			
 			
 			image guitar_hero.separator_bg:
@@ -63,8 +63,8 @@ screen guitar_hero_panel:
 					spacing guitar_hero.small_spacing
 					
 					if not guitar_hero.playing():
-						key 'UP'   action guitar_hero.select_prev_song
-						key 'DOWN' action guitar_hero.select_next_song
+						key 'W' action guitar_hero.select_prev_song
+						key 'S' action guitar_hero.select_next_song
 					
 					if guitar_hero.show_arrows:
 						textbutton '↑':
@@ -95,8 +95,8 @@ screen guitar_hero_panel:
 				xalign 0.5
 				
 				if not guitar_hero.playing():
-					key 'LEFT'  action guitar_hero.add_difficulty(-1)
-					key 'RIGHT' action guitar_hero.add_difficulty(+1)
+					key 'A' action guitar_hero.add_difficulty(-1)
+					key 'D' action guitar_hero.add_difficulty(+1)
 				
 				textbutton '←':
 					style 'guitar_hero_ctrl_btn'

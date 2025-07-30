@@ -3,7 +3,7 @@ init python:
 	
 	
 	guitar_hero.bg = im.rect('#0000')
-	guitar_hero.shadow_bg = im.rect('000B')
+	guitar_hero.shadow_bg = im.rect('#000B')
 	
 	guitar_hero.close_btn = True
 	#guitar_hero.stop_btn = False
@@ -20,11 +20,16 @@ label start:
 	
 	$ guitar_hero.show()
 	
+	$ db.skip_tab = False
+	
 	$ prev_playing = False
 	while renpy.has_screen('guitar_hero'):
 		$ playing = guitar_hero.playing()
 		
 		if not playing and prev_playing:
+			$ guitar_hero.block_playing = True
+			$ db.skip_tab = False
+			
 			me "Difficulty: [guitar_hero.difficulty].\nQuality: [round(guitar_hero.last_game_quality * 100, 1)]%%."
 			
 			if guitar_hero.last_game_quality > 0.8:
@@ -36,6 +41,7 @@ label start:
 					me "Not bad..?"
 			
 			window hide
+			$ guitar_hero.block_playing = False
 		
 		$ prev_playing = playing
 		

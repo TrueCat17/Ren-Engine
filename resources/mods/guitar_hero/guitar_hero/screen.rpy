@@ -80,4 +80,3 @@ screen guitar_hero:
 	
 	
 	use guitar_hero_panel
-

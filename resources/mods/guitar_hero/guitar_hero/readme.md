@@ -125,7 +125,7 @@
 
 * `guitar_hero.get_name_for_song(song)` - получить "красивое" название песни с переводом (из файла `name`) из обычного;
 
-* `guitar_hero.set_song(song)` - выделить песню `song`.
+* `guitar_hero.set_song(song)` - выбрать песню `song`.
 
 
 Также для изменения доступны стили, указанные в файле `styles.rpy`.
@@ -155,7 +155,7 @@ Files contained in it (optional):
 * `notes4.txt` - for medium mode;
 * `notes6.txt` - for hard mode;
 * `notes.txt` - "common" note file, selected if there is no specialized version
-(required if any of the specialized versions are missing).
+(required if any of the specialized versions is missing).
 
 If the note file is missing, it should be "recorded" from the "record mode" (key `R`).  
 In this mode you can use the `0` button for a pseudo-random note.    

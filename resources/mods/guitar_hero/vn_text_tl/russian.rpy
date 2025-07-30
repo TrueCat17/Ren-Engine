@@ -15,4 +15,3 @@ label russian start_b4860ce3:
 
 label russian start_381ef636:
 	"Какой-то текст в конце."
-

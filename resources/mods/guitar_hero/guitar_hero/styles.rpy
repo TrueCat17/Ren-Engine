@@ -1,7 +1,8 @@
 init -1:
 	style guitar_hero_main_vbox is vbox:
-		align 0.5
-		spacing guitar_hero.string_spacing
+		xalign 0.5
+		ypos    0.025
+		spacing 0.025
 	
 	
 	style guitar_hero_btn is textbutton:
