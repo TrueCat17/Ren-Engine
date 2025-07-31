@@ -57,6 +57,9 @@ init -995 python:
 				if cur_time - array[i][0] < 1:
 					break
 			array[:i] = []
+		
+		screen_tmp.text_align = 0.0 if config.debug_screen_align[0] < 0.5 else 1.0
+		screen_tmp.mode_btn_xsize = (debug_screen.size[0] - debug_screen.indent * 2) // 3
 	
 	def debug_screen__get_screen_times():
 		mode = debug_screen.get_show_mode()
@@ -80,14 +83,14 @@ init -995 python:
 				return max_value
 		
 		else:
-			out_msg('Unexpected debug_screen show_mode: %s', mode)
+			out_msg('debug_screen.get_screen_times', 'Unexpected debug_screen show_mode: %s', mode)
 			return []
 		
+		arrays = debug_screen.screen_time_arrays
 		params = []
 		max_name_len = 0
-		names = sorted(debug_screen.screen_time_arrays.keys())
-		for name in names:
-			array = debug_screen.screen_time_arrays[name]
+		for name in sorted(arrays.keys()):
+			array = arrays[name]
 			if array:
 				params.append((name, get_time(array)))
 				max_name_len = max(max_name_len, len(name))
@@ -156,14 +159,14 @@ screen debug_screen_fps_and_alignment:
 	
 	text debug_screen.get_last_fps():
 		style 'debug_screen_fps_text'
-		xalign 0.0 if config.debug_screen_align[0] < 0.5 else 1.0
+		xalign screen_tmp.text_align
 		yalign 0.5
 	
 	if config.debug_screen_visible_mode == 1:
 		hbox:
 			spacing debug_screen.indent
-			xalign  1.0 if config.debug_screen_align[0] < 0.5 else 0.0
-			yalign  0.5
+			xalign 1.0 - screen_tmp.text_align
+			yalign 0.5
 			
 			for align in ((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0)):
 				button:
@@ -182,7 +185,7 @@ screen debug_screen_buttons:
 	for mode in ('Mean (second)', 'Max (second)', 'Last Frame'):
 		textbutton _(mode):
 			style 'debug_screen_mode_btn'
-			xsize (debug_screen.ext_size[0] - debug_screen.indent * 4) // 3
+			xsize screen_tmp.mode_btn_xsize
 			
 			ground debug_screen['btn_ground_selected' if debug_screen.get_show_mode() == mode else 'btn_ground']
 			hover  debug_screen.btn_hover
@@ -197,7 +200,7 @@ screen debug_screen_text:
 	for text in debug_screen.get_screen_times():
 		text text:
 			style 'debug_screen_text'
-			align 0.0 if config.debug_screen_align[0] < 0.5 else 1.0
+			align screen_tmp.text_align
 
 screen debug_screen:
 	zorder 1000000
@@ -205,6 +208,7 @@ screen debug_screen:
 	
 	# 0, 1, 2, 3 -> off, back+fps+text, fps+text, fps
 	if config.debug_screen_visible_mode:
+		$ screen_tmp = SimpleObject()
 		$ debug_screen.update()
 		
 		null:
@@ -216,7 +220,7 @@ screen debug_screen:
 				alpha 1 if config.debug_screen_visible_mode == 1 else 0
 			
 			null:
-				pos  debug_screen.indent
+				align 0.5
 				size debug_screen.size
 				
 				vbox:
