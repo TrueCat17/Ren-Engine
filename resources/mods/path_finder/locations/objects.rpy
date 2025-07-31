@@ -41,4 +41,3 @@ init 1 python:
 	add_location_object("enter", "gate_left_pos", "gate_left")
 	add_location_object("enter", "gate_right_pos", "gate_right")
 	add_location_object("enter", "ikarus_pos", "ikarus")
-	

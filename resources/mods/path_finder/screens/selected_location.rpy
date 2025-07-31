@@ -13,11 +13,11 @@ screen selected_location:
 		$ stop_moving()
 	
 	if not me.paths:
-		key 'w' action SetDict(cam_object, 'y', in_bounds(cam_object['y'] - common_speed, 0, draw_location.ysize))
-		key 'a' action SetDict(cam_object, 'x', in_bounds(cam_object['x'] - common_speed, 0, draw_location.xsize))
-		key 's' action SetDict(cam_object, 'y', in_bounds(cam_object['y'] + common_speed, 0, draw_location.ysize))
-		key 'd' action SetDict(cam_object, 'x', in_bounds(cam_object['x'] + common_speed, 0, draw_location.xsize))
-	
+		key 'W' first_delay 0 action "cam_object['y'] = in_bounds(cam_object['y'] - common_speed, 0, draw_location.ysize)"
+		key 'A' first_delay 0 action "cam_object['x'] = in_bounds(cam_object['x'] - common_speed, 0, draw_location.xsize)"
+		key 'S' first_delay 0 action "cam_object['y'] = in_bounds(cam_object['y'] + common_speed, 0, draw_location.ysize)"
+		key 'D' first_delay 0 action "cam_object['x'] = in_bounds(cam_object['x'] + common_speed, 0, draw_location.xsize)"
+		
 		if draw_location.free():
 			image draw_location.free():
 				alpha 0.5
@@ -28,11 +28,5 @@ screen selected_location:
 				ysize int(draw_location.ysize * location_zoom)
 		
 		button:
-			size get_stage_size()
-			alpha 0.01
-			mouse False
-			
-			ground im.rect("#000")
-			hover  im.rect("#000")
-			
+			style 'path_finder_bg_btn'
 			action add_point

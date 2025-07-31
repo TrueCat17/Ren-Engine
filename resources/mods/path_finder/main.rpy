@@ -4,6 +4,6 @@ init 100 python:
 	
 	start_screens = ['hotkeys', 'debug_screen', 'all_locations', 'menu', 'points_list']
 	
-	gate_right = get_location_objects("enter", "before_gates", "gate_right", 1)[0]
-	gate_right.start_animation("open")
+	gate_right = get_location_objects('enter', 'before_gates', 'gate_right', 1)[0]
+	gate_right.start_animation('open')
 	gate_right.update()

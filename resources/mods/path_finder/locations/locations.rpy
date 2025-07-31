@@ -47,4 +47,3 @@ init python:
 	rpg_locations["enter"].x, rpg_locations["enter"].y = 312, 276
 	rpg_locations["ikarus"].x, rpg_locations["ikarus"].y = 173, 301
 	rpg_locations["radio_club"].x, rpg_locations["radio_club"].y = 390, 54
-

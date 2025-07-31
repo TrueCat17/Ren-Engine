@@ -13,7 +13,7 @@ translate russian strings:
 	old 'To right'
 	new 'Вправо'
 	
-	old 'Points aviable: %s / %s'
+	old 'Points available: %s / %s'
 	new 'Точек доступно: %s / %s'
 	
 	old 'Stop'
