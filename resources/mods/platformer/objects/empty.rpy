@@ -11,7 +11,8 @@ init -21 python:
 	class Pltf_Start(Pltf_Empty):
 		@staticmethod
 		def init(x, y):
-			me.x, me.y = x * cell_size, y * cell_size
+			me.x = x * cell_size + cell_size // 2
+			me.y = y * cell_size + cell_size - 1
 	
 	
 	class Pltf_Exit(Pltf_Empty):
@@ -28,5 +29,4 @@ init -21 python:
 		def physics(cell, pixel, dx, dy):
 			global next_level
 			next_level = cur_level + 1
-			return pixel[0] + dx, pixel[1] + dy
-
+			return pixel

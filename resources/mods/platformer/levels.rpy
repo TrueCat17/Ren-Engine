@@ -1,8 +1,8 @@
 init -10 python:
 	levels = []
 	def add_level(level):
-		if not level or len(level) == 0:
-			out_msg('Level is invalid')
+		if not level:
+			out_msg('Invalid level')
 			return
 		w, h = len(level[0]), len(level)
 		
@@ -11,7 +11,7 @@ init -10 python:
 			if not start:
 				start = 'S' in line
 			if line[-1] != ' ':
-				out_msg('add_level', 'Line must end with space symbol')
+				out_msg('add_level', 'Line must ends with space symbol')
 				return
 			if len(line) != w:
 				out_msg('add_level', 'All lines of level must have one length')
@@ -44,7 +44,7 @@ init -10 python:
 		'_': Pltf_VertexWall,
 		'-': Pltf_Ladder,
 		'o': Pltf_Coin,
-		'E': Pltf_Exit
+		'E': Pltf_Exit,
 	}
 	
 	
@@ -86,4 +86,3 @@ init -10 python:
 		r' S  ',
 		r'/X\ '
 	])
-

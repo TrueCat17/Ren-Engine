@@ -17,60 +17,48 @@ init python:
 		global next_level
 		next_level = None
 		
-		def sign(x):
-			return -1 if x < 0 else 1 if x > 0 else 0
-		def part(x):
-			return 0 if abs(x) < 1 else sign(x)
-		def to_zero(x):
-			return x if abs(x) < 1 else x + 1 if x < 0 else x - 1
-		def floor(x):
-			return math.floor(x)
-		
-		
 		level = levels[cur_level]
-		xcell, ycell = floor(me.x / cell_size), floor(me.y / cell_size)
-		x, y = me.x - xcell * cell_size, me.y - ycell * cell_size
+		xcell, ycell = me.x // cell_size, me.y // cell_size
+		x, y = me.x % cell_size, me.y % cell_size
 		
-		symbol = get_symbol(level, floor(xcell + x / cell_size + 0.5), floor(ycell + (y - 1) / cell_size + 1))
+		symbol = get_symbol(level, xcell, ycell)
 		obj_type = level_classes[symbol]
+		
+		on_ground = get_on_ground(xcell, ycell, x, y)
 		
 		
 		if left == right:
 			if left: # and right
 				me.set_direction(to_back)
 		else:
-			speed = (me_xspeed if shift_is_down else me_xspeed_run) * cell_size
+			speed = (me_xspeed if hotkeys.shift else me_xspeed_run) * cell_size * physics_step
 			
-			if left:
-				me_vx -= speed * physics_step
-				if not obj_type.can_vertical or y == 0:
-					me.set_direction(to_left)
-			else: # right
-				me_vx += speed * physics_step
-				if not obj_type.can_vertical or y == 0:
-					me.set_direction(to_right)
+			me_vx += speed * (-1 if left else 1)
+			
+			if on_ground or not obj_type.can_vertical:
+				me.set_direction(to_left if left else to_right)
 		
 		
 		no_gravity = False
+		
+		if on_ground:
+			me_vy = 0
+			if space:
+				me_vy -= me_jump
+		
 		if obj_type.can_vertical:
 			if up or down:
 				me.set_direction(to_forward)
 				
-				speed = me_yspeed * cell_size
-				if up:
-					me_vy -= speed * physics_step
-				else:
-					me_vy += speed * physics_step
-			me_vx *= friction
-			me_vy *= friction
+				speed = me_yspeed * physics_step * cell_size
+				me_vy += speed * (-1 if up else 1)
 			
-			if me.direction == to_forward:
+			if not on_ground:
+				me_vx *= friction
+				me_vy *= friction
+			
+			if me.get_direction() == to_forward:
 				no_gravity = True
-		else:
-			if on_ground((xcell, ycell), (floor(x + cell_size / 2), floor(y + cell_size - 1))):
-				me_vy = 0
-				if space:
-					me_vy -= me_jump
 		
 		if not no_gravity:
 			me_vy += gravity
@@ -83,9 +71,15 @@ init python:
 		if abs(me_vx) < 0.15:
 			me_vx = 0
 		
+		def sign(x):
+			return -1 if x < 0 else 1 if x > 0 else 0
+		def part(x):
+			return 0 if abs(x) < 1 else sign(x)
+		def to_zero(x):
+			return x - part(x)
+		
 		i = 0
 		while int(full_dx) or int(full_dy):
-			ax, ay = cell_size / 2, cell_size - 1 # anchor; default - down border, point (0.5, 1.0)
 			dx = dy = 0
 			
 			i += 1
@@ -95,25 +89,14 @@ init python:
 				if not dx:
 					continue
 				
-				x += ax
-				y += ay
-				
-				xcell += floor(x / cell_size)
-				x %= cell_size
-				ycell += floor(y / cell_size)
-				y %= cell_size
-				
 				if dx < 0:
-					if floor(x) == 0:
+					if x == 0:
 						x += cell_size
 						xcell -= 1
 				else:
-					if floor(x) == cell_size - 1:
+					if x == cell_size - 1:
 						x -= cell_size
 						xcell += 1
-				
-				symbol = get_symbol(level, xcell, ycell)
-				obj_type = level_classes[symbol]
 			else:
 				dy = part(full_dy)
 				full_dy = to_zero(full_dy)
@@ -121,38 +104,34 @@ init python:
 					continue
 				
 				if dy < 0:
-					ay = 0 # up border
-					
-				x += ax
-				y += ay
-				
-				xcell += floor(x / cell_size)
-				x %= cell_size
-				ycell += floor(y / cell_size)
-				y %= cell_size
-				
-				if dy < 0:
-					if floor(y) == 0:
+					if y == 0:
 						y += cell_size
 						ycell -= 1
 				else:
-					if floor(y) == cell_size - 1:
+					if y == cell_size - 1:
 						y -= cell_size
 						ycell += 1
-				
-				symbol = get_symbol(level, xcell, ycell)
-				obj_type = level_classes[symbol]
 			
-			if 'physics' not in level_class_props[symbol]:
+			
+			symbol = get_symbol(level, xcell, ycell - 1)
+			obj_type = level_classes[symbol]
+			if hasattr(obj_type, 'physics'):
+				_for_event_cheking = obj_type.physics((xcell, ycell - 1), (x, y), dx, dy) # coin, exit...
+			
+			
+			symbol = get_symbol(level, xcell, ycell)
+			obj_type = level_classes[symbol]
+			
+			if hasattr(obj_type, 'physics'):
+				x, y = obj_type.physics((xcell, ycell), (x, y), dx, dy)
+			else:
 				x += dx
 				y += dy
-			else:
-				lx, ly = x - floor(x), y - floor(y)
-				x, y = obj_type.physics((xcell, ycell), (floor(x), floor(y)), dx, dy)
-				x, y = x + lx, y + ly
 			
-			x -= ax
-			y -= ay
+			xcell += x // cell_size
+			x %= cell_size
+			ycell += y // cell_size
+			y %= cell_size
 		
 		pltf_lost_dxy = (full_dx, full_dy)
 		
@@ -160,7 +139,7 @@ init python:
 		me.y = ycell * cell_size + y
 		
 		moving_dtime = get_game_time() - last_stay_time
-		fps = me.walk_fps if shift_is_down else me.run_fps
+		fps = me.walk_fps if hotkeys.shift else me.run_fps
 		me.set_frame(int(moving_dtime * fps))
 		me.set_pose('walk' if moving_dtime else 'stay')
 		
@@ -176,26 +155,17 @@ init python:
 			return ' '
 		return level[ycell][xcell]
 	
-	def on_ground(cell, pixel):
-		xcell, ycell = cell
-		x, y = pixel
-		
-		xcell += math.floor(x / cell_size)
-		x %= cell_size
-		ycell += math.floor(y / cell_size)
-		y %= cell_size
-		
+	def get_on_ground(xcell, ycell, x, y):
 		if y == cell_size - 1:
 			y = -1
 			ycell += 1
 		
 		symbol = get_symbol(levels[cur_level], xcell, ycell)
+		obj_type = level_classes[symbol]
 		
-		if 'physics' not in level_class_props[symbol]:
+		if not hasattr(obj_type, 'physics'):
 			return False
 		
-		obj_type = level_classes[symbol]
 		tx, ty = obj_type.physics((xcell, ycell), (x, y), 0, 1)
 		free_to_down = tx == x and ty == y + 1
 		return not free_to_down
-

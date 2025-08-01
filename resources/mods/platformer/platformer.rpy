@@ -1,5 +1,7 @@
 init -1000 python:
 	
+	platformer_bg = im.rect('#222')
+	
 	def msg(text, color, msg_time = 2.0):
 		global main_text, main_text_color, main_text_end_time
 		main_text = text
@@ -11,41 +13,45 @@ init -1000 python:
 
 
 screen platformer:
-	image im.rect('#222'):
-		size (1.0, 1.0)
+	image platformer_bg:
+		size 1.0
 	
 	
-	$ shift_is_down = left = right = up = down = space = False
+	$ left = right = up = down = space = False
 	
-	key 'LEFT SHIFT'  action SetVariable('shift_is_down', True) first_delay 0
-	key 'RIGHT SHIFT' action SetVariable('shift_is_down', True) first_delay 0
+	$ allow_arrows()
+	key 'LEFT'  first_delay 0 action  'left = True'
+	key 'RIGHT' first_delay 0 action 'right = True'
+	key 'UP'    first_delay 0 action    'up = True'
+	key 'DOWN'  first_delay 0 action  'down = True'
 	
-	key 'LEFT'  action SetVariable('left',  True) first_delay 0
-	key 'RIGHT' action SetVariable('right', True) first_delay 0
-	key 'UP'    action SetVariable('up',    True) first_delay 0
-	key 'DOWN'  action SetVariable('down',  True) first_delay 0
-	key 'a'     action SetVariable('left',  True) first_delay 0
-	key 'd'     action SetVariable('right', True) first_delay 0
-	key 'w'     action SetVariable('up',    True) first_delay 0
-	key 's'     action SetVariable('down',  True) first_delay 0
+	key 'A'     first_delay 0 action  'left = True'
+	key 'D'     first_delay 0 action 'right = True'
+	key 'W'     first_delay 0 action    'up = True'
+	key 'S'     first_delay 0 action  'down = True'
 	
-	key 'SPACE' action SetVariable('space', True) first_delay 0
+	key 'SPACE' first_delay 0 action 'space = True'
 	
 	$ update()
 	
 	
 	image level_image:
 		pos  (level_x, level_y)
-		size (level_w * cell_size, level_h * cell_size)
+		xsize level_w * cell_size
+		ysize level_h * cell_size
 		
 		for obj_type, obj_x, obj_y in level_dynamic_objects:
 			image obj_type.image:
-				pos  (obj_x * cell_size, obj_y * cell_size)
-				size (cell_size, cell_size)
+				xpos obj_x * cell_size
+				ypos obj_y * cell_size
+				size cell_size
 		
 		image me.main():
-			pos  (int(me.x + 0.1 * cell_size), int(me.y - 0.33 * cell_size))
-			size (int(cell_size * 0.8), int(cell_size * 1.6))
+			anchor (0.5, 0.8)
+			xpos me.x
+			ypos me.y
+			xsize int(cell_size * 0.8)
+			ysize int(cell_size * 1.6)
 			crop  me.crop
 	
 	if get_game_time() < main_text_end_time:
@@ -62,4 +68,3 @@ screen platformer:
 			text (var_desc + str(globals()[var_name])):
 				xalign 1.0
 				color var_color
-

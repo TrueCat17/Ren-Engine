@@ -1,7 +1,7 @@
 init -20 python:
 	
 	start_score = score = 0
-	extra_text_vars.append(('score', 'Score: ', 0xFFBB00))
+	extra_text_vars.append(('score', 'Score: ', '#FB0'))
 	
 	class Pltf_Coin(Pltf_Empty):
 		can_vertical = False
@@ -29,8 +29,8 @@ init -20 python:
 		
 		@staticmethod
 		def physics(cell, pixel, dx, dy):
-			if tuple(cell) in Pltf_Coin.coins:
-				Pltf_Coin.coins.remove(tuple(cell))
+			if cell in Pltf_Coin.coins:
+				Pltf_Coin.coins.remove(cell)
 				level_dynamic_objects.remove((Pltf_Coin, cell[0], cell[1]))
 				
 				global score
@@ -38,4 +38,3 @@ init -20 python:
 			
 			x, y = pixel
 			return x + dx, y + dy
-

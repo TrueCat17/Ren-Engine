@@ -28,7 +28,7 @@ init -20 python:
 			args = [(cell_size, cell_size)]
 			for i in range(cell_size):
 				args.append((i, cell_size - 1 - i))
-				args.append(im.scale(black_color, 1, i + 1))
+				args.append(im.rect('#000', 1, i + 1))
 			Pltf_LeftWall.image = im.matrix_color(im.composite(*args), get_invert_and_tint_matrix(wall_color))
 		
 		@staticmethod
@@ -59,7 +59,7 @@ init -20 python:
 			args = [(cell_size, cell_size)]
 			for i in range(cell_size):
 				args.append((i, i))
-				args.append(im.scale(black_color, 1, cell_size - i))
+				args.append(im.rect('#000', 1, cell_size - i))
 			Pltf_RightWall.image = im.matrix_color(im.composite(*args), get_invert_and_tint_matrix(wall_color))
 		
 		@staticmethod
@@ -83,9 +83,9 @@ init -20 python:
 			args = [(cell_size, cell_size)]
 			for i in range(cell_size // 2):
 				args.append((i, cell_size - 1 - i))
-				args.append(im.scale(black_color, 1, i + 1))
+				args.append(im.rect('#000', 1, i + 1))
 				args.append((i + cell_size / 2, i + cell_size / 2))
-				args.append(im.scale(black_color, 1, cell_size / 2 - i))
+				args.append(im.rect('#000', 1, cell_size / 2 - i))
 			Pltf_VertexWall.image = im.matrix_color(im.composite(*args), get_invert_and_tint_matrix(wall_color))
 		
 		@staticmethod
@@ -111,4 +111,3 @@ init -20 python:
 						if dx < 0:
 							return x, y - 1
 			return tx, ty
-

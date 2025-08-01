@@ -1,6 +1,6 @@
 init -100 python:
 	set_fps(60)
-	physics_step = 1.0 / get_fps()
+	physics_step = 1 / get_fps()
 	
 	cell_size = 32 # pow of 2: 8, 16, 32...
 
@@ -20,7 +20,8 @@ init python:
 			last_stay_time = get_game_time()
 		
 		global update_dtime
-		update_dtime += get_last_tick()
+		update_dtime += min(get_last_tick(), 0.1)
+		
 		while update_dtime > physics_step:
 			update_dtime -= physics_step
 			
@@ -39,4 +40,3 @@ init python:
 			level_y = (sh - lh) // 2
 		else:
 			level_y = sh // 2 - int(me.y + cell_size / 2)
-
