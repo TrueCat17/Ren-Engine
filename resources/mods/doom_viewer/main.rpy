@@ -1,8 +1,13 @@
+init -1000 python:
+	for f in 'sin cos tan radians degrees atan dist isclose ceil atan2'.split(' '):
+		globals()['math_' + f] = getattr(math, f)
+
 init 100 python:
 	set_fps(30)
 	quick_menu = False
 	config.has_autosave = False
 	
+	hide_screen('dialogue_box')
 	show_screen('doom')
 	show_screen('desc')
 	
@@ -15,14 +20,14 @@ init 100 python:
 		def set_level(self, num):
 			global player
 			
-			self.wad_data = WADData(self, map_name='E1M' + str(num))
-			player = self.player = Player(self)
+			self.wad_data = WADData(self, map_name = 'E1M' + str(num))
+			player = Player(self)
 			self.bsp = BSP(self)
 			self.seg_handler = SegHandler(self)
 			self.view_renderer = ViewRenderer(self)
 		
 		def update(self):
-			self.player.update()
+			player.update()
 			self.seg_handler.update()
 			self.bsp.update()
 	

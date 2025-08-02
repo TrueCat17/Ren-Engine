@@ -9,7 +9,7 @@ init -100 python:
 	PLAYER_ROT_SPEED = 130
 	PLAYER_HEIGHT = 41
 	
-	SCREEN_DIST = H_WIDTH / math.tan(math.radians(H_FOV))
+	SCREEN_DIST = H_WIDTH / math_tan(math_radians(H_FOV))
 	
 	
 	mod_dir = os.path.dirname(get_filename(0)) + '/'

@@ -4,12 +4,16 @@ init python:
 	from io import BytesIO
 	
 	class WADReader:
+		file_cache = {}
+		
 		def __init__(self, wad_path):
-			#self.wad_file = open(wad_path, 'rb')
+			if wad_path not in WADReader.file_cache:
+				data = open(wad_path, 'rb').read()
+				if wad_path.endswith('.zlib'):
+					data = zlib.decompress(data)
+				WADReader.file_cache[wad_path] = data
 			
-			compressed = open(wad_path, 'rb').read()
-			data = zlib.decompress(compressed)
-			self.wad_file = BytesIO(data)
+			self.wad_file = BytesIO(WADReader.file_cache[wad_path])
 			
 			self.header = self.read_header()
 			self.directory = self.read_directory()

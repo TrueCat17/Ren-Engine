@@ -17,6 +17,7 @@ screen doom:
 		rot_speed = PLAYER_ROT_SPEED * get_last_tick()
 		x = y = 0
 	
+	$ allow_arrows()
 	key 'LEFT'  first_delay 0 action 'player.angle += rot_speed'
 	key 'RIGHT' first_delay 0 action 'player.angle -= rot_speed'
 	

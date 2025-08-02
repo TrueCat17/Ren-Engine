@@ -6,7 +6,6 @@ init python:
 		def __init__(self, engine):
 			self.engine = engine
 			self.wad_data = engine.wad_data
-			self.player = engine.player
 			self.textures = self.wad_data.asset_data.textures
 			self.sky_id = self.wad_data.asset_data.sky_id
 			
@@ -28,14 +27,14 @@ init python:
 		def get_x_to_angle_table():
 			x_to_angle = []
 			for i in range(DOOM_W + 1):
-				angle = math.degrees(math.atan((H_WIDTH - i) / SCREEN_DIST))
+				angle = math_degrees(math_atan((H_WIDTH - i) / SCREEN_DIST))
 				x_to_angle.append(angle)
 			return x_to_angle
 		
 		def scale_from_global_angle(self, x, rw_normal_angle, rw_distance):
 			x_angle = self.x_to_angle[x]
-			num = SCREEN_DIST * math.cos(math.radians(rw_normal_angle - x_angle - self.player.angle))
-			den = rw_distance * math.cos(math.radians(x_angle))
+			num = SCREEN_DIST * math_cos(math_radians(rw_normal_angle - x_angle - player.angle))
+			den = rw_distance * math_cos(math_radians(x_angle))
 			
 			scale = num / den
 			return in_bounds(scale, self.MIN_SCALE, self.MAX_SCALE)
@@ -53,6 +52,10 @@ init python:
 			upper_clip = self.upper_clip
 			lower_clip = self.lower_clip
 			
+			player_angle = player.angle
+			player_height = player.height
+			player_pos = player.pos
+			
 			# textures
 			wall_texture_id = side.middle_texture
 			ceil_texture_id = front_sector.ceil_texture
@@ -60,8 +63,8 @@ init python:
 			light_level = front_sector.light_level
 			
 			# calculate the relative plane heights of front sector
-			world_front_z1 = front_sector.ceil_height - self.player.height
-			world_front_z2 = front_sector.floor_height - self.player.height
+			world_front_z1 = front_sector.ceil_height - player_height
+			world_front_z2 = front_sector.floor_height - player_height
 			
 			# check which parts must be rendered
 			b_draw_wall = side.middle_texture != '-'
@@ -72,13 +75,13 @@ init python:
 			rw_normal_angle = seg.angle + 90
 			offset_angle = rw_normal_angle - self.rw_angle1
 			
-			hypotenuse = math.dist(self.player.pos, seg.start_vertex)
-			rw_distance = hypotenuse * math.cos(math.radians(offset_angle))
+			hypotenuse = math_dist(player_pos, seg.start_vertex)
+			rw_distance = hypotenuse * math_cos(math_radians(offset_angle))
 			
 			rw_scale1 = self.scale_from_global_angle(x1, rw_normal_angle, rw_distance)
 			
 			# lol try to fix the stretched line bug
-			if math.isclose(offset_angle % 360, 90, abs_tol=1):
+			if math_isclose(offset_angle % 360, 90, abs_tol=1):
 				rw_scale1 *= 0.01
 			
 			if x1 < x2:
@@ -92,16 +95,16 @@ init python:
 			wall_texture = renderer.get_texture(self.textures[wall_texture_id])
 			if line.flags & self.wad_data.LINEDEF_FLAGS['DONT_PEG_BOTTOM']:
 				v_top = front_sector.floor_height + get_image_height(wall_texture)
-				middle_tex_alt = v_top - self.player.height
+				middle_tex_alt = v_top - player_height
 			else:
 				middle_tex_alt = world_front_z1
 			middle_tex_alt += side.y_offset
 			
 			# determine how the wall textures are horizontally aligned
-			rw_offset = hypotenuse * math.sin(math.radians(offset_angle))
+			rw_offset = hypotenuse * math_sin(math_radians(offset_angle))
 			rw_offset += seg.offset + side.x_offset
 			#
-			rw_center_angle = rw_normal_angle - self.player.angle
+			rw_center_angle = rw_normal_angle - player_angle
 			# -------------------------------------------------------------------------- #
 			
 			# determine where on the screen the wall is drawn
@@ -127,7 +130,7 @@ init python:
 					
 					if wy1 < wy2:
 						angle = rw_center_angle - self.x_to_angle[x]
-						texture_column = rw_distance * math.tan(math.radians(angle)) - rw_offset
+						texture_column = rw_distance * math_tan(math_radians(angle)) - rw_offset
 						inv_scale = 1.0 / rw_scale1
 						
 						renderer.draw_wall_col(wall_texture, texture_column, x, wy1, wy2, middle_tex_alt, inv_scale, light_level)
@@ -152,6 +155,10 @@ init python:
 			upper_clip = self.upper_clip
 			lower_clip = self.lower_clip
 			
+			player_angle = player.angle
+			player_height = player.height
+			player_pos = player.pos
+			
 			# textures
 			upper_wall_texture = side.upper_texture
 			lower_wall_texture = side.lower_texture
@@ -160,10 +167,10 @@ init python:
 			light_level = front_sector.light_level
 			
 			# calculate the relative plane heights of front and back sector
-			world_front_z1 = front_sector.ceil_height - self.player.height
-			world_back_z1 = back_sector.ceil_height - self.player.height
-			world_front_z2 = front_sector.floor_height - self.player.height
-			world_back_z2 = back_sector.floor_height - self.player.height
+			world_front_z1 = front_sector.ceil_height - player_height
+			world_back_z1 = back_sector.ceil_height - player_height
+			world_front_z2 = front_sector.floor_height - player_height
+			world_back_z2 = back_sector.floor_height - player_height
 			
 			# sky hack
 			if front_sector.ceil_texture == back_sector.ceil_texture == self.sky_id:
@@ -196,8 +203,8 @@ init python:
 			rw_normal_angle = seg.angle + 90
 			offset_angle = rw_normal_angle - self.rw_angle1
 			
-			hypotenuse = math.dist(self.player.pos, seg.start_vertex)
-			rw_distance = hypotenuse * math.cos(math.radians(offset_angle))
+			hypotenuse = math_dist(player_pos, seg.start_vertex)
+			rw_distance = hypotenuse * math_cos(math_radians(offset_angle))
 			
 			rw_scale1 = self.scale_from_global_angle(x1, rw_normal_angle, rw_distance)
 			if x2 > x1:
@@ -214,7 +221,7 @@ init python:
 					upper_tex_alt = world_front_z1
 				else:
 					v_top = back_sector.ceil_height + get_image_height(upper_wall_texture)
-					upper_tex_alt = v_top - self.player.height
+					upper_tex_alt = v_top - player_height
 				upper_tex_alt += side.y_offset
 			
 			if b_draw_lower_wall:
@@ -228,10 +235,10 @@ init python:
 			
 			# determine how the wall textures are horizontally aligned
 			if seg_textured:= b_draw_upper_wall or b_draw_lower_wall:
-				rw_offset = hypotenuse * math.sin(math.radians(offset_angle))
+				rw_offset = hypotenuse * math_sin(math_radians(offset_angle))
 				rw_offset += seg.offset + side.x_offset
 				#
-				rw_center_angle = rw_normal_angle - self.player.angle
+				rw_center_angle = rw_normal_angle - player_angle
 			
 			# the y positions of the top / bottom edges of the wall on the screen
 			wall_y1 = H_HEIGHT - world_front_z1 * rw_scale1
@@ -263,7 +270,7 @@ init python:
 				
 				if seg_textured:
 					angle = rw_center_angle - self.x_to_angle[x]
-					texture_column = rw_distance * math.tan(math.radians(angle)) - rw_offset
+					texture_column = rw_distance * math_tan(math_radians(angle)) - rw_offset
 					inv_scale = 1.0 / rw_scale1
 				
 				if b_draw_upper_wall:

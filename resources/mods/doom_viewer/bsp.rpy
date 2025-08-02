@@ -1,10 +1,29 @@
 init python:
+	def norm_angle(angle):
+		return angle % 360
+	
+	def angle_to_x(angle):
+		x = SCREEN_DIST - math_tan(math_radians(angle)) * H_WIDTH
+		return int(x)
+	
+	def point_to_angle(vertex):
+		player_x, player_y = player.pos
+		dx = vertex[0] - player_x
+		dy = vertex[1] - player_y
+		return math_degrees(math_atan2(dy, dx))
+	
+	def is_on_back_side(node):
+		player_x, player_y = player.pos
+		dx = player_x - node.x_partition
+		dy = player_y - node.y_partition
+		return dx * node.dy_partition <= dy * node.dx_partition
+	
+	
 	class BSP:
 		SUB_SECTOR_IDENTIFIER = 0x8000  # 2**15 = 32768
 		
 		def __init__(self, engine):
 			self.engine = engine
-			self.player = engine.player
 			self.nodes = engine.wad_data.nodes
 			self.sub_sectors = engine.wad_data.sub_sectors
 			self.segs = engine.wad_data.segments
@@ -21,8 +40,7 @@ init python:
 			while not sub_sector_id >= self.SUB_SECTOR_IDENTIFIER:
 				node = self.nodes[sub_sector_id]
 				
-				is_on_back = self.is_on_back_side(node)
-				if is_on_back:
+				if is_on_back_side(node):
 					sub_sector_id = self.nodes[sub_sector_id].back_child_id
 				else:
 					sub_sector_id = self.nodes[sub_sector_id].front_child_id
@@ -31,19 +49,11 @@ init python:
 			seg = self.segs[sub_sector.first_seg_id]
 			return seg.front_sector.floor_height
 		
-		@staticmethod
-		def angle_to_x(angle):
-			if angle > 0:
-				x = SCREEN_DIST - math.tan(math.radians(angle)) * H_WIDTH
-			else:
-				x = -math.tan(math.radians(angle)) * H_WIDTH + SCREEN_DIST
-			return int(x)
-		
 		def add_segment_to_fov(self, vertex1, vertex2):
-			angle1 = self.point_to_angle(vertex1)
-			angle2 = self.point_to_angle(vertex2)
+			angle1 = point_to_angle(vertex1)
+			angle2 = point_to_angle(vertex2)
 			
-			span = self.norm(angle1 - angle2)
+			span = norm_angle(angle1 - angle2)
 			# backface culling
 			if span >= 180.0:
 				return False
@@ -51,44 +61,41 @@ init python:
 			# needed for further calculations
 			rw_angle1 = angle1
 			
-			angle1 -= self.player.angle
-			angle2 -= self.player.angle
+			angle1 -= player.angle
+			angle2 -= player.angle
 			
-			span1 = self.norm(angle1 + H_FOV)
+			span1 = norm_angle(angle1 + H_FOV)
 			if span1 > FOV:
 				if span1 >= span + FOV:
 					return False
 				# clipping
 				angle1 = H_FOV
 			
-			span2 = self.norm(H_FOV - angle2)
+			span2 = norm_angle(H_FOV - angle2)
 			if span2 > FOV:
 				if span2 >= span + FOV:
 					return False
 				# clipping
 				angle2 = -H_FOV
 			
-			x1 = self.angle_to_x(angle1)
-			x2 = self.angle_to_x(angle2)
+			x1 = angle_to_x(angle1)
+			x2 = angle_to_x(angle2)
 			return x1, x2, rw_angle1
 		
 		def render_sub_sector(self, sub_sector_id):
 			sub_sector = self.sub_sectors[sub_sector_id]
+			classify_segment = self.engine.seg_handler.classify_segment
 			
 			for i in range(sub_sector.seg_count):
 				seg = self.segs[sub_sector.first_seg_id + i]
 				if result := self.add_segment_to_fov(seg.start_vertex, seg.end_vertex):
-					self.engine.seg_handler.classify_segment(seg, *result)
-		
-		@staticmethod
-		def norm(angle):
-			return angle % 360
+					classify_segment(seg, *result)
 		
 		def check_bbox(self, bbox):
 			a, b = (bbox.left, bbox.bottom), (bbox.left, bbox.top)
 			c, d = (bbox.right, bbox.top), (bbox.right, bbox.bottom)
 			
-			px, py = self.player.pos
+			px, py = player.pos
 			if px < bbox.left:
 				if py > bbox.top:
 					bbox_sides = (b, a), (c, b)
@@ -112,23 +119,18 @@ init python:
 					return True
 			
 			for v1, v2 in bbox_sides:
-				angle1 = self.point_to_angle(v1)
-				angle2 = self.point_to_angle(v2)
+				angle1 = point_to_angle(v1)
+				angle2 = point_to_angle(v2)
 				
-				span = self.norm(angle1 - angle2)
+				span = norm_angle(angle1 - angle2)
 				
-				angle1 -= self.player.angle
-				span1 = self.norm(angle1 + H_FOV)
+				angle1 -= player.angle
+				span1 = norm_angle(angle1 + H_FOV)
 				if span1 > FOV:
 					if span1 >= span + FOV:
 						continue
 				return True
 			return False
-		
-		def point_to_angle(self, vertex):
-			dx = vertex[0] - self.player.pos[0]
-			dy = vertex[1] - self.player.pos[1]
-			return math.degrees(math.atan2(dy, dx))
 		
 		def render_bsp_node(self, node_id):
 			if self.is_traverse_bsp:
@@ -140,8 +142,7 @@ init python:
 				
 				node = self.nodes[node_id]
 				
-				is_on_back = self.is_on_back_side(node)
-				if is_on_back:
+				if is_on_back_side(node):
 					self.render_bsp_node(node.back_child_id)
 					if self.check_bbox(node.bbox['front']):
 						self.render_bsp_node(node.front_child_id)
@@ -149,8 +150,3 @@ init python:
 					self.render_bsp_node(node.front_child_id)
 					if self.check_bbox(node.bbox['back']):
 						self.render_bsp_node(node.back_child_id)
-		
-		def is_on_back_side(self, node):
-			dx = self.player.pos[0] - node.x_partition
-			dy = self.player.pos[1] - node.y_partition
-			return dx * node.dy_partition - dy * node.dx_partition <= 0
