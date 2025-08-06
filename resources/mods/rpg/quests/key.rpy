@@ -1,14 +1,14 @@
 label key__start:
-	"Квест <Ключ> начат."
+	tutorial "Квест <Ключ> начат."
 	
 	"Я увидел какой-то ключ возле здания клубов."
 	"Думаю, лучше его подобрать, пока кто-нибудь его не запнул в траву."
-	"[[Для этого нужно подойти к ключу и взять его в инвентарь, нажав E (англ.).]"
-	"[[Нажав I, можно открыть/закрыть инвентарь.]"
+	tutorial "Для этого нужно подойти к ключу и взять его в инвентарь, нажав E (англ.)."
+	tutorial "Нажав I, можно открыть/закрыть инвентарь."
 	window hide
 
 label key__end:
-	"Квест <Ключ> завершён."
+	tutorial "Квест <Ключ> завершён."
 	window hide
 
 label key__*:
@@ -36,7 +36,7 @@ label key__radio_club*:
 		return
 	
 	$ set_rpg_control(False)
-	$ location_cutscene_on(align='down')
+	$ location_cutscene_on(align = 'down')
 	$ me.set_direction(to_forward)
 	
 	me "Я тут рядом проходил."
@@ -65,4 +65,3 @@ label key__radio_club*:
 	
 	$ location_cutscene_off()
 	$ set_rpg_control(True)
-

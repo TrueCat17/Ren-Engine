@@ -11,6 +11,7 @@ label rpg_start:
 	python:
 		set_rpg_control(False)
 		make_names_unknown()
+		meet('me', 'Семён')
 		
 		set_location('ikarus', 'sit_place')
 		me.set_direction(to_right)
@@ -26,9 +27,9 @@ label rpg_start:
 	$ me.move_to_place('before_sit_place')
 	$ me.move_to_place('before_sit_place-2')
 	
-	"Управление WASD/стрелки + Shift (бег/шаг)."
-	"Для выхода из локации-помещения подойдите к выходу и нажмите кнопку <Действие> - E."
-	"То же самое относится и к входу."
+	tutorial "Управление WASD + Shift (бег/шаг)."
+	tutorial "Для выхода из локации-помещения подойдите к выходу и нажмите кнопку <Действие> - E."
+	tutorial "То же самое относится и к входу."
 	
 	window hide
 	$ set_rpg_control(True)
@@ -41,8 +42,8 @@ label enter__ikarus:
 	
 	$ show_extra_help = False
 	window show
-	"Быстрые сохранение/загрузка - Q/L."
-	"Скрытие/Показ интерфейса - H, скриншот - P."
+	tutorial "Быстрые сохранение/загрузка - Q/L."
+	tutorial "Скрытие/Показ интерфейса - H, скриншот - P."
 	window hide
 	
 	$ set_rpg_control(True)
@@ -54,8 +55,8 @@ label enter__before_gates:
 	$ was.append('gates')
 	
 	$ set_rpg_control(False)
-	$ location_cutscene_on(align='down')
-	$ me.move_to_place('before_gates', False)
+	$ location_cutscene_on(align = 'down')
+	$ me.move_to_place('before_gates')
 	$ me.set_direction(to_forward)
 	
 	window show
@@ -67,9 +68,9 @@ label enter__before_gates:
 	window hide
 	
 	$ show_character(sl, 'clubs')
-	$ cam_to(sl, align='up')
+	$ cam_to(sl, align = 'up')
 	$ sl.start_animation('hello', -1)
-	$ sl.move_to_place('behind_gates', False, 2)
+	$ sl.move_to_place('behind_gates', wait_time = 2)
 	$ sl.remove_animation()
 	
 	window show
@@ -107,23 +108,23 @@ label clubs__before_clubs:
 	$ was.append('clubs')
 	
 	$ set_rpg_control(False)
-	$ location_cutscene_on(align='down')
+	$ location_cutscene_on(align = 'down')
 	$ me.move_to_place('before_porch')
 	$ me.set_direction(to_forward)
 	
+	$ show_character(un, 'radio_club')
+	$ un.move_to_place('porch', wait_time = 0)
 	window show
 	"Проходя мимо здания клубов, я заметил, что тут вышла {color=[hex(un.name_text_color)]}какая-то девушка{/color}."
 	
-	$ show_character(un, 'radio_club')
-	$ un.move_to_place('porch')
-	
-	$ show_character(us, 'cluster')
-	$ us.move_to_place('porch_left', True, 1)
-	$ us.rotate_after_moving = to_right
+	python:
+		show_character(us, 'cluster')
+		us.move_to_place('porch_left', True, 1)
+		us.rotate_after_moving = to_right
 	$ un.set_direction(to_left)
 	
 	"Пока я раздумывал, стоит ли подходить к ней, появилась {color=[hex(us.name_text_color)]}ещё одна{/color}."
-	"Она подошла к первой."		
+	"Она подошла к первой."
 	"Начала что-то рассказывать и..."
 	
 	$ us.start_animation('cricket', 0, 0.7)
@@ -134,9 +135,9 @@ label clubs__before_clubs:
 	
 	$ add_location_object('clubs', 'porch', 'key')
 	$ un.move_to_place('admin', True, 0.5)
+	$ us.remove_animation()
 	"Первая убежала."
 	
-	$ us.remove_animation()
 	$ us.set_direction(to_back)
 	pause 0.2
 	$ me.set_direction(to_right)
@@ -158,11 +159,11 @@ label on__radio_club:
 		return
 	$ was.append('radio_club')
 	
-	python:
-		set_rpg_control(False)
-		me.set_direction(to_forward)
-		sh.set_direction(to_back)
-	$ location_cutscene_on(align='down')
+	$ set_rpg_control(False)
+	$ location_cutscene_on(align = 'down')
+	$ me.set_direction(to_forward)
+	$ sh.set_direction(to_back)
+	pause 0.5
 	
 	window show
 	
@@ -171,10 +172,9 @@ label on__radio_club:
 	sh "Я - Шурик."
     $ meet('sh', 'Шурик')
 	
-	me "Я - [me], приятно познакомиться, конечно, но я просто зашёл посмотреть..."
+	me "Я - [me!t], приятно познакомиться, конечно, но я просто зашёл посмотреть..."
 	
 	window hide
 	$ sh.set_direction(to_forward)
 	$ location_cutscene_off()
 	$ set_rpg_control(True)
-

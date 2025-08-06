@@ -56,4 +56,3 @@ init 1 python:
 	add_location_object("radio_club", "radio_club_tabouret_pos-1", "radio_club_tabouret")
 	add_location_object("radio_club", "radio_club_tabouret_pos-2", "radio_club_tabouret")
 	add_location_object("radio_club", "radio_club_tabouret_pos-3", "radio_club_tabouret")
-	
