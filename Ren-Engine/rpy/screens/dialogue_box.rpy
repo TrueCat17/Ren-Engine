@@ -148,11 +148,14 @@ init -1000 python:
 				db.dialogue_full_text += db.last_dialogue_text_suffix
 		
 		if name is not None or db.dialogue_text_after_pause or not db.prev_texts:
-			text_object = db.get_cur_text_object(text)
+			text_object = db.get_cur_text_object(db.dialogue_text_prefix + text + db.dialogue_text_suffix)
 			db.prev_texts.append(text_object)
 			db.prev_texts[:-config.history_length] = []
 		else:
-			db.prev_texts[-1].dialogue_text += text
+			text_object = db.prev_texts[-1]
+			if db.last_dialogue_text_suffix and text_object.dialogue_text.endswith(db.last_dialogue_text_suffix):
+				text_object.dialogue_text = text_object.dialogue_text[:-len(db.last_dialogue_text_suffix)]
+			text_object.dialogue_text += text + db.last_dialogue_text_suffix
 		
 		window_show()
 	
