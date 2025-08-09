@@ -20,7 +20,7 @@ init -1002 python:
 					self.__setattr__(name, value)
 		
 		def __contains__(self, key):
-			if attr in screen_lang_complex_props:
+			if key in screen_lang_complex_props:
 				props = get_prop_names(key)
 				for prop in props:
 					if prop not in self:
