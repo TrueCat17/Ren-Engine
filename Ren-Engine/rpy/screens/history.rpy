@@ -1,20 +1,58 @@
 init python:
 	def history__on_show(screen_name):
-		if screen_name == 'history':
-			history.showed_time = get_game_time()
-			history.hided_time = 0
+		if screen_name != 'history':
+			return
+		
+		history.closing = False
+		
+		smooth_changes.start(
+			'history',
+			history.pre_start_props, history.start_props, history.cur_props,
+			history.appearance_time, None,
+		)
+	
 	signals.add('show_screen', history__on_show)
 	
+	
 	def history__close():
-		if not history.hided_time:
-			history.hided_time = get_game_time()
+		if history.closing:
+			return
+		history.closing = True
+		
+		smooth_changes.start(
+			'history',
+			history.cur_props.copy(), history.end_props, history.cur_props,
+			history.disappearance_time, HideScreen('history'),
+		)
+	
 	
 	build_object('history')
+	history.cur_props = {}
+	
+	history.pre_start_props = {
+		'xpos': 0,
+		'ypos': 0.5,
+		'xanchor': 1.0,
+		'yanchor': 0.5,
+		'alpha': 1.0,
+	}
+	history.start_props = {
+		'xpos': 0,
+		'ypos': 0.5,
+		'xanchor': 0.0,
+		'yanchor': 0.5,
+		'alpha': 1.0,
+	}
+	history.end_props = {
+		'xpos': 0,
+		'ypos': 0.5,
+		'xanchor': 0.0,
+		'yanchor': 0.5,
+		'alpha': 0.0,
+	}
 	
 	history.ysize = 0.95
 	
-	history.showed_time = 0
-	history.hided_time = 0
 	history.appearance_time = 0.4
 	history.disappearance_time = 0.4
 	
@@ -53,24 +91,16 @@ screen history:
 		screen_tmp.narrator_xsize = gui.get_int('history_thought_xpos') + gui.get_int('history_thought_width') + 70
 		screen_tmp.xsize = max(screen_tmp.usual_xsize, screen_tmp.narrator_xsize)
 		
-		dtime = get_game_time() - history.showed_time
-		screen_tmp.x = int(-screen_tmp.xsize * (history.appearance_time - dtime) / history.appearance_time)
-		if screen_tmp.x > 0:
-			screen_tmp.x = 0
-		
-		if history.hided_time:
-			dtime = get_game_time() - history.hided_time
-			screen_tmp.alpha = (history.disappearance_time - dtime) / history.disappearance_time
-			if screen_tmp.alpha <= 0:
-				hide_screen('history')
-		else:
-			screen_tmp.alpha = 1
+		smooth_changes.update('history')
+		screen_tmp.__dict__.update(history.cur_props)
 	
 	image gui.bg('history_bg'):
 		clipping True
 		alpha screen_tmp.alpha
-		xpos screen_tmp.x
-		yalign 0.5
+		xpos screen_tmp.xpos
+		ypos screen_tmp.ypos
+		xanchor screen_tmp.xanchor
+		yanchor screen_tmp.yanchor
 		xsize screen_tmp.xsize
 		ysize history.ysize
 		

@@ -95,7 +95,7 @@ init -1000001 python:
 		0, 20, 0.5, False -> 10
 		10, 20, 0.7, True -> 13
 		"""
-		t = float if type(start) is float or type(end) is float else int
+		t = float if type(start) is float or type(end) is float else absolute
 		return t(start + (end - start) * (1 - k if reverse else k))
 	
 	

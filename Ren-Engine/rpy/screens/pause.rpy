@@ -10,11 +10,46 @@ init -100:
 init -100 python:
 	pause_screen.disable = False
 	
-	pause_screen.rotate_before_hiding = 15 # in degrees
 	# in seconds:
-	pause_screen.rotate_time = 0.2
-	pause_screen.disappearance_time = 0.2
+	pause_screen.disappearance_time = [0.2, 0.2]
 	pause_screen.appearance_time = 0.4
+	
+	pause_screen.pre_start_props = {
+		'xpos': 0.0,
+		'xanchor': 0.0,
+		'ypos': 0.0,
+		'yanchor': 1.0,
+		'alpha': 1,
+		'rotate': 0,
+	}
+	pause_screen.start_props = {
+		'xpos': 0.0,
+		'xanchor': 0.0,
+		'ypos': 1.0,
+		'yanchor': 1.0,
+		'alpha': 1,
+		'rotate': 0,
+	}
+	
+	pause_screen.end_props = [
+		{
+			'xpos': 0.0,
+			'xanchor': 0.0,
+			'ypos': 1.0,
+			'yanchor': 1.0,
+			'alpha': 1,
+			'rotate': 15,
+		},
+		{
+			'xpos': 1.0,
+			'xanchor': 0.0,
+			'ypos': 2.0 + _sin(15),
+			'yanchor': 1.0,
+			'alpha': 1,
+			'rotate': 15,
+		},
+	]
+	
 	
 	# item: [text, action]
 	#  text will be translated
@@ -31,59 +66,36 @@ init -100 python:
 
 
 init -1000 python:
-	def pause_screen__update():
-		if pause_screen.showed_time:
-			dtime = get_game_time() - pause_screen.showed_time
-		else:
-			dtime = 0
-			signals.add('enter_frame', Exec('pause_screen.showed_time = get_game_time()'), times = 1)
-			# set <showed_time> in the next frame, because freezing is possible (because loading image(s) for pause menu)
-		
-		screen_tmp.x = 0
-		screen_tmp.rotate = 0
-		
-		if dtime > pause_screen.appearance_time:
-			screen_tmp.y = 0
-			if pause_screen.hided_time:
-				dtime = get_game_time() - pause_screen.hided_time
-				if dtime < pause_screen.rotate_time:
-					screen_tmp.rotate = pause_screen.rotate_before_hiding * dtime / pause_screen.rotate_time
-				else:
-					screen_tmp.rotate = pause_screen.rotate_before_hiding
-					screen_tmp.x = screen_tmp.y = (dtime - pause_screen.rotate_time) / pause_screen.disappearance_time
-					
-					if screen_tmp.x >= 1:
-						screen_tmp.x, screen_tmp.y = 0, 0
-						screen_tmp.rotate = 0
-						pause_screen.hided_time = 0
-						
-						set_fps(pause_screen.before_fps)
-						hide_screen('pause')
-		else:
-			screen_tmp.y = float(dtime - pause_screen.appearance_time) / pause_screen.appearance_time
-	
-	
 	def pause_screen__show(ignore_checks = False):
 		if not ignore_checks and pause_screen.disable: return
 		if has_screen('pause'): return
 		
-		pause_screen.showed_time = 0
-		pause_screen.hided_time = 0
+		smooth_changes.start(
+			'pause',
+			pause_screen.pre_start_props, pause_screen.start_props, pause_screen.cur_props,
+			pause_screen.appearance_time, None,
+		)
+		
 		pause_screen.before_fps = get_fps()
 		set_fps(pause_screen.fps)
 		show_screen('pause')
 	
 	def pause_screen__close():
-		if get_game_time() - pause_screen.hided_time < pause_screen.rotate_time + pause_screen.disappearance_time: return
-		if not pause_screen.showed_time: return
-		if get_game_time() - pause_screen.showed_time < pause_screen.appearance_time: return
+		if not smooth_changes.ended('pause'): return
 		
-		pause_screen.hided_time = get_game_time()
+		smooth_changes.start(
+			'pause',
+			pause_screen.start_props, pause_screen.end_props, pause_screen.cur_props,
+			pause_screen.disappearance_time, pause_screen.real_close,
+		)
+	
+	def pause_screen__real_close():
+		hide_screen('pause')
+		set_fps(pause_screen.before_fps)
 	
 	
 	build_object('pause_screen')
-	pause_screen.showed_time = 0
-	pause_screen.hided_time = 0
+	pause_screen.cur_props = {}
 	pause_screen.before_fps = None
 	pause_screen.fps = 60
 
@@ -93,10 +105,14 @@ screen pause:
 	modal  True
 	save   False
 	
+	$ smooth_changes.update('pause')
 	$ screen_tmp = SimpleObject()
-	$ pause_screen.update()
-	xpos   screen_tmp.x
-	ypos   screen_tmp.y
+	$ screen_tmp.__dict__.update(pause_screen.cur_props)
+	xpos   screen_tmp.xpos
+	ypos   screen_tmp.ypos
+	xanchor screen_tmp.xanchor
+	yanchor screen_tmp.yanchor
+	alpha  screen_tmp.alpha
 	rotate screen_tmp.rotate
 	
 	key 'ESCAPE' action pause_screen.close
