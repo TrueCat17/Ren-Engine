@@ -6,6 +6,23 @@ init -1001 python:
 	to_left = 1
 	to_right = 2
 	
+	character_text_edges = (
+		'name_prefix',
+		'name_suffix',
+		'text_prefix',
+		'text_suffix',
+		
+		'nvl_name_prefix',
+		'nvl_name_suffix',
+		'nvl_text_prefix',
+		'nvl_text_suffix',
+		
+		'history_name_prefix',
+		'history_name_suffix',
+		'history_text_prefix',
+		'history_text_suffix',
+	)
+	
 	def characters_moved():
 		for character in characters:
 			if not character.get_auto() and not character.ended_move_waiting():
@@ -164,8 +181,8 @@ init -1001 python:
 			self.invisible = False
 			
 			
-			for prefix_from, prefix_to in [('who_', 'name_text_'), ('what_', 'dialogue_text_')]:
-				for prop in ('font', 'size', 'color', 'outlinecolor', 'background', 'prefix', 'suffix'):
+			for prefix_from, prefix_to in (('who_', 'name_text_'), ('what_', 'dialogue_text_')):
+				for prop in ('font', 'size', 'color', 'outlinecolor', 'background'):
 					prop_from = prefix_from + prop
 					prop_to   = prefix_to   + prop
 					
@@ -179,8 +196,13 @@ init -1001 python:
 						value = color_to_int(value)
 					self[prop_to] = value
 			
+			for prop_to in character_text_edges:
+				prop_from = prop_to.replace('name_', 'who_').replace('text_', 'what_')
+				if prop_from in properties:
+					self[prop_to] = properties[prop_from]
+			
 			for prop, value in properties.items():
-				if prop.startswith('dialogue_'):
+				if prop.startswith('dialogue_') or prop in ('history_name_bg', 'history_name_bg_style'):
 					self[prop] = value
 			
 			self.inventory = None

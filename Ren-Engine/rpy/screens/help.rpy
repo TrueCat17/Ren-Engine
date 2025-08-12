@@ -124,6 +124,11 @@ init -500 python:
 	help.background_image = im.rect('#FFF')
 	help.border_image = im.rect('#000')
 	
+	# None - auto
+	help.slider_ground = None
+	help.slider_hover  = None
+	help.slider_button_style = None
+	
 	# only relative sizes here
 	help.indent = 0.03
 	help.xindent = help.indent / get_from_hard_config('window_w_div_h', float)
@@ -131,7 +136,13 @@ init -500 python:
 	help.viewport_height = help.height - help.indent_for_buttons - help.indent
 	
 	def help__init_slider():
-		slider_v.init('help', help.viewport_height, button_size = help.slider_width)
+		slider_v.init(
+			'help', help.viewport_height,
+			ground = help.slider_ground,
+			hover  = help.slider_hover,
+			button_size  = help.slider_width,
+			button_style = help.slider_button_style
+		)
 	signals.add('inited', help__init_slider, times = 1)
 
 init:

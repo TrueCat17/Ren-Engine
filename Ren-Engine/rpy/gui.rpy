@@ -75,9 +75,23 @@ init -1000 python:
 	gui.dialogue_box_height_min = 80
 	gui.dialogue_box_bg = 'images/gui/dialogue/voice.png'
 	
-	# default prefix and suffix for text of all characters
-	gui.dialogue_text_prefix = ''
-	gui.dialogue_text_suffix = ''
+	
+	# default prefixes and suffixes for name and text of all characters
+	gui.name_prefix = ''
+	gui.name_suffix = ''
+	gui.text_prefix = ''
+	gui.text_suffix = ''
+	
+	gui.nvl_name_prefix = ''
+	gui.nvl_name_suffix = ':'
+	gui.nvl_text_prefix = ''
+	gui.nvl_text_suffix = ''
+	
+	gui.history_name_prefix = ''
+	gui.history_name_suffix = ':'
+	gui.history_text_prefix = ''
+	gui.history_text_suffix = ''
+	
 	
 	# dialogue text
 	gui.dialogue_text_font = 'Calibri'
@@ -107,9 +121,6 @@ init -1000 python:
 	gui.name_box_height_min = 24
 	gui.name_box_bg = 'images/gui/dialogue/name.png'
 	
-	# default prefix and suffix for name of all characters
-	gui.name_text_prefix = ''
-	gui.name_text_suffix = ''
 	
 	# name_text
 	gui.name_text_font = 'Calibri'
@@ -154,15 +165,11 @@ init -1000 python:
 	gui.nvl_height = None # None = auto
 	gui.nvl_spacing = 10 # enable if nvl_height is None
 	
-	gui.nvl_name_prefix = ''
-	gui.nvl_name_suffix = ':'
 	gui.nvl_name_xpos = 0.25
 	gui.nvl_name_ypos = 0
 	gui.nvl_name_width = 150
 	gui.nvl_name_xalign = 1.0
 	
-	gui.nvl_text_prefix = ''
-	gui.nvl_text_suffix = ''
 	gui.nvl_text_xpos = 0.27
 	gui.nvl_text_ypos = 0
 	gui.nvl_text_width = 0.6
@@ -186,18 +193,21 @@ init -1000 python:
 	gui.history_height = None # None = auto
 	gui.history_spacing = 5 # enable if history_height is None
 	
-	gui.history_name_xpos = 150
+	gui.history_name_bg = None # None - disable
+	gui.history_name_bg_style = None # name (str) of style, that extends image
+	
+	gui.history_name_xpos = 0.125
 	gui.history_name_ypos = 0
-	gui.history_name_width = 150
+	gui.history_name_width = 0.125
 	gui.history_name_xalign = 1.0
 	
-	gui.history_text_xpos = 170
+	gui.history_text_xpos = 0.13
 	gui.history_text_ypos = 0
 	gui.history_text_width = 0.5
 	gui.history_text_xalign = 0.0
 	
 	# for text of narrator (with empty name)
-	gui.history_thought_xpos = 0.1
+	gui.history_thought_xpos = 0.08
 	gui.history_thought_ypos = 0
 	gui.history_thought_width = 0.6
 	gui.history_thought_xalign = 0.0

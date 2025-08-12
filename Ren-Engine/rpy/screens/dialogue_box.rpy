@@ -57,7 +57,7 @@ init -1000 python:
 				props += [prop, prop + '_min', prop + '_max']
 			
 			if style.endswith('text'):
-				props += ['font', 'size', 'size_min', 'size_max', 'color', 'outlinecolor', 'prefix', 'suffix']
+				props += ['font', 'size', 'size_min', 'size_max', 'color', 'outlinecolor']
 			else:
 				props += ['bg']
 			
@@ -69,6 +69,21 @@ init -1000 python:
 				elif prop.endswith('bg') and callable(value):
 					value = value()
 				db[prop] = value
+		
+		for prop in ('history_name_bg', 'history_name_bg_style'):
+			db[prop] = (local_styles if prop in local_styles else gui)[prop]
+		
+		# prefixes and suffixes
+		for prop in character_text_edges:
+			if prop in local_styles:
+				value = local_styles[prop]
+			else:
+				prop_without_mode = prop.replace('nvl_', '').replace('history_', '')
+				if prop_without_mode in local_styles:
+					value = local_styles[prop_without_mode]
+				else:
+					value = gui[prop]
+			db[prop] = value
 		
 		for style in ('dialogue_button', 'dialogue_menu_button'):
 			props = []
@@ -129,33 +144,25 @@ init -1000 python:
 		if name is not None:
 			db.start_time = get_game_time()
 			
-			db.name_text = db.name_text_prefix + name + db.name_text_suffix
+			db.name_text = name
 			
 			db.dialogue_text = ''
-			db.dialogue_full_text = db.dialogue_text_prefix + text
-			if not db.dialogue_text_after_pause:
-				db.dialogue_full_text += db.dialogue_text_suffix
-			db.last_dialogue_text_suffix = db.dialogue_text_suffix
+			db.dialogue_full_text = text
 		
 		# continuation of prev text (for <extend> character)
 		else:
 			db.start_time = get_game_time() - len(db.dialogue_text) / config.text_cps
 			
-			if db.last_dialogue_text_suffix and db.dialogue_full_text.endswith(db.last_dialogue_text_suffix):
-				db.dialogue_full_text = db.dialogue_full_text[:-len(db.last_dialogue_text_suffix)]
 			db.dialogue_full_text += text
-			if not db.dialogue_text_after_pause:
-				db.dialogue_full_text += db.last_dialogue_text_suffix
 		
 		if name is not None or db.dialogue_text_after_pause or not db.prev_texts:
-			text_object = db.get_cur_text_object(db.dialogue_text_prefix + text + db.dialogue_text_suffix)
+			text_object = db.get_cur_text_object(text)
+			db.dialogue.append(text_object)
 			db.prev_texts.append(text_object)
 			db.prev_texts[:-config.history_length] = []
 		else:
 			text_object = db.prev_texts[-1]
-			if db.last_dialogue_text_suffix and text_object.dialogue_text.endswith(db.last_dialogue_text_suffix):
-				text_object.dialogue_text = text_object.dialogue_text[:-len(db.last_dialogue_text_suffix)]
-			text_object.dialogue_text += text + db.last_dialogue_text_suffix
+			text_object.dialogue_text += text
 		
 		window_show()
 	
@@ -241,11 +248,7 @@ init -1000 python:
 				return
 			db.read = True
 			
-			if db.mode == 'nvl':
-				text_object = db.get_cur_text_object()
-				db.dialogue.append(text_object)
-				db.name_text = db.dialogue_text = db.dialogue_full_text = ''
-			else:
+			if db.mode != 'nvl':
 				db.dialogue = []
 		else:
 			db.dialogue_text = db.dialogue_full_text
@@ -256,6 +259,9 @@ init -1000 python:
 		
 		res = SimpleObject()
 		res.dialogue_text = text
+		
+		for prop in character_text_edges + ('history_name_bg', 'history_name_bg_style'):
+			res[prop] = db[prop]
 		
 		for prop in ('name_text', 'name_text_font', 'name_text_color', 'name_text_outlinecolor', 'dialogue_text_font', 'dialogue_text_color', 'dialogue_text_outlinecolor'):
 			simple_prop = prop.replace('text_', '')
@@ -416,7 +422,7 @@ screen dialogue_box_adv:
 				
 				alpha 1 if db.name_text else 0
 				
-				text db.name_text:
+				text (db.name_prefix + db.name_text + db.name_suffix):
 					font         db.name_text_font
 					text_size    gui.get_int('name_text_size', obj = db)
 					color        db.name_text_color
@@ -424,7 +430,7 @@ screen dialogue_box_adv:
 					xalign       gui.name_text_xalign
 					yalign       gui.name_text_yalign
 			
-			text db.dialogue_text:
+			text (db.text_prefix + db.dialogue_text + (db.text_suffix if db.dialogue_text == db.dialogue_full_text else '')):
 				xpos gui.get_int('dialogue_text_xpos', obj = db)
 				ypos gui.get_int('dialogue_text_ypos', obj = db)
 				xsize screen_tmp.dialogue_text_width
@@ -450,10 +456,6 @@ screen dialogue_box_nvl:
 		spacing 0 if gui.nvl_height else gui.get_int('nvl_spacing')
 		
 		python:
-			screen_tmp.last_dialogue = db.dialogue.copy()
-			if db.dialogue_text:
-				screen_tmp.last_dialogue.append(db.get_cur_text_object())
-			
 			screen_tmp.name_text_size     = gui.get_int('name_text_size')
 			screen_tmp.dialogue_text_size = gui.get_int('dialogue_text_size')
 			
@@ -474,12 +476,12 @@ screen dialogue_box_nvl:
 			
 			screen_tmp.nvl_height = gui.get_int('nvl_height') if gui.nvl_height else -1
 		
-		for text_object in screen_tmp.last_dialogue:
+		for text_object in db.dialogue:
 			null:
 				ysize screen_tmp.nvl_height
 				
 				if text_object.name_text:
-					text (gui.nvl_name_prefix + text_object.name_text + gui.nvl_name_suffix):
+					text (text_object.nvl_name_prefix + text_object.name_text + text_object.nvl_name_suffix):
 						xpos  screen_tmp.nvl_name_xpos
 						ypos  screen_tmp.nvl_name_ypos + screen_tmp.name_text_yoffset
 						xsize screen_tmp.nvl_name_width
@@ -491,8 +493,15 @@ screen dialogue_box_nvl:
 						color        text_object.name_color
 						outlinecolor text_object.name_outlinecolor
 				
-				$ nvl_text_prefix = 'nvl_%s_' % ('text' if text_object.name_text else 'thought')
-				text (gui.nvl_text_prefix + text_object.dialogue_text + gui.nvl_text_suffix):
+				python:
+					if text_object is db.dialogue[-1] and db.dialogue_text != db.dialogue_full_text:
+						screen_tmp.text = db.dialogue_text
+					else:
+						screen_tmp.text = text_object.dialogue_text + text_object.nvl_text_suffix
+				
+				text (text_object.nvl_text_prefix + screen_tmp.text):
+					
+					$ nvl_text_prefix = 'nvl_%s_' % ('text' if text_object.name_text else 'thought')
 					xpos  screen_tmp[nvl_text_prefix + 'xpos']
 					ypos  screen_tmp[nvl_text_prefix + 'ypos'] + (screen_tmp.dialogue_text_yoffset if text_object.name_text else 0)
 					xsize screen_tmp[nvl_text_prefix + 'width']

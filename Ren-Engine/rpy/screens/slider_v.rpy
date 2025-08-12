@@ -1,15 +1,16 @@
 init -1000 python:
 	
-	def slider_v__init(name, size, slider_size = 0.4, ground = None, hover = None, value = 0.0, button_size = 25, spacing = 4, buttons = True):
+	def slider_v__init(name, size, slider_size = 0.4, ground = None, hover = None, value = 0.0, button_size = 25, spacing = 4, buttons = True, button_style = None):
 		data = slider_v.data[name] = SimpleObject()
-		data.size        = size
-		data.slider_size = slider_size
-		data.ground      = ground or gui.vbar_ground
-		data.hover       = hover  or gui.vbar_hover
-		data.value       = value
-		data.button_size = button_size
-		data.spacing     = spacing
-		data.buttons     = buttons
+		data.size         = size
+		data.slider_size  = slider_size
+		data.ground       = ground or gui.vbar_ground
+		data.hover        = hover  or gui.vbar_hover
+		data.value        = value
+		data.button_size  = button_size
+		data.spacing      = spacing
+		data.buttons      = buttons
+		data.button_style = button_style or 'slider_v_button'
 		
 		data.scrolling = False
 		data.hovered = False
@@ -79,7 +80,7 @@ screen slider_v(name):
 			null ysize slider_v_cur.spacing
 			
 			textbutton '↑':
-				style 'slider_v_button'
+				style slider_v_cur.button_style
 				text_size slider_v_cur.button_size - 10
 				size      slider_v_cur.button_size
 				action slider_v.add_value(-0.1)
@@ -135,7 +136,7 @@ screen slider_v(name):
 		
 		if slider_v_cur.buttons:
 			textbutton '↓':
-				style 'slider_v_button'
+				style slider_v_cur.button_style
 				text_size slider_v_cur.button_size - 10
 				size      slider_v_cur.button_size
 				action slider_v.add_value(+0.1)
