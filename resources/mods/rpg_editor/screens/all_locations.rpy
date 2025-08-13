@@ -15,8 +15,6 @@ init python:
 	
 	common_speed = 25
 	
-	start_x, start_y = common_cam_x, common_cam_y
-	
 	def start_drag_location(name):
         global drag_location_name
         drag_location_name = name
@@ -25,31 +23,33 @@ init python:
 		local_mouse_pos = get_local_mouse()
         start_mouse_pos = get_mouse()
         mouse_moved = False
-        
-        global start_x, start_y
-        start_x, start_y = x, y
 	
 	def select_location(name):
 		global selected_location_name
 		selected_location_name = name
 		
+		global selected_location
+		selected_location = rpg_locations[name]
+		
 		hide_screen('all_locations')
+		
+		on_place_changed()
 		show_screen('selected_location')
 
 
 screen all_locations:
-	image im.rect('#444'):
+	image all_locations_bg:
 		size 1.0
 	
-	key 'w' action [AddVariable('common_cam_y', -common_speed), AddVariable('start_y', -common_speed)]
-	key 'a' action [AddVariable('common_cam_x', -common_speed), AddVariable('start_x', -common_speed)]
-	key 's' action [AddVariable('common_cam_y', +common_speed), AddVariable('start_y', +common_speed)]
-	key 'd' action [AddVariable('common_cam_x', +common_speed), AddVariable('start_x', +common_speed)]
+	key 'W' action 'common_cam_y -= common_speed'
+	key 'A' action 'common_cam_x -= common_speed'
+	key 'S' action 'common_cam_y += common_speed'
+	key 'D' action 'common_cam_x += common_speed'
 	
 	for key in '-_':
-		key key action SetVariable('common_k', max(common_k - common_k_min, common_k_min))
+		key key action 'common_k = max(common_k - common_k_min, common_k_min)'
 	for key in '+=':
-		key key action SetVariable('common_k', min(common_k + common_k_min, common_k_max))
+		key key action 'common_k = min(common_k + common_k_min, common_k_max)'
 	
 	python:
 		x, y = int(-common_cam_x * common_k), int(-common_cam_y * common_k)
@@ -67,14 +67,12 @@ screen all_locations:
 			if start_mouse_pos != mouse_pos:
 				mouse_moved = True
 			
-			if mouse_pos[0] < get_stage_width() - locations_width:
-				location = rpg_locations[drag_location_name]
-				old_x, old_y = location.x, location.y
-				
+			if 0 < mouse_pos[0] < get_stage_width() - location_list_width and 0 < mouse_pos[1] < get_stage_height():
 				new_x = (mouse_pos[0] - local_mouse_pos[0] - x) / common_k
 				new_y = (mouse_pos[1] - local_mouse_pos[1] - y) / common_k
 				
-				if old_x != new_x or old_y != new_y:
+				location = rpg_locations[drag_location_name]
+				if location.x != new_x or location.y != new_y:
 					location.x, location.y = new_x, new_y
 					set_save_locations()
 	
@@ -92,9 +90,9 @@ screen all_locations:
 				size get_image_size(preview)
 				
 				ground preview
-				hover preview
+				hover  preview
+				corner_sizes 0
 				
 				action start_drag_location(name)
 	
-	use locations_list
-
+	use location_list

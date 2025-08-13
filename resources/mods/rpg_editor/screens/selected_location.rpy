@@ -1,3 +1,10 @@
+init:
+	style transparent_btn is button:
+		ground im.rect('#0000')
+		hover  im.rect('#FFF8')
+		corner_sizes 0
+		alpha 0.5
+
 init python:
 	local_cam_x, local_cam_y = get_stage_width() // 2, get_stage_height() // 2
 	
@@ -7,7 +14,22 @@ init python:
 	
 	local_speed = 25
 	
-	def get_objs_and_places():
+	selected_location_bg = im.rect('#444')
+	
+	place_bg = im.rect('#0B0')
+	exit_place_side_bg = im.rect('#FF0')
+	exit_exit_side_bg = im.rect('#B00')
+	exit_wrong_bg = im.rect('#F00')
+	
+	
+	calced_objs = []
+	calced_places = []
+	
+	def on_place_changed():
+		set_save_locations()
+		update_objs_and_places()
+	
+	def update_objs_and_places():
 		zoom = absolute(local_k)
 		floor = math.floor
 		def convert_rect(x, y, w, h, xa, ya):
@@ -20,70 +42,90 @@ init python:
 			floor_w = floor(x + w * zoom) - floor_x
 			floor_h = floor(y + h * zoom) - floor_y
 			
-			return (floor_x, floor_y), (floor_w, floor_h)
+			return floor_x, floor_y, floor_w, floor_h
 		
-		objs = []
-		places = []
+		calced_objs.clear()
+		calced_places.clear()
 		
-		for place in selected_location.places.values():
-			if '_pos' in place.name:
-				obj_name = place.name[0:place.name.index('_pos')]
-				if obj_name in location_objects:
-					obj = location_objects[obj_name]
-					main_frame = obj['animations'][None]
-					obj_image = get_image_or_similar(main_frame['directory'] + main_frame['main_image'] + '.' + location_object_ext)
+		for place_name, place in selected_location.places.items():
+			i = place_name.find('_pos')
+			if i != -1:
+				obj_name = place_name[:i]
+				obj = location_objects.get(obj_name)
+				if obj:
+					main_frame = obj.animations[None]
+					image = get_image_or_similar(main_frame.directory + main_frame.main_image)
 					
 					x = place.x + place.xsize / 2
 					y = place.y + place.ysize / 2
-					w, h = get_image_size(obj_image)
+					w, h = get_image_size(image)
 					
-					pos, size = convert_rect(x, y, w, h, 0.5, 1.0)
-					objs.append((obj_image, pos, size))
+					x, y, w, h = convert_rect(x, y, w, h, 0.5, 1.0)
+					calced_objs.append((image, x, y, w, h))
+			
+			image2 = None
 			
 			if place.to_location_name is None:
-				image = im.Rect('#0B0')
+				image = place_bg
 			else:
 				to_loc = rpg_locations.get(place.to_location_name, None)
 				if to_loc and place.to_place_name in to_loc.places:
 					if place.exit_side:
 						x, y, w, h = place.get_rect(of_exit = False)
 						ex, ey, ew, eh = place.get_rect(of_exit = True)
-						image = im.Composite((place.xsize, place.ysize),
-									         (x  - place.x, y  - place.y), im.Rect('#FF0',  w,  h),
-									         (ex - place.x, ey - place.y), im.Rect('#B00', ew, eh))
+						
+						image = exit_place_side_bg
+						x, y, w, h = convert_rect(x, y, w, h, 0, 0)
+						
+						image2 = exit_exit_side_bg
+						ex, ey, ew, eh = convert_rect(ex, ey, ew, eh, 0, 0)
+					
 					else:
-						image = im.Rect('#B00')
+						image = exit_exit_side_bg
 				else:
-					image = im.Rect('#F00')
+					image = exit_wrong_bg
 			
-			pos, size = convert_rect(place.x, place.y, max(place.xsize, 3), max(place.ysize, 3), 0, 0)
-			places.append((place, image, pos, size))
+			images = []
+			
+			# c - common
+			cx, cy, cw, ch = convert_rect(place.x, place.y, place.xsize, place.ysize, 0, 0)
+			cw = max(cw, min_place_size)
+			ch = max(ch, min_place_size)
+			
+			if not image2:
+				x, y, w, h = 0, 0, cw, ch
+			else:
+				x -= cx
+				y -= cy
+			images.append((image, x, y, w, h))
+			
+			if image2:
+				images.append((image2, ex - cx, ey - cy, ew, eh))
+			
+			calced_places.append((place, (cx, cy), (cw, ch), images))
 		
-		objs.sort(key = lambda image_pos_size: image_pos_size[1][1])
-		places.sort(key = lambda place_and_others: place_and_others[0].xsize * place_and_others[0].ysize, reverse = True)
-		
-		return objs, places
+		calced_objs.sort(key = lambda image_x_y_w_h: image_x_y_w_h[2])
+		calced_places.sort(key = lambda place_and_others: place_and_others[0].xsize * place_and_others[0].ysize, reverse = True)
+	
 	
 	hotkeys.disable_key_on_screens['ESCAPE'].append('selected_location')
 
 
 screen selected_location:
-	image im.rect('#444'):
+	image selected_location_bg:
 		size 1.0
 	
-	key 'w' action 'local_cam_y -= local_speed'
-	key 'a' action 'local_cam_x -= local_speed'
-	key 's' action 'local_cam_y += local_speed'
-	key 'd' action 'local_cam_x += local_speed'
+	key 'W' action 'local_cam_y -= local_speed'
+	key 'A' action 'local_cam_x -= local_speed'
+	key 'S' action 'local_cam_y += local_speed'
+	key 'D' action 'local_cam_x += local_speed'
 	
 	for key in '-_':
-		key key action SetVariable('local_k', max(local_k - local_k_min, local_k_min))
+		key key action 'local_k = max(local_k - local_k_min, local_k_min); update_objs_and_places()'
 	for key in '+=':
-		key key action SetVariable('local_k', min(local_k + local_k_min, local_k_max))
+		key key action 'local_k = min(local_k + local_k_min, local_k_max); update_objs_and_places()'
 	
 	python:
-		selected_location = rpg_locations[selected_location_name]
-		
 		x, y = int(-local_cam_x * local_k), int(-local_cam_y * local_k)
 		w, h = int(selected_location.xsize * local_k), int(selected_location.ysize * local_k)
 		sw, sh = get_stage_width() - props_width, get_stage_height()
@@ -121,23 +163,25 @@ screen selected_location:
 				size (w, h)
 		
 		if not persistent.hide_places:
-			null:
-				$ objs, places = get_objs_and_places()
-				
-				for obj_image, pos, size in objs:
-					image obj_image:
-						pos  pos
-						size size
-				
-				for place, image, pos, size in places:
-					button:
-						ground image
-						action 'selected_place_name = place.name'
-						
-						pos  pos
-						size size
-						
-						alpha 0.5
+			for image, x, y, w, h in calced_objs:
+				image image:
+					xpos x
+					ypos y
+					xsize w
+					ysize h
+			
+			for place, pos, size, images in calced_places:
+				button:
+					style 'transparent_btn'
+					pos  pos
+					size size
+					action 'selected_place_name = place.name'
+					
+					for image, x, y, w, h in images:
+						image image:
+							xpos x
+							ypos y
+							xsize w
+							ysize h
 	
 	use location_props
-

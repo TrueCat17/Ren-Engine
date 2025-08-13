@@ -43,7 +43,7 @@ translate russian strings:
 	old 'New place name'
 	new 'Название нового места'
 	
-	old 'Renaming a place'
+	old 'Renaming the place'
 	new 'Переименование места'
 	
 	old 'Exit side'

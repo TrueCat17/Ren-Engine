@@ -10,9 +10,9 @@ You can edit this files in text editor (with objects - need, because editor only
 
 
 [Start]
-On start shows screen <global space>, locations with view from above.
+First, a global space is displayed, something like a "view from above".
 
-On right there is panel with locations list, you can <Add> or <Del> any location.
+On the right is a panel with a list of locations, you can <Add> or <Del> any location.
 This list can be rewinded with key-arrows up/down.
 
 You can move locations:
@@ -23,13 +23,13 @@ You can move locations:
 Location position relatively others need only for ease edit, it is not important in game.
 
 Keys \
-{color=FF0000}W{/color}, \
-{color=FF0000}A{/color}, \
-{color=FF0000}S{/color} and \
-{color=FF0000}D{/color} moves camera.
+{color=#F00}W{/color}, \
+{color=#F00}A{/color}, \
+{color=#F00}S{/color} and \
+{color=#F00}D{/color} moves camera.
 Keys \
-{color=FF0000}-{/color} and \
-{color=FF0000}+{/color} - down and up scale.
+{color=#F00}-{/color} and \
+{color=#F00}+{/color} - down and up scale.
 
 Click on location - edit it.
 
@@ -49,14 +49,14 @@ Tab <Properties> allows edit places.
 	
 	Also such places have properties:
 		<Exit Side>, that define position of exit (red) or input (yellow).
-		Aviable values: Up, Left, Right, Down and None (all place is exit).
-	
+		Available values: Up, Left, Right, Down and None (all place is exit).
+		
 		<Rotate on Enter> is responsible for character rotation after transition.
 		Usually it not need: for example, exit from right side of location-1 transite player to left side of location-2.
 			In this cases, the property takes default <None> (not to rotate).
 		But if need, you can set values <To forward>, <To left>, <To right> or <To back>.
 	
-	If place name starts with name of any object, and after stand "_pos", such object will be installed in this place.
+	If place name starts with name of any object, and after stands "_pos", then such object will be installed in this place.
 	For example:
 		bus will be installed in place "bus_pos",
 		bench - in places "bench_pos-1", "bench_pos-2", ...
@@ -68,19 +68,19 @@ Tab <Properties> allows edit places.
 	
 	Changing properties x, y, xsize (width) and ysize (height) for selected place:
 		1. Click on button with property name to select the property,
-		2. Change value with buttons +/- 1/10/100
+		2. Change value with buttons +/- 1/10/100.
 
 Tab <Objects> shows list of registered objects:
 	Use only for shows images and names.
 	Arrows up/down rewinds this list.
 
 Keys \
-{color=FF0000}W{/color}, \
-{color=FF0000}A{/color}, \
-{color=FF0000}S{/color}, \
-{color=FF0000}D{/color}, \
-{color=FF0000}-{/color} and \
-{color=FF0000}+{/color} works as on global screen.
+{color=#F00}W{/color}, \
+{color=#F00}A{/color}, \
+{color=#F00}S{/color}, \
+{color=#F00}D{/color}, \
+{color=#F00}-{/color} and \
+{color=#F00}+{/color} works as on global screen.
 Key Esc and button <Unselect> - pull off selection of place or location (last - return to global screen).
 
 

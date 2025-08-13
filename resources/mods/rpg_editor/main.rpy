@@ -3,29 +3,38 @@ init 1 python:
 	set_can_mouse_hide(False)
 	config.has_autosave = False
 	
-	start_screens = ['hotkeys', 'all_locations', 'menu']
+	start_screens = ['hotkeys', 'debug_screen', 'all_locations', 'menu']
 	
 	need_save_locations = False
-	set_save_locations = SetVariable('need_save_locations', True)
+	def set_save_locations():
+		global need_save_locations
+		need_save_locations = True
 	
 	def check_need_save_location():
 		global need_save_locations
 		if need_save_locations:
 			need_save_locations = False
 			save()
-	set_interval(check_need_save_location, 1)
+	set_interval(check_need_save_location, 1.0)
 	
 	
 	def get_image_or_similar(path):
-		if os.path.exists(path):
-			return path
+		cache = get_image_or_similar.__dict__
+		res = cache.get(path)
+		if res:
+			return res
 		
-		directory = os.path.dirname(path)
-		path_start = os.path.splitext(path[len(directory)+1:])[0]
+		directory = os.path.dirname(path) + '/'
+		filename = os.path.basename(path) + '.'
+		
 		for name in os.listdir(directory):
-			if name.startswith(path_start):
-				return os.path.join(directory, name)
+			if name.startswith(filename):
+				res = directory + name
+				break
+		else:
+			res = im.rect('#888')
 		
-		return im.rect('#888')
+		cache[path] = res
+		return res
 	
 	register_new_locations()
