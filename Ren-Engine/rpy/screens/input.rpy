@@ -271,10 +271,11 @@ screen input:
 		xalign input.xalign
 		yalign input.yalign
 		
-		image input.bg_border:
-			xsize screen_tmp.bg_xsize + input.bg_border_size * 2
-			ysize screen_tmp.bg_ysize + input.bg_border_size * 2
-			corner_sizes input.bg_border_size
+		if input.bg_border_size:
+			image input.bg_border:
+				xsize screen_tmp.bg_xsize + input.bg_border_size * 2
+				ysize screen_tmp.bg_ysize + input.bg_border_size * 2
+				corner_sizes input.bg_border_size
 		
 		image input.bg:
 			corner_sizes -1
@@ -299,10 +300,11 @@ screen input_content:
 			xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
 			ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
 			
-			image input.tf_bg_border:
-				xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
-				ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
-				corner_sizes input.tf_bg_border_size
+			if input.tf_bg_border_size:
+				image input.tf_bg_border:
+					xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
+					ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
+					corner_sizes input.tf_bg_border_size
 			
 			image input.tf_bg:
 				corner_sizes -1
