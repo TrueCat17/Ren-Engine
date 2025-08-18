@@ -1,18 +1,18 @@
 init -990 python:
 	
-	def info__set_msg(msg, extra = ''):
-		info.msg = [msg, extra]
+	def info__set_msg(msg):
+		info.msg = msg
 	
-	def info__set_msg_if_prev(msg, prev, msg_extra = '', prev_extra = ''):
-		if info.msg == [prev, prev_extra]:
-			info.msg = [msg, msg_extra]
+	def info__set_msg_if_prev(msg, prev):
+		if info.msg == prev:
+			info.msg = msg
 	
 	
 	build_object('info')
 	
-	info.msg = ['', '']
-	info.msg_color = 0xFFFFFF
-	info.msg_outlinecolor = 0x0000FF
+	info.msg = ''
+	info.msg_color = '#FFF'
+	info.msg_outlinecolor = '#00F'
 	
 	
 	info.ysize = 100
@@ -27,7 +27,7 @@ init -990 python:
 	info.group_size = 3
 	
 	info.groups = []
-	info.count_groups = int(math.ceil(len(info.resources) / info.group_size))
+	info.count_groups = math.ceil(len(info.resources) / info.group_size)
 	for i in range(info.count_groups):
 		group = []
 		info.groups.append(group)
@@ -39,10 +39,10 @@ init -990 python:
 
 screen info:
 	python:
-		info.ysize = max(get_stage_height() // 5, 100)
-		info.indent = min(get_stage_height() // 60, 20)
+		info.ysize     = max(get_stage_height() // 5, 100)
+		info.indent    = min(get_stage_height() // 60, 20)
 		info.text_size = min(get_stage_height() // 20, 22)
-		info.btn_size = min(int(get_stage_height() * 0.4), 250)
+		info.btn_size  = min(int(get_stage_height() * 0.4), 250)
 	
 	image info.back:
 		xsize 1.0
@@ -61,19 +61,15 @@ screen info:
 							spaces = ' ' * (max_len - len(_(resource)))
 							count = sc_map.player[resource]
 							changing = sc_map.player['change_' + resource]
-							changing_color = '0x00FF00' if changing >= 0 else '#FF0000'
+							changing_color = '#0F0' if changing >= 0 else '#F00'
 						
-						text ('%s:%s {color=0xFFAA00}%s{/color} ({color=%s}%s{/color})' % (_(resource), spaces, count, changing_color, changing)):
+						text ('%s:%s {color=#FA0}%s{/color} ({color=%s}%s{/color})' % (_(resource), spaces, count, changing_color, changing)):
 							text_size info.text_size
-							color 0xFFFFFF
+							color '#FFF'
 							outlinecolor 0
 							font 'Consola'
 		
-		python:
-			text = _(info.msg[0])
-			if info.msg[1]:
-				text += ' (%s)' % _(info.msg[1])
-		text text:
+		text _(info.msg):
 			xpos    info.indent
 			ypos    info.ysize - info.indent
 			yanchor 1.0

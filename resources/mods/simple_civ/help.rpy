@@ -12,36 +12,25 @@ init python:
 				building_list.append(building)
 		building_list.extend(common_buildings)
 		
-		building_str = '[{color=0x00FF00}{outlinecolor=0}%s{/outlinecolor}{/color}]' % _('road') + ':\n'
-		for resource in info.resources:
-			if resource not in building_cost['road-1']: continue
-			building_str += '    %s: {color=0xFFFF00}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), building_cost['road-1'][resource])
+		building_str = '[{color=#0F0}{outlinecolor=0}%s{/outlinecolor}{/color}]:\n' % _('road')
+		for resource, count in building_cost['road-1'].items():
+			building_str += '    %s: {color=#FF0}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), count)
 		building_str += '\n'
 		for building in building_list:
 			for i in (1, 2, 3, 4):
-				building_str += '[{color=0x00FF00}{outlinecolor=0}%s-%s{/outlinecolor}{/color}]:\n' % (_(building), i)
-				resources = building_cost[building + '-' + str(i)]
-				for resource in info.resources:
-					if resource not in resources: continue
-					building_str += '    %s: {color=0xFFFF00}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), resources[resource])
-			if building != building_list[-1]:
-				building_str += '\n'
-		res['building_cost'] = building_str
+				building_str += '[{color=#0F0}{outlinecolor=0}%s-%s{/outlinecolor}{/color}]:\n' % (_(building), i)
+				for resource, count in building_cost[building + '-' + str(i)].items():
+					building_str += '    %s: {color=#FF0}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), count)
+			building_str += '\n'
+		res['building_cost'] = building_str.rstrip()
 		
-		support_str = '[{color=0x00FF00}{outlinecolor=0}%s{/outlinecolor}{/color}]' % _('road') + ':\n'
-		for resource in info.resources:
-			if resource not in support_cost['road']: continue
-			support_str += '    %s: {color=0xFFFF00}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), support_cost['road'][resource])
-		support_str += '\n'
-		for building in building_list:
-			support_str += '[{color=0x00FF00}{outlinecolor=0}%s{/outlinecolor}{/color}]:\n' % _(building)
-			resources = support_cost[building]
-			for resource in info.resources:
-				if resource not in resources: continue
-				support_str += '    %s: {color=0xFFFF00}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), resources[resource])
-			if building != building_list[-1]:
-				support_str += '\n'
-		res['support_cost'] = support_str
+		support_str = ''
+		for building in ['road'] + building_list:
+			support_str += '[{color=#0F0}{outlinecolor=0}%s{/outlinecolor}{/color}]:\n' % _(building)
+			for resource, count in support_cost[building].items():
+				support_str += '    %s: {color=#FF0}{outlinecolor=0}%s{/outlinecolor}{/color}\n' % (_(resource), count)
+			support_str += '\n'
+		res['support_cost'] = support_str.rstrip()
 		
 		production_str = ''
 		for building in building_list:
@@ -50,18 +39,14 @@ init python:
 			production_str += _(building) + ':\n'
 			resources = building_production[building]
 			if resources['from']:
-				from_resources = resources['from']
 				production_str += '  ' + _('From') + ':\n'
-				for resource in info.resources:
-					if resource not in from_resources: continue
-					production_str += '    %s ({color=0xFF8000}{outlinecolor=0}%s{/outlinecolor}{/color})\n' % (_(resource), from_resources[resource])
-			to_resources = resources['to']
+				for resource, count in resources['from'].items():
+					production_str += '    %s ({color=#F80}{outlinecolor=0}%s{/outlinecolor}{/color})\n' % (_(resource), count)
 			production_str += '  ' + _('Makes') + ':\n'
-			for resource in info.resources:
-				if resource not in to_resources: continue
-				production_str += '    %s ({color=0x00FF00}{outlinecolor=0}%s{/outlinecolor}{/color})\n' % (_(resource), to_resources[resource])
+			for resource, count in resources['to'].items():
+				production_str += '    %s ({color=#0F0}{outlinecolor=0}%s{/outlinecolor}{/color})\n' % (_(resource), count)
 			production_str += '\n'
-		res['building_production'] = production_str[:-1]
+		res['building_production'] = production_str.rstrip()
 		
 		return res
 	

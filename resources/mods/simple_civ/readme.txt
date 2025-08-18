@@ -21,11 +21,11 @@ Good luck!
 [Keyboard]
 
 Map moving - WASD (+CTRL to moving to the end).
-Zoom changing: + и -.
+Zoom changing: + and -.
 Unit selection on current cell: left and right arrows.
 The context menu can be called up with the menu key (next to the right CTRL),
 but not only from click to unit on right panel.
-Select items of the menu: up and down arrows.
+To select the points of this menu, you can use arrows up and down.
 Next step: Shift+Enter.
 
 Hovering over most of the buttons reveals a button on the keyboard that does the same.
@@ -66,8 +66,8 @@ ${building_cost}
 
 [Support]
 
-[{color=0x00FF00}{outlinecolor=0}Storage{/outlinecolor}{/color}] and \
-[{color=0x00FF00}{outlinecolor=0}District{/outlinecolor}{/color}] \
+[{color=#0F0}{outlinecolor=0}Storage{/outlinecolor}{/color}] and \
+[{color=#0F0}{outlinecolor=0}District{/outlinecolor}{/color}] \
 consume base content multiplied by their level.
 The rest of the buildings instead of the level use the number of residents currently working.
 For example, if 3 workers are sent to the sawmill, but there is only a level 2 storage nearby,

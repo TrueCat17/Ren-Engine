@@ -12,8 +12,8 @@ init python:
 		
 		'cement factory': {
 			'from': {
-				'coal': 40,
 				'stone': 30,
+				'coal': 40,
 			},
 			'to': {
 				'cement': 25,

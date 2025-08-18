@@ -13,4 +13,3 @@ init -1 python:
 	
 	
 	building_powers = [0, 1, 2, 4, 7]
-	

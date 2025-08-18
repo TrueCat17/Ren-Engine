@@ -24,11 +24,11 @@ init -1 python:
 			player = self.player
 			
 			if task == 'build':
-				for resource, count in building_cost['%s-%s' % tuple(args)].items():
+				for resource, count in building_cost['%s-%s' % args].items():
 					if player[resource] < count:
-						info.set_msg('Not enough resources', resource)
+						info.set_msg(_('Not enough resources') + ' (%s)' % _(resource))
 						return
-				for resource, count in building_cost['%s-%s' % tuple(args)].items():
+				for resource, count in building_cost['%s-%s' % args].items():
 					player[resource] -= count
 				
 				if cell.road_level == 0:
@@ -44,7 +44,7 @@ init -1 python:
 						player.add_worker(self.x, self.y)
 					elif not player.main_storage_cell and cell.building == 'storage':
 						player.main_storage_cell = cell
-				
+			
 			elif task == 'unbuild':
 				cell.building = None
 				cell.building_level = 0
@@ -80,11 +80,14 @@ init -1 python:
 				new_builder.turns = 0
 			
 			else:
-				out_msg('Builder.exec_task', 'Expected task <build>, <unbuild> or <train>, got <' + str(task) + '>')
+				out_msg('Builder.exec_task', 'Expected task <build>, <unbuild> or <train>, got <%s>', task)
 			
 			self.turns = 0
 			sc_map.update_block(self.x // sc_map.block_size, self.y // sc_map.block_size)
 			control.select_cell(self.x, self.y) # update menu
+			
+			self.player.calc_changing_resources()
+			sc_map.draw_units()
 		
 		
 		def get_menu(self):
@@ -95,30 +98,26 @@ init -1 python:
 				return res
 			
 			cell = sc_map.map[self.y][self.x]
-			calc = self.player.calc_changing_resources
 			
 			res.append(MenuItem('Move', control.pick, 'm'))
 			
 			if cell.building == 'district':
-				res.append(MenuItem('Train new builder', [Function(self.exec_task, 'train'), calc], 't'))
+				res.append(MenuItem('Train new builder', Function(self.exec_task, 'train'), 't'))
 			
 			if cell.road_level == 0:
-				res.append(MenuItem('Make road', [Function(self.exec_task, 'build', 'road', 1), calc], 'r'))
+				res.append(MenuItem('Make road', Function(self.exec_task, 'build', 'road', 1), 'r'))
 			
 			if cell.building:
 				need_technology = cell.building if cell.building in technology_names else cell.resource
 				if self.player.technology_progress[need_technology] > cell.building_level:
-					res.append(MenuItem('Improve building', [
-						Function(self.exec_task, 'build', cell.building, cell.building_level + 1),
-						calc
-					], 'i'))
-				res.append(MenuItem('Remove building', [Function(self.exec_task, 'unbuild'), calc], 'u'))
+					res.append(MenuItem('Improve building', Function(self.exec_task, 'build', cell.building, cell.building_level + 1), 'i'))
+				res.append(MenuItem('Remove building', Function(self.exec_task, 'unbuild'), 'u'))
 			else:
 				res.append(MenuItem('Build'))
-				for building in control.selected_cell_buildings:
+				for building in buildings[control.selected_cell.resource]:
 					need_technology = building if building in technology_names else cell.resource
 					if self.player.technology_progress[need_technology] > 0:
-						res.append(MenuItem(building, [Function(self.exec_task, 'build', building, 1), calc]))
+						res.append(MenuItem(building, Function(self.exec_task, 'build', building, 1)))
 			
 			return res
 		

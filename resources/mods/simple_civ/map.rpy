@@ -31,8 +31,8 @@ init -10 python:
 		
 		sum_chances = 0.0
 		chances = []
-		for k in sc_map.chances:
-			sum_chances += sc_map.chances[k]
+		for k, v in sc_map.chances.items():
+			sum_chances += v
 			chances.append((k, sum_chances))
 		
 		sc_map.map = []
@@ -69,24 +69,27 @@ init -10 python:
 			
 			player.calc_changing_resources()
 		
-		sc_map.blocks = {}
+		sc_map.draw_units()
+		
 		for y in range(sc_map.block_ycount):
 			for x in range(sc_map.block_xcount):
 				sc_map.update_block(x, y)
 	
 	def sc_map__get_block(block_x, block_y):
-		return sc_map.blocks[(block_x, block_y)]
+		return dont_save.blocks[(block_x, block_y)]
 	def sc_map__update_block(block_x, block_y):
-		sc_map.blocks[(block_x, block_y)] = None
+		dont_save.blocks[(block_x, block_y)] = None
 	def sc_map__real_update_block(block_x, block_y):
 		image_dir = sc_map.image_dir
 		image_size = sc_map.image_size
-		res = [(image_size * sc_map.block_size, image_size * sc_map.block_size)]
+		
+		block_size = sc_map.block_size * image_size
+		res = [(block_size, block_size)]
 		
 		xstart = block_x * sc_map.block_size
 		ystart = block_y * sc_map.block_size
 		for y in range(sc_map.block_size):
-			line  = sc_map.map[ystart + y]
+			line = sc_map.map[ystart + y]
 			for x in range(sc_map.block_size):
 				cell = line[xstart + x]
 				cell_x, cell_y = x * image_size, y * image_size
@@ -102,7 +105,7 @@ init -10 python:
 					res.append((cell_x, cell_y))
 					res.append(image_dir + cell.building.replace(' ', '_') + '-' + str(cell.building_level) + '.png')
 		
-		sc_map.blocks[(block_x, block_y)] = im.composite(*res)
+		dont_save.blocks[(block_x, block_y)] = im.composite(*res)
 	
 	def sc_map__add_zoom(d):
 		sc_map.zoom = in_bounds(sc_map.zoom + d * sc_map.zoom_change, sc_map.min_zoom, sc_map.max_zoom)
@@ -110,7 +113,7 @@ init -10 python:
 	
 	def sc_map__move(cell_x = 0, cell_y = 0, add = True):
 		if add:
-			if sc_map.ctrl:
+			if hotkeys.ctrl:
 				cell_x *= 1000
 				cell_y *= 1000
 			x, y = sc_map.center_cell
@@ -121,6 +124,8 @@ init -10 python:
 		sc_map.y = -cell_y * sc_map.image_size * sc_map.zoom + (get_stage_height() - info.ysize) / 2
 		sc_map.alignment()
 		sc_map.update_center_cell()
+		
+		sc_map.draw_units()
 	
 	def sc_map__update_center_cell():
 		size = sc_map.image_size * sc_map.zoom
@@ -134,21 +139,21 @@ init -10 python:
 		sc_map.center_cell = ((left + right) / 2, (top + bottom) / 2)
 	
 	def sc_map__alignment():
-		xsize = sc_map.xsize * sc_map.image_size * sc_map.zoom
+		xsize = int(sc_map.xsize * sc_map.image_size * sc_map.zoom)
 		stage_width = get_stage_width() - control.xsize
 		if xsize < stage_width:
-			sc_map.x = (stage_width - int(xsize)) // 2
+			sc_map.x = (stage_width - xsize) // 2
 		else:
-			left = stage_width - int(xsize)
+			left = stage_width - xsize
 			right = 0
 			sc_map.x = in_bounds(sc_map.x, left, right)
 		
-		ysize = sc_map.ysize * sc_map.image_size * sc_map.zoom
+		ysize = int(sc_map.ysize * sc_map.image_size * sc_map.zoom)
 		stage_height = get_stage_height() - info.ysize
 		if ysize < stage_height:
-			sc_map.y = (stage_height - int(ysize)) // 2
+			sc_map.y = (stage_height - ysize) // 2
 		else:
-			top = stage_height - int(ysize)
+			top = stage_height - ysize
 			bottom = 0
 			sc_map.y = in_bounds(sc_map.y, top, bottom)
 	
@@ -160,11 +165,11 @@ init -10 python:
 		block_size = sc_map.block_size * sc_map.image_size
 		x, y = sc_map.x, sc_map.y
 		
-		for k in sc_map.blocks:
+		for k in dont_save.blocks:
 			block_x, block_y = k
-			if not sc_map.blocks[k]:
+			if not dont_save.blocks[k]:
 				sc_map.real_update_block(block_x, block_y)
-			block_image = sc_map.blocks[k]
+			block_image = dont_save.blocks[k]
 			res.append({
 				'image': block_image,
 				'xpos': int(block_x * block_size * zoom + x),
@@ -172,31 +177,7 @@ init -10 python:
 				'size': int(block_size * zoom),
 			})
 		
-		size = int(sc_map.image_size * zoom)
-		for player in sc_map.players:
-			for UnitType in [Builder]:
-				units = {} # units[pos] = is_free
-				for unit in player.units:
-					if not isinstance(unit, UnitType): continue
-					
-					pos = unit.x, unit.y
-					is_free = unit.turns > 0
-					units[pos] = units.get(pos) or is_free
-				
-				for (xpos, ypos), is_free in units.items():
-					res.append({
-						'image': UnitType.image,
-						'xpos': int(xpos * sc_map.image_size * zoom + x),
-						'ypos': int(ypos * sc_map.image_size * zoom + y),
-						'size': size,
-					})
-					if not is_free:
-						res.append({
-							'text': UnitType.no_turn_symbol,
-							'xpos': int(xpos * sc_map.image_size * zoom + x + UnitType.no_turn_symbol_offset * size),
-							'ypos': int(ypos * sc_map.image_size * zoom + y),
-						})
-		
+		res.extend(sc_map.unit_data)
 		
 		cell_time = 2
 		cell_alpha_min = 0.20
@@ -208,7 +189,7 @@ init -10 python:
 		cell_alpha = cell_alpha * (cell_alpha_max - cell_alpha_min) + cell_alpha_min # min-max
 		
 		res.append({
-			'image': im.rect('#F00'),
+			'image': sc_map.selected_cell_bg,
 			'xpos': int(control.selected_cell.x * sc_map.image_size * zoom + x),
 			'ypos': int(control.selected_cell.y * sc_map.image_size * zoom + y),
 			'size': int(sc_map.image_size * zoom),
@@ -217,7 +198,7 @@ init -10 python:
 		
 		if sc_map.mark_unloaded:
 			player = sc_map.player
-			image = im.rect('#FF0')
+			image = sc_map.unloaded_bg
 			size = sc_map.image_size * zoom
 			int_size = int(size)
 			
@@ -244,6 +225,38 @@ init -10 python:
 					})
 		
 		return res
+	
+	def sc_map__draw_units():
+		res = sc_map.unit_data = []
+		
+		zoom = sc_map.zoom
+		size = int(sc_map.image_size * zoom)
+		x, y = sc_map.x, sc_map.y
+		
+		for player in sc_map.players:
+			for UnitType in [Builder]:
+				units = {} # units[pos] = is_free
+				for unit in player.units:
+					if not isinstance(unit, UnitType): continue
+					
+					pos = unit.x, unit.y
+					is_free = unit.turns > 0
+					units[pos] = units.get(pos) or is_free
+				
+				for (xpos, ypos), is_free in units.items():
+					res.append({
+						'image': UnitType.image,
+						'xpos': int(xpos * sc_map.image_size * zoom + x),
+						'ypos': int(ypos * sc_map.image_size * zoom + y),
+						'size': size,
+					})
+					if not is_free:
+						res.append({
+							'text': UnitType.no_turn_symbol,
+							'xpos': int(xpos * sc_map.image_size * zoom + x + UnitType.no_turn_symbol_offset * size),
+							'ypos': int(ypos * sc_map.image_size * zoom + y),
+						})
+		
 	
 	
 	def sc_map__outside(x, y):
@@ -299,9 +312,17 @@ init -10 python:
 		
 		cell = control.selected_cell
 		control.select_cell(cell.x, cell.y)
+		
+		sc_map.draw_units()
 	
 	
 	build_object('sc_map')
+	
+	dont_save.blocks = {}
+	
+	sc_map.bg = im.rect('#222')
+	sc_map.selected_cell_bg = im.rect('#F00')
+	sc_map.unloaded_bg = im.rect('#FF0')
 	
 	sc_map.min_zoom = 0.25
 	sc_map.max_zoom = 2.0
@@ -314,9 +335,6 @@ init -10 python:
 	
 	sc_map.count_players = 1
 	sc_map.count_start_builders = 1
-	
-	sc_map.ctrl = False
-	sc_map.shift = False
 	
 	sc_map.mark_unloaded = True
 	

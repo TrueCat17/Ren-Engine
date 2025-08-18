@@ -1,4 +1,6 @@
 init python:
+	research_bg = im.rect('#DDA')
+	
 	technology_names = []
 	technology_extra = {}
 	
@@ -21,108 +23,117 @@ screen research:
 	modal True
 	zorder 100
 	
-	key 'ESCAPE' action hide_screen('research')
-	
 	button:
+		ground black_bg
+		hover  black_bg
+		corner_sizes 0
 		size   1.0
 		alpha  0.3
 		mouse  False
-		ground im.rect('#000')
-		hover  im.rect('#000')
-		
 		action hide_screen('research')
 	
+	key 'ESCAPE' action hide_screen('research')
+	
+	
 	$ technology_progress = sc_map.player.technology_progress
-	image im.rect('#DDA'):
-		size (600, max(350, int(get_stage_height() * 0.7)))
+	$ bg_ysize = max(350, int(get_stage_height() * 0.7))
+	$ title_text_size = get_absolute(info.text_size, get_stage_height()) * 1.5
+	
+	image research_bg:
+		xsize 600
+		ysize bg_ysize
 		align 0.5
 		
 		text _('Research'):
 			xalign 0.5
-			color 0xFFFFFF
+			color '#FFF'
 			outlinecolor 0
-			text_size get_absolute(info.text_size, get_stage_height()) * 1.5
+			text_size title_text_size
 			font 'Arial'
 		
-		hbox:
-			align 0.5
-			spacing 30
+		null:
+			xalign 0.5
+			ypos title_text_size
+			ysize bg_ysize - title_text_size
 			
-			vbox:
-				spacing 10
+			hbox:
+				align 0.5
+				spacing 30
 				
-				text _('Name'):
-					xalign 0.5
-					text_size info.text_size
-					color 0x0000FF
-				
-				for building in technology_names:
-					python:
-						name = _(building)
-						if building in technology_extra:
-							name += ' (' + _(technology_extra[building]) + ')'
+				vbox:
+					spacing 10
 					
-					text name:
-						font 'Consola'
-						text_size info.text_size
-						color 0
-			
-			vbox:
-				spacing 10
-				
-				text _('Progress'):
-					xalign 0.5
-					text_size info.text_size
-					color 0x0000FF
-				
-				for building in technology_names:
-					text (str(technology_progress[building]) + '/4'):
+					text _('Name'):
 						xalign 0.5
-						font 'Consola'
 						text_size info.text_size
-						color 0x00FF00
-						outlinecolor 0
-						ysize info.text_size
-			
-			vbox:
-				spacing 10
+						color '#00F'
+					
+					for building in technology_names:
+						python:
+							name = _(building)
+							if building in technology_extra:
+								name += ' (' + _(technology_extra[building]) + ')'
+						
+						text name:
+							text_size info.text_size
+							color 0
 				
-				text _('Cost'):
-					xalign 0.5
-					text_size info.text_size
-					color 0x0000FF
-				
-				for building in technology_names:
-					if technology_progress[building] < 4:
-						$ cost = technology_costs[technology_progress[building] + 1]
-						text str(cost):
+				vbox:
+					spacing 10
+					
+					text _('Progress'):
+						xalign 0.5
+						text_size info.text_size
+						color '#00F'
+					
+					for building in technology_names:
+						text ('%s/4' % technology_progress[building]):
 							xalign 0.5
 							text_size info.text_size
-							color 0xFFFF00 if cost <= sc_map.player.science else 0xFF0000
+							color '#0F0'
 							outlinecolor 0
 							ysize info.text_size
-					else:
-						null:
-							size info.text_size
-			
-			vbox:
-				spacing 10
 				
-				text _('Explore'):
-					xalign 0.5
-					text_size info.text_size
-					color 0x0000FF
+				vbox:
+					spacing 10
+					
+					text _('Cost'):
+						xalign 0.5
+						text_size info.text_size
+						color '#00F'
+					
+					for building in technology_names:
+						if technology_progress[building] < 4:
+							$ cost = technology_costs[technology_progress[building] + 1]
+							text str(cost):
+								xalign 0.5
+								text_size info.text_size
+								color '#FF0' if cost <= sc_map.player.science else '#F00'
+								outlinecolor 0
+								ysize info.text_size
+						else:
+							null:
+								size info.text_size
 				
-				for building in technology_names:
-					if technology_progress[building] < 4 and sc_map.player.science >= technology_costs[technology_progress[building] + 1]:
-						textbutton '+':
-							style 'btn'
-							xalign 0.5
-							size info.text_size
-							text_size info.text_size - 2
-							color 0x00FF00
-							outlinecolor 0
-							action sc_map.player.explore(building)
-					else:
-						null:
-							size info.text_size
+				vbox:
+					spacing 10
+					
+					text _('Explore'):
+						xalign 0.5
+						text_size info.text_size
+						color '#00F'
+					
+					for building in technology_names:
+						if technology_progress[building] < 4 and sc_map.player.science >= technology_costs[technology_progress[building] + 1]:
+							textbutton '+':
+								style 'btn'
+								xalign 0.5
+								size info.text_size
+								text_size info.text_size - 2
+								font 'Calibri'
+								color '#0F0'
+								outlinecolor 0
+								action sc_map.player.explore(building)
+						else:
+							null:
+								size info.text_size

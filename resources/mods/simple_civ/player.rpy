@@ -33,8 +33,8 @@ init -900 python:
 				self.technology_progress[name] = 1
 		
 		def explore(self, building):
-			self.science -= technology_costs[self.technology_progress[building] + 1]
 			self.technology_progress[building] += 1
+			self.science -= technology_costs[self.technology_progress[building]]
 			control.select_cell(control.selected_cell.x, control.selected_cell.y) # update menu
 		
 		def add_builder(self, x, y):
@@ -54,9 +54,8 @@ init -900 python:
 				self['change_' + resource] = 0
 			
 			# cost of support and base science
-			for cell in self.road_cells:
-				for resource, count in support_cost['road'].items():
-					self['change_' + resource] -= count
+			for resource, count in support_cost['road'].items():
+				self['change_' + resource] -= count * len(self.road_cells)
 			for cell in self.building_cells:
 				if cell.building in ('storage', 'district'):
 					for resource, count in support_cost[cell.building].items():
@@ -74,7 +73,7 @@ init -900 python:
 			storage_cells = [cell for cell in self.building_cells if cell.building == 'storage']
 			for cell in storage_cells:
 				has_road = sc_map.has_road(self.main_storage_cell.x, self.main_storage_cell.y, cell.x, cell.y)
-				cell.enabled_level = cell.building_level if has_road else 0 
+				cell.enabled_level = cell.building_level if has_road else 0
 			for cell in self.building_cells:
 				if cell.building in ('storage', 'district'): continue
 				near_storage_level = 0

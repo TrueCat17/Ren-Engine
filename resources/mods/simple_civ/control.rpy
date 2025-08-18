@@ -16,25 +16,20 @@ init -1 python:
 				return
 			
 			unit.selected_cell(cell_x, cell_y)
+			sc_map.draw_units()
 		else:
 			control.select_cell(cell_x, cell_y)
 	
 	def control__select_cell(cell_x, cell_y):
-		cell = sc_map.map[cell_y][cell_x]
-		control.selected_cell_buildings = buildings[cell.resource]
-		
-		control.selected_cell = cell
+		control.selected_cell = sc_map.map[cell_y][cell_x]
 		
 		cell_units = [unit for unit in sc_map.player.units if unit.x == cell_x and unit.y == cell_y]
 		free_units = []
 		not_free_units = []
 		for UnitType in [Builder, Worker]:
 			for unit in cell_units:
-				if isinstance(unit, UnitType) and not unit.get_symbol():
-					free_units.append(unit)
-			for unit in cell_units:
-				if isinstance(unit, UnitType) and unit.get_symbol():
-					not_free_units.append(unit)
+				if isinstance(unit, UnitType):
+					(not_free_units if unit.get_symbol() else free_units).append(unit)
 		
 		units = control.selected_unit_array = free_units + not_free_units
 		control.select_unit(units[0] if units else None)
@@ -51,19 +46,18 @@ init -1 python:
 		if l < 5:
 			s = 0
 		else:
-			i = control.selected_unit_index
-			s = in_bounds(i - 2, 0, l - 5)
-			
+			s = in_bounds(control.selected_unit_index - 2, 0, l - 5)
+		
 		control.selected_unit_array_start = s
 		control.selected_unit_array_end = min(s + 5, l)
 	
 	
 	def control__next_unit():
-		control.selected_unit_index = min(control.selected_unit_index + 1, len(control.selected_unit_array) - 1)
+		control.selected_unit_index = control.selected_unit_index + 1
 		control.select_unit(control.selected_unit_array[control.selected_unit_index])
 	
 	def control__prev_unit():
-		control.selected_unit_index = max(control.selected_unit_index - 1, 0)
+		control.selected_unit_index = control.selected_unit_index - 1
 		control.select_unit(control.selected_unit_array[control.selected_unit_index])
 	
 	
@@ -86,6 +80,8 @@ init -1 python:
 	control.text_size = 25
 	control.xsize = 250
 	control.back = im.rect('#CCC')
+	control.selected_unit_bg = im.rect('#0A0')
+	control.unselected_unit_bg = im.rect('#999')
 	
 	control.picking = False
 	
