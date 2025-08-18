@@ -8,16 +8,16 @@ init -1 python:
 	def init_steps():
 		global cur_gen_num, step_generations, cells
 		cur_gen_num = 0
-		step_generations = [[] for i in range(step_life_time)]
+		step_generations = [(0, []) for i in range(step_life_time)]
 		cells = defaultdict(list)
 	
-	def add_steps(count):
+	def add_step_generations(count):
 		for i in range(count):
-			step_generations.insert(0, [])
+			step_generations.insert(0, (0, []))
 		global step_life_time
 		step_life_time = len(step_generations)
 	
-	def del_steps(count):
+	def del_step_generations(count):
 		step_generations[:count] = []
 		global step_life_time
 		step_life_time = len(step_generations)
@@ -28,14 +28,14 @@ init -1 python:
 		y = int(agent.y)
 		cell = cells[(x // cell_size, y // cell_size)]
 		new_step = [x, y, agent.agent_id, cell, agent.circle, cur_gen_num]
-		cur_step_generation.append(new_step)
+		cur_step_generation[1].append(new_step)
 		
 		i = 0
 		while i < len(cell):
 			old_step = cell[i]
-			tdx = old_step[0] - x
-			tdy = old_step[1] - y
-			if tdx*tdx + tdy*tdy < remove_in_cell_dist2:
+			dx = old_step[0] - x
+			dy = old_step[1] - y
+			if dx*dx + dy*dy < remove_in_cell_dist2:
 				old_step[3] = None
 				cell.pop(i)
 			else:
@@ -46,18 +46,17 @@ init -1 python:
 		global cur_gen_num
 		cur_gen_num += 1
 		
-		step_generations.append([])
+		step_generations.append((0, []))
 		global cur_step_generation
 		cur_step_generation = step_generations[-1]
 		
-		for step in step_generations[0]:
+		for step in step_generations[0][1]:
 			if step[3]:
 				step[3].remove(step) # remove from cell
 		step_generations.pop(0)
 	
 	
 	def get_power_from(x, y, agent_id):
-		sensors_dist2 = sensors_dist * sensors_dist
 		center_xcell = int(x) // cell_size
 		center_ycell = int(y) // cell_size
 		

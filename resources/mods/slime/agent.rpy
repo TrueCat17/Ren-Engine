@@ -1,6 +1,7 @@
 init -2 python:
 	speed = 4
 	sensors_dist = 32
+	sensors_dist2 = sensors_dist**2
 	
 	escaping_power = 200
 	escaping_time = 20
@@ -16,6 +17,8 @@ init -2 python:
 		[255, 255, 255],
 	]
 	agent_index = 0
+	
+	agents = []
 	
 	class Agent:
 		def __init__(self):
@@ -72,8 +75,7 @@ init -2 python:
 			add_step(self)
 	
 	def init_agents():
-		global agents
-		agents = []
+		agents.clear()
 		add_agents(agent_count)
 	
 	
