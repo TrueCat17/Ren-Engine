@@ -5,4 +5,3 @@ translate russian strings:
 	
 	old 'Render: usual'
 	new 'Отрисовка: обычная'
-
