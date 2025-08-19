@@ -106,8 +106,14 @@ init python:
 		
 		root = get_root_dir()
 		root_len = len(root)
+		
+		var_dir = 'var/'
+		reus_var_dir = reus.var_dir
+		
 		for path, ds, fs in os.walk(root):
 			path = make_sure_dir(path[root_len:])
+			if path.startswith(var_dir) and not path.startswith(reus_var_dir):
+				continue
 			
 			for f in fs:
 				f = path + f
