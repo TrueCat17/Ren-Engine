@@ -308,7 +308,7 @@ bool Screen::hasScreen(std::string name) {
 	return getMain(name);
 }
 
-void Screen::logScreenCode(std::string name) {
+std::string Screen::getScreenCode(std::string name) {
 	std::lock_guard g(screenMutex);
 
 	auto it = screenMap.find(name);
@@ -318,12 +318,17 @@ void Screen::logScreenCode(std::string name) {
 
 	Node* node = getDeclared(name);
 	if (!node) {
-		Utils::outError("Screen::logScreenCode", "Screen <%> is not defined", name);
-		return;
+		Utils::outError("Screen::getScreenCode", "Screen <%> is not defined", name);
+		return "";
 	}
 
-	std::string code = ScreenCodeGenerator::get(node);
-	Logger::log("\n\n\nCode of screen <" + name + ">:\n\n" + code + "\n\n\n");
+	return ScreenCodeGenerator::get(node);
+}
+void Screen::logScreenCode(const std::string &name) {
+	std::string code = getScreenCode(name);
+	if (!code.empty()) {
+		Logger::log("\n\n\nCode of screen <" + name + ">:\n\n" + code + "\n\n\n");
+	}
 }
 
 

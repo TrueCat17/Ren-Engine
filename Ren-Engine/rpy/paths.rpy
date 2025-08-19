@@ -63,8 +63,49 @@ init -1000001 python:
 	
 	
 	def get_stack(depth):
-		stack = traceback.format_stack()
-		return stack[:-(depth + 1)]
+		stack = traceback.extract_stack()
+		stack[-(depth + 1):] = []
+		
+		def fix_frame_params(params):
+			filename, numline, _name = params
+			
+			if not filename.startswith('_SL_FILE_'):
+				return
+			
+			screen_name = filename[len('_SL_FILE_'):]
+			screen_code = _get_screen_code(screen_name)
+			
+			lines = screen_code.split('\n')
+			if numline - 1 >= len(lines):
+				return
+			
+			line = lines[numline - 1]
+			
+			i = line.find('#')
+			if i == -1:
+				return
+			
+			comment = line[i+1:].strip()
+			parts = comment.split('|')
+			if len(parts) != 3:
+				return
+			if parts[0] != '_SL_REAL':
+				return
+			
+			filename = parts[1]
+			numline = parts[2]
+			params[:] = [filename, numline]
+		
+		for i, frame in enumerate(stack):
+			params = [frame.filename, frame.lineno, frame.name]
+			fix_frame_params(params)
+			
+			if len(params) == 3:
+				stack[i] = '  File "%s", line %s in %s\n' % tuple(params)
+			else:
+				stack[i] = '  File "%s", line %s\n' % tuple(params)
+		
+		return stack
 	
 	
 	def get_exception_stack_str(e, depth):

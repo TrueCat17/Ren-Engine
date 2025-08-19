@@ -36,7 +36,8 @@ public:
 	static void addToHide(std::string name, const std::string &fileName, uint32_t numLine);
 	static bool hasScreen(std::string name);
 
-	static void logScreenCode(std::string name);
+	static std::string getScreenCode(std::string name);
+	static void logScreenCode(const std::string &name);
 
 	static void allowArrowsForCalcedScreen(const std::string &fileName, uint32_t numLine);
 

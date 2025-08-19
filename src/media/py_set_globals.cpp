@@ -111,6 +111,7 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("_allow_arrows", Screen::allowArrowsForCalcedScreen);
 	setFunc("has_screen", Screen::hasScreen);
 	setFunc("_log_screen_code", Screen::logScreenCode);
+	setFunc("_get_screen_code", Screen::getScreenCode);
 	setFunc("_SL_check_events", Screen::checkScreenEvents);
 
 	setFunc("start_mod", Game::startMod);
