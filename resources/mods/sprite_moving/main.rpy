@@ -11,7 +11,7 @@ init 1 python:
 
 
 label start:
-	#show bg room
+	#scene bg room
 	#show rn serious-2
 	
 	

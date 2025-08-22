@@ -12,5 +12,8 @@ translate russian strings:
 	old 'Ctrl - do not remove previous sprite with this name'
 	new 'Ctrl - не удалять предыдущий спрайт с таким именем'
 	
+	old 'Shift - not to be forcibly in the center'
+	new 'Shift - не помещать принудительно в центр'
+	
 	old 'readme.txt'
 	new 'tl/russian/readme.txt'

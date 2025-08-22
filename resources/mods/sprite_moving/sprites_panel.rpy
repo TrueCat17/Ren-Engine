@@ -1,61 +1,144 @@
 init 1 python:
 	
-	def panel__sprite_name(sprite):
+	def sprite_panel__sprite_name(sprite):
 		res = sprite.sprite_name
 		if len(res) > 25:
 			res = res[:23].rstrip() + '..'
 		return res
 	
-	def panel__upper_sprite():
-		if not panel.cur_sprite: return
+	def sprite_panel__upper():
+		if not sprite_panel.cur_sprite: return
 		
-		index = sprites.list.index(panel.cur_sprite)
+		sprites.effects_to_end()
+		
+		index = sprites.list.index(sprite_panel.cur_sprite)
 		if index != 0:
 			sprites.list[index - 1], sprites.list[index] = sprites.list[index], sprites.list[index - 1]
 	
-	def panel__lower_sprite():
-		if not panel.cur_sprite: return
+	def sprite_panel__lower():
+		if not sprite_panel.cur_sprite: return
 		
-		index = sprites.list.index(panel.cur_sprite)
+		sprites.effects_to_end()
+		
+		index = sprites.list.index(sprite_panel.cur_sprite)
 		if index != len(sprites.list) - 1:
 			sprites.list[index + 1], sprites.list[index] = sprites.list[index], sprites.list[index + 1]
 	
-	def panel__remove_sprite():
-		if not panel.cur_sprite: return
+	def sprite_panel__remove():
+		if not sprite_panel.cur_sprite: return
 		
-		index = sprites.list.index(panel.cur_sprite)
+		sprites.effects_to_end()
+		
+		index = sprites.list.index(sprite_panel.cur_sprite)
 		sprites.list.pop(index)
 		
 		if sprites.list:
 			if len(sprites.list) <= index:
 				index = -1
-			panel.cur_sprite = sprites.list[index]
+			sprite_panel.cur_sprite = sprites.list[index]
 		else:
-			panel.cur_sprite = None
+			sprite_panel.cur_sprite = None
 		
-		panel.update_sprite_count()
+		sprite_panel.update_sprite_count()
 	
-	
-	def panel__update_sprite_count():
-		free_ysize = get_stage_height() - (panel.info_text_size + style.place_btn.ysize * 2 + panel.small_indent) - style.sprite_btn.ysize - 5 * panel.indent
-		panel.sprite_btn_count = (free_ysize + panel.small_indent) // (style.sprite_btn.ysize + panel.small_indent)
+	def sprite_panel__fix_cur_sprite():
+		cur_sprite = sprite_panel.cur_sprite
+		if cur_sprite in sprites.list: return
 		
-		panel.all_sprite_btns = panel.sprite_btn_count >= len(sprites.list)
-		if not panel.all_sprite_btns:
-			panel.sprite_btn_count -= 2 # place for <prev> and <next> buttons
-	
-	def panel__update_sprite_size():
-		panel.sprites_xsize = get_stage_width()  - panel.xsize
-		panel.sprites_ysize = get_stage_height() - panel.ysize
+		cur_tag = cur_sprite and cur_sprite.tag
 		
-		panel.update_sprite_count()
+		for sprite in reversed(sprites.list):
+			if not cur_tag or sprite.tag == cur_tag:
+				sprite_panel.cur_sprite = sprite
+				break
+		else:
+			sprite_panel.cur_sprite = sprites.list[-1] if sprites.list else None
 	
 	
-	panel.place_btn_groups = [
+	def sprite_panel__update_sprite_count():
+		free_ysize = get_stage_height()
+		free_ysize -= style.change_sprite_btn.ysize
+		free_ysize -= style.place_btn.ysize * 2 + panels.small_indent
+		free_ysize -= panels.info_text_size * 2
+		free_ysize -= 5 * panels.indent
+		
+		sprite_panel.sprite_btn_count = (free_ysize + panels.small_indent) // (style.sprite_btn.ysize + panels.small_indent)
+		
+		sprite_panel.all_sprite_btns = sprite_panel.sprite_btn_count >= len(sprites.list)
+		if not sprite_panel.all_sprite_btns:
+			sprite_panel.sprite_btn_count -= 2 # place for <prev> and <next> buttons
+	
+	def sprite_panel__update_sprites_size():
+		panels.sprites_xsize = get_stage_width()  - panels.xsize
+		panels.sprites_ysize = get_stage_height() - panels.ysize
+		
+		sprite_panel.update_sprite_count()
+	
+	
+	def sprite_panel__place_name_is(place_name, sprite = None):
+		sprite = sprite or sprite_panel.cur_sprite
+		if not sprite: return False
+		
+		cur_actions = (
+			'pos '    + str((sprite.xpos,    sprite.ypos)),
+			'anchor ' + str((sprite.xanchor, sprite.yanchor))
+		)
+		
+		g = globals()
+		place = g[place_name]
+		
+		place_actions = place.actions
+		if len(place_actions) != 2:
+			return False
+		
+		for cur_action, (place_action, filename, numline) in zip(cur_actions, place_actions):
+			if cur_action != place_action:
+				return False
+		return True
+	
+	def sprite_panel__set_place(place_name):
+		cur_sprite = sprite_panel.cur_sprite
+		
+		cmd = cur_sprite.sprite_name.split(' ')
+		cmd += ['at', place_name]
+		cmd += ['as', cur_sprite.tag]
+		cmd += ['with', sprite_panel.default_effect_code]
+		
+		sprites.show(cmd, ())
+		
+		for sprite in reversed(sprites.list):
+			if sprite.tag == cur_sprite.tag:
+				sprite_panel.cur_sprite = sprite
+				break
+	
+	def sprite_panel__toggle_sprite_alpha(sprite):
+		if sprite.alpha == 0:
+			sprite.alpha = 1.0
+		else:
+			sprite.alpha *= -1
+	
+	def sprite_panel__get_sprites():
+		tmp_sprites = []
+		
+		for sprite in sprites.list:
+			effect = sprite.effect
+			if effect:
+				tmp_sprites.extend(effect.removing_sprites)
+		
+		new_sprites = [sprite for sprite in sprites.list if sprite not in tmp_sprites]
+		
+		first_index = sprite_panel.first_sprite_index
+		count = sprite_panel.sprite_btn_count
+		return new_sprites[first_index : first_index + count]
+	
+	
+	build_object('sprite_panel')
+	
+	sprite_panel.place_btn_groups = (
 		('fl', 'cl', 'cr', 'fr'),
 		('l', 'c', 'r'),
-	]
-	panel.place_names = {
+	)
+	sprite_panel.place_names = {
 		'fl': 'fleft',
 		'fr': 'fright',
 		'cl': 'cleft',
@@ -64,205 +147,149 @@ init 1 python:
 		'r': 'right',
 		'c': 'center',
 	}
-	panel.default_effect_code = 'Dissolve(0.2)'
+	sprite_panel.default_effect_code = 'Dissolve(0.2)'
 	
-	def panel__place_name_is(name, sprite = None):
-		sprite = sprite or panel.cur_sprite
-		if not sprite: return False
-		
-		data = sprite.new_data
-		cur_actions = (
-			'pos ' + str((data.xpos, data.ypos)),
-			'anchor ' + str((data.xanchor, data.yanchor))
-		)
-		
-		g = globals()
-		for short_name in panel.place_names:
-			place_name = panel.place_names[short_name]
-			place = g[place_name]
-			if place.actions == cur_actions:
-				return name == short_name
-		
-		return False
+	sprite_panel.first_sprite_index = 0
 	
-	def panel__set_place(name):
-		place_name = panel.place_names[name]
-		sprite = panel.cur_sprite
-		index = sprites.list.index(sprite)
-		
-		cmd = sprite.sprite_name.split(' ')
-		cmd += ['at', place_name]
-		cmd += ['as', sprite.tag]
-		cmd += ['with', panel.default_effect_code]
-		
-		sprites.show(cmd, [])
-		panel.cur_sprite = sprites.list[index]
+	sprite_panel.update_sprites_size()
+	signals.add('resized_stage', sprite_panel.update_sprites_size)
+
+init:
+	style change_sprite_btn is textbutton:
+		size 28
+		ground im.round_rect('#08F', 20, 20, 4)
+		hover  im.round_rect('#F00', 20, 20, 4)
+		color '#FF0'
+		outlinecolor 0
 	
-	def panel__toggle_sprite_alpha(sprite):
-		if sprite.new_data.alpha == 0:
-			sprite.new_data.alpha = 1.0
-		else:
-			sprite.new_data.alpha *= -1
+	style hide_sprite_btn is change_sprite_btn:
+		size 25
 	
+	style sprite_btn is change_sprite_btn:
+		size (200, 25)
+		color '#FFF'
 	
-	build_object('panel')
+	style change_sprite_index_btn is sprite_btn:
+		xsize panels.small_btn_xsize
+		xalign 0.5
 	
-	
-	style.change_sprite_btn = Style(style.textbutton)
-	style.change_sprite_btn.size = 28
-	style.change_sprite_btn.ground = im.round_rect('#08F', 28, 28, 4)
-	style.change_sprite_btn.hover  = im.round_rect('#F00', 28, 28, 4)
-	style.change_sprite_btn.color = 0xFFFF00
-	style.change_sprite_btn.outlinecolor = 0x000000
-	
-	style.hide_sprite_btn = Style(style.textbutton)
-	style.hide_sprite_btn.size = 25
-	style.hide_sprite_btn.ground = im.round_rect('#08F', 25, 25, 4)
-	style.hide_sprite_btn.hover  = im.round_rect('#F00', 25, 25, 4)
-	style.hide_sprite_btn.color = 0xFFFF00
-	style.hide_sprite_btn.outlinecolor = 0x000000
-	
-	style.sprite_btn = Style(style.textbutton)
-	style.sprite_btn.xsize = 200
-	style.sprite_btn.ground = im.round_rect('#08F', 200, style.sprite_btn.ysize, 4)
-	style.sprite_btn.hover  = im.round_rect('#F00', 200, style.sprite_btn.ysize, 4)
-	style.sprite_btn.color = 0xFFFFFF
-	style.sprite_btn.outlinecolor = 0x000000
-	
-	style.change_sprite_index_btn = Style(style.sprite_btn)
-	style.change_sprite_index_btn.xsize = panel.small_btn_xsize
-	style.change_sprite_index_btn.ground = im.round_rect('#08F', panel.small_btn_xsize, style.change_sprite_index_btn.ysize, 4)
-	style.change_sprite_index_btn.hover  = im.round_rect('#F00', panel.small_btn_xsize, style.change_sprite_index_btn.ysize, 4)
-	style.change_sprite_index_btn.xalign = 0.5
-	
-	style.place_btn = Style(style.textbutton)
-	style.place_btn.size = (40, 25)
-	style.place_btn.ground = im.round_rect('#08F', 40, 25, 4)
-	style.place_btn.hover  = im.round_rect('#F00', 40, 25, 4)
-	style.place_btn.color = 0xFFFFFF
-	style.place_btn.outlinecolor = 0x000000
-	
-	
-	panel.first_sprite_index = 0
-	
-	panel.update_sprite_size()
-	signals.add('resized_stage', panel.update_sprite_size)
-	
+	style place_btn is sprite_btn:
+		size (40, 25)
 
 
 screen sprites_panel:
-	alpha 0 if panel.hide else 1
+	alpha 0 if panels.hide else 1
 	
-	image panel.back:
+	python:
+		sprite_panel.fix_cur_sprite()
+		screen_tmp = SimpleObject()
+		screen_tmp.have_cur_sprite = sprite_panel.cur_sprite is not None
+		screen_tmp.cur_index = sprites.list.index(sprite_panel.cur_sprite) if screen_tmp.have_cur_sprite else None
+	
+	image panels.back:
 		xalign 1.0
-		xsize panel.xsize
+		xsize panels.xsize
 		ysize 1.0
 		
 		vbox:
-			ypos panel.indent
-			spacing panel.indent
-			xsize panel.xsize
+			ypos    panels.indent
+			spacing panels.indent
+			xsize panels.xsize
 			
 			hbox:
 				xalign 0.5
-				spacing panel.small_indent
+				spacing panels.small_indent
 				
 				textbutton '+':
 					style 'change_sprite_btn'
-					color 0x00FF00
-					action ShowScreen('add_image')
+					color '#0F0'
+					action show_screen('add_image')
 				
-				if panel.cur_sprite not in sprites.list:
-					$ panel.cur_sprite = sprites.list[-1] if sprites.list else None
-				
-				$ panel.upper_enable = panel.cur_sprite is not None and sprites.list.index(panel.cur_sprite) != 0
+				$ screen_tmp.upper_enable = screen_tmp.cur_index not in (None, 0)
 				textbutton '↑':
 					style 'change_sprite_btn'
-					hover  style.change_sprite_btn['hover' if panel.upper_enable else 'ground']
-					mouse  panel.upper_enable
-					action panel.upper_sprite
+					hover  style.change_sprite_btn['hover' if screen_tmp.upper_enable else 'ground']
+					mouse  screen_tmp.upper_enable
+					action sprite_panel.upper
 				
-				$ panel.lower_enable = panel.cur_sprite is not None and sprites.list.index(panel.cur_sprite) != len(sprites.list) - 1
+				$ screen_tmp.lower_enable = screen_tmp.cur_index not in (None, len(sprites.list) - 1)
 				textbutton '↓':
 					style 'change_sprite_btn'
-					hover  style.change_sprite_btn['hover' if panel.lower_enable else 'ground']
-					mouse  panel.lower_enable
-					action panel.lower_sprite
+					hover  style.change_sprite_btn['hover' if screen_tmp.lower_enable else 'ground']
+					mouse  screen_tmp.lower_enable
+					action sprite_panel.lower
 				
 				textbutton '-':
 					style 'change_sprite_btn'
-					color 0xFF0000
-					hover  style.change_sprite_btn['hover' if panel.cur_sprite is not None else 'ground']
-					mouse  panel.cur_sprite is not None
-					action panel.remove_sprite
+					color '#F00'
+					hover  style.change_sprite_btn['hover' if screen_tmp.have_cur_sprite else 'ground']
+					mouse  screen_tmp.have_cur_sprite
+					action sprite_panel.remove
 				
 				textbutton '?':
 					style 'change_sprite_btn'
-					color 0x00FF00
+					color '#0F0'
 					action show_screen('help')
 				key 'F1' action show_screen('help')
-				
+			
 			vbox:
 				xalign 0.5
-				spacing panel.small_indent
+				spacing panels.small_indent
 				
-				if not panel.all_sprite_btns:
+				if not sprite_panel.all_sprite_btns:
 					textbutton '↑':
-						alpha 0 if panel.first_sprite_index == 0 else 1
 						style 'change_sprite_index_btn'
-						action 'panel.first_sprite_index -= 1'
+						alpha 0 if sprite_panel.first_sprite_index == 0 else 1
+						action 'sprite_panel.first_sprite_index -= 1'
 				
-				for i, sprite in enumerate(sprites.list[panel.first_sprite_index : panel.first_sprite_index + panel.sprite_btn_count]):
+				for i, sprite in enumerate(sprite_panel.get_sprites()):
 					hbox:
-						spacing panel.small_indent
+						spacing panels.small_indent
 						
-						$ hided = sprite.new_data.alpha <= 0 and sprite.old_data is None
-						textbutton (' X ' if hided else ' O '):
+						$ screen_tmp.hided = sprite.alpha <= 0
+						textbutton ('X' if screen_tmp.hided else 'O'):
 							style 'hide_sprite_btn'
-							ground style.hide_sprite_btn['hover' if hided else 'ground']
-							hover  style.hide_sprite_btn.hover
-							action panel.toggle_sprite_alpha(sprite)
+							selected screen_tmp.hided
+							action sprite_panel.toggle_sprite_alpha(sprite)
 						
-						textbutton ('  %s. %s' % (panel.first_sprite_index + i + 1, panel.sprite_name(sprite))):
+						textbutton ('  %s. %s' % (sprite_panel.first_sprite_index + i + 1, sprite_panel.sprite_name(sprite))):
 							style 'sprite_btn'
 							text_align 'left'
-							ground style.sprite_btn['hover' if sprite == panel.cur_sprite else 'ground']
-							hover  style.sprite_btn.hover
-							action 'panel.cur_sprite = sprite'
+							selected sprite_panel.cur_sprite == sprite
+							action 'sprite_panel.cur_sprite = sprite'
 				
-				if not panel.all_sprite_btns:
+				if not sprite_panel.all_sprite_btns:
 					textbutton '↓':
-						alpha 0 if panel.first_sprite_index == len(sprites.list) - panel.sprite_btn_count else 1
 						style 'change_sprite_index_btn'
-						action 'panel.first_sprite_index += 1'
+						alpha 0 if sprite_panel.first_sprite_index == len(sprites.list) - sprite_panel.sprite_btn_count else 1
+						action 'sprite_panel.first_sprite_index += 1'
 		
 		vbox:
 			xalign 0.5
 			yanchor 1.0
-			ypos get_stage_height() - panel.indent
-			spacing panel.indent
+			ypos get_stage_height() - panels.indent
+			spacing panels.indent
 			
 			vbox:
-				alpha 1 if panel.cur_sprite else 0
+				alpha 1 if screen_tmp.have_cur_sprite else 0
 				xalign 0.5
-				spacing panel.small_indent
+				spacing panels.small_indent
 				
-				for btn_group in panel.place_btn_groups:
+				for btn_group in sprite_panel.place_btn_groups:
 					hbox:
 						xalign 0.5
-						spacing panel.small_indent
+						spacing panels.small_indent
 						
 						for btn_name in btn_group:
+							$ screen_tmp.place_name = sprite_panel.place_names[btn_name]
+							
 							textbutton btn_name:
 								style 'place_btn'
-								ground style.place_btn['hover' if panel.place_name_is(btn_name) else 'ground']
-								hover  style.place_btn.hover
-								action panel.set_place(btn_name)
+								selected sprite_panel.place_name_is(screen_tmp.place_name)
+								action sprite_panel.set_place(screen_tmp.place_name)
 			
 			text ('Config width x height:\n%sx%s' % (config.width, config.height)):
-				color 0x000000
-				text_size panel.info_text_size
+				color 0
+				text_size panels.info_text_size
 				text_align 0.5
 				xalign 0.5
-			
-
