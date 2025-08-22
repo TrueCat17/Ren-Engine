@@ -43,14 +43,19 @@ init -9000 python:
 			
 			cache = {}
 			def get_rect(spr):
+				if not spr.image or spr.real_alpha <= 0:
+					return None
+				
 				if spr in cache:
 					return cache[spr]
 				
-				x, y         = spr.real_xpos,  spr.real_ypos
 				xsize, ysize = spr.real_xsize, spr.real_ysize
-				
-				res = cache[spr] = (x, y, x + xsize, y + ysize)
-				return res
+				if xsize < 1 or ysize < 1:
+					cache[spr] = None
+				else:
+					x, y = spr.real_xpos, spr.real_ypos
+					cache[spr] = (x, y, x + xsize, y + ysize)
+				return cache[spr]
 			
 			def intersection_rects(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2):
 				return xmax1 > xmin2 and xmax2 > xmin1 and ymax1 > ymin2 and ymax2 > ymin1
@@ -61,16 +66,16 @@ init -9000 python:
 			
 			make_common = False
 			for new_spr in new_sprites:
-				if not new_spr.image:
+				rect = get_rect(new_spr)
+				if not rect:
 					continue
-				
-				xmin1, ymin1, xmax1, ymax1 = get_rect(new_spr)
+				xmin1, ymin1, xmax1, ymax1 = rect
 				
 				for old_spr in old_sprites:
-					if not old_spr.image:
+					rect = get_rect(old_spr)
+					if not rect:
 						continue
-					
-					xmin2, ymin2, xmax2, ymax2 = get_rect(old_spr)
+					xmin2, ymin2, xmax2, ymax2 = rect
 					
 					if intersection_rects(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2):
 						make_common = True
@@ -81,7 +86,7 @@ init -9000 python:
 			if not make_common:
 				return
 			
-			new_rects = [get_rect(spr) for spr in new_sprites if spr.image]
+			new_rects = [get_rect(spr) for spr in new_sprites if get_rect(spr)]
 			
 			xmin, ymin, xmax, ymax = new_rects[0]
 			for rect in new_rects[1:]:
@@ -99,10 +104,12 @@ init -9000 python:
 			
 			for args, sprite_list in ((new_args, new_sprites), (old_args, old_sprites)):
 				for spr in sprite_list:
-					image = spr.image
-					if not image or spr.real_alpha <= 0:
+					rect = get_rect(spr)
+					if not rect:
 						continue
+					_xmin, _ymin, _xmax, _ymax = rect
 					
+					image = spr.image
 					image_xsize, image_ysize = get_image_size(image)
 					res_xsize, res_ysize = spr.real_xsize, spr.real_ysize
 					
@@ -116,7 +123,6 @@ init -9000 python:
 					if int(res_xsize) != image_xsize or int(res_ysize) != image_ysize:
 						image = im.renderer_scale(image, res_xsize, res_ysize)
 					
-					_xmin, _ymin, _xmax, _ymax = get_rect(spr)
 					args.append((_xmin - xmin, _ymin - ymin))
 					args.append(image)
 			
@@ -162,7 +168,7 @@ init -9000 python:
 			
 			if new_sprite:
 				new_sprite.extra_alpha = alpha
-			if old_sprite:
+			if old_sprite and new_sprite is not sprites.scene:
 				old_sprite.extra_alpha = anti_alpha
 			
 			if alpha == 1:

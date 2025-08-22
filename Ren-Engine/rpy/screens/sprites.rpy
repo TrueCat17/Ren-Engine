@@ -120,7 +120,7 @@ init -1000 python:
 			decl_at = kwargs.pop('decl_at')
 		else:
 			decl_at = get_image(image_name)
-		show_at = kwargs.pop('show_at', ())
+		show_at  = kwargs.pop('show_at', ())
 		call_str = kwargs.pop('call_str', image_name)
 		if kwargs:
 			out_msg('sprites.show_impl', 'Unexpected params: %s', list(kwargs.keys()))
@@ -132,15 +132,23 @@ init -1000 python:
 		if is_scene:
 			index = len(sprites.list)
 		else:
-			index = -1
-			for index, spr in enumerate(sprites.list):
-				if spr.tag == tag:
-					old_sprite = spr
-					if not effect:
-						sprites.list.pop(index)
-						index -= 1
-					break
-			index += 1
+			for spr in reversed(sprites.list.copy()):
+				if spr.tag != tag:
+					continue
+				
+				index = sprites.list.index(spr)
+				
+				old_sprite = spr
+				old_sprite.remove_effect() # case: 2+ cmd (scene/show/hide) on 1 tag in 1 <with> expression
+				
+				if not effect:
+					if old_sprite in sprites.list: # exactly not removed by .remove_effect?
+						sprites.list.remove(old_sprite)
+				else:
+					index += 1
+				break
+			else:
+				index = len(sprites.list)
 		
 		if at is None:
 			at = () if show_at or old_sprite else center

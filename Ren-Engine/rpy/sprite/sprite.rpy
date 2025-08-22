@@ -14,7 +14,9 @@ init -9000 python:
 			self.tag = tag or get_next_sprite_tag()
 			self.call_str = call_str
 			
-			if not old_sprite:
+			self.ignore_old_data = False
+			
+			if not old_sprite or old_sprite.ignore_old_data:
 				self.xpos    = self.ypos    = 0
 				self.xanchor = self.yanchor = 0
 				self.xsize   = self.ysize   = None
@@ -94,7 +96,7 @@ init -9000 python:
 		def calculate_props(self):
 			parent = self.parent
 			if parent is not None:
-				p_xzoom,   p_yzoom   = parent.real_xzoom,   parent.real_yzoom
+				p_xzoom,   p_yzoom   = max(parent.real_xzoom, 0.0001), max(parent.real_yzoom, 0.0001)
 				p_xsize,   p_ysize   = parent.real_xsize,   parent.real_ysize
 				p_xpos,    p_ypos    = parent.real_xpos,    parent.real_ypos
 				p_xanchor, p_yanchor = parent.real_xanchor, parent.real_yanchor
