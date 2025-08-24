@@ -339,6 +339,8 @@ init -1000 python:
 
 
 screen dialogue_box_buttons(disable_next_btn = False):
+	$ screen_tmp = db.screen_tmp # if included from screen <choice_menu>
+	
 	vbox:
 		xalign gui.dialogue_box_xalign
 		yalign gui.dialogue_box_yalign
@@ -382,7 +384,9 @@ screen dialogue_box_buttons(disable_next_btn = False):
 				ysize screen_tmp.get('dialogue_button_height', 0)
 		
 		if quick_menu:
+			$ screen.tmp = screen_tmp
 			use quick_menu
+			$ screen_tmp = screen.tmp
 	
 	if screen_tmp.get('dialogue_menu_button_width'):
 		button:
@@ -549,7 +553,8 @@ screen dialogue_box:
 	zorder -2
 	
 	python:
-		screen_tmp = SimpleObject()
+		# save tmp in db, because it used in screen <dialogue_box_buttons>, that can be included from <choice_menu>
+		screen_tmp = db.screen_tmp = SimpleObject()
 		
 		if not has_screen('dialogue_box_skip_text'):
 			show_screen('dialogue_box_skip_text')
