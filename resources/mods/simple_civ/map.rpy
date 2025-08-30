@@ -256,7 +256,6 @@ init -10 python:
 							'xpos': int(xpos * sc_map.image_size * zoom + x + UnitType.no_turn_symbol_offset * size),
 							'ypos': int(ypos * sc_map.image_size * zoom + y),
 						})
-		
 	
 	
 	def sc_map__outside(x, y):
