@@ -1,107 +1,110 @@
-# tg_
-
 init -100 python:
 	quick_menu = False
 	gui.dialogue_menu_button_width = 0
 	
-	tg_pause = False
+	def tetris__update_sizes(xindent, yindent):
+		xzoom = (get_stage_width()  - xindent) // tetris.width
+		yzoom = (get_stage_height() - yindent) // tetris.height
+		tetris.zoom = min(xzoom, yzoom)
 	
-	tg_text_xsize = 170
+	def tetris__normal_pos(x, y):
+		return x % tetris.width, y % tetris.height
 	
-	tg_width = 1
-	tg_height = 1
-	def tg_update_sizes():
-		global tg_zoom, tg_btns_ysize
-		xzoom = (get_stage_width()  - tg_xindent) // tg_width
-		yzoom = (get_stage_height() - tg_yindent) // tg_height
-		tg_zoom = min(xzoom, yzoom)
+	def tetris__get_level(game, level):
+		tetris[game + '_level'] = level
+		
+		levels = tetris[game + '_levels']
+		tetris.is_last_level = (level + 1) not in levels
+		
+		level_data = levels[level]
+		
+		lines = [line.strip() for line in level_data.strip().split('\n')]
+		
+		tetris.height = len(lines)
+		tetris.width = len(lines[0])
+		for i, line in enumerate(lines):
+			if len(line) != tetris.width:
+				out_msg('tetris.get_level (%s)' % game, 'Level %s, line %s: expected %s symbols, got %s', level, i + 1, tetris.width, len(line))
+		
+		return lines
+
+
+init python:
+	tetris = SimpleObject()
+	build_object('tetris')
 	
+	tetris.pause = False
+	tetris.exit  = False
 	
-	tg_colors = ('green', 'orange', 'purple', 'yellow', 'blue', 'cyan', 'black')
-	tg_hex_colors = {
-		'green'  : '#00AA00',
-		'orange' : '#FF8000',
-		'purple' : '#7F007F',
-		'yellow' : '#DDDD00',
-		'blue'   : '#0000FF',
-		'cyan'   : '#00FFFF',
-		'gray'   : '#808080',
-		'black'  : '#000000',
-		'white'  : '#FFFFFF',
-		'red'    : '#FF0000',
+	tetris.indent = 10
+	tetris.text_xsize = 170
+	
+	tetris.width = 1
+	tetris.height = 1
+	
+	tetris.colors = ('green', 'orange', 'purple', 'yellow', 'blue', 'cyan', 'red')
+	tetris.hex_colors = {
+		'green' : '#0A0',
+		'orange': '#F80',
+		'purple': '#808',
+		'yellow': '#DD0',
+		'blue'  : '#00F',
+		'cyan'  : '#0FF',
+		'red'   : '#F00',
+		'gray'  : '#888',
+		'black' : '#000',
+		'white' : '#FFF',
 	}
+	tetris.images = { color: im.rect(color) for color in tetris.hex_colors.values() }
 	
-	tg_color_field = ['#0A0']
+	tetris.pixels = [['#0A0']]
 	
-	def tg_change_pause_state():
-		global tg_pause
-		tg_pause = not tg_pause
+	tetris.sides = (
+		(-1, 0),
+		(+1, 0),
+		(0, -1),
+		(0, +1),
+	)
 
 
-screen tg_main_screen:
-	key 'ESCAPE' action SetVariable('tg_pause', True)
+screen tetris_main_screen(xindent, yindent):
+	key 'ESCAPE' action 'tetris.pause = True'
 	
-	$ tg_update_sizes()
-	xsize get_stage_width()  - tg_xindent
-	ysize get_stage_height() - tg_yindent
+	$ tetris.update_sizes(screen.xindent, screen.yindent)
+	xsize get_stage_width()  - screen.xindent
+	ysize get_stage_height() - screen.yindent
 	xalign 1.0
-	
-	image im.rect('#FFF'):
-		align 0.5
-		zoom tg_zoom
-		size (tg_width, tg_height)
+	ypos tetris.indent
 	
 	vbox:
 		align 0.5
-		zoom tg_zoom
+		zoom tetris.zoom
 		
-		for i in range(tg_height):
+		for line in tetris.pixels:
 			hbox:
-				python:
-					tg_line = []
-					
-					tg_count = 0
-					for j in range(tg_width):
-						tg_count += 1
-						
-						tg_color = tg_color_field[i * tg_width + j]
-						
-						tg_is_end = j == tg_width - 1
-						if tg_is_end:
-							tg_next_color = '#0000'
-						else:
-							tg_next_color = tg_color_field[i * tg_width + j + 1]
-					
-						tg_need_draw = tg_color != tg_next_color
-						if tg_need_draw:
-							tg_line.append((tg_color, tg_count))
-							tg_count = 0
-				
-				for tg_color, tg_count in tg_line:
-					$ cell_image = im.rect(tg_color) if tg_color.startswith('#') else tg_color
-					image cell_image:
-						size (tg_count, 1)
+				for image in line:
+					image image:
+						size 1
 
 
 label start:
-	jump tg_main
+	jump tetris_main
 
-label tg_main:
-	$ set_fps(20)
+label tetris_main:
+	$ set_fps(60)
 	
 	scene bg room
 	
-	'Choose a game!'
+	'Choose a game! Management - WASD.'
 	menu:
 		'Life':
-			jump tg_life_start
+			jump tetris_life_start
 		'Snake':
-			jump tg_snake_start
+			jump tetris_snake_start
 		'Tanks':
-			jump tg_tanks_start_usual
+			jump tetris_tanks_start_usual
 		'Tanks (campaign)':
-			jump tg_tanks_start_campaign
+			jump tetris_tanks_start_campaign
 		''
 		'Exit':
 			'See you later!'
-

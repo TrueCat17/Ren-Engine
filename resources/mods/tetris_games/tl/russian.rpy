@@ -1,7 +1,7 @@
-translate russian tg_main_a63baa94:
-	"Выбирай игру!"
+translate russian tetris_main_53161f71:
+	"Выбирай игру! Управление - WASD."
 
-translate russian tg_main_5061cf42:
+translate russian tetris_main_5061cf42:
 	"До встречи!"
 
 
@@ -45,9 +45,6 @@ translate russian strings:
 	
 	
 	# snake
-	old 'Restart'
-	new 'Перезапуск'
-	
 	old 'Score'
 	new 'Очки'
 	
@@ -70,4 +67,3 @@ translate russian strings:
 	
 	old 'WIN'
 	new 'ПОБЕДА'
-	
