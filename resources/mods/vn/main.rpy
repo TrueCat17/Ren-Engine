@@ -120,14 +120,12 @@ label start:
 	rn "Это довольно полезная возможность MatrixColor."
 	
 	show rn normal:
-		align (0.5, 1.0)
 		linear 0.5 xalign 0.85
 	show photo ren at left_center with dissolve
 	rn "Например, вот моя чёрно-белая фотография."
 	show photo room with dspr
 	rn "А здесь - эта комната, но перекрашенная."
 	show rn normal:
-		align (0.85, 1.0)
 		linear 0.5 xalign 0.5
 	hide photo with dspr
 	
