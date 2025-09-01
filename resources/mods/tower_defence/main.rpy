@@ -1,179 +1,212 @@
 init python:
-	show_screen('tower_defence')
 	
-	td_frame_time = 1.0 / 60
-	
-	td_zoom = 1
-	
-	td_result = ''
-	td_alarm_moneys = -10
-	
-	
-	def td_init():
-		global td_tanks, td_towers, td_bullets
-		td_tanks = []
-		td_towers = []
-		td_bullets = []
+	def tower_defence__init():
+		tower_defence.init_map()
 		
-		global td_moneys, td_hp
-		td_moneys = 100
-		td_hp = 100
+		tower_defence.tanks.clear()
+		tower_defence.towers.clear()
+		tower_defence.bullets.clear()
 		
-		global td_last_update_time, td_to_update_time
-		td_last_update_time = 0
-		td_to_update_time = 0
+		tower_defence.moneys = 100
+		tower_defence.hp = 100
+		
+		tower_defence.last_update_time = 0
+		tower_defence.to_update_time = 0
 		
 		set_level(0)
 	
 	def set_level(level):
-		global td_result
-		if level == len(td_levels):
-			td_result = '{color=#00FF00}' + _('WIN')
+		if level == len(tower_defence.levels):
+			tower_defence.result = '{color=#0F0}' + _('WIN')
 			return
 		
-		global td_level, td_pause, td_tanks_created, td_to_update_time, td_bullets
-		td_level = level
-		td_pause = True
-		td_tanks_created = 0
-		td_to_update_time = 0
-		td_bullets = []
+		tower_defence.level = level
+		tower_defence.pause = True
+		tower_defence.result = ''
+		tower_defence.tanks_created = 0
+		tower_defence.to_update_time = 0
+		tower_defence.bullets = []
 	
-	def td_update():
-		global td_last_update_time, td_to_update_time, td_zoom
-		td_zoom = int(min(get_stage_width() / td_map_w / td_cell_size, get_stage_height() * 0.7 / td_map_h / td_cell_size))
-		if td_zoom < 1:
-			td_zoom = 1
+	def tower_defence__update():
+		xzoom = get_stage_width()        / tower_defence.map_w / tower_defence.cell_size
+		yzoom = get_stage_height() * 0.7 / tower_defence.map_h / tower_defence.cell_size
+		tower_defence.zoom = max(int(min(xzoom, yzoom)), 1)
 		
-		global td_result
-		td_result = '' if td_hp else '{color=#FF0000}' + _('FAIL')
+		if tower_defence.hp == 0:
+			tower_defence.result = '{color=#F00}' + _('FAIL')
 		
-		if td_pause or td_hp == 0:
-			td_last_update_time = 0
+		if tower_defence.pause or tower_defence.hp == 0:
+			tower_defence.last_update_time = 0
 			return
 		
-		td_to_update_time += get_last_tick()
-		while td_to_update_time > td_frame_time:
-			td_to_update_time -= td_frame_time
+		tower_defence.to_update_time += get_last_tick()
+		while tower_defence.to_update_time > tower_defence.frame_time:
+			tower_defence.to_update_time -= tower_defence.frame_time
 			
-			td_check_tank_add()
-			td_update_tanks()
-			td_update_towers()
-			td_update_bullets()
+			tower_defence.check_tank_adding()
+			tower_defence.update_tanks()
+			tower_defence.update_towers()
+			tower_defence.update_bullets()
 		
-		if not td_tanks and td_tanks_created == td_levels[td_level][1]:
-			set_level(td_level + 1)
+		if not tower_defence.tanks and tower_defence.tanks_created == tower_defence.levels[tower_defence.level][1]:
+			set_level(tower_defence.level + 1)
+
+
+init python:
+	tower_defence = SimpleObject()
+	build_object('tower_defence')
 	
-	td_init()
+	tower_defence.images = 'mods/' + get_current_mod() + '/images/'
+	
+	tower_defence.bg = im.rect('#FB4')
+	tower_defence.panel_bg  = im.rect('#555')
+	tower_defence.result_bg = im.rect('#333')
+	
+	tower_defence.frame_time = 1 / 60
+	
+	tower_defence.zoom = 1
+	
+	tower_defence.result = ''
+	tower_defence.alarm_moneys = -10
+
+init 10 python:
+	tower_defence.init()
+	show_screen('tower_defence')
 
 
 screen tower_defence:
-	key 'ESCAPE' action SetVariable('td_pause', True)
+	key 'ESCAPE' action 'tower_defence.pause = True'
 	
-	image im.Rect('#FB4'):
-		size (1.0, 0.8)
+	image tower_defence.bg:
+		size 1.0
 	
-	$ td_update()
+	$ tower_defence.update()
+	$ screen_tmp = SimpleObject()
 	
-	image td_back:
+	image tower_defence.field:
 		anchor (0.5, 0.5)
 		pos    (0.5, 0.4)
-		size   (td_map_w * td_cell_size, td_map_h * td_cell_size)
-		zoom    td_zoom
+		xsize tower_defence.map_w * tower_defence.cell_size
+		ysize tower_defence.map_h * tower_defence.cell_size
+		zoom  tower_defence.zoom
 		
-		for obj in td_tanks:
+		for obj in tower_defence.tanks:
 			image obj.image:
 				anchor (0.5, 0.5)
-				xpos int((obj.x + 0.5) * td_cell_size)
-				ypos int((obj.y + 0.5) * td_cell_size)
-				size   obj.size 
+				xpos obj.x * tower_defence.cell_size
+				ypos obj.y * tower_defence.cell_size
+				size   obj.size
 				rotate obj.rotation
 		
-		for obj in td_bullets:
+		for obj in tower_defence.bullets:
 			image obj.image:
 				anchor (0.5, 0.5)
-				xpos int((obj.x + 0.5) * td_cell_size)
-				ypos int((obj.y + 0.5) * td_cell_size)
-				
+				xpos obj.x * tower_defence.cell_size
+				ypos obj.y * tower_defence.cell_size
 				size obj.size
 		
-		$ td_to_delete_tower = None
-		for obj in td_towers:
+		$ screen_tmp.to_delete_tower = None
+		for obj in tower_defence.towers:
 			button:
 				corner_sizes 0
 				ground obj.image
-				action SetVariable('td_to_delete_tower', obj)
+				action 'screen_tmp.to_delete_tower = obj'
 				
 				anchor (0.5, 0.5)
-				xpos int((obj.x + 0.5) * td_cell_size)
-				ypos int((obj.y + 0.5) * td_cell_size)
+				xpos obj.x * tower_defence.cell_size
+				ypos obj.y * tower_defence.cell_size
 				
 				size   obj.size
 				rotate obj.rotation
 		python:
-			if td_to_delete_tower is not None:
-				td_moneys += td_tower_types[td_to_delete_tower.tower_type]['cost'] // 2
-				td_towers.remove(td_to_delete_tower)
+			if screen_tmp.to_delete_tower:
+				tower_defence.moneys += screen_tmp.to_delete_tower.cost // 2
+				tower_defence.towers.remove(screen_tmp.to_delete_tower)
 		
-		image im.Rect('#FB4'):
+		image tower_defence.bg:
 			xpos 0
 			xanchor 1.0
-			size (td_cell_size, 1.0)
+			xsize tower_defence.cell_size
+			ysize 1.0
 	
-	if td_result:
-		image im.Rect('333'):
+	if tower_defence.result:
+		image tower_defence.result_bg:
 			xalign 0.5
 			ypos 10
-			size (200, 32)
+			size (0.25, 0.15)
 			
-			text td_result:
-				align (0.5, 0.5)
-				text_size 30
+			text tower_defence.result:
+				align 0.5
+				text_size 0.07
 	
-	image im.Rect('#555'):
-		ypos 0.8
+	image tower_defence.panel_bg:
+		yalign 1.0
 		size (1.0, 0.2)
 		
-		hbox:
-			spacing 10
-			align (0.05, 0.5)
+		vbox:
+			spacing 0.01
+			xpos 0.03
+			yalign 0.5
 			
 			textbutton _('Restart'):
-				xsize 100
-				yalign 0.5
-				action td_init
+				style 'tower_defence_button'
+				action tower_defence.init
 			
-			textbutton _('Play' if td_pause else 'Pause'):
-				xsize 100
-				yalign 0.5
-				action SetVariable('td_pause', not td_pause)
+			textbutton _('Play' if tower_defence.pause else 'Pause'):
+				style 'tower_defence_button'
+				action ToggleVariable('tower_defence.pause')
 		
 		hbox:
-			spacing 10
-			align (0.5, 0.5)
+			spacing 0.01
+			align 0.5
 			
-			for tower_type in ('usual', 'fast', 'frost'):
+			for tower_type, tower_props in tower_defence.tower_types.items():
 				vbox:
+					spacing 0.01
+					
 					button:
 						corner_sizes 0
-						ground td_tower_types[tower_type]['image']
-						size (td_cell_size, td_cell_size)
-						action add_tower(tower_type)
-					text str(td_tower_types[tower_type]['cost']):
+						ground tower_props['image']
+						size tower_defence.cell_size * min(tower_defence.zoom, 2)
 						xalign 0.5
-						text_size 20
-						color 0
+						action tower_defence.add_tower(tower_type)
+					
+					text str(tower_props['cost']):
+						style 'tower_defence_text'
+						color '#F80'
+						xalign 0.5
 		
 		hbox:
-			spacing 10
-			align (0.95, 0.5)
+			spacing 0.01
 			
-			text (_('Level') + ': ' + str(td_level + 1)):
-				text_size 18
-				color 0
-			text (_('Money') + ': ' + str(td_moneys)):
-				text_size 18
-				color 0xFF0000 if get_game_time() - td_alarm_moneys < 0.3 else 0xFFFF00
-			text (_('HP') + ': ' + str(td_hp)):
-				text_size 18
-				color 0x00FF00
-
+			xpos   0.97
+			xanchor 1.0
+			yalign 0.5
+			
+			$ screen_tmp.money_color = '#F00' if get_game_time() - tower_defence.alarm_moneys < 0.3 else '#FF0'
+			
+			vbox:
+				spacing 0.01
+				
+				text (_('Level') + ':'):
+					style 'tower_defence_text'
+					color '#F80'
+				text (_('Money') + ':'):
+					style 'tower_defence_text'
+					color screen_tmp.money_color
+				text (_('HP') + ':'):
+					style 'tower_defence_text'
+					color '#0F0'
+			
+			vbox:
+				spacing 0.01
+				
+				text str(tower_defence.level + 1):
+					style 'tower_defence_text'
+					color '#F80'
+				text str(tower_defence.moneys):
+					style 'tower_defence_text'
+					color screen_tmp.money_color
+				text str(tower_defence.hp):
+					style 'tower_defence_text'
+					color '#0F0'

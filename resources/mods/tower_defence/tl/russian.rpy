@@ -24,4 +24,3 @@ translate russian strings:
 	
 	old 'HP'
 	new 'Здоровье'
-

@@ -1,72 +1,72 @@
-init python:
-	td_bullet_types = {
-		'usual': { 'color':td_tower_types['usual']['color'], 'speed':10, 'damage':5, 'frost':False },
-		'fast':  { 'color':td_tower_types['fast']['color'],  'speed':20, 'damage':5, 'frost':False },
-		'frost': { 'color':td_tower_types['frost']['color'], 'speed':8,  'damage':4, 'frost':True  }
+init 3 python:
+	tower_defence.bullet_types = { # speed in cells/sec
+		'usual': { 'speed': 10, 'damage': 5, 'frost': False },
+		'fast':  { 'speed': 20, 'damage': 4, 'frost': False },
+		'frost': { 'speed': 8,  'damage': 4, 'frost': True  },
 	}
 	
-	td_bullet_image = 'mods/tower_defence/images/bullet.png'
-	td_bullet_image_bung = im.recolor(td_bullet_image, 255, 128, 0)
+	def tower_defence__init_bullets():
+		image = tower_defence.images + 'bullet.png'
+		for bullet_type, bullet_props in tower_defence.bullet_types.items():
+			tower_props = tower_defence.tower_types[bullet_type]
+			r, g, b, a = renpy.easy.color(tower_props['color'])
+			bullet_props['image'] = im.recolor(image, r, g, b, a)
+		tower_defence.bullet_image_bung = im.recolor(image, 255, 128, 0)
+	tower_defence__init_bullets()
 	
-	td_bullet_size = td_cell_size // 8
-	td_bullet_test_size = (td_tank_size + td_bullet_size) / td_cell_size
-	td_bullet_test_half_size = td_bullet_test_size / 2
+	tower_defence.bullets = []
 	
-	
-	td_bullets = []
-	
-	def td_update_bullets():
+	tower_defence.bullet_size = tower_defence.cell_size // 8
+	tower_defence.bullet_test_size = (tower_defence.tank_size + tower_defence.bullet_size) / tower_defence.cell_size
+
+init -1 python:
+	def tower_defence__update_bullets():
 		to_delete = []
-		for bullet in td_bullets:
-			need_del = bullet.image == td_bullet_image_bung or bullet.update()
+		for bullet in tower_defence.bullets:
+			need_del = bullet.image == tower_defence.bullet_image_bung or bullet.update()
 			if need_del:
 				to_delete.append(bullet)
 		for bullet in to_delete:
-			td_bullets.remove(bullet)
+			tower_defence.bullets.remove(bullet)
 	
 	
-	class Bullet(Object):
+	class TowerDefenceBullet:
 		def __init__(self, x, y, dx, dy, bullet_type):
-			Object.__init__(self)
+			self.__dict__.update(tower_defence.bullet_types[bullet_type])
 			
-			self.x, self.y = x, y
+			self.x, self.y = absolute(x), absolute(y)
 			self.dx, self.dy = dx, dy
 			
-			orig = td_bullet_types[bullet_type]
-			for prop in orig:
-				self[prop] = orig[prop]
-			
-			r, g, b, a = renpy.easy.color(self.color)
-			self.image = im.recolor(td_bullet_image, r, g, b, a)
-			
-			self.size = td_bullet_size
+			self.size = tower_defence.bullet_size
 		
 		def check_tanks(self):
-			global td_moneys
 			x, y = self.x, self.y
 			
-			for tank in td_tanks:
-				ctx, cty = tank.x, tank.y
-				tx, ty = ctx - td_bullet_test_half_size, cty - td_bullet_test_half_size
-				if x >= tx and x < tx + td_bullet_test_size and y >= ty and y < ty + td_bullet_test_size:
+			size = tower_defence.bullet_test_size
+			half_size = size / 2
+			
+			for tank in tower_defence.tanks:
+				tx = tank.x - half_size
+				ty = tank.y - half_size
+				
+				if x >= tx and x < tx + size and y >= ty and y < ty + size:
 					tank.hp -= self.damage
 					if self.frost:
 						tank.frost = True
 					if tank.hp <= 0:
-						td_moneys += tank.cost
-						td_tanks.remove(tank)
-					self.image = td_bullet_image_bung
+						tower_defence.moneys += tank.cost
+						tower_defence.tanks.remove(tank)
+					self.image = tower_defence.bullet_image_bung
 					self.size = int(self.size * 1.2)
 					break
 		
-		def check_out(self):
-			return self.x < -0.5 or self.y < -0.5 or self.x > td_map_w + 0.5 or self.y > td_map_h + 0.5
+		def check_outside(self):
+			return self.x < 0 or self.y < 0 or self.x > tower_defence.map_w or self.y > tower_defence.map_h
 		
 		def update(self):
-			self.x += self.dx * self.speed * td_frame_time
-			self.y += self.dy * self.speed * td_frame_time
+			self.x += self.dx * self.speed * tower_defence.frame_time
+			self.y += self.dy * self.speed * tower_defence.frame_time
 			
 			self.check_tanks()
 			
-			return self.check_out()
-
+			return self.check_outside()

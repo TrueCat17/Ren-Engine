@@ -1,63 +1,55 @@
-init -1 python:
-	td_tower_types = {
-		'usual': { 'speed':2, 'color':'#FF0', 'cost':50 },
-		'fast':  { 'speed':3, 'color':'#F00', 'cost':75 },
-		'frost': { 'speed':1, 'color':'#00F', 'cost':75 },
+init 2 python:
+	tower_defence.tower_types = { # speed in bullets/sec
+		'usual': { 'speed': 2, 'color': '#FF0', 'cost': 50 },
+		'fast':  { 'speed': 3, 'color': '#F00', 'cost': 75 },
+		'frost': { 'speed': 1, 'color': '#00F', 'cost': 75 },
 	}
 	
-	def init_towers():
-		image = 'mods/tower_defence/images/tower.png'
-		for tower_type in td_tower_types:
-			d = td_tower_types[tower_type]
-			r, g, b, a = renpy.easy.color(d['color'])
-			d['image'] = im.ReColor(image, r, g, b, a)
-	init_towers()
+	def tower_defence__init_towers():
+		image = tower_defence.images + 'tower.png'
+		for tower_props in tower_defence.tower_types.values():
+			r, g, b, a = renpy.easy.color(tower_props['color'])
+			tower_props['image'] = im.recolor(image, r, g, b, a)
+	tower_defence__init_towers()
+	
+	tower_defence.towers = []
+	tower_defence.tower_size = tower_defence.cell_size // 2
 
-init python:
-	td_tower_size = td_cell_size // 2
-	td_half_tower_size = td_tower_size // 2
-	
-	td_towers = []
-	
-	def td_update_towers():
-		for tower in td_towers:
+init -1 python:
+	def tower_defence__update_towers():
+		for tower in tower_defence.towers:
 			tower.update()
 	
-	def make_tower(x, y):
-		global td_moneys
-		td_moneys -= td_tower_types[selected_tower_type]['cost']
+	def tower_defence__make_tower(x, y):
+		tower_type = tower_defence.selected_tower_type
+		tower_defence.moneys -= tower_defence.tower_types[tower_type]['cost']
 		
-		tower = TD_Tower(selected_tower_type, x, y)
-		td_towers.append(tower)
+		tower = TowerDefenceTower(tower_type, x, y)
+		tower_defence.towers.append(tower)
 	
 	
-	class TD_Tower(Object):
+	class TowerDefenceTower:
 		MAX_DIST2 = 25 # 2 - power, **2, ^2
 		
 		def __init__(self, tower_type, x, y):
-			Object.__init__(self)
-			
+			self.__dict__.update(tower_defence.tower_types[tower_type])
 			self.tower_type = tower_type
-			orig = td_tower_types[tower_type]
-			for prop in orig:
-				self[prop] = orig[prop]
 			
-			self.x, self.y = x, y
-			self.size = td_tower_size
+			self.x, self.y = absolute(x + 0.5), absolute(y + 0.5)
+			self.size = tower_defence.tower_size
 			
 			self.rotation = 0
 			
-			self.shut_time = 1.0 / self.speed
+			self.shut_time = 1 / self.speed
 			self.last_shut = -self.shut_time
 		
 		def update(self):
-			tank = self.get_near_tank()
-			if tank is None:
+			tank = self.get_target_tank()
+			if not tank:
 				return
 			
 			dx = tank.x - self.x
 			dy = tank.y - self.y
-			dist = math.sqrt(dx*dx + dy*dy)
 			
 			self.rotation = math.atan2(dy, dx) * 180 / math.pi + 90
 			
@@ -66,14 +58,16 @@ init python:
 			
 			self.last_shut = get_game_time()
 			
-			bullet = Bullet(self.x, self.y, dx / dist, dy / dist, self.tower_type)
-			td_bullets.append(bullet)
+			dist = math.sqrt(dx * dx + dy * dy)
+			bullet = TowerDefenceBullet(self.x, self.y, dx / dist, dy / dist, self.tower_type)
+			tower_defence.bullets.append(bullet)
 		
-		def get_near_tank(self):
+		def get_target_tank(self):
 			x, y = self.x, self.y
-			for tank in td_tanks:
+			MAX_DIST2 = TowerDefenceTower.MAX_DIST2
+			
+			for tank in tower_defence.tanks:
 				dx, dy = tank.x - x, tank.y - y
-				if dx*dx + dy*dy < TD_Tower.MAX_DIST2:
+				if dx * dx + dy * dy < MAX_DIST2:
 					return tank
 			return None
-

@@ -1,5 +1,5 @@
-init -1 python:
-	td_levels = (
+init 1 python:
+	tower_defence.levels = (
 		# type, count
 		('usual',  5),  # 1
 		('usual', 20),  # 2
