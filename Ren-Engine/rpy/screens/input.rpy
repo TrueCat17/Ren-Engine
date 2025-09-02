@@ -273,9 +273,9 @@ screen input:
 		
 		if input.bg_border_size:
 			image input.bg_border:
+				corner_sizes -1
 				xsize screen_tmp.bg_xsize + input.bg_border_size * 2
 				ysize screen_tmp.bg_ysize + input.bg_border_size * 2
-				corner_sizes input.bg_border_size
 		
 		image input.bg:
 			corner_sizes -1
@@ -302,9 +302,9 @@ screen input_content:
 			
 			if input.tf_bg_border_size:
 				image input.tf_bg_border:
+					corner_sizes -1
 					xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
 					ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
-					corner_sizes input.tf_bg_border_size
 			
 			image input.tf_bg:
 				corner_sizes -1
