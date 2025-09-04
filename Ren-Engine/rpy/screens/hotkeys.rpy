@@ -105,7 +105,7 @@ init -901 python:
 		
 		if key not in hotkeys.fkeys: # F-keys always work
 			for screen in hotkeys.disable_on_screens + hotkeys.disable_key_on_screens[keys_str]:
-				if renpy.has_screen(screen):
+				if has_screen(screen):
 					return
 		
 		
