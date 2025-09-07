@@ -25,14 +25,13 @@ init -100 python:
 			
 			guitar_hero.update()
 			
-			if persistent.guitar_hero_song:
+			if persistent.guitar_hero_song and persistent.guitar_hero_song in guitar_hero.cur_songs:
 				paths = guitar_hero.get_paths(persistent.guitar_hero_song, False)
 				if paths:
 					guitar_hero.set_song(persistent.guitar_hero_song)
 			
-			if not guitar_hero.song and guitar_hero.song_paths:
-				song = list(guitar_hero.song_paths.keys())[0]
-				guitar_hero.set_song(song)
+			if not guitar_hero.song and guitar_hero.cur_songs:
+				guitar_hero.set_song(guitar_hero.cur_songs[0])
 		
 		finally:
 			guitar_hero.initing = False

@@ -44,6 +44,9 @@ init -200 python:
 			else:
 				guitar_hero.song = None
 		
+		if guitar_hero.song in guitar_hero.cur_songs:
+			guitar_hero.song_index = guitar_hero.cur_songs.index(guitar_hero.song)
+		
 		if len(guitar_hero.cur_songs) > guitar_hero.count_songs:
 			max_start_index = len(guitar_hero.cur_songs) - guitar_hero.count_songs
 			guitar_hero.start_song_index = min(guitar_hero.start_song_index, max_start_index)
