@@ -46,9 +46,11 @@ init 1 python:
 	add_location_object("clubs", "mus_club_rails_pos-2", "mus_club_rails")
 	add_location_object("clubs", "mus_club_rails_pos-3", "mus_club_rails")
 	add_location_object("clubs", "mus_club_rails_pos-4", "mus_club_rails")
+	
 	add_location_object("enter", "gate_left_pos", "gate_left")
 	add_location_object("enter", "gate_right_pos", "gate_right")
 	add_location_object("enter", "ikarus_pos", "ikarus")
+	
 	add_location_object("radio_club", "radio_club_cupboards_pos", "radio_club_cupboards")
 	add_location_object("radio_club", "radio_club_table_pos", "radio_club_table")
 	add_location_object("radio_club", "radio_club_tabouret_pos-1", "radio_club_tabouret")

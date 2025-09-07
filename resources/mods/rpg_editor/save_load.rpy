@@ -175,6 +175,12 @@ init python:
 				
 				params = '"%s", "%s", "%s"' % (location_name, place_name, obj_name)
 				tmp.append('\tadd_location_object(' + params + ')')
+			
+			if tmp[-1] != '\t':
+				tmp.append('\t')
+		
+		while tmp and tmp[-1] == '\t':
+			tmp.pop()
 		
 		with open(file_with_objects, 'wb') as f:
 			for s in tmp:
