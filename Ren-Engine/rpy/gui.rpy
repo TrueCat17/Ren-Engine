@@ -159,7 +159,7 @@ init -1000 python:
 	
 	
 	# props for nvl-mode
-	gui.nvl_bg = im.rect('0005')
+	gui.nvl_bg = im.rect('#0005')
 	
 	gui.nvl_top_indent = 0.05
 	gui.nvl_height = None # None = auto
