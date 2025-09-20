@@ -95,9 +95,6 @@ if (PLATFORM STREQUAL "win32")
 		:SDL2.dll
 	)
 else()
-	# for python dynamic module _ssl.so
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Xlinker --export-dynamic")
-
 	link_libraries(
 		GL
 		jemalloc
