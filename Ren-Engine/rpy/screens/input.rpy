@@ -165,6 +165,25 @@ init -995 python:
 				screen_tmp.bg_ysize += screen_tmp.tf_bg_ysize + spacing
 			if input.prompt:
 				screen_tmp.bg_ysize += prompt_text_size + spacing
+		
+		def fix(name, max_value):
+			value = screen_tmp[name]
+			
+			orig_name = name.replace('xsize', 'width').replace('ysize', 'height')
+			
+			min_res = input.get(orig_name + '_min')
+			if min_res is not None:
+				value = max(value, get_absolute(min_res, max_value))
+			max_res = input.get(orig_name + '_max')
+			if max_res is not None:
+				value = min(value, get_absolute(max_res, max_value))
+			
+			screen_tmp[name] = value
+		
+		fix('tf_bg_xsize', w)
+		fix('tf_bg_ysize', h)
+		fix('bg_xsize', w)
+		fix('bg_ysize', h)
 	
 	
 	build_object('input')
@@ -184,20 +203,25 @@ init:
 	
 	python:
 		input.fog = im.rect('#0005')
+		input.fog_corner_sizes = -1
 		
 		input.bg = im.rect('#FFF')
-		input.bg_width = None # None = auto
+		input.bg_corner_sizes = -1
+		input.bg_width  = None # None = auto
 		input.bg_height = None # None = auto
 		
 		input.bg_border = im.rect('#222')
+		input.bg_border_corner_sizes = -1
 		input.bg_border_size = 4 # 0 - disable
 		
 		# tf = text field
 		input.tf_bg = input.bg
-		input.tf_bg_width = None # None = auto
+		input.tf_bg_corner_sizes = -1
+		input.tf_bg_width  = None # None = auto
 		input.tf_bg_height = None # None = auto
 		
 		input.tf_bg_border = input.bg_border
+		input.tf_bg_border_corner_sizes = -1
 		input.tf_bg_border_size = 2 # 0 - disable
 		
 		# indent from tf to tf_border
@@ -258,6 +282,7 @@ screen input:
 	button:
 		ground input.fog
 		hover  input.fog
+		corner_sizes input.fog_corner_sizes
 		size 1.0
 		
 		mouse False
@@ -273,12 +298,12 @@ screen input:
 		
 		if input.bg_border_size:
 			image input.bg_border:
-				corner_sizes -1
+				corner_sizes input.bg_border_corner_sizes
 				xsize screen_tmp.bg_xsize + input.bg_border_size * 2
 				ysize screen_tmp.bg_ysize + input.bg_border_size * 2
 		
 		image input.bg:
-			corner_sizes -1
+			corner_sizes input.bg_corner_sizes
 			xsize screen_tmp.bg_xsize
 			ysize screen_tmp.bg_ysize
 			align 0.5
@@ -302,12 +327,12 @@ screen input_content:
 			
 			if input.tf_bg_border_size:
 				image input.tf_bg_border:
-					corner_sizes -1
+					corner_sizes input.tf_bg_border_corner_sizes
 					xsize screen_tmp.tf_bg_xsize + input.tf_bg_border_size * 2
 					ysize screen_tmp.tf_bg_ysize + input.tf_bg_border_size * 2
 			
 			image input.tf_bg:
-				corner_sizes -1
+				corner_sizes input.tf_bg_corner_sizes
 				xsize screen_tmp.tf_bg_xsize
 				ysize screen_tmp.tf_bg_ysize
 				align 0.5
