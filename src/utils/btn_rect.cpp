@@ -673,6 +673,7 @@ void BtnRect::processKey(SDL_Keycode key, bool shift) {
 	goodVariants.reserve(btnRects.size());
 
 	for (BtnRect *btnRect : btnRects) {
+		if (btnRect == selectedBtnRect) continue;
 		if (btnRect->needIgnore()) continue;
 
 		FRect fRect = getFRect(btnRect->owner);
