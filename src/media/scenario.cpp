@@ -197,6 +197,7 @@ static void restoreScreens(const std::string &loadPath) {
 		                        "pickling.load_global_vars(tmp + '/py_globals')", loadPath);
 
 		startScreensVec = Game::loadInfo(loadPath);
+		Screen::clearScreensToShow();
 	}else {
 		PyUtils::callInPythonThread([&]() {
 			PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");

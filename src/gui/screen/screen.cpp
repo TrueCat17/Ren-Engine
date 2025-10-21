@@ -241,6 +241,12 @@ static void makeScreenVars(const std::string &name,
 	}
 }
 
+void Screen::clearScreensToShow() {
+	std::lock_guard g(screenMutex);
+
+	toShowList.clear();
+}
+
 void Screen::addToShow(std::string name,
                        const std::string &fileName, uint32_t numLine,
                        PyObject *args, PyObject *kwargs)

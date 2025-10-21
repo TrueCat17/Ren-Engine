@@ -30,6 +30,7 @@ public:
 
 	static void replace(const std::string &fromName, const std::string &toName);
 
+	static void clearScreensToShow();
 	static void addToShow(std::string name,
 	                      const std::string &fileName, uint32_t numLine,
 	                      PyObject *args = nullptr, PyObject *kwargs = nullptr);
