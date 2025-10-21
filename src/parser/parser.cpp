@@ -141,13 +141,15 @@ Parser::Parser(const std::string &dir) {
 			size_t n = s.find_last_not_of(' ');
 			s.erase(n + 1);
 
-			removeComment(s);
 			n = s.find_first_not_of(' ');
+			if (n <= pythonIndent) {
+				removeComment(s);
+				n = s.find_first_not_of(' ');
+			}
 			if (n == size_t(-1)) {
 				code.push_back({});
 				continue;
 			}
-
 
 			if (n <= pythonIndent) {
 				if (String::endsWith(s, "python:")) {
