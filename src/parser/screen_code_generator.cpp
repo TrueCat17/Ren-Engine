@@ -419,7 +419,7 @@ static std::string initCode(Node *node, const std::string& index) {
 
 	if (node->isScreenProp) {
 		res = String::strip(params);
-		res += "# _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
+		res += " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
 		return res;
 	}
 
