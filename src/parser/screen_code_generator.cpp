@@ -449,7 +449,7 @@ static std::string initCode(Node *node, const std::string& index) {
 			if (child->isScreenConst || child->isScreenEvent) continue;
 
 			std::string childRes = initCode(child);
-			childRes.insert(String::firstNotInQuotes(childRes, '#'), ", ");
+			childRes.insert(String::firstNotInQuotes(childRes, '#') - 1, ",");
 
 			res += "    " + childRes + "\n";
 		}
@@ -503,7 +503,7 @@ static std::string initCode(Node *node, const std::string& index) {
 		if (!child->isScreenProp) break;
 
 		std::string childRes = initCode(child);
-		childRes.insert(String::firstNotInQuotes(childRes, '#'), ", ");
+		childRes.insert(String::firstNotInQuotes(childRes, '#') - 1, ",");
 
 		res += indent + "    " + childRes + "\n";
 		lastPropNum = child->screenNum;
