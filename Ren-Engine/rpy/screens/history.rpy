@@ -123,21 +123,21 @@ screen history:
 	modal True
 	zorder 10000
 	
+	$ screen_tmp = SimpleObject()
+	$ history.update()
+	alpha screen_tmp.alpha
+	
 	key 'ESCAPE' action history.close
 	button:
 		ground 'images/bg/black.jpg'
+		hover  'images/bg/black.jpg'
 		size  1.0
-		alpha 0.01
+		alpha gui.history_fog_alpha
 		mouse False
 		action    history.close
 		alternate history.close
 	
-	
-	$ screen_tmp = SimpleObject()
-	$ history.update()
-	
 	image gui.bg('history_bg'):
-		alpha screen_tmp.alpha
 		xpos screen_tmp.xpos
 		ypos screen_tmp.ypos
 		xanchor screen_tmp.xanchor
@@ -203,19 +203,30 @@ screen history:
 								color        text_object.name_color
 								outlinecolor text_object.name_outlinecolor
 						
-						text (text_object.history_text_prefix + text_object.dialogue_text + text_object.history_text_suffix):
-							
-							$ history_text_prefix = 'history_%s_' % ('text' if text_object.name_text else 'thought')
-							xpos       screen_tmp[history_text_prefix + 'xpos']
-							ypos       screen_tmp[history_text_prefix + 'ypos'] + (screen_tmp.dialogue_text_yoffset if text_object.name_text else 0)
-							xsize      screen_tmp[history_text_prefix + 'width']
-							xanchor    screen_tmp[history_text_prefix + 'xalign']
-							text_align screen_tmp[history_text_prefix + 'xalign']
-							text_size  screen_tmp.dialogue_text_size
-							
-							font         text_object.dialogue_font
-							color        text_object.dialogue_color
-							outlinecolor text_object.dialogue_outlinecolor
+						if text_object.name_text:
+							text (text_object.history_text_prefix + text_object.dialogue_text + text_object.history_text_suffix):
+								xpos       screen_tmp.history_text_xpos
+								ypos       screen_tmp.history_text_ypos + screen_tmp.dialogue_text_yoffset
+								xsize      screen_tmp.history_text_width
+								xanchor    screen_tmp.history_text_xalign
+								text_align screen_tmp.history_text_xalign
+								text_size  screen_tmp.dialogue_text_size
+								
+								font         text_object.dialogue_font
+								color        text_object.dialogue_color
+								outlinecolor text_object.dialogue_outlinecolor
+						else:
+							text (text_object.history_text_prefix + text_object.dialogue_text + text_object.history_text_suffix):
+								xpos       screen_tmp.history_thought_xpos
+								ypos       screen_tmp.history_thought_ypos
+								xsize      screen_tmp.history_thought_width
+								xanchor    screen_tmp.history_thought_xalign
+								text_align screen_tmp.history_thought_xalign
+								text_size  screen_tmp.dialogue_text_size
+								
+								font         text_object.dialogue_font
+								color        text_object.dialogue_color
+								outlinecolor text_object.dialogue_outlinecolor
 			
 			null:
 				align (1.0, 0.5)

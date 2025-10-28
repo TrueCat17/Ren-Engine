@@ -189,6 +189,7 @@ init -1000 python:
 	
 	# history
 	config.history_length = 50
+	gui.history_fog_alpha = 0.01
 	gui.history_bg = im.rect('#181818BB')
 	gui.history_height = None # None = auto
 	gui.history_spacing = 5 # enable if history_height is None

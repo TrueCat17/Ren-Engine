@@ -156,10 +156,11 @@ init -1000 python:
 			db.dialogue_full_text += text
 		
 		if name is not None or db.dialogue_text_after_pause or not db.prev_texts:
-			text_object = db.get_cur_text_object(text)
-			db.dialogue.append(text_object)
-			db.prev_texts.append(text_object)
-			db.prev_texts[:-config.history_length] = []
+			if text:
+				text_object = db.get_cur_text_object(text)
+				db.dialogue.append(text_object)
+				db.prev_texts.append(text_object)
+				db.prev_texts[:-config.history_length] = []
 		else:
 			text_object = db.prev_texts[-1]
 			text_object.dialogue_text += text
