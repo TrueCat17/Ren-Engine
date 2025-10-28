@@ -137,7 +137,6 @@ screen history:
 	$ history.update()
 	
 	image gui.bg('history_bg'):
-		clipping True
 		alpha screen_tmp.alpha
 		xpos screen_tmp.xpos
 		ypos screen_tmp.ypos
@@ -152,6 +151,7 @@ screen history:
 				style 'history_title' if style.history_title else 'text'
 		
 		null:
+			clipping True
 			xpos screen_tmp.padding_left
 			ypos screen_tmp.padding_top
 			xsize screen_tmp.container_xsize
