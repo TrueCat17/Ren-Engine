@@ -218,6 +218,28 @@ init -995 python:
 						res = repr(res)
 					console.out(res)
 	
+	def console__get_output():
+		text_size = style.console_text.get_current('text_size')
+		input_height = text_size * (console.input.count('\n') + 1)
+		
+		output_height = get_stage_height() - input_height
+		output_lines = math.ceil(output_height / text_size)
+		
+		cache = console__get_output.__dict__
+		text = persistent.console_text
+		key = (text, output_lines)
+		res = cache.get(key)
+		if res is not None:
+			return res
+		
+		lines = text.split('\n')[-output_lines:]
+		for i, line in enumerate(lines):
+			if line.startswith('>>> '):
+				lines[i] = code_coloring.colorize(line)
+		
+		cache[key] = '\n'.join(lines)
+		return cache[key]
+	
 	
 	def console__watch_add(code):
 		eval_obj = Eval(code, 'Console: watch', console.to_watch_index, depth = 1)
@@ -370,17 +392,6 @@ screen console:
 	key 'RETURN'    action console.on_enter
 	
 	
-	python:
-		screen_tmp = SimpleObject()
-		
-		screen_tmp.text_size = style.console_text.get_current('text_size')
-		screen_tmp.input_height = screen_tmp.text_size * (console.input.count('\n') + 1)
-		
-		screen_tmp.output_height = get_stage_height() - screen_tmp.input_height
-		screen_tmp.output_lines = math.ceil(screen_tmp.output_height / screen_tmp.text_size)
-		
-		screen_tmp.output = '\n'.join(persistent.console_text.split('\n')[-screen_tmp.output_lines:])
-	
 	image console.background:
 		alpha console.background_alpha
 		size 1.0
@@ -388,7 +399,7 @@ screen console:
 	vbox:
 		yalign 1.0
 		
-		text screen_tmp.output:
+		text console.get_output():
 			style 'console_text'
 			xpos  50
 			xsize get_stage_width() - 50
