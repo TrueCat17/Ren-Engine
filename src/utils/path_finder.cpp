@@ -642,7 +642,33 @@ static void getPath(Point *start, Point *end) {
 	while (last != start) {
 		PointInt x = std::min(PointInt(last->x * scale + scale / 2), PointInt(currentMap->originalWidth - 1));
 		PointInt y = std::min(PointInt(last->y * scale + scale / 2), PointInt(currentMap->originalHeight - 1));
-		path.push_back({x, y});
+
+		bool isNew = true;
+		if (path.size() > 1) {
+			SimplePoint p1 = path.back();
+			SimplePoint p2 = path[path.size() - 2];
+
+			int dx1 = x - p1.x;
+			int dy1 = y - p1.y;
+
+			int dx2 = p1.x - p2.x;
+			int dy2 = p1.y - p2.y;
+
+			if (dy1 == 0 || dy2 == 0) {
+				isNew = dy1 != dy2;
+			}else {
+				int k1 = dx1 / dy1;
+				int k2 = dx2 / dy2;
+				isNew = k1 != k2;
+			}
+		}
+
+		if (isNew) {
+			path.push_back({x, y});
+		}else {
+			path.back() = {x, y};
+		}
+
 		last = last->parent;
 	}
 }
