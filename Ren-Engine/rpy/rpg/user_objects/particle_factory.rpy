@@ -24,6 +24,7 @@ init -1000 python:
 			self.min_size = kwargs.get('min_size', 0.5)
 			self.max_size = kwargs.get('max_size', 1.5)
 			
+			self.save_exactly = kwargs.get('save_exactly', False)
 			self.objs = []
 			self.set_count(kwargs.get('count', 50))
 		
@@ -80,3 +81,14 @@ init -1000 python:
 		
 		def free(self):
 			return None
+		
+		def __getstate__(self):
+			res = self.__dict__.copy()
+			if not self.save_exactly:
+				res['objs'] = []
+				res['count'] = len(self.objs)
+			return res
+		def __setstate__(self, state):
+			count = state.pop('count', len(state['objs']))
+			self.__dict__ = state
+			self.set_count(count)
