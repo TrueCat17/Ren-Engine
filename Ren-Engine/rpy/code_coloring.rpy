@@ -94,7 +94,7 @@ init -1000 python:
 					token_type = None
 			
 			if token_type:
-				res += '{color=%s}%s{/color}' % (code_coloring.colors[token_type], token)
+				res += '{color=%s}%s{/color}' % (code_coloring.colors[token_type], token.replace('{', '{{'))
 			else:
 				res += token
 		

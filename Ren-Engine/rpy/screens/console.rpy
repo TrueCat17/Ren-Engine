@@ -25,7 +25,7 @@ init -995 python:
 	
 	
 	def console__out(text):
-		persistent.console_text += '\n' + str(text).replace('{', '{{')
+		persistent.console_text += '\n' + str(text)
 	def console__out_help():
 		console.out(console.help)
 	
@@ -236,6 +236,8 @@ init -995 python:
 		for i, line in enumerate(lines):
 			if line.startswith('>>> '):
 				lines[i] = code_coloring.colorize(line)
+			else:
+				lines[i] = line.replace('{', '{{')
 		
 		cache[key] = '\n'.join(lines)
 		return cache[key]
