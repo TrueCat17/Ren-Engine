@@ -234,7 +234,7 @@ init -995 python:
 		
 		lines = text.split('\n')[-output_lines:]
 		for i, line in enumerate(lines):
-			if line.startswith('>>> '):
+			if line.startswith('>>> ') or line.startswith('... '):
 				lines[i] = code_coloring.colorize(line)
 			else:
 				lines[i] = line.replace('{', '{{')
