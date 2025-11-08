@@ -171,6 +171,15 @@ init -10000 python:
 		save_page, save_slot = page, slot
 		screenshot_width = config.thumbnail_width
 		screenshot_height = int(screenshot_width / get_from_hard_config('window_w_div_h', float))
+		
+		if has_screen('pause'):
+			set_fps(pause_screen.fps)
+			set_timeout(slots.after_loading, 0)
+	
+	def slots__after_loading():
+		after_loading = not has_screen('pause')
+		if after_loading:
+			set_fps(pause_screen.before_fps)
 	
 	def slots__delete(slot = None, page = None):
 		page = page or persistent.slot_page
