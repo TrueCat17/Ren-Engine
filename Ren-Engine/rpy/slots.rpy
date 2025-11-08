@@ -173,7 +173,6 @@ init -10000 python:
 		screenshot_height = int(screenshot_width / get_from_hard_config('window_w_div_h', float))
 		
 		if has_screen('pause'):
-			set_fps(pause_screen.fps)
 			set_timeout(slots.after_loading, 0)
 	
 	def slots__after_loading():
