@@ -1,32 +1,26 @@
 init python:
 	
-	simple_production = ['farm', 'sawmill', 'career']
+	sc_buildings.simple = ['farm', 'sawmill', 'career']
 	
-	building_production = {
-		'college': {
-			'from': {},
-			'to': {
-				'science': 4,
-			}
-		},
+	sc_buildings.takes = {
+		'cement factory': (
+			('stone', 30),
+			('coal',  40),
+		),
 		
-		'cement factory': {
-			'from': {
-				'stone': 30,
-				'coal': 40,
-			},
-			'to': {
-				'cement': 25,
-			}
-		},
+		'metal factory': (
+			('coal',  45),
+			('metal', 30),
+		),
 		
-		'metal factory': {
-			'from': {
-				'coal': 45,
-				'metal': 30,
-			},
-			'to': {
-				'steel': 15,
-			}
-		},
+		'barracks': (
+			('wood',  8),
+			('stone', 8),
+		),
+	}
+	
+	sc_buildings.makes = {
+		'cement factory': ('cement', 25),
+		'metal factory': ('steel', 15),
+		'college': ('science', 4),
 	}

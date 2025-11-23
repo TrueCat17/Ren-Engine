@@ -1,100 +1,106 @@
 init python:
 	
-	class MenuItem:
-		def __init__(self, text, actions = None, key = ''):
+	class SC_MenuItem:
+		def __init__(self, text, actions = None, key = '', no_delay = False):
 			self.text = text
 			if actions is not None:
 				self.actions = list(actions) if type(actions) in (tuple, list) else [actions]
 			else:
 				self.actions = None
 			self.key = key
+			self.delay = 0 if no_delay else 0.5
 	
 	
-	def context_menu__show(items):
+	def sc_context_menu__show(items):
 		if not items:
 			return
 		
 		x, y = get_mouse()
-		x = max(x, context_menu.xsize)
-		y = min(y + 1, get_stage_height() - context_menu.text_size * len(items))
-		context_menu.pos = x, y
+		x = max(x, sc_context_menu.xsize)
+		y = min(y + 1, get_stage_height() - sc_context_menu.text_size * len(items))
+		sc_context_menu.pos = (x, y)
 		
-		context_menu.show_time = get_game_time()
-		context_menu.items = items
-		context_menu.key_items = [item for item in items if item.key]
+		sc_context_menu.show_time = get_game_time()
+		sc_context_menu.items = items
+		sc_context_menu.key_items = [item for item in items if item.key]
 		
-		show_screen('context_menu')
+		show_screen('sc_context_menu')
 	
-	def context_menu__hide():
-		hide_screen('context_menu')
-		info.set_msg('')
+	def sc_context_menu__hide():
+		hide_screen('sc_context_menu')
+		sc_info.set_msg('')
 	
 	
-	def context_menu__exec(item):
-		context_menu.hide()
+	def sc_context_menu__exec(item):
+		sc_context_menu.hide()
 		exec_funcs(item.actions)
 	
 	
-	build_object('context_menu')
-	context_menu.xsize = 250
-	context_menu.text_size = 20
-	context_menu.ground = im.rect('#FFF')
-	context_menu.hover  = im.rect('#06F')
+	build_object('sc_context_menu')
+	sc_context_menu.xsize = 250
+	sc_context_menu.text_size = 20
+	sc_context_menu.font = 'Calibri'
+	sc_context_menu.ground = im.rect('#FFF')
+	sc_context_menu.hover  = im.rect('#06F')
 	
-	context_menu.pos = (0, 0)
-	context_menu.items = []
+	sc_context_menu.pos = (0, 0)
+	sc_context_menu.items = []
 	
-	hotkeys.disable_key_on_screens['ESCAPE'].append('context_menu')
+	hotkeys.disable_key_on_screens['ESCAPE'].append('sc_context_menu')
 
 
-screen context_menu:
+screen sc_context_menu:
 	modal True
 	zorder 100
 	
-	key 'ESCAPE' action context_menu.hide
-	if get_game_time() - context_menu.show_time > 0.25:
-		key 'MENU' action context_menu.hide
+	key 'ESCAPE' action sc_context_menu.hide
+	if get_game_time() - sc_context_menu.show_time > 0.25:
+		for key in ('MENU', 'SPACE', 'RETURN'):
+			key key action sc_context_menu.hide
 	
 	button:
 		size 1.0
 		alpha 0.01
 		
-		ground black_bg
-		hover  black_bg
+		ground sc_black_bg
+		hover  sc_black_bg
 		mouse  False
-		action context_menu.hide
+		action    sc_context_menu.hide
+		alternate sc_context_menu.hide
 	
-	image white_bg:
-		xsize context_menu.xsize
-		ysize len(context_menu.items) * context_menu.text_size
+	image sc_white_bg:
+		xsize sc_context_menu.xsize
+		ysize len(sc_context_menu.items) * sc_context_menu.text_size
 		
 		xanchor 1.0
-		pos context_menu.pos
+		pos sc_context_menu.pos
 		
 		vbox:
-			for item in context_menu.items:
+			for item in sc_context_menu.items:
 				if item.actions is None:
 					text _(item.text):
-						xsize      context_menu.xsize
-						text_size  context_menu.text_size
+						xsize sc_context_menu.xsize
+						font      sc_context_menu.font
+						text_size sc_context_menu.text_size
+						color    '#555'
 						text_align 'center'
-						color      '#555'
 				else:
 					textbutton (' ' + _(item.text)):
-						xsize context_menu.xsize
-						ysize context_menu.text_size
+						xsize sc_context_menu.xsize
+						ysize sc_context_menu.text_size
 						
-						text_size  context_menu.text_size
+						font      sc_context_menu.font
+						text_size sc_context_menu.text_size
+						color     0
 						text_align 'left'
-						color      0
 						
-						ground context_menu.ground
-						hover  context_menu.hover
+						ground sc_context_menu.ground
+						hover  sc_context_menu.hover
 						
-						hovered   info.set_msg(item.key)
-						unhovered info.set_msg_if_prev('', item.key)
+						hovered   sc_info.set_msg(item.key)
+						unhovered sc_info.set_msg_if_prev('', item.key)
 						
-						action context_menu.exec(item)
+						action sc_context_menu.exec(item)
 	
-	for item in context_menu.key_items:
-		key item.key action context_menu.exec(item)
+	for item in sc_context_menu.key_items:
+		key item.key action sc_context_menu.exec(item)

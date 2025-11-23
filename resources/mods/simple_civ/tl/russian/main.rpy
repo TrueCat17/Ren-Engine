@@ -4,6 +4,36 @@ translate russian strings:
 	new 'tl/russian/readme.txt'
 	
 	
+	# sc_main_menu
+	
+	old 'Simple Civilization'
+	new 'Простая Цивилизация'
+	
+	old 'Width'
+	new 'Ширина'
+	
+	old 'Height'
+	new 'Высота'
+	
+	old 'Seed'
+	new 'Зерно'
+	
+	old 'Count of players'
+	new 'Кол-во игроков'
+	
+	old 'Count of bots'
+	new 'Кол-во ботов'
+	
+	old 'Difficulty level'
+	new 'Уровень сложности'
+	
+	old '%s is not int'
+	new '%s - не число'
+	
+	old 'Start'
+	new 'Начать'
+	
+	
 	# resources:
 	
 	old 'wood'
@@ -30,20 +60,14 @@ translate russian strings:
 	old 'science'
 	new 'наука'
 	
+	old 'player'
+	new 'игрок'
+	
 	
 	# infrastructure:
 	
-	old 'road'
-	new 'дорога'
-	
-	old 'district'
-	new 'район'
-	
 	old 'farm'
 	new 'ферма'
-	
-	old 'college'
-	new 'колледж'
 	
 	old 'sawmill'
 	new 'лесопилка'
@@ -51,8 +75,8 @@ translate russian strings:
 	old 'career'
 	new 'карьер'
 	
-	old 'storage'
-	new 'склад'
+	old 'college'
+	new 'колледж'
 	
 	old 'cement factory'
 	new 'цемент. завод'
@@ -64,28 +88,13 @@ translate russian strings:
 	new 'казармы'
 	
 	
-	# units:
+	# map actions:
 	
-	old 'builders'
-	new 'строители'
+	old 'Disable'
+	new 'Выключить'
 	
-	old 'soldiers'
-	new 'солдаты'
-	
-	
-	# builder actions:
-	
-	old 'No turns'
-	new 'Нет ходов'
-	
-	old 'Move'
-	new 'Передвинуть'
-	
-	old 'Train new builder'
-	new 'Обучить нового строителя'
-	
-	old 'Make road'
-	new 'Сделать дорогу'
+	old 'Enable'
+	new 'Включить'
 	
 	old 'Improve building'
 	new 'Улучшить здание'
@@ -93,24 +102,17 @@ translate russian strings:
 	old 'Remove building'
 	new 'Удалить здание'
 	
+	old 'Repeat'
+	new 'Повторить'
+	
 	old 'Build'
 	new 'Построить'
 	
 	
-	old 'Cell selection'
-	new 'Выбор ячейки'
-	
-	old 'Cancel selection'
-	new 'Отмена выбора'
-	
-	old 'Moving is available on roads or to near cells'
-	new 'Доступно движение по дорогам или до соседних клеток'
-	
-	
 	# other:
 	
-	old 'Research'
-	new 'Исследования'
+	old 'Technologies'
+	new 'Технологии'
 	
 	old 'Help'
 	new 'Помощь'
@@ -118,11 +120,26 @@ translate russian strings:
 	old 'Pause'
 	new 'Пауза'
 	
+	old 'New Game'
+	new 'Новая Игра'
+	
+	old 'End the current game?'
+	new 'Закончить текущую игру?'
+	
 	old 'Step'
 	new 'Ход'
 	
 	old 'Next'
 	new 'Далее'
+	
+	old 'Force'
+	new 'Влияние'
+	
+	old 'Disabled'
+	new 'Отключено'
+	
+	old 'Will be lost'
+	new 'Будет потеряно'
 	
 	old 'Not enough resources'
 	new 'Недостаточно ресурсов'
@@ -130,50 +147,11 @@ translate russian strings:
 	old 'Field'
 	new 'Поле'
 	
-	old 'Units'
-	new 'Соединения'
-	
 	old 'Building'
 	new 'Здание'
 	
-	old 'No road to\nmain storage'
-	new 'Нет дороги до\nосновного склада'
 	
-	old 'Storage < Building'
-	new 'Склад < Здание'
-	
-	
-	# workers action
-	
-	old 'Workers'
-	new 'Рабочие'
-	
-	old 'Cancel work'
-	new 'Отмена работы'
-	
-	old 'Select work'
-	new 'Выбор работы'
-	
-	old 'Too far'
-	new 'Слишком далеко'
-	
-	old 'No work'
-	new 'Нет работы'
-	
-	old 'No free places'
-	new 'Нет свободных мест'
-	
-	old 'Work place'
-	new 'Место работы'
-	
-	old 'No'
-	new 'Нет'
-	
-	old 'Worker districts'
-	new 'Районы рабочих'
-	
-	
-	# research
+	# technologies
 	
 	old 'Name'
 	new 'Название'
@@ -181,7 +159,7 @@ translate russian strings:
 	old 'Progress'
 	new 'Прогресс'
 	
-	old 'Cost'
+	old 'Price'
 	new 'Цена'
 	
 	old 'Explore'
@@ -190,8 +168,86 @@ translate russian strings:
 	
 	# help
 	
-	old 'From'
-	new 'Из'
+	old 'Takes'
+	new 'Берёт'
 	
 	old 'Makes'
-	new 'Делает'
+	new 'Даёт'
+	
+	old 'Big Force'
+	new 'Большое Влияние'
+	
+	
+	# achivements
+	
+	old 'Achivement'
+	new 'Достижение'
+	
+	old 'winner'
+	new 'победитель'
+	
+	old 'loser'
+	new 'проигравший'
+	
+	old 'normal one'
+	new 'нормальный'
+	
+	old 'Defeat bots on normal (10) difficulty level'
+	new 'Победить ботов на нормальном (10) уровне сложности'
+	
+	old 'observer'
+	new 'наблюдатель'
+	
+	old 'Start a game where all 4 players are bots'
+	new 'Начать игру, где все 4 игрока будут ботами'
+	
+	old 'scientist'
+	new 'учёный'
+	
+	old 'Learn all technologies'
+	new 'Изучить все технологии'
+	
+	old 'factory worker'
+	new 'заводчанин'
+	
+	old 'Build cement factory'
+	new 'Построить цемент. завод'
+	
+	old 'economist'
+	new 'экономист'
+	
+	old 'Upgrade the sawmill to level 4'
+	new 'Улучшить лесопилку до 4 уровня'
+	
+	old 'professor'
+	new 'профессор'
+	
+	old 'Build a level 4 college'
+	new 'Построить колледж 4 уровня'
+	
+	old 'conqueror'
+	new 'завоеватель'
+	
+	old 'Victory on the 80x80 map'
+	new 'Победить на карте 80x80'
+	
+	old 'mad scientist'
+	new 'безумный учёный'
+	
+	old 'Build 100 level 4 colleges'
+	new 'Построить 100 колледжей 4 уровня'
+	
+	old 'industrialist'
+	new 'промышленник'
+	
+	old 'Simultaneous operation of 20 level 4 metal factories'
+	new 'Одновременная работа 20 металлургических заводов 4 уровня'
+	
+	
+	# end messages
+	
+	old 'Win'
+	new 'Победа'
+	
+	old 'Fail'
+	new 'Поражение'

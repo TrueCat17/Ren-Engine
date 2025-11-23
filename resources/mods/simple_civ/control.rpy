@@ -1,103 +1,71 @@
-init -1 python:
-	
-	def control__on_click():
-		x, y = get_mouse()
-		cell_x = int((x - sc_map.x) / sc_map.zoom / sc_map.image_size)
-		cell_y = int((y - sc_map.y) / sc_map.zoom / sc_map.image_size)
-		
-		if control.picking:
-			control.picking = False
-			hide_screen('picking')
-			info.set_msg('')
-			
-			unit = control.selected_unit
-			if unit.x == cell_x and unit.y == cell_y:
-				info.set_msg('Cancel selection')
-				return
-			
-			unit.selected_cell(cell_x, cell_y)
-			sc_map.draw_units()
-		else:
-			control.select_cell(cell_x, cell_y)
-	
-	def control__select_cell(cell_x, cell_y):
-		control.selected_cell = sc_map.map[cell_y][cell_x]
-		
-		cell_units = [unit for unit in sc_map.player.units if unit.x == cell_x and unit.y == cell_y]
-		free_units = []
-		not_free_units = []
-		for UnitType in [Builder, Worker]:
-			for unit in cell_units:
-				if isinstance(unit, UnitType):
-					(not_free_units if unit.get_symbol() else free_units).append(unit)
-		
-		units = control.selected_unit_array = free_units + not_free_units
-		control.select_unit(units[0] if units else None)
-	
-	def control__select_unit(unit):
-		control.selected_unit_index = control.selected_unit_array.index(unit) if unit else 0
-		control.selected_unit = unit
-		control.set_visible_units()
-		
-		control.selected_unit_menu_items = unit.get_menu() if unit else []
-	
-	def control__set_visible_units():
-		l = len(control.selected_unit_array)
-		if l < 5:
-			s = 0
-		else:
-			s = in_bounds(control.selected_unit_index - 2, 0, l - 5)
-		
-		control.selected_unit_array_start = s
-		control.selected_unit_array_end = min(s + 5, l)
-	
-	
-	def control__next_unit():
-		control.selected_unit_index = control.selected_unit_index + 1
-		control.select_unit(control.selected_unit_array[control.selected_unit_index])
-	
-	def control__prev_unit():
-		control.selected_unit_index = control.selected_unit_index - 1
-		control.select_unit(control.selected_unit_array[control.selected_unit_index])
-	
-	
-	def control__pick():
-		control.picking = True
-		show_screen('picking')
-		info.set_msg('Cell selection')
-	def control__unpick():
-		control.picking = False
-		hide_screen('picking')
-		info.set_msg('Cancel selection')
-	
-	
-	
-	build_object('control')
-	
-	control.step = 1
-	
-	control.indent = 15
-	control.text_size = 25
-	control.xsize = 250
-	control.back = im.rect('#CCC')
-	control.selected_unit_bg = im.rect('#0A0')
-	control.unselected_unit_bg = im.rect('#999')
-	
-	control.picking = False
-	
-	control.selected_cell = None
-	control.selected_unit_array = []
-	control.selected_unit = None
-	control.selected_unit_menu_items = []
-	
-	control.unit_back = im.rect('#AAA')
-	control.unit_size = 32
-
-
-
 init python:
-	hotkeys.disable_key_on_screens['ESCAPE'].append('picking')
-
-# empty screen, just to disable <pause> menu
-screen picking:
-	pass
+	
+	def sc_control__set_player(index):
+		for player in sc_map.players:
+			if player.index != index: continue
+			
+			sc_map.player = player
+			cell = sc_control.selected_cell
+			if cell:
+				sc_control.select_cell(cell.x, cell.y)
+			break
+	
+	
+	def sc_control__show_menu(key_enter = False):
+		if key_enter and time.time() - sc_map.step_time < 0.5:
+			return
+		sc_context_menu.show(sc_control.menu_items)
+	
+	def sc_control__select_cell(cell_x, cell_y, skip_on_prev_cell = False):
+		cell = sc_map.map[cell_y][cell_x]
+		if skip_on_prev_cell and cell is sc_control.selected_cell:
+			return
+		
+		sc_control.selected_cell = cell
+		sc_info.set_msg('')
+		menu = sc_control.menu_items = []
+		
+		player = sc_map.player
+		if cell.player is not player or player.bot:
+			return
+		
+		building = cell.building
+		resource = cell.resource
+		
+		if building:
+			upd1 = Function(sc_control.select_cell, cell_x, cell_y)
+			upd2 = player.calc_changing_resources
+			upd3 = sc_map.update_forces
+			upd = [upd1, upd2, upd3]
+			if cell.disabled:
+				menu.append(SC_MenuItem('Enable', [GetSetAttr('disabled', False, obj = cell)] + upd, 'E'))
+			else:
+				menu.append(SC_MenuItem('Disable', [GetSetAttr('disabled', True, obj = cell)] + upd, 'E'))
+			
+			need_technology = building if building in sc_technologies.names else resource
+			level = cell.building_level
+			if player.technological_progress[need_technology] > level:
+				menu.append(SC_MenuItem('Improve building', Function(player.build, cell_x, cell_y, building, level + 1), 'I'))
+			menu.append(SC_MenuItem('Remove building', Function(player.unbuild, cell_x, cell_y), 'U', no_delay = True))
+		
+		else:
+			last_building = player.last_building
+			if last_building and last_building in sc_buildings.on_resource[resource]:
+				need_technology = last_building if last_building in sc_technologies.names else resource
+				if player.technological_progress[need_technology] > 0:
+					menu.append(SC_MenuItem('Repeat', Function(player.build, cell_x, cell_y, last_building, 1), 'R', no_delay = True))
+			
+			menu.append(SC_MenuItem('Build'))
+			for building in sc_buildings.on_resource[resource]:
+				need_technology = building if building in sc_technologies.names else resource
+				if player.technological_progress[need_technology] > 0:
+					menu.append(SC_MenuItem(building, Function(player.build, cell_x, cell_y, building, 1)))
+	
+	
+	sc_control = SimpleObject()
+	build_object('sc_control')
+	
+	sc_control.back = im.rect('#CCC')
+	
+	sc_control.selected_cell = None
+	sc_control.menu_items = []

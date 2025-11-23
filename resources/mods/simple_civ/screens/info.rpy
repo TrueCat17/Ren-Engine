@@ -1,112 +1,92 @@
-init -990 python:
+init python:
 	
-	def info__set_msg(msg):
-		info.msg = msg
+	def sc_info__set_msg(msg):
+		sc_info.msg = msg
 	
-	def info__set_msg_if_prev(msg, prev):
-		if info.msg == prev:
-			info.msg = msg
-	
-	
-	build_object('info')
-	
-	info.msg = ''
-	info.msg_color = '#FFF'
-	info.msg_outlinecolor = '#00F'
+	def sc_info__set_msg_if_prev(msg, prev):
+		if sc_info.msg == prev:
+			sc_info.msg = msg
 	
 	
-	info.ysize = 100
-	info.back = im.rect('#555')
+	def sc_info__get_text_size():
+		return min(get_stage_height() // 20, 24)
 	
-	info.indent = 10
-	info.text_size = 20
-	info.btn_size = 140
+	def sc_info__get_indent():
+		return max(get_stage_height() // 60, 10)
 	
-	info.simple_resources = ('food', 'wood', 'stone', 'coal', 'metal')
-	info.resources = info.simple_resources + ('cement', 'steel', 'science')
-	info.group_size = 3
+	def sc_info__get_ysize():
+		text_size = sc_info.get_text_size()
+		indent = sc_info.get_indent()
+		return text_size * 4 + indent * 3
 	
-	info.groups = []
-	info.count_groups = math.ceil(len(info.resources) / info.group_size)
-	for i in range(info.count_groups):
-		group = []
-		info.groups.append(group)
-		for j in range(info.group_size):
-			index = i * info.group_size + j
-			if index < len(info.resources):
-				group.append(info.resources[index])
+	
+	sc_info = SimpleObject()
+	build_object('sc_info')
+	
+	sc_info.msg = ''
+	sc_info.msg_color = '#FFF'
+	sc_info.msg_outlinecolor = '#00F'
+	
+	
+	sc_info.back = im.rect('#555')
+	
+	sc_info.indent = 10
+	sc_info.btn_size = 140
+	
+	sc_info.simple_resources = ('food', 'wood', 'stone', 'coal', 'metal')
+	sc_info.resources = sc_info.simple_resources + ('cement', 'steel', 'science')
+	
+	sc_info.groups = [
+		sc_info.resources[0:3],
+		sc_info.resources[3:6],
+		sc_info.resources[6:] + ('player', ),
+	]
 
 
-screen info:
+screen sc_info:
 	python:
-		info.ysize     = max(get_stage_height() // 5, 100)
-		info.indent    = min(get_stage_height() // 60, 20)
-		info.text_size = min(get_stage_height() // 20, 22)
-		info.btn_size  = min(int(get_stage_height() * 0.4), 250)
+		screen_tmp = SimpleObject()
+		screen_tmp.ysize     = sc_info.get_ysize()
+		screen_tmp.indent    = sc_info.get_indent()
+		screen_tmp.text_size = sc_info.get_text_size()
 	
-	image info.back:
+	image sc_info.back:
 		xsize 1.0
-		ysize info.ysize
+		ysize screen_tmp.ysize
 		yalign 1.0
 		
 		hbox:
-			pos     info.indent
-			spacing info.indent
+			pos     screen_tmp.indent
+			spacing screen_tmp.indent
 			
-			for group in info.groups:
+			for group in sc_info.groups:
 				$ max_len = max(len(_(resource)) for resource in group)
+				
 				vbox:
 					for resource in group:
 						python:
-							spaces = ' ' * (max_len - len(_(resource)))
-							count = sc_map.player[resource]
-							changing = sc_map.player['change_' + resource]
-							changing_color = '#0F0' if changing >= 0 else '#F00'
+							text = _(resource)
+							spaces = ' ' * (max_len - len(text))
+							
+							if resource != 'player':
+								count = sc_map.player[resource]
+								changing = sc_map.player['change_' + resource]
+								changing_color = '#0F0' if changing >= 0 else '#F00'
+								text = ('%s:%s {color=#FA0}%s{/color} ({color=%s}%s{/color})' % (text, spaces, count, changing_color, changing))
+							else:
+								text = '%s: {image=%s}' % (text, sc_map.player.image)
 						
-						text ('%s:%s {color=#FA0}%s{/color} ({color=%s}%s{/color})' % (_(resource), spaces, count, changing_color, changing)):
-							text_size info.text_size
+						text text:
+							font 'Consola'
+							text_size screen_tmp.text_size
 							color '#FFF'
 							outlinecolor 0
-							font 'Consola'
 		
-		text _(info.msg):
-			xpos    info.indent
-			ypos    info.ysize - info.indent
+		text _(sc_info.msg):
+			xpos    screen_tmp.indent
+			ypos    screen_tmp.ysize - screen_tmp.indent
 			yanchor 1.0
-			xsize   get_stage_width() - info.btn_size - 2 * info.indent
 			
-			color        info.msg_color
-			outlinecolor info.msg_outlinecolor
-			text_size    info.text_size
-		
-		vbox:
-			xpos    get_stage_width() - info.indent
-			xanchor 1.0
-			yalign  0.5
-			spacing info.indent
-			
-			textbutton _('Research'):
-				style     'btn'
-				xsize     info.btn_size
-				text_size info.text_size
-				hovered   info.set_msg('F2')
-				unhovered info.set_msg_if_prev('', 'F2')
-				action show_screen('research')
-			key 'F2' action show_screen('research')
-			
-			textbutton _('Help'):
-				style     'btn'
-				xsize     info.btn_size
-				text_size info.text_size
-				hovered   info.set_msg('F1')
-				unhovered info.set_msg_if_prev('', 'F1')
-				action    show_screen('help')
-			key 'F1' action show_screen('help')
-			
-			textbutton _('Pause'):
-				style     'btn'
-				xsize     info.btn_size
-				text_size info.text_size
-				hovered   info.set_msg('Esc')
-				unhovered info.set_msg_if_prev('', 'Esc')
-				action pause_screen.show()
+			color        sc_info.msg_color
+			outlinecolor sc_info.msg_outlinecolor
+			text_size    screen_tmp.text_size

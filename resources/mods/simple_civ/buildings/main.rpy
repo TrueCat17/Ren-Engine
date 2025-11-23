@@ -1,15 +1,17 @@
 init -1 python:
 	
-	buildings = {}
-	buildings['food'] = ['farm']
-	buildings['wood'] = ['sawmill']
+	sc_buildings = SimpleObject()
 	
-	for i in ('stone', 'coal', 'metal'):
-		buildings[i] = ['career']
+	sc_buildings.on_resource = {}
+	sc_buildings.on_resource['food'] = ['farm']
+	sc_buildings.on_resource['wood'] = ['sawmill']
 	
-	common_buildings = ('storage', 'district', 'college', 'cement factory', 'metal factory')
-	for i in buildings:
-		buildings[i].extend(common_buildings)
+	for resource in ('stone', 'coal', 'metal'):
+		sc_buildings.on_resource[resource] = ['career']
+	
+	sc_buildings.common = ('college', 'cement factory', 'metal factory', 'barracks')
+	for array in sc_buildings.on_resource.values():
+		array.extend(sc_buildings.common)
 	
 	
-	building_powers = [0, 1, 2, 4, 7]
+	sc_buildings.power = [None, 1, 2, 4, 7]
