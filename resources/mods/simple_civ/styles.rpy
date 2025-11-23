@@ -41,6 +41,15 @@ init 10:
 		xsize -1
 	
 	
+	style sc_tech_explore_btn is sc_btn:
+		xalign 0.5
+		hover im.round_rect('#09F', 20, 20, 6)
+		font 'Calibri'
+		color '#0F0'
+		hover_color None
+		outlinecolor 0
+	
+	
 	style notification:
 		ground im.rect('#333')
 		hover  im.rect('#333')

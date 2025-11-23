@@ -133,13 +133,9 @@ screen sc_technologies:
 						$ level = screen_tmp.technological_progress[building]
 						if level < 4 and sc_map.player.science >= sc_technologies.price[level + 1] and not screen_tmp.is_bot:
 							textbutton '+':
-								style 'sc_btn'
-								xalign 0.5
+								style 'sc_tech_explore_btn'
 								size screen_tmp.text_size
 								text_size screen_tmp.text_size - 2
-								font 'Calibri'
-								color '#0F0'
-								outlinecolor 0
 								action sc_map.player.explore(building)
 						else:
 							null:
