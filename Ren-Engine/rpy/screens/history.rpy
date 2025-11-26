@@ -92,6 +92,7 @@ init python:
 	history.slider_hover  = None
 	history.slider_button_style = None
 	history.slider_width = 25 # only in pixels
+	history.slider_hover_spacing = None
 	
 	history.appearance_time = 0.4
 	history.disappearance_time = 0.4
@@ -106,6 +107,7 @@ init python:
 			hover  = history.slider_hover,
 			button_size  = history.slider_width,
 			button_style = history.slider_button_style,
+			hover_spacing = history.slider_hover_spacing,
 		)
 		history__on_resized_stage()
 	signals.add('inited', history__init_slider, times = 1)

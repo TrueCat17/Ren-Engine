@@ -1,6 +1,6 @@
 init -1000 python:
 	
-	def slider_v__init(name, size, slider_size = 0.4, ground = None, hover = None, value = 0.0, button_size = 25, spacing = 4, buttons = True, button_style = None):
+	def slider_v__init(name, size, slider_size = 0.4, ground = None, hover = None, value = 0.0, button_size = 25, spacing = 4, buttons = True, button_style = None, hover_spacing = None):
 		data = slider_v.data[name] = SimpleObject()
 		data.size         = size
 		data.slider_size  = slider_size
@@ -15,6 +15,7 @@ init -1000 python:
 		data.scrolling = False
 		data.hovered = False
 		data.y = 0
+		data.hover_spacing = hover_spacing if hover_spacing is not None else gui.vbar_hover_spacing
 	
 	def slider_v__change(name, **args):
 		data = slider_v.data[name]
@@ -92,25 +93,26 @@ screen slider_v(name):
 			screen_tmp = SimpleObject()
 			screen_tmp.xsize = slider_v_cur.button_size
 			screen_tmp.ysize = slider_v.get_bar_size()
+			screen_tmp.hover_full_size = screen_tmp.ysize - slider_v_cur.hover_spacing * 2
 			
-			screen_tmp.hover_crop = (
-				0,
-				float(slider_v_cur.value * (1 - slider_v_cur.slider_size)),
-				1.0,
-				float(slider_v_cur.slider_size)
-			)
+			screen_tmp.hover_start = screen_tmp.hover_full_size * slider_v_cur.value * (1 - slider_v_cur.slider_size) + slider_v_cur.hover_spacing
+			screen_tmp.hover_size = screen_tmp.hover_full_size * slider_v_cur.slider_size
 		
 		image slider_v_cur.ground:
 			corner_sizes -1
 			xsize screen_tmp.xsize
 			ysize screen_tmp.ysize
 			
-			image slider_v_cur.hover:
-				corner_sizes -1
-				ypos screen_tmp.ysize * slider_v_cur.value * (1 - slider_v_cur.slider_size)
-				xsize screen_tmp.xsize
-				ysize screen_tmp.ysize * slider_v_cur.slider_size
-				crop screen_tmp.hover_crop
+			null:
+				clipping True
+				ypos screen_tmp.hover_start
+				ysize screen_tmp.hover_size
+				
+				image slider_v_cur.hover:
+					corner_sizes -1
+					ypos -screen_tmp.hover_start
+					xsize screen_tmp.xsize
+					ysize screen_tmp.ysize
 			
 			# separate button for case <ground with transparent parts>
 			button:

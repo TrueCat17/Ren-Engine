@@ -128,6 +128,7 @@ init -500 python:
 	help.slider_ground = None
 	help.slider_hover  = None
 	help.slider_button_style = None
+	help.slider_hover_spacing = None
 	
 	# only relative sizes here
 	help.indent = 0.03
@@ -141,7 +142,8 @@ init -500 python:
 			ground = help.slider_ground,
 			hover  = help.slider_hover,
 			button_size  = help.slider_width,
-			button_style = help.slider_button_style
+			button_style = help.slider_button_style,
+			hover_spacing = help.slider_hover_spacing,
 		)
 	signals.add('inited', help__init_slider, times = 1)
 

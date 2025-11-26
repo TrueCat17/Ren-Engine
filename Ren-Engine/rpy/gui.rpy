@@ -256,3 +256,5 @@ init -1000 python:
 	
 	gui.vbar_ground = im.rotozoom(gui.bar_ground, 90, 1)
 	gui.vbar_hover  = im.rotozoom(gui.bar_hover , 90, 1)
+	
+	gui.vbar_hover_spacing = 2
