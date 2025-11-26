@@ -158,6 +158,8 @@ init:
 	
 	style help_text is text:
 		color 0
+		text_size 0.03
+		text_size_min 16
 
 
 screen help:
