@@ -2,10 +2,10 @@ init -1000 python:
 	# db = dialogue box
 	
 	
-	def db__make_step(text, start_index, max_count_symbols = 1e9):
+	def db__make_step(text, start_index, start_symbols, max_count_symbols = 1e9):
 		l = len(text)
 		index = start_index
-		symbols = 0
+		symbols = start_symbols
 		tag = value = None
 		
 		while index < l and symbols < max_count_symbols:
@@ -24,7 +24,7 @@ init -1000 python:
 				
 				# style
 				else:
-					if symbols != 0:
+					if symbols != start_symbols:
 						break # stop if was text on current step
 					
 					start_index = index
@@ -44,6 +44,16 @@ init -1000 python:
 				symbols += 1
 		
 		return index, symbols, tag, value
+	
+	# without tags, space symbols and escaped {
+	def db__count_symbols(text):
+		prev_index = None
+		index = 0
+		symbols = 0
+		while prev_index != index:
+			prev_index = index
+			index, symbols, tag, value = db.make_step(text, index, symbols)
+		return symbols
 	
 	
 	def db__update_styles(local_styles = None):
@@ -102,9 +112,10 @@ init -1000 python:
 					value = value()
 				db[prop] = value
 	
-	def db__show_text(name, text, local_styles):
-		text = text.replace('%%', '%') # percent escaping from old renpy versions (see config.old_substitutions for renpy)
-		text = interpolate_tags(text)
+	def db__show_text(name, text, local_styles, need_interpolate = True):
+		if need_interpolate:
+			text = text.replace('%%', '%') # percent escaping from old renpy versions (see config.old_substitutions for renpy)
+			text = interpolate_tags(text)
 		
 		if name is None:
 			if db.local_styles is None:
@@ -122,9 +133,10 @@ init -1000 python:
 		
 		prev_index = None
 		index = 0
+		symbols = 0
 		while prev_index != index:
 			prev_index = index
-			index, symbols, tag, value = db.make_step(text, index)
+			index, symbols, tag, value = db.make_step(text, index, symbols)
 			
 			if tag == 'w':
 				db.pause_after_text = 1e9
@@ -151,7 +163,7 @@ init -1000 python:
 		
 		# continuation of prev text (for <extend> character)
 		else:
-			db.start_time = get_game_time() - len(db.dialogue_text) / config.text_cps
+			db.start_time = get_game_time() - db.count_symbols(db.dialogue_text) / config.text_cps
 			
 			db.dialogue_full_text += text
 		
@@ -212,9 +224,10 @@ init -1000 python:
 			
 			prev_index = None
 			index = 0
+			symbols = 0
 			while symbols_to_render and prev_index != index:
 				prev_index = index
-				index, symbols, tag, value = db.make_step(db.dialogue_full_text, index, symbols_to_render)
+				index, symbols, tag, value = db.make_step(db.dialogue_full_text, index, symbols, symbols_to_render)
 				symbols_to_render -= symbols
 			
 			if index < len(db.dialogue_full_text):
@@ -228,7 +241,7 @@ init -1000 python:
 				elif db.pause_end <= get_game_time():
 					db.pause_after_text = 0
 					db.pause_end = 0
-					db.show_text(None, db.dialogue_text_after_pause, db.local_styles)
+					db.show_text(None, db.dialogue_text_after_pause, db.local_styles, need_interpolate = False)
 	
 	
 	def db__enter_action():
