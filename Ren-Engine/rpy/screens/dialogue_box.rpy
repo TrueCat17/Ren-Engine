@@ -225,10 +225,9 @@ init -1000 python:
 			prev_index = None
 			index = 0
 			symbols = 0
-			while symbols_to_render and prev_index != index:
+			while prev_index != index and symbols != symbols_to_render:
 				prev_index = index
 				index, symbols, tag, value = db.make_step(db.dialogue_full_text, index, symbols, symbols_to_render)
-				symbols_to_render -= symbols
 			
 			if index < len(db.dialogue_full_text):
 				db.dialogue_text = db.dialogue_full_text[:index] + '{invisible}' + db.dialogue_full_text[index:]
