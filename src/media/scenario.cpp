@@ -422,11 +422,19 @@ void Scenario::execute(const std::string &loadPath) {
 			checkToSaveStack();
 
 			static const std::string code = "can_exec_next_command()";
-			while (GV::inGame && PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, code, true) == "False") {
+			while (true) {
+				if (!GV::inGame) return;
+				if (PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, code, true) == "True") break;
+				if (!jumpNextLabel.empty()) break;
+
 				Utils::sleep(Game::getFrameTime());
 				checkToSaveStack();
 			}
-			if (!GV::inGame) return;
+
+			if (!jumpNextLabel.empty()) {
+				PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "skip_exec_current_command(full = True)");
+				continue;
+			}
 		}
 
 

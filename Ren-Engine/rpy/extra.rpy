@@ -221,6 +221,8 @@ init -1000000 python:
 		func_that_stopped_scenario = None
 		return True
 	
-	def skip_exec_current_command():
+	def skip_exec_current_command(full = False):
 		for func in can_exec_next_skip_funcs:
 			func()
+		if full:
+			db.read = True
