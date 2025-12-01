@@ -23,14 +23,14 @@ init python:
 	indent = 5
 
 init:
-	style text:
+	style masks_text is text:
 		size (135, btn_size)
 		color '#FFF'
 		outlinecolor 0
 		text_align  'center'
 		text_valign 'center'
 	
-	style textbutton:
+	style masks_textbutton is textbutton:
 		ground im.round_rect('#08F', 20, 20, 6)
 		hover  im.round_rect('#F80', 20, 20, 6)
 		color       '#EEE'
@@ -66,22 +66,28 @@ screen masks:
 				spacing indent
 				
 				textbutton '←':
+					style 'masks_textbutton'
 					action ['duration = max(0.5, duration - 0.5)', restart_mask]
 				
-				text ('Time: %s' % duration)
+				text ('Time: %s' % duration):
+					style 'masks_text'
 				
 				textbutton '→':
+					style 'masks_textbutton'
 					action ['duration = min(duration + 0.5, 10.0)', restart_mask]
 			
 			hbox:
 				spacing indent
 				
 				textbutton '←':
+					style 'masks_textbutton'
 					action ['step = max(1, step - 1)', restart_mask]
 				
-				text ('Step: %s' % step)
+				text ('Step: %s' % step):
+					style 'masks_text'
 				
 				textbutton '→':
+					style 'masks_textbutton'
 					action ['step = min(step + 1, 20)', restart_mask]
 		
 		hbox:
@@ -89,13 +95,16 @@ screen masks:
 			align (0.5, 1.0)
 			
 			textbutton '←':
+				style 'masks_textbutton'
 				action ['num_mask = max(0, num_mask - 1)', restart_mask]
 			
 			textbutton mask_images[num_mask]:
+				style 'masks_textbutton'
 				xsize 150
 				action restart_mask
 			
 			textbutton '→':
+				style 'masks_textbutton'
 				action ['num_mask = min(num_mask + 1, len(mask_images) - 1)', restart_mask]
 		
 		hbox:
@@ -104,5 +113,6 @@ screen masks:
 			
 			for mask_cmp_name in ('<', '>', '==', '!=', '<=', '>='):
 				textbutton mask_cmp_name:
+					style 'masks_textbutton'
 					selected mask_cmp == mask_cmp_name
 					action ['mask_cmp = mask_cmp_name', restart_mask]
