@@ -321,7 +321,7 @@ static std::string initUseCode(Node *node, const std::string &index) {
 	std::string inner = initCode(screenNode, index);
 	std::string res =
 	        "_SL_screen_vars_stack.append(screen)\n"
-	        "screen = SimpleObject()\n";
+	        "_SL_inner_screen_args = SimpleObject()\n";
 
 
 	std::vector<std::string> argsWasSet;
@@ -349,7 +349,7 @@ static std::string initUseCode(Node *node, const std::string &index) {
 		}
 
 		argsWasSet.push_back(name);
-		res += "screen." + name + " = " + varCode + "\n";
+		res += "_SL_inner_screen_args." + name + " = " + varCode + "\n";
 	}
 
 	for (size_t i = 0; i < screenNodeVars.size(); ++i) {
@@ -363,10 +363,10 @@ static std::string initUseCode(Node *node, const std::string &index) {
 			continue;
 		}
 
-		res += "screen." + varName + " = " + varCode + "\n";
+		res += "_SL_inner_screen_args." + varName + " = " + varCode + "\n";
 	}
 
-	res += "\n" +
+	res += "screen = _SL_inner_screen_args\n\n" +
 	       inner + "\n\n" +
 	       "screen = _SL_screen_vars_stack.pop()";
 	return res;
