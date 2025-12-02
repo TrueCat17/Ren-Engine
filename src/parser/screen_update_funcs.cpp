@@ -50,6 +50,9 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 				return;
 			}
 		}
+
+		Utils::outMsg(propName, expected + '\n' + node->getPlace());
+		return;
 	}
 
 	for (const Node *child : node->children) {
@@ -67,7 +70,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 		}
 	}
 
-	Utils::outError(propName, "Error on out error\n%", obj->node->getPlace());
+	Utils::outMsg(propName, "Error on out error\n" + node->getPlace());
 }
 
 

@@ -74,7 +74,7 @@ const Style* StyleManager::getByName(const Node *node, const std::string &name) 
 	const Style *res;
 	PyObject *pyStyle = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), "style." + name);
 	if (!pyStyle || pyStyle == Py_None) {
-		Utils::outError("StyleManager::getByName", "Style <%> is not defined", name);
+		Utils::outError("StyleManager::getByName", "Style <%> is not defined\n%", name, node->getPlace());
 		res = new Style(Py_None, "None");
 	}else {
 		res = new Style(pyStyle, name);
