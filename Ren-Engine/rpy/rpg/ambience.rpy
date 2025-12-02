@@ -51,6 +51,9 @@ init python:
 		global location_ambience_path
 		if path and path != location_ambience_path:
 			renpy.play(path, 'location_ambience', fadein = location_fade_time)
+			
+			pos = time.time() % renpy.music.get_audio_len(path)
+			renpy.music.set_pos(pos, channel = 'location_ambience')
 		
 		location_ambience_path = path
 		renpy.music.set_volume(cur_location.ambience_volume, 'location_ambience')
