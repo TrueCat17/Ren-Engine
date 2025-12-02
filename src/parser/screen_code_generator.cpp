@@ -262,8 +262,13 @@ static std::string initCycleCode(Node *node) {
 		}
 	}
 
+	std::string screenNum = std::to_string(node->screenNum);
+	if (node->parent->command == "for" || node->parent->command == "while") {
+		screenNum = "_SL_counter" + std::to_string(node->parent->id) + " + " + screenNum;
+	}
+
 	res +=
-	    "_SL_last[" + std::to_string(node->screenNum) + "] = _SL_last = [None] * " + name + "\n" +
+	    "_SL_last[" + screenNum + "] = _SL_last = [None] * " + name + "\n" +
 	    idLen + " = " + name + "\n" +
 	    name + " = 0\n"
 	    "\n" +
