@@ -356,8 +356,12 @@ void PyUtils::errorProcessing(const std::string &code) {
 
 
 
+static std::mutex isConstExprCacheMutex;
 static std::map<std::string, bool> isConstExprCache;
-static bool isConstExprImpl(const std::string &code) {
+
+bool PyUtils::isConstExpr(const std::string &code) {
+	std::lock_guard g(isConstExprCacheMutex);
+
 	auto it = isConstExprCache.find(code);
 	if (it != isConstExprCache.end()) {
 		return it->second;
@@ -392,6 +396,9 @@ static bool isConstExprImpl(const std::string &code) {
 			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
 				if ((c == 'X' || c == 'x') && prev == '0') {
 					hex = true;
+				}else
+				if ((c == 'E' || c == 'e') && ((prev >= '0' && prev <= '9') || prev == '.')) {
+					//nothing to do, e - part of number: 1e9, 3.2E-5
 				}else {
 					if (!hex || ((c > 'F' && c <= 'Z') || (c > 'f' && c <= 'z'))) {
 						return isConstExprCache[code] = false;
@@ -412,15 +419,6 @@ static bool isConstExprImpl(const std::string &code) {
 
 	return isConstExprCache[code] = true;
 }
-
-bool PyUtils::isConstExpr(const std::string &code) {
-	bool res;
-	callInPythonThread([&]() {
-		res = isConstExprImpl(code);
-	});
-	return res;
-}
-
 
 
 static std::map<std::string, std::string> constExprs;

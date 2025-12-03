@@ -19,20 +19,41 @@
 static void initConsts(Node *node);
 static void initIsEnd(Node *node);
 static void initNums(Node *node);
-static std::string initCode(Node *node, const std::string& index = "");
+static std::vector<std::string> initCode(Node *node, const std::string& index = "");
 
 
 static std::map<const Node*, std::string> screenCodes;
 
 
-void initScreen(Node *node) {
+static void initScreen(Node *node) {
 	if (screenCodes.find(node) != screenCodes.end()) return;
 
 	initConsts(node);
 	initIsEnd(node);
 	initNums(node);
 
-	std::string screenCode = initCode(node);
+	const std::vector<std::string> screenCodeStrs = initCode(node);
+
+	std::string screenCode;
+	for (size_t i = 0; i < screenCodeStrs.size(); ++i) {
+		const std::string &s = screenCodeStrs[i];
+		screenCode += s;
+
+		//(\n) -> ()
+		if (!s.empty() && s.back() == '(' && i != screenCodeStrs.size() - 1) {
+			const std::string &next = screenCodeStrs[i + 1];
+			if (!next.empty() && next.find_first_not_of(' ') == next.size() - 1 && next.back() == ')') {
+				screenCode += ")";
+				++i;
+			}
+		}
+
+		screenCode.push_back('\n');
+	}
+	while (!screenCode.empty() && screenCode.back() == '\n') {
+		screenCode.pop_back();
+	}
+
 	screenCodes[node] = screenCode;
 
 	ScreenUpdateFuncs::initNodeFuncs(node);
@@ -69,6 +90,7 @@ static void initConsts(Node *node) {
 		return;
 	}
 	if (command == "$" || command == "python") return;
+	if (command == "continue" || command == "break") return;
 
 	ScopeExit se([&]() { screensInInit.pop_back(); });
 	se.enable = false;
@@ -113,16 +135,18 @@ static void initConsts(Node *node) {
 
 		if (child->isScreenProp && !child->isScreenConst && !child->isScreenEvent) {
 			++node->countPropsToCalc;
+		}else
+		if (child->command == "continue" || child->command == "break") {
+			++node->countPropsToCalc;
 		}
 	}
 
+	if (isCycle || command == "if" || command == "elif" || command == "else") return;
 
 	if (command == "button" || command == "textbutton" || command == "hotspot") {
 		node->withScreenEvent = true;
 		return;
 	}
-
-	if (isCycle || command == "if" || command == "elif" || command == "else") return;
 
 	for (const Node *child : node->children) {
 		if (!child->isScreenConst) return;
@@ -155,8 +179,8 @@ static void initIsEnd(Node *node) {
 static void initNums(Node *node) {
 	uint32_t i = 0;
 	for (Node *child : node->children) {
-		if (child->isScreenConst || child->isScreenEvent ||
-		    child->command == "$" || child->command == "python") continue;
+		if (child->isScreenConst || child->isScreenEvent) continue;
+		if (child->command == "$" || child->command == "python") continue;
 
 		child->screenNum = i++;
 		initNums(child);
@@ -165,48 +189,72 @@ static void initNums(Node *node) {
 
 
 
-static uint32_t maxScreenChild(Node *node) {
-	for (size_t i = node->children.size() - 1; i != size_t(-1); --i) {
-		Node *child = node->children[i];
-		if (child->screenNum != uint32_t(-1)) {
-			return child->screenNum;
+//last index = -1;
+//prelast = -2;
+//...
+static std::vector<std::pair<int, Node*>> getNumberedActiveChildren(Node *node, bool *eachChildIsEnd) {
+	auto withObject = [](const std::string &command) {
+		return command != "$" && command != "python";
+	};
+
+	std::vector<std::pair<int, Node*>> res;
+	res.reserve(node->children.size());
+
+	if (eachChildIsEnd) {
+		*eachChildIsEnd = true;
+	}
+
+	size_t objects = 0;
+	for (Node *child : node->children) {
+		if (child->isScreenConst || child->isScreenEvent) continue;
+
+		res.push_back({1234567, child});
+
+		if (eachChildIsEnd && !child->isScreenEnd) {
+			*eachChildIsEnd = false;
+		}
+
+		if (withObject(child->command)) {
+			++objects;
 		}
 	}
 
-	return uint32_t(-1);
+	size_t counted = 0;
+	for (auto &pair : res) {
+		if (withObject(pair.second->command)) {
+			pair.first = int(counted++ - objects);
+		}
+	}
+
+	return res;
 }
 
 
-static void initChildCode(Node *child, std::string &res, const std::string &indent, const std::string &index) {
+static void initChildCode(Node *child, std::vector<std::string> &res, const std::string &indent, const std::string &index) {
 	const std::string &childCommand = child->command;
 
-	std::string childRes = initCode(child, index);
-	if (childRes.empty()) return;
-
-	std::vector<std::string> code = String::split(childRes, "\n");
+	const std::vector<std::string> code = initCode(child, index);
+	if (code.empty()) return;
 
 	if (child->isScreenProp || child->isScreenEnd) {
-		if (childCommand != "continue" && childCommand != "break") {
-			res += indent + "_SL_last[" + index + "] = ";
-		}else {
-			res += indent;
+		res.push_back(indent);
+		if (childCommand != "continue" && childCommand != "break" && !index.empty()) {
+			res.back() += "_SL_last[" + index + "] = ";
 		}
 
 		for (size_t i = 0; i < code.size(); ++i) {
 			if (i) {
-				res += indent;
+				res.back() += indent;
 			}
-			res += code[i];
+			res.back() += code[i];
 			if (i != code.size() - 1) {
-				res += '\n';
+				res.push_back({});
 			}
 		}
 
 		if (child->withScreenEvent) {
-			res += "\n" +
-			       indent + "_SL_check_events()";
+			res.push_back(indent + "_SL_check_events()");
 		}
-		res += '\n';
 
 		return;
 	}
@@ -214,105 +262,107 @@ static void initChildCode(Node *child, std::string &res, const std::string &inde
 
 	if (childCommand != "elif" && childCommand != "else") {
 		if (childCommand != "$" && childCommand != "python") {
-			res += indent + "_SL_stack.append(_SL_last)\n";
+			res.push_back(indent + "_SL_stack.append(_SL_last)");
 		}
 	}
 
 	for (const std::string &line : code) {
-		res += indent + line + '\n';
+		res.push_back(indent + line);
 	}
 
-	bool hasEnd = true;
+	if (childCommand == "$" || childCommand == "python") return;
+
 	if (childCommand == "if" || childCommand == "elif" ||
-	    childCommand == "for" || childCommand == "while") // child may be not end-[condition/cycle]
+	    childCommand == "for" || childCommand == "while") // child may be not end of condition/cycle
 	{
 		if (child->childNum + 1 < child->parent->children.size()) { // and nextChild
 			Node *nextChild = child->parent->children[child->childNum + 1];
-			if (nextChild->command == "elif" || nextChild->command == "else") { // may be end-[condition/cycle]
-				hasEnd = false;
+			if (nextChild->command == "elif" || nextChild->command == "else") { // may be end of condition/cycle
+				return;
 			}
 		}
 	}
-	if (hasEnd) {
-		if (childCommand != "$" && childCommand != "python") {
-			res += indent + "_SL_last = _SL_stack.pop()\n";
-		}
-	}
+
+	res.push_back(indent + "_SL_last = _SL_stack.pop()");
 }
 
 
-static std::string initCycleCode(Node *node) {
-	std::string res;
-	std::string id = std::to_string(node->id);
-	std::string name = "_SL_counter" + id;
-	std::string idLen = "_SL_len" + id;
-	std::string indent = "    ";
+static std::vector<std::string> initCycleCode(Node *node, const std::string &index) {
+	std::vector<std::string> res;
+
+	const std::string indent = "    ";
 
 	const std::string &command = node->command;
 	const std::string &params = node->params;
 
-	uint32_t count = maxScreenChild(node) + 1;
-
-	PyUtils::exec(node->getFileName(), node->getNumLine(), name + " = 0");
-
 	if (node->childNum + 1 < node->parent->children.size()) {
 		Node *next = node->parent->children[node->childNum + 1];
 		if (next->command == "else") {
-			res += "_SL_break" + id + " = False\n";
+			res.push_back("_SL_break" + std::to_string(node->id) + " = False");
 		}
 	}
 
-	std::string screenNum = std::to_string(node->screenNum);
-	if (node->parent->command == "for" || node->parent->command == "while") {
-		screenNum = "_SL_counter" + std::to_string(node->parent->id) + " + " + screenNum;
-	}
-
-	res +=
-	    "_SL_last[" + screenNum + "] = _SL_last = [None] * " + name + "\n" +
-	    idLen + " = " + name + "\n" +
-	    name + " = 0\n"
-	    "\n" +
-	    command + ' ' + params + ": # "
-	    "_SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n" +
-	    indent + "\n";
-
-	if (count) {
-		res +=
-		    indent + "if " + name + " == " + idLen + ":\n" +
-		    indent + "    _SL_last += [None] * " + std::to_string(32 * count) + "\n" +
-		    indent + "    " + idLen + " += " + std::to_string(32 * count) + "\n" +
-		    indent + "\n";
-	}
+	res.push_back("_SL_last[" + index + "] = _SL_last = []");
+	res.push_back({});
+	res.push_back(command + ' ' + params);
+	res.back() += ": # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
+	res.push_back(indent);
 
 
-	bool empty = true;
-	for (Node *child : node->children) {
-		if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
-		if (child->isScreenEvent) continue;
+	bool eachChildIsEnd;
+	const std::vector<std::pair<int, Node*>> activeChildren = getNumberedActiveChildren(node, &eachChildIsEnd);
 
-		std::string index = name;
-		if (child->screenNum) {
-			index += " + " + std::to_string(child->screenNum);
+	if (!eachChildIsEnd) {
+		for (const auto &[index, child] : activeChildren) {
+			if (index < 0) {
+				res.push_back(indent + "_SL_last.append(None)");
+			}
 		}
-		initChildCode(child, res, indent, index);
-
-		res += indent + '\n';
-		empty = false;
-	}
-	if (empty) {
-		res += indent + "pass\n";
+		res.push_back(indent);
 	}
 
-	if (count) {
-		res += indent + name + " += " + std::to_string(count) + "\n";
+	std::string checkEventsStr = indent + "_SL_check_events()";
+
+	for (size_t i = 0; i < activeChildren.size(); ++i) {
+		const auto &[index, child] = activeChildren[i];
+
+		std::string indexStr;
+		if (!eachChildIsEnd) {
+			indexStr = std::to_string(index);
+		}else {
+			res.push_back(indent + "_SL_last.append(");
+		}
+
+		initChildCode(child, res, indent, indexStr);
+
+		if (eachChildIsEnd) {
+			size_t i = res.size();
+			while (--i) {
+				if (res[i] == checkEventsStr) break;
+			}
+
+			if (i) {
+				res.insert(res.begin() + long(i), indent + ")");
+			}else {
+				res.push_back(indent + ")");
+			}
+		}
+
+		res.push_back(indent);
+	}
+
+	if (activeChildren.empty()) {
+		res.push_back(indent + "pass");
 	}
 
 	return res;
 }
 
-static std::string initUseCode(Node *node, const std::string &index) {
+static std::vector<std::string> initUseCode(Node *node, const std::string &index) {
+	std::vector<std::string> res;
+
 	Node *screenNode = Screen::getDeclared(node->params);
-	if (!screenNode) return "";
+	if (!screenNode) return res;
 
 	auto &nodeVars = node->getScreenVars();
 	auto &screenNodeVars = screenNode->getScreenVars();
@@ -323,17 +373,16 @@ static std::string initUseCode(Node *node, const std::string &index) {
 		                screenNodeVars.size(), node->params, nodeVars.size(), node->getPlace());
 	}
 
-	std::string inner = initCode(screenNode, index);
-	std::string res =
-	        "_SL_screen_vars_stack.append(screen)\n"
-	        "_SL_inner_screen_args = SimpleObject()\n";
+	const std::vector<std::string> inner = initCode(screenNode, index);
 
+	res.push_back("_SL_screen_vars_stack.append(screen)");
+	res.push_back("_SL_inner_screen_args = SimpleObject()");
 
 	std::vector<std::string> argsWasSet;
 	argsWasSet.reserve(nodeVars.size());
 
 	for (size_t i = 0; i < nodeVars.size(); ++i) {
-		auto &[varName, varCode] = nodeVars[i];
+		const auto &[varName, varCode] = nodeVars[i];
 
 		const std::string *namePtr = &varName;
 		if (namePtr->empty()) {
@@ -354,11 +403,10 @@ static std::string initUseCode(Node *node, const std::string &index) {
 		}
 
 		argsWasSet.push_back(name);
-		res += "_SL_inner_screen_args." + name + " = " + varCode + "\n";
+		res.push_back("_SL_inner_screen_args." + name + " = " + varCode);
 	}
 
-	for (size_t i = 0; i < screenNodeVars.size(); ++i) {
-		auto &[varName, varCode] = screenNodeVars[i];
+	for (const auto &[varName, varCode] : screenNodeVars) {
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
 
 		if (varCode.empty()) {
@@ -368,26 +416,32 @@ static std::string initUseCode(Node *node, const std::string &index) {
 			continue;
 		}
 
-		res += "_SL_inner_screen_args." + varName + " = " + varCode + "\n";
+		res.push_back("_SL_inner_screen_args." + varName + " = " + varCode);
 	}
 
-	res += "screen = _SL_inner_screen_args\n\n" +
-	       inner + "\n\n" +
-	       "screen = _SL_screen_vars_stack.pop()";
+	res.push_back("screen = _SL_inner_screen_args");
+	res.push_back({});
+	res.insert(res.end(), inner.begin(), inner.end());
+	res.push_back({});
+	res.push_back("screen = _SL_screen_vars_stack.pop()");
+
 	return res;
 }
 
-static std::string initCode(Node *node, const std::string& index) {
+static std::vector<std::string> initCode(Node *node, const std::string& index) {
+	if (node->isScreenEvent) return {};
+
 	const std::string &command = node->command;
 	const std::string &params = node->params;
 
-	std::string res;
+	bool isMainScreen = command == "screen" && index.empty();
+	if (node->isScreenConst && !isMainScreen) return {};
 
-	if (command == "use") {
-		res = initUseCode(node, index);
-		return res;
-	}
+	if (command == "use") return initUseCode(node, index);
 
+	if (command == "for" || command == "while") return initCycleCode(node, index);
+
+	std::vector<std::string> res;
 	if (command == "continue" || command == "break") {
 		Node *t = node->parent;
 		int extraDepth = 0;
@@ -395,36 +449,29 @@ static std::string initCode(Node *node, const std::string& index) {
 			t = t->parent;
 			++extraDepth;
 		}
-		std::string id = std::to_string(t->id);
 
-		res = "# _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n";
+		res.push_back("# _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()));
 
 		if (command == "break" &&
 		    t->childNum + 1 < t->parent->children.size() &&
 		    t->parent->children[t->childNum + 1]->command == "else")
 		{
-			res += "_SL_break" + id + " = True\n";
+			res.push_back("_SL_break" + std::to_string(t->id) + " = True");
 		}
-		std::string removeStackTop;
 		if (extraDepth) {
 			for (int i = 0; i < extraDepth - 1; ++i) {
-				removeStackTop += "_SL_stack.pop()\n";
+				res.push_back("_SL_stack.pop()");
 			}
-			removeStackTop += "_SL_last = _SL_stack.pop()\n";
+			res.push_back("_SL_last = _SL_stack.pop()");
 		}
 
-		res += "_SL_counter" + id + " += " + std::to_string(maxScreenChild(t) + 1) + "\n" +
-		       removeStackTop +
-		       command + "\n";
+		res.push_back(command);
 		return res;
 	}
 
-	bool isMainScreen = command == "screen" && index.empty();
-	if ((node->isScreenConst && !isMainScreen) || node->isScreenEvent) return "";
-
 	if (node->isScreenProp) {
-		res = String::strip(params);
-		res += " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
+		res.push_back(String::strip(params));
+		res.back() += " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
 		return res;
 	}
 
@@ -433,38 +480,26 @@ static std::string initCode(Node *node, const std::string& index) {
 
 		const std::vector<std::string> code = String::split(params, "\n");
 		for (size_t i = 0; i < code.size(); ++i) {
-			if (code[i].empty()) continue;
-
-			res += code[i] + " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(startLine + i);
-			if (i != code.size() - 1) {
-				res += "\n";
-			}
+			res.push_back(code[i] + " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(startLine + i));
 		}
 
 		return res;
 	}
 
-	if (command == "for" || command == "while") return initCycleCode(node);
-
 
 
 	if (node->isScreenEnd) {
-		res = "(\n";
+		res.push_back("(");
 		for (Node *child : node->children) {
 			if (child->isScreenConst || child->isScreenEvent) continue;
 
-			std::string childRes = initCode(child);
-			childRes.insert(String::firstNotInQuotes(childRes, '#') - 1, ",");
+			std::vector<std::string> childRes = initCode(child);
 
-			res += "    " + childRes + "\n";
+			std::string &propCode = childRes[0];
+			propCode.insert(String::firstNotInQuotes(propCode, '#') - 1, ",");
+			res.push_back("    " + propCode);
 		}
-
-		if (res.size() != 2) {
-			res += ")";
-		}else {
-			res[1] = ')';
-		}
-
+		res.push_back(")");
 		return res;
 	}
 
@@ -472,59 +507,82 @@ static std::string initCode(Node *node, const std::string& index) {
 	std::string indent;
 
 	if (command == "screen") {
-		if (index.empty()) {
-			res = "_SL_stack = []\n"
-			      "_SL_screen_vars_stack = []\n"
-			      "screen = screen_vars['" + params + "']\n\n";
+		if (isMainScreen) {
+			res.push_back("_SL_stack = []");
+			res.push_back("_SL_screen_vars_stack = []");
+			res.push_back("screen = screen_vars['" + params + "']");
+			res.push_back({});
 		}
 	}else
 	if (command == "if" || command == "elif" || command == "else") {
 		indent = "    ";
 
-		if (command == "else" && !String::endsWith(node->parent->children[node->childNum - 1]->command, "if")) {//prev is for/while
-			res += "if not _SL_break" + std::to_string(node->parent->children[node->childNum - 1]->id) + ":";
-			res +=   " # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n";
-			res += indent + "_SL_last = _SL_stack[-1]\n";
+		Node *prevNode = node->childNum ? node->parent->children[node->childNum - 1] : nullptr;
+
+		bool isElseAfterCycle = command == "else" && (prevNode->command == "for" || prevNode->command == "while");
+		if (isElseAfterCycle) {
+			res.push_back("if not _SL_break" + std::to_string(prevNode->id));
 		}else {
-			res = command + " " + params + ": # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine()) + "\n";
+			res.push_back(command + " " + params);
+		}
+		res.back() += ": # _SL_REAL|" + node->getFileName() + "|" + std::to_string(node->getNumLine());
+		if (isElseAfterCycle) {
+			res.push_back(indent + "_SL_last = _SL_stack[-1]");
 		}
 	}
 
-	res += indent;
-	if (command == "screen" && index.empty()) {
-		res += "_SL_" + params + " = ";
+	res.push_back(indent);
+	if (isMainScreen) {
+		res.back() += "_SL_" + params + " = ";
 	}else {
-		res += "_SL_last[" + index + "] = ";
+		res.back() += "_SL_last[" + index + "] = ";
 	}
-	res += "_SL_last = [\n";
-	size_t bracketBegin = res.size() - 2;
+	res.back() += "_SL_last = [";
+
+	size_t bracketStrIndex = res.size() - 1;
+	size_t bracketIndex = res.back().size() - 1;
 
 	uint32_t lastPropNum = uint32_t(-1);
-	uint32_t maxChildNum = maxScreenChild(node);
 
 	//props before first obj
 	for (Node *child : node->children) {
 		if (child->isScreenConst || child->isScreenEvent) continue;
 		if (!child->isScreenProp) break;
 
-		std::string childRes = initCode(child);
-		childRes.insert(String::firstNotInQuotes(childRes, '#') - 1, ",");
+		std::vector<std::string> childRes = initCode(child);
 
-		res += indent + "    " + childRes + "\n";
+		std::string &propCode = childRes[0];
+		propCode.insert(String::firstNotInQuotes(propCode, '#') - 1, ",");
+		res.push_back(indent + "    " + propCode);
+
 		lastPropNum = child->screenNum;
 	}
 
+	const std::vector<std::pair<int, Node*>> activeChildren = getNumberedActiveChildren(node, nullptr);
+	uint32_t maxChildNum = uint32_t(-1);
+	for (size_t i = activeChildren.size() - 1; i != size_t(-1); --i) {
+		const auto &[index, child] = activeChildren[i];
+		if (index < 0) {
+			maxChildNum = child->screenNum;
+			break;
+		}
+	}
+
 	if (maxChildNum != uint32_t(-1)) {
-		res += String::repeat(indent + "    None,\n", maxChildNum - lastPropNum);
-		res += indent + "]";
+		size_t count = maxChildNum - lastPropNum;
+		for (size_t i = 0; i < count; ++i) {
+			res.push_back(indent + "    None,");
+		}
+		res.push_back(indent + ']');
 	}else {
-		res.back() = ']';
+		res.back() += ']';
 	}
 
 	bool empty = false;
 	if (lastPropNum == maxChildNum) {
-		res[bracketBegin] = '(';
-		res.back() = ')';
+		std::string &bracketLine = res[bracketStrIndex];
+		bracketLine[bracketIndex] = '(';
+		res.back().back() = ')';
 
 		empty = true;
 		for (const Node *child : node->children) {
@@ -538,27 +596,21 @@ static std::string initCode(Node *node, const std::string& index) {
 	}
 
 	if (!empty) {
-		res += "\n" +
-		       indent + "\n";
+		res.push_back(indent);
 
-		for (Node *child : node->children) {
-			if (child->isScreenConst && child->command != "continue" && child->command != "break") continue;
-			if (child->isScreenEvent) continue;
-
+		for (const auto &[index, child] : activeChildren) {
 			if (child->screenNum <= lastPropNum && lastPropNum != uint32_t(-1)) continue;
 
-			initChildCode(child, res, indent, std::to_string(child->screenNum));
+			initChildCode(child, res, indent, std::to_string(index));
 
-			if (child->screenNum != maxChildNum) {
-				res += indent + '\n';
-			}
+			res.push_back(indent);
 		}
 	}
 
 
 	if (isMainScreen || node->withScreenEvent) {
-		res += "\n"
-		       "_SL_check_events()\n";
+		res.push_back({});
+		res.push_back("_SL_check_events()");
 	}
 
 	return res;
