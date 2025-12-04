@@ -60,6 +60,6 @@ screen desc:
 		for text in ('Use keys 1-9 to set the desired level', 'Controls: WASD and arrows', 'Ctrl - disable zoom'):
 			text _(text):
 				xalign 1.0
-				color 0xFFFFFF
+				color '#FFF'
 				outlinecolor 0
 				text_size 20
