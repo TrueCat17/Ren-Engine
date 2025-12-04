@@ -614,7 +614,7 @@ static void loop() {
 
 			size_t count = 0;
 			for (size_t i = 0; i < textures.size(); ++i) {
-				if (!GV::inGame) break;
+				if (GV::exit) break;
 
 				const RenderStruct &rs = curRenderData[i];
 				SDL_Texture *texture = textures[i].get();
@@ -644,7 +644,7 @@ static void loop() {
 			unbindTexture();
 		}else {
 			for (size_t i = 0; i < textures.size(); ++i) {
-				if (!GV::inGame) break;
+				if (GV::exit) break;
 
 				const RenderStruct &rs = curRenderData[i];
 				const TexturePtr &texture = textures[i];
