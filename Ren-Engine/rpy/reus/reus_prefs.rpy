@@ -1,4 +1,6 @@
 init python:
+	reus.prefs_name_width = 0.3
+	
 	def reus_update_prefs(screen_name = None):
 		lang_changing = screen_name is None
 		added_to_pref_tabs = 'Updates' in preferences.tabs
@@ -93,7 +95,7 @@ init python:
 			name = dont_save_reus.path_names.get(path, '-')
 			
 			res.append([
-				['str', name, 1, 0.3, 'center'],
+				['str', name, 1, reus.prefs_name_width, 'center'],
 				['btn', _('Check'), None, Function(reus.check, path), (4, 1)],
 				['str', size],
 				['btn', _('Update'), None, Function(reus.check_and_load, path), (4, 1)],
