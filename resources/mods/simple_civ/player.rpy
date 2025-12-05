@@ -100,6 +100,7 @@ init python:
 		def unbuild(self, x, y):
 			cell = sc_map.map[y][x]
 			
+			cell.disabled = False
 			cell.building = None
 			cell.building_level = 0
 			self.building_cells.remove(cell)
