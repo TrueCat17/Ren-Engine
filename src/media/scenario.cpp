@@ -359,7 +359,6 @@ void Scenario::jumpNext(const std::string &label, bool isCall, const std::string
 
 void Scenario::execute(const std::string &loadPath) {
 	double initingStartTime = Utils::getTimer();
-	initing = true;
 	size_t initNum = 0;
 
 	ScopeExit se([]() {

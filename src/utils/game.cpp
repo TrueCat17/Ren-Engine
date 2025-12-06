@@ -257,6 +257,7 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 
 	GV::gameTime = 0;
 	GV::beforeFirstFrame = true;
+	Scenario::initing = true;//before inGame = true
 	GV::inGame = true;
 	modIndex += 1;
 	Scenario::execute(loadPath);
