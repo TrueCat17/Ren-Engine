@@ -11,10 +11,11 @@ init -995 python:
 		console.cursor_x = (index - input_slice.rindex('\n') - 1) if console.cursor_y else index
 	
 	def console__get_input_text():
+		cursor = '{alpha=' + ('1' if get_game_time() % 2 < 1 else '0.01') + '}' + console.cursor + '{/alpha}'
 		index = console.get_cursor_index()
-		alpha_cursor = '{alpha=' + ('1' if get_game_time() % 2 < 1 else '0.01') + '}' + console.cursor + '{/alpha}'
-		res = console.input[:index] + alpha_cursor + console.input[index:]
-		return res.replace(text_nav.key_tag, '{{')
+		input_before = console.input[:index].replace('{', '{{')
+		input_after  = console.input[index:].replace('{', '{{')
+		return input_before + cursor + input_after
 	
 	def console__clear():
 		persistent.console_commands = []
@@ -138,7 +139,7 @@ init -995 python:
 			console.input = console.input_tmp = ''
 			if not persistent.console_commands or persistent.console_commands[-1] != to_exec:
 				persistent.console_commands += [to_exec]
-			console.execute(to_exec.replace(text_nav.key_tag, '{'))
+			console.execute(to_exec)
 		else:
 			index = console.get_cursor_index()
 			console.input = console.input[:index] + '\n' + ' ' * cur_indent + console.input[index:]

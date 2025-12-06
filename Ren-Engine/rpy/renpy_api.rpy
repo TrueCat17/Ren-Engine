@@ -223,7 +223,7 @@ init -9990 python:
 		signals.send('language')
 	
 	def renpy__input_save(res):
-		renpy.input_res = res
+		renpy.input_res = res.replace('{', '{{')
 	def renpy__input(var_name, prompt, default = '', allow = None, exclude = '', length = None, mask = None, reset_btn = None):
 		if reset_btn is None:
 			reset_btn = default != ''

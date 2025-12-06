@@ -10,7 +10,7 @@ init python:
 				text = '\n'.join(lines)
 				return text, x, y, 0
 			if s == 'c':
-				set_clipboard_text(text.replace(text_nav.key_tag, '{'))
+				set_clipboard_text(text)
 				return text, x, y, 0
 			if s == 'v':
 				s = get_clipboard_text()
@@ -21,7 +21,6 @@ init python:
 			if shift and s in text_nav.keys:
 				s = text_nav.keys_shift[text_nav.keys.index(s)]
 		
-		s = s.replace('{', text_nav.key_tag)
 		return text[:index] + s + text[index:], x, y, len(s)
 	
 	
@@ -67,6 +66,5 @@ init python:
 	
 	text_nav.keys = list(alphabet) + list("1234567890-=[]\\;',./`")
 	text_nav.keys_shift = list(alphabet.upper()) + list('!@#$%^&*()_+{}|:"<>?~')
-	text_nav.key_tag = chr(255)
 	
-	text_nav.spec_symbols = text_nav.keys[text_nav.keys.index('-'):] + text_nav.keys_shift[text_nav.keys_shift.index('!'):] + [text_nav.key_tag]
+	text_nav.spec_symbols = text_nav.keys[text_nav.keys.index('-'):] + text_nav.keys_shift[text_nav.keys_shift.index('!'):]
