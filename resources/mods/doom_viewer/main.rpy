@@ -7,7 +7,7 @@ init 100 python:
 	quick_menu = False
 	config.has_autosave = False
 	
-	hide_screen('dialogue_box')
+	start_screens.remove('dialogue_box')
 	show_screen('doom')
 	show_screen('desc')
 	
