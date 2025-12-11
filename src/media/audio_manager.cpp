@@ -618,7 +618,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 	auto &is = infoFile;
 	std::string tmp;
 
-	const char *loadFile = "CPP_Embed: AudioManager::load";
+	const char *loadFile = "CPP_EMBED: AudioManager::load";
 
 	std::getline(is, tmp);
 	size_t countAudioChannels = size_t(String::toInt(tmp));

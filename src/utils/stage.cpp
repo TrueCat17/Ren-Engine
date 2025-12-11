@@ -204,7 +204,7 @@ static void wait() {
 	}
 
 	if (GV::inGame) {
-		PyUtils::exec("CPP_EMBED: stage.cpp", __LINE__, "signals.send('resized_stage')");
+		pyExecFromCpp("signals.send('resized_stage')");
 	}
 }
 

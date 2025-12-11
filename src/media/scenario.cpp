@@ -193,8 +193,7 @@ static void checkToSaveStack() {
 static void restoreScreens(const std::string &loadPath) {
 	std::vector<std::string> startScreensVec;
 	if (!loadPath.empty()) {
-		PyUtils::execWithSetTmp("CPP_EMBED: scenario.cpp", __LINE__,
-		                        "pickling.load_global_vars(tmp + '/py_globals')", loadPath);
+		pyExecFromCppWithSetTmp("pickling.load_global_vars(tmp + '/py_globals')", loadPath);
 
 		startScreensVec = Game::loadInfo(loadPath);
 		Screen::clearScreensToShow();
@@ -423,7 +422,7 @@ void Scenario::execute(const std::string &loadPath) {
 			static const std::string code = "can_exec_next_command()";
 			while (true) {
 				if (!GV::inGame) return;
-				if (PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, code, true) == "True") break;
+				if (pyExecFromCppWithRes(code) == "True") break;
 				if (!jumpNextLabel.empty()) break;
 
 				Utils::sleep(Game::getFrameTime());
@@ -431,7 +430,7 @@ void Scenario::execute(const std::string &loadPath) {
 			}
 
 			if (!jumpNextLabel.empty()) {
-				PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "skip_exec_current_command(full = True)");
+				pyExecFromCpp("skip_exec_current_command(full = True)");
 				continue;
 			}
 		}
@@ -447,8 +446,8 @@ void Scenario::execute(const std::string &loadPath) {
 				++initNum;
 				if (initNum == initBlocks.size()) {
 					Translation::enable();
-					PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "_choose_lang()");
-					PyUtils::exec("CPP_EMBED: scenario.cpp", __LINE__, "signals.send('inited')");
+					pyExecFromCpp("_choose_lang()");
+					pyExecFromCpp("signals.send('inited')");
 
 					restoreScreens(loadPath);
 					Logger::logEvent("Mod Initing (" + std::to_string(initBlocks.size()) + " blocks)",

@@ -67,8 +67,7 @@ static void show(const std::string &name, const std::string &fileName, uint32_t 
 	}
 
 	for (const auto &sameName : getSameNames(name)) {
-		PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
-		                        "signals.send('show_screen', tmp)", sameName);
+		pyExecFromCppWithSetTmp("signals.send('show_screen', tmp)", sameName);
 	}
 	Stage::screens->addChildAt(scr, uint32_t(Stage::screens->children.size()));
 }
@@ -84,12 +83,10 @@ static void hide(const std::string &name, const std::string &fileName, uint32_t 
 	}
 
 	delete scr;
-	PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
-	                        "del screen_vars[tmp]", name);
+	pyExecFromCppWithSetTmp("del screen_vars[tmp]", name);
 
 	for (const auto &sameName : getSameNames(name)) {
-		PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__,
-		                        "signals.send('hide_screen', tmp)", sameName);
+		pyExecFromCppWithSetTmp("signals.send('hide_screen', tmp)", sameName);
 	}
 }
 
@@ -148,7 +145,7 @@ static void makeScreenVars(const std::string &name,
 	        "_SL_got_args = " + std::string((args && kwargs) ? "True" : "False") + "\n"
 	        "if (tmp not in screen_vars) or _SL_got_args:\n"
 	        "    screen_vars[tmp] = SimpleObject()";
-	PyUtils::execWithSetTmp("CPP_EMBED: screen.cpp", __LINE__, code, name);
+	pyExecFromCppWithSetTmp(code, name);
 
 	if (!args || !kwargs) return; //create screen on loading
 

@@ -161,7 +161,7 @@ static SurfacePtr getImage(const std::string &path) {
 		std::vector<std::string> commands = Sprite::getChildrenImagesDeclAt(path);
 		if (commands.empty()) return nullptr;
 
-		std::string realPath = PyUtils::exec("CPP_EMBED: text_field.cpp", __LINE__, commands.front(), true);
+		std::string realPath = pyExecFromCppWithRes(commands.front());
 		return ImageManipulator::getImage(realPath);
 	}
 

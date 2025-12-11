@@ -77,7 +77,7 @@ const std::string& Translation::get(const std::string &str) {
 }
 
 PyObject* Translation::getKnownLanguages() {
-	std::string defaultLang = PyUtils::exec("CPP_EMBED: translation.cpp", __LINE__, "config.default_language", true);
+	std::string defaultLang = pyExecFromCppWithRes("config.default_language");
 
 	std::vector<std::string> vec(langs.begin(), langs.end());
 	if (defaultLang != "empty" && langs.find(defaultLang) == langs.end()) {

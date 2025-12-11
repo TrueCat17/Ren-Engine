@@ -18,8 +18,7 @@ void Imagemap::updateTexture() {
 	prevHoverPath = hoverPath;
 
 	if (hoverPath.empty()) {
-		hoverPath = PyUtils::execWithSetTmp("CPP_EMBED: imagemap.cpp", __LINE__,
-		                                    "im.MatrixColor(tmp, im.matrix.brightness(0.1))", groundPath, true);
+		hoverPath = pyExecFromCppWithSetTmpWithRes("im.MatrixColor(tmp, im.matrix.brightness(0.1))", groundPath);
 	}
 
 	surface = ImageManipulator::getImage(groundPath, false);

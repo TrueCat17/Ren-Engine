@@ -99,7 +99,7 @@ void Game::load(const std::string &table, const std::string &name) {
 const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	std::vector<std::string> startScreensVec;
 
-	const char *loadFunc = "CPP_Embed: Game::loadInfo";
+	const char *loadFunc = "CPP_EMBED: Game::loadInfo";
 	std::string tmp;
 
 
@@ -177,8 +177,8 @@ static void saveInfo(const std::string &path) {
 }
 
 void Game::save() {
-	const std::string page = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_page", true);
-	const std::string slot = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "save_slot", true);
+	const std::string page = pyExecFromCppWithRes("save_page");
+	const std::string slot = pyExecFromCppWithRes("save_slot");
 
 	const std::string tablePath = savesPath + '/' + page;
 	const std::string fullPath = tablePath + '/' + slot;
@@ -191,9 +191,8 @@ void Game::save() {
 	}
 
 
-	std::string varsAreSaved = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__,
-	    "pickling.save_global_vars('" + fullPath + "/py_globals')", true);
-	if (varsAreSaved != "True") return;
+	std::string saved = pyExecFromCppWithSetTmpWithRes("pickling.save_global_vars('%s/py_globals' % tmp)", fullPath);
+	if (saved != "True") return;
 
 	Scenario::saveStack(fullPath + "/stack");
 
@@ -283,8 +282,8 @@ static void makeScreenshotHelper(const std::string &screenshotPath) {
 	const SurfacePtr screenshot = Renderer::getScreenshot();
 	if (!screenshot) return;
 
-	std::string width = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_width", true);
-	std::string height = PyUtils::exec("CPP_EMBED: game.cpp", __LINE__, "screenshot_height", true);
+	std::string width  = pyExecFromCppWithRes("screenshot_width");
+	std::string height = pyExecFromCppWithRes("screenshot_height");
 	ImageManipulator::saveSurface(screenshot, screenshotPath, width, height);
 }
 void Game::makeScreenshot() {

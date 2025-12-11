@@ -41,4 +41,48 @@ public:
 	static bool isIdentifier(std::string_view s);
 };
 
+
+struct PyExecConstExprString {
+	char data[64] = "CPP_EMBED: ";
+
+	operator std::string() {
+		return data;
+	}
+};
+
+constexpr static PyExecConstExprString getBaseName(const char* path) {
+	PyExecConstExprString res;
+	char* data = res.data;
+
+	char *end = data;
+	while (*end) {
+		++end;
+	}
+
+	const char *fileName = path;
+	while (*path) {
+		if (*path++ == '/') {
+			fileName = path;
+		}
+	}
+
+	while (*fileName) {
+		*end++ = *fileName++;
+	}
+	*end = '\0';
+
+	return res;
+}
+
+#define pyExecFromCpp(code) \
+	PyUtils::exec(getBaseName(__FILE__), __LINE__, code, false)
+#define pyExecFromCppWithRes(code) \
+	PyUtils::exec(getBaseName(__FILE__), __LINE__, code, true)
+
+#define pyExecFromCppWithSetTmp(code, tmp) \
+	PyUtils::execWithSetTmp(getBaseName(__FILE__), __LINE__, code, tmp, false)
+#define pyExecFromCppWithSetTmpWithRes(code, tmp) \
+	PyUtils::execWithSetTmp(getBaseName(__FILE__), __LINE__, code, tmp, true)
+
+
 #endif // PYUTILS_H
