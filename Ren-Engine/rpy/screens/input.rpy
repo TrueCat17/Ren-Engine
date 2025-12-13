@@ -83,6 +83,9 @@ init -995 python:
 		input.index = len(input.res)
 	
 	def input__add(s):
+		if get_game_time() - input.show_time < 0.5:
+			return
+		
 		old_index = input.index
 		
 		input.res, x, _y, add_index = text_nav.add(
@@ -251,7 +254,7 @@ init:
 
 screen input:
 	modal True
-	zorder 1000000
+	zorder 10000
 	
 	$ screen_tmp = SimpleObject()
 	
