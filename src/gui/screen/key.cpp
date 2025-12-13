@@ -128,7 +128,7 @@ void Key::checkEvents() {
 
 		lastDown = 0;
 		prevIsDown = false;
-		inFirstDown = false;
+		inFirstDown = Key::getPressed(key);
 		wasFirstDelay = false;
 	}
 
