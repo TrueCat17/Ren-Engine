@@ -2,6 +2,9 @@ init -995 python:
 	quick_menu = True # set to False to disable quick_menu
 	
 	def quick_menu_screen__update():
+		window = db.visible and db.mode == 'adv'
+		screen_tmp.bg = gui.bg('quick_buttons_bg' if window else 'quick_buttons_bg_without_window')
+		
 		tmp_style = style.quick_button
 		std_xsize = tmp_style.get_current('xsize') if tmp_style.xsize > 0 else 0
 		text_size = tmp_style.get_current('text_size')
@@ -60,7 +63,7 @@ screen quick_menu:
 	$ screen_tmp = SimpleObject()
 	$ quick_menu_screen.update()
 	
-	image gui.bg('quick_buttons_bg' if db.visible else 'quick_buttons_bg_without_window'):
+	image screen_tmp.bg:
 		style 'quick_buttons_bg'
 		xsize screen_tmp.full_xsize
 		
