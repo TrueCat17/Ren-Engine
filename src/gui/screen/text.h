@@ -32,6 +32,7 @@ struct TextParams {
 class Text: public Container {
 private:
 	std::string prevText;
+	uint32_t prevVisibleSymbols = 1e9;
 
 public:
 	bool prevParamsIsHover = false;

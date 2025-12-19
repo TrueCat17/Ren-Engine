@@ -144,6 +144,9 @@ void SyntaxChecker::init() {
 		}
 	}
 
+	addBlockChildren("text", "visible_symbols");
+	knownScreenLeafs.insert("visible_symbols");
+
 	const std::string conditions = ", if, elif if elif, else if elif for while, ";
 
 	addBlockChildren("main", "init, init---python, label, screen, translate, translate---strings");
@@ -196,7 +199,7 @@ void SyntaxChecker::init() {
 
 	setSuperParents(screenElems + "imagemap, hotspot, for, ground, hover" +
 	                screenProps + spacingProps + simpleProps + textProps + buttonProps +
-	                "action, first_delay, delay, corner_sizes", SuperParent::SCREEN);
+	                "action, first_delay, delay, corner_sizes, visible_symbols", SuperParent::SCREEN);
 
 	addBlockChildren("translate strings", "old, new old");
 	setSuperParents("old, new", SuperParent::TL_STRS);

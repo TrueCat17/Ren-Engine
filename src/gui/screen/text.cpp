@@ -140,6 +140,7 @@ void Text::updateSize() {
 
 	auto curParams = std::tie(
 	    first_param,
+	    tf->visibleSymbols,
 	    widthInt,
 	    heightInt,
 	    color,
@@ -149,6 +150,7 @@ void Text::updateSize() {
 	);
 	auto prevParams = std::tie(
 	    prevText,
+	    prevVisibleSymbols,
 	    tf->maxWidth,
 	    tf->maxHeight,
 	    tf->mainStyle.color,

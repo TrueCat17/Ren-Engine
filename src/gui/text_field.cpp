@@ -78,7 +78,6 @@ static TTF_Font* getFont(const std::string &name, int size) {
 static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &style, SDL_Surface *surface) {
 	if (!style.font) return;
 
-	int maxH = *h;
 	if (TTF_SizeUTF8(style.font, str.c_str(), w, h)) {
 		Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
 		return;
@@ -92,7 +91,7 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	*w += countOutlines * 2;
 	*h += countOutlines * 2;
 
-	SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
+	SDL_Rect rect = {x, std::max(0, surface->h - *h), *w, *h};
 	if (rect.y < 3) rect.y = 0;//fix for fonts, where some symbols have height more than font size on init
 
 	SurfacePtr tmpSurface;
@@ -219,10 +218,13 @@ static void updateFont(TextStyle &textStyle) {
 	textStyle.font = getFont(*textStyle.fontName, int(std::round(textStyle.fontSize)));
 }
 
-static bool invisible;
+
 static std::set<std::string> tagsWithValue = { "color", "outlinecolor", "alpha", "size", "font", "image" };
-static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle> &styleStack, int x, int *w, int *h, SDL_Surface *surface) {
-	bool onlySize = !surface;
+
+static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, size_t visibleSymbols,
+                       std::vector<TextStyle> &styleStack, int x, int *w, int *h, SDL_Surface *surface
+) {
+	bool onlySize = !surface || *wasSymbols >= visibleSymbols;
 
 	bool isStyle = line[i] == '{';
 	if (isStyle && i + 1 < line.size() && line[i + 1] == '{') {
@@ -230,11 +232,9 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 		isStyle = false;
 	}
 
+	*w = *h = 0;
 
 	if (isStyle) {
-		int maxH = *h;
-		*w = *h = 0;
-
 		size_t start = line.find_first_not_of(' ', i + 1);
 		size_t end = line.find('}', start);
 		if (start >= end || end == size_t(-1)) {
@@ -297,23 +297,22 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			else if (tag == "size")  apply(style.fontSize, value);
 			else if (tag == "font") style.fontName = String::getConstPtr(value);
 
-			else if (tag != "image" && tag != "invisible") {
+			else if (tag != "image") {
 				unknownTag = true;
 				Utils::outError("TextField::makeStep", "Unknown tag <%>", tag);
 			}
 
-			if (tag == "invisible") {
-				invisible = true;
-			}else
 			if (tag == "image") {
 				SurfacePtr image = getImage(value);
 				if (!image) {
 					Utils::outError("TextField::makeStep", "Failed to load image <%>", value);
 				}else {
+					int lineHeight = onlySize ? 0 : *h;
+
 					*h = int(style.fontSize);
 					*w = int(style.fontSize * float(image->w) / float(image->h));
-					if (!onlySize && !invisible) {
-						SDL_Rect rect = {x, std::max(0, maxH - *h), *w, *h};
+					if (!onlySize) {
+						SDL_Rect rect = {x, std::max(0, lineHeight - *h), *w, *h};
 						SDL_SetSurfaceAlphaMod(image.get(), Uint8(Math::inBounds(style.alpha * 255, 0, 255)));
 						SDL_BlitScaled(image.get(), nullptr, surface, &rect);
 						SDL_SetSurfaceAlphaMod(image.get(), 255);
@@ -336,22 +335,45 @@ static size_t makeStep(const std::string &line, size_t i, std::vector<TextStyle>
 			end = line.size();
 		}
 		i = end - 1;
-		std::string word = line.substr(start, end - start);
 
-		TextStyle &style = styleStack.back();
+		std::string word;
 		if (onlySize) {
-			if (TTF_SizeUTF8(style.font, word.c_str(), w, h)) {
-				Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+			word = line.substr(start, end - start);
+		}else {
+			while (start < end) {
+				char c = line[start];
+
+				size_t cSize = String::getCountBytes(c);
+				if (*wasSymbols < visibleSymbols) {
+					word += line.substr(start, cSize);
+				}
+				start += cSize;
+
+				if (c != ' ') {
+					++*wasSymbols;
+				}
 			}
-			int countOutlines = getCountOutlines(style);
-			*w += countOutlines * 2;
-			*h += countOutlines * 2;
-		}else if (!invisible) {
-			addChars(word, x, w, h, style, surface);
+		}
+
+		if (!word.empty()) {
+			TextStyle &style = styleStack.back();
+			if (onlySize) {
+				if (TTF_SizeUTF8(style.font, word.c_str(), w, h)) {
+					Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+				}
+				int countOutlines = getCountOutlines(style);
+				*w += countOutlines * 2;
+				*h += countOutlines * 2;
+			}else {
+				addChars(word, x, w, h, style, surface);
+			}
 		}
 	}
 
 	return i + 1;
+}
+static size_t makeStepForOnlySize(const std::string &line, size_t i, std::vector<TextStyle> &styleStack, int *w, int *h) {
+	return makeStep(line, i, nullptr, 2e9, styleStack, -1, w, h, nullptr);
 }
 
 void TextField::setFont(const std::string *fontName, float fontSize) {
@@ -379,7 +401,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 		part.start = i;
 
 		int w, h;
-		i = makeStep(line, i, styleStack, -1, &w, &h, nullptr);
+		i = makeStepForOnlySize(line, i, styleStack, &w, &h);
 		if (!w) continue;
 
 		width += w;
@@ -408,7 +430,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 	i = 0;
 	while (i < part.start) {
 		int w, h;
-		i = makeStep(line, i, styleStack, -1, &w, &h, nullptr);
+		i = makeStepForOnlySize(line, i, styleStack, &w, &h);
 	}
 	TTF_Font *font = styleStack.back().font;
 
@@ -496,14 +518,14 @@ void TextField::setText(const std::string &text) {
 	styleStack.push_back(mainStyle);
 	updateStyle(mainStyle);
 
-	std::vector<std::string> tmpLines = String::split(text, "\n");
+	std::vector<std::string> lines = String::split(text, "\n");
 	int curTextWidth = 0;
 	int curTextHeight = 0;
 
 	//calc sizes & apply wordwrap
-	std::vector<SDL_Rect> tmpLineRects;
-	for (size_t numLine = 0; numLine < tmpLines.size(); ++numLine) {
-		std::string &line = tmpLines[numLine];
+	lineRects.clear();
+	for (size_t numLine = 0; numLine < lines.size(); ++numLine) {
+		std::string &line = lines[numLine];
 
 		//check text wrap
 		size_t wrapIndex = line.size();
@@ -533,7 +555,7 @@ void TextField::setText(const std::string &text) {
 			if (line.empty()) {
 				line = nextLine;
 			}else {
-				tmpLines.insert(tmpLines.begin() + long(numLine + 1), nextLine);
+				lines.insert(lines.begin() + long(numLine + 1), nextLine);
 			}
 			--numLine;
 			continue;
@@ -547,7 +569,7 @@ void TextField::setText(const std::string &text) {
 		size_t i = 0;
 		while (i < line.size()) {
 			int w, h;
-			i = makeStep(line, i, styleStack, lineWidth, &w, &h, nullptr);
+			i = makeStepForOnlySize(line, i, styleStack, &w, &h);
 			lineWidth += w;
 			lineHeight = std::max(lineHeight, h);
 		}
@@ -557,30 +579,16 @@ void TextField::setText(const std::string &text) {
 
 		lineRect.w = lineWidth;
 		lineRect.h = lineHeight;
-		tmpLineRects.push_back(lineRect);
+		lineRects.push_back(lineRect);
 
 		curTextHeight += lineHeight;
 		if (maxHeight > 0 && curTextHeight >= maxHeight) {
-			tmpLineRects.back().h -= curTextHeight - maxHeight;
+			lineRect.h -= curTextHeight - maxHeight;
 			curTextHeight = maxHeight;
-			tmpLines.erase(tmpLines.begin() + long(numLine + 1), tmpLines.end());
+			lines.erase(lines.begin() + long(numLine + 1), lines.end());
 			break;
 		}
 	}
-
-	if (
-	    prevMainStyle == mainStyle && tmpLines == lines && tmpLineRects == lineRects &&
-	    prevMaxWidth == maxWidth && prevMaxHeight == maxHeight &&
-	    prevUseMaxForWidth == useMaxForWidth && prevUseMaxForHeight == useMaxForHeight
-	) return;
-
-	prevMainStyle = mainStyle;
-	lines.swap(tmpLines);
-	lineRects.swap(tmpLineRects);
-	prevMaxWidth = maxWidth;
-	prevMaxHeight = maxHeight;
-	prevUseMaxForWidth = useMaxForWidth;
-	prevUseMaxForHeight = useMaxForHeight;
 
 	if (useMaxForWidth || maxWidth <= 0) {
 		setWidth(float(std::max(maxWidth, curTextWidth)));
@@ -597,18 +605,17 @@ void TextField::setText(const std::string &text) {
 	styleStack.erase(styleStack.begin() + 1, styleStack.end());
 	updateStyle(mainStyle);
 	lineSurfaces.clear();
-	invisible = false;
+
+	size_t wasSymbols = 0;
 	for (size_t numLine = 0; numLine < lines.size(); ++numLine) {
-		setLine(numLine, lines[numLine], styleStack);
+		setLine(lines[numLine], lineRects[numLine], wasSymbols, styleStack);
 	}
 }
 
-void TextField::setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack) {
-	const SDL_Rect &lineRect = lineRects[numLine];
-
+void TextField::setLine(const std::string &line, const SDL_Rect &rect, size_t &wasSymbols, std::vector<TextStyle> &styleStack) {
 	SDL_Surface *surface = nullptr;
-	if (lineRect.w) {
-		surface = SDL_CreateRGBSurfaceWithFormat(0, lineRect.w, lineRect.h, 32, SDL_PIXELFORMAT_RGBA32);
+	if (rect.w) {
+		surface = SDL_CreateRGBSurfaceWithFormat(0, rect.w, rect.h, 32, SDL_PIXELFORMAT_RGBA32);
 	}
 	SurfacePtr surfacePtr = surface;
 
@@ -618,8 +625,8 @@ void TextField::setLine(size_t numLine, const std::string &line, std::vector<Tex
 	int x = 0;
 	int w, h;
 	while (i < line.size()) {
-		h = lineRect.h;
-		i = makeStep(line, i, styleStack, x, &w, &h, surface);
+		h = rect.h;
+		i = makeStep(line, i, &wasSymbols, visibleSymbols, styleStack, x, &w, &h, surface);
 		x += w;
 	}
 }

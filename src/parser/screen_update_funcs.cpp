@@ -716,6 +716,19 @@ makeUpdateTextAlignFunc(main_or_hover, valign, infix##text_valign, "top", "botto
 makeTextFuncs(main, )
 makeTextFuncs(hover, hover_)
 
+static void update_visible_symbols(Child *obj, size_t propIndex) {
+	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
+	TextField *tf = static_cast<Text*>(obj)->tf;
+
+	bool tmpBool;
+	updateCondition(tmpBool, tf->visibleSymbols, prop, "visible_symbols")
+	else {
+		tf->visibleSymbols = 1e9;
+		std::string msg = Utils::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name);
+		outError(obj, "visible_symbols", propIndex, msg);
+	}
+}
+
 
 static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 //addProp(style) -> { "style", update_style },
@@ -769,6 +782,8 @@ static std::map<std::string, ScreenUpdateFunc> mapScreenFuncs = {
 	addTextProp(italic)
 	addTextProp(underline)
 	addTextProp(strikethrough)
+
+	addProp(visible_symbols)
 
 #undef addTextProp
 #undef addProp

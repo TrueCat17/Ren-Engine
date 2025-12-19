@@ -37,20 +37,12 @@ private:
 	float hAlign = 0;
 	float vAlign = 0;
 
-	int prevMaxWidth = -1;
-	int prevMaxHeight = -1;
-
-	TextStyle prevMainStyle;
-	std::vector<std::string> lines;
 	std::vector<SDL_Rect> lineRects;
+	std::vector<SDL_Rect> rects;//lineRects with align
 
-	std::vector<SDL_Rect> rects;
 	std::vector<SurfacePtr> lineSurfaces;
 
-	bool prevUseMaxForWidth = false;
-	bool prevUseMaxForHeight = false;
-
-	void setLine(size_t numLine, const std::string &line, std::vector<TextStyle> &styleStack);
+	void setLine(const std::string &line, const SDL_Rect &rect, size_t &wasSymbols, std::vector<TextStyle> &styleStack);
 
 public:
 	static const std::string DEFAULT_FONT_NAME;
@@ -60,6 +52,8 @@ public:
 
 	int maxWidth  = -1;
 	int maxHeight = -1;
+
+	uint32_t visibleSymbols = 1e9;
 
 	TextStyle mainStyle;
 

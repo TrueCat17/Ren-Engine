@@ -152,7 +152,7 @@ init -1001:
 		modal False
 		save  True
 		zorder 0
-		ignore_modal False
+		ignore_modal False # UNDOCUMENTED, don't use
 	
 	style vbox is screen:
 		size 0
@@ -178,6 +178,7 @@ init -1001:
 		italic        False
 		underline     False
 		strikethrough False
+		visible_symbols 1e9 # UNDOCUMENTED, don't use
 	
 	style textbutton is text:
 		mouse True
