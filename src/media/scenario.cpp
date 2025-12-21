@@ -421,7 +421,7 @@ void Scenario::execute(const std::string &loadPath) {
 
 			static const std::string code = "can_exec_next_command()";
 			while (true) {
-				if (!GV::inGame) return;
+				if (!GV::inGame) return;//not break
 				if (pyExecFromCppWithRes(code) == "True") break;
 				if (!jumpNextLabel.empty()) break;
 

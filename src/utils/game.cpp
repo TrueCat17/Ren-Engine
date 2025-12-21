@@ -49,7 +49,7 @@ static int modIndex = -1;
 static const std::string savesPath = "../var/saves";
 
 
-static void _startMod(const std::string &dir, const std::string &loadPath = "");
+static void _startMod(const std::string dir, const std::string loadPath = "");
 static void makeScreenshotHelper(const std::string &screenshotPath);
 
 void Game::startMod(const std::string &dir) {
@@ -203,7 +203,7 @@ void Game::save() {
 }
 
 static std::mutex modMutex;
-static void _startMod(const std::string &dir, const std::string &loadPath) {
+static void _startMod(const std::string dir, const std::string loadPath) {
 	Utils::setThreadName("scenario");
 
 	double waitingStartTime = Utils::getTimer();
@@ -260,6 +260,8 @@ static void _startMod(const std::string &dir, const std::string &loadPath) {
 	GV::inGame = true;
 	modIndex += 1;
 	Scenario::execute(loadPath);
+
+	pyExecFromCpp("signals.send('exit_frame')");
 }
 
 
