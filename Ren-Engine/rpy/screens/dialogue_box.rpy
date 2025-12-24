@@ -173,7 +173,7 @@ init -1000 python:
 		
 		db.all_visible_symbols = prefix_symbols + db.count_symbols(db.dialogue_text) + suffix_symbols
 		
-		if name is not None or db.dialogue_text_after_pause or not db.prev_texts:
+		if name is not None or not db.prev_texts:
 			if text:
 				text_object = db.get_cur_text_object(text)
 				db.dialogue.append(text_object)
