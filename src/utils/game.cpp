@@ -261,7 +261,8 @@ static void _startMod(const std::string dir, const std::string loadPath) {
 	modIndex += 1;
 	Scenario::execute(loadPath);
 
-	pyExecFromCpp("signals.send('exit_frame')");
+	//extra check: <signals> were created before calling <start_mod>
+	pyExecFromCpp("if 'signals' in globals(): signals.send('exit_frame')");
 }
 
 
