@@ -44,7 +44,7 @@ screen masks:
 			mask_value = int(mask_value / step) * step
 		
 		w, h = get_stage_size()
-		base_image = im.scale('images/bg/bus_stop.jpg', w, h)
+		base_image = im.scale('images/bg/entry.webp', w, h)
 		mask_image = im.scale(mask_dir + mask_images[num_mask], w, h)
 	
 	

@@ -1,29 +1,25 @@
 init python:
-	set_fps(20)
+	#__builtins__.start_mod('tutorial')
 	set_can_mouse_hide(False)
 	config.has_autosave = False
-	
 	pause_screen.disable = True
-	start_screens = ['hotkeys', 'main_menu']
 	
-	back_path = 'images/gui/menu/main/back.png'
+	ship_ambience = 'sound/ambience/ship.ogg'
+	renpy.music.play(ship_ambience, channel = 'ambience', fadein = black_cover.appearance_time)
+	renpy.music.set_pos(time.time() % renpy.music.get_audio_len(ship_ambience), channel = 'ambience')
 
-screen main_menu:
-	image back_path:
-		size 1.0
+
+label start:
+	$ show_bg_entry()
 	
-	use mods
+	if not persistent.get('first_meet_ended'):
+		call first_meet
+		$ conversation.prepare(wait = True)
+	else:
+		$ conversation.prepare(wait = False)
 	
-	vbox:
-		align 0.95
-		spacing 5
-		
-		$ btn_params = (
-			(_('Load'), ShowMenu('load')),
-			(_('Preferences'), ShowMenu('preferences')),
-			(_('Exit'), exit_from_game),
-		)
-		for text, action in btn_params:
-			textbutton text:
-				style 'menu_button'
-				action action
+	$ btns.show()
+	$ conversation.show()
+	
+	while True:
+		pause 1

@@ -6,7 +6,7 @@ init python:
 	config.has_autosave = False
 	
 	
-	btn_bg = im.rect('#0004')
+	btn_bg = im.round_rect('#DDDB', 40, 40, 8)
 	image_render = False
 	
 	snowflakes = []
@@ -66,9 +66,6 @@ init:
 
 
 screen snow:
-	image 'images/bg/bus_stop.jpg':
-		size 1.0
-	
 	$ update_snow()
 	
 	if image_render:
@@ -83,6 +80,7 @@ screen snow:
 				size snowflake[4]
 	
 	image btn_bg:
+		corner_sizes -1
 		size (350, 70)
 		align (0.5, 0.95)
 		

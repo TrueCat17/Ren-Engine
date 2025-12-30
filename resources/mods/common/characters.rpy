@@ -2,9 +2,9 @@ init -990 python:
 	
 	# VN characters:
 	
-	sm = Character('Семён', color = '#DDA')
+	sm = Character('I', color = '#4F0') # main character
 	me = sm
-	rn = Character('Рен', color = '#FFF')
+	rn = Character('Ren', color = '#FFF')
 	
 	
 	# RPG characters:
@@ -25,4 +25,3 @@ init -990 python:
 init -980 python:
 	register_character_animation(sl, 'hello',   'images/characters/anim/sl_hello', 0, 0, 4, 0, 3, 1.0)
 	register_character_animation(us, 'cricket', 'images/characters/anim/us_cricket', 0, 0, 6, 0, 5, 1.5)
-

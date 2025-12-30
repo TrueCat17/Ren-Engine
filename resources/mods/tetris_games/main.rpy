@@ -93,7 +93,7 @@ label start:
 label tetris_main:
 	$ set_fps(60)
 	
-	scene bg room
+	scene bg room_screen
 	
 	'Choose a game! Management - WASD.'
 	menu:
@@ -108,3 +108,7 @@ label tetris_main:
 		''
 		'Exit':
 			'See you later!'
+			
+			$ start_mod('main_menu')
+			while 1:
+				pause 1

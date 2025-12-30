@@ -14,7 +14,7 @@ init python:
 
 
 label start:
-	scene bg room with dissolve
+	scene bg entry with dissolve
 	"Some start text with bg."
 	window hide
 	
