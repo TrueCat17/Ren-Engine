@@ -121,6 +121,7 @@ init python:
 label conversation_start:
 	$ hide_screen('btns')
 	$ conversation.hide()
+	$ db.skip_tab = False
 	
 	show rn 2 smile with dissolve
 	
@@ -138,6 +139,7 @@ label conversation_start:
 	
 	$ conversation.show()
 	$ show_screen('btns')
+	$ db.skip_tab = False
 
 
 screen conversation:
