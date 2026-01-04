@@ -56,7 +56,7 @@ label quick_start:
 				scene bg entry
 				
 				show rn smile with dissolve
-				rn "Visual Novell starts here."
+				rn "Visual Novel starts here."
 				
 				scene bg black with dissolve
 		''')
