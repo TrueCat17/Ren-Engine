@@ -138,8 +138,8 @@ Buildings consume base maintenance multiplied by their level.
 A functioning building also provides \
 ${red}-1${end} \
 to food and \
-${green}+1${end} \
-to science.
+${green}+n${end} \
+to science (according to the performance level from section ${yellow}Buildings${end}).
 
 Basic building support:
 
