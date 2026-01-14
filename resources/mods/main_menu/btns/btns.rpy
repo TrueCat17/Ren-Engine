@@ -8,7 +8,7 @@ init python:
 		}
 		btn_coords = {
 			'demos':    (   0, 433),
-			'tutorial': (1383, 820),
+			'tutorial': (1377, 533),
 			'clicker':  (1915, 676),
 		}
 		
