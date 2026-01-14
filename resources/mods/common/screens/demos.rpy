@@ -34,13 +34,11 @@ init -10 python:
 	
 	
 	def demos__show():
-		black_cover.start()
-		set_timeout(ShowScreen('demos'), black_cover.appearance_time)
+		black_cover.start(ShowScreen('demos'))
 		common_screen.show_time = get_game_time() + black_cover.appearance_time * 2
 	
 	def demos__hide():
-		black_cover.start()
-		set_timeout(HideScreen(common_screen.name), black_cover.appearance_time)
+		black_cover.start(HideScreen(common_screen.name))
 	
 	
 	build_object('demos')

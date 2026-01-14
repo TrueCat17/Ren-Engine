@@ -7,8 +7,7 @@ init -1000 python:
 		
 		renpy.music.stop(channel = 'ambience', fadeout = black_cover.appearance_time)
 		
-		black_cover.start()
-		set_timeout(Function(__builtins__.start_mod, dir_name), black_cover.appearance_time)
+		black_cover.start(Function(__builtins__.start_mod, dir_name))
 	
 	def show_bg_entry():
 		renpy.show('bg entry', is_scene = True)

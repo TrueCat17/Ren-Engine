@@ -1,7 +1,6 @@
 init python:
 	def show_prefs():
-		black_cover.start()
-		set_timeout(ShowScreen('preferences'), black_cover.appearance_time)
+		black_cover.start(ShowScreen('preferences'))
 		common_screen.show_time = get_game_time() + black_cover.appearance_time * 2
 	
 	quick_menu_screen.old_items = quick_menu_screen.items

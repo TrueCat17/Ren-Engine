@@ -22,8 +22,7 @@ init python:
 		global hide_screen
 		hide_screen = common_screen.orig_hide_screen
 		
-		black_cover.start()
-		set_timeout(HideScreen(name), black_cover.appearance_time)
+		black_cover.start(HideScreen(name))
 	
 	
 	build_object('common_screen')

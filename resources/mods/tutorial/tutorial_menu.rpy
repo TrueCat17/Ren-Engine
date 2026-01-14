@@ -51,24 +51,23 @@ init:
 
 init 100 python:
 	def tutorial_menu__start(from_middle = False):
-		black_cover.start(from_middle = from_middle)
 		if from_middle:
+			func = None
 			show_screen('tutorial_menu')
 		else:
-			set_timeout(ShowScreen('tutorial_menu'), black_cover.appearance_time)
+			func = ShowScreen('tutorial_menu')
+		black_cover.start(func, from_middle = from_middle)
 	
 	def tutorial_menu__hide():
 		# do nothing when lesson starts from init block on testing
 		if has_screen('tutorial_menu'):
-			black_cover.start()
-			set_timeout(HideScreen('tutorial_menu'), black_cover.appearance_time)
+			black_cover.start(HideScreen('tutorial_menu'))
 	
 	def tutorial_menu__restart():
 		pause_screen.items.pop(0)
 		hide_screen('pause')
 		
-		black_cover.start()
-		set_timeout(Jump('start'), black_cover.appearance_time)
+		black_cover.start(Jump('start'))
 	
 	
 	def tutorial_menu__set_category(category):
