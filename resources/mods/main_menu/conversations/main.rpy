@@ -5,7 +5,7 @@ init python:
 	def conversation__show():
 		conversation.show_time = get_game_time()
 		conversation.hide_time = None
-		conversation.update()
+		conversation.update(check = False)
 		show_screen('conversation')
 		show_screen('civ_screen')
 	
@@ -56,9 +56,10 @@ init python:
 			renpy.call('conversation_start')
 	
 	
-	def conversation__update():
-		if not has_screen('conversation'): return
-		if conversation.cur_pose is None: return
+	def conversation__update(check = True):
+		if check:
+			if not has_screen('conversation'): return
+			if conversation.cur_pose is None: return
 		
 		if not conversation.hide_time:
 			dtime = get_game_time() - conversation.show_time
@@ -86,9 +87,10 @@ init python:
 			conversation.civ_screen_alpha = 0
 		
 		
-		conversation.zorder = 1 if conversation.cur_pose > 1 else -1
+		conversation.zorder = 1 if (conversation.cur_pose or 0) > 1 else -1
 		conversation.has_action = False
 		
+		if conversation.cur_pose is None: return
 		if conversation.cur_pose == 0: return
 		if conversation.alpha != 1: return
 		if conversation.wait_before_time is None: return
