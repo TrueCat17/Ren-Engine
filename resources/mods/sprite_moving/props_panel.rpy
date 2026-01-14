@@ -58,6 +58,8 @@ init 1 python:
 		full = xfull if prop[0] == 'x' else yfull
 		
 		v = sprite[prop]
+		if v is None and prop in ('xsize', 'ysize'):
+			v = (get_image_width if prop == 'xsize' else get_image_height)(image)
 		
 		if type(v) is float:
 			v = round(v * full)
