@@ -1,10 +1,10 @@
 init -10 python:
-	if get_current_mod() in ('main_menu', 'tutorial', 'sprite_moving'):
-		config.setdefault('animations', True)
-		
-		preferences.content['Other'].append(
-			[['bool', '["Animations"!t]', GetSetAttr('config.animations'), ToggleVariable('config.animations')]]
-		)
+	config.setdefault('animations', True)
+	
+	preferences.content['Other'].append(
+		[['bool', '["Animations"!t]', GetSetAttr('config.animations'), ToggleVariable('config.animations')]]
+	)
+	
 	
 	planet_fps = 30
 	planet_pause_time = 1 / planet_fps
