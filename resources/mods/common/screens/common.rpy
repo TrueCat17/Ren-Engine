@@ -175,53 +175,53 @@ screen common_screen(name):
 			action demos.hide
 
 screen demos_on_screen:
-	zorder 10001
+	zorder 10000
 	modal  True
 	use common_screen('demos')
 screen utils_on_screen:
-	zorder 10001
+	zorder 10000
 	modal  True
 	use common_screen('utils')
 screen preferences_on_screen:
-	zorder 10001
+	zorder 10000
 	modal  True
 	use common_screen('preferences')
 screen load_on_screen:
-	zorder 10001
+	zorder 10000
 	modal  True
 	use common_screen('load')
 
 
 screen demos_with_btns:
-	zorder 10001
+	zorder 10000
 	modal  True
 	save   False
 	$ common_screen.update_params('demos')
 	use demos
 	use common_screen_buttons
 screen utils_with_btns:
-	zorder 10001
+	zorder 10000
 	modal  True
 	save   False
 	$ common_screen.update_params('utils')
 	use utils
 	use common_screen_buttons
 screen preferences_with_btns:
-	zorder 10001
+	zorder 10000
 	modal  True
 	save   False
 	$ common_screen.update_params('preferences')
 	use preferences
 	use common_screen_buttons
 screen load_with_btns:
-	zorder 10001
+	zorder 10000
 	modal  True
 	save   False
 	$ common_screen.update_params('load')
 	use load
 	use common_screen_buttons
 screen save_with_btns:
-	zorder 10001
+	zorder 10000
 	modal  True
 	save   False
 	$ common_screen.update_params('save')

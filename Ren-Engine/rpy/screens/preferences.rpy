@@ -166,7 +166,7 @@ init python:
 
 
 screen preferences:
-	zorder 10001
+	zorder 10000
 	modal  True
 	save   False
 	
