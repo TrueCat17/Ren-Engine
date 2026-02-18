@@ -35,22 +35,30 @@ init python:
 	def btns__get():
 		btns.spent += get_last_tick()
 		
-		backlight_time = 0.5
+		backlight_time = 0.75
+		backlight_time_half = backlight_time / 2
+		
 		backlight_cycle_time = 10
 		backlight_work_time = backlight_cycle_time * 4
 		
 		time_shift = backlight_cycle_time / 2
 		
 		dtime = (btns.spent + time_shift) % backlight_cycle_time
+		dtime_cur = dtime % backlight_time
 		index = int(dtime / backlight_time)
 		
 		for i, btn in enumerate(btns.props.values()):
 			backlight = (index == i * 2)
-			
 			selected = btns.hovered_name == btn.name
+			
 			if backlight and not selected and btns.spent < backlight_work_time:
+				if dtime_cur < backlight_time_half:
+					k = dtime_cur / backlight_time_half
+				else:
+					k = (backlight_time - dtime_cur) / backlight_time_half
+				
 				btn.selected = True
-				btn.alpha = 0.33
+				btn.alpha = 0.33 * easein(k)
 			else:
 				btn.selected = selected
 				btn.alpha = 0.1 if selected else 0.01
