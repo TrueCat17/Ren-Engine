@@ -201,6 +201,18 @@ translate russian strings:
 	old 'Start a game where all 4 players are bots'
 	new 'Начать игру, где все 4 игрока будут ботами'
 	
+	old 'pacifist victory'
+	new 'победа пацифиста'
+	
+	old 'Win without building barracks'
+	new 'Победить без строительства казарм'
+	
+	old 'barbarian victory'
+	new 'победа варваров'
+	
+	old 'Win without discovering technology'
+	new 'Победить без открытия технологий'
+	
 	old 'scientist'
 	new 'учёный'
 	

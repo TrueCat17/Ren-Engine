@@ -45,7 +45,7 @@ init python:
 				'stone':   1000,
 				'coal':     800,
 				'metal':    700,
-				'cement':   500,
+				'cement':   600,
 				'steel':    500,
 				'science': 1400,
 			}
@@ -64,7 +64,7 @@ init python:
 				'metal':  300,
 				'cement': 200,
 				'steel':  200,
-				'science': 300,
+				'science': 200,
 			}
 			
 			self.looking_future_steps = 3
@@ -135,11 +135,11 @@ init python:
 			
 			res = []
 			for resource, k in self.resource_k.items():
-				cur = props[resource] if building != 'college' else 0
+				cur = props[resource] if resource != 'science' else 0
 				change = props['change_' + resource]
 				max_value = resource_max[resource]
 				
-				if cur + change >= max_value and change > 0: continue
+				if cur + change >= max_value and change >= 0: continue
 				
 				count = cur + change * looking_future_steps
 				score = (max_value - count) * k
@@ -567,6 +567,13 @@ init python:
 		def fix_factories(self):
 			player = self.player
 			player.calc_changing_resources()
+			
+			for cell in self.cement_factories:
+				if player.stone + player.change_stone > player.cement + player.change_cement: break
+				
+				cell.disabled = True
+				player.calc_changing_resources()
+				sc_map.update_forces()
 			
 			resource_max = self.resource_max
 			

@@ -40,9 +40,14 @@ init python:
 				(0, 0),           im.rect('#000', size, size),
 				(border, border), im.rect((r, g, b), size - border * 2, size - border * 2),
 			)
+			
+			self.without_barracks = True
+			self.without_technologies = True
 		
 		
 		def explore(self, building):
+			self.without_technologies = False
+			
 			self.technological_progress[building] += 1
 			self.science -= sc_technologies.price[self.technological_progress[building]]
 			if not self.bot:
@@ -80,6 +85,9 @@ init python:
 				
 				for resource, count in need_resources:
 					self[resource] -= count
+			
+			if building == 'barracks':
+				self.without_barracks = False
 			
 			if cell.building_level == 0:
 				self.building_cells.append(cell)

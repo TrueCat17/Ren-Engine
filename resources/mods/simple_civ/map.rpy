@@ -173,7 +173,8 @@ init python:
 		last_y = sc_map.ysize - 1
 		map = sc_map.map
 		
-		border_h = get_image_height(image_dir + 'border.webp')
+		border_size = get_image_height(image_dir + 'border.webp')
+		border_pos = image_size - border_size # ypos for horizontal border, xpos for vertical (rotated horizontal)
 		
 		start_x = block_x * block_size
 		start_y = block_y * block_size
@@ -191,32 +192,34 @@ init python:
 				
 				cell = line[real_x]
 				
-				building = cell.building
-				if building is not None:
-					res.append((cell_x, cell_y))
-					res.append(image_dir + building.replace(' ', '_') + '-%s.webp' % cell.building_level)
-				
 				player = cell.player
 				if player is None: continue
 				
+				cell_pos = (cell_x, cell_y)
+				
+				building = cell.building
+				if building is not None:
+					res.append(cell_pos)
+					res.append(image_dir + building.replace(' ', '_') + '-%s.webp' % cell.building_level)
+				
 				left = line[real_x - 1] if real_x else None
 				if left and left.player is not player:
-					res.append((cell_x, cell_y))
+					res.append(cell_pos)
 					res.append(player.border_v)
 				
 				right = line[real_x + 1] if real_x != last_x else None
 				if right and right.player is not player:
-					res.append((cell_x + image_size - border_h, cell_y))
+					res.append((cell_x + border_pos, cell_y))
 					res.append(player.border_v)
 				
 				top = top_line and top_line[real_x]
 				if top and top.player is not player:
-					res.append((cell_x, cell_y))
+					res.append(cell_pos)
 					res.append(player.border_h)
 				
 				bottom = bottom_line and bottom_line[real_x]
 				if bottom and bottom.player is not player:
-					res.append((cell_x, cell_y + image_size - border_h))
+					res.append((cell_x, cell_y + border_pos))
 					res.append(player.border_h)
 		
 		dont_save.sc_extra_blocks[(block_x, block_y)] = im.composite(*res)
@@ -289,14 +292,21 @@ init python:
 		return (cell_x, cell_y)
 	
 	
-	def sc_map__to_draw():
-		res = []
+	def sc_map__to_draw(screen_tmp):
+		blocks = screen_tmp.blocks = []
 		
 		zoom = sc_map.zoom
-		block_size = int(sc_map.block_size * sc_map.image_size * zoom)
 		x, y = int(sc_map.x), int(sc_map.y)
-		map_width  = get_stage_width() - sc_control.get_xsize()
-		map_height = get_stage_height() - sc_info.get_ysize()
+		block_size = int(sc_map.block_size * sc_map.image_size * zoom)
+		
+		screen_tmp.block_pos  = (x, y)
+		screen_tmp.block_zoom = block_size
+		
+		map_xstart = -x // block_size
+		map_ystart = -y // block_size
+		
+		map_xend = (get_stage_width() - sc_control.get_xsize() - x) / block_size
+		map_yend = (get_stage_height() - sc_info.get_ysize()   - y) / block_size
 		
 		nature_blocks = dont_save.sc_nature_blocks
 		extra_blocks  = dont_save.sc_extra_blocks
@@ -307,53 +317,41 @@ init python:
 					sc_map.make_nature_block(block_x, block_y)
 					sc_map.update_block(block_x, block_y)
 		
-		for k in extra_blocks:
-			block_x, block_y = k
+		for pos in extra_blocks:
+			block_x, block_y = pos
 			
-			image_x = block_x * block_size + x
-			if image_x >= map_width: continue
-			if image_x < -block_size: continue
+			if block_x < map_xstart: continue
+			if block_x >= map_xend:  continue
 			
-			image_y = block_y * block_size + y
-			if image_y >= map_height: continue
-			if image_y < -block_size: continue
+			if block_y < map_ystart: continue
+			if block_y >= map_yend:  continue
 			
-			nature_image = nature_blocks[k]
+			nature_image = nature_blocks[pos]
 			
-			if not extra_blocks[k]:
+			if extra_blocks[pos] is None:
 				sc_map.real_update_block(block_x, block_y)
-			extra_image = extra_blocks[k]
+			extra_image = extra_blocks[pos]
 			
-			obj = {
-				'image': nature_image,
-				'xpos': image_x,
-				'ypos': image_y,
-				'size': block_size,
-				'alpha': 1,
-			}
-			res.append(obj)
-			res.append(dict(obj, image = extra_image))
+			blocks.append((nature_image, pos))
+			blocks.append((extra_image,  pos))
 		
 		
-		cell_time = 2
-		cell_alpha_min = 0.20
-		cell_alpha_max = 0.50
+		mark_time = 2
+		mark_alpha_min = 0.20
+		mark_alpha_max = 0.50
 		
-		cell_alpha = time.time() % cell_time # 0-2n
-		if cell_alpha > cell_time * 0.5:
-			cell_alpha = cell_time - cell_alpha # 0-n
-		cell_alpha = cell_alpha * (cell_alpha_max - cell_alpha_min) + cell_alpha_min # min-max
+		mark_alpha = time.time() % mark_time # 0-2n
+		if mark_alpha > mark_time * 0.5:
+			mark_alpha = mark_time - mark_alpha # 0-n
+		screen_tmp.mark_alpha = mark_alpha * (mark_alpha_max - mark_alpha_min) + mark_alpha_min # min-max
 		
-		size = int(sc_map.image_size * zoom)
+		screen_tmp.mark_zoom = int(sc_map.image_size * zoom)
 		
-		if sc_control.selected_cell:
-			res.append({
-				'image': sc_map.selected_cell_marker,
-				'xpos': sc_control.selected_cell.x * size + x,
-				'ypos': sc_control.selected_cell.y * size + y,
-				'size': size,
-				'alpha': cell_alpha,
-			})
+		markers = screen_tmp.markers = []
+		
+		cell = sc_control.selected_cell
+		if cell:
+			markers.append((sc_map.selected_cell_marker, (cell.x, cell.y)))
 		
 		if sc_map.mark_disabled:
 			image = sc_map.disabled_cell_marker
@@ -364,13 +362,7 @@ init python:
 					if cell.building is None: continue
 					if not cell.disabled: continue
 					
-					res.append({
-						'image': image,
-						'xpos': cell.x * size + x,
-						'ypos': cell.y * size + y,
-						'size': size,
-						'alpha': cell_alpha,
-					})
+					markers.append((image, (cell.x, cell.y)))
 		
 		if sc_map.mark_spending:
 			spending_cell_marker = sc_map.spending_cell_marker
@@ -385,21 +377,16 @@ init python:
 				elif not is_cur and     is_next: image = taking_cell_marker
 				else: continue
 				
-				res.append({
-					'image': image,
-					'xpos': cell.x * size + x,
-					'ypos': cell.y * size + y,
-					'size': size,
-					'alpha': cell_alpha,
-				})
-		
-		return res
+				markers.append((image, (cell.x, cell.y)))
 	
 	
 	def sc_map__next_step():
 		sc_map.next_step_ready = True
 	
 	def sc_map__real_next_step():
+		if time.time() - sc_map.step_time < 0.25:
+			return
+		
 		sc_map.next_step_ready = False
 		
 		if not sc_map.player.bot:
@@ -492,8 +479,7 @@ init python:
 		host_changed_cells = sc_map.host_changed_cells = []
 		for line in sc_map.map:
 			for cell in line:
-				player = cell.player
-				if player is not None and player is not cell.next_player:
+				if cell.player is not cell.next_player:
 					host_changed_cells.append(cell)
 	
 	

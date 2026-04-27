@@ -29,12 +29,29 @@ screen sc_map:
 	key 'F5' action ToggleVariable('sc_map.mark_disabled')
 	key 'F6' action ToggleVariable('sc_map.mark_spending')
 	
-	for obj in sc_map.to_draw():
-		image obj['image']:
-			xpos obj['xpos']
-			ypos obj['ypos']
-			size  obj['size']
-			alpha obj['alpha']
+	
+	$ screen_tmp = SimpleObject()
+	$ sc_map.to_draw(screen_tmp)
+	
+	null:
+		pos  screen_tmp.block_pos
+		zoom screen_tmp.block_zoom
+		
+		for image, pos in screen_tmp.blocks:
+			image image:
+				pos pos
+				size 1
+	
+	null:
+		pos   screen_tmp.block_pos
+		zoom  screen_tmp.mark_zoom
+		alpha screen_tmp.mark_alpha
+		
+		for image, pos in screen_tmp.markers:
+			image image:
+				pos pos
+				size 1
+	
 	
 	button:
 		ground sc_black_bg

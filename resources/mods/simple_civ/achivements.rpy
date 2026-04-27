@@ -16,6 +16,14 @@ init python:
 	def sc_ach__normal_one():
 		return sc_map.bonus_for_bots == 50 and sc_ach.winner()
 	
+	
+	def sc_ach__pacifist_victory():
+		return sc_ach.winner() and sc_map.players[0].without_barracks
+	
+	def sc_ach__barbarian_victory():
+		return sc_ach.winner() and sc_map.players[0].without_technologies
+	
+	
 	def sc_ach__scientist():
 		player = sc_map.players[0]
 		for level in player.technological_progress.values():
@@ -101,6 +109,9 @@ init python:
 		'loser':  '',
 		'normal one': 'Defeat bots on normal (10) difficulty level',
 		'observer':   'Start a game where all 4 players are bots',
+		
+		'pacifist victory':  'Win without building barracks',
+		'barbarian victory': 'Win without discovering technology',
 		
 		'scientist':      'Learn all technologies',
 		'factory worker': 'Build cement factory',
