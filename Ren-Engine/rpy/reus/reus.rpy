@@ -77,6 +77,9 @@ init python:
 		
 		empty = True
 		for path, ds, fs in os.walk(root):
+			if path == root:
+				ds[:] = [d for d in ds if d in ('Ren-Engine', 'resources', 'var')]
+			
 			if reus.upd_link_fn not in fs:
 				continue
 			
