@@ -4,7 +4,7 @@
 #include <fstream>
 #include <time.h>
 
-#include <SDL2/SDL_image.h>
+#include <SDL3/SDL_image.h>
 
 
 #include "config.h"
@@ -20,6 +20,7 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 #include "media/py_utils/convert_to_py.h"
+#include "media/py_utils/py_code_disk_cache.h"
 #include "media/scenario.h"
 #include "media/sprite.h"
 #include "media/translation.h"
@@ -207,6 +208,8 @@ static void _startMod(const std::string dir, const std::string loadPath) {
 	Utils::setThreadName("scenario");
 
 	double waitingStartTime = Utils::getTimer();
+
+	PyUtils::callInPythonThread(PyCodeDiskCache::checkSaving);
 
 	GV::inGame = false;
 	BtnRect::disableSelectMode(true);

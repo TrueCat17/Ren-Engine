@@ -3,8 +3,9 @@
 #include <map>
 #include <set>
 
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL_ttf.h>
 
+#include "config.h"
 #include "renderer.h"
 
 #include "media/image_manipulator.h"
@@ -51,7 +52,7 @@ static TTF_Font* getFont(const std::string &name, int size) {
 		if (!String::startsWith(file, startName)) continue;
 		if (file.find('.', startName.size()) != size_t(-1)) continue;
 
-		res = TTF_OpenFont(file.c_str(), size);
+		res = TTF_OpenFont(file.c_str(), float(size));
 		if (res) {
 			return fonts[t] = res;
 		}
@@ -78,8 +79,8 @@ static TTF_Font* getFont(const std::string &name, int size) {
 static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &style, SDL_Surface *surface) {
 	if (!style.font) return;
 
-	if (TTF_SizeUTF8(style.font, str.c_str(), w, h)) {
-		Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+	if (!TTF_GetStringSize(style.font, str.c_str(), str.size(), w, h)) {
+		Utils::outMsg("TTF_GetStringSize", SDL_GetError());
 		return;
 	}
 	if (style.alpha * 255 < 1) return;
@@ -96,8 +97,8 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 
 	SurfacePtr tmpSurface;
 	if (style.enableOutline) {
-		//masks from TTF_RenderUTF8_Blended
-		tmpSurface = SDL_CreateRGBSurface(0, *w, *h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+		//format from TTF_RenderUTF8_Blended
+		tmpSurface = SDL_CreateSurface(*w, *h, SDL_PIXELFORMAT_ARGB8888);
 
 		SDL_Color outlineColor;
 		outlineColor.r = Uint8(style.outlineColor >> 16);
@@ -105,20 +106,20 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 		outlineColor.b = style.outlineColor & 0xFF;
 		outlineColor.a = 255;
 
-		SDL_Surface *surfaceOutlineText = TTF_RenderUTF8_Blended(style.font, str.c_str(), outlineColor);
+		SDL_Surface *surfaceOutlineText = TTF_RenderText_Blended(style.font, str.c_str(), str.size(), outlineColor);
 		if (!surfaceOutlineText) {
-			Utils::outMsg("TTF_RenderUTF8_Blended", TTF_GetError());
+			Utils::outMsg("TTF_RenderText_Blended", SDL_GetError());
 			return;
 		}
 
 		std::pair<int, int> pairs[8] = {{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}};
 		for (auto [x, y] : pairs) {
 			for (int i = 1; i <= countOutlines; ++i) {
-				SDL_Rect to = {countOutlines + x * i, countOutlines + y * i, origW, origH};
-				SDL_BlitSurface(surfaceOutlineText, nullptr, tmpSurface.get(), &to);
+				SDL_Rect to = { countOutlines + x * i, countOutlines + y * i, origW, origH };
+				SDL_BlitSurfaceScaled(surfaceOutlineText, nullptr, tmpSurface.get(), &to, SDL_SCALEMODE_NEAREST);
 			}
 		}
-		SDL_FreeSurface(surfaceOutlineText);
+		SDL_DestroySurface(surfaceOutlineText);
 	}
 
 	SDL_Color color;
@@ -127,9 +128,9 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	color.b = style.color & 0xFF;
 	color.a = 255;
 
-	SDL_Surface *surfaceText = TTF_RenderUTF8_Blended(style.font, str.c_str(), color);
+	SDL_Surface *surfaceText = TTF_RenderText_Blended(style.font, str.c_str(), str.size(), color);
 	if (!surfaceText) {
-		Utils::outMsg("TTF_RenderUTF8_Blended", TTF_GetError());
+		Utils::outMsg("TTF_RenderText_Blended", SDL_GetError());
 		return;
 	}
 
@@ -143,7 +144,7 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 		SDL_SetSurfaceAlphaMod(surfaceText, Uint8(std::min<float>(style.alpha * 255, 255)));
 		SDL_BlitSurface(surfaceText, nullptr, surface, &rect);
 	}
-	SDL_FreeSurface(surfaceText);
+	SDL_DestroySurface(surfaceText);
 }
 
 static std::string getTagValue(std::string &tag) {
@@ -314,7 +315,7 @@ static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, si
 					if (!onlySize) {
 						SDL_Rect rect = {x, std::max(0, lineHeight - *h), *w, *h};
 						SDL_SetSurfaceAlphaMod(image.get(), Uint8(Math::inBounds(style.alpha * 255, 0, 255)));
-						SDL_BlitScaled(image.get(), nullptr, surface, &rect);
+						SDL_BlitSurfaceScaled(image.get(), nullptr, surface, &rect, Config::getScaleQuality());
 						SDL_SetSurfaceAlphaMod(image.get(), 255);
 					}
 				}
@@ -358,8 +359,8 @@ static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, si
 		if (!word.empty()) {
 			TextStyle &style = styleStack.back();
 			if (onlySize) {
-				if (TTF_SizeUTF8(style.font, word.c_str(), w, h)) {
-					Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+				if (!TTF_GetStringSize(style.font, word.c_str(), word.size(), w, h)) {
+					Utils::outMsg("TTF_GetStringSize", SDL_GetError());
 				}
 				int countOutlines = getCountOutlines(style);
 				*w += countOutlines * 2;
@@ -455,8 +456,8 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 		const std::string symbol = std::string(partStr.substr(start, i - start));
 
 		int w;
-		if (TTF_SizeUTF8(font, symbol.c_str(), &w, nullptr)) {
-			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+		if (!TTF_GetStringSize(font, symbol.c_str(), symbol.size(), &w, nullptr)) {
+			Utils::outMsg("TTF_GetStringSize", SDL_GetError());
 			return line.size();
 		}
 		if (!width) {
@@ -484,8 +485,8 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 			partStr.pop_back();
 		}
 
-		if (TTF_SizeUTF8(font, partStr.c_str(), &width, nullptr)) {
-			Utils::outMsg("TTF_SizeUTF8", TTF_GetError());
+		if (!TTF_GetStringSize(font, partStr.c_str(), partStr.size(), &width, nullptr)) {
+			Utils::outMsg("TTF_GetStringSize", SDL_GetError());
 			return line.size();
 		}
 		width += getCountOutlines(styleStack.back()) * 2;
@@ -563,7 +564,7 @@ void TextField::setText(const std::string &text) {
 
 		SDL_Rect lineRect = { 0, curTextHeight, 0, 0};
 		int lineWidth = 0;
-		int lineHeight = TTF_FontHeight(styleStack.back().font);
+		int lineHeight = TTF_GetFontHeight(styleStack.back().font);
 
 		updateStyle(styleStack.back());
 		size_t i = 0;
@@ -574,7 +575,7 @@ void TextField::setText(const std::string &text) {
 			lineHeight = std::max(lineHeight, h);
 		}
 
-		lineWidth = std::min(lineWidth, Renderer::info.max_texture_width);
+		lineWidth = std::min(lineWidth, Renderer::maxSize);
 		curTextWidth = std::max(curTextWidth, lineWidth);
 
 		lineRect.w = lineWidth;
@@ -615,7 +616,7 @@ void TextField::setText(const std::string &text) {
 void TextField::setLine(const std::string &line, const SDL_Rect &rect, size_t &wasSymbols, std::vector<TextStyle> &styleStack) {
 	SDL_Surface *surface = nullptr;
 	if (rect.w) {
-		surface = SDL_CreateRGBSurfaceWithFormat(0, rect.w, rect.h, 32, SDL_PIXELFORMAT_RGBA32);
+		surface = SDL_CreateSurface(rect.w, rect.h, SDL_PIXELFORMAT_ARGB8888);
 	}
 	SurfacePtr surfacePtr = surface;
 

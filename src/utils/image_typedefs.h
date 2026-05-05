@@ -1,7 +1,7 @@
 #ifndef IMAGETYPEDEFS_H
 #define IMAGETYPEDEFS_H
 
-#include "SDL2/SDL_render.h"
+#include "SDL3/SDL_render.h"
 
 #include "gv.h"
 
@@ -86,7 +86,7 @@ public:
 	}
 };
 
-using SurfacePtr = SmartPtr<SDL_Surface, SDL_FreeSurface>;
+using SurfacePtr = SmartPtr<SDL_Surface, SDL_DestroySurface>;
 using TexturePtr = SmartPtr<SDL_Texture, SDL_DestroyTexture>;
 
 #endif // IMAGETYPEDEFS_H

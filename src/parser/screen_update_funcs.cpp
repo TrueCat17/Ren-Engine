@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL_ttf.h>
 #undef main
 
 #include "gui/screen/hotspot.h"

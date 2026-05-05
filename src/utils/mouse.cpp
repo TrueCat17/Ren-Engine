@@ -1,6 +1,6 @@
 #include "mouse.h"
 
-#include <SDL2/SDL_mouse.h>
+#include <SDL3/SDL_mouse.h>
 
 #include "config.h"
 #include "utils/image_caches.h"
@@ -25,7 +25,7 @@ void Mouse::init() {
 	if (usual) {
 		usualModeCursor = SDL_CreateColorCursor(usual.get(), 0, 0);
 	}else {
-		usualModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+		usualModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
 	}
 
 	const std::string btnPath = Config::get("mouse_btn");
@@ -35,7 +35,7 @@ void Mouse::init() {
 	if (btn) {
 		btnModeCursor = SDL_CreateColorCursor(btn.get(), 0, 0);
 	}else {
-		btnModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+		btnModeCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
 	}
 
 	setUsualMode();
@@ -64,7 +64,11 @@ void Mouse::update() {
 	if (out) {
 		x = y = -1000000;
 	}else {
-		SDL_GetMouseState(&x, &y);
+		float fx, fy;
+		SDL_GetMouseState(&fx, &fy);
+
+		x = int(fx);
+		y = int(fy);
 	}
 }
 
@@ -122,5 +126,9 @@ void Mouse::checkCursorVisible() {
 			show = GV::frameStartTime - lastAction < timeToHide;
 		}
 	}
-	SDL_ShowCursor(show);
+	if (show) {
+		SDL_ShowCursor();
+	}else {
+		SDL_HideCursor();
+	}
 }

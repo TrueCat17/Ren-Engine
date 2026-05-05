@@ -12,8 +12,8 @@ extern "C" {
 #include <libavutil/md5.h>
 }
 
-#include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_clipboard.h>
+#include <SDL3/SDL_ttf.h>
+#include <SDL3/SDL_clipboard.h>
 
 #include "gv.h"
 #include "logger.h"
@@ -43,7 +43,7 @@ std::string Utils::getVersion() {
 }
 
 void Utils::setThreadName([[maybe_unused]] std::string name) {
-#ifndef __WIN32__ //suspend on wine
+#ifndef __CYGWIN__ //suspend on wine
 	size_t maxNameSize = 14;//doc. say "16 with null terminator" (15), but this does not work
 
 	if (name.empty()) {
@@ -80,7 +80,7 @@ std::string Utils::getClipboardText() {
 }
 
 bool Utils::setClipboardText(const std::string &text) {
-	if (SDL_SetClipboardText(text.c_str()) < 0) {
+	if (!SDL_SetClipboardText(text.c_str())) {
 		Utils::outMsg("Utils::setClipboardText", SDL_GetError());
 		return false;
 	}
@@ -150,7 +150,7 @@ bool Utils::realOutMsg() {
 	Key::resetPressed();
 
 	int res = 0;
-	if (SDL_ShowMessageBox(&data, &res)) {
+	if (!SDL_ShowMessageBox(&data, &res)) {
 		std::cout << msg.str << '\n';
 		std::cout << SDL_GetError() << '\n';
 	}
@@ -284,17 +284,12 @@ Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SD
 		return 0;
 	}
 
-	const Uint8 *pixel = (const Uint8 *)surface->pixels + y * surface->pitch + x * surface->format->BytesPerPixel;
 	Uint8 r, g, b, a;
-	if (surface->format->palette) {
-		SDL_Color &c = surface->format->palette->colors[*pixel];
-		r = c.r;
-		g = c.g;
-		b = c.b;
-		a = c.a;
-	}else {
-		SDL_GetRGBA(*reinterpret_cast<const Uint32*>(pixel), surface->format, &r, &g, &b, &a);
+	if (!SDL_ReadSurfacePixel(surface.get(), x, y, &r, &g, &b, &a)) {
+		Utils::outMsg("SDL_WriteSurfacePixel", SDL_GetError());
+		return 0;
 	}
+
 	return (Uint32(r) << 24) + (Uint32(g) << 16) + (Uint32(b) << 8) + a;
 }
 

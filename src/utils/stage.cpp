@@ -1,7 +1,5 @@
 #include "stage.h"
 
-#include <SDL2/SDL.h>
-
 #include "config.h"
 #include "gv.h"
 #include "renderer.h"
@@ -26,20 +24,32 @@ SDL_Window *Stage::window = nullptr;
 Group *Stage::screens = nullptr;
 
 
-static SDL_DisplayMode getDisplayMode() {
+SDL_DisplayMode Stage::getDisplayMode() {
 	SDL_DisplayMode res;
-	int index = 0;
+	res.w = 1920;
+	res.h = 1080;
+
+	SDL_DisplayID index = 0;
 	if (Stage::window) {
-		index = SDL_GetWindowDisplayIndex(Stage::window);
-		if (index < 0) {
-			Utils::outMsg("SDL_GetWindowDisplayIndex", SDL_GetError());
-			index = 0;
+		index = SDL_GetDisplayForWindow(Stage::window);
+		if (!index) {
+			Utils::outMsg("SDL_GetDisplayForWindow", SDL_GetError());
+			return res;
 		}
+	}else {
+		const SDL_DisplayID *firstDisplayId = SDL_GetDisplays(nullptr);
+		if (!firstDisplayId) {
+			Utils::outMsg("SDL_GetDisplays", SDL_GetError());
+			return res;
+		}
+		index = *firstDisplayId;
 	}
-	if (SDL_GetDesktopDisplayMode(index, &res)) {
+
+	const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(index);
+	if (!dm) {
 		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
-		res.w = 1920;
-		res.h = 1080;
+	}else {
+		res = *dm;
 	}
 	return res;
 }
@@ -64,9 +74,9 @@ static SDL_Rect getUsableBounds() {
 	if (Stage::fullscreen) {
 		res = {0, 0, Stage::getMaxWidth(), Stage::getMaxHeight()};
 	}else {
-		int index = SDL_GetWindowDisplayIndex(Stage::window);
-		if (index < 0) {
-			Utils::outMsg("SDL_GetWindowDisplayIndex", SDL_GetError());
+		SDL_DisplayID index = SDL_GetDisplayForWindow(Stage::window);
+		if (!index) {
+			Utils::outMsg("SDL_GetDisplayForWindow", SDL_GetError());
 			res = {0, 0, Stage::getMaxWidth(), Stage::getMaxHeight()};
 		}else {
 			int wTop, wLeft, wBottom, wRight;
@@ -140,13 +150,20 @@ void Stage::applyChanges() {
 	if (Stage::fullscreen != stageFullscreen) {//need only change fullscreen mode?
 		Stage::fullscreen = stageFullscreen;
 		Config::set("window_fullscreen", stageFullscreen ? "True" : "False");
-		SDL_SetWindowFullscreen(Stage::window, SDL_WINDOW_FULLSCREEN_DESKTOP * Stage::fullscreen);
+
+		SDL_SetWindowFullscreen(Stage::window, Stage::fullscreen);
+		SDL_SyncWindow(Stage::window);
+
 		if (Stage::fullscreen) {
 			SDL_GetWindowSize(Stage::window, &Stage::width, &Stage::height);
 		}else {
 			Stage::maximized = false;
-			Stage::width = Math::inBounds(String::toInt(Config::get("window_width")), Stage::MIN_WIDTH, Stage::getMaxWidth());
-			Stage::height = Math::inBounds(String::toInt(Config::get("window_height")), Stage::MIN_HEIGHT, Stage::getMaxHeight());
+
+			int w = String::toInt(Config::get("window_width"));
+			int h = String::toInt(Config::get("window_height"));
+
+			Stage::width  = Math::inBounds(w, Stage::MIN_WIDTH,  Stage::getMaxWidth());
+			Stage::height = Math::inBounds(h, Stage::MIN_HEIGHT, Stage::getMaxHeight());
 		}
 
 		auto size = fixWindowSize(Stage::width, Stage::height);
@@ -157,7 +174,8 @@ void Stage::applyChanges() {
 			Stage::fullscreen = false;
 			Config::set("window_fullscreen", "False");
 
-			SDL_SetWindowFullscreen(Stage::window, 0);
+			SDL_SetWindowFullscreen(Stage::window, false);
+			SDL_SyncWindow(Stage::window);
 		}
 		Stage::width = stageWidth;
 		Stage::height = stageHeight;
@@ -166,11 +184,11 @@ void Stage::applyChanges() {
 	Stage::x = 0;
 	Stage::y = 0;
 	if (Stage::maximized || Stage::fullscreen) {
-		int windowW, windowH;
-		SDL_GetWindowSize(Stage::window, &windowW, &windowH);
+		int w, h;
+		SDL_GetWindowSize(Stage::window, &w, &h);
 
-		Stage::x = std::max(0, windowW - Stage::width) / 2;
-		Stage::y = std::max(0, windowH - Stage::height) / 2;
+		Stage::x = std::max(0, w - Stage::width) / 2;
+		Stage::y = std::max(0, h - Stage::height) / 2;
 	}
 
 	if (Stage::screens) {
@@ -185,6 +203,7 @@ void Stage::applyChanges() {
 		Config::set("window_width", std::to_string(Stage::width));
 		Config::set("window_height", std::to_string(Stage::height));
 		SDL_SetWindowSize(Stage::window, Stage::width + Stage::x * 2, Stage::height + Stage::y * 2);
+		SDL_SyncWindow(Stage::window);
 	}
 
 	stageApplied = true;

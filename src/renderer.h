@@ -32,8 +32,10 @@ public:
 	static std::mutex renderDataMutex;
 	static std::vector<RenderStruct> renderData;
 
-	static SDL_RendererInfo info;
+	static std::string driver;
+	static int maxSize;
 	static bool init();
+	static bool useFastOpenGL();
 
 	static void updateSelectedRect();
 

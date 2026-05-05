@@ -91,7 +91,7 @@ public:
 	bool initCodec();
 	void update(bool minUpdate);
 
-	int getVolume() const;
+	float getVolume() const;
 
 	void setFadeIn(double v);
 	void setFadeOut(double v);

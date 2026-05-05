@@ -2,11 +2,10 @@
 #include <fstream>
 #include <thread>
 
-#include <SDL2/SDL.h>
-#undef main //for cancel declare spec. start-func on Windows
+#include <SDL3/SDL.h>
 
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL_image.h>
+#include <SDL3/SDL_ttf.h>
 
 #include "gv.h"
 #include "config.h"
@@ -44,14 +43,10 @@ int setenv(const char *name, const char *value, int replace);
 
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
-	setenv("PYTHONPATH", "../Ren-Engine/py_libs/", 1);
-	setenv("PYTHONHOME", "../Ren-Engine/py_libs/", 1);
-
 	if (newRoot.empty()) {
-		char *charsPathUTF8 = SDL_GetBasePath();
+		const char *charsPathUTF8 = SDL_GetBasePath();
 		if (charsPathUTF8) {
 			newRoot = charsPathUTF8;
-			SDL_free(charsPathUTF8);
 		}else {
 			Utils::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
 		}
@@ -76,6 +71,25 @@ static std::string setDir(std::string newRoot) {
 
 	rootDirectory = newRoot = String::join(parts, "/");
 
+	for (int i = 0; i < 2; ++i) {
+		if (!parts.empty()) {
+			parts.pop_back();
+		}
+	}
+	
+#ifdef __CYGWIN__
+	//C:/path/to/ -> /cygdrive/c/path/to/
+	if (!parts.empty() && String::endsWith(parts[0], ":")) {
+		parts[0].pop_back();
+		parts[0] = "/cygdrive/" + parts[0];
+	}
+#endif
+	
+	std::string pyLibs = String::join(parts, "/") + "/Ren-Engine/py_libs/";
+
+	setenv("PYTHONPATH", pyLibs.c_str(), 1);
+	setenv("PYTHONHOME", pyLibs.c_str(), 1);
+
 	return FileSystem::setCurrentPath(newRoot);
 }
 
@@ -89,21 +103,16 @@ static bool init() {
 
 	Utils::setThreadName(Config::get("window_title"));
 
-	if (SDL_Init(SDL_INIT_VIDEO)) {
+	if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
 		Utils::outMsg("SDL_Init", SDL_GetError());
-		return true;
+		return false;
 	}
 
-	if (TTF_Init()) {
-		Utils::outMsg("TTF_Init", TTF_GetError());
-		return true;
+	if (!TTF_Init()) {
+		Utils::outMsg("TTF_Init", SDL_GetError());
+		return false;
 	}
 
-	SDL_DisplayMode displayMode;
-	if (SDL_GetDesktopDisplayMode(0, &displayMode)) {
-		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
-		return true;
-	}
 
 	Mouse::init();
 
@@ -112,12 +121,17 @@ static bool init() {
 	Game::setMaxFps(fps);
 
 
-	Stage::fullscreen = Config::get("window_fullscreen") == "True";
+	SDL_DisplayMode displayMode = Stage::getDisplayMode();
+	Stage::width  = Math::inBounds(String::toInt(Config::get("window_width")),  Stage::MIN_WIDTH,  displayMode.w);
+	Stage::height = Math::inBounds(String::toInt(Config::get("window_height")), Stage::MIN_HEIGHT, displayMode.h);
 
-	Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
-
-	Stage::width = Math::inBounds(String::toInt(Config::get("window_width")), Stage::MIN_WIDTH, Stage::getMaxWidth());
-	Stage::height = Math::inBounds(String::toInt(Config::get("window_height")), Stage::MIN_HEIGHT, Stage::getMaxHeight());
+	std::string windowTitle = Config::get("window_title");
+	Stage::window = SDL_CreateWindow(windowTitle.c_str(), Stage::width, Stage::height,
+	                                 SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+	if (!Stage::window) {
+		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
+		return false;
+	}
 
 	std::string xStr = Config::get("window_x");
 	std::string yStr = Config::get("window_y");
@@ -132,20 +146,19 @@ static bool init() {
 	}else {
 		y = String::toInt(yStr);
 	}
+	SDL_SetWindowPosition(Stage::window, x, y);
 
-	const std::string windowTitle = Config::get("window_title");
-	Stage::window = SDL_CreateWindow(windowTitle.c_str(), x, y, Stage::width, Stage::height, flags);
-	if (!Stage::window) {
-		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
-		return true;
-	}
+	//after set pos
+	Stage::fullscreen = Config::get("window_fullscreen") == "True";
 	if (Stage::fullscreen) {
-		SDL_SetWindowFullscreen(Stage::window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		SDL_SetWindowFullscreen(Stage::window, true);
+		SDL_SyncWindow(Stage::window);
 	}
+
 	Stage::needResize = true;
 	Stage::changeWindowSize();
 
-	const std::string iconPath = Config::get("window_icon");
+	std::string iconPath = Config::get("window_icon");
 	if (!iconPath.empty() && iconPath != "None") {
 		SurfacePtr icon = ImageCaches::getSurface(iconPath);
 		if (icon) {
@@ -155,22 +168,22 @@ static bool init() {
 
 
 	if (Renderer::init()) {
-		return true;
+		return false;
 	}
 	ImageManipulator::init();
 	AudioManager::init();
 	SyntaxChecker::init();
 	PyUtils::init();
 
-	return false;
+	return true;
 }
 
 
-static SDL_KeyCode numpadKeys[] = {SDLK_END,  SDLK_DOWN,  SDLK_PAGEDOWN, // 1, 2, 3
+static SDL_Keycode numpadKeys[] = {SDLK_END,  SDLK_DOWN,  SDLK_PAGEDOWN, // 1, 2, 3
                                    SDLK_LEFT, SDLK_SPACE, SDLK_RIGHT,    // 4, 5, 6
                                    SDLK_HOME, SDLK_UP,    SDLK_PAGEUP};  // 7, 8, 9
-static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
-	SDL_Keycode key = ks.sym;
+static SDL_Keycode getKeyCode(const SDL_KeyboardEvent &event) {
+	SDL_Keycode key = event.key;
 	if (key == SDLK_MENU) {     //Because SDL converts name "Menu" to keycode SDLK_APPLICATION,
 		key = SDLK_APPLICATION; //but events contains keycode SDLK_MENU
 	}else
@@ -184,7 +197,7 @@ static SDL_Keycode getKeyCode(const SDL_Keysym &ks) {
 		if (key == SDLK_KP_0) {
 			key = SDLK_0;
 		}else {
-			if (ks.mod & KMOD_NUM) {
+			if (event.mod & SDL_KMOD_NUM) {
 				key -= SDLK_KP_1 - SDLK_1;
 			}else {
 				key = numpadKeys[key - SDLK_KP_1];
@@ -244,12 +257,15 @@ static void loop() {
 		}
 
 		for (const SDL_Event &event : tmpEvents) {
-			const int MOUSE_EVENTS = SDL_MOUSEMOTION | SDL_MOUSEBUTTONDOWN | SDL_MOUSEBUTTONUP | SDL_MOUSEWHEEL;
-			if ((event.type & MOUSE_EVENTS) != event.type) continue;
-
-			Mouse::setLastAction();
-			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				BtnRect::disableSelectMode();
+			Uint32 type = event.type;
+			if (
+			    type == SDL_EVENT_MOUSE_MOTION      ||
+			    type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+			    type == SDL_EVENT_MOUSE_BUTTON_UP   ||
+			    type == SDL_EVENT_MOUSE_WHEEL
+			) {
+				Mouse::setLastAction();
+				break;
 			}
 		}
 
@@ -259,63 +275,67 @@ static void loop() {
 		for (const SDL_Event &event : tmpEvents) {
 			if (GV::exit) return;
 
-			if (event.type == SDL_WINDOWEVENT) {
-				int type = event.window.event;
+			Uint32 type = event.type;
 
-				if (type == SDL_WINDOWEVENT_EXPOSED || type == SDL_WINDOWEVENT_FOCUS_GAINED) {
-					Renderer::needToRedraw = true;
-					Stage::minimized = false;
-				}else
-				if (type == SDL_WINDOWEVENT_ENTER) {
-					mouseOut = false;
-				}else
-				if (type == SDL_WINDOWEVENT_LEAVE) {
-					mouseOut = true;
-				}else
 
-				if (type == SDL_WINDOWEVENT_MOVED) {
-					int x, y;
-					SDL_GetWindowPosition(Stage::window, &x, &y);
-					if (x || y) {//if x and y are 0 - then probably it error, ignore
-						int leftBorderSize = 0;
-						int captionHeight = 0;
+			//window events
+
+			if (type == SDL_EVENT_WINDOW_EXPOSED || type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
+				Renderer::needToRedraw = true;
+				Stage::minimized = false;
+			}else
+			if (type == SDL_EVENT_WINDOW_MOUSE_ENTER) {
+				mouseOut = false;
+			}else
+			if (type == SDL_EVENT_WINDOW_MOUSE_LEAVE) {
+				mouseOut = true;
+			}else
+
+			if (type == SDL_EVENT_WINDOW_MOVED) {
+				int x, y;
+				SDL_GetWindowPosition(Stage::window, &x, &y);
+				int leftBorderSize = 0;
+				int captionHeight = 0;
 #ifdef __LINUX__
-						//fix for SDL_GetWindowPosition on linux (x11? wm?)
-						SDL_GetWindowBordersSize(Stage::window, &captionHeight, &leftBorderSize, nullptr, nullptr);
+				//fix for SDL_GetWindowPosition on linux (x11? wm?)
+				SDL_GetWindowBordersSize(Stage::window, &captionHeight, &leftBorderSize, nullptr, nullptr);
 #endif
-						x = std::max(x - leftBorderSize, 1);
-						y = std::max(y - captionHeight, 1);
+				x = std::max(x - leftBorderSize, 1);
+				y = std::max(y - captionHeight, 1);
 
-						Config::set("window_x", std::to_string(x));
-						Config::set("window_y", std::to_string(y));
-					}
-				}else
+				Config::set("window_x", std::to_string(x));
+				Config::set("window_y", std::to_string(y));
+			}else
 
-				if (type == SDL_WINDOWEVENT_MINIMIZED) {
-					Stage::minimized = true;
-				}else
-				if (type == SDL_WINDOWEVENT_MAXIMIZED || type == SDL_WINDOWEVENT_RESTORED) {
-					Renderer::needToRedraw = true;
-					Stage::minimized = false;
-					if (type == SDL_WINDOWEVENT_MAXIMIZED) {
-						Stage::needResize = true;
-						Stage::maximized = true;
-						resizeWithoutMouseDown = true;
-					}else {
-						restoredTime = Utils::getTimer();
-					}
-				}else
-
-				if (type == SDL_WINDOWEVENT_RESIZED || type == SDL_WINDOWEVENT_SIZE_CHANGED) {
-					resizedTime = Utils::getTimer();
-					if (!Stage::fullscreen && !startWindowWidth && !startWindowHeight) {
-						resizeWithoutMouseDown = true;
-					}
+			if (type == SDL_EVENT_WINDOW_MINIMIZED) {
+				Stage::minimized = true;
+			}else
+			if (type == SDL_EVENT_WINDOW_MAXIMIZED || type == SDL_EVENT_WINDOW_RESTORED) {
+				Renderer::needToRedraw = true;
+				Stage::minimized = false;
+				if (type == SDL_EVENT_WINDOW_MAXIMIZED) {
+					Stage::needResize = true;
+					Stage::maximized = true;
+					resizeWithoutMouseDown = true;
+				}else {
+					restoredTime = Utils::getTimer();
 				}
 			}else
 
-			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				bool left = event.button.button == SDL_BUTTON_LEFT;
+			if (type == SDL_EVENT_WINDOW_RESIZED) {
+				resizedTime = Utils::getTimer();
+				if (!Stage::fullscreen && !startWindowWidth && !startWindowHeight) {
+					resizeWithoutMouseDown = true;
+				}
+			}else
+
+
+			//mouse events
+
+			if (type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+				BtnRect::disableSelectMode();
+
+				bool left  = event.button.button == SDL_BUTTON_LEFT;
 				bool right = event.button.button == SDL_BUTTON_RIGHT;
 				if (left || right) {
 					if (left) {
@@ -324,13 +344,16 @@ static void loop() {
 					BtnRect::checkMouseClick(left, false);
 				}
 			}else
-			if (event.type == SDL_MOUSEBUTTONUP) {
+			if (type == SDL_EVENT_MOUSE_BUTTON_UP) {
 				mouseWasUp = true;
 				Mouse::setMouseDown(false);
 			}else
 
-			if (event.type == SDL_KEYDOWN) {
-				SDL_Keycode key = getKeyCode(event.key.keysym);
+
+			// keyboard events
+
+			if (type == SDL_EVENT_KEY_DOWN) {
+				SDL_Keycode key = getKeyCode(event.key);
 				if (Key::getPressed(key)) continue;
 
 				if (key == SDLK_RETURN || key == SDLK_SPACE) {
@@ -372,8 +395,8 @@ static void loop() {
 				}
 			}else
 
-			if (event.type == SDL_KEYUP) {
-				SDL_Keycode key = getKeyCode(event.key.keysym);
+			if (type == SDL_EVENT_KEY_UP) {
+				SDL_Keycode key = getKeyCode(event.key);
 				Key::setUpState(key);
 
 				if (key == SDLK_LSHIFT) {
@@ -496,15 +519,22 @@ static void eventLoop() {
 
 
 		SDL_Event event;
+		Uint32 prevType = 0;
 		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT ||
-			    (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE))
-			{
+			Uint32 type = event.type;
+
+			//<moving> after enter/leave fullscreen is not real moving, skip
+			if (prevType == SDL_EVENT_WINDOW_ENTER_FULLSCREEN || prevType == SDL_EVENT_WINDOW_LEAVE_FULLSCREEN) {
+				if (type == SDL_EVENT_WINDOW_MOVED) continue;
+			}
+
+			if (type == SDL_EVENT_QUIT || type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
 				GV::exit = true;
 				return;
 			}
 
 			events.push_back(event);
+			prevType = type;
 		}
 	}
 }
@@ -523,7 +553,7 @@ static void destroy() {
 		toSleep -= 0.001;
 	}
 
-	SDL_CloseAudio();
+	AudioManager::clear();
 	SDL_Quit();
 }
 
@@ -537,10 +567,9 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 		resources = argv[1];
 	}else { //for more comfort debug
 		std::string path;
-		char *charsPathUTF8 = SDL_GetBasePath();
+		const char *charsPathUTF8 = SDL_GetBasePath();
 		if (charsPathUTF8) {
 			path = charsPathUTF8;
-			SDL_free(charsPathUTF8);
 		}else {
 			std::cout << "argsProcessing, SDL_GetBasePath:\n" <<
 			             SDL_GetError() << '\n';
@@ -607,7 +636,7 @@ int main(int argc, char **argv) {
 
 	{
 		double initStartTime = Utils::getTimer();
-		if (init()) {
+		if (!init()) {
 			return 0;
 		}
 		Logger::logEvent("Ren-Engine (version " + Utils::getVersion() + ") Initing", Utils::getTimer() - initStartTime);
@@ -616,9 +645,8 @@ int main(int argc, char **argv) {
 		Logger::log("OS: " + platform);
 
 		std::string driverInfo =
-		        std::string("Renderer: ") + Renderer::info.name + ", "
-		        "maxTextureWidth = " + std::to_string(Renderer::info.max_texture_width) + ", "
-		        "maxTextureHeight = " + std::to_string(Renderer::info.max_texture_height) + "\n";
+		        "Renderer: " + Renderer::driver + ", "
+		        "maxTextureSize = " + std::to_string(Renderer::maxSize) + "\n";
 		Logger::log(driverInfo);
 
 		Logger::log("Resource Directory: " + rootDirectory);
@@ -628,10 +656,10 @@ int main(int argc, char **argv) {
 	Game::startMod("main_menu");
 
 	{//update mouse pos on start
-		int mouseX, mouseY;
+		float mouseX, mouseY;
 		SDL_GetGlobalMouseState(&mouseX, &mouseY);
 
-		SDL_WarpMouseGlobal(mouseX ^ 1, mouseY);
+		SDL_WarpMouseGlobal(mouseX + 1, mouseY);
 		SDL_WarpMouseGlobal(mouseX, mouseY);
 	}
 

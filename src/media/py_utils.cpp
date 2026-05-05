@@ -53,12 +53,10 @@ static void finalizeInterpreterImpl() {
 	}
 	constObjects.clear();
 
-#if PY_MINOR_VERSION >= 12
 	for (auto &i : compiledObjects) {
 		Py_DECREF(i.second);
 	}
 	compiledObjects.clear();
-#endif
 
 	clearPyWrappers();
 	Mods::clearList();

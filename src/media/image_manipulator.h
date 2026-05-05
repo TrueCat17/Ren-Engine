@@ -1,7 +1,7 @@
 #ifndef IMAGE_MANIPULATOR_H
 #define IMAGE_MANIPULATOR_H
 
-#include <SDL2/SDL_endian.h>
+#include <SDL3/SDL_endian.h>
 
 #include "utils/image_typedefs.h"
 
@@ -25,7 +25,7 @@ public:
 	static void save(const std::string &imageStr, const std::string &path, const std::string &width, const std::string &height);
 	static void saveSurface(const SurfacePtr &image, std::string path, const std::string &width, const std::string &height, bool now = false);
 
-	static SurfacePtr getNewNotClear(int w, int h, Uint32 format = SDL_PIXELFORMAT_UNKNOWN);
+	static SurfacePtr getNewNotClear(int w, int h, SDL_PixelFormat format = SDL_PIXELFORMAT_UNKNOWN);
 
 	static void loadImage(const std::string &desc);
 	static SurfacePtr getImage(std::string desc, bool formatRGBA32 = true);

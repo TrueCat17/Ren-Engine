@@ -5,7 +5,7 @@
 #include <thread>
 #include <vector>
 
-#include <SDL2/SDL_audio.h>
+#include <SDL3/SDL_audio.h>
 
 #define ALLOW_INCLUDE_AUDIO_CHANNEL_H
 #include "media/audio_channel.h"
@@ -25,7 +25,6 @@ std::map<std::string, double> AudioManager::mixerVolumes;
 
 
 static std::vector<Channel*> channels;
-static bool opened = false;
 
 
 static Channel* findChannelWithoutError(const std::string &name) {
@@ -48,10 +47,17 @@ static Channel* findChannel(const std::string &name, const std::string &from, co
                    "Line " + std::to_string(numLine))
 
 
-static void fillAudio(void *, Uint8 *stream, int globalLen) {
+static SDL_AudioSpec spec = { SDL_AUDIO_S16, 2, 48000 };
+static SDL_AudioStream *stream = nullptr;
+static std::vector<Uint8> buffer;
+
+static void fillAudio(void *, SDL_AudioStream *stream, int globalLen, int) {
+	if (globalLen <= 0) return;
+
 	std::lock_guard g(AudioManager::mutex);
 
-	SDL_memset(stream, 0, size_t(globalLen));
+	buffer.resize(size_t(globalLen));
+	SDL_memset(buffer.data(), 0, size_t(globalLen));
 
 	for (Channel *channel : channels) {
 		if (!channel->audioPos || channel->audioLen <= 0) continue;
@@ -60,34 +66,29 @@ static void fillAudio(void *, Uint8 *stream, int globalLen) {
 		Uint32 len = std::min<Uint32>(Uint32(globalLen), channel->audioLen);
 		channel->addToCurTime(len);
 
-		int volume = channel->getVolume();
+		float volume = channel->getVolume();
 		if (volume > 0) {
-			SDL_MixAudio(stream, channel->audioPos, len, volume);
+			SDL_MixAudio(buffer.data(), channel->audioPos, SDL_AUDIO_S16, len, volume);
 		}
 		channel->audioPos += len;
 		channel->audioLen -= len;
 	}
+
+	SDL_PutAudioStreamDataNoCopy(stream, buffer.data(), globalLen, nullptr, nullptr);
 }
 static void startAudio() {
-	static SDL_AudioSpec wantedSpec;
-	wantedSpec.freq = 44100;
-	wantedSpec.format = AUDIO_S16SYS;
-	wantedSpec.channels = 2;
-	wantedSpec.silence = 0;
-	wantedSpec.samples = 4096;
-	wantedSpec.callback = fillAudio;
-
-	if (SDL_OpenAudio(&wantedSpec, nullptr)) {
-		Utils::outMsg("SDL_OpenAudio", SDL_GetError());
+	stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, fillAudio, nullptr);
+	if (!stream) {
+		Utils::outMsg("SDL_OpenAudioDeviceStream", SDL_GetError());
 		return;
 	}
-	SDL_PauseAudio(0);
-	opened = true;
+	SDL_ResumeAudioStreamDevice(stream);
 }
 static void stopAudio() {
-	if (opened) {
-		SDL_CloseAudio();
-		opened = false;
+	SDL_CloseAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK);
+	if (stream) {
+		SDL_DestroyAudioStream(stream);
+		stream = nullptr;
 	}
 }
 
@@ -332,7 +333,7 @@ void AudioManager::play(const std::string &channelName, std::string path,
 	channel->clearQueue(fadeOut);
 	channel->audios.push_back(audio);
 
-	if (!opened) {
+	if (!stream) {
 		startAudio();
 	}
 	channel->update(true);
@@ -356,7 +357,7 @@ void AudioManager::queue(const std::string &channelName, std::string path,
 	Audio *audio = new Audio(path, fadeIn, volume, place, fileName, numLine);
 	channel->audios.push_back(audio);
 
-	if (!opened) {
+	if (!stream) {
 		startAudio();
 	}
 	channel->update(true);
@@ -707,7 +708,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 	}
 	std::getline(is, tmp);
 
-	if (!opened) {
+	if (!stream) {
 		startAudio();
 	}
 }

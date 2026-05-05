@@ -1,6 +1,7 @@
 #include "path_finder.h"
 
 #include <algorithm>
+#include <cfloat>
 #include <vector>
 #include <map>
 #include <mutex>
@@ -19,25 +20,22 @@
 //only for debug
 [[maybe_unused]]
 static void saveMap(std::vector<bool> map, int w, int h, const std::string &name, int scale) {
-	Uint32 resFormat = SDL_PIXELFORMAT_INDEX8;
-	int resPitch = w * int(SDL_BITSPERPIXEL(resFormat)) / 8;
-	resPitch = (resPitch + 3) & ~3;//align to 4
-	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
-
-	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(
-	            resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat);
+	SurfacePtr res = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_INDEX8);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
-	res->flags &= Uint32(~SDL_PREALLOC);
 
-	SDL_Palette *palette = res->format->palette;
+	SDL_Palette *palette = SDL_CreateSurfacePalette(res.get());
 	palette->ncolors = 2;
 	palette->colors[0] = {0, 0, 0, 0};
 	palette->colors[1] = {0, 0, 0, 255};
 
+	Uint8 *pixels = (Uint8*)res->pixels;
+
 	for (int y = 0; y < h; ++y) {
+		int line = y * res->pitch;
+
 		for (int x = 0; x < w; ++x) {
 			bool free = map[size_t(y * w + x)];
-			resPixels[y * resPitch + x] = free;
+			pixels[line + x] = free;
 		}
 	}
 
@@ -172,13 +170,15 @@ static void bitmapMake(const SurfacePtr &surface) {
 	size_t size = widthBitmapObject * heightBitmapObject;
 	bitmapObject.reserve(size);
 
-	if (surface->format->BytesPerPixel == 3) {
+	int bpp = SDL_BYTESPERPIXEL(surface->format);
+
+	if (bpp == 3) {
 		bitmapObject.assign(size, true);
 	}else {
 		bitmapObject.assign(size, false);
 		const Uint8 *pixels = (const Uint8*)surface->pixels;
 
-		if (surface->format->BytesPerPixel == 4) {
+		if (bpp == 4) {
 			for (size_t y = 0; y < heightBitmapObject; ++y) {
 				const Uint8 *line = pixels + y * size_t(surface->pitch);
 				const size_t lineBitmap = y * widthBitmapObject;
@@ -190,11 +190,12 @@ static void bitmapMake(const SurfacePtr &surface) {
 				}
 			}
 		}else {
-			SDL_Color *colors = surface->format->palette->colors;
+			SDL_Palette *palette = SDL_GetSurfacePalette(surface.get());
+			SDL_Color *colors = palette->colors;
 
-			if (SDL_HasColorKey(surface.get())) {
+			if (SDL_SurfaceHasColorKey(surface.get())) {
 				Uint32 key;
-				SDL_GetColorKey(surface.get(), &key);
+				SDL_GetSurfaceColorKey(surface.get(), &key);
 
 				SDL_Color &color = colors[key];
 				color.r = color.g = color.b = color.a = 0;

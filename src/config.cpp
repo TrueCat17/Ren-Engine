@@ -1,10 +1,7 @@
 #include "config.h"
 
-#include <cstring>
 #include <fstream>
 #include <vector>
-
-#include <SDL2/SDL_hints.h>
 
 #include "utils/file_system.h"
 #include "utils/string.h"
@@ -224,6 +221,7 @@ void Config::save() {
 }
 
 
+static int textureScaleQuality = 0;
 void Config::setDefaultScaleQuality() {
 	std::string value = Config::get("scale_quality");
 	Config::setScaleQuality(value);
@@ -235,12 +233,12 @@ bool Config::setScaleQuality(std::string value) {
 		value = "0";
 		ok = false;
 	}
-	if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, value.c_str()) == SDL_FALSE) {
-		Utils::outMsg("SDL_SetHint", "Failed to set scale quality");
-		ok = false;
-	}
+	textureScaleQuality = value[0] - '0';
 	return ok;
 }
-std::string Config::getScaleQuality() {
-	return SDL_GetHint(SDL_HINT_RENDER_SCALE_QUALITY);
+SDL_ScaleMode Config::getScaleQuality() {
+	return SDL_ScaleMode(textureScaleQuality);
+}
+std::string Config::getScaleQualityAsStr() {
+	return std::to_string(textureScaleQuality);
 }

@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <string>
+#include <SDL3/SDL_surface.h>
 
 class Config {
 public:
@@ -12,7 +13,8 @@ public:
 
 	static void setDefaultScaleQuality();
 	static bool setScaleQuality(std::string value);
-	static std::string getScaleQuality();
+	static std::string getScaleQualityAsStr();
+	static SDL_ScaleMode getScaleQuality();
 };
 
 #endif // CONFIG_H

@@ -1,17 +1,9 @@
 #include "string.h"
 
+#include <cmath>
+
 #include "utils/utils.h"
 
-
-std::string String::repeat(std::string_view str, size_t count) {
-	std::string res;
-	res.reserve(str.size() * count);
-
-	for (size_t i = 0; i < count; ++i) {
-		res += str;
-	}
-	return res;
-}
 
 std::vector<std::string> String::split(const std::string &str, std::string_view separator) {
 	size_t prev = 0;
@@ -195,20 +187,11 @@ size_t String::firstNotInQuotes(std::string_view str, char c) {
 }
 
 bool String::startsWith(std::string_view str, std::string_view substr) {
-	if (str.size() < substr.size()) return false;
-	
-	if (str.size() > substr.size()) {
-		str = str.substr(0, substr.size());
-	}
-	return str == substr;
+	return str.substr(0, substr.size()) == substr;
 }
 bool String::endsWith(std::string_view str, std::string_view substr) {
 	if (str.size() < substr.size()) return false;
-
-	if (str.size() > substr.size()) {
-		str = str.substr(str.size() - substr.size());
-	}
-	return str == substr;
+	return str.substr(str.size() - substr.size()) == substr;
 }
 
 std::string_view String::stripView(std::string_view s, char space) {

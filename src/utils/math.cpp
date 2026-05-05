@@ -28,22 +28,3 @@ float Math::getSin(int i) {
 
 	return sins[i < 90 ? i : 180 - i] * k;
 }
-
-float Math::getCos(int i) {
-	if (!i) return 1;
-
-	i = (i + 90) % 360;
-	if (i < 0) {
-		i += 360;
-	}
-
-	float k;
-	if (i < 180) {
-		k = 1;
-	}else {
-		k = -1;
-		i -= 180;
-	}
-
-	return sins[i < 90 ? i : 180 - i] * k;
-}

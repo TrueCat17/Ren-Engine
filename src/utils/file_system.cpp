@@ -5,7 +5,7 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "utils/string.h"
 #include "utils/utils.h"

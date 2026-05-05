@@ -6,8 +6,6 @@
 
 class String {
 public:
-	static std::string repeat(std::string_view str, size_t count);
-
 	static int toInt(std::string_view str);
 	static double toDouble(std::string_view str);
 

@@ -10,6 +10,7 @@ typedef struct SDL_Renderer SDL_Renderer;
 
 class ImageCaches {
 public:
+	static bool surfaceIsOpaque(const SurfacePtr &surface);
 	static SurfacePtr convertToRGBA32(const SurfacePtr &surface);
 
 	static SurfacePtr getThereIsSurfaceOrNull(const std::string &path, bool formatRGBA32 = true);

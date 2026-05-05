@@ -4,10 +4,11 @@
 #include <map>
 #include <vector>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_image.h>
 
 #include "config.h"
+#include "renderer.h"
 
 #include "gui/display_object.h"
 #include "media/image_manipulator.h"
@@ -19,14 +20,31 @@
 
 static std::vector<std::string> supportedExts = { "png", "jpg", "jpeg", "webp" };
 
-static std::map<SurfacePtr, std::pair<double, TexturePtr>> textures;
+struct TextureWithInfo {
+	TexturePtr texture;
+	float time;
+	int size;
+};
+static std::map<SurfacePtr, TextureWithInfo> textures;
 
 static std::recursive_mutex surfaceMutex;
 static std::map<std::string, std::pair<double, SurfacePtr>> surfaces;
 
 
+bool ImageCaches::surfaceIsOpaque(const SurfacePtr &surface) {
+	SDL_Palette *palette = SDL_GetSurfacePalette(surface.get());
+	if (palette) {
+		for (int i = 0; i < palette->ncolors; ++i) {
+			if (palette->colors[i].a != 255) return false;
+		}
+		return true;
+	}
+	return !SDL_ISPIXELFORMAT_ALPHA(surface->format);
+}
+
+
 SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
-	Uint32 format = surface->format->format;
+	SDL_PixelFormat format = surface->format;
 	if (format == SDL_PIXELFORMAT_RGBA32) return surface;
 
 	const int w = surface->w;
@@ -38,7 +56,7 @@ SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
 	const int newPitch = newSurface->pitch;
 	Uint8 *newPixels = (Uint8*)newSurface->pixels;
 
-	const SDL_Palette *palette = surface->format->palette;
+	const SDL_Palette *palette = SDL_GetSurfacePalette(surface.get());
 	if (palette) {
 		for (int y = 0; y < h; ++y) {
 			const Uint8 *src = pixels + y * pitch;
@@ -85,7 +103,7 @@ SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
 			}
 		}
 	}else {
-		bool hasColorKey = SDL_HasColorKey(surface.get()) == SDL_TRUE;
+		bool hasColorKey = SDL_SurfaceHasColorKey(surface.get());
 		if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
 			for (int y = 0; y < surface->h; ++y) {
 				const Uint8 *src = pixels + y * pitch;
@@ -128,7 +146,7 @@ SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
 			}
 		}else {
 			if (hasColorKey) {
-				SDL_FillRect(newSurface.get(), nullptr, 0);
+				SDL_FillSurfaceRect(newSurface.get(), nullptr, 0);
 			}
 			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
 		}
@@ -146,56 +164,36 @@ static void trimTexturesCache(const SurfacePtr &last) {
 	 * After trim add new texture
 	 */
 
-	const size_t MAX_SIZE = size_t(String::toInt(Config::get("max_size_textures_cache"))) * (1 << 20);//in MegaBytes
-	size_t cacheSize = size_t(last->h * last->pitch);
+	const int MAX_SIZE = String::toInt(Config::get("max_size_textures_cache")) * (1 << 20);//in MegaBytes
+	int cacheSize = last->h * last->pitch;
 
-	using Iter = std::map<SurfacePtr, std::pair<double, TexturePtr>>::const_iterator;
-
-	for (Iter it = textures.cbegin(); it != textures.cend(); ++it) {
-		const SurfacePtr &surface = it->first;
-		cacheSize += size_t(surface->h * surface->pitch);
+	for (const auto &[surface, textureWithInfo] : textures) {
+		cacheSize += textureWithInfo.size;
 	}
 	if (cacheSize < MAX_SIZE) return;
 
 
-	class KV {
-	private:
-		Iter iter;
-
-	public:
-		KV(const Iter &iter):
-			iter(iter)
-		{}
-
-		const SurfacePtr& surface() const { return iter->first; }
-		double time() const { return iter->second.first; }
-		const TexturePtr& texture() const { return iter->second.second; }
-	};
-
 	std::vector<SurfacePtr> toDelete;
-	std::vector<KV> candidatesToDelete;
 
-	for (Iter it = textures.cbegin(); it != textures.cend(); ++it) {
-		KV kv(it);
-		const SurfacePtr &surface = kv.surface();
+	using Pair = std::pair<SurfacePtr, TextureWithInfo>;
+	std::vector<Pair> candidatesToDelete;
 
+	for (const auto &[surface, textureWithInfo] : textures) {
 		if (surface.use_count() == 1) {
-			cacheSize -= size_t(surface->h * surface->pitch);
+			cacheSize -= textureWithInfo.size;
 			toDelete.push_back(surface);
 		}else
-		if (kv.texture().use_count() == 1) {//1 - value in textures
-			candidatesToDelete.push_back(kv);
+		if (textureWithInfo.texture.use_count() == 1) {//1 - value in textures
+			candidatesToDelete.push_back(std::make_pair(surface, textureWithInfo));
 		}
 	}
 
 	if (cacheSize > MAX_SIZE) {
 		std::sort(candidatesToDelete.begin(), candidatesToDelete.end(),
-				  [](const KV &a, const KV &b) { return a.time() < b.time(); });
+		          [](const Pair &a, const Pair &b) { return a.second.time < b.second.time; });
 
-		for (const KV &kv : candidatesToDelete) {
-			const SurfacePtr &surface = kv.surface();
-
-			cacheSize -= size_t(surface->h * surface->pitch);
+		for (const auto &[surface, textureWithInfo] : candidatesToDelete) {
+			cacheSize -= textureWithInfo.size;
 			toDelete.push_back(surface);
 
 			if (cacheSize < MAX_SIZE) break;
@@ -212,15 +210,31 @@ TexturePtr ImageCaches::getTexture(SDL_Renderer *renderer, const SurfacePtr &sur
 
 	auto it = textures.find(surface); 
 	if (it != textures.end()) {
-		it->second.first = Utils::getTimer();
-		return it->second.second;
+		it->second.time = float(Utils::getTimer());
+		return it->second.texture;
 	}
 
-	TexturePtr texture = SDL_CreateTextureFromSurface(renderer, surface.get());
+	//software renderer draws palette texture slow, convert it
+	//"fastOpenGL" renderer does not know how to work with palettes, convert it too
+	SurfacePtr src;
+	if (SDL_GetSurfacePalette(surface.get())) {
+		if (Renderer::driver == "software" || Renderer::useFastOpenGL()) {
+			SDL_PixelFormat format = surfaceIsOpaque(surface) ? SDL_PIXELFORMAT_RGB24 : SDL_PIXELFORMAT_RGBA32;
+			src = SDL_ConvertSurface(surface.get(), format);
+		}
+	}
+	if (!src) {
+		src = surface;
+	}
+
+	TexturePtr texture = SDL_CreateTextureFromSurface(renderer, src.get());
 	if (texture) {
-		trimTexturesCache(surface);
-		textures[surface] = std::make_pair(Utils::getTimer(), texture);
+		trimTexturesCache(src);
+		textures[surface] = TextureWithInfo{ texture, float(Utils::getTimer()), src->h * src->pitch };
+
 		SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_BLEND);
+		SDL_SetTextureScaleMode(texture.get(), Config::getScaleQuality());
+
 		return texture;
 	}
 
@@ -327,7 +341,7 @@ SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path, bool fo
 
 	if (formatRGBA32) {
 		SurfacePtr res = getThereIsSurfaceOrNull(path, false);
-		if (res && res->format->format != SDL_PIXELFORMAT_RGBA32) {
+		if (res && res->format != SDL_PIXELFORMAT_RGBA32) {
 			res = convertToRGBA32(res);
 			setSurface(path, res);
 		}
@@ -345,9 +359,9 @@ SurfacePtr ImageCaches::getThereIsSurfaceOrNull(const std::string &path, bool fo
 
 
 static bool unusualFormat(const SurfacePtr &surface) {
-	if (surface->format->palette) return false;
-	if (surface->format->format == SDL_PIXELFORMAT_RGBA32) return false;
-	if (surface->format->format == SDL_PIXELFORMAT_RGB24 && SDL_HasColorKey(surface.get()) == SDL_FALSE) return false;
+	if (SDL_GetSurfacePalette(surface.get())) return false;
+	if (surface->format == SDL_PIXELFORMAT_RGBA32) return false;
+	if (surface->format == SDL_PIXELFORMAT_RGB24 && !SDL_SurfaceHasColorKey(surface.get())) return false;
 
 	return true;
 }
@@ -358,7 +372,7 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 	SurfacePtr res;
 	if (formatRGBA32) {
 		res = getSurface(path, false);
-		if (res && res->format->format != SDL_PIXELFORMAT_RGBA32) {
+		if (res && res->format != SDL_PIXELFORMAT_RGBA32) {
 			res = convertToRGBA32(res);
 			setSurface(path, res);
 		}
@@ -382,13 +396,13 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 	}
 
 	if (String::startsWith(realPath, "images/bg/black.")) {
-		res = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_RGBA32);
+		res = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA32);
 		if (!res) {
-			Utils::outMsg("SDL_CreateRGBSurfaceWithFormat", SDL_GetError());
+			Utils::outMsg("SDL_CreateSurface", SDL_GetError());
 			return nullptr;
 		}
-		if (SDL_FillRect(res.get(), nullptr, SDL_MapRGBA(res->format, 0, 0, 0, 255))) {
-			Utils::outMsg("SDL_FillRect", SDL_GetError());
+		if (!SDL_WriteSurfacePixel(res.get(), 0, 0, 0, 0, 0, 255)) {
+			Utils::outMsg("SDL_WriteSurfacePixel", SDL_GetError());
 			return nullptr;
 		}
 
@@ -421,15 +435,15 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 
 	res = IMG_Load(realPath.c_str());
 	if (!res) {
-		Utils::outMsg("IMG_Load", IMG_GetError());
+		Utils::outMsg("IMG_Load", SDL_GetError());
 		return nullptr;
 	}
 
-	SDL_Palette *palette = res->format->palette;
+	SDL_Palette *palette = SDL_GetSurfacePalette(res.get());
 	if (palette) {
-		if (SDL_HasColorKey(res.get())) {
+		if (SDL_SurfaceHasColorKey(res.get())) {
 			Uint32 colorKey;
-			SDL_GetColorKey(res.get(), &colorKey);
+			SDL_GetSurfaceColorKey(res.get(), &colorKey);
 
 			SDL_Color &color = palette->colors[colorKey];
 			color.r = color.g = color.b = color.a = 0;

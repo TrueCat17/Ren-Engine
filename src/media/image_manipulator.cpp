@@ -10,8 +10,9 @@
 #include <cmath>
 #include <cstring>
 
-#include <SDL2/SDL_image.h>
+#include <SDL3/SDL_image.h>
 
+#include "config.h"
 #include "gv.h"
 #include "renderer.h"
 
@@ -38,7 +39,8 @@ static inline bool smallImage(int w, int h) {
 }
 static SurfacePtr getNotPaletteImage(const std::string &path) {
 	SurfacePtr res = ImageManipulator::getImage(path, false);
-	if (res && res->format->BitsPerPixel < 24) {
+
+	if (res && SDL_BITSPERPIXEL(res->format) < 24) {
 		res = ImageManipulator::getImage(path);
 	}
 	return res;
@@ -83,7 +85,7 @@ void ImageManipulator::init() {
 }
 
 
-SurfacePtr ImageManipulator::getNewNotClear(int w, int h, Uint32 format) {
+SurfacePtr ImageManipulator::getNewNotClear(int w, int h, SDL_PixelFormat format) {
 	if (w <= 0 || h <= 0) return nullptr;
 
 	if (format == SDL_PIXELFORMAT_UNKNOWN || SDL_BITSPERPIXEL(format) < 24) {
@@ -92,12 +94,14 @@ SurfacePtr ImageManipulator::getNewNotClear(int w, int h, Uint32 format) {
 
 	int pitch = w * int(SDL_BITSPERPIXEL(format)) / 8;
 	pitch = (pitch + 3) & ~3;//align to 4
-	void *pixels = SDL_malloc(size_t(h * pitch));
+	void *pixels = SDL_aligned_alloc(SDL_GetSIMDAlignment(), size_t(h * pitch));
 
-	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, SDL_BITSPERPIXEL(format), pitch, format);
+	SurfacePtr res = SDL_CreateSurfaceFrom(w, h, format, pixels, pitch);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 
-	res->flags &= Uint32(~SDL_PREALLOC);
+	res->flags |= SDL_SURFACE_SIMD_ALIGNED;
+	res->flags &= Uint32(~SDL_SURFACE_PREALLOCATED);
+
 	return res;
 }
 
@@ -208,7 +212,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 	}
 
 	ImageCaches::setSurface(desc, res);
-	if (res && formatRGBA32 && res->format->format != SDL_PIXELFORMAT_RGBA32) {
+	if (res && formatRGBA32 && res->format != SDL_PIXELFORMAT_RGBA32) {
 		res = ImageCaches::getSurface(desc, true);
 	}
 	return res;
@@ -242,9 +246,9 @@ static SurfacePtr scale(const std::vector<std::string> &args) {
 		return img;
 	}
 
-	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format->format);
-	if (SDL_BlitScaled(img.get(), nullptr, res.get(), nullptr)) {
-		Utils::outMsg("SDL_BlitScaled", SDL_GetError());
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format);
+	if (!SDL_BlitSurfaceScaled(img.get(), nullptr, res.get(), nullptr, Config::getScaleQuality())) {
+		Utils::outMsg("SDL_BlitSurfaceScaled", SDL_GetError());
 	}
 	return res;
 }
@@ -270,9 +274,9 @@ static SurfacePtr factorScale(const std::vector<std::string> &args) {
 	int w = std::max(int(img->w * width), 1);
 	int h = std::max(int(img->h * height), 1);
 
-	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format->format);
-	if (SDL_BlitScaled(img.get(), nullptr, res.get(), nullptr)) {
-		Utils::outMsg("SDL_BlitScaled", SDL_GetError());
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format);
+	if (!SDL_BlitSurfaceScaled(img.get(), nullptr, res.get(), nullptr, Config::getScaleQuality())) {
+		Utils::outMsg("SDL_BlitSurfaceScaled", SDL_GetError());
 	}
 	return res;
 }
@@ -293,7 +297,7 @@ static SurfacePtr rendererScale(const std::vector<std::string> &args) {
 		return img;
 	}
 
-	if (w > Renderer::info.max_texture_width || h > Renderer::info.max_texture_height) {
+	if (w > Renderer::maxSize || h > Renderer::maxSize) {
 		return scale(args);
 	}
 
@@ -330,8 +334,8 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 
 	SDL_Rect imgRect = {x, y, w, h};
 
-	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format->format);
-	if (SDL_BlitSurface(img.get(), &imgRect, res.get(), nullptr)) {
+	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format);
+	if (!SDL_BlitSurface(img.get(), &imgRect, res.get(), nullptr)) {
 		Utils::outMsg("SDL_BlitSurface", SDL_GetError());
 	}
 
@@ -451,7 +455,7 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		//image - center
 		SDL_Rect from = {xFrom, yFrom, w, h};
 		SDL_Rect to = {xOn, yOn, w, h};
-		SDL_BlitScaled(firstImg.get(), &from, res.get(), &to);
+		SDL_BlitSurfaceScaled(firstImg.get(), &from, res.get(), &to, Config::getScaleQuality());
 
 		for (int y = yOn; y < yOn + h; ++y) {
 			if (left > 0) {
@@ -808,10 +812,10 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 		return img;
 	}
 
-	SDL_RendererFlip flip = SDL_FLIP_NONE;
+	SDL_FlipMode flip = SDL_FLIP_NONE;
 	if (zoom < 0) {
 		zoom = -zoom;
-		flip = SDL_RendererFlip(SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL);
+		flip = SDL_FlipMode(SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL);
 	}
 
 	const int w = std::max(int(img->w * zoom), 1);
@@ -824,7 +828,7 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 
 	const SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
 
-	SurfacePtr res = SDL_CreateRGBSurfaceWithFormat(0, resW, resH, 32, SDL_PIXELFORMAT_RGBA32);
+	SurfacePtr res = SDL_CreateSurface(resW, resH, SDL_PIXELFORMAT_RGBA32);
 
 	SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
 	ScopeExit se([&]() { SDL_DestroyRenderer(renderer); });
@@ -840,8 +844,11 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 		return nullptr;
 	}
 
-	if (SDL_RenderCopyEx(renderer, texture.get(), nullptr, &dstRect, angle, nullptr, flip)) {
-		Utils::outMsg("ImageManipulator::rotozoom, SDL_RenderCopyEx", SDL_GetError());
+	SDL_FRect dstFRect;
+	SDL_RectToFRect(&dstRect, &dstFRect);
+
+	if (!SDL_RenderTextureRotated(renderer, texture.get(), nullptr, &dstFRect, angle, nullptr, flip)) {
+		Utils::outMsg("ImageManipulator::rotozoom, SDL_RenderTextureRotated", SDL_GetError());
 		return nullptr;
 	}
 
@@ -1446,10 +1453,10 @@ static void imageToPalette(std::map<Uint32, Uint32> &colors, int w, int h, const
 }
 
 static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
-	if (img->format->BytesPerPixel == 1) return img;//optimized
+	if (SDL_BYTESPERPIXEL(img->format) == 1) return img;//optimized
 
 	bool isRGBA = false;
-	Uint32 format = img->format->format;
+	Uint32 format = img->format;
 	if (format == SDL_PIXELFORMAT_RGBA32) {
 		isRGBA = true;
 	}else {
@@ -1463,15 +1470,14 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	const int imgPitch = img->pitch;
 	const Uint8 *imgPixels = (const Uint8*)img->pixels;
 
+	int resPitch = (w + 3) & ~3;//align to 4
+	Uint8 *resPixels = (Uint8*)SDL_aligned_alloc(SDL_GetSIMDAlignment(), size_t(h * resPitch));
 
-	Uint32 resFormat = SDL_PIXELFORMAT_INDEX8;
-	int resPitch = w * int(SDL_BITSPERPIXEL(resFormat)) / 8;
-	resPitch = (resPitch + 3) & ~3;//align to 4
-	Uint8 *resPixels = (Uint8*)SDL_malloc(size_t(h * resPitch));
-
-	SurfacePtr res = SDL_CreateRGBSurfaceWithFormatFrom(resPixels, w, h, SDL_BITSPERPIXEL(resFormat), resPitch, resFormat);
+	SurfacePtr res = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_INDEX8, resPixels, resPitch);
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
-	res->flags &= Uint32(~SDL_PREALLOC);
+
+	res->flags |= SDL_SURFACE_SIMD_ALIGNED;
+	res->flags &= Uint32(~SDL_SURFACE_PREALLOCATED);
 
 
 	std::map<Uint32, Uint32> colors;
@@ -1482,12 +1488,12 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	}
 	if (colors.size() <= 256) {
 		Uint32 colorKey;
-		bool hasColorKey = (format == SDL_PIXELFORMAT_RGB24) && SDL_HasColorKey(img.get());
+		bool hasColorKey = (format == SDL_PIXELFORMAT_RGB24) && SDL_SurfaceHasColorKey(img.get());
 		if (hasColorKey) {
-			SDL_GetColorKey(img.get(), &colorKey);
+			SDL_GetSurfaceColorKey(img.get(), &colorKey);
 		}
 
-		SDL_Palette *palette = res->format->palette;
+		SDL_Palette *palette = SDL_CreateSurfacePalette(res.get());
 		palette->ncolors = int(colors.size());
 		for (const auto &pair : colors) {
 			Uint32 color = pair.first;
@@ -1575,19 +1581,19 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, std::string path, cons
 	SurfacePtr resizedImg;
 	if (w != img->w || h != img->h) {
 		resizedImg = getNewNotClear(w, h);
-		SurfacePtr imgNotPaletted = img->format->BitsPerPixel < 24 ? ImageCaches::convertToRGBA32(img) : img;
-		SDL_BlitScaled(imgNotPaletted.get(), nullptr, resizedImg.get(), nullptr);
+		SurfacePtr imgNotPaletted = SDL_BITSPERPIXEL(img->format) < 24 ? ImageCaches::convertToRGBA32(img) : img;
+		SDL_BlitSurfaceScaled(imgNotPaletted.get(), nullptr, resizedImg.get(), nullptr, SDL_SCALEMODE_LINEAR);
 	}else {
-		resizedImg = (isJPG && img->format->BitsPerPixel < 24) ? ImageCaches::convertToRGBA32(img) : img;
+		resizedImg = (isJPG && SDL_BITSPERPIXEL(img->format) < 24) ? ImageCaches::convertToRGBA32(img) : img;
 	}
 
 	if (isJPG) {
 		SurfacePtr imgToSave;
-		if (resizedImg->format->BitsPerPixel == 24) { //RGB24
+		if (SDL_BITSPERPIXEL(resizedImg->format) == 24) { //RGB24
 			imgToSave = resizedImg;
-		}else {                                       //RGBA32
+		}else {                                           //RGBA32
 			imgToSave = getNewNotClear(w, h);
-			SDL_FillRect(imgToSave.get(), nullptr, Uint32(0xFF << Ashift));//black
+			SDL_FillSurfaceRect(imgToSave.get(), nullptr, Uint32(0xFF << Ashift));//black
 
 			SDL_BlendMode old;
 			SDL_GetSurfaceBlendMode(resizedImg.get(), &old);
@@ -1595,13 +1601,13 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, std::string path, cons
 			SDL_BlitSurface(resizedImg.get(), nullptr, imgToSave.get(), nullptr);
 			SDL_SetSurfaceBlendMode(resizedImg.get(), old);
 		}
-		if (IMG_SaveJPG(imgToSave.get(), tmpPath.c_str(), quality)) {
-			Utils::outMsg("ImageManipulator::saveSurface", IMG_GetError());
+		if (!IMG_SaveJPG(imgToSave.get(), tmpPath.c_str(), quality)) {
+			Utils::outMsg("ImageManipulator::saveSurface", SDL_GetError());
 		}
 	}else {
 		SurfacePtr imgToSave = optimizeSurfaceFormat(resizedImg);
-		if (IMG_SavePNG(imgToSave.get(), tmpPath.c_str())) {
-			Utils::outMsg("ImageManipulator::saveSurface", IMG_GetError());
+		if (!IMG_SavePNG(imgToSave.get(), tmpPath.c_str())) {
+			Utils::outMsg("ImageManipulator::saveSurface", SDL_GetError());
 		}
 	}
 

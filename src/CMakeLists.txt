@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 project(Ren-Engine)
 
@@ -77,28 +77,29 @@ link_libraries(
 	pthread
 	stdc++fs
 	avformat avcodec avutil swresample
-	SDL2_image SDL2_ttf
-	jpeg png16 webp
+	SDL3_image SDL3_ttf
+	SDL3
+	jpeg
+	webp webpdemux webpmux sharpyuv
 	freetype
 	brotlidec brotlicommon
-	python3.11
-#	Hacl_Hash_SHA2.a # for python (in v3.12) module <_sha2>
+	python3.14
+	Hacl_HMAC
 	z # z after python, because python's zlibmodule uses libz
 )
 
 if (PLATFORM STREQUAL "win32")
-	set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -mwindows -static -static-libstdc++ -Wl,--enable-stdcall-fixup")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -static -static-libstdc++ -Wl,--enable-stdcall-fixup")
 	
 	link_directories("/cygdrive/c/Windows/System32/")
 	link_libraries(
 		:opengl32.dll
-		:SDL2.dll
+		ole32 uuid imm32 version winmm setupapi
 	)
 else()
 	link_libraries(
 		GL
 		jemalloc
-		SDL2
 		c m dl util
 	)
 endif()

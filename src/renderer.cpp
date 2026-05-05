@@ -1,16 +1,14 @@
 #include "renderer.h"
 
-#include <cmath>
 #include <map>
 #include <thread>
 
 #define USE_OPENGL32
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL_opengl.h>
+#include <SDL3/SDL.h>
 
 #include "gv.h"
 #include "config.h"
-#include "media/image_manipulator.h"
 
 #include "utils/btn_rect.h"
 #include "utils/math.h"
@@ -49,12 +47,9 @@ bool operator==(const RenderStruct &a, const RenderStruct &b) {
 
 
 
-typedef void (GLAPIENTRY *BLENDCOLOR_TYPE)(GLclampf, GLclampf, GLclampf, GLclampf);
-static BLENDCOLOR_TYPE blendColor;
-static PFNGLBLENDFUNCSEPARATEPROC blendFuncSeparate;
-
 static int windowWidth, windowHeight;
 static SDL_Renderer *renderer = nullptr;
+static PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate = nullptr;
 
 bool Renderer::needToRender = false;
 bool Renderer::needToRedraw = false;
@@ -65,11 +60,17 @@ std::mutex Renderer::renderMutex;
 std::mutex Renderer::renderDataMutex;
 std::vector<RenderStruct> Renderer::renderData;
 
-SDL_RendererInfo Renderer::info;
+std::string Renderer::driver = "software";
+int Renderer::maxSize = -1;
 
 
 static bool fastOpenGL = false;
 static bool checkOpenGlErrors = false;
+
+bool Renderer::useFastOpenGL() {
+	return fastOpenGL;
+}
+
 
 static void checkErrorsImpl(const char *from, const char *glFuncName) {
 	GLuint error = glGetError();
@@ -100,17 +101,6 @@ static void checkErrorsImpl(const char *from, const char *glFuncName) {
 #define checkErrors(glFuncName) checkErrorsImpl(__FUNCTION__, glFuncName)
 
 
-static bool surfaceIsOpaque(const SurfacePtr &surface) {
-	SDL_Palette *palette = surface->format->palette;
-	if (palette) {
-		for (int i = 0; i < palette->ncolors; ++i) {
-			if (palette->colors[i].a != 255) return false;
-		}
-		return true;
-	}
-	return surface->format->Amask == 0;
-}
-
 static SDL_Texture *currentTexture = nullptr;
 static bool currentTextureIsOpaque = false;
 static void bindTexture(SDL_Texture *texture, bool opaque) {
@@ -120,29 +110,42 @@ static void bindTexture(SDL_Texture *texture, bool opaque) {
 		if (!currentTexture) currentTextureIsOpaque = !opaque;
 		currentTexture = texture;
 
-		if (SDL_GL_BindTexture(texture, nullptr, nullptr)) {
-			Utils::outMsg("SDL_GL_BindTexture", SDL_GetError());
-		}
+		SDL_FlushRenderer(renderer);
+
+		SDL_PropertiesID props = SDL_GetTextureProperties(texture);
+		Sint64 id = SDL_GetNumberProperty(props, SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER, 0);
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, GLuint(id));
+		checkErrors("glBindTexture(GL_TEXTURE_2D, id)");
 	}
 
 	if (currentTextureIsOpaque != opaque) {
 		currentTextureIsOpaque = opaque;
 
 		if (opaque) {
-			blendFuncSeparate(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA);
-			checkErrors("glBlendFuncSeparate");
+			glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}else {
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			checkErrors("glBlendFunc");
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 		}
+		checkErrors("glBlendFuncSeparate");
 	}
+
+	SDL_ScaleMode mode;
+	SDL_GetTextureScaleMode(texture, &mode);
+
+	GLint value = mode == SDL_SCALEMODE_NEAREST ? GL_NEAREST : GL_LINEAR;
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, value);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, value);
 }
 static void unbindTexture() {
-	if (currentTexture) {
-		SDL_GL_UnbindTexture(currentTexture);
-		checkErrors("glBindTexture(GL_TEXTURE_2D, 0)");
-		currentTexture = nullptr;
-	}
+	glBindTexture(GL_TEXTURE_2D, 0);
+	checkErrors("glBindTexture(GL_TEXTURE_2D, 0)");
+
+	glDisable(GL_TEXTURE_2D);
+
+	SDL_FlushRenderer(renderer);
+	currentTexture = nullptr;
 }
 
 
@@ -159,13 +162,18 @@ static void setClipRect(const SDL_Rect *clipRect) {
 	currentClipRect = rect;
 
 	if (fastOpenGL) {
+		glEnable(GL_SCISSOR_TEST);
+		if (checkOpenGlErrors) {
+			checkErrors("glDisable(GL_SCISSOR_TEST)");
+		}
+
 		glScissor(rect.x, windowHeight - rect.y - rect.h, rect.w, rect.h);//at glScissor lower pixel - y=0
 		if (checkOpenGlErrors) {
 			checkErrors("glScissor");
 		}
 	}else {
-		if (SDL_RenderSetClipRect(renderer, &rect)) {
-			Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
+		if (!SDL_SetRenderClipRect(renderer, &rect)) {
+			Utils::outMsg("SDL_SetRenderClipRect", SDL_GetError());
 		}
 	}
 }
@@ -174,8 +182,8 @@ static void disableClipRect() {
 		glDisable(GL_SCISSOR_TEST);
 		checkErrors("glDisable(GL_SCISSOR_TEST)");
 	}else {
-		if (SDL_RenderSetClipRect(renderer, nullptr)) {
-			Utils::outMsg("SDL_RenderSetClipRect", SDL_GetError());
+		if (!SDL_SetRenderClipRect(renderer, nullptr)) {
+			Utils::outMsg("SDL_SetRenderClipRect", SDL_GetError());
 		}
 	}
 }
@@ -191,19 +199,19 @@ static void fastRenderOne(const RenderStruct *obj) {
 		int dY = obj->dstRect.y + obj->center.y;
 
 		glPushMatrix();
-		if (check) {
+		if constexpr (check) {
 			checkErrors("glPushMatrix");
 		}
 		glTranslated(dX, dY, 0);
-		if (check) {
+		if constexpr (check) {
 			checkErrors("glTranslated");
 		}
 		glRotatef(obj->angle, 0, 0, 1);
-		if (check) {
+		if constexpr (check) {
 			checkErrors("glRotated");
 		}
 		glTranslated(-dX, -dY, 0);
-		if (check) {
+		if constexpr (check) {
 			checkErrors("glTranslated");
 		}
 	}
@@ -227,13 +235,13 @@ static void fastRenderOne(const RenderStruct *obj) {
 	glTexCoord2f(texMaxX, texMaxY); glVertex2i(vertMaxX, vertMaxY);
 	glTexCoord2f(texMaxX, texMinY); glVertex2i(vertMaxX, vertMinY);
 	glEnd();
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glBegin(GL_QUADS)/glTexCoord2f/glVertex2i/glEnd");
 	}
 
 	if (angle % 360) {
 		glPopMatrix();
-		if (check) {
+		if constexpr (check) {
 			checkErrors("glPopMatrix");
 		}
 	}
@@ -242,11 +250,11 @@ static void fastRenderOne(const RenderStruct *obj) {
 static const size_t MAX_RENDER_GROUP_SIZE = 1024;
 template<bool check>
 static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
-	float texBuffer[MAX_RENDER_GROUP_SIZE * 8];
-	int vertexBuffer[MAX_RENDER_GROUP_SIZE * 8];
+	SDL_FPoint texBuffer[MAX_RENDER_GROUP_SIZE * 4];
+	SDL_Point vertexBuffer[MAX_RENDER_GROUP_SIZE * 4];
 
-	float *texPtr = texBuffer;
-	int *vertexPtr = vertexBuffer;
+	SDL_FPoint *texPtr = texBuffer;
+	SDL_Point *vertexPtr = vertexBuffer;
 
 	float w = float(startObj->surface->w);
 	float h = float(startObj->surface->h);
@@ -259,29 +267,21 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 		float texMaxX = float(obj->srcRect.x + obj->srcRect.w) / w;
 		float texMaxY = float(obj->srcRect.y + obj->srcRect.h) / h;
 
-		texPtr[0] = texMinX;
-		texPtr[1] = texMinY;
-		texPtr[2] = texMinX;
-		texPtr[3] = texMaxY;
-		texPtr[4] = texMaxX;
-		texPtr[5] = texMaxY;
-		texPtr[6] = texMaxX;
-		texPtr[7] = texMinY;
-		texPtr += 8;
+		texPtr[0] = { texMinX, texMinY };
+		texPtr[1] = { texMinX, texMaxY };
+		texPtr[2] = { texMaxX, texMaxY };
+		texPtr[3] = { texMaxX, texMinY };
+		texPtr += 4;
 
 		int vertMinX = obj->dstRect.x;
 		int vertMinY = obj->dstRect.y;
 		int vertMaxX = obj->dstRect.x + obj->dstRect.w;
 		int vertMaxY = obj->dstRect.y + obj->dstRect.h;
 
-		vertexPtr[0] = vertMinX;
-		vertexPtr[1] = vertMinY;
-		vertexPtr[2] = vertMinX;
-		vertexPtr[3] = vertMaxY;
-		vertexPtr[4] = vertMaxX;
-		vertexPtr[5] = vertMaxY;
-		vertexPtr[6] = vertMaxX;
-		vertexPtr[7] = vertMinY;
+		vertexPtr[0] = { vertMinX, vertMinY };
+		vertexPtr[1] = { vertMinX, vertMaxY };
+		vertexPtr[2] = { vertMaxX, vertMaxY };
+		vertexPtr[3] = { vertMaxX, vertMinY };
 
 		int angle = int(obj->angle) % 360;
 		if (angle) {
@@ -296,45 +296,45 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 				a->x = int(x * cosA - y * sinA) + center.x;
 				a->y = int(x * sinA + y * cosA) + center.y;
 			};
-			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 0));
-			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 2));
-			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 4));
-			rotate(reinterpret_cast<SDL_Point*>(vertexPtr + 6));
+			rotate(vertexPtr + 0);
+			rotate(vertexPtr + 1);
+			rotate(vertexPtr + 2);
+			rotate(vertexPtr + 3);
 		}
-		vertexPtr += 8;
+		vertexPtr += 4;
 
 		++obj;
 	}
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glEnableClientState(GL_VERTEX_ARRAY)");
 	}
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glEnableClientState(GL_TEXTURE_COORD_ARRAY)");
 	}
 
 	glTexCoordPointer(2, GL_FLOAT, 0, texBuffer);
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glTexCoordPointer");
 	}
 	glVertexPointer(2, GL_INT, 0, vertexBuffer);
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glVertexPointer");
 	}
 
 	glDrawArrays(GL_QUADS, 0, int(count * 4));
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glDrawArrays");
 	}
 
 	glDisableClientState(GL_VERTEX_ARRAY);
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glDisableClientState(GL_VERTEX_ARRAY)");
 	}
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-	if (check) {
+	if constexpr (check) {
 		checkErrors("glDisableClientState(GL_TEXTURE_COORD_ARRAY)");
 	}
 }
@@ -342,8 +342,8 @@ static void fastRenderGroup(const RenderStruct *startObj, size_t count) {
 static void fastRender(const RenderStruct *obj, size_t count) {
 	glColor4f(1, 1, 1, GLfloat(obj->alpha) / 255);
 	checkErrors("glColor4f");
-	blendColor(1, 1, 1, GLfloat(obj->alpha) / 255);
-	checkErrors("glBlendColor");
+//	glBlendColor(1, 1, 1, obj->alpha / 255.0f);
+//	checkErrors("glBlendColor");
 
 	if (count < 7) {
 		for (size_t i = 0; i < count; ++i) {
@@ -376,8 +376,8 @@ static void updateViewport(int w, int h) {
 		glLoadIdentity();
 	}
 
-	if (SDL_RenderSetViewport(renderer, nullptr)) {
-		Utils::outMsg("SDL_RenderSetViewport", SDL_GetError());
+	if (!SDL_SetRenderViewport(renderer, nullptr)) {
+		Utils::outMsg("SDL_SetRenderViewport", SDL_GetError());
 	}
 }
 
@@ -430,17 +430,18 @@ static void scale() {
 	SDL_Rect dstRect = {0, 0, scaleWidth, scaleHeight};
 	TexturePtr toRender = ImageCaches::getTexture(renderer, toScaleSurface);
 
-	if (SDL_SetRenderTarget(renderer, tmpTexture)) {
+	if (!SDL_SetRenderTarget(renderer, tmpTexture)) {
 		Utils::outMsg("Renderer::scale, SDL_SetRenderTarget", SDL_GetError());
 	}
-	if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)) {
+	if (!SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)) {
 		Utils::outMsg("Renderer::scale, SDL_SetRenderDrawColor", SDL_GetError());
 	}
-	if (SDL_RenderClear(renderer)) {
+	if (!SDL_RenderClear(renderer)) {
 		Utils::outMsg("Renderer::scale, SDL_RenderClear", SDL_GetError());
 	}
 	if (fastOpenGL) {
 		updateViewport(dstRect.w, dstRect.h);
+		SDL_FlushRenderer(renderer);
 		Renderer::needToUpdateViewPort = true;
 
 		glEnable(GL_BLEND);
@@ -450,10 +451,8 @@ static void scale() {
 
 		glColor4f(1, 1, 1, 1);
 		checkErrors("glColor4f");
-		blendColor(1, 1, 1, 1);
-		checkErrors("glBlendColor");
 
-		bindTexture(toRender.get(), surfaceIsOpaque(toScaleSurface));
+		bindTexture(toRender.get(), ImageCaches::surfaceIsOpaque(toScaleSurface));
 
 		glBegin(GL_QUADS);
 		//inverse Y, because render to texture in opengl
@@ -467,17 +466,20 @@ static void scale() {
 		unbindTexture();
 		glFlush();
 	}else {
-		if (SDL_RenderCopy(renderer, toRender.get(), nullptr, &dstRect)) {
-			Utils::outMsg("Renderer::scale, SDL_RenderCopy", SDL_GetError());
+		SDL_FRect dstFRect;
+		SDL_RectToFRect(&dstRect, &dstFRect);
+
+		if (!SDL_RenderTexture(renderer, toRender.get(), nullptr, &dstFRect)) {
+			Utils::outMsg("Renderer::scale, SDL_RenderTexture", SDL_GetError());
 		}
 	}
 
-	scaledSurface = ImageManipulator::getNewNotClear(scaleWidth, scaleHeight);
-	if (SDL_RenderReadPixels(renderer, &dstRect, SDL_PIXELFORMAT_RGBA32, scaledSurface->pixels, scaledSurface->pitch)) {
+	scaledSurface = SDL_RenderReadPixels(renderer, &dstRect);
+	if (!scaledSurface) {
 		Utils::outMsg("Renderer::scale, SDL_RenderReadPixels", SDL_GetError());
 	}
 
-	if (SDL_SetRenderTarget(renderer, nullptr)) {
+	if (!SDL_SetRenderTarget(renderer, nullptr)) {
 		Utils::outMsg("Renderer::scale, SDL_SetRenderTarget(nullptr)", SDL_GetError());
 	}
 
@@ -510,8 +512,8 @@ SurfacePtr Renderer::getScreenshot() {
 static void readPixels() {
 	SDL_Rect rect = { Stage::x, Stage::y, Stage::width, Stage::height };
 
-	screenshot = ImageManipulator::getNewNotClear(rect.w, rect.h, SDL_PIXELFORMAT_RGB24);
-	if (SDL_RenderReadPixels(renderer, &rect, SDL_PIXELFORMAT_RGB24, screenshot->pixels, screenshot->pitch)) {
+	screenshot = SDL_RenderReadPixels(renderer, &rect);
+	if (!screenshot) {
 		Utils::outMsg("SDL_RenderReadPixels", SDL_GetError());
 	}
 }
@@ -528,7 +530,7 @@ static void loop() {
 	static std::vector<TexturePtr> textures;
 	static std::vector<TexturePtr> prevTextures;
 
-	std::array<SDL_Point, 4> prevSelectedRect = { NULL_POINT, NULL_POINT, NULL_POINT, NULL_POINT };
+	std::array<SDL_Point, 4> prevSelectedRect = selectedRect;
 
 	while (!GV::exit) {
 		if (!scaled) {
@@ -587,23 +589,22 @@ static void loop() {
 			checkErrors("Start");
 		}
 
-		SDL_GetWindowSize(Stage::window, &windowWidth, &windowHeight);
 		if (Renderer::needToUpdateViewPort) {
 			Renderer::needToUpdateViewPort = false;
+			SDL_GetWindowSize(Stage::window, &windowWidth, &windowHeight);
 			updateViewport(windowWidth, windowHeight);
 		}
-		if (SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)) {
+		if (!SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)) {
 			Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
 		}
-		if (SDL_RenderClear(renderer)) {
+		if (!SDL_RenderClear(renderer)) {
 			Utils::outMsg("SDL_RenderClear", SDL_GetError());
 		}
+		SDL_FlushRenderer(renderer);
 
 		if (fastOpenGL && !textures.empty()) {
 			glEnable(GL_BLEND);
 			checkErrors("glEnable(GL_BLEND)");
-			glEnable(GL_SCISSOR_TEST);
-			checkErrors("glEnable(GL_SCISSOR_TEST)");
 
 			size_t start = 0;
 			SDL_Texture *prevTexture = nullptr;
@@ -627,7 +628,7 @@ static void loop() {
 					fastRender(curRenderData.data() + start, count);
 
 					prevTexture = texture;
-					prevIsOpaque = surfaceIsOpaque(rs.surface);
+					prevIsOpaque = ImageCaches::surfaceIsOpaque(rs.surface);
 					prevAlpha = rs.alpha;
 					prevClip = rs.clip;
 					prevClipRect = rs.clipRect;
@@ -651,18 +652,27 @@ static void loop() {
 
 				setClipRect(rs.clip ? &rs.clipRect : nullptr);
 
-				if (SDL_SetTextureAlphaMod(texture.get(), rs.alpha)) {
+				if (!SDL_SetTextureAlphaMod(texture.get(), rs.alpha)) {
 					Utils::outMsg("SDL_SetTextureAlphaMod", SDL_GetError());
 				}
 
-				if (SDL_RenderCopyEx(renderer, texture.get(),
-				                     &rs.srcRect,
-				                     &rs.dstRect,
-				                     double(rs.angle),
-				                     &rs.center,
-				                     SDL_FLIP_NONE))
+				SDL_FRect srcRect, dstRect;
+				SDL_RectToFRect(&rs.srcRect, &srcRect);
+				SDL_RectToFRect(&rs.dstRect, &dstRect);
+
+				SDL_FPoint center = {
+				    float(rs.center.x),
+				    float(rs.center.y),
+				};
+
+				if (!SDL_RenderTextureRotated(renderer, texture.get(),
+				                              &srcRect,
+				                              &dstRect,
+				                              double(rs.angle),
+				                              &center,
+				                              SDL_FLIP_NONE))
 				{
-					Utils::outMsg("SDL_RenderCopyEx", SDL_GetError());
+					Utils::outMsg("SDL_RenderTextureRotated", SDL_GetError());
 				}
 			}
 		}
@@ -673,7 +683,7 @@ static void loop() {
 			if (fastOpenGL) {
 				glColor4f(0, 0.25, 1, 1);
 			}else {
-				if (SDL_SetRenderDrawColor(renderer, 0, 64, 255, 255)) {
+				if (!SDL_SetRenderDrawColor(renderer, 0, 64, 255, 255)) {
 					Utils::outMsg("SDL_SetRenderDrawColor", SDL_GetError());
 				}
 			}
@@ -688,7 +698,7 @@ static void loop() {
 					glVertex2i(end.x, end.y);
 					glEnd();
 				}else {
-					if (SDL_RenderDrawLine(renderer, start.x, start.y, end.x, end.y)) {
+					if (!SDL_RenderLine(renderer, float(start.x), float(start.y), float(end.x), float(end.y))) {
 						Utils::outMsg("SDL_RenderDrawLine", SDL_GetError());
 					}
 				}
@@ -700,26 +710,29 @@ static void loop() {
 		}
 
 		if (Stage::screens) {
-			SDL_Rect empties[2];
+			SDL_FRect empties[2];
 			if (Stage::x) {
-				empties[0] = { 0, 0, Stage::x, Stage::height };
-				empties[1] = { Stage::x + Stage::width, 0, windowWidth - Stage::x - Stage::width, Stage::height };
+				empties[0] = { 0, 0, float(Stage::x), float(Stage::height) };
+				float right = float(Stage::x + Stage::width);
+				empties[1] = { right, 0, float(windowWidth) - right, float(Stage::height) };
 			}else {
-				empties[0] = { 0, 0, Stage::width, Stage::y };
-				empties[1] = { 0, Stage::y + Stage::height, Stage::width, windowHeight - Stage::y - Stage::height };
+				empties[0] = { 0, 0, float(Stage::width), float(Stage::y) };
+				float bottom = float(Stage::y + Stage::height);
+				empties[1] = { 0, bottom, float(Stage::width), float(windowHeight) - bottom };
 			}
 
-			for (const SDL_Rect &empty : empties) {
-				if (!empty.w || !empty.h) continue;
+			for (const SDL_FRect &empty : empties) {
+				if (Math::floatsAreEq(empty.w, 0)) continue;
+				if (Math::floatsAreEq(empty.h, 0)) continue;
 
 				if (fastOpenGL) {
 					glColor4f(0, 0, 0, 1);
 					checkErrors("glColor4f");
-					glRecti(empty.x, empty.y, empty.x + empty.w, empty.y + empty.h);
+					glRectf(empty.x, empty.y, empty.x + empty.w, empty.y + empty.h);
 					checkErrors("glRecti");
 				}else {
 					SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-					if (SDL_RenderFillRect(renderer, &empty)) {
+					if (!SDL_RenderFillRect(renderer, &empty)) {
 						Utils::outMsg("SDL_RenderFillRect", SDL_GetError());
 					}
 				}
@@ -749,43 +762,38 @@ static void loop() {
 static void initImpl(bool *inited, bool *error) {
 	Utils::setThreadName("renderer");
 
-	Uint32 flags;
-	int renderDriver = -1;
-	if (Config::get("software_renderer") == "True") {
-		flags = SDL_RENDERER_SOFTWARE;
-	}else {
-		flags = SDL_RENDERER_ACCELERATED;
-		if (Config::get("opengl_vsync") == "True") {
-			flags |= SDL_RENDERER_PRESENTVSYNC;
-		}
+	std::string opengl = "opengl";
 
-		std::string opengl = "opengl";
+	if (Config::get("software_renderer") != "True") {
 		int countRenderDrivers = SDL_GetNumRenderDrivers();
 		for (int i = 0; i < countRenderDrivers; ++i) {
-			SDL_RendererInfo info;
-			SDL_GetRenderDriverInfo(i, &info);
-			if (info.name == opengl) {
-				renderDriver = i;
+			const char* name = SDL_GetRenderDriver(i);
+			if (name == opengl) {
+				Renderer::driver = opengl;
 				break;
 			}
 		}
-		if (renderDriver == -1) {
+		if (Renderer::driver != opengl) {
 			Utils::outMsg("Renderer::init", "OpenGL driver not found");
-			flags = SDL_RENDERER_SOFTWARE;
-		}else {
-			fastOpenGL = Config::get("fast_opengl") == "True";
-			if (fastOpenGL) {
-				SDL_SetHint(SDL_HINT_RENDER_BATCHING, "false");
-			}
 		}
 	}
 	
-	renderer = SDL_CreateRenderer(Stage::window, renderDriver, flags);
-	if (!renderer) {
+	renderer = SDL_CreateRenderer(Stage::window, Renderer::driver.c_str());
+	if (renderer) {
+		fastOpenGL = Config::get("fast_opengl") == "True";
+		if (fastOpenGL) {
+			glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
+			if (!glBlendFuncSeparate) {
+				fastOpenGL = false;
+				Utils::outMsg("Renderer::init", "glBlendFuncSeparate not found, fast_opengl disabled");
+			}
+		}
+	}else {
 		Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 
-		if (flags & SDL_RENDERER_ACCELERATED) {
-			renderer = SDL_CreateRenderer(Stage::window, -1, SDL_RENDERER_SOFTWARE);
+		if (Renderer::driver == opengl) {
+			Renderer::driver = "software";
+			renderer = SDL_CreateRenderer(Stage::window, Renderer::driver.c_str());
 			if (!renderer) {
 				Utils::outMsg("SDL_CreateRenderer", SDL_GetError());
 			}
@@ -798,11 +806,11 @@ static void initImpl(bool *inited, bool *error) {
 		}
 	}
 
-	SDL_GetRendererInfo(renderer, &Renderer::info);
-	if (Renderer::info.max_texture_width <= 0)  Renderer::info.max_texture_width  = 2048;
-	if (Renderer::info.max_texture_height <= 0) Renderer::info.max_texture_height = 2048;
+	SDL_PropertiesID props = SDL_GetRendererProperties(renderer);
+	Renderer::maxSize = int(SDL_GetNumberProperty(props, SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 0));
+	if (Renderer::maxSize <= 0) Renderer::maxSize = 2048;
 
-	if (std::string(Renderer::info.name) == "opengl") {
+	if (Renderer::driver == opengl) {
 		size_t countErrors = 0;
 		const size_t maxCountErrors = 10;
 
@@ -814,13 +822,9 @@ static void initImpl(bool *inited, bool *error) {
 	}else {
 		fastOpenGL = false;
 	}
-	if (fastOpenGL) {
-		blendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
-		blendColor = (BLENDCOLOR_TYPE)SDL_GL_GetProcAddress("glBlendColor");
-		if (!blendFuncSeparate || !blendColor) {
-			Utils::outMsg("Renderer::init", "glBlendFuncSeparate or glBlendColor not found");
-			fastOpenGL = false;
-		}
+
+	if (Config::get("opengl_vsync") == "True") {
+		SDL_SetRenderVSync(renderer, SDL_RENDERER_VSYNC_ADAPTIVE);
 	}
 
 	*inited = true;

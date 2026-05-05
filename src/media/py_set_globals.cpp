@@ -167,7 +167,7 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("get_screen_times", GUI::getScreenTimes);
 
 	setFunc("set_scale_quality", Config::setScaleQuality);
-	setFunc("get_scale_quality", Config::getScaleQuality);
+	setFunc("get_scale_quality", Config::getScaleQualityAsStr);
 
 	setFunc("_get_cwd", FileSystem::getCurrentPath);
 	setFunc("_start_file_win32", FileSystem::startFile_win32);

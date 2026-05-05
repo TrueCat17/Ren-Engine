@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include <SDL2/SDL_stdinc.h> //Uint32
+#include <SDL3/SDL_stdinc.h> //Uint32
 
 #include <Python.h>
 

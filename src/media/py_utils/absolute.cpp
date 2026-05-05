@@ -14,9 +14,8 @@ extern "C" {
 
 
 bool PyAbsolute_PreInit() {
-#if PY_MINOR_VERSION >= 12
-	Py_SET_REFCNT(&PyAbsolute_Type, _Py_IMMORTAL_REFCNT);
-#endif
+	Py_SET_REFCNT(&PyAbsolute_Type, _Py_IMMORTAL_INITIAL_REFCNT);
+
 	std::string_view roundName = "__round__";
 
 	PyMethodDef *round = nullptr;
@@ -49,7 +48,7 @@ PyObject* PyAbsolute_FromDouble(double val) {
 }
 
 
-static PyObject* absolute_new_imp(PyObject *arg, PyObject *kwargs) {
+static PyObject* absolute_new_impl(PyObject *arg, PyObject *kwargs) {
 	if (kwargs && PyDict_Size(kwargs)) {
 		PyErr_SetString(PyExc_TypeError, "absolute() takes no keyword arguments");
 		return nullptr;
@@ -86,7 +85,7 @@ static PyObject* absolute_new(PyTypeObject *, PyObject *args, PyObject *kwargs) 
 	}
 
 	PyObject *arg = countArgs ? PySequence_Fast_GET_ITEM(args, 0) : nullptr;
-	return absolute_new_imp(arg, kwargs);
+	return absolute_new_impl(arg, kwargs);
 }
 
 static PyObject* absolute_vectorcall(PyObject *, PyObject *const *args, size_t nargsf, PyObject *kwargs) {
@@ -97,7 +96,7 @@ static PyObject* absolute_vectorcall(PyObject *, PyObject *const *args, size_t n
 	}
 
 	PyObject *arg = nargs ? args[0] : nullptr;
-	return absolute_new_imp(arg, kwargs);
+	return absolute_new_impl(arg, kwargs);
 }
 
 void _PyFloat_ExactDealloc(PyObject *op);
@@ -231,42 +230,42 @@ static PyObject* toFloat(PyObject *pyA) {
 
 
 static PyNumberMethods asNumber = {
-    add,         /* nb_add */
-    sub,         /* nb_subtract */
-    mul,         /* nb_multiply */
-    rem,         /* nb_remainder */
-    nullptr,     /* nb_divmod */
-    nullptr,     /* nb_power */
-    neg,         /* nb_negative */
-    pos,         /* nb_positive */
-    getAbs,      /* nb_absolute */
-    nonzero,     /* nb_bool */
-    nullptr,     /* nb_invert */
-    nullptr,     /* nb_lshift */
-    nullptr,     /* nb_rshift */
-    nullptr,     /* nb_and */
-    nullptr,     /* nb_xor */
-    nullptr,     /* nb_or */
-    toLong,      /* nb_int */
-    nullptr,     /* nb_reserved */
-    toFloat,     /* nb_float */
-    nullptr,     /* nb_inplace_add */
-    nullptr,     /* nb_inplace_subtract */
-    nullptr,     /* nb_inplace_multiply */
-    nullptr,     /* nb_inplace_remainder */
-    nullptr,     /* nb_inplace_power */
-    nullptr,     /* nb_inplace_lshift */
-    nullptr,     /* nb_inplace_rshift */
-    nullptr,     /* nb_inplace_and */
-    nullptr,     /* nb_inplace_xor */
-    nullptr,     /* nb_inplace_or */
-    getFloorDiv, /* nb_floor_divide */
-    getTrueDiv,  /* nb_true_divide */
-    nullptr,     /* nb_inplace_floor_divide */
-    nullptr,     /* nb_inplace_true_divide */
-    nullptr,     /* nb_index */
-    nullptr,     /* nb_matrix_multiply */
-    nullptr,     /* nb_inplace_matrix_multiply */
+    add,         // nb_add
+    sub,         // nb_subtract
+    mul,         // nb_multiply
+    rem,         // nb_remainder
+    nullptr,     // nb_divmod
+    nullptr,     // nb_power
+    neg,         // nb_negative
+    pos,         // nb_positive
+    getAbs,      // nb_absolute
+    nonzero,     // nb_bool
+    nullptr,     // nb_invert
+    nullptr,     // nb_lshift
+    nullptr,     // nb_rshift
+    nullptr,     // nb_and
+    nullptr,     // nb_xor
+    nullptr,     // nb_or
+    toLong,      // nb_int
+    nullptr,     // nb_reserved
+    toFloat,     // nb_float
+    nullptr,     // nb_inplace_add
+    nullptr,     // nb_inplace_subtract
+    nullptr,     // nb_inplace_multiply
+    nullptr,     // nb_inplace_remainder
+    nullptr,     // nb_inplace_power
+    nullptr,     // nb_inplace_lshift
+    nullptr,     // nb_inplace_rshift
+    nullptr,     // nb_inplace_and
+    nullptr,     // nb_inplace_xor
+    nullptr,     // nb_inplace_or
+    getFloorDiv, // nb_floor_divide
+    getTrueDiv,  // nb_true_divide
+    nullptr,     // nb_inplace_floor_divide
+    nullptr,     // nb_inplace_true_divide
+    nullptr,     // nb_index
+    nullptr,     // nb_matrix_multiply
+    nullptr,     // nb_inplace_matrix_multiply
 };
 
 
@@ -280,7 +279,11 @@ static PyObject* richcompare(PyObject *pyA, PyObject *pyB, int op) {
 		b = PyLong_AsDouble(pyB);
 		if (PyErr_Occurred()) {
 			PyErr_Clear();
-			if (_PyLong_Sign(pyB) < 0) {
+
+			int sign = 0;
+			PyLong_GetSign(pyB, &sign);
+
+			if (sign < 0) {
 				//b is very small
 				     if (op == Py_LT) res = false;
 				else if (op == Py_LE) res = false;
@@ -324,54 +327,53 @@ PyTypeObject PyAbsolute_Type = {
     "absolute",
     sizeof(PyAbsoluteObject),
     0,
-    absolute_dealloc,                 /* tp_dealloc */
-    0,                                /* tp_vectorcall_offset */
-    nullptr,                          /* tp_getattr */
-    nullptr,                          /* tp_setattr */
-    nullptr,                          /* tp_compare */
-    toStr,                            /* tp_repr */
-    &asNumber,                        /* tp_as_number */
-    nullptr,                          /* tp_as_sequence */
-    nullptr,                          /* tp_as_mapping */
-    hash,                             /* tp_hash */
-    nullptr,                          /* tp_call */
-    toStr,                            /* tp_str */
-    PyObject_GenericGetAttr,          /* tp_getattro */
-    nullptr,                          /* tp_setattro */
-    nullptr,                          /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,               /* tp_flags */
-    "Absolute coordinate in float.",  /* tp_doc */
-    nullptr,                          /* tp_traverse */
-    nullptr,                          /* tp_clear */
-    richcompare,                      /* tp_richcompare */
-    0,                                /* tp_weaklistoffset */
-    nullptr,                          /* tp_iter */
-    nullptr,                          /* tp_iternext */
-    methods,                          /* tp_methods */
-    nullptr,                          /* tp_members */
-    nullptr,                          /* tp_getset */
-    nullptr,                          /* tp_base */
-    nullptr,                          /* tp_dict */
-    nullptr,                          /* tp_descr_get */
-    nullptr,                          /* tp_descr_set */
-    0,                                /* tp_dictoffset */
-    nullptr,                          /* tp_init */
-    nullptr,                          /* tp_alloc */
-    absolute_new,                     /* tp_new */
-    nullptr,                          /* tp_free */
-    nullptr,                          /* tp_is_gc */
-    nullptr,                          /* tp_bases */
-    nullptr,                          /* tp_mro */
-    nullptr,                          /* tp_cache */
-    nullptr,                          /* tp_subclasses */
-    nullptr,                          /* tp_weaklist */
-    nullptr,                          /* tp_del */
-    0,                                /* tp_version_tag */
-    nullptr,                          /* tp_finalize */
-    absolute_vectorcall,              /* tp_vectorcall */
-#if PY_MINOR_VERSION >= 12
-    0,                                /* tp_watched */
-#endif
+    absolute_dealloc,                 // tp_dealloc
+    0,                                // tp_vectorcall_offset
+    nullptr,                          // tp_getattr
+    nullptr,                          // tp_setattr
+    nullptr,                          // tp_compare
+    toStr,                            // tp_repr
+    &asNumber,                        // tp_as_number
+    nullptr,                          // tp_as_sequence
+    nullptr,                          // tp_as_mapping
+    hash,                             // tp_hash
+    nullptr,                          // tp_call
+    toStr,                            // tp_str
+    PyObject_GenericGetAttr,          // tp_getattro
+    nullptr,                          // tp_setattro
+    nullptr,                          // tp_as_buffer
+    Py_TPFLAGS_DEFAULT,               // tp_flags
+    "Absolute coordinate in float.",  // tp_doc
+    nullptr,                          // tp_traverse
+    nullptr,                          // tp_clear
+    richcompare,                      // tp_richcompare
+    0,                                // tp_weaklistoffset
+    nullptr,                          // tp_iter
+    nullptr,                          // tp_iternext
+    methods,                          // tp_methods
+    nullptr,                          // tp_members
+    nullptr,                          // tp_getset
+    nullptr,                          // tp_base
+    nullptr,                          // tp_dict
+    nullptr,                          // tp_descr_get
+    nullptr,                          // tp_descr_set
+    0,                                // tp_dictoffset
+    nullptr,                          // tp_init
+    nullptr,                          // tp_alloc
+    absolute_new,                     // tp_new
+    nullptr,                          // tp_free
+    nullptr,                          // tp_is_gc
+    nullptr,                          // tp_bases
+    nullptr,                          // tp_mro
+    nullptr,                          // tp_cache
+    nullptr,                          // tp_subclasses
+    nullptr,                          // tp_weaklist
+    nullptr,                          // tp_del
+    0,                                // tp_version_tag
+    nullptr,                          // tp_finalize
+    absolute_vectorcall,              // tp_vectorcall
+    0,                                // tp_watched
+    0,                                // tp_versions_used
 };
 
 

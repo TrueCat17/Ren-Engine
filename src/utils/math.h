@@ -8,10 +8,14 @@ class Math {
 public:
 	static void init();
 	static float getSin(int angle);
-	static float getCos(int angle);
+
+	static float getCos(int angle) {
+		if (!angle) return 1;
+		return getSin(angle + 90);
+	}
 
 	static bool floatsAreEq(float a, float b) {
-		double max = std::max(1.0f, std::max(std::abs(a) , std::abs(b)));
+		float max = std::max(1.0f, std::max(std::abs(a) , std::abs(b)));
 		return std::abs(a - b) <= FLT_EPSILON * max;
 	}
 	static bool doublesAreEq(double a, double b) {
@@ -21,7 +25,9 @@ public:
 
 	template<typename T, typename MIN, typename MAX>
 	static T inBounds(T value, MIN min, MAX max) {
-		return (value < T(min)) ? T(min) : (value > T(max)) ? T(max) : value;
+		T tMin(min);
+		T tMax(max);
+		return (value < tMin) ? tMin : (value > tMax) ? tMax : value;
 	}
 };
 

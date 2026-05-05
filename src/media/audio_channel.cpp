@@ -1,7 +1,7 @@
 #define ALLOW_INCLUDE_AUDIO_CHANNEL_H
 #include "audio_channel.h"
 
-#include <SDL2/SDL_audio.h>
+#include <SDL3/SDL_audio.h>
 
 #include "media/audio_manager.h"
 #include "utils/scope_exit.h"
@@ -135,7 +135,7 @@ bool Channel::initCodec() {
 
 	convertCtx = nullptr;
 	if (swr_alloc_set_opts2(&convertCtx,
-	                        &out, AV_SAMPLE_FMT_S16, 44100,
+	                        &out, AV_SAMPLE_FMT_S16, 48000,
 	                        &in, codecCtx->sample_fmt, codecCtx->sample_rate,
 	                        0, nullptr))
 	{
@@ -287,10 +287,10 @@ void Channel::loadNextFrame() {
 	}
 }
 
-int Channel::getVolume() const {
+float Channel::getVolume() const {
 	const Audio *audio = getAudio();
 
-	double max = SDL_MIX_MAXVOLUME * audio->volume * volume * AudioManager::mixerVolumes[mixer];
+	double max = audio->volume * volume * AudioManager::mixerVolumes[mixer];
 
 	double dtimeFadeIn  = AudioManager::startUpdateTime - audio->startFadeInTime;
 	double dtimeFadeOut = AudioManager::startUpdateTime - audio->startFadeOutTime;
@@ -301,7 +301,7 @@ int Channel::getVolume() const {
 	double fadeInVolume  = useFadeIn  ? (      max * dtimeFadeIn  / audio->fadeIn)  : max;
 	double fadeOutVolume = useFadeOut ? (max - max * dtimeFadeOut / audio->fadeOut) : max;
 
-	return int(std::min(fadeInVolume, fadeOutVolume));
+	return float(std::min(fadeInVolume, fadeOutVolume));
 }
 
 double Channel::getPos() const {

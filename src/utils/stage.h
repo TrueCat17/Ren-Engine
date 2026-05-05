@@ -1,7 +1,8 @@
 #ifndef STAGE_H
 #define STAGE_H
 
-typedef struct SDL_Window SDL_Window;
+#include "SDL3/SDL_video.h"
+
 class Group;
 
 
@@ -20,6 +21,7 @@ public:
 	static Group *screens;
 
 
+	static SDL_DisplayMode getDisplayMode();
 	static int getMaxWidth();
 	static int getMaxHeight();
 

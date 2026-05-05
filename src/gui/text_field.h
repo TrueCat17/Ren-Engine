@@ -6,7 +6,7 @@
 
 #include "display_object.h"
 
-typedef struct _TTF_Font TTF_Font;
+typedef struct TTF_Font TTF_Font;
 
 
 struct TextStyle {
