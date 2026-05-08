@@ -122,6 +122,7 @@ init python:
 		
 		sc_ach.check()
 		sc_map.game_ended = False
+		sc_map.step_time = time.time()
 	
 	
 	def sc_map__make_nature_block(block_x, block_y):
@@ -381,12 +382,11 @@ init python:
 	
 	
 	def sc_map__next_step():
+		if time.time() - sc_map.step_time < 0.25:
+			return
 		sc_map.next_step_ready = True
 	
 	def sc_map__real_next_step():
-		if time.time() - sc_map.step_time < 0.25:
-			return
-		
 		sc_map.next_step_ready = False
 		
 		if not sc_map.player.bot:

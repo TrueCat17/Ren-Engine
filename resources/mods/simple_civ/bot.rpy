@@ -47,7 +47,7 @@ init python:
 				'metal':    700,
 				'cement':   600,
 				'steel':    500,
-				'science': 1400,
+				'science':  500,
 			}
 			
 			k = (48 * 24) / (sc_map.xsize * sc_map.ysize)
@@ -64,7 +64,7 @@ init python:
 				'metal':  300,
 				'cement': 200,
 				'steel':  200,
-				'science': 200,
+				'science': 500,
 			}
 			
 			self.looking_future_steps = 3
@@ -89,38 +89,48 @@ init python:
 			player = self.player
 			technological_progress = player.technological_progress
 			
-			order = (
-				'food',
-				'stone',
-				'barracks',
-				'college',
-				'coal',
-				'cement factory',
-				'metal',
-				'metal factory',
-				'wood',
-			)
-			if self.resource_max['science'] != 0:
-				base_only = ('college', 'cement factory', 'metal factory')
-			else:
+			main = ('food', 'stone')
+			min_main_level = min(technological_progress[name] for name in main)
+			max_main_level = max(technological_progress[name] for name in main)
+			
+			# target level = min_main_level - 1
+			second = ('barracks', 'wood')
+			
+			# target level = min_main_level - 2
+			help = ('college', 'coal', 'cement factory')
+			if min_main_level > 1:
+				help += ('metal', 'metal factory')
+			
+			base_only = ('college', 'cement factory', 'metal factory')
+			prev_diff = 1
+			
+			min_not_base_only = min(level for name, level in technological_progress.items() if name not in base_only)
+			if min_not_base_only == 4:
 				base_only = ()
+			if min_main_level == 4:
+				prev_diff = 0
 			
-			min_level = min(technological_progress.values())
-			if min_level > 0:
-				min_level = min(value for name, value in technological_progress.items() if name not in base_only)
-			
-			next_level = min_level + 1
-			if next_level >= len(sc_technologies.price):
-				return None
-			
-			if player.science < sc_technologies.price[next_level]:
-				return ''
-			
-			for name in order:
-				if min_level > 0 and name in base_only: continue
-				
-				if technological_progress[name] == min_level:
+			for lag, names in ((1, second), (2, help)):
+				for name in names:
+					need_level = 1 if name in base_only else max(1, min_main_level - prev_diff * lag)
+					
+					level = technological_progress[name]
+					if level >= need_level: continue
+					if sc_technologies.price[level + 1] > player.science: continue
+					
 					return name
+			
+			need_level = min(min_main_level + 1, 4)
+			for name in main:
+				level = technological_progress[name]
+				if level >= need_level: continue
+				
+				if sc_technologies.price[level + 1] > player.science:
+					return ''
+				return name
+			
+			if min_not_base_only == 4:
+				return None
 			
 			return ''
 		
@@ -140,6 +150,7 @@ init python:
 				max_value = resource_max[resource]
 				
 				if cur + change >= max_value and change >= 0: continue
+				if resource == 'cement' and cur + change > player.stone + player.change_stone: continue
 				
 				count = cur + change * looking_future_steps
 				score = (max_value - count) * k
