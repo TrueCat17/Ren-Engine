@@ -473,11 +473,12 @@ init python:
 			player = self.player
 			priority = self.get_resource_priority()
 			
+			deficit_resource = player.deficit_resource_with_hope(self.resource_cells)
+			
 			for _score, resource in priority:
 				building_full_name = resource_to_building[resource]
 				building = get_building_short_name(building_full_name)
 				
-				deficit_resource = player.deficit_resource()
 				if deficit_resource and deficit_resource != resource and building_full_name in self.have_buildings: continue
 				
 				if building in sc_buildings.common:
@@ -555,19 +556,21 @@ init python:
 			
 			def have_max():
 				return player.wood > self.resource_max['wood'] and player.stone > self.resource_max['stone']
-			def have_half():
-				return player.wood > self.resource_max['wood'] / 2 and player.stone > self.resource_max['stone'] / 2
+			def have_half_next():
+				next_wood  = player.wood  + player.change_wood
+				next_stone = player.stone + player.change_stone
+				return next_wood > self.resource_max['wood'] / 2 and next_stone > self.resource_max['stone'] / 2
 			
 			if have_max():
 				self.attacking = True
-			if not have_half():
+			if not have_half_next():
 				self.attacking = False
 			
 			if self.attacking:
 				if self.check_attack():
 					return
 			
-			if have_half():
+			if have_half_next():
 				if self.check_defence():
 					return
 			

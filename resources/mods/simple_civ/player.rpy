@@ -72,6 +72,21 @@ init python:
 			return None
 		
 		
+		def deficit_resource_with_hope(self, resource_cells):
+			props = self.__dict__
+			technological_progress = props['technological_progress']
+			
+			for resource in sc_info.simple_resources:
+				k = 5 if resource == 'food' else 1
+				if props[resource] + props['change_' + resource] * k >= 0: continue
+				
+				max_level = technological_progress[resource]
+				for cell in resource_cells[resource]:
+					if cell.building is None or cell.building_level < max_level:
+						return resource
+			return None
+		
+		
 		def build(self, x, y, building, level, free = False):
 			cell = sc_map.map[y][x]
 			
