@@ -413,6 +413,7 @@ init python:
 		for player in sc_map.players:
 			if player.bot:
 				player.bot.prepare()
+				player.calc_changing_resources()
 		sc_map.step_time = time.time()
 	
 	
@@ -468,9 +469,10 @@ init python:
 			for cell in line:
 				player_forces = cell.player_forces
 				max_force = max(player_forces)
-				if not max_force: continue
-				
 				player = cell.player
+				
+				if not max_force and player is None: continue
+				
 				if player is not None and player_forces[player.index] == max_force:
 					cell.next_player = player
 				else:
