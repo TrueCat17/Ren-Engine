@@ -1,24 +1,4 @@
 init python:
-	resource_to_building = {
-		'food': 'farm',
-		'wood': 'sawmill',
-		'stone': 'stone career',
-		'coal':   'coal career',
-		'metal': 'metal career',
-		'cement': 'cement factory',
-		'steel':  'metal factory',
-		'science': 'college',
-	}
-	
-	def get_building_short_name(building_full_name):
-		if 'career' in building_full_name:
-			return 'career'
-		return building_full_name
-	def get_building_full_name(resource, building):
-		if building == 'career':
-			return resource + ' ' + building
-		return building
-	
 	
 	class SC_Bot(SimpleObject):
 		
@@ -82,7 +62,7 @@ init python:
 				self.metal_factories.append(cell)
 			
 			self.player.build(cell.x, cell.y, building, level)
-			self.have_buildings.add(get_building_full_name(cell.resource, building))
+			self.have_buildings.add(sc_buildings.get_full_name(cell.resource, building))
 		
 		
 		def choose_technology(self):
@@ -143,23 +123,22 @@ init python:
 			resource_max = self.resource_max
 			have_buildings = self.have_buildings
 			
+			full_building_for_resource = sc_buildings.full_building_for_resource
+			
 			res = []
 			for resource, k in self.resource_k.items():
 				cur = props[resource] if resource != 'science' else 0
 				change = props['change_' + resource]
 				max_value = resource_max[resource]
 				
-				if cur + change >= max_value and change >= 0: continue
-				if resource == 'cement' and cur + change > player.stone + player.change_stone: continue
-				
 				count = cur + change * looking_future_steps
 				score = (max_value - count) * k
 				
-				building_full_name = resource_to_building[resource]
+				building_full_name = full_building_for_resource[resource]
 				if building_full_name not in have_buildings:
 					score += 1e9
 				
-				res.append((score, resource))
+				res.append((score, resource, (cur, change, max_value)))
 			
 			res.sort(key = lambda t: t[0], reverse = True)
 			return res
@@ -365,7 +344,7 @@ init python:
 			
 			have_buildings = self.have_buildings = set()
 			for cell in player.building_cells:
-				building_full_name = get_building_full_name(cell.resource, cell.building)
+				building_full_name = sc_buildings.get_full_name(cell.resource, cell.building)
 				have_buildings.add(building_full_name)
 			
 			for cells in (self.cement_factories, self.metal_factories):
@@ -473,13 +452,20 @@ init python:
 			player = self.player
 			priority = self.get_resource_priority()
 			
+			full_building_for_resource = sc_buildings.full_building_for_resource
+			building_for_resource = sc_buildings.building_for_resource
+			
 			deficit_resource = player.deficit_resource_with_hope(self.resource_cells)
 			
-			for _score, resource in priority:
-				building_full_name = resource_to_building[resource]
-				building = get_building_short_name(building_full_name)
-				
+			for _score, resource, props in priority:
+				building_full_name = full_building_for_resource[resource]
 				if deficit_resource and deficit_resource != resource and building_full_name in self.have_buildings: continue
+				
+				cur, change, max_value = props
+				if cur + change >= max_value and change >= 0: continue
+				if resource == 'cement' and cur + change > player.stone + player.change_stone: continue
+				
+				building = building_for_resource[resource]
 				
 				if building in sc_buildings.common:
 					if player.technological_progress[building] == 0: continue
@@ -559,6 +545,16 @@ init python:
 			def have_half_next():
 				next_wood  = player.wood  + player.change_wood
 				next_stone = player.stone + player.change_stone
+				
+				# we can disable some cement factories
+				for resource, count in sc_buildings.takes['cement factory']:
+					if resource == 'stone':
+						stone_for_one_cement_factory = count
+						break
+				else:
+					stone_for_one_cement_factory = 0
+				next_stone += stone_for_one_cement_factory * len(self.cement_factories) / 2
+				
 				return next_wood > self.resource_max['wood'] / 2 and next_stone > self.resource_max['stone'] / 2
 			
 			if have_max():
@@ -580,39 +576,48 @@ init python:
 		
 		def fix_factories(self):
 			player = self.player
-			player.calc_changing_resources()
+			calc_changing_resources = player.calc_changing_resources
+			calc_changing_resources()
+			
+			props = player.__dict__
+			stone = props['stone']
+			cement = props['cement']
+			
+			update_forces = sc_map.update_forces
 			
 			for cell in self.cement_factories:
-				if player.stone + player.change_stone > player.cement + player.change_cement: break
+				if stone + props['change_stone'] > cement + props['change_cement']: break
 				
 				cell.disabled = True
-				player.calc_changing_resources()
-				sc_map.update_forces()
+				calc_changing_resources()
+				update_forces()
 			
 			resource_max = self.resource_max
 			
 			for building, cells in (('cement factory', self.cement_factories), ('metal factory', self.metal_factories)):
 				
 				resource, _count = sc_buildings.makes[building]
-				if player[resource] >= resource_max[resource]:
+				if props[resource] >= resource_max[resource]:
 					for cell in cells:
 						cell.disabled = True
-					player.calc_changing_resources()
-					sc_map.update_forces()
+					calc_changing_resources()
+					update_forces()
 					continue
 				
 				takes = sc_buildings.takes[building]
 				for cell in cells:
+					if cell.disabled: continue
+					
 					disable = False
 					for resource, _count in takes:
-						if player[resource] + player['change_' + resource] < 0:
+						if props[resource] + props['change_' + resource] < 0:
 							disable = True
 							break
 					
 					if disable:
 						cell.disabled = True
-						player.calc_changing_resources()
-						sc_map.update_forces()
+						calc_changing_resources()
+						update_forces()
 					else:
 						break
 		
@@ -620,28 +625,31 @@ init python:
 		def fix_resources(self):
 			self.fix_factories()
 			player = self.player
-			
-			if not player.deficit_resource():
-				return
+			food = player.food
+			calc_changing_resources = player.calc_changing_resources
 			
 			def get_common_score():
 				res = 0
 				priority = self.get_resource_priority()
-				for score, resource in priority:
+				for score, resource, _props in priority:
 					if score > 0 and resource != 'science':
 						res += score
 				return res
 			
 			simple_buildings = sc_buildings.simple
+			power = sc_buildings.power
+			get_full_name = sc_buildings.get_full_name
 			
 			for soft_actions in (True, False):
+				if not player.deficit_resource(): break
+				
 				seen = set()
 				array_for = defaultdict(list)
 				for cell in player.building_cells:
 					if cell.disabled: continue
 					
 					building = cell.building
-					building_full_name = get_building_full_name(cell.resource, building)
+					building_full_name = get_full_name(cell.resource, building)
 					
 					if building == 'farm': continue
 					if soft_actions:
@@ -651,7 +659,7 @@ init python:
 						seen.add(building_full_name)
 						if building not in ('college', 'barracks'): continue
 					
-					score = sc_buildings.power[cell.building_level]
+					score = power[cell.building_level]
 					if building in simple_buildings:
 						score *= cell.resource_count
 					
@@ -665,7 +673,7 @@ init python:
 					cells[:] = [cell for _score, cell in cells]
 				
 				while player.deficit_resource() and any(array_for.values()):
-					have_food = player.food + player.change_food >= 0
+					have_food = food + player.change_food >= 0
 					
 					prev_score = get_common_score()
 					min_building_full_name = None
@@ -677,7 +685,7 @@ init python:
 						cell = cells[0]
 						
 						cell.disabled = True
-						player.calc_changing_resources()
+						calc_changing_resources()
 						score = get_common_score()
 						cell.disabled = False
 						
@@ -685,13 +693,14 @@ init python:
 							min_building_full_name = building_full_name
 							min_score = score
 					
+					# min_score is not None
 					if have_food and min_score >= prev_score:
 						break
 					
 					cells = array_for[min_building_full_name]
 					cell = cells.pop(0)
 					cell.disabled = True
-					player.calc_changing_resources()
+					calc_changing_resources()
 					sc_map.update_forces()
 				
 				self.fix_factories()

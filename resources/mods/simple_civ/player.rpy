@@ -75,14 +75,16 @@ init python:
 		def deficit_resource_with_hope(self, resource_cells):
 			props = self.__dict__
 			technological_progress = props['technological_progress']
+			building_for_resource = sc_buildings.building_for_resource
 			
 			for resource in sc_info.simple_resources:
 				k = 5 if resource == 'food' else 1
 				if props[resource] + props['change_' + resource] * k >= 0: continue
 				
+				building = building_for_resource[resource]
 				max_level = technological_progress[resource]
 				for cell in resource_cells[resource]:
-					if cell.building is None or cell.building_level < max_level:
+					if cell.building is None or (cell.building == building and cell.building_level < max_level):
 						return resource
 			return None
 		
@@ -144,38 +146,39 @@ init python:
 			takes_get = sc_buildings.takes.get
 			makes_get = sc_buildings.makes.get
 			
-			props = self.__dict__
-			
 			start_value = sc_map.bonus_for_bots if self.bot else 0
-			for resource in sc_info.resources:
-				props['change_' + resource] = start_value
+			change_props = { resource: start_value for resource in sc_info.resources }
 			
 			for cell in self.building_cells:
 				building = cell.building
 				level = cell.building_level
-				cell_power = power[level]
 				
 				for resource, count in support[building]:
-					props['change_' + resource] -= count * level
+					change_props[resource] -= count * level
 				
 				if cell.disabled:
 					continue
 				
-				props['change_science'] += cell_power
-				props['change_food'] -= level
+				cell_power = power[level]
+				change_props['science'] += cell_power
+				change_props['food'] -= level
 				
 				if building in simple:
-					props['change_' + cell.resource] += cell.resource_count * cell_power
+					change_props[cell.resource] += cell.resource_count * cell_power
 				else:
 					takes = takes_get(building)
 					if takes is not None:
 						for resource, count in takes:
-							props['change_' + resource] -= count * cell_power
+							change_props[resource] -= count * cell_power
 					
 					makes = makes_get(building)
 					if makes is not None:
 						resource, count = makes
-						props['change_' + resource] += count * cell_power
+						change_props[resource] += count * cell_power
+			
+			props = self.__dict__
+			for resource, count in change_props.items():
+				props['change_' + resource] = count
 		
 		
 		def update(self):
