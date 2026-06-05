@@ -33,6 +33,7 @@
 #include "utils/btn_rect.h"
 #include "utils/file_system.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/mouse.h"
 #include "utils/string.h"
 #include "utils/stage.h"
@@ -70,10 +71,10 @@ void Game::load(const std::string &table, const std::string &name) {
 
 	for (const std::string &path : {savesPath, tablePath, fullPath}) {
 		if (!FileSystem::exists(path)) {
-			Utils::outError("Game::load",
-			                "Failed to open save <%_%>\n"
-			                "Directory <%> not found",
-			                table, name, path);
+			Message::outError("Game::load",
+			                  "Failed to open save <%_%>\n"
+			                  "Directory <%> not found",
+			                  table, name, path);
 			return;
 		}
 	}
@@ -83,14 +84,14 @@ void Game::load(const std::string &table, const std::string &name) {
 	};
 	for (const char *fileName : {"/stack", "/info", "/py_globals"}) {
 		if (!fileExists(fullPath + fileName)) {
-			Utils::outError("Game::load", "File <%%> not exists or empty", fullPath, fileName);
+			Message::outError("Game::load", "File <%%> not exists or empty", fullPath, fileName);
 			return;
 		}
 	}
 
 	std::string modName;
 	{//load info
-		std::ifstream is(fullPath + "/info");
+		std::ifstream is(fullPath + "/info", std::ios_base::binary);
 
 		std::getline(is, modName);
 	}
@@ -104,7 +105,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	std::string tmp;
 
 
-	std::ifstream is(loadPath + "/info");
+	std::ifstream is(loadPath + "/info", std::ios_base::binary);
 	std::string modName;
 	std::getline(is, modName);
 
@@ -118,7 +119,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 		std::getline(is, tmp);
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
-			Utils::outError(loadFunc, "In string <%> expected 2 args", tmp);
+			Message::outError(loadFunc, "In string <%> expected 2 args", tmp);
 			fps = 60;
 			hideMouse = true;
 		}else {
@@ -348,7 +349,7 @@ int Game::getImageWidth(const std::string &image) {
 	if (surface) {
 		return surface->w;
 	}
-	Utils::outMsg("Game::getImageWidth", "surface == nullptr");
+	Message::outMsg("Game::getImageWidth", "surface == nullptr");
 	return 0;
 }
 int Game::getImageHeight(const std::string &image) {
@@ -356,14 +357,14 @@ int Game::getImageHeight(const std::string &image) {
 	if (surface) {
 		return surface->h;
 	}
-	Utils::outMsg("Game::getImageHeight", "surface == nullptr");
+	Message::outMsg("Game::getImageHeight", "surface == nullptr");
 	return 0;
 }
 
 Uint32 Game::getImagePixel(const std::string &image, int x, int y) {
 	SurfacePtr surface = ImageManipulator::getImage(image, false);
 	if (!surface) {
-		Utils::outMsg("Game::getImagePixel", "surface == nullptr");
+		Message::outMsg("Game::getImagePixel", "surface == nullptr");
 		return 0;
 	}
 	SDL_Rect draw = { x, y, surface->w, surface->h };

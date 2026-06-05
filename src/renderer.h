@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include <mutex>
+#include <string>
 #include <vector>
 
 #include "utils/image_typedefs.h"
@@ -27,15 +28,15 @@ public:
 	static bool needToRedraw;
 	static bool needToUpdateViewPort;
 
-	static std::mutex renderMutex;
-
 	static std::mutex renderDataMutex;
 	static std::vector<RenderStruct> renderData;
 
 	static std::string driver;
 	static int maxSize;
+
 	static bool init();
 	static bool useFastOpenGL();
+	static void draw();
 
 	static void updateSelectedRect();
 

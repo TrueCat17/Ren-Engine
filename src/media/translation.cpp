@@ -4,10 +4,11 @@
 #include <map>
 #include <set>
 
+#include "gv.h"
 #include "media/py_utils.h"
 #include "media/py_utils/convert_to_py.h"
 #include "parser/mods.h"
-#include "utils/utils.h"
+#include "utils/message.h"
 
 
 static bool enabled;
@@ -32,9 +33,9 @@ static void update() {
 				}
 			}
 			if (!prevValue.empty()) {
-				Utils::outError("Translation::update",
-				                "Expected <new> before end of translation block\n%",
-				                node->getPlace());
+				Message::outError("Translation::update",
+				                  "Expected <new> before end of translation block\n%",
+				                  node->getPlace());
 			}
 		}
 	}

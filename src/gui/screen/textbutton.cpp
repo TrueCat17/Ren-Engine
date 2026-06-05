@@ -2,7 +2,7 @@
 
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
-#include "utils/utils.h"
+#include "utils/message.h"
 
 
 TextButton::TextButton(Node *node, Screen *screen):
@@ -29,9 +29,9 @@ void TextButton::updateTexture() {
 	surface = ImageManipulator::getImage(path, false);
 	if (!surface) {
 		std::string prop = curParamsIsHover ? "hover" : "ground";
-		Utils::outError("TextButton::updateTexture",
-		                "Failed to load % image <%>\n%",
-		                prop, path, node->getPlace());
+		Message::outError("TextButton::updateTexture",
+		                  "Failed to load % image <%>\n%",
+		                  prop, path, node->getPlace());
 	}
 }
 

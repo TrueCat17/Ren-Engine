@@ -14,6 +14,7 @@
 #include "media/image_manipulator.h"
 #include "utils/algo.h"
 #include "utils/file_system.h"
+#include "utils/message.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -44,115 +45,12 @@ bool ImageCaches::surfaceIsOpaque(const SurfacePtr &surface) {
 
 
 SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
-	SDL_PixelFormat format = surface->format;
-	if (format == SDL_PIXELFORMAT_RGBA32) return surface;
+	if (surface->format == SDL_PIXELFORMAT_RGBA32) return surface;
 
-	const int w = surface->w;
-	const int h = surface->h;
-	const int pitch = surface->pitch;
-	const Uint8 *pixels = (const Uint8*)surface->pixels;
+	SurfacePtr res = ImageManipulator::getNewNotClear(surface->w, surface->h);
+	SDL_BlitSurface(surface.get(), nullptr, res.get(), nullptr);
 
-	SurfacePtr newSurface = ImageManipulator::getNewNotClear(w, h);
-	const int newPitch = newSurface->pitch;
-	Uint8 *newPixels = (Uint8*)newSurface->pixels;
-
-	const SDL_Palette *palette = SDL_GetSurfacePalette(surface.get());
-	if (palette) {
-		for (int y = 0; y < h; ++y) {
-			const Uint8 *src = pixels + y * pitch;
-			const Uint8 *srcEnd = src + w - (w % 4);
-			Uint8 *dst = newPixels + y * newPitch;
-
-			while (src != srcEnd) {
-				const SDL_Color &color1 = palette->colors[*src++];
-				const SDL_Color &color2 = palette->colors[*src++];
-				const SDL_Color &color3 = palette->colors[*src++];
-				const SDL_Color &color4 = palette->colors[*src++];
-
-				dst[Rshift / 8] = color1.r;
-				dst[Gshift / 8] = color1.g;
-				dst[Bshift / 8] = color1.b;
-				dst[Ashift / 8] = color1.a;
-
-				dst[Rshift / 8 + 4] = color2.r;
-				dst[Gshift / 8 + 4] = color2.g;
-				dst[Bshift / 8 + 4] = color2.b;
-				dst[Ashift / 8 + 4] = color2.a;
-
-				dst[Rshift / 8 + 8] = color3.r;
-				dst[Gshift / 8 + 8] = color3.g;
-				dst[Bshift / 8 + 8] = color3.b;
-				dst[Ashift / 8 + 8] = color3.a;
-
-				dst[Rshift / 8 + 12] = color4.r;
-				dst[Gshift / 8 + 12] = color4.g;
-				dst[Bshift / 8 + 12] = color4.b;
-				dst[Ashift / 8 + 12] = color4.a;
-
-				dst += 16;
-			}
-			for (int i = 0; i < w % 4; ++i) {
-				const SDL_Color &color = palette->colors[*src++];
-
-				dst[Rshift / 8] = color.r;
-				dst[Gshift / 8] = color.g;
-				dst[Bshift / 8] = color.b;
-				dst[Ashift / 8] = color.a;
-
-				dst += 4;
-			}
-		}
-	}else {
-		bool hasColorKey = SDL_SurfaceHasColorKey(surface.get());
-		if (format == SDL_PIXELFORMAT_RGB24 && !hasColorKey) {
-			for (int y = 0; y < surface->h; ++y) {
-				const Uint8 *src = pixels + y * pitch;
-				const Uint8 *srcEnd = src + (w - (w % 4)) * 3;
-				Uint8 *dst = newPixels + y * newPitch;
-
-				while (src != srcEnd) {
-					dst[Rshift / 8] = src[Rshift / 8];
-					dst[Gshift / 8] = src[Gshift / 8];
-					dst[Bshift / 8] = src[Bshift / 8];
-					dst[Ashift / 8] = 255;
-
-					dst[Rshift / 8 + 4] = src[Rshift / 8 + 3];
-					dst[Gshift / 8 + 4] = src[Gshift / 8 + 3];
-					dst[Bshift / 8 + 4] = src[Bshift / 8 + 3];
-					dst[Ashift / 8 + 4] = 255;
-
-					dst[Rshift / 8 + 8] = src[Rshift / 8 + 6];
-					dst[Gshift / 8 + 8] = src[Gshift / 8 + 6];
-					dst[Bshift / 8 + 8] = src[Bshift / 8 + 6];
-					dst[Ashift / 8 + 8] = 255;
-
-					dst[Rshift / 8 + 12] = src[Rshift / 8 + 9];
-					dst[Gshift / 8 + 12] = src[Gshift / 8 + 9];
-					dst[Bshift / 8 + 12] = src[Bshift / 8 + 9];
-					dst[Ashift / 8 + 12] = 255;
-
-					src += 12;
-					dst += 16;
-				}
-				for (int i = 0; i < w % 4; ++i) {
-					dst[Rshift / 8] = src[Rshift / 8];
-					dst[Gshift / 8] = src[Gshift / 8];
-					dst[Bshift / 8] = src[Bshift / 8];
-					dst[Ashift / 8] = 255;
-
-					src += 3;
-					dst += 4;
-				}
-			}
-		}else {
-			if (hasColorKey) {
-				SDL_FillSurfaceRect(newSurface.get(), nullptr, 0);
-			}
-			SDL_BlitSurface(surface.get(), nullptr, newSurface.get(), nullptr);
-		}
-	}
-
-	return newSurface;
+	return res;
 }
 
 
@@ -238,7 +136,7 @@ TexturePtr ImageCaches::getTexture(SDL_Renderer *renderer, const SurfacePtr &sur
 		return texture;
 	}
 
-	Utils::outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
+	Message::outMsg("SDL_CreateTextureFromSurface", SDL_GetError());
 	return nullptr;
 }
 void ImageCaches::clearTextures() {
@@ -398,11 +296,11 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 	if (String::startsWith(realPath, "images/bg/black.")) {
 		res = SDL_CreateSurface(1, 1, SDL_PIXELFORMAT_RGBA32);
 		if (!res) {
-			Utils::outMsg("SDL_CreateSurface", SDL_GetError());
-			return nullptr;
+			Message::outMsg("SDL_CreateSurface", SDL_GetError());
+			return res;
 		}
 		if (!SDL_WriteSurfacePixel(res.get(), 0, 0, 0, 0, 0, 255)) {
-			Utils::outMsg("SDL_WriteSurfacePixel", SDL_GetError());
+			Message::outMsg("SDL_WriteSurfacePixel", SDL_GetError());
 			return nullptr;
 		}
 
@@ -435,8 +333,8 @@ SurfacePtr ImageCaches::getSurface(const std::string &path, bool formatRGBA32) {
 
 	res = IMG_Load(realPath.c_str());
 	if (!res) {
-		Utils::outMsg("IMG_Load", SDL_GetError());
-		return nullptr;
+		Message::outMsg("IMG_Load", SDL_GetError());
+		return res;
 	}
 
 	SDL_Palette *palette = SDL_GetSurfacePalette(res.get());

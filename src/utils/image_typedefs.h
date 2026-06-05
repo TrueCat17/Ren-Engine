@@ -6,7 +6,7 @@
 #include "gv.h"
 
 
-template <typename T, void (*deleter)(T*)>
+template <typename T, void (*deleter)(T*), std::mutex *mutex>
 class SmartPtr {
 private:
 	T *ptr = nullptr;
@@ -25,7 +25,10 @@ private:
 
 public:
 	void operator=(const SmartPtr &pointer) {
-		std::lock_guard g(GV::mutexForSmartPtr);
+		if constexpr (mutex) {
+			mutex->lock();
+		}
+
 		clear();
 
 		ptr = pointer.ptr;
@@ -33,9 +36,16 @@ public:
 		if (counter) {
 			++*counter;
 		}
+
+		if constexpr (mutex) {
+			mutex->unlock();
+		}
 	}
 	void operator=(T *pointer) {
-		std::lock_guard g(GV::mutexForSmartPtr);
+		if constexpr (mutex) {
+			mutex->lock();
+		}
+
 		clear();
 
 		ptr = pointer;
@@ -43,6 +53,10 @@ public:
 			counter = new int(1);
 		}else {
 			counter = nullptr;
+		}
+
+		if constexpr (mutex) {
+			mutex->unlock();
 		}
 	}
 
@@ -56,8 +70,15 @@ public:
 	}
 
 	~SmartPtr() {
-		std::lock_guard g(GV::mutexForSmartPtr);
+		if constexpr (mutex) {
+			mutex->lock();
+		}
+
 		clear();
+
+		if constexpr (mutex) {
+			mutex->unlock();
+		}
 	}
 
 
@@ -86,7 +107,7 @@ public:
 	}
 };
 
-using SurfacePtr = SmartPtr<SDL_Surface, SDL_DestroySurface>;
-using TexturePtr = SmartPtr<SDL_Texture, SDL_DestroyTexture>;
+using SurfacePtr = SmartPtr<SDL_Surface, SDL_DestroySurface, &GV::mutexForSurfacePtr>;
+using TexturePtr = SmartPtr<SDL_Texture, SDL_DestroyTexture, nullptr>;
 
 #endif // IMAGETYPEDEFS_H

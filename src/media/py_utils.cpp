@@ -3,9 +3,7 @@
 #include "py_utils/absolute.h"
 
 
-#include <deque>
 #include <map>
-#include <mutex>
 
 
 #include "gui/gui.h"
@@ -17,8 +15,9 @@
 #include "parser/mods.h"
 
 #include "utils/algo.h"
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
+#include "utils/thread_tasks.h"
 
 
 using PyCode = std::tuple<const std::string, const std::string, uint32_t>;
@@ -26,9 +25,9 @@ static std::map<PyCode, PyObject*> compiledObjects;
 
 static std::map<std::string, PyObject*> constObjects;
 
-static const std::string_view True = "True";
+static const std::string_view True  = "True";
 static const std::string_view False = "False";
-static const std::string_view None = "None";
+static const std::string_view None  = "None";
 
 
 static PyObject *tracebackModule = nullptr;
@@ -91,14 +90,14 @@ static void initInterpreterImpl() {
 	}
 	formatTraceback = PyObject_GetAttrString(tracebackModule, "format_tb");
 	if (!formatTraceback) {
-		Utils::outMsg("PyUtils::initInterpreter", "traceback.format_tb == nullptr");
+		Message::outMsg("PyUtils::initInterpreter", "traceback.format_tb == nullptr");
 		std::abort();
 	}
 
 	PyObject *builtinModule = PyImport_AddModule("builtins");
 	builtinDict = PyModule_GetDict(builtinModule);
 	if (!builtinDict) {
-		Utils::outMsg("PyUtils::initInterpreter", "builtins == nullptr");
+		Message::outMsg("PyUtils::initInterpreter", "builtins == nullptr");
 		std::abort();
 	}
 
@@ -106,7 +105,7 @@ static void initInterpreterImpl() {
 	PyUtils::marshalDumps = PyObject_GetAttrString(marshalModule, "dumps");
 	PyUtils::marshalLoads = PyObject_GetAttrString(marshalModule, "loads");
 	if (!PyUtils::marshalDumps || !PyUtils::marshalLoads) {
-		Utils::outMsg("PyUtils::initInterpreter", "marshal == nullptr");
+		Message::outMsg("PyUtils::initInterpreter", "marshal == nullptr");
 		std::abort();
 	}
 
@@ -114,10 +113,10 @@ static void initInterpreterImpl() {
 	PyUtils::global = PyModule_GetDict(main);
 
 	if (!PyAbsolute_PreInit()) {
-		Utils::outMsg("PyUtils::initInterpreter", "Failure on call PyAbsolute_PreInit()");
+		Message::outMsg("PyUtils::initInterpreter", "Failure on call PyAbsolute_PreInit()");
 	}
 	if (PyType_Ready(&PyAbsolute_Type) < 0) {
-		Utils::outMsg("PyUtils::initInterpreter", "Can't initialize absolute type");
+		Message::outMsg("PyUtils::initInterpreter", "Can't initialize absolute type");
 	}else {
 		PyDict_SetItemString(builtinDict, "absolute", (PyObject*)&PyAbsolute_Type);
 	}
@@ -126,66 +125,13 @@ static void initInterpreterImpl() {
 }
 
 
-static std::thread::id pythonThreadId;
-static size_t funcsForPyThreadIndex = 0;
-static std::deque<std::pair<const std::function<void()>*, size_t>> funcsForPyThread;
-static std::deque<size_t> funcsForPyThreadCalced;
-static std::mutex funcsForPyThreadMutex;
-static std::mutex funcsForPyThreadCalcedMutex;
-
-static void initImpl() {
-	Utils::setThreadName("python");
-	pythonThreadId = std::this_thread::get_id();
-
-	PyCodeDiskCache::init();
-
-	while (true) {
-		if (!funcsForPyThread.empty()) {
-			const std::function<void()> *func;
-			size_t funcId;
-			{
-				std::lock_guard g(funcsForPyThreadMutex);
-				auto &p = funcsForPyThread.front();
-				func = p.first;
-				funcId = p.second;
-				funcsForPyThread.pop_front();
-			}
-			(*func)();
-			{
-				std::lock_guard g(funcsForPyThreadCalcedMutex);
-				funcsForPyThreadCalced.push_back(funcId);
-			}
-		}else {
-			Utils::sleep(50 * 1e-6);
-		}
-	}
-}
 void PyUtils::init() {
-	std::thread(initImpl).detach();
+	ThreadTasks::python.createThread("python");
+	callInPythonThread(PyCodeDiskCache::init);
 }
 
 void PyUtils::callInPythonThread(const std::function<void()> &func) {
-	if (std::this_thread::get_id() == pythonThreadId) {
-		func();
-		return;
-	}
-
-	size_t funcId;
-	{
-		std::lock_guard g(funcsForPyThreadMutex);
-		funcId = ++funcsForPyThreadIndex;
-		funcsForPyThread.push_back({&func, funcId});
-	}
-	while (true) {
-		{
-			std::lock_guard g(funcsForPyThreadCalcedMutex);
-			if (!funcsForPyThreadCalced.empty() && funcsForPyThreadCalced.front() == funcId) {
-				funcsForPyThreadCalced.pop_front();
-				return;
-			}
-		}
-		Utils::sleep(10 * 1e-6);
-	}
+	ThreadTasks::python.addAndWait(func);
 }
 
 
@@ -273,7 +219,7 @@ static void errorProcessingImpl(const std::string &code) {
 	PyObject *pyType, *pyValue, *pyTraceback;
 	PyErr_Fetch(&pyType, &pyValue, &pyTraceback);
 	if (!pyType) {
-		Utils::outMsg("PyUtils::errorProcessing", "pyType == nullptr");
+		Message::outMsg("PyUtils::errorProcessing", "pyType == nullptr");
 		return;
 	}
 
@@ -339,7 +285,7 @@ static void errorProcessingImpl(const std::string &code) {
 
 	Logger::log(out);
 
-	Utils::outMsg("Python", "See details in var/log.txt");
+	Message::outMsg("Python", "See details in var/log.txt");
 
 	Py_XDECREF(pyType);
 	Py_XDECREF(pyValue);

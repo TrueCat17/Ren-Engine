@@ -4,11 +4,11 @@
 #include "style.h"
 
 #include "parser/syntax_checker.h"
-
 #include "media/py_utils.h"
+
+#include "utils/message.h"
 #include "utils/scope_exit.h"
 #include "utils/stage.h"
-#include "utils/utils.h"
 
 
 Child::Child(Node *node, Container *screenParent, Screen *screen):
@@ -104,7 +104,7 @@ void Child::updateProps() {
 	if (!props || props == Py_None) return;
 	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
 		std::string type = props->ob_type->tp_name;
-		Utils::outError("Child::updateProps", "Expected list or tuple, got %", type);
+		Message::outError("Child::updateProps", "Expected list or tuple, got %", type);
 		return;
 	}
 

@@ -2,7 +2,7 @@
 
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
-#include "utils/utils.h"
+#include "utils/message.h"
 
 
 Imagemap::Imagemap(Node *node, Screen *screen):
@@ -23,14 +23,14 @@ void Imagemap::updateTexture() {
 
 	surface = ImageManipulator::getImage(groundPath, false);
 	if (!surface) {
-		Utils::outError("Imagemap::updateTexture",
-		                "Failed to load ground image <%>\n%",
-		                groundPath, node->getPlace());
+		Message::outError("Imagemap::updateTexture",
+		                  "Failed to load ground image <%>\n%",
+		                  groundPath, node->getPlace());
 	}
 	hover = ImageManipulator::getImage(hoverPath, false);
 	if (!hover) {
-		Utils::outError("Imagemap::updateTexture",
-		                "Failed to load hover image <%>\n%",
-		                hoverPath, node->getPlace());
+		Message::outError("Imagemap::updateTexture",
+		                  "Failed to load hover image <%>\n%",
+		                  hoverPath, node->getPlace());
 	}
 }

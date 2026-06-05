@@ -18,9 +18,11 @@
 
 #include "parser/mods.h"
 
+#include "utils/clipboard.h"
 #include "utils/file_system.h"
 #include "utils/game.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/mouse.h"
 #include "utils/path_finder.h"
 #include "utils/stage.h"
@@ -77,14 +79,15 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setValue("need_save", false);
 	setValue("need_screenshot", false);
 	setValue("screenshot_width", 640);
-	setValue("screenshot_height", int(640 / String::toDouble(Config::get("window_w_div_h"))));
+	const double k = String::toDouble(Config::get("window_w_div_h"));
+	setValue("screenshot_height", int(640 / (k < 0.1 ? 1.777 : k)));
 
 	setFunc("ftoi", ftoi);
 	setFunc("get_md5", Utils::md5);
 
 	setFunc("get_current_mod", getCurrentMod);
 	setFunc("get_mods", Mods::getList);
-	setFunc("_out_msg", Utils::outMsg);
+	setFunc("_out_msg", Message::outMsg);
 	setFunc("_log_str_with_end", Logger::logWithEnd);
 
 	setFunc("_register_channel", AudioManager::registerChannel);
@@ -161,8 +164,8 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("get_last_tick", Game::getLastTick);
 	setFunc("get_game_time", Game::getGameTime);
 
-	setFunc("get_clipboard_text", Utils::getClipboardText);
-	setFunc("set_clipboard_text", Utils::setClipboardText);
+	setFunc("get_clipboard_text", Clipboard::get);
+	setFunc("set_clipboard_text", Clipboard::set);
 
 	setFunc("get_screen_times", GUI::getScreenTimes);
 

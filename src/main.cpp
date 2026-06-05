@@ -1,10 +1,7 @@
-#include <iostream>
 #include <fstream>
 #include <thread>
 
 #include <SDL3/SDL.h>
-
-#include <SDL3/SDL_image.h>
 #include <SDL3/SDL_ttf.h>
 
 #include "gv.h"
@@ -29,10 +26,11 @@
 #include "utils/game.h"
 #include "utils/image_caches.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/mouse.h"
-#include "utils/scope_exit.h"
 #include "utils/stage.h"
 #include "utils/string.h"
+#include "utils/thread_tasks.h"
 #include "utils/utils.h"
 
 
@@ -41,6 +39,7 @@ extern "C" {
 int setenv(const char *name, const char *value, int replace);
 }
 
+
 static std::string rootDirectory;
 static std::string setDir(std::string newRoot) {
 	if (newRoot.empty()) {
@@ -48,7 +47,7 @@ static std::string setDir(std::string newRoot) {
 		if (charsPathUTF8) {
 			newRoot = charsPathUTF8;
 		}else {
-			Utils::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
+			Message::outMsg("setDir, SDL_GetBasePath", SDL_GetError());
 		}
 
 		String::replaceAll(newRoot, "\\", "/");
@@ -94,8 +93,6 @@ static std::string setDir(std::string newRoot) {
 }
 
 static bool init() {
-	GV::messageThreadId = std::this_thread::get_id();
-
 	Math::init();
 	Logger::init();
 	Config::init();
@@ -104,15 +101,14 @@ static bool init() {
 	Utils::setThreadName(Config::get("window_title"));
 
 	if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)) {
-		Utils::outMsg("SDL_Init", SDL_GetError());
+		Message::outMsg("SDL_Init", SDL_GetError());
 		return false;
 	}
 
 	if (!TTF_Init()) {
-		Utils::outMsg("TTF_Init", SDL_GetError());
+		Message::outMsg("TTF_Init", SDL_GetError());
 		return false;
 	}
-
 
 	Mouse::init();
 
@@ -121,28 +117,34 @@ static bool init() {
 	Game::setMaxFps(fps);
 
 
-	SDL_DisplayMode displayMode = Stage::getDisplayMode();
-	Stage::width  = Math::inBounds(String::toInt(Config::get("window_width")),  Stage::MIN_WIDTH,  displayMode.w);
-	Stage::height = Math::inBounds(String::toInt(Config::get("window_height")), Stage::MIN_HEIGHT, displayMode.h);
+	Stage::updateDisplayMode();
+	const int maxStageWidth  = Stage::getMaxWidth();
+	const int maxStageHeight = Stage::getMaxHeight();
+
+	Stage::width  = Math::inBounds(String::toInt(Config::get("window_width")),  Stage::MIN_WIDTH,  maxStageWidth);
+	Stage::height = Math::inBounds(String::toInt(Config::get("window_height")), Stage::MIN_HEIGHT, maxStageHeight);
 
 	std::string windowTitle = Config::get("window_title");
 	Stage::window = SDL_CreateWindow(windowTitle.c_str(), Stage::width, Stage::height,
 	                                 SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 	if (!Stage::window) {
-		Utils::outMsg("SDL_CreateWindow", SDL_GetError());
+		Message::outMsg("SDL_CreateWindow", SDL_GetError());
 		return false;
+	}
+	if (!SDL_SetWindowMinimumSize(Stage::window, 640, 360)) {
+		Message::outMsg("SDL_SetWindowMinimumSize", SDL_GetError());
 	}
 
 	std::string xStr = Config::get("window_x");
 	std::string yStr = Config::get("window_y");
 	int x, y;
 	if (xStr == "None") {
-		x = (displayMode.w - Stage::width) / 2;
+		x = (maxStageWidth - Stage::width) / 2;
 	}else {
 		x = String::toInt(xStr);
 	}
 	if (yStr == "None") {
-		y = (displayMode.h - Stage::height) / 2;
+		y = (maxStageHeight - Stage::height) / 2;
 	}else {
 		y = String::toInt(yStr);
 	}
@@ -167,7 +169,7 @@ static bool init() {
 	}
 
 
-	if (Renderer::init()) {
+	if (!Renderer::init()) {
 		return false;
 	}
 	ImageManipulator::init();
@@ -216,17 +218,6 @@ static void loop() {
 	bool leftShift = false;
 	bool rightShift = false;
 
-	bool &mouseOut = Mouse::out;
-	bool mouseOutPrevDown = false;
-	int startWindowWidth = 0;
-	int startWindowHeight = 0;
-
-	//unmaximized = restored + resized
-	//but this events can be not in one frame (or even in nears)
-	double resizedTime = -1;
-	double restoredTime = -1;
-	double maxTimeForUnmaximized = 0.1;
-
 	std::vector<SDL_Event> tmpEvents;
 
 	while (true) {
@@ -235,6 +226,10 @@ static void loop() {
 		}
 		if (GV::exit) return;
 
+
+		while (Renderer::needToRender) {
+			Utils::sleep(0.001, false);
+		}
 
 		GV::updateMutex.lock();
 
@@ -246,13 +241,9 @@ static void loop() {
 			pyExecFromCpp("signals.send('enter_frame')");
 		});
 
-		bool resizeWithoutMouseDown = false;
-		bool mouseWasDown = false;
-		bool mouseWasUp = false;
-
 		tmpEvents.clear();
 		{
-			auto g = std::lock_guard(eventMutex);
+			std::lock_guard g(eventMutex);
 			events.swap(tmpEvents);
 		}
 
@@ -269,17 +260,181 @@ static void loop() {
 			}
 		}
 
-		Mouse::update();
-		BtnRect::checkMouseCursor();
-
 		for (const SDL_Event &event : tmpEvents) {
 			if (GV::exit) return;
 
 			Uint32 type = event.type;
 
+			if (type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+				BtnRect::disableSelectMode();
+
+				bool left  = event.button.button == SDL_BUTTON_LEFT;
+				bool right = event.button.button == SDL_BUTTON_RIGHT;
+				if (left || right) {
+					BtnRect::checkMouseClick(left, false);
+				}
+			}else
+			if (type == SDL_EVENT_MOUSE_BUTTON_UP) {
+				Mouse::setMouseDown(false);
+			}else
+
+
+			if (type == SDL_EVENT_KEY_DOWN) {
+				SDL_Keycode key = getKeyCode(event.key);
+				if (Key::getPressed(key)) continue;
+
+				if (key == SDLK_RETURN || key == SDLK_SPACE) {
+					if (BtnRect::checkMouseClick(true, true)) {
+						Key::setToNotReact(key);
+					}else {
+						Key::setFirstDownState(key);
+					}
+				}else {
+					bool isModKey = false;
+					if (key == SDLK_LCTRL || key == SDLK_RCTRL || key == SDLK_LALT || key == SDLK_RALT) {
+						isModKey = true;
+					}else
+					if (key == SDLK_LSHIFT) {
+						isModKey = true;
+						leftShift = true;
+					}else
+					if (key == SDLK_RSHIFT) {
+						isModKey = true;
+						rightShift = true;
+					}
+
+					bool isFKey = key >= SDLK_F1 && key <= SDLK_F12;
+
+					bool selectMode;
+					if (isModKey || isFKey) {
+						selectMode = false;
+					}else {
+						selectMode = BtnRect::getSelectMode();
+						BtnRect::processKey(key, leftShift || rightShift);
+						if (BtnRect::getSelectMode()) {
+							selectMode = true;
+						}
+					}
+
+					if (!selectMode) {
+						Key::setFirstDownState(key);
+					}
+				}
+			}else
+
+			if (type == SDL_EVENT_KEY_UP) {
+				SDL_Keycode key = getKeyCode(event.key);
+				Key::setUpState(key);
+
+				if (key == SDLK_LSHIFT) {
+					leftShift = false;
+				}else
+				if (key == SDLK_RSHIFT) {
+					rightShift = false;
+				}
+			}
+		}
+
+		GUI::update();
+
+		BtnRect::checkSelectedBtn();
+
+		if (!Stage::minimized) {
+			std::lock_guard g(Renderer::renderDataMutex);
+			Renderer::updateSelectedRect();
+			Renderer::renderData.clear();
+			if (Stage::screens) {
+				Stage::screens->draw();
+			}
+			Renderer::needToRender = true;
+		}
+
+		Config::save();
+
+		if (pyExecFromCppWithRes("need_save") == "True") {
+			pyExecFromCpp("need_save = False");
+			Game::save();
+		}
+		if (pyExecFromCppWithRes("need_screenshot") == "True") {
+			pyExecFromCpp("need_screenshot = False");
+			Game::makeScreenshot();
+		}
+
+		GV::updateMutex.unlock();
+
+		pyExecFromCpp("signals.send('exit_frame')");
+
+		PyUtils::callInPythonThread(PyCodeDiskCache::checkSaving);
+
+		const double spent = Utils::getTimer() - GV::frameStartTime;
+		const double timeToSleep = Game::getFrameTime() - spent;
+//		printf("%.2f %.2f\n", spent * 1000, timeToSleep * 1000);
+		Utils::sleep(timeToSleep);
+
+		if (!GV::beforeFirstFrame) {
+			GV::firstFrame = false;
+		}
+	}
+}
+
+
+static void eventLoop() {
+	std::thread(loop).detach();
+
+	//unmaximized = restored + resized
+	//but this events can be not in one frame (or even in nears)
+	double resizedTime = -1;
+	double restoredTime = -1;
+	const double maxTimeForUnmaximized = 0.1;
+
+	bool &mouseOut = Mouse::out;
+	bool mouseOutPrevDown = false;
+	int startWindowWidth = 0;
+	int startWindowHeight = 0;
+
+	while (!GV::exit) {
+		Utils::sleep(0.001, false);
+
+		bool resizeWithoutMouseDown = false;
+		bool mouseWasDown = false;
+		bool mouseWasUp = false;
+
+		ThreadTasks::main.execAll();
+		Renderer::draw();
+
+		//for no deadlock
+		int i = 0;
+		for (; i < 50; ++i) {
+			bool success = eventMutex.try_lock();
+			if (success) break;
+
+			ThreadTasks::main.execAll();
+			Utils::sleep(0.001, false);
+		}
+		if (i == 50) continue;
+
+
+		SDL_Event event;
+		Uint32 prevType = 0;
+		while (SDL_PollEvent(&event)) {
+			Uint32 type = event.type;
+
+			//<moving> after enter/leave fullscreen is not real moving, skip
+			if (prevType == SDL_EVENT_WINDOW_ENTER_FULLSCREEN || prevType == SDL_EVENT_WINDOW_LEAVE_FULLSCREEN) {
+				if (type == SDL_EVENT_WINDOW_MOVED) continue;
+			}
+
+			if (type == SDL_EVENT_QUIT || type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
+				GV::exit = true;
+				return;
+			}
+
 
 			//window events
 
+			if (type == SDL_EVENT_WINDOW_DISPLAY_CHANGED) {
+				Stage::updateDisplayMode();
+			}else
 			if (type == SDL_EVENT_WINDOW_EXPOSED || type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
 				Renderer::needToRedraw = true;
 				Stage::minimized = false;
@@ -344,77 +499,35 @@ static void loop() {
 					BtnRect::checkMouseClick(left, false);
 				}
 			}else
+
 			if (type == SDL_EVENT_MOUSE_BUTTON_UP) {
 				mouseWasUp = true;
 				Mouse::setMouseDown(false);
-			}else
-
-
-			// keyboard events
-
-			if (type == SDL_EVENT_KEY_DOWN) {
-				SDL_Keycode key = getKeyCode(event.key);
-				if (Key::getPressed(key)) continue;
-
-				if (key == SDLK_RETURN || key == SDLK_SPACE) {
-					if (BtnRect::checkMouseClick(true, true)) {
-						Key::setToNotReact(key);
-					}else {
-						Key::setFirstDownState(key);
-					}
-				}else {
-					bool isModKey = false;
-					if (key == SDLK_LCTRL || key == SDLK_RCTRL || key == SDLK_LALT || key == SDLK_RALT) {
-						isModKey = true;
-					}else
-					if (key == SDLK_LSHIFT) {
-						isModKey = true;
-						leftShift = true;
-					}else
-					if (key == SDLK_RSHIFT) {
-						isModKey = true;
-						rightShift = true;
-					}
-
-					bool isFKey = key >= SDLK_F1 && key <= SDLK_F12;
-
-					bool selectMode;
-					if (isModKey || isFKey) {
-						selectMode = false;
-					}else {
-						selectMode = BtnRect::getSelectMode();
-						BtnRect::processKey(key, leftShift || rightShift);
-						if (BtnRect::getSelectMode()) {
-							selectMode = true;
-						}
-					}
-
-					if (!selectMode) {
-						Key::setFirstDownState(key);
-					}
-				}
-			}else
-
-			if (type == SDL_EVENT_KEY_UP) {
-				SDL_Keycode key = getKeyCode(event.key);
-				Key::setUpState(key);
-
-				if (key == SDLK_LSHIFT) {
-					leftShift = false;
-				}else
-				if (key == SDLK_RSHIFT) {
-					rightShift = false;
-				}
 			}
+
+
+			//for processing in <loop> thread
+			if (type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+			    type == SDL_EVENT_MOUSE_BUTTON_UP   ||
+			    type == SDL_EVENT_MOUSE_MOTION      ||
+			    type == SDL_EVENT_MOUSE_WHEEL       ||
+			    type == SDL_EVENT_KEY_DOWN          ||
+			    type == SDL_EVENT_KEY_UP)
+			{
+				events.push_back(event);
+			}
+
+			prevType = type;
 		}
 
-		if (!Stage::fullscreen && Utils::getTimer() - std::min(restoredTime, resizedTime) < maxTimeForUnmaximized ) {
+		eventMutex.unlock();
+
+
+		if (!Stage::fullscreen && Utils::getTimer() - std::min(restoredTime, resizedTime) < maxTimeForUnmaximized) {
 			restoredTime = resizedTime = -1;
 			Stage::needResize = true;
 			Stage::maximized = false;
 		}
-
-		Mouse::checkCursorVisible();
 
 		bool mouseOutDown = false;
 		if (mouseOut) {
@@ -434,108 +547,24 @@ static void loop() {
 		}
 		mouseOutPrevDown = mouseOutDown;
 
-		GUI::update();
-
-		BtnRect::checkSelectedBtn();
-
-		if (!Stage::minimized) {
-			while (Renderer::needToRender) {
-				Utils::sleep(0.001, false);
-			}
-
-			std::lock_guard g(Renderer::renderDataMutex);
-			Renderer::updateSelectedRect();
-			Renderer::renderData.clear();
-			if (Stage::screens) {
-				Stage::screens->draw();
-			}
-			Renderer::needToRender = true;
-		}
-
-		Config::save();
-
-		if (pyExecFromCppWithRes("need_save") == "True") {
-			pyExecFromCpp("need_save = False");
-			Game::save();
-		}
-		if (pyExecFromCppWithRes("need_screenshot") == "True") {
-			pyExecFromCpp("need_screenshot = False");
-			Game::makeScreenshot();
-		}
-
-		pyExecFromCpp("signals.send('exit_frame')");
-
-		GV::updateMutex.unlock();
-
-		PyUtils::callInPythonThread(PyCodeDiskCache::checkSaving);
-
-		const double spent = Utils::getTimer() - GV::frameStartTime;
-		const double timeToSleep = Game::getFrameTime() - spent;
-//		std::cout << spent << ' ' << timeToSleep << '\n';
-		Utils::sleep(timeToSleep);
-
-		if (!GV::beforeFirstFrame) {
-			GV::firstFrame = false;
-		}
-	}
-}
-
-static void eventLoop() {
-	std::thread(loop).detach();
-
-	while (!GV::exit) {
-		while (Utils::realOutMsg()) {}
-		Stage::applyChanges();
-
-		Utils::sleep(0.010, false);
-
-		//SDL can change window size inside SDL_PollEvent => need lock renderMutex
-		//  This code displays messages while trying lock the mutex (for case when messages appearance in render)
-		while (true) {
-			bool success = Renderer::renderMutex.try_lock();
-			if (success) break;
-
-			while (Utils::realOutMsg()) {}
-			Utils::sleep(0.001, false);
-		}
-		ScopeExit se([]() {
-			Renderer::renderMutex.unlock();
-		});
+		ThreadTasks::main.execAll();
 
 		//for no deadlock
-		int i = 0;
+		i = 0;
 		for (; i < 50; ++i) {
-			bool success = eventMutex.try_lock();
+			bool success = GV::updateMutex.try_lock();
 			if (success) break;
 
-			while (Utils::realOutMsg()) {}
+			ThreadTasks::main.execAll();
 			Utils::sleep(0.001, false);
 		}
 		if (i == 50) continue;
 
-		ScopeExit se2([]() {
-			eventMutex.unlock();
-		});
+		Mouse::checkCursorVisible();
+		Mouse::update();
+		BtnRect::checkMouseCursor();
 
-
-		SDL_Event event;
-		Uint32 prevType = 0;
-		while (SDL_PollEvent(&event)) {
-			Uint32 type = event.type;
-
-			//<moving> after enter/leave fullscreen is not real moving, skip
-			if (prevType == SDL_EVENT_WINDOW_ENTER_FULLSCREEN || prevType == SDL_EVENT_WINDOW_LEAVE_FULLSCREEN) {
-				if (type == SDL_EVENT_WINDOW_MOVED) continue;
-			}
-
-			if (type == SDL_EVENT_QUIT || type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-				GV::exit = true;
-				return;
-			}
-
-			events.push_back(event);
-			prevType = type;
-		}
+		GV::updateMutex.unlock();
 	}
 }
 
@@ -559,7 +588,7 @@ static void destroy() {
 
 static bool argsProcessing(int argc, char **argv, std::string &resources) {
 	if (argc > 2) {
-		Utils::outError("argsProcessing", "Expected max 1 arg, got: %", argc - 1);
+		Message::outError("argsProcessing", "Expected max 1 arg, got: %", argc - 1);
 		return true;
 	}
 
@@ -571,8 +600,7 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 		if (charsPathUTF8) {
 			path = charsPathUTF8;
 		}else {
-			std::cout << "argsProcessing, SDL_GetBasePath:\n" <<
-			             SDL_GetError() << '\n';
+			printf("argsProcessing, SDL_GetBasePath:\n%s\n", SDL_GetError());
 			path = FileSystem::getCurrentPath();
 		}
 
@@ -583,7 +611,7 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 		path += "../path_to_resources.txt";
 
 		if (FileSystem::exists(path)) {
-			std::ifstream is(path);
+			std::ifstream is(path, std::ios_base::binary);
 			while (!is.eof()) {
 				std::string s;
 				std::getline(is, s);
@@ -592,8 +620,8 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 				}
 			}
 			if (!FileSystem::isDirectory(resources)) {
-				std::cout << "Path of resources is not a directory or does not exist\n"
-				             "Path: " << resources << '\n';
+				printf("Path of resources is not a directory or does not exist\n");
+				printf("Path: %s\n", resources.c_str());
 				return true;
 			}
 		}
@@ -602,19 +630,21 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 
 	for (const char *i : { "--help", "-help", "-h", "h", "/?", "?" }) {
 		if (resources == i) {
-			std::cout << "Ren-Engine is fast analog of Ren'Py\n"
-			             "Usage:\n"
-			             "  ./Ren-Engine [resources_dir=../resources/]\n"
-			             "  ./Ren-Engine --help    - show this help and exit\n"
-			             "  ./Ren-Engine --version - show version and exit\n"
-			             "Github: https://github.com/TrueCat17/Ren-Engine\n"
-			             "Wiki:   https://github.com/TrueCat17/Ren-Engine/wiki\n";
+			printf(
+			    "Ren-Engine is fast analog of Ren'Py\n"
+			    "Usage:\n"
+			    "  ./Ren-Engine [resources_dir=../resources/]\n"
+			    "  ./Ren-Engine --help    - show this help and exit\n"
+			    "  ./Ren-Engine --version - show version and exit\n"
+			    "Github: https://github.com/TrueCat17/Ren-Engine\n"
+			    "Wiki:   https://github.com/TrueCat17/Ren-Engine/wiki\n"
+			);
 			return true;
 		}
 	}
 	for (const char *i : { "--version", "-version", "-ver", "-v", "v" }) {
 		if (resources == i) {
-			std::cout << "Ren-Engine " << Utils::getVersion() << '\n';
+			printf("Ren-Engine %s\n", Utils::getVersion().c_str());
 			return true;
 		}
 	}
@@ -623,6 +653,8 @@ static bool argsProcessing(int argc, char **argv, std::string &resources) {
 }
 
 int main(int argc, char **argv) {
+	ThreadTasks::main.initForThread();
+
 	std::string resources;
 	if (argsProcessing(argc, argv, resources)) {
 		return 0;
@@ -630,7 +662,7 @@ int main(int argc, char **argv) {
 
 	const std::string errMsg = setDir(resources);
 	if (!errMsg.empty()) {
-		Utils::outMsg("setDir", errMsg);
+		Message::outMsg("setDir", errMsg);
 		return 0;
 	}
 
@@ -666,6 +698,6 @@ int main(int argc, char **argv) {
 	eventLoop();
 	destroy();
 
-	std::cout << "\nOk!\n";
+	printf("\nOk!\n");
 	return 0;
 }

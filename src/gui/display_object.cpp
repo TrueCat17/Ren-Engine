@@ -1,9 +1,11 @@
 #include "display_object.h"
 
-#include "group.h"
 #include "renderer.h"
 
+#include "group.h"
+
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/stage.h"
 #include "utils/utils.h"
 
@@ -70,7 +72,7 @@ void DisplayObject::updateGlobal() {
 		globalClipping = clipping;
 		if (clipping) {
 			if (!Math::floatsAreEq(std::fmod(globalRotate, float(360)), 0)) {
-				Utils::outMsg("DisplayObject::updateGlobal", "Object with clipping can't be rotated");
+				Message::outMsg("DisplayObject::updateGlobal", "Object with clipping can't be rotated");
 			}
 			clipRect = { globalX, globalY, getWidth(), getHeight() };
 		}

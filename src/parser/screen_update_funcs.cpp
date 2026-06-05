@@ -19,8 +19,8 @@
 #include "media/py_utils/absolute.h"
 
 #include "utils/algo.h"
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 #undef PyFloat_AS_DOUBLE
@@ -33,10 +33,10 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 	if (node->command == "use") {
 		node = Screen::getDeclared(node->params);
 		if (!node) {
-			Utils::outError("ScreenUpdateFuncs::outError",
-			                "Error on out error: screen <%> not found (?)",
-			                obj->node->params);
-			Utils::outMsg(propName, expected);
+			Message::outError("ScreenUpdateFuncs::outError",
+			                  "Error on out error: screen <%> not found (?)",
+			                  obj->node->params);
+			Message::outMsg(propName, expected);
 			return;
 		}
 	}
@@ -46,12 +46,12 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 			if (!child->isScreenProp) continue;
 
 			if (child->command == propName || child->command + "Pre" == propName) {
-				Utils::outMsg(propName, expected + '\n' + child->getPlace());
+				Message::outMsg(propName, expected + '\n' + child->getPlace());
 				return;
 			}
 		}
 
-		Utils::outMsg(propName, expected + '\n' + node->getPlace());
+		Message::outMsg(propName, expected + '\n' + node->getPlace());
 		return;
 	}
 
@@ -65,12 +65,12 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 				desc += "style <" + obj->style->name + ">";
 			}
 
-			Utils::outMsg(propName, desc);
+			Message::outMsg(propName, desc);
 			return;
 		}
 	}
 
-	Utils::outMsg(propName, "Error on out error\n" + node->getPlace());
+	Message::outMsg(propName, "Error on out error\n" + node->getPlace());
 }
 
 
@@ -85,7 +85,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	}else { \
 		typedObj->propName = false; \
 		std::string exactPropName = std::string_view(#propName) == "btnRect.buttonMode" ? "mouse" : #propName; \
-		std::string msg = Utils::format("Expected type bool, got %", prop->ob_type->tp_name); \
+		std::string msg = Message::format("Expected type bool, got %", prop->ob_type->tp_name); \
 		outError(obj, exactPropName, propIndex, msg); \
 	} \
 }
@@ -101,7 +101,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		var = DT(PyLong_AsLongAndOverflow(prop, &overflow)); \
 		if (overflow) { \
 			var = 0; \
-			std::string msg = Utils::format("int too large (%)", PyUtils::objToStr(prop)); \
+			std::string msg = Message::format("int too large (%)", PyUtils::objToStr(prop)); \
 			outError(obj, propName, propIndex, msg); \
 		} \
 	}
@@ -117,7 +117,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	updateCondition(isFloat, typedObj->propName, prop, #propName) \
 	else { \
 		typedObj->propName = 0; \
-		std::string msg = Utils::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
+		std::string msg = Message::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
 		outError(obj, #propName, propIndex, msg); \
 		return; \
 	} \
@@ -159,10 +159,10 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	\
 	std::string error; \
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) { \
-		error = Utils::format("Expected types float, absolute, int, tuple or list, got %", prop->ob_type->tp_name); \
+		error = Message::format("Expected types float, absolute, int, tuple or list, got %", prop->ob_type->tp_name); \
 	}else \
 	if (Py_SIZE(prop) != 2) { \
-		error = Utils::format("Expected sequence with size == 2, got %", Py_SIZE(prop)); \
+		error = Message::format("Expected sequence with size == 2, got %", Py_SIZE(prop)); \
 	} \
 	if (!error.empty()) { \
 		xIsFloat = yIsFloat = false; \
@@ -179,7 +179,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	else { \
 		xIsFloat = false; \
 		obj->x##propName = 0; \
-		std::string msg = Utils::format("At x" #propName "-prop expected types float, absolute or int, got %", \
+		std::string msg = Message::format("At x" #propName "-prop expected types float, absolute or int, got %", \
 		                                x->ob_type->tp_name); \
 		outError(obj, "x"#propName, propIndex, msg); \
 	} \
@@ -187,7 +187,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 	else { \
 		yIsFloat = false; \
 		obj->y##propName = 0; \
-		std::string msg = Utils::format("At y" #propName "-prop expected types float, absolute or int, got %", \
+		std::string msg = Message::format("At y" #propName "-prop expected types float, absolute or int, got %", \
 		                                y->ob_type->tp_name); \
 		outError(obj, "y"#propName, propIndex, msg); \
 	} \
@@ -209,7 +209,7 @@ static void update_##x_or_y##align(Child *obj, size_t propIndex) { \
 	updateCondition(isFloat, value, prop, #x_or_y"align") \
 	else { \
 		value = 0; \
-		std::string msg = Utils::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
+		std::string msg = Message::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
 		outError(obj, #x_or_y"align", propIndex, msg); \
 	} \
 	obj->x_or_y##pos_is_float = obj->x_or_y##anchor_is_float = isFloat; \
@@ -235,10 +235,10 @@ static void update_align(Child *obj, size_t propIndex) {
 
 	std::string error;
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
-		error = Utils::format("Expected types float, absolute, int, tuple or list, got %", prop->ob_type->tp_name);
+		error = Message::format("Expected types float, absolute, int, tuple or list, got %", prop->ob_type->tp_name);
 	}else
 	if (Py_SIZE(prop) != 2) {
-		error = Utils::format("Expected sequence with size == 2, got %", Py_SIZE(prop));
+		error = Message::format("Expected sequence with size == 2, got %", Py_SIZE(prop));
 	}
 	if (!error.empty()) {
 		obj->xpos_is_float = obj->xanchor_is_float = obj->ypos_is_float = obj->yanchor_is_float = false;
@@ -254,7 +254,7 @@ static void update_align(Child *obj, size_t propIndex) {
 	updateCondition(isFloat, value, part, #part "align") \
 	else { \
 		value = 0; \
-		std::string msg = Utils::format("At " #part "align-prop expected types float, absolute or int, got %", \
+		std::string msg = Message::format("At " #part "align-prop expected types float, absolute or int, got %", \
 		                                part->ob_type->tp_name); \
 		outError(obj, "align", propIndex, msg); \
 	} \
@@ -275,7 +275,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		typedObj->propName = PyUtils::objToStr(prop); \
 	}else { \
 		typedObj->propName.clear(); \
-		std::string msg = Utils::format("Expected type str, got %", prop->ob_type->tp_name); \
+		std::string msg = Message::format("Expected type str, got %", prop->ob_type->tp_name); \
 		outError(obj, #propName, propIndex, msg); \
 	} \
 }
@@ -285,10 +285,10 @@ static void update_crop(Child *obj, size_t propIndex) {
 
 	std::string error;
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
-		error = Utils::format("Expected types tuple or list, got %", prop->ob_type->tp_name);
+		error = Message::format("Expected types tuple or list, got %", prop->ob_type->tp_name);
 	}else
 	if (Py_SIZE(prop) != 4) {
-		error = Utils::format("Expected sequence with size == 4, got %", Py_SIZE(prop));
+		error = Message::format("Expected sequence with size == 4, got %", Py_SIZE(prop));
 	}
 	if (!error.empty()) {
 		obj->xcrop_is_float = obj->ycrop_is_float = obj->wcrop_is_float = obj->hcrop_is_float = false;
@@ -304,7 +304,7 @@ static void update_crop(Child *obj, size_t propIndex) {
 	updateCondition(obj->part##crop_is_float, obj->part##crop, part, #part "crop") \
 	else { \
 		obj->part##crop = 0; \
-		std::string msg = Utils::format("At " #part "crop-prop expected types float, absolute or int, got %",\
+		std::string msg = Message::format("At " #part "crop-prop expected types float, absolute or int, got %",\
 		                                part->ob_type->tp_name); \
 		outError(obj, #part "crop", propIndex, msg); \
 	}
@@ -330,7 +330,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
 		bool ok = isHoverParam && prop == Py_None; \
 		if (!ok) { \
-			std::string msg = Utils::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
+			std::string msg = Message::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name); \
 			outError(obj, #propName, propIndex, msg); \
 		} \
 	} \
@@ -353,7 +353,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		}else { \
 			params.font_style &= Uint8(~mask); \
 			if (prop != Py_False) { \
-				std::string msg = Utils::format("Expected type bool, got %", prop->ob_type->tp_name); \
+				std::string msg = Message::format("Expected type bool, got %", prop->ob_type->tp_name); \
 				outError(obj, #propName, propIndex, msg); \
 			} \
 		} \
@@ -376,7 +376,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		constexpr bool isHoverParam = std::string_view(#main_or_hover) == "hover"; \
 		bool ok = isHoverParam && prop == Py_None; \
 		if (!ok) { \
-			std::string msg = Utils::format("Expected type str, got %", prop->ob_type->tp_name); \
+			std::string msg = Message::format("Expected type str, got %", prop->ob_type->tp_name); \
 			outError(obj, #funcPostfix, propIndex, msg); \
 		} \
 	} \
@@ -389,7 +389,7 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 	if (PyLong_CheckExact(prop)) {
 		long color = PyLong_AsLongAndOverflow(prop, &overflow);
 		if (overflow || color < 0 || color > 0xFFFFFF) {
-			error = Utils::format("Expected value between 0 and 0xFFFFFF, got %", PyUtils::objToStr(prop));
+			error = Message::format("Expected value between 0 and 0xFFFFFF, got %", PyUtils::objToStr(prop));
 			return fail;
 		}
 		return Uint32(color);
@@ -406,7 +406,7 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 
 		size_t size = str.size();
 		if (size != 3 && size != 6) {
-			error = Utils::format("Expected str with len 3 or 6 symbols, got %", size);
+			error = Message::format("Expected str with len 3 or 6 symbols, got %", size);
 			return fail;
 		}
 
@@ -417,7 +417,7 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 			bool isSmallAlpha = c >= 'a' && c <= 'f';
 			bool isBigAlpha   = c >= 'A' && c <= 'F';
 			if (!isNum && !isSmallAlpha && !isBigAlpha) {
-				error = Utils::format("Expected color symbols in [0-9], [a-f] and [A-F], got <%>",
+				error = Message::format("Expected color symbols in [0-9], [a-f] and [A-F], got <%>",
 				                      PyUtils::objToStr(prop));
 				return fail;
 			}
@@ -452,11 +452,11 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 		}else {
 			msg = "Expected types int, str, tuple or list, got %";
 		}
-		error = Utils::format(msg, prop->ob_type->tp_name);
+		error = Message::format(msg, prop->ob_type->tp_name);
 		return fail;
 	}
 	if (Py_SIZE(prop) != 3) {
-		error = Utils::format("Expected sequence with size == 3, got %", Py_SIZE(prop));
+		error = Message::format("Expected sequence with size == 3, got %", Py_SIZE(prop));
 		return fail;
 	}
 
@@ -466,12 +466,12 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 #define partProc(ch, index) \
 	item = propItems[index]; \
 	if (!PyLong_CheckExact(item)) { \
-		error = Utils::format("Expected sequence with ints, got %", item->ob_type->tp_name); \
+		error = Message::format("Expected sequence with ints, got %", item->ob_type->tp_name); \
 		return fail; \
 	} \
 	long ch = PyLong_AsLongAndOverflow(item, &overflow); \
 	if (overflow || ch < 0 || ch > 255) { \
-		error = Utils::format("Expected sequence with ints between 0 and 255, got %", PyUtils::objToStr(item)); \
+		error = Message::format("Expected sequence with ints between 0 and 255, got %", PyUtils::objToStr(item)); \
 		return fail; \
 	}
 
@@ -531,7 +531,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		if (valueStr == one) { \
 			value = 1; \
 		}else { \
-			std::string msg = Utils::format("Expected str " zero ", center or " one ", got <%>", valueStr); \
+			std::string msg = Message::format("Expected str " zero ", center or " one ", got <%>", valueStr); \
 			outError(obj, #funcPostfix, propIndex, msg); \
 		} \
 		params.propName = value; \
@@ -545,11 +545,11 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		params.set_##propName = false; \
 		\
 		if constexpr (std::string_view(#main_or_hover) == "main") { \
-			std::string msg = Utils::format("Expected types str or float, got %", prop->ob_type->tp_name); \
+			std::string msg = Message::format("Expected types str or float, got %", prop->ob_type->tp_name); \
 			outError(obj, #funcPostfix, propIndex, msg); \
 		}else { \
 			if (prop != Py_None) { \
-				std::string msg = Utils::format("Expected types str, float or None, got %", prop->ob_type->tp_name); \
+				std::string msg = Message::format("Expected types str, float or None, got %", prop->ob_type->tp_name); \
 				outError(obj, #funcPostfix, propIndex, msg); \
 			} \
 		} \
@@ -585,11 +585,11 @@ static void update_corner_sizes(Child *obj, size_t propIndex) {
 	std::string error;
 	size_t len = 0;
 	if (!PyTuple_CheckExact(prop) && !PyList_CheckExact(prop)) {
-		error = Utils::format("Expected types float, absolute, int, tuple or list, got %", prop->ob_type->tp_name);
+		error = Message::format("Expected types float, absolute, int, tuple or list, got %", prop->ob_type->tp_name);
 	}else {
 		len = size_t(Py_SIZE(prop));
 		if (len != 2 && len != 4) {
-			error = Utils::format("Expected sequence with size == 2 or size == 4, got %", len);
+			error = Message::format("Expected sequence with size == 2 or size == 4, got %", len);
 		}
 	}
 	if (!error.empty()) {
@@ -607,7 +607,7 @@ static void update_corner_sizes(Child *obj, size_t propIndex) {
 	updateCondition(isFloat, value, item, "corner_sizes[" #i "]") \
 	else { \
 		value = 0; \
-		std::string msg = Utils::format("At corner_sizes[" #i "] expected types float, absolute or int, got %", \
+		std::string msg = Message::format("At corner_sizes[" #i "] expected types float, absolute or int, got %", \
 		                                item->ob_type->tp_name); \
 		outError(obj, "corner_sizes", propIndex, msg); \
 	} \
@@ -718,13 +718,13 @@ makeTextFuncs(hover, hover_)
 
 static void update_visible_symbols(Child *obj, size_t propIndex) {
 	PyObject *prop = PySequence_Fast_GET_ITEM(obj->props, propIndex);
-	TextField *tf = static_cast<Text*>(obj)->tf;
+	TextField &tf = static_cast<Text*>(obj)->tf;
 
 	bool tmpBool;
-	updateCondition(tmpBool, tf->visibleSymbols, prop, "visible_symbols")
+	updateCondition(tmpBool, tf.visibleSymbols, prop, "visible_symbols")
 	else {
-		tf->visibleSymbols = 1e9;
-		std::string msg = Utils::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name);
+		tf.visibleSymbols = 1e9;
+		std::string msg = Message::format("Expected types float, absolute or int, got %", prop->ob_type->tp_name);
 		outError(obj, "visible_symbols", propIndex, msg);
 	}
 }
@@ -843,7 +843,7 @@ ScreenUpdateFunc ScreenUpdateFuncs::getFunc(const std::string &type, std::string
 		return it->second;
 	}
 
-	Utils::outError("ScreenUpdateFuncs::getFunc", "Func <%> not found", propName);
+	Message::outError("ScreenUpdateFuncs::getFunc", "Func <%> not found", propName);
 	return nullptr;
 }
 

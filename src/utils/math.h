@@ -25,8 +25,8 @@ public:
 
 	template<typename T, typename MIN, typename MAX>
 	static T inBounds(T value, MIN min, MAX max) {
-		T tMin(min);
-		T tMax(max);
+		T tMin = T(min);
+		T tMax = T(max);
 		return (value < tMin) ? tMin : (value > tMax) ? tMax : value;
 	}
 };

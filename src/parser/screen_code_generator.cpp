@@ -10,9 +10,9 @@
 #include "parser/screen_update_funcs.h"
 
 #include "utils/algo.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 
@@ -105,9 +105,9 @@ static void initConsts(Node *node) {
 
 		if (screenNode) {
 			if (Algo::in(params, screensInInit)) {
-				Utils::outError("ScreenCodeGenerator::initConsts",
-				                "Using screens with recursion: % -> %",
-				                String::join(screensInInit, " -> "), params);
+				Message::outError("ScreenCodeGenerator::initConsts",
+				                  "Using screens with recursion: % -> %",
+				                  String::join(screensInInit, " -> "), params);
 			}else {
 				ok = true;
 				initScreen(screenNode);
@@ -115,9 +115,9 @@ static void initConsts(Node *node) {
 				node->countPropsToCalc = screenNode->countPropsToCalc;
 			}
 		}else {
-			Utils::outError("ScreenCodeGenerator::initConsts",
-			                "Screen with name <%> not found\n%",
-			                node->params, node->getPlace());
+			Message::outError("ScreenCodeGenerator::initConsts",
+			                  "Screen with name <%> not found\n%",
+			                  node->params, node->getPlace());
 		}
 		if (ok) return;
 
@@ -368,9 +368,9 @@ static std::vector<std::string> initUseCode(Node *node, const std::string &index
 	auto &screenNodeVars = screenNode->getScreenVars();
 
 	if (screenNodeVars.size() < nodeVars.size()) {
-		Utils::outError("ScreenCodeGenerator::initUseCode",
-		                "Maximum % args expected for screen <%>, got %\n\n%",
-		                screenNodeVars.size(), node->params, nodeVars.size(), node->getPlace());
+		Message::outError("ScreenCodeGenerator::initUseCode",
+		                  "Maximum % args expected for screen <%>, got %\n\n%",
+		                  screenNodeVars.size(), node->params, nodeVars.size(), node->getPlace());
 	}
 
 	const std::vector<std::string> inner = initCode(screenNode, index);
@@ -396,9 +396,9 @@ static std::vector<std::string> initUseCode(Node *node, const std::string &index
 		        [&name] (const auto &p) { return p.first == name; }
 		    ) == screenNodeVars.cend()
 		) {
-			Utils::outError("ScreenCodeGenerator::initUseCode",
-			                "No param <%> in screen <%>\n\n%",
-			                name, node->params, node->getPlace());
+			Message::outError("ScreenCodeGenerator::initUseCode",
+			                  "No param <%> in screen <%>\n\n%",
+			                  name, node->params, node->getPlace());
 			continue;
 		}
 
@@ -410,9 +410,9 @@ static std::vector<std::string> initUseCode(Node *node, const std::string &index
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) continue;
 
 		if (varCode.empty()) {
-			Utils::outError("ScreenCodeGenerator::initUseCode",
-			                "No value for param <%> in screen <%>\n\n%",
-			                varName, node->params, node->getPlace());
+			Message::outError("ScreenCodeGenerator::initUseCode",
+			                  "No value for param <%> in screen <%>\n\n%",
+			                  varName, node->params, node->getPlace());
 			continue;
 		}
 

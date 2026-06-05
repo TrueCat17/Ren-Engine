@@ -1,9 +1,9 @@
 #ifndef TEXT_H
 #define TEXT_H
 
-#include "container.h"
+#include "../text_field.h"
 
-class TextField;
+#include "container.h"
 
 struct TextParams {
 	const std::string *font = nullptr;
@@ -40,10 +40,10 @@ public:
 	TextParams mainParams;
 	TextParams hoverParams;
 
-	TextField *tf;
+	TextField tf;
 
 	Text(Node *node, Screen *screen);
-	virtual ~Text();
+	virtual ~Text() {}
 
 	virtual void updateSize();
 	virtual void updateGlobal();

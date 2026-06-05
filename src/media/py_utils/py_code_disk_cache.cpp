@@ -5,33 +5,35 @@
 #include <vector>
 
 #include "media/py_utils.h"
+#include "utils/message.h"
 #include "utils/utils.h"
 
 
 static const char *path = "../var/py_code_cache";
 const uint32_t MAX_SIZE = 5 << 20; //5 MB
-const uint32_t VERSION = PY_VERSION_HEX;
+const uint32_t VERSION = PY_VERSION_HEX + 1;
 
 static bool changed = false;
+static uint32_t lastId = 0;
 
 
 struct PyCode {
 	std::string code;
 	std::string fileName;
 	uint32_t numLine;
-	float time;
+	uint32_t id;
 	PyObject *pyCodeObject;
 	std::vector<char> serialized;
 
 	PyCode(const std::vector<char> &code,
 	       const std::vector<char> &fileName,
 	       uint32_t numLine,
-	       float time,
+	       uint32_t id,
 	       const std::vector<char> &serialized):
 	    code(code.data(), code.size()),
 	    fileName(fileName.data(), fileName.size()),
 	    numLine(numLine),
-	    time(time),
+	    id(id),
 	    pyCodeObject(nullptr),
 	    serialized(serialized)
 	{}
@@ -39,12 +41,12 @@ struct PyCode {
 	PyCode(const std::string &code,
 	       const std::string &fileName,
 	       uint32_t numLine,
-	       float time,
+	       uint32_t id,
 	       PyObject *pyCodeObject):
 	    code(code),
 	    fileName(fileName),
 	    numLine(numLine),
-	    time(time),
+	    id(id),
 	    pyCodeObject(pyCodeObject)
 	{}
 
@@ -53,7 +55,7 @@ struct PyCode {
 		pyCodeObject = nullptr;
 
 		if (!pyBytes || !PyBytes_CheckExact(pyBytes)) {
-			Utils::outMsg("PyCodeDiskCache, makeDump", "Failed to call marshal.dumps(code_object)");
+			Message::outMsg("PyCodeDiskCache, makeDump", "Failed to call marshal.dumps(code_object)");
 			PyErr_Clear();
 			return;
 		}
@@ -68,14 +70,11 @@ static std::vector<PyCode> serializedCodes;
 
 
 
-template<typename T = uint32_t>
-static T read4(std::ifstream &is) {
-	static_assert(sizeof(T) == 4);
-
+static uint32_t read4(std::ifstream &is) {
 	char v[4];
 	is.read(v, 4);
 
-	T res;
+	uint32_t res;
 	memcpy(&res, v, 4);
 	return res;
 }
@@ -105,13 +104,14 @@ void PyCodeDiskCache::init() {
 
 		uint32_t numLine = read4(is);
 
-		float time = read4<float>(is);
+		uint32_t id = read4(is);
+		lastId = std::max(lastId, id);
 
 		uint32_t serializedSize = read4(is);
 		serialized.resize(serializedSize);
 		is.read(serialized.data(), serializedSize);
 
-		serializedCodes.push_back(PyCode(code, fileName, numLine, time, serialized));
+		serializedCodes.push_back(PyCode(code, fileName, numLine, id, serialized));
 	}
 }
 
@@ -127,7 +127,7 @@ PyObject* PyCodeDiskCache::get(const std::string &code, const std::string &fileN
 	PyCode *pyCode = nullptr;
 	for (PyCode &t : serializedCodes) {
 		if (t.code == code && t.fileName == fileName && t.numLine == numLine) {
-			t.time = float(Utils::getTimer());
+			t.id = ++lastId;
 			pyCode = &t;
 			break;
 		}
@@ -139,7 +139,7 @@ PyObject* PyCodeDiskCache::get(const std::string &code, const std::string &fileN
 
 	PyObject *pyCodeObject = PyObject_CallFunction(PyUtils::marshalLoads, "O", pySerialized);
 	if (!pyCodeObject) {
-		Utils::outMsg("PyCodeDiskCache::get", "Failed to call marshal.loads(serialized)");
+		Message::outMsg("PyCodeDiskCache::get", "Failed to call marshal.loads(serialized)");
 		PyErr_Clear();
 	}
 
@@ -153,14 +153,14 @@ void PyCodeDiskCache::set(const std::string &code, const std::string&fileName, u
 	if (isSmallCode(code)) return;
 
 	changed = true;
-	serializedCodes.push_back(PyCode(code, fileName, numLine, float(Utils::getTimer()), pyCodeObject));
+	serializedCodes.push_back(PyCode(code, fileName, numLine, ++lastId, pyCodeObject));
 }
 
 
 
 static void trim() {
 	std::sort(serializedCodes.begin(), serializedCodes.end(),
-	          [](const PyCode &a, const PyCode &b) -> bool { return a.time > b.time; });
+	          [](const PyCode &a, const PyCode &b) -> bool { return a.id > b.id; });
 
 	size_t size = 0;
 	size_t i;
@@ -177,10 +177,7 @@ static void trim() {
 	serializedCodes.erase(serializedCodes.begin() + long(i), serializedCodes.end());
 }
 
-template<typename T>
-static void write4(std::ofstream &os, T v32) {
-	static_assert(sizeof(T) == 4);
-
+static void write4(std::ofstream &os, uint32_t v32) {
 	char v[4];
 	memcpy(v, &v32, 4);
 
@@ -215,7 +212,7 @@ void PyCodeDiskCache::checkSaving() {
 
 		write4(os, pyCode.numLine);
 
-		write4(os, pyCode.time);
+		write4(os, pyCode.id);
 
 		write4(os, uint32_t(pyCode.serialized.size()));
 		os.write(pyCode.serialized.data(), std::streamsize(pyCode.serialized.size()));

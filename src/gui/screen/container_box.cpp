@@ -2,8 +2,8 @@
 
 #include "screen.h"
 
+#include "utils/message.h"
 #include "utils/stage.h"
-#include "utils/utils.h"
 
 
 ContainerBox::ContainerBox(Node *node, Container *screenParent, Screen *screen):
@@ -31,9 +31,9 @@ ContainerBox::ContainerBox(Node *node, Container *screenParent, Screen *screen):
 			hasHBox = true;
 		}else
 		{//unreachable
-			Utils::outError("ContainerBox::ContainerBox",
-			                "<has> expected value <vbox> or <hbox>, got <%>\n%",
-			                hasNode->params, hasNode->getPlace());
+			Message::outError("ContainerBox::ContainerBox",
+			                  "<has> expected value <vbox> or <hbox>, got <%>\n%",
+			                  hasNode->params, hasNode->getPlace());
 		}
 	}
 }

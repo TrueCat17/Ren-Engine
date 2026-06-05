@@ -7,8 +7,8 @@ namespace fs = std::filesystem;
 
 #include <SDL3/SDL.h>
 
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 static std::string clear(const std::string &path) {
@@ -45,7 +45,7 @@ std::string FileSystem::getCurrentPath() {
 	if (cwd_utf8) {
 		SDL_free(cwd_utf8);
 	}else {
-		Utils::outMsg("FileSystem::getCurrentPath, SDL_iconv_wchar_utf8", SDL_GetError());
+		Message::outMsg("FileSystem::getCurrentPath, SDL_iconv_wchar_utf8", SDL_GetError());
 	}
 #endif
 	String::replaceAll(res, "\\", "/");
@@ -58,7 +58,7 @@ std::string FileSystem::setCurrentPath(std::string path) {
 	fs::current_path(path.c_str(), ec);
 
 	if (!ec.value()) return "";
-	return Utils::format("Set current path to <%> failed\n%", path, ec.message());
+	return Message::format("Set current path to <%> failed\n%", path, ec.message());
 }
 
 
@@ -79,7 +79,7 @@ void FileSystem::createDirectory(const std::string &path) {
 	std::error_code ec;
 	fs::create_directory(clear(path), ec);
 	if (ec.value()) {
-		Utils::outError("FileSystem::createDirectory", "%\n  path: <%>", ec.message(), path);
+		Message::outError("FileSystem::createDirectory", "%\n  path: <%>", ec.message(), path);
 	}
 }
 
@@ -87,7 +87,7 @@ void FileSystem::remove(const std::string &path) {
 	std::error_code ec;
 	fs::remove_all(clear(path), ec);
 	if (ec.value()) {
-		Utils::outError("FileSystem::remove", "%\n  path: <%>", ec.message(), path);
+		Message::outError("FileSystem::remove", "%\n  path: <%>", ec.message(), path);
 	}
 }
 
@@ -95,7 +95,7 @@ void FileSystem::rename(const std::string &oldPath, const std::string &newPath) 
 	std::error_code ec;
 	fs::rename(clear(oldPath), clear(newPath), ec);
 	if (ec.value()) {
-		Utils::outError("FileSystem::rename", "%\n  oldPath: <%>\n  newPath: <%>", ec.message(), oldPath, newPath);
+		Message::outError("FileSystem::rename", "%\n  oldPath: <%>\n  newPath: <%>", ec.message(), oldPath, newPath);
 	}
 }
 
@@ -175,7 +175,7 @@ int64_t FileSystem::getFileTime(const std::string &path) {
 	std::error_code ec;
 	auto time = fs::last_write_time(path, ec);
 	if (ec.value()) {
-		Utils::outError("FileSystem::getFileTime", "%\n  path: <%>", ec.message(), path);
+		Message::outError("FileSystem::getFileTime", "%\n  path: <%>", ec.message(), path);
 		return 0;
 	}
 
@@ -190,7 +190,7 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unus
 #else
 	wchar_t *wpath = reinterpret_cast<wchar_t*>(SDL_iconv_string("UTF-16LE", "UTF-8", path.c_str(), path.size() + 1));
 	if (!wpath) {
-		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
+		Message::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
 		return false;
 	}
 
@@ -213,7 +213,7 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unus
 
 	if (!PyList_CheckExact(vars)) {
 		std::string type = vars->ob_type->tp_name;
-		Utils::outError("FileSystem::startFile_win32", "Expected type(vars) is list, got %", type);
+		Message::outError("FileSystem::startFile_win32", "Expected type(vars) is list, got %", type);
 		return false;
 	}
 
@@ -222,7 +222,7 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unus
 		PyObject *pyVar = PyList_GET_ITEM(vars, i);
 		if (!PyUnicode_CheckExact(pyVar)) {
 			std::string type = pyVar->ob_type->tp_name;
-			Utils::outError("FileSystem::startFile_win32", "Expected type(vars[i]) is str, got %", type);
+			Message::outError("FileSystem::startFile_win32", "Expected type(vars[i]) is str, got %", type);
 			return false;
 		}
 
@@ -235,7 +235,7 @@ bool FileSystem::startFile_win32([[maybe_unused]] std::string path, [[maybe_unus
 
 	wenv = reinterpret_cast<wchar_t*>(SDL_iconv_string("UTF-16LE", "UTF-8", v.data(), v.size()));
 	if (!wenv) {
-		Utils::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
+		Message::outMsg("FileSystem::startFile_win32, SDL_iconv_string", SDL_GetError());
 		return false;
 	}
 

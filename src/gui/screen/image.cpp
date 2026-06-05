@@ -1,7 +1,7 @@
 #include "image.h"
 
 #include "media/image_manipulator.h"
-#include "utils/utils.h"
+#include "utils/message.h"
 
 
 Image::Image(Node *node, Screen *screen):
@@ -17,8 +17,8 @@ void Image::updateTexture() {
 
 	surface = ImageManipulator::getImage(first_param, false);
 	if (!surface) {
-		Utils::outError("Image::updateTexture",
-		                "Failed to load image <%>\n%",
-		                first_param, node->getPlace());
+		Message::outError("Image::updateTexture",
+		                  "Failed to load image <%>\n%",
+		                  first_param, node->getPlace());
 	}
 }

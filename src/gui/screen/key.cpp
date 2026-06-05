@@ -9,6 +9,7 @@
 
 #include "media/py_utils.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -119,9 +120,9 @@ void Key::checkEvents() {
 			static bool outedAllowArrowsError = false;
 			if (!outedAllowArrowsError) {
 				outedAllowArrowsError = true;
-				Utils::outError("Key::checkEvents",
-				                "Don't use keys <LEFT>, <RIGHT>, <UP> and <DOWN> without calling <allow_arrows()>\n%",
-				                node->getPlace());
+				Message::outError("Key::checkEvents",
+				                  "Don't use keys <LEFT>, <RIGHT>, <UP> and <DOWN> without calling <allow_arrows()>\n%",
+				                  node->getPlace());
 			}
 			key = SDLK_QUESTION;
 		}
@@ -133,9 +134,9 @@ void Key::checkEvents() {
 	}
 
 	if (key == SDLK_UNKNOWN) {
-		Utils::outError("SDL_GetKeyFromName",
-		                "KeyName <%>\n%\n%",
-		                first_param, SDL_GetError(), node->getPlace());
+		Message::outError("SDL_GetKeyFromName",
+		                  "KeyName <%>\n%\n%",
+		                  first_param, SDL_GetError(), node->getPlace());
 	}else {
 		if ((key == SDLK_SPACE && notReactOnSpace) || (key == SDLK_RETURN && notReactOnEnter)) return;
 

@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "utils/utils.h"
+#include "utils/message.h"
 
 
 std::vector<std::string> String::split(const std::string &str, std::string_view separator) {
@@ -44,7 +44,7 @@ int String::toInt(std::string_view str) {
 			continue;
 		}
 
-		Utils::outError("String::toInt", "String <%> is an invalid number", str);
+		Message::outError("String::toInt", "String <%> is an invalid number", str);
 		return 0;
 	}
 	return neg ? -res : res;
@@ -133,7 +133,7 @@ double String::toDouble(std::string_view str) {
 	double res = strToDoubleWithError(str, error);
 
 	if (error) {
-		Utils::outError("String::toDouble", "String <%> is an invalid number", str);
+		Message::outError("String::toDouble", "String <%> is an invalid number", str);
 	}
 	return res;
 }

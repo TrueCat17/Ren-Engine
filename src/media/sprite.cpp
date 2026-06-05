@@ -7,9 +7,9 @@
 
 #include "utils/algo.h"
 #include "utils/file_system.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 static std::map<std::string, Node*> declAts;
@@ -27,9 +27,9 @@ static Node* parseAction(PyObject *action, uint32_t childNum,
 
 	ScopeExit se([&] {
 		if (!res) {
-			Utils::outError("Sprite, parseAction",
-			                "Failed to parse child <%> of (%:%)",
-			                childNum, parentFileName, parentNumLine);
+			Message::outError("Sprite, parseAction",
+			                  "Failed to parse child <%> of (%:%)",
+			                  childNum, parentFileName, parentNumLine);
 		}
 	});
 
@@ -100,8 +100,8 @@ void Sprite::registerImage(Node *imageNode) {
 
 	name = String::strip(name);
 	if (name.empty()) {
-		Utils::outError("Utils::registerImage",
-		                "Empty name\n%", imageNode->getPlace());
+		Message::outError("Utils::registerImage",
+		                  "Empty name\n%", imageNode->getPlace());
 		return;
 	}
 	declAts[name] = imageNode;
@@ -124,9 +124,9 @@ void Sprite::registerImage(Node *imageNode) {
 		if (!actions) return;
 
 		if (!PyTuple_CheckExact(actions) && !PyList_CheckExact(actions)) {
-			Utils::outError("Sprite::registerImage",
-			                "type(get_default_transform_actions()) expected tuple or list, got %",
-			                actions->ob_type->tp_name);
+			Message::outError("Sprite::registerImage",
+			                  "type(get_default_transform_actions()) expected tuple or list, got %",
+			                  actions->ob_type->tp_name);
 			return;
 		}
 
@@ -160,7 +160,7 @@ PyObject* Sprite::getImageDeclAt(const std::string &name) {
 		return node->getPyChildren();
 	}
 
-	Utils::outError("Sprite::getImageDeclAt", "Image <%> not registered", name);
+	Message::outError("Sprite::getImageDeclAt", "Image <%> not registered", name);
 	return PyTuple_New(0);
 }
 
@@ -207,7 +207,7 @@ const std::vector<std::string>& Sprite::getChildrenImagesDeclAt(const std::strin
 		const Node *node = it->second;
 		getChildrenImages(res, node);
 	}else {
-		Utils::outError("Sprite::getVectorImageDeclAt", "Image <%> not registered", name);
+		Message::outError("Sprite::getVectorImageDeclAt", "Image <%> not registered", name);
 	}
 
 	return res;

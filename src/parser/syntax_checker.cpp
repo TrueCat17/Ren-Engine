@@ -4,8 +4,8 @@
 #include <set>
 
 #include "parser/parser.h"
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 static std::set<std::string> knownScreenLeafs;
@@ -78,7 +78,7 @@ const std::vector<std::string> &SyntaxChecker::getScreenProps(const std::string 
 
 	auto syntaxIt = mapSyntax.find(type);
 	if (syntaxIt == mapSyntax.end()) {
-		Utils::outError("SyntaxChecker::getScreenProps", "Type <%> not found", type);
+		Message::outError("SyntaxChecker::getScreenProps", "Type <%> not found", type);
 		static std::vector<std::string> res;
 		return res;
 	}

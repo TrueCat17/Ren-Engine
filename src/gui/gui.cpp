@@ -1,10 +1,5 @@
 #include "gui.h"
 
-#define printTime 0
-#if printTime
-#include <iostream>
-#endif
-
 #include "gui/screen/screen.h"
 #include "media/py_utils.h"
 #include "utils/stage.h"
@@ -46,8 +41,10 @@ static void updateImpl(bool saving) {
 
 		double st = Utils::getTimer();
 
+#define printTime 0
+
 #if printTime
-		std::cout << "update <" << scr->getName() << ">:\n";
+		printf("update <%s>:\n", scr->getName().c_str());
 		const double time1 = Utils::getTimer();
 #endif
 		scr->calcProps();
@@ -67,14 +64,14 @@ static void updateImpl(bool saving) {
 		scr->updateGlobal();
 #if printTime
 		const double time5 = Utils::getTimer();
-		auto round = [](double start, double end) {
-			return std::trunc((end - start) * 1e5) / 1e2;
-		};
-		std::cout << round(time1, time2) << " - " <<
-		             round(time2, time3) << " - " <<
-		             round(time3, time4) << " - " <<
-		             round(time4, time5) << ": " <<
-		             round(time1, time5) << '\n';
+		printf(
+		    "%.2f - %.2f - %.2f - %.2f: %.2f\n",
+		    (time2 - time1) * 1000,
+		    (time3 - time2) * 1000,
+		    (time4 - time3) * 1000,
+		    (time5 - time4) * 1000,
+		    (time5 - time1) * 1000
+		);
 #endif
 
 		const std::string &name = scr->getName();

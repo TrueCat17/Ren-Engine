@@ -13,8 +13,9 @@
 #include "parser/syntax_checker.h"
 
 #include "utils/algo.h"
-#include "utils/scope_exit.h"
 #include "utils/file_system.h"
+#include "utils/message.h"
+#include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
 
@@ -72,7 +73,7 @@ static std::vector<std::string> getFileNames(const std::string &path) {
 		return FileSystem::getFilesRecursive(path);
 	}
 
-	Utils::outError("getFileNames", "Directory <%> not found", path);
+	Message::outError("getFileNames", "Directory <%> not found", path);
 	static const std::string mainMenu = "mods/main_menu";
 	if (path != mainMenu) {
 		return getFileNames(mainMenu);
@@ -97,10 +98,10 @@ Parser::Parser(const std::string &dir) {
 
 	for (const std::string &fileName : files) {
 		if (fileName.find("_SL_FILE_") != size_t(-1)) {
-			Utils::outError("Parser::Parser", "File <%> must be renamed to not contain <_SL_FILE_>", fileName);
+			Message::outError("Parser::Parser", "File <%> must be renamed to not contain <_SL_FILE_>", fileName);
 		}
 		if (fileName.find("_SL_REAL") != size_t(-1)) {
-			Utils::outError("Parser::Parser", "File <%> must be renamed to not contain <_SL_REAL>", fileName);
+			Message::outError("Parser::Parser", "File <%> must be renamed to not contain <_SL_REAL>", fileName);
 		}
 	}
 
@@ -114,7 +115,7 @@ Parser::Parser(const std::string &dir) {
 		bool toPrevLine = false;
 
 		std::string s;
-		std::ifstream is(fileName);
+		std::ifstream is(fileName, std::ios_base::binary);
 		code.push_back("FILENAME " + fileName);
 		++countFiles;
 
@@ -134,7 +135,7 @@ Parser::Parser(const std::string &dir) {
 			String::replaceAll(s, "\t", "    ");
 
 			if (String::startsWith(s, "FILENAME")) {
-				Utils::outError("Parser::Parser", "String cannot start with <FILENAME> (file <%>)", fileName);
+				Message::outError("Parser::Parser", "String cannot start with <FILENAME> (file <%>)", fileName);
 				s = "";
 			}
 
@@ -228,11 +229,11 @@ Node* Parser::getMainNode() {
 		bool t;
 		bool ok = SyntaxChecker::check("main", headWord, prevHeadWord, SuperParent::MAIN, t);
 		if (!ok) {
-			Utils::outError("Parser::getMainNode",
-			                "Invalid syntax in string <%>\n\n"
-			                "File <%>\n"
-			                "Line: %",
-			                headLine, fileName, start - startFile);
+			Message::outError("Parser::getMainNode",
+			                  "Invalid syntax in string <%>\n\n"
+			                  "File <%>\n"
+			                  "Line: %",
+			                  headLine, fileName, start - startFile);
 		}
 
 		uint32_t nextChildStart = start + 1;
@@ -267,9 +268,9 @@ Node* Parser::getMainNode() {
 
 			if (node->command == "label" || node->command == "screen") {
 				if (node->params.find('\'') != size_t(-1) || node->params.find('"') != size_t(-1)) {
-					Utils::outError("Parser::getMainNode",
-					                "Name of % contains quote: <%>\n%",
-					                node->command, node->params, node->getPlace());
+					Message::outError("Parser::getMainNode",
+					                  "Name of % contains quote: <%>\n%",
+					                  node->command, node->params, node->getPlace());
 					String::replaceAll(node->params, "'", "");
 					String::replaceAll(node->params, "\"", "");
 				}
@@ -317,12 +318,12 @@ static void initScreenNode(Node *node) {
 				auto it = props.find(child->command);
 				if (it != props.end()) {
 					Node *orig = it->second;
-					Utils::outError("Parser::initScreenNode",
-					                "Redefinition %:\n"
-					                "%\n"
-					                "Previous definition:\n"
-					                "%",
-					                child->command, child->getPlace(), orig->getPlace());
+					Message::outError("Parser::initScreenNode",
+					                  "Redefinition %:\n"
+					                  "%\n"
+					                  "Previous definition:\n"
+					                  "%",
+					                  child->command, child->getPlace(), orig->getPlace());
 				}else {
 					props[child->command] = child;
 				}
@@ -353,9 +354,9 @@ static void initScreenNode(Node *node) {
 			}
 
 			if (!Algo::isLexicalValid(argsStr)) {
-				Utils::outError("Parser::initScreenNode",
-				                "Screen args are invalid\n\n%",
-				                node->getPlace());
+				Message::outError("Parser::initScreenNode",
+				                  "Screen args are invalid\n\n%",
+				                  node->getPlace());
 				return;
 			}
 
@@ -387,9 +388,9 @@ static void initScreenNode(Node *node) {
 
 				if (checkName && !Algo::isValidPyName(name)) {
 					ok = false;
-					Utils::outError("Parser::initScreenNode",
-					                "Invalid name <%>\n\n%",
-					                name, node->getPlace());
+					Message::outError("Parser::initScreenNode",
+					                  "Invalid name <%>\n\n%",
+					                  name, node->getPlace());
 				}
 				if (checkValue) {
 					PyObject *co = nullptr;
@@ -399,9 +400,9 @@ static void initScreenNode(Node *node) {
 
 					if (!co) {
 						ok = false;
-						Utils::outError("Parser::initScreenNode",
-						                "Invalid default value <%> for argument <%>\n\n%",
-						                value, name, node->getPlace());
+						Message::outError("Parser::initScreenNode",
+						                  "Invalid default value <%> for argument <%>\n\n%",
+						                  value, name, node->getPlace());
 					}
 				}
 
@@ -417,8 +418,8 @@ static void initScreenNode(Node *node) {
 					}else {// node->command == "use"
 						error = "Keyword <%> argument repeated\n\n%";
 					}
-					Utils::outError("Parser::initScreenNode", error,
-					                name, node->getPlace());
+					Message::outError("Parser::initScreenNode", error,
+					                  name, node->getPlace());
 				}
 
 				if (ok) {
@@ -441,8 +442,8 @@ static void initScreenNode(Node *node) {
 					//example: use screen_name(arg2 = None, value1)
 					errorStr = "Non-keyword arg after keyword arg\n\n%";
 				}
-				Utils::outError("Parser::initScreenNode", errorStr,
-				                node->getPlace());
+				Message::outError("Parser::initScreenNode", errorStr,
+				                  node->getPlace());
 				break;
 			}
 
@@ -450,10 +451,10 @@ static void initScreenNode(Node *node) {
 		}
 
 		if (args.empty()) {
-			Utils::outError("Parser::initScreenNode",
-			                "Invalid syntax\n"
-			                "Object <%> must have main parameter\n\n%",
-			                node->command, node->getPlace());
+			Message::outError("Parser::initScreenNode",
+			                  "Invalid syntax\n"
+			                  "Object <%> must have main parameter\n\n%",
+			                  node->command, node->getPlace());
 			return;
 		}
 
@@ -472,19 +473,19 @@ static void initScreenNode(Node *node) {
 		const std::string &name = args[i];
 		bool t;
 		if (!SyntaxChecker::check(node->command, name, "", SuperParent::SCREEN, t)) {
-			Utils::outError("Parser::initScreenNode",
-			                "Invalid syntax in string <% %>\n"
-			                "Parameter <%> is not property of <%>\n\n%",
-			                node->command, node->params,
-			                name, node->command, node->getPlace());
+			Message::outError("Parser::initScreenNode",
+			                  "Invalid syntax in string <% %>\n"
+			                  "Parameter <%> is not property of <%>\n\n%",
+			                  node->command, node->params,
+			                  name, node->command, node->getPlace());
 			continue;
 		}
 
 		if (i + 1 >= args.size()) {
-			Utils::outError("Parser::initScreenNode",
-			                "Skip value of parameter <%> in string\n"
-			                "<%>\n\n%",
-			                name, node->params, node->getPlace());
+			Message::outError("Parser::initScreenNode",
+			                  "Skip value of parameter <%> in string\n"
+			                  "<%>\n\n%",
+			                  name, node->params, node->getPlace());
 			continue;
 		}
 		const std::string &value = args[i + 1];
@@ -513,9 +514,9 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 		if (String::startsWith(headLine, "$")) {
 			res->command = "$";
 			res->params = headLine.substr(1);
-			Utils::outError("Parser::getNode",
-			                "Do you mean <$ %> instead of <%>?\n\n%",
-			                res->params, headLine, res->getPlace());
+			Message::outError("Parser::getNode",
+			                  "Do you mean <$ %> instead of <%>?\n\n%",
+			                  res->params, headLine, res->getPlace());
 			return res;
 		}
 
@@ -527,26 +528,26 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 	bool block = start != end - 1;
 	if (!block) {
 		if (headLine.back() == ':') {
-			Utils::outError("Parser::getNode",
-			                "Only block declaration ends with a colon\n"
-			                "String <%>\n\n%",
-			                headLine, res->getPlace());
+			Message::outError("Parser::getNode",
+			                  "Only block declaration ends with a colon\n"
+			                  "String <%>\n\n%",
+			                  headLine, res->getPlace());
 			headLine.erase(headLine.size() - 1);
 		}
 		std::string copy = headLine + '\n';
 		if (String::firstNotInQuotes(copy, '\n') == size_t(-1)) {
-			Utils::outError("Parser::getNode",
-			                "Not closed quote in <%>\n\n%",
-			                headLine, res->getPlace());
+			Message::outError("Parser::getNode",
+			                  "Not closed quote in <%>\n\n%",
+			                  headLine, res->getPlace());
 			res->command = "pass";
 			return res;
 		}
 	}else {
 		if (headLine.back() != ':') {
-			Utils::outError("Parser::getNode",
-			                "Block declaration must ends with a colon\n"
-			                "String <%>\n\n%",
-			                headLine, res->getPlace());
+			Message::outError("Parser::getNode",
+			                  "Block declaration must ends with a colon\n"
+			                  "String <%>\n\n%",
+			                  headLine, res->getPlace());
 			headLine = "pass";
 			block = false;
 			end = start + 1;
@@ -565,10 +566,10 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 	    (type == "if" || type == "elif" || type == "else" ||
 	     type == "for" || type == "while" || type == "python"))
 	{
-		Utils::outError("Parser::getNode",
-		                "Expected an indented block\n"
-		                "String <%>\n\n%",
-		                headLine, res->getPlace());
+		Message::outError("Parser::getNode",
+		                  "Expected an indented block\n"
+		                  "String <%>\n\n%",
+		                  headLine, res->getPlace());
 		type = res->command = headLine = "pass";
 		endType = headLine.size();
 	}
@@ -608,9 +609,9 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 				}
 			}
 			if (!ok) {
-				Utils::outError("Parser::getNode",
-				                "<%> outside loop\n%",
-				                type, res->getPlace());
+				Message::outError("Parser::getNode",
+				                  "<%> outside loop\n%",
+				                  type, res->getPlace());
 				type = res->command = "pass";
 			}
 		}
@@ -638,7 +639,7 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 		if (type == "translate") {
 			std::vector<std::string> words = Algo::getArgs(res->params);
 			if (words.size() != 2) {
-				Utils::outError("Parser::getNode", "<translate> expected 2 args, got args:\n  <%>", res->params);
+				Message::outError("Parser::getNode", "<translate> expected 2 args, got args:\n  <%>", res->params);
 				words = { "None", "none_none" };
 			}
 			const std::string &lang = words[0];
@@ -652,7 +653,7 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 			}else {
 				res->command = type = "label";
 				if (translateType.find('_') == size_t(-1)) {
-					Utils::outError("Parser::getNode", "Unknown type of translation <%>", translateType);
+					Message::outError("Parser::getNode", "Unknown type of translation <%>", translateType);
 				}
 			}
 		}
@@ -713,20 +714,20 @@ Node* Parser::getNode(uint32_t start, uint32_t end, int superParent, bool isText
 
 		bool isText;
 		if (!SyntaxChecker::check(type, headWord, prevHeadWord, superParent, isText)) {
-			Utils::outError("Parser::getNode",
-			                "Invalid syntax in string <%>\n"
-			                "(node: <%>, parentNode: <%>, prevNode: <%>)\n\n%",
-			                headLine, headWord, type, prevHeadWord, res->getPlace());
+			Message::outError("Parser::getNode",
+			                  "Invalid syntax in string <%>\n"
+			                  "(node: <%>, parentNode: <%>, prevNode: <%>)\n\n%",
+			                  headLine, headWord, type, prevHeadWord, res->getPlace());
 			continue;
 		}
 		prevHeadWord = headWord;
 
 		Node *node = getNode(childStart, nextChildStart, superParent, isText);
 		if (node->command == "has" && node->params != "vbox" && node->params != "hbox") {
-			Utils::outError("Parser::getNode",
-			                "Invalid syntax in string <%>\n"
-			                "After <has> expected <vbox> or <hbox>, got <%>\n\n%",
-			                headLine, node->params, node->getPlace());
+			Message::outError("Parser::getNode",
+			                  "Invalid syntax in string <%>\n"
+			                  "After <has> expected <vbox> or <hbox>, got <%>\n\n%",
+			                  headLine, node->params, node->getPlace());
 			continue;
 		}
 

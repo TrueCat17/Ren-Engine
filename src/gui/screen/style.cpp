@@ -3,8 +3,8 @@
 #include <set>
 
 #include "media/py_utils.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
-#include "utils/utils.h"
 
 
 Style::Style(PyObject *style, const std::string &name):
@@ -16,7 +16,7 @@ Style::Style(PyObject *style, const std::string &name):
 
 	PyObject *dict = PyObject_GetAttrString(style, "__dict__");
 	if (!dict || !PyDict_CheckExact(dict)) {
-		Utils::outMsg("Style::Style", "Expected type(obj.__dict__) is dict");
+		Message::outMsg("Style::Style", "Expected type(obj.__dict__) is dict");
 		Py_XDECREF(dict);
 		return;
 	}
@@ -74,7 +74,7 @@ const Style* StyleManager::getByName(const Node *node, const std::string &name) 
 	const Style *res;
 	PyObject *pyStyle = PyUtils::execRetObj(node->getFileName(), node->getNumLine(), "style." + name);
 	if (!pyStyle || pyStyle == Py_None) {
-		Utils::outError("StyleManager::getByName", "Style <%> is not defined\n%", name, node->getPlace());
+		Message::outError("StyleManager::getByName", "Style <%> is not defined\n%", name, node->getPlace());
 		res = new Style(Py_None, "None");
 	}else {
 		res = new Style(pyStyle, name);

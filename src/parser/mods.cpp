@@ -10,8 +10,8 @@
 #include "media/py_utils/convert_to_py.h"
 
 #include "utils/file_system.h"
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 struct Mod {
@@ -33,7 +33,7 @@ void Mods::init() {
 		Mod mod;
 		mod.dir = dir.substr(modsPath.size());//lost only dirName, without "mods/"
 
-		std::ifstream nameFile(file);
+		std::ifstream nameFile(file, std::ios_base::binary);
 		while (!nameFile.eof()) {
 			std::string line;
 			std::getline(nameFile, line);
@@ -46,7 +46,7 @@ void Mods::init() {
 
 			size_t separator = line.find('=');
 			if (separator == size_t(-1)) {
-				Utils::outError("Mods::init", "Line <%> in file <%> is incorrect", line, file);
+				Message::outError("Mods::init", "Line <%> in file <%> is incorrect", line, file);
 				continue;
 			}
 

@@ -3,9 +3,9 @@
 
 #include <array>
 
-#include "SDL3/SDL_keycode.h"
-
 #include "gui/screen/child.h"
+
+typedef Uint32 SDL_Keycode;
 
 
 class BtnRect {

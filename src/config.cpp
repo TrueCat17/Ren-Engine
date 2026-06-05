@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "utils/file_system.h"
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 struct Param {
@@ -41,7 +41,7 @@ std::string Config::get(const std::string &name) {
 		if (param.name == name) return param.value;
 	}
 
-	Utils::outError("Config::get", "Unknown param <%>", name);
+	Message::outError("Config::get", "Unknown param <%>", name);
 	return "";
 }
 
@@ -68,7 +68,7 @@ void Config::set(const std::string &name, const std::string &value, const std::s
 	if (initing) {
 		params.push_back({name, value, comment});
 	}else {
-		Utils::outError("Config::set", "Unknown param <%>", name);
+		Message::outError("Config::set", "Unknown param <%>", name);
 	}
 }
 
@@ -112,10 +112,10 @@ static void load() {
 	if (!is.is_open()) {
 		is.open(pathOrig, std::ios::binary);
 		if (!is.is_open()) {
-			Utils::outError("Config::load",
-			                "Failed to load file <%>\n"
-			                "Using default settings",
-			                pathOrig);
+			Message::outError("Config::load",
+			                  "Failed to load file <%>\n"
+			                  "Using default settings",
+			                  pathOrig);
 			return;
 		}
 	}
@@ -142,19 +142,19 @@ static void load() {
 
 		if (line.empty()) continue;
 		if (line[0] == '#') {
-			Utils::outMsg("Config::load", "Comment at the begining of line is invalid");
+			Message::outMsg("Config::load", "Comment at the begining of line is invalid");
 			continue;
 		}
 
 		size_t indexAssign = line.find('=');
 		if (indexAssign == size_t(-1)) {
-			Utils::outError("Config::load", "Expected symbol '=' in <%>", line);
+			Message::outError("Config::load", "Expected symbol '=' in <%>", line);
 			continue;
 		}
 		if (indexComment == size_t(-1)) {
 			indexComment = line.size();
 		}else if (indexComment < indexAssign) {
-			Utils::outError("Config::load", "First symbol '=' in <%> is commented", line);
+			Message::outError("Config::load", "First symbol '=' in <%> is commented", line);
 			continue;
 		}
 
@@ -229,7 +229,7 @@ void Config::setDefaultScaleQuality() {
 bool Config::setScaleQuality(std::string value) {
 	bool ok = true;
 	if (value != "0" && value != "1" && value != "2") {
-		Utils::outError("Config::setScaleQuality", "Expected 0, 1 or 2, got <%>", value);
+		Message::outError("Config::setScaleQuality", "Expected 0, 1 or 2, got <%>", value);
 		value = "0";
 		ok = false;
 	}

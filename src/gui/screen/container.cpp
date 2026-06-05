@@ -13,7 +13,7 @@
 #include "key.h"
 
 #include "parser/syntax_checker.h"
-#include "utils/utils.h"
+#include "utils/message.h"
 
 
 Container::Container(Node *node, Container *screenParent, Screen *screen):
@@ -103,9 +103,9 @@ void Container::addChildrenFromNode() {
 		if (childCommand == "use") {
 			Node *screenNode = Screen::getDeclared(childNode->params);
 			if (!screenNode) {
-				Utils::outError("Screen::show",
-				                "Screen <%> is not defined\n%",
-				                childNode->params, childNode->getPlace());
+				Message::outError("Screen::show",
+				                  "Screen <%> is not defined\n%",
+				                  childNode->params, childNode->getPlace());
 				continue;
 			}else {
 				child = new Screen(childNode, screen);
@@ -156,9 +156,9 @@ void Container::addChildrenFromNode() {
 
 		{
 			if (!SyntaxChecker::isKnownScreenLeaf(childCommand)) {
-				Utils::outError("Container::addChildrenFromNode",
-				                "Unknown type <%>\n%",
-				                childCommand, childNode->getPlace());
+				Message::outError("Container::addChildrenFromNode",
+				                  "Unknown type <%>\n%",
+				                  childCommand, childNode->getPlace());
 			}
 			continue;
 		}

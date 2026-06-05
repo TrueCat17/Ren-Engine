@@ -1,7 +1,6 @@
 #include "stage.h"
 
 #include "config.h"
-#include "gv.h"
 #include "renderer.h"
 
 #include "gui/group.h"
@@ -9,9 +8,10 @@
 #include "media/py_utils.h"
 
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
-#include "utils/utils.h"
+#include "utils/thread_tasks.h"
 
 
 int Stage::x, Stage::y, Stage::width, Stage::height;
@@ -24,41 +24,41 @@ SDL_Window *Stage::window = nullptr;
 Group *Stage::screens = nullptr;
 
 
-SDL_DisplayMode Stage::getDisplayMode() {
-	SDL_DisplayMode res;
-	res.w = 1920;
-	res.h = 1080;
+static SDL_DisplayMode displayModeStruct;
+
+void Stage::updateDisplayMode() {
+	displayModeStruct.w = 1920;
+	displayModeStruct.h = 1080;
 
 	SDL_DisplayID index = 0;
 	if (Stage::window) {
 		index = SDL_GetDisplayForWindow(Stage::window);
 		if (!index) {
-			Utils::outMsg("SDL_GetDisplayForWindow", SDL_GetError());
-			return res;
+			Message::outMsg("SDL_GetDisplayForWindow", SDL_GetError());
+			return;
 		}
 	}else {
 		const SDL_DisplayID *firstDisplayId = SDL_GetDisplays(nullptr);
 		if (!firstDisplayId) {
-			Utils::outMsg("SDL_GetDisplays", SDL_GetError());
-			return res;
+			Message::outMsg("SDL_GetDisplays", SDL_GetError());
+			return;
 		}
 		index = *firstDisplayId;
 	}
 
 	const SDL_DisplayMode *dm = SDL_GetDesktopDisplayMode(index);
 	if (!dm) {
-		Utils::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
+		Message::outMsg("SDL_GetDesktopDisplayMode", SDL_GetError());
 	}else {
-		res = *dm;
+		displayModeStruct = *dm;
 	}
-	return res;
 }
 
 int Stage::getMaxWidth() {
-	return getDisplayMode().w;
+	return displayModeStruct.w;
 }
 int Stage::getMaxHeight() {
-	return getDisplayMode().h;
+	return displayModeStruct.h;
 }
 
 int Stage::getStageWidth() {
@@ -69,25 +69,25 @@ int Stage::getStageHeight() {
 }
 
 
-static SDL_Rect getUsableBounds() {
-	SDL_Rect res;
-	if (Stage::fullscreen) {
-		res = {0, 0, Stage::getMaxWidth(), Stage::getMaxHeight()};
-	}else {
+static void getUsableBounds(int &usableWidth, int &usableHeight) {
+	usableWidth = Stage::getMaxWidth();
+	usableHeight = Stage::getStageHeight();
+
+	if (!Stage::fullscreen) {
 		SDL_DisplayID index = SDL_GetDisplayForWindow(Stage::window);
 		if (!index) {
-			Utils::outMsg("SDL_GetDisplayForWindow", SDL_GetError());
-			res = {0, 0, Stage::getMaxWidth(), Stage::getMaxHeight()};
-		}else {
-			int wTop, wLeft, wBottom, wRight;
-			SDL_GetWindowBordersSize(Stage::window, &wTop, &wLeft, &wBottom, &wRight);
-
-			SDL_GetDisplayUsableBounds(index, &res);
-			res.w -= wLeft + wRight;
-			res.h -= wTop + wBottom;
+			Message::outMsg("SDL_GetDisplayForWindow", SDL_GetError());
+			return;
 		}
+
+		int wTop, wLeft, wBottom, wRight;
+		SDL_GetWindowBordersSize(Stage::window, &wTop, &wLeft, &wBottom, &wRight);
+
+		SDL_Rect res;
+		SDL_GetDisplayUsableBounds(index, &res);
+		usableWidth  = res.w - (wLeft + wRight);
+		usableHeight = res.h - (wTop + wBottom);
 	}
-	return res;
 }
 
 
@@ -95,10 +95,9 @@ static std::pair<int, int> fixWindowSize(int w, int h, int dX = 1, int dY = 1) {
 	double k = String::toDouble(Config::get("window_w_div_h"));
 	if (k < 0.1) {
 		k = 1.777;
-		Utils::outError("fixWindowSize",
-		                "Invalid <window_w_div_h> in <params.conf>:\n"
-		                "<%>",
-		                Config::get("window_w_div_h"));
+		Message::outError("fixWindowSize",
+		                  "Invalid <window_w_div_h> in <params.conf>: <%>",
+		                  Config::get("window_w_div_h"));
 	}
 
 	if (Stage::maximized || Stage::fullscreen) {//can only scale down
@@ -121,13 +120,14 @@ static std::pair<int, int> fixWindowSize(int w, int h, int dX = 1, int dY = 1) {
 			h = int(Stage::MIN_WIDTH / k);
 		}
 
-		SDL_Rect usableBounds = getUsableBounds();
-		if (w > usableBounds.w) {
-			w = usableBounds.w;
+		int usableWidth, usableHeight;
+		getUsableBounds(usableWidth, usableHeight);
+		if (w > usableWidth) {
+			w = usableWidth;
 			h = int(w / k);
 		}
-		if (h > usableBounds.h) {
-			h = usableBounds.h;
+		if (h > usableHeight) {
+			h = usableHeight;
 			w = int(h * k);
 		}
 	}
@@ -136,51 +136,7 @@ static std::pair<int, int> fixWindowSize(int w, int h, int dX = 1, int dY = 1) {
 }
 
 
-static std::mutex stageMutex;
-static int stageWidth = 0;
-static int stageHeight = 0;
-static bool stageFullscreen = false;
-static bool stageApplied = true;
-
-void Stage::applyChanges() {
-	if (stageApplied) return;
-
-	std::lock_guard g(Renderer::renderMutex);
-
-	if (Stage::fullscreen != stageFullscreen) {//need only change fullscreen mode?
-		Stage::fullscreen = stageFullscreen;
-		Config::set("window_fullscreen", stageFullscreen ? "True" : "False");
-
-		SDL_SetWindowFullscreen(Stage::window, Stage::fullscreen);
-		SDL_SyncWindow(Stage::window);
-
-		if (Stage::fullscreen) {
-			SDL_GetWindowSize(Stage::window, &Stage::width, &Stage::height);
-		}else {
-			Stage::maximized = false;
-
-			int w = String::toInt(Config::get("window_width"));
-			int h = String::toInt(Config::get("window_height"));
-
-			Stage::width  = Math::inBounds(w, Stage::MIN_WIDTH,  Stage::getMaxWidth());
-			Stage::height = Math::inBounds(h, Stage::MIN_HEIGHT, Stage::getMaxHeight());
-		}
-
-		auto size = fixWindowSize(Stage::width, Stage::height);
-		Stage::width = size.first;
-		Stage::height = size.second;
-	}else {                                    //need change window size
-		if (GV::inGame && Stage::fullscreen) {
-			Stage::fullscreen = false;
-			Config::set("window_fullscreen", "False");
-
-			SDL_SetWindowFullscreen(Stage::window, false);
-			SDL_SyncWindow(Stage::window);
-		}
-		Stage::width = stageWidth;
-		Stage::height = stageHeight;
-	}
-
+static void onResize() {
 	Stage::x = 0;
 	Stage::y = 0;
 	if (Stage::maximized || Stage::fullscreen) {
@@ -206,52 +162,61 @@ void Stage::applyChanges() {
 		SDL_SyncWindow(Stage::window);
 	}
 
-	stageApplied = true;
 	Renderer::needToUpdateViewPort = true;
-}
-
-
-static void wait() {
-	stageApplied = false;
-
-	if (GV::messageThreadId == std::this_thread::get_id()) {
-		Stage::applyChanges();
-	}else {
-		while (!stageApplied) {
-			Utils::sleep(0.001);
-		}
-	}
 
 	if (GV::inGame) {
 		pyExecFromCpp("signals.send('resized_stage')");
 	}
 }
 
+
 void Stage::setStageSize(int width, int height) {
-	auto dm = getDisplayMode();
-	if (width >= dm.w || height >= dm.h) {
-		setFullscreen(true);
+	if (width >= displayModeStruct.w || height >= displayModeStruct.h) {
+		Stage::setFullscreen(true);
 		return;
 	}
 
 	if (width != Stage::width || height != Stage::height) {
-		SDL_RestoreWindow(Stage::window);
-		Stage::maximized = false;
-		Stage::changeWindowSize(width, height);
+		ThreadTasks::main.addAndWait([=]() {
+			SDL_RestoreWindow(Stage::window);
+			Stage::maximized = false;
+			Stage::changeWindowSize(width, height);
+		});
 	}
 }
 
 void Stage::setFullscreen(bool value) {
 	if (value == Stage::fullscreen) return;
 
-	std::lock_guard g(stageMutex);
-	stageFullscreen = value;
-	Stage::maximized = false;
-	wait();
+	ThreadTasks::main.addAndWait([=]() {
+		Stage::fullscreen = value;
+		Config::set("window_fullscreen", value ? "True" : "False");
+
+		SDL_SetWindowFullscreen(Stage::window, value);
+		SDL_SyncWindow(Stage::window);
+
+		if (value) {
+			SDL_GetWindowSize(Stage::window, &Stage::width, &Stage::height);
+		}else {
+			Stage::maximized = false;
+
+			int w = String::toInt(Config::get("window_width"));
+			int h = String::toInt(Config::get("window_height"));
+
+			Stage::width  = Math::inBounds(w, Stage::MIN_WIDTH,  Stage::getMaxWidth());
+			Stage::height = Math::inBounds(h, Stage::MIN_HEIGHT, Stage::getMaxHeight());
+		}
+
+		const auto size = fixWindowSize(Stage::width, Stage::height);
+		Stage::width = size.first;
+		Stage::height = size.second;
+
+		onResize();
+	});
 }
 
 
-static std::tuple<int, int, int, int> prevSizes = {0, 0, 0, 0};
+static std::tuple<int, int, int, int> prevSizes = { 0, 0, 0, 0 };
 void Stage::changeWindowSize(int startW, int startH, int prevWindowWidth, int prevWindowHeight) {
 	ScopeExit se([]() {
 		Stage::needResize = false;
@@ -264,7 +229,7 @@ void Stage::changeWindowSize(int startW, int startH, int prevWindowWidth, int pr
 		prevWindowWidth = Stage::width;
 		prevWindowHeight = Stage::height;
 	}
-	std::tuple<int, int, int, int> sizes = {startW, startH, prevWindowWidth, prevWindowHeight};
+	std::tuple<int, int, int, int> sizes = { startW, startH, prevWindowWidth, prevWindowHeight };
 	if (prevSizes == sizes) return;
 	prevSizes = sizes;
 
@@ -272,12 +237,19 @@ void Stage::changeWindowSize(int startW, int startH, int prevWindowWidth, int pr
 	int dY = startH - prevWindowHeight;
 	if (!dX && !dY && !Stage::needResize) return;
 
-	auto [w, h] = fixWindowSize(startW, startH, dX, dY);
+	const auto [w, h] = fixWindowSize(startW, startH, dX, dY);
+
 	if (w != startW || w != Stage::width || h != startH || h != Stage::height || Stage::needResize) {
-		std::lock_guard g(stageMutex);
-		stageWidth = w;
-		stageHeight = h;
-		stageFullscreen = Stage::fullscreen;
-		wait();
+		if (GV::inGame && Stage::fullscreen) {
+			Stage::fullscreen = false;
+			Config::set("window_fullscreen", "False");
+
+			SDL_SetWindowFullscreen(Stage::window, false);
+			SDL_SyncWindow(Stage::window);
+		}
+		Stage::width = w;
+		Stage::height = h;
+
+		onResize();
 	}
 }

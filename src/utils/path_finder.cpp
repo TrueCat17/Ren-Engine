@@ -13,8 +13,8 @@
 #include "media/py_utils.h"
 
 #include "utils/file_system.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
-#include "utils/utils.h"
 
 
 //only for debug
@@ -101,9 +101,9 @@ struct MipMapParams {
 	}
 };
 
-struct MipMap {
-	static const uint8_t MAX_SCALE = 64;
+static const uint8_t MIP_MAP_MAX_SCALE = 64;
 
+struct MipMap {
 	uint32_t originalWidth, originalHeight;
 	std::string name;
 	MipMapParams params;
@@ -123,7 +123,7 @@ static std::map<std::string, MipMap*> mipMaps;
 static MipMap* getLocation(const std::string &name) {
 	auto it = mipMaps.find(name);
 	if (it == mipMaps.end()) {
-		Utils::outError("PathFinder::getLocation", "Location <%> not found", name);
+		Message::outError("PathFinder::getLocation", "Location <%> not found", name);
 		return nullptr;
 	}
 	return it->second;
@@ -133,17 +133,17 @@ static void makeOutsideMsg(const std::string &from, PointInt xStart, PointInt yS
 {
 	std::string extra;
 	if (endMap) {
-		extra = Utils::format("start=%x%, end=%x%",
-		                      startMap->originalWidth, startMap->originalHeight,
-		                      endMap->originalWidth, endMap->originalHeight);
+		extra = Message::format("start=%x%, end=%x%",
+		                        startMap->originalWidth, startMap->originalHeight,
+		                        endMap->originalWidth, endMap->originalHeight);
 	}else {
-		extra = Utils::format("%x%", startMap->originalWidth, startMap->originalHeight);
+		extra = Message::format("%x%", startMap->originalWidth, startMap->originalHeight);
 	}
 
-	Utils::outError("PathFinder::" + from,
-	                "Start (%, %) or/and End (%, %) point outside\n"
-	                "location (%)",
-	                xStart, yStart, xEnd, yEnd, extra);
+	Message::outError("PathFinder::" + from,
+	                  "Start (%, %) or/and End (%, %) point outside\n"
+	                  "location (%)",
+	                  xStart, yStart, xEnd, yEnd, extra);
 }
 
 struct Point {
@@ -298,26 +298,26 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 	std::lock_guard g(pathFinderMutex);
 
 	if (!PyList_CheckExact(objects) || !PyList_CheckExact(places)) {
-		Utils::outMsg("PathFinder::updateLocation", "Expects type of objects and places is list");
+		Message::outMsg("PathFinder::updateLocation", "Expects type of objects and places is list");
 		return;
 	}
 
 	long countObjectElements = Py_SIZE(objects);
 	long countPlaceElements = Py_SIZE(places);
 	if ((countObjectElements % 3) || (countPlaceElements % 5)) {
-		Utils::outMsg("PathFinder::updateLocation",
-		              "Expects objects == [freeImage, x, y] * N, places == [name, x, y, loc_name, to_place_name] * N");
+		Message::outMsg("PathFinder::updateLocation",
+		                "Expects objects == [freeImage, x, y] * N, places == [name, x, y, loc_name, to_place_name] * N");
 		return;
 	}
 
-	if (!minScale || minScale > MipMap::MAX_SCALE || (minScale & (minScale - 1))) {
-		Utils::outError("PathFinder::updateLocation",
-		                "minScale (%) == 0, more than % or is not a power of 2",
-		                minScale, MipMap::MAX_SCALE);
+	if (!minScale || minScale > MIP_MAP_MAX_SCALE || (minScale & (minScale - 1))) {
+		Message::outError("PathFinder::updateLocation",
+		                  "minScale (%) == 0, more than % or is not a power of 2",
+		                  minScale, MIP_MAP_MAX_SCALE);
 		return;
 	}
 	if (!countScales) {
-		Utils::outMsg("PathFinder::updateLocation", "countScales == 0");
+		Message::outMsg("PathFinder::updateLocation", "countScales == 0");
 		return;
 	}
 
@@ -340,7 +340,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		PyObject *pyY = PyList_GET_ITEM(objects, i + 2);
 
 		if (!PyUnicode_CheckExact(pyObjectFree) || !PyLong_CheckExact(pyX) || !PyLong_CheckExact(pyY)) {
-			Utils::outMsg("PathFinder::updateLocation", "Expects objects == [str, int, int] * N");
+			Message::outMsg("PathFinder::updateLocation", "Expects objects == [str, int, int] * N");
 			continue;
 		}
 
@@ -349,7 +349,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
 		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
 		if (overflowX || overflowY) {
-			Utils::outMsg("PathFinder::updateLocation", "Object coordinates are overflowing");
+			Message::outMsg("PathFinder::updateLocation", "Object coordinates are overflowing");
 			continue;
 		}
 
@@ -367,7 +367,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		if (!PyUnicode_CheckExact(pyName) || !PyLong_CheckExact(pyX) || !PyLong_CheckExact(pyY) ||
 		    !PyUnicode_CheckExact(pyLocation) || !PyUnicode_CheckExact(pyPlace))
 		{
-			Utils::outMsg("PathFinder::updateLocation", "Expects places == [str, int, int, str, str] * N");
+			Message::outMsg("PathFinder::updateLocation", "Expects places == [str, int, int, str, str] * N");
 			continue;
 		}
 
@@ -376,7 +376,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
 		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
 		if (overflowX || overflowY) {
-			Utils::outMsg("PathFinder::updateLocation", "Place coordinates are overflowing");
+			Message::outMsg("PathFinder::updateLocation", "Place coordinates are overflowing");
 			continue;
 		}
 		std::string location = PyUtils::objToStr(pyLocation);
@@ -473,7 +473,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 		prevContent = &map->content;
 
 		scale *= 2;
-		if (scale > MipMap::MAX_SCALE) break;
+		if (scale > MIP_MAP_MAX_SCALE) break;
 	}
 }
 
@@ -699,13 +699,13 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 		return PyTuple_New(0);
 	}
 	if (objects != Py_None && !PyList_CheckExact(objects)) {
-		Utils::outMsg("PathFinder::findPath", "Expects type(objects) is list");
+		Message::outMsg("PathFinder::findPath", "Expects type(objects) is list");
 		return PyTuple_New(0);
 	}
 
 	long countObjectElements = objects != Py_None ? Py_SIZE(objects) : 0;
 	if (countObjectElements % 4) {
-		Utils::outMsg("PathFinder::findPath", "Expects objects == [x, y, w, h] * N");
+		Message::outMsg("PathFinder::findPath", "Expects objects == [x, y, w, h] * N");
 		return PyTuple_New(0);
 	}
 
@@ -740,7 +740,7 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 					if (!PyLong_CheckExact(pyX) || !PyLong_CheckExact(pyY) ||
 					    !PyLong_CheckExact(pyW) || !PyLong_CheckExact(pyH))
 					{
-						Utils::outMsg("PathFinder::findPath", "Expects type(objects[i]) is int");
+						Message::outMsg("PathFinder::findPath", "Expects type(objects[i]) is int");
 						continue;
 					}
 					int overflowX, overflowY, overflowW, overflowH;
@@ -749,7 +749,7 @@ PyObject* PathFinder::findPath(const std::string &location, PointInt xStart, Poi
 					long w = PyLong_AsLongAndOverflow(pyW, &overflowW);
 					long h = PyLong_AsLongAndOverflow(pyH, &overflowH);
 					if (overflowX || overflowY || overflowW || overflowH) {
-						Utils::outMsg("PathFinder::updateLocation", "Object coordinates/sizes are overflowing");
+						Message::outMsg("PathFinder::updateLocation", "Object coordinates/sizes are overflowing");
 						continue;
 					}
 
@@ -882,7 +882,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 		return PyTuple_New(0);
 	}
 	if (!PyList_CheckExact(bannedExits)) {
-		Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects type(bannedExits) is list");
+		Message::outMsg("PathFinder::findPathBetweenLocations", "Expects type(bannedExits) is list");
 		return PyTuple_New(0);
 	}
 
@@ -915,14 +915,14 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 	for (size_t i = 0; i < s; ++i) {
 		PyObject *elem = PyList_GET_ITEM(bannedExits, i);
 		if (!PyTuple_CheckExact(elem) || Py_SIZE(elem) != 2) {
-			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] is tuple with len 2");
+			Message::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] is tuple with len 2");
 			continue;
 		}
 
 		PyObject *pyLocationName = PyTuple_GET_ITEM(elem, 0);
 		PyObject *pyPlaceName = PyTuple_GET_ITEM(elem, 1);
 		if (!PyUnicode_CheckExact(pyLocationName) || !PyUnicode_CheckExact(pyPlaceName)) {
-			Utils::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] == (str, str)");
+			Message::outMsg("PathFinder::findPathBetweenLocations", "Expects bannedExits[i] == (str, str)");
 			continue;
 		}
 
@@ -957,7 +957,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 			LocationNode &node = locationNodes.back();
 			node.id = uint16_t(locationNodes.size() - 1);
 			if (node.id == errorNodeId) {
-				Utils::outMsg("PathFinder::findPathBetweenLocations", "Too many nodes");
+				Message::outMsg("PathFinder::findPathBetweenLocations", "Too many nodes");
 				return PyTuple_New(0);
 			}
 
@@ -979,7 +979,7 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 				LocationNode &place = locationNodes.back();
 				place.id = uint16_t(locationNodes.size() - 1);
 				if (place.id == errorNodeId) {
-					Utils::outMsg("PathFinder::findPathBetweenLocations", "Too many nodes");
+					Message::outMsg("PathFinder::findPathBetweenLocations", "Too many nodes");
 					return PyTuple_New(0);
 				}
 				place.isExit = false;

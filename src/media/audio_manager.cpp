@@ -14,6 +14,7 @@
 #include "utils/algo.h"
 #include "utils/game.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -39,7 +40,7 @@ static Channel* findChannel(const std::string &name, const std::string &from, co
 		if (channel->name == name) return channel;
 	}
 
-	Utils::outError(from, "Channel <%> not found\n\n%", name, place);
+	Message::outError(from, "Channel <%> not found\n\n%", name, place);
 	return nullptr;
 }
 
@@ -79,7 +80,7 @@ static void fillAudio(void *, SDL_AudioStream *stream, int globalLen, int) {
 static void startAudio() {
 	stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, fillAudio, nullptr);
 	if (!stream) {
-		Utils::outMsg("SDL_OpenAudioDeviceStream", SDL_GetError());
+		Message::outMsg("SDL_OpenAudioDeviceStream", SDL_GetError());
 		return;
 	}
 	SDL_ResumeAudioStreamDevice(stream);
@@ -145,22 +146,22 @@ void AudioManager::registerChannel(const std::string &name, const std::string &m
 	std::lock_guard g(AudioManager::mutex);
 
 	if (name.find(' ') != size_t(-1)) {
-		Utils::outError("AudioManager::registerChannel",
-		                "Channel name <%> must not contain spaces\n\n%",
-		                name, get_place);
+		Message::outError("AudioManager::registerChannel",
+		                  "Channel name <%> must not contain spaces\n\n%",
+		                  name, get_place);
 		return;
 	}
 	if (mixer.find(' ') != size_t(-1)) {
-		Utils::outError("AudioManager::registerChannel",
-		                "Mixer name <%> must not contain spaces\n\n%",
-		                mixer, get_place);
+		Message::outError("AudioManager::registerChannel",
+		                  "Mixer name <%> must not contain spaces\n\n%",
+		                  mixer, get_place);
 		return;
 	}
 
 	if (AudioManager::hasChannel(name)) {
-		Utils::outError("AudioManager::registerChannel",
-		                "Channel <%> already exists\n\n%",
-		                name, get_place);
+		Message::outError("AudioManager::registerChannel",
+		                  "Channel <%> already exists\n\n%",
+		                  name, get_place);
 		return;
 	}
 
@@ -201,17 +202,17 @@ PyObject* AudioManager::getAudioLen(const std::string &path) {
 
 	if (int error = avformat_open_input(&formatCtx, path.c_str(), nullptr, nullptr)) {
 		if (error == AVERROR(ENOENT)) {
-			Utils::outError("AudioManager::getAudioLen: avformat_open_input",
-			                "File <%> not found", path);
+			Message::outError("AudioManager::getAudioLen: avformat_open_input",
+			                  "File <%> not found", path);
 		}else {
-			Utils::outError("AudioManager::getAudioLen: avformat_open_input",
-			                "Failed to open input stream in file <%>", path);
+			Message::outError("AudioManager::getAudioLen: avformat_open_input",
+			                  "Failed to open input stream in file <%>", path);
 		}
 		Py_RETURN_NONE;
 	}
 	if (avformat_find_stream_info(formatCtx, nullptr) < 0) {
-		Utils::outError("AudioManager::getAudioLen: avformat_find_stream_info",
-		                "Failed to read stream information in file <%>", path);
+		Message::outError("AudioManager::getAudioLen: avformat_find_stream_info",
+		                  "Failed to read stream information in file <%>", path);
 		Py_RETURN_NONE;
 	}
 
@@ -225,9 +226,9 @@ void AudioManager::setMixerVolume(double volume, const std::string &mixer,
 	if (mixerVolumes.count(mixer)) {
 		mixerVolumes[mixer] = Math::inBounds(volume, 0, 1);
 	}else {
-		Utils::outError("AudioManager::setMixerVolume",
-		                "Mixer <%> is not used by any channel now\n\n%",
-		                mixer, get_place);
+		Message::outError("AudioManager::setMixerVolume",
+		                  "Mixer <%> is not used by any channel now\n\n%",
+		                  mixer, get_place);
 	}
 }
 
@@ -402,7 +403,7 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 
 	size_t countArgs = args.size() - first;
 	if (countArgs % 2 || args.size() < first) {
-		Utils::outMsg(params.fromFunc, params.expectedArgsMsg + "\n\n" + place);
+		Message::outMsg(params.fromFunc, params.expectedArgsMsg + "\n\n" + place);
 		return true;
 	}
 
@@ -426,18 +427,18 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 						continue;
 					}
 
-					Utils::outError(params.fromFunc,
-					                "Element paths[%] must be str, got %\n\n%",
-					                i, pyPath->ob_type->tp_name, place);
+					Message::outError(params.fromFunc,
+					                  "Element paths[%] must be str, got %\n\n%",
+					                  i, pyPath->ob_type->tp_name, place);
 					error = true;
 					return;
 				}
 			}
 
 			else {
-				Utils::outError(params.fromFunc,
-				                "Arg <paths> must be str, list or tuple, got %\n\n%",
-				                paths->ob_type->tp_name, place);
+				Message::outError(params.fromFunc,
+				                  "Arg <paths> must be str, list or tuple, got %\n\n%",
+				                  paths->ob_type->tp_name, place);
 				error = true;
 			}
 		});
@@ -454,7 +455,7 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 
 		std::string valueStr = PyUtils::exec(fileName, numLine, valueCode, true);
 		if (!String::isNumber(valueStr)) {
-			Utils::outError(params.fromFunc, "Expected number, got <%>\n\n%", valueStr, place);
+			Message::outError(params.fromFunc, "Expected number, got <%>\n\n%", valueStr, place);
 			return true;
 		}
 		double res = String::toDouble(valueStr);
@@ -473,7 +474,7 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 			params.useVolume = false;
 
 			if (res < 0 || res > 1) {
-				Utils::outError(params.fromFunc, "Expected volume between 0 and 1, got <%>\n\n%", valueStr, place);
+				Message::outError(params.fromFunc, "Expected volume between 0 and 1, got <%>\n\n%", valueStr, place);
 				res = Math::inBounds(res, 0, 1);
 			}
 
@@ -481,7 +482,7 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 			continue;
 		}
 
-		Utils::outError(params.fromFunc, "Unexpected param <%>\n\n%", name, place);
+		Message::outError(params.fromFunc, "Unexpected param <%>\n\n%", name, place);
 		return true;
 	}
 
@@ -492,8 +493,8 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 		if (String::isNumber(valueStr)) {
 			params.fadeOut = String::toDouble(valueStr);
 		}else {
-			Utils::outError(params.fromFunc,
-			                "Expected number in config.fadeout_audio, got <%>\n\n%", valueStr, place);
+			Message::outError(params.fromFunc,
+			                  "Expected number in config.fadeout_audio, got <%>\n\n%", valueStr, place);
 		}
 	}
 
@@ -627,7 +628,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 		std::getline(is, tmp);
 		std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 7) {
-			Utils::outError(loadFile, "In string <%> expected 7 args", tmp);
+			Message::outError(loadFile, "In string <%> expected 7 args", tmp);
 			return;
 		}
 
@@ -657,7 +658,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 			std::getline(is, tmp);
 			tmpVec = String::split(tmp, " ");
 			if (tmpVec.size() != 6) {
-				Utils::outError(loadFile, "In string <%> expected 6 args", tmp);
+				Message::outError(loadFile, "In string <%> expected 6 args", tmp);
 				return;
 			}
 
@@ -697,7 +698,7 @@ void AudioManager::load(std::ifstream &infoFile) {
 
 		const std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
-			Utils::outError(loadFile, "In string <%> expected 2 args", tmp);
+			Message::outError(loadFile, "In string <%> expected 2 args", tmp);
 			return;
 		}
 

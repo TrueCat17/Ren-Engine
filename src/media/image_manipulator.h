@@ -1,6 +1,8 @@
 #ifndef IMAGE_MANIPULATOR_H
 #define IMAGE_MANIPULATOR_H
 
+#include <string>
+
 #include <SDL3/SDL_endian.h>
 
 #include "utils/image_typedefs.h"

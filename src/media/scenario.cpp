@@ -21,6 +21,7 @@
 
 #include "utils/algo.h"
 #include "utils/game.h"
+#include "utils/message.h"
 #include "utils/mouse.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
@@ -41,7 +42,7 @@ static Node* getLabel(const std::string &name, bool outError = true) {
 	if (it != declaredLabels.end()) return it->second;
 
 	if (outError) {
-		Utils::outError("Scenario::getLabel", "Label <%> not found", name);
+		Message::outError("Scenario::getLabel", "Label <%> not found", name);
 	}
 	return nullptr;
 }
@@ -65,7 +66,7 @@ static void restoreStack(const std::string &loadPath) {
 		return;
 	}
 
-	std::ifstream is(loadPath + "/stack");
+	std::ifstream is(loadPath + "/stack", std::ios_base::binary);
 
 	Node *prevNode = nullptr;
 	size_t num = 0;
@@ -75,13 +76,13 @@ static void restoreStack(const std::string &loadPath) {
 		if (num <= prevNode->children.size() && (num || !zeroIndexIsError)) return true;
 
 		if (num) {
-			Utils::outError("Scenario::restoreStack",
-			                "Node have only % children, need #%\n%",
-			                prevNode->children.size(), num, prevNode->getPlace());
+			Message::outError("Scenario::restoreStack",
+			                  "Node have only % children, need #%\n%",
+			                  prevNode->children.size(), num, prevNode->getPlace());
 		}else {
-			Utils::outError("Scenario::restoreStack",
-			                "Unexpected stack element after last element <%>\n%",
-			                prevNode->command, prevNode->getPlace());
+			Message::outError("Scenario::restoreStack",
+			                  "Unexpected stack element after last element <%>\n%",
+			                  prevNode->command, prevNode->getPlace());
 		}
 		return false;
 	};
@@ -107,7 +108,7 @@ static void restoreStack(const std::string &loadPath) {
 
 		std::vector<std::string> tmpVec = String::split(tmp, " ");
 		if (tmpVec.size() != 2) {
-			Utils::outError("Scenario::restoreStack", "In string <%> expected 2 args", tmp);
+			Message::outError("Scenario::restoreStack", "In string <%> expected 2 args", tmp);
 			return;
 		}
 
@@ -134,7 +135,7 @@ static void restoreStack(const std::string &loadPath) {
 
 
 		if (!prevNode) {
-			Utils::outMsg("Scenario::restoreStack", "Label not defined");
+			Message::outMsg("Scenario::restoreStack", "Label not defined");
 			return;
 		}
 
@@ -142,9 +143,9 @@ static void restoreStack(const std::string &loadPath) {
 		if (!node) return;
 
 		if (node->command != first) {
-			Utils::outError("Scenario::restoreStack",
-			                "Expected command <%>, got <%>\n%",
-			                first, node->command, node->getPlace());
+			Message::outError("Scenario::restoreStack",
+			                  "Expected command <%>, got <%>\n%",
+			                  first, node->command, node->getPlace());
 			return;
 		}
 
@@ -201,12 +202,12 @@ static void restoreScreens(const std::string &loadPath) {
 		PyUtils::callInPythonThread([&]() {
 			PyObject *startScreens = PyDict_GetItemString(PyUtils::global, "start_screens");
 			if (!startScreens) {
-				Utils::outMsg("Scenario::restoreScreens", "start_screens is not defined");
+				Message::outMsg("Scenario::restoreScreens", "start_screens is not defined");
 				return;
 			}
 
 			if (!PyList_CheckExact(startScreens)) {
-				Utils::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
+				Message::outMsg("Scenario::restoreScreens", "type(start_screens) is not list");
 				return;
 			}
 
@@ -214,8 +215,8 @@ static void restoreScreens(const std::string &loadPath) {
 			for (size_t i = 0; i < len; ++i) {
 				PyObject *elem = PyList_GET_ITEM(startScreens, i);
 				if (!PyUnicode_CheckExact(elem)) {
-					Utils::outError("Scenario::restoreScreens",
-					                "type(start_screens[%]) is not str", i);
+					Message::outError("Scenario::restoreScreens",
+					                  "type(start_screens[%]) is not str", i);
 					continue;
 				}
 
@@ -241,9 +242,9 @@ static void makeStyle(const Node *child) {
 		parent = "default";
 	}else {
 		if (words.size() != 3 || words[1] != "is") {
-			Utils::outError("Scenatio::execute",
-			                "Expected 'style name [is parent]', got: style %\n%",
-			                child->params, child->getPlace());
+			Message::outError("Scenatio::execute",
+			                  "Expected 'style name [is parent]', got: style %\n%",
+			                  child->params, child->getPlace());
 			return;
 		}
 		name = words[0];
@@ -251,23 +252,23 @@ static void makeStyle(const Node *child) {
 	}
 
 	if (!PyUtils::isIdentifier(name)) {
-		Utils::outError("Scenatio::execute",
-		                "Invalid style name <%>\n%",
-		                name, child->getPlace());
+		Message::outError("Scenatio::execute",
+		                  "Invalid style name <%>\n%",
+		                  name, child->getPlace());
 		return;
 	}
 	if (!PyUtils::isIdentifier(parent)) {
-		Utils::outError("Scenatio::execute",
-		                "Invalid style name <%>\n%",
-		                parent, child->getPlace());
+		Message::outError("Scenatio::execute",
+		                  "Invalid style name <%>\n%",
+		                  parent, child->getPlace());
 		return;
 	}
 
 	if (name != "default") {
 		if (PyUtils::exec(child->getFileName(), child->getNumLine(), "style." + parent + " is None", true) == "True") {
-			Utils::outError("Scenario::execute",
-			                "Style <%> does not exist\n%",
-			                parent, child->getPlace());
+			Message::outError("Scenario::execute",
+			                  "Style <%> does not exist\n%",
+			                  parent, child->getPlace());
 		}
 	}
 
@@ -306,9 +307,9 @@ static void displayCommandProcessing(const Node *child) {
 
 	const std::vector<std::string> args = Algo::getArgs(child->params);
 	if (args.empty() && child->command != "scene") {
-		Utils::outError("Scenario::execute",
-		                "Invalid command <% %>\n%",
-		                child->command, child->params, child->getPlace());
+		Message::outError("Scenario::execute",
+		                  "Invalid command <% %>\n%",
+		                  child->command, child->params, child->getPlace());
 		return;
 	}
 
@@ -478,7 +479,7 @@ void Scenario::execute(const std::string &loadPath) {
 			if (obj->command == "menuItem") {
 				stack.pop_back();
 				if (stack.empty()) {
-					Utils::outMsg("Scenario::execute", "menuItem is first in stack");
+					Message::outMsg("Scenario::execute", "menuItem is first in stack");
 					break;
 				}
 			}
@@ -514,9 +515,9 @@ void Scenario::execute(const std::string &loadPath) {
 			int res = String::toInt(resStr);
 
 			if (res < 0 || res >= int(obj->children.size())) {
-				Utils::outError("Scenario::execute",
-				                "choice_menu_result = %, min = 0, max = %\n%",
-				                resStr, obj->children.size(), obj->getPlace());
+				Message::outError("Scenario::execute",
+				                  "choice_menu_result = %, min = 0, max = %\n%",
+				                  resStr, obj->children.size(), obj->getPlace());
 				res = 0;
 			}
 
@@ -586,9 +587,9 @@ void Scenario::execute(const std::string &loadPath) {
 
 		if (child->command == "transform") {
 			if (!PyUtils::isIdentifier(child->params)) {
-				Utils::outError("Scenatio::execute",
-				                "Invalid transform name <%>\n%",
-				                child->params, child->getPlace());
+				Message::outError("Scenatio::execute",
+				                  "Invalid transform name <%>\n%",
+				                  child->params, child->getPlace());
 				continue;
 			}
 
@@ -745,9 +746,9 @@ void Scenario::execute(const std::string &loadPath) {
 				--i;
 			}
 			if (!i) {
-				Utils::outError("Scenario::execute",
-				                "% outside loop\n%",
-				                child->command, child->getPlace());
+				Message::outError("Scenario::execute",
+				                  "% outside loop\n%",
+				                  child->command, child->getPlace());
 				continue;
 			}
 
@@ -760,9 +761,9 @@ void Scenario::execute(const std::string &loadPath) {
 			}else {
 				stack.pop_back();
 				if (stack.empty()) {//unreachable (top level - <label>, for example, not <while>), but...
-					Utils::outError("Scenario::execute",
-					                "% outside loop\n%",
-					                child->command, child->getPlace());
+					Message::outError("Scenario::execute",
+					                  "% outside loop\n%",
+					                  child->command, child->getPlace());
 					break;
 				}
 
@@ -784,8 +785,8 @@ void Scenario::execute(const std::string &loadPath) {
 				--i;
 			}
 			if (i == size_t(-1)) {
-				Utils::outError("Scenario::execute",
-				                "return outside label\n%", child->getPlace());
+				Message::outError("Scenario::execute",
+				                  "return outside label\n%", child->getPlace());
 				continue;
 			}
 
@@ -808,9 +809,9 @@ void Scenario::execute(const std::string &loadPath) {
 		}
 
 		if (child->command != "pass") {
-			Utils::outError("Scenario::execute",
-			                "Unexpected command <%>\n%",
-			                child->command, child->getPlace());
+			Message::outError("Scenario::execute",
+			                  "Unexpected command <%>\n%",
+			                  child->command, child->getPlace());
 		}
 	}
 

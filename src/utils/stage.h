@@ -1,10 +1,13 @@
 #ifndef STAGE_H
 #define STAGE_H
 
-#include "SDL3/SDL_video.h"
+typedef struct SDL_Window SDL_Window;
 
 class Group;
 
+
+/* call all SDL-funcs with SDL_Window in main thread
+*/
 
 class Stage {
 public:
@@ -21,7 +24,7 @@ public:
 	static Group *screens;
 
 
-	static SDL_DisplayMode getDisplayMode();
+	static void updateDisplayMode();
 	static int getMaxWidth();
 	static int getMaxHeight();
 
@@ -32,7 +35,6 @@ public:
 	static void setFullscreen(bool value);
 
 	static void changeWindowSize(int startW = 0, int startH = 0, int prevWindowWidth = 0, int prevWindowHeight = 0);
-	static void applyChanges();
 };
 
 #endif // STAGE_H

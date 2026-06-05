@@ -9,9 +9,9 @@
 #include "media/py_utils.h"
 
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/mouse.h"
 #include "utils/stage.h"
-#include "utils/utils.h"
 
 
 static std::vector<BtnRect*> btnRects;
@@ -246,9 +246,9 @@ void BtnRect::onHovered() const {
 			std::string path = PyUtils::objToStr(hoverSoundObj);
 			AudioManager::play("button_hover", path, 0, 0, 1.0, node->getFileName(), node->getNumLine());
 		}else if (hoverSoundObj != Py_None) {
-			Utils::outError("BtnRect::onHovered",
-			                "In style.%.hover_sound expected type str, got %",
-			                style->name, hoverSoundObj->ob_type->tp_name);
+			Message::outError("BtnRect::onHovered",
+			                  "In style.%.hover_sound expected type str, got %",
+			                  style->name, hoverSoundObj->ob_type->tp_name);
 		}
 	}
 
@@ -292,9 +292,9 @@ void BtnRect::onLeftClick() const {
 			AudioManager::play("button_click ", path, 0, 0, 1.0,
 			                   node->getFileName(), node->getNumLine());
 		}else if (activateSoundObj != Py_None) {
-			Utils::outError("BtnRect::onLeftClick",
-			                "In style.%.activate_sound expected type str, got %",
-			                style->name, activateSoundObj->ob_type->tp_name);
+			Message::outError("BtnRect::onLeftClick",
+			                  "In style.%.activate_sound expected type str, got %",
+			                  style->name, activateSoundObj->ob_type->tp_name);
 		}
 	}
 
@@ -379,7 +379,7 @@ void BtnRect::disableSelectMode(bool clearLastBtn) {
 
 
 std::array<SDL_Point, 4> BtnRect::getPointsOfSelectedRect() {
-	static std::array<SDL_Point, 4> res;
+	std::array<SDL_Point, 4> res;
 
 	BtnRect *rect = selectMode ? getSelectedBtnRect() : nullptr;
 	if (rect) {

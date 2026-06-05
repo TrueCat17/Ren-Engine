@@ -1,7 +1,7 @@
 #include "algo.h"
 
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 static size_t getStartArg(std::string_view args, size_t end, const char separator) {
 	return args.find_first_not_of(separator, end + 1);
@@ -49,9 +49,9 @@ static size_t getEndArg(std::string_view args, size_t start, const char separato
 					*isValid = false;
 				}else {
 					std::string cStr(1, c);
-					Utils::outError("Algo::getEndArg",
-					                "Invalid bracket % at position % in string:\n%",
-					                cStr, i, args);
+					Message::outError("Algo::getEndArg",
+					                  "Invalid bracket % at position % in string:\n%",
+					                  cStr, i, args);
 				}
 			}
 		}
@@ -61,11 +61,11 @@ static size_t getEndArg(std::string_view args, size_t start, const char separato
 			*isValid = false;
 		}else {
 			bool b = b1 || b2 || b3;
-			Utils::outError("Algo::getEndArg",
-			                "Not closed % % in string:\n%",
-			                b ? (b1 ? "(" : b2 ? "[" : "{") : (q1 ? "single" : "double"),
-			                b ? "bracket" : "quote",
-			                args);
+			Message::outError("Algo::getEndArg",
+			                  "Not closed % % in string:\n%",
+			                  b ? (b1 ? "(" : b2 ? "[" : "{") : (q1 ? "single" : "double"),
+			                  b ? "bracket" : "quote",
+			                  args);
 		}
 	}
 	return i;

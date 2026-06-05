@@ -2,29 +2,21 @@
 
 #include <tuple>
 
-#include "../text_field.h"
-
 #include "utils/math.h"
 #include "utils/scope_exit.h"
 #include "utils/stage.h"
 
 Text::Text(Node *node, Screen *screen):
-    Container(node, this, screen),
-    tf(new TextField())
+    Container(node, this, screen)
 {
-	addChildAt(tf, 0);
-}
-Text::~Text() {
-	delete tf;
+	addChildAt(&tf, 0);
 }
 
 #define makeGetFunction(prop) \
 static inline \
 decltype(TextParams::prop) get_##prop(const Text *text) { \
-	if (text->curParamsIsHover && text->hoverParams.set_##prop) { \
-		return text->hoverParams.prop; \
-	} \
-	return text->mainParams.prop; \
+	bool useHover = text->curParamsIsHover && text->hoverParams.set_##prop; \
+	return (useHover ? text->hoverParams : text->mainParams).prop; \
 }
 makeGetFunction(font)
 makeGetFunction(color)
@@ -36,15 +28,11 @@ makeGetFunction(valign)
 #define makeGetSize(postfix) \
 static inline \
 float get_size##postfix(const Text *text) { \
-	const TextParams *params = nullptr; \
-	if (text->curParamsIsHover && text->hoverParams.size##postfix > 0) { \
-		params = &text->hoverParams; \
-	} else { \
-		params = &text->mainParams; \
-	} \
+	bool useHover = text->curParamsIsHover && text->hoverParams.size##postfix > 0; \
+	const TextParams &params = useHover ? text->hoverParams : text->mainParams; \
 	\
-	float res = params->size##postfix; \
-	int k = params->size##postfix##_is_float ? Stage::height : 1; \
+	float res = params.size##postfix; \
+	int k = params.size##postfix##_is_float ? Stage::height : 1; \
 	return res * float(k); \
 }
 makeGetSize()
@@ -64,7 +52,7 @@ Uint8 get_font_style(const Text *text) {
 	Uint8 res = text->mainParams.font_style;
 	if (text->curParamsIsHover) {
 		for (int i = 0; i < 8; ++i) {
-			int mask = 1 << i;
+			Uint8 mask = Uint8(1 << i);
 			if (text->hoverParams.set_font_style & mask) {
 				if (text->hoverParams.font_style & mask) {
 					res |= mask;
@@ -93,10 +81,10 @@ void Text::updateSize() {
 		}else {
 			width = -1;
 		}
-		tf->useMaxForWidth = false;
+		tf.useMaxForWidth = false;
 	}else {
 		width = getWidth() / globalZoomX;
-		tf->useMaxForWidth = true;
+		tf.useMaxForWidth = true;
 	}
 	if (ysize <= 0) {
 		if (ysize_max > 0) {
@@ -104,19 +92,19 @@ void Text::updateSize() {
 		}else {
 			height = -1;
 		}
-		tf->useMaxForHeight = false;
+		tf.useMaxForHeight = false;
 	}else {
 		height = getHeight() / globalZoomY;
-		tf->useMaxForHeight = true;
+		tf.useMaxForHeight = true;
 	}
 
 	ScopeExit se([&]() {
 		if (!first_param.empty()) {
 			if (xsize <= 0) {
-				width = tf->getWidth() / globalZoomX;
+				width = tf.getWidth() / globalZoomX;
 			}
 			if (ysize <= 0) {
-				height = tf->getHeight() / globalZoomY;
+				height = tf.getHeight() / globalZoomY;
 			}
 		}
 
@@ -126,7 +114,7 @@ void Text::updateSize() {
 
 
 	if (first_param.empty() && prevText.empty()) {
-		tf->enable = false;
+		tf.enable = false;
 		return;
 	}
 
@@ -140,7 +128,7 @@ void Text::updateSize() {
 
 	auto curParams = std::tie(
 	    first_param,
-	    tf->visibleSymbols,
+	    tf.visibleSymbols,
 	    widthInt,
 	    heightInt,
 	    color,
@@ -151,12 +139,12 @@ void Text::updateSize() {
 	auto prevParams = std::tie(
 	    prevText,
 	    prevVisibleSymbols,
-	    tf->maxWidth,
-	    tf->maxHeight,
-	    tf->mainStyle.color,
-	    tf->mainStyle.outlineColor,
-	    tf->mainStyle.enableOutline,
-	    tf->mainStyle.fontStyle
+	    tf.maxWidth,
+	    tf.maxHeight,
+	    tf.mainStyle.color,
+	    tf.mainStyle.outlineColor,
+	    tf.mainStyle.enableOutline,
+	    tf.mainStyle.fontStyle
 	);
 
 	bool needUpdate = false;
@@ -178,27 +166,27 @@ void Text::updateSize() {
 	if (max > 0 && size > max) size = max;
 	size = std::floor(size * globalZoomY);
 
-	if (fontName != tf->mainStyle.fontName ||
-	    !Math::floatsAreEq(size, tf->mainStyle.fontSize))
+	if (fontName != tf.mainStyle.fontName ||
+	    !Math::floatsAreEq(size, tf.mainStyle.fontSize))
 	{
-		tf->setFont(fontName, size);
+		tf.setFont(fontName, size);
 		needUpdate = true;
 	}
 
 	if (needUpdate) {
-		tf->setText(first_param);
+		tf.setText(first_param);
 	}
 
 	float halign = get_halign(this);
 	float valign = get_valign(this);
 	if (!needUpdate && (
-	    !Math::floatsAreEq(halign, tf->getHAlign()) ||
-	    !Math::floatsAreEq(valign, tf->getVAlign())
+	    !Math::floatsAreEq(halign, tf.getHAlign()) ||
+	    !Math::floatsAreEq(valign, tf.getVAlign())
 	)) {
 		needUpdate = true;
 	}
 	if (needUpdate) {
-		tf->setAlign(halign, valign);
+		tf.setAlign(halign, valign);
 	}
 }
 
@@ -207,11 +195,11 @@ void Text::updateGlobal() {
 	Container::updateGlobal();
 
 	if (!prevText.empty() && !Math::floatsAreEq(prevGlobalRotate, getGlobalRotate())) {
-		tf->setAlign(tf->getHAlign(), tf->getVAlign());
+		tf.setAlign(tf.getHAlign(), tf.getVAlign());
 	}
 }
 
 void Text::updateTexture() {
-	tf->enable = true;
+	tf.enable = true;
 	Container::updateTexture();
 }

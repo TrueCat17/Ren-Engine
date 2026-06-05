@@ -14,8 +14,8 @@
 
 #include "utils/file_system.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/string.h"
-#include "utils/utils.h"
 
 
 bool operator==(const SDL_Rect &a, const SDL_Rect &b);
@@ -60,16 +60,16 @@ static TTF_Font* getFont(const std::string &name, int size) {
 	}
 
 	if (name != TextField::DEFAULT_FONT_NAME) {
-		Utils::outError("getFont",
-		                "Failed to load font <%>.\n"
-		                "Try to load default font.",
-		                name);
+		Message::outError("getFont",
+		                  "Failed to load font <%>.\n"
+		                  "Try to load default font.",
+		                  name);
 		res = getFont(TextField::DEFAULT_FONT_NAME, size);
 	}else {
-		Utils::outError("getFont",
-		                "Failed to load default font <%>.\n"
-		                "Text will not be displayed.",
-		                name);
+		Message::outError("getFont",
+		                  "Failed to load default font <%>.\n"
+		                  "Text will not be displayed.",
+		                  name);
 		res = nullptr;
 	}
 
@@ -80,19 +80,16 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 	if (!style.font) return;
 
 	if (!TTF_GetStringSize(style.font, str.c_str(), str.size(), w, h)) {
-		Utils::outMsg("TTF_GetStringSize", SDL_GetError());
+		Message::outMsg("TTF_GetStringSize", SDL_GetError());
 		return;
 	}
 	if (style.alpha * 255 < 1) return;
-
-	int origW = *w;
-	int origH = *h;
 
 	int countOutlines = getCountOutlines(style);
 	*w += countOutlines * 2;
 	*h += countOutlines * 2;
 
-	SDL_Rect rect = {x, std::max(0, surface->h - *h), *w, *h};
+	SDL_Rect rect = { x, std::max(0, surface->h - *h), 0, 0 };
 	if (rect.y < 3) rect.y = 0;//fix for fonts, where some symbols have height more than font size on init
 
 	SurfacePtr tmpSurface;
@@ -108,15 +105,15 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 
 		SDL_Surface *surfaceOutlineText = TTF_RenderText_Blended(style.font, str.c_str(), str.size(), outlineColor);
 		if (!surfaceOutlineText) {
-			Utils::outMsg("TTF_RenderText_Blended", SDL_GetError());
+			Message::outMsg("TTF_RenderText_Blended", SDL_GetError());
 			return;
 		}
 
 		std::pair<int, int> pairs[8] = {{-1, -1}, {0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}};
 		for (auto [x, y] : pairs) {
 			for (int i = 1; i <= countOutlines; ++i) {
-				SDL_Rect to = { countOutlines + x * i, countOutlines + y * i, origW, origH };
-				SDL_BlitSurfaceScaled(surfaceOutlineText, nullptr, tmpSurface.get(), &to, SDL_SCALEMODE_NEAREST);
+				SDL_Rect to = { countOutlines + x * i, countOutlines + y * i, 0, 0 };
+				SDL_BlitSurface(surfaceOutlineText, nullptr, tmpSurface.get(), &to);
 			}
 		}
 		SDL_DestroySurface(surfaceOutlineText);
@@ -130,12 +127,12 @@ static void addChars(const std::string &str, int x, int *w, int *h, TextStyle &s
 
 	SDL_Surface *surfaceText = TTF_RenderText_Blended(style.font, str.c_str(), str.size(), color);
 	if (!surfaceText) {
-		Utils::outMsg("TTF_RenderText_Blended", SDL_GetError());
+		Message::outMsg("TTF_RenderText_Blended", SDL_GetError());
 		return;
 	}
 
 	if (style.enableOutline) {
-		SDL_Rect to = {countOutlines, countOutlines, origW, origH};
+		SDL_Rect to = { countOutlines, countOutlines, 0, 0 };
 		SDL_BlitSurface(surfaceText, nullptr, tmpSurface.get(), &to);
 
 		SDL_SetSurfaceAlphaMod(tmpSurface.get(), Uint8(std::min<float>(style.alpha * 255, 255)));
@@ -180,7 +177,7 @@ static Uint32 getColor(std::string_view value) {
 	}
 
 	if (value.size() > 6) {
-		Utils::outError("TextField::getColor", "Expected color (format RRGGBB), got <%>", value);
+		Message::outError("TextField::getColor", "Expected color (format RRGGBB), got <%>", value);
 		value.remove_suffix(value.size() - 6);
 	}
 
@@ -208,7 +205,7 @@ static Uint32 getColor(std::string_view value) {
 		}
 	}
 	if (invalid) {
-		Utils::outError("TextField::getColor", "Color <%> is invalid", value);
+		Message::outError("TextField::getColor", "Color <%> is invalid", value);
 	}
 	return res;
 }
@@ -239,7 +236,7 @@ static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, si
 		size_t start = line.find_first_not_of(' ', i + 1);
 		size_t end = line.find('}', start);
 		if (start >= end || end == size_t(-1)) {
-			Utils::outMsg("TextField::makeStep", "Incomplete tag");
+			Message::outMsg("TextField::makeStep", "Incomplete tag");
 			return line.size();
 		}
 
@@ -255,16 +252,16 @@ static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, si
 				styleStack.pop_back();
 				updateStyle(styleStack.back());
 			}else {
-				Utils::outError("TextField::makeStep",
-				                "Closed tag <%> != last opened tag <%>",
-				                tag, styleStack.back().tag);
+				Message::outError("TextField::makeStep",
+				                  "Closed tag <%> != last opened tag <%>",
+				                  tag, styleStack.back().tag);
 			}
 		}else {
 			TextStyle style = styleStack.back();//copy
 
 			std::string value = getTagValue(tag);
 			if (value.empty() && tagsWithValue.count(tag)) {
-				Utils::outError("TextField::makeStep", "Tag <%> must have value", tag);
+				Message::outError("TextField::makeStep", "Tag <%> must have value", tag);
 				return i + 1;
 			}
 			style.tag = tag;
@@ -300,13 +297,13 @@ static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, si
 
 			else if (tag != "image") {
 				unknownTag = true;
-				Utils::outError("TextField::makeStep", "Unknown tag <%>", tag);
+				Message::outError("TextField::makeStep", "Unknown tag <%>", tag);
 			}
 
 			if (tag == "image") {
 				SurfacePtr image = getImage(value);
 				if (!image) {
-					Utils::outError("TextField::makeStep", "Failed to load image <%>", value);
+					Message::outError("TextField::makeStep", "Failed to load image <%>", value);
 				}else {
 					int lineHeight = onlySize ? 0 : *h;
 
@@ -360,7 +357,7 @@ static size_t makeStep(const std::string &line, size_t i, size_t *wasSymbols, si
 			TextStyle &style = styleStack.back();
 			if (onlySize) {
 				if (!TTF_GetStringSize(style.font, word.c_str(), word.size(), w, h)) {
-					Utils::outMsg("TTF_GetStringSize", SDL_GetError());
+					Message::outMsg("TTF_GetStringSize", SDL_GetError());
 				}
 				int countOutlines = getCountOutlines(style);
 				*w += countOutlines * 2;
@@ -457,7 +454,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 
 		int w;
 		if (!TTF_GetStringSize(font, symbol.c_str(), symbol.size(), &w, nullptr)) {
-			Utils::outMsg("TTF_GetStringSize", SDL_GetError());
+			Message::outMsg("TTF_GetStringSize", SDL_GetError());
 			return line.size();
 		}
 		if (!width) {
@@ -486,7 +483,7 @@ static size_t findWrapIndex(const std::string &line, std::vector<TextStyle> styl
 		}
 
 		if (!TTF_GetStringSize(font, partStr.c_str(), partStr.size(), &width, nullptr)) {
-			Utils::outMsg("TTF_GetStringSize", SDL_GetError());
+			Message::outMsg("TTF_GetStringSize", SDL_GetError());
 			return line.size();
 		}
 		width += getCountOutlines(styleStack.back()) * 2;

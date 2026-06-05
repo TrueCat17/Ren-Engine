@@ -1,6 +1,6 @@
 #include "image_manipulator.h"
 
-#include <algorithm>
+#include <array>
 #include <deque>
 #include <fstream>
 #include <map>
@@ -20,6 +20,7 @@
 #include "utils/file_system.h"
 #include "utils/image_caches.h"
 #include "utils/math.h"
+#include "utils/message.h"
 #include "utils/scope_exit.h"
 #include "utils/string.h"
 #include "utils/utils.h"
@@ -100,7 +101,7 @@ SurfacePtr ImageManipulator::getNewNotClear(int w, int h, SDL_PixelFormat format
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 
 	res->flags |= SDL_SURFACE_SIMD_ALIGNED;
-	res->flags &= Uint32(~SDL_SURFACE_PREALLOCATED);
+	res->flags &= ~SDL_SURFACE_PREALLOCATED;
 
 	return res;
 }
@@ -140,14 +141,14 @@ void preloadThread() {
 				toSaveImages.pop_front();
 			}
 
-			auto [img, path, width, height] = tuple;
+			const auto &[img, path, width, height] = tuple;
 			ImageManipulator::saveSurface(img, path, width, height, true);
 		}
 	}
 }
 
 
-static std::mutex vecMutex;
+static std::mutex processingImagesMutex;
 static std::vector<std::string> processingImages;
 
 SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
@@ -160,7 +161,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 	bool in = true;
 	while (in) {
 		{
-			std::lock_guard g(vecMutex);
+			std::lock_guard g(processingImagesMutex);
 			in = Algo::in(desc, processingImages);
 			if (!in) {
 				res = ImageCaches::getThereIsSurfaceOrNull(desc, formatRGBA32);
@@ -176,7 +177,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 
 
 	ScopeExit se([&]() {
-		std::lock_guard g(vecMutex);
+		std::lock_guard g(processingImagesMutex);
 
 		for (size_t i = 0; i < processingImages.size(); ++i) {
 			if (processingImages[i] == desc) {
@@ -190,7 +191,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 	const std::vector<std::string> args = Algo::getArgs(desc, '|');
 
 	if (args.empty()) {
-		Utils::outMsg("ImageManipulator::getImage", "No arguments");
+		Message::outMsg("ImageManipulator::getImage", "No arguments");
 		return nullptr;
 	}
 	if (args.size() == 1) {
@@ -205,7 +206,7 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 
 	auto it = functions.find(command);
 	if (it == functions.end()) {
-		Utils::outError("ImageManipulator::getImage", "Unknown command <%>", command);
+		Message::outError("ImageManipulator::getImage", "Unknown command <%>", command);
 	}else {
 		auto func = it->second;
 		res = func(args);
@@ -219,14 +220,15 @@ SurfacePtr ImageManipulator::getImage(std::string desc, bool formatRGBA32) {
 }
 
 
-static bool incorrectCountImpl(const std::string &fromFunc, const std::vector<std::string> &args, size_t expected) {
+static bool incorrectCountImpl(const char *fromFunc, const std::vector<std::string> &args, size_t expected) {
 	if (args.size() != expected + 1) {
-		Utils::outError(fromFunc, "Expected % arguments:\n<%>", expected, String::join(args, ", "));
+		Message::outError("ImageManipulator::" + std::string(fromFunc),
+		                  "Expected % arguments:\n<%>", expected, String::join(args, ", "));
 		return true;
 	}
 	return false;
 }
-#define incorrectCount(expected) incorrectCountImpl("ImageManipulator::" + std::string(__func__), args, expected)
+#define incorrectCount(expected) incorrectCountImpl(__func__, args, expected)
 
 
 static SurfacePtr scale(const std::vector<std::string> &args) {
@@ -238,7 +240,7 @@ static SurfacePtr scale(const std::vector<std::string> &args) {
 	const int w = String::toInt(Algo::clear(args[2]));
 	const int h = String::toInt(Algo::clear(args[3]));
 	if (w <= 0 || h <= 0) {
-		Utils::outError("ImageManipulator::scale", "Sizes are invalid:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::scale", "Sizes are invalid:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -248,7 +250,7 @@ static SurfacePtr scale(const std::vector<std::string> &args) {
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format);
 	if (!SDL_BlitSurfaceScaled(img.get(), nullptr, res.get(), nullptr, Config::getScaleQuality())) {
-		Utils::outMsg("SDL_BlitSurfaceScaled", SDL_GetError());
+		Message::outMsg("ImageManipulator::scale, SDL_BlitSurfaceScaled", SDL_GetError());
 	}
 	return res;
 }
@@ -262,8 +264,8 @@ static SurfacePtr factorScale(const std::vector<std::string> &args) {
 	const double width = String::toDouble(Algo::clear(args[2]));
 	const double height = String::toDouble(Algo::clear(args[3]));
 	if (width <= 0 || height <= 0) {
-		Utils::outError("ImageManipulator::factorScale",
-		                "Scale factors must be > 0:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::factorScale",
+		                  "Scale factors must be > 0:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -276,7 +278,7 @@ static SurfacePtr factorScale(const std::vector<std::string> &args) {
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format);
 	if (!SDL_BlitSurfaceScaled(img.get(), nullptr, res.get(), nullptr, Config::getScaleQuality())) {
-		Utils::outMsg("SDL_BlitSurfaceScaled", SDL_GetError());
+		Message::outMsg("ImageManipulator::factorScale, SDL_BlitSurfaceScaled", SDL_GetError());
 	}
 	return res;
 }
@@ -289,7 +291,7 @@ static SurfacePtr rendererScale(const std::vector<std::string> &args) {
 	const int w = String::toInt(Algo::clear(args[2]));
 	const int h = String::toInt(Algo::clear(args[3]));
 	if (w <= 0 || h <= 0) {
-		Utils::outError("ImageManipulator::rendererScale", "Sizes are invalid:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::rendererScale", "Sizes are invalid:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -313,8 +315,8 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 	const std::string rectStr = Algo::clear(args[2]);
 	const std::vector<std::string> rectVec = String::split(rectStr, " ");
 	if (rectVec.size() != 4) {
-		Utils::outError("ImageManipulator::crop",
-		                "Expected rect as a sequence with size 4:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::crop",
+		                  "Expected rect as a sequence with size 4:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -324,7 +326,7 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 	const int h = String::toInt(rectVec[3]);
 
 	if (w <= 0 || h <= 0) {
-		Utils::outError("ImageManipulator::crop", "Sizes are invalid:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::crop", "Sizes are invalid:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -336,7 +338,7 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h, img->format);
 	if (!SDL_BlitSurface(img.get(), &imgRect, res.get(), nullptr)) {
-		Utils::outMsg("SDL_BlitSurface", SDL_GetError());
+		Message::outMsg("ImageManipulator::crop, SDL_BlitSurface", SDL_GetError());
 	}
 
 	return res;
@@ -344,8 +346,8 @@ static SurfacePtr crop(const std::vector<std::string> &args) {
 
 static SurfacePtr composite(const std::vector<std::string> &args) {
 	if (args.size() % 2) {
-		Utils::outError("ImageManipulator::composite",
-		                "Expected odd count of arguments:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::composite",
+		                  "Expected odd count of arguments:\n<%>", String::join(args, ", "));
 		return nullptr;
 	}
 
@@ -355,120 +357,53 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 	const int resW = sizeVec.size() == 2 ? String::toInt(sizeVec[0]) : 0;
 	const int resH = sizeVec.size() == 2 ? String::toInt(sizeVec[1]) : 0;
 	if (sizeVec.size() != 2 || resW <= 0 || resH <= 0) {
-		Utils::outError("ImageManipulator::composite", "Sizes are invalid <%>", sizeStr);
+		Message::outError("ImageManipulator::composite", "Sizes are invalid <%>", sizeStr);
+		return nullptr;
+	}
+
+	if (args.size() == 2) {
+		return SDL_CreateSurface(resW, resH, SDL_PIXELFORMAT_RGBA32);
+	}
+
+	const std::string firstPosStr = Algo::clear(args[2]);
+	const std::vector<std::string> firstPosVec = String::split(firstPosStr, " ");
+	if (firstPosVec.size() != 2) {
+		Message::outError("ImageManipulator::composite",
+		                  "Expected pos as a sequence with size 2:\n<%>", String::join(args, ", "));
+		return nullptr;
+	}
+
+	const std::string firstImgStr = Algo::clear(args[3]);
+	SurfacePtr firstImg = ImageManipulator::getImage(firstImgStr);
+	if (!firstImg) {
+		Message::outError("ImageManipulator::composite", "Failed to get image <%>", firstImgStr);
 		return nullptr;
 	}
 
 	if (args.size() == 4) {
-		const std::string posStr = Algo::clear(args[2]);
-		const std::string imagePath = Algo::clear(args[3]);
-		SurfacePtr image = ImageManipulator::getImage(imagePath);
-
-		if (!image) {
-			Utils::outError("ImageManipulator::composite", "Failed to get image <%>", imagePath);
-			return image;
+		if (firstPosStr == "0 0" && resW == firstImg->w && resH == firstImg->h) {
+			return firstImg;
 		}
-
-		if (posStr == "0 0" && resW == image->w && resH == image->h) {
-			return image;
-		}
-	}
-
-
-	std::map<std::string, size_t> images;
-	for (size_t i = 2; i < args.size(); i += 2) {
-		const std::string image = Algo::clear(args[i + 1]);
-
-		if (!images.count(image)) {
-			images[image] = i;
-		}
-	}
-	if (!images.empty()) {
-		using P = std::pair<std::string, size_t>;
-		std::vector<P> imagesPairs(images.begin(), images.end());
-
-		std::sort(imagesPairs.begin(), imagesPairs.end(),
-				  [](const P &a, const P &b) { return a.second < b.second; });
-
-		std::lock_guard g(preloadMutex);
-
-		for (const P &p : imagesPairs) {
-			const std::string &desc = p.first;
-			if (!Algo::in(desc, toLoadImages) && !ImageCaches::getThereIsSurfaceOrNull(desc)) {
-				toLoadImages.push_back(desc);
-			}
-		}
-
 	}
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(resW, resH);
-	Uint8 *resPixels = (Uint8*)res->pixels;
-	const int resPitch = res->pitch;
+	if (firstImg) {
+		int x = String::toInt(firstPosVec[0]);
+		int y = String::toInt(firstPosVec[1]);
 
+		//top, left, right, bottom
+		SDL_Rect rects[4] = {
+		    { 0, 0, res->w, y },
+		    { 0, y, x, firstImg->h },
+		    { x + firstImg->w, y, res->w - (firstImg->w + x), firstImg->h },
+		    { 0, y + firstImg->h, res->w, res->h - (y + firstImg->h) },
+		};
+		SDL_FillSurfaceRects(res.get(), rects, 4, 0);
 
-	const std::string firstImgStr = args.size() > 2 ? Algo::clear(args[3]) : "";
-	SurfacePtr firstImg = firstImgStr.empty() ? nullptr : ImageManipulator::getImage(firstImgStr);
-	if (!firstImg) {
-		if (args.size() > 2) {
-			Utils::outError("ImageManipulator::composite", "Failed to get image <%>", firstImgStr);
-		}
-		::memset(resPixels, 0, size_t(resH * resPitch));
+		SDL_Rect dst = { x, y, 0, 0 };
+		SDL_BlitSurface(firstImg.get(), nullptr, res.get(), &dst);
 	}else {
-		const std::string firstPosStr = Algo::clear(args[2]);
-		const std::vector<std::string> firstPosVec = String::split(firstPosStr, " ");
-		if (firstPosVec.size() != 2) {
-			Utils::outError("ImageManipulator::composite",
-			                "Expected pos as a sequence with size 2:\n<%>", String::join(args, ", "));
-			return nullptr;
-		}
-
-		int xOn = String::toInt(firstPosVec[0]);
-		int yOn = String::toInt(firstPosVec[1]);
-		int w = firstImg->w;
-		int h = firstImg->h;
-
-		int xFrom = 0;
-		int yFrom = 0;
-
-		if (xOn < 0) {
-			w += xOn;
-			xFrom = -xOn;
-			xOn = 0;
-		}
-		if (yOn < 0) {
-			h += yOn;
-			yFrom = -yOn;
-			yOn = 0;
-		}
-		if (w > resW - xOn) w = resW - xOn;
-		if (h > resH - yOn) h = resH - yOn;
-
-
-		if (yOn > 0) {
-			::memset(resPixels, 0, size_t(yOn * resPitch));//up
-		}
-
-		const int left = xOn * 4;
-		const int center = w * 4;
-		const int right = res->pitch - (left + center);
-
-		//image - center
-		SDL_Rect from = {xFrom, yFrom, w, h};
-		SDL_Rect to = {xOn, yOn, w, h};
-		SDL_BlitSurfaceScaled(firstImg.get(), &from, res.get(), &to, Config::getScaleQuality());
-
-		for (int y = yOn; y < yOn + h; ++y) {
-			if (left > 0) {
-				::memset(resPixels + y * resPitch, 0, size_t(left));//left
-			}
-			if (right > 0) {
-				::memset(resPixels + y * resPitch + left + center, 0, size_t(right));//right
-			}
-		}
-
-		if (resH > yOn + h) {
-			::memset(resPixels + (yOn + h) * resPitch, 0, size_t((resH - (yOn + h)) * resPitch));//down
-		}
+		SDL_FillSurfaceRect(res.get(), nullptr, 0);
 	}
 
 
@@ -476,95 +411,27 @@ static SurfacePtr composite(const std::vector<std::string> &args) {
 		const std::string posStr = Algo::clear(args[i]);
 		const std::vector<std::string> posVec = String::split(posStr, " ");
 		if (posVec.size() != 2) {
-			Utils::outError("ImageManipulator::composite",
-			                 "Expected pos as a sequence with size 2:\n<%>", String::join(args, ", "));
+			Message::outError("ImageManipulator::composite",
+			                  "Expected pos as a sequence with size 2:\n<%>", String::join(args, ", "));
 			return nullptr;
 		}
 
 		const std::string imgStr = Algo::clear(args[i + 1]);
 		SurfacePtr img = ImageManipulator::getImage(imgStr);
 		if (!img) {
-			Utils::outError("ImageManipulator::composite", "Failed to get image <%>", imgStr);
-			continue;
+			Message::outError("ImageManipulator::composite", "Failed to get image <%>", imgStr);
+			return nullptr;
 		}
 
-		int xOn = String::toInt(posVec[0]);
-		int yOn = String::toInt(posVec[1]);
-		if (xOn >= resW || yOn >= resH) continue;
-		if (xOn + img->w < 0 || yOn + img->h < 0) continue;
+		SDL_Rect dst;
+		dst.x = String::toInt(posVec[0]);
+		dst.y = String::toInt(posVec[1]);
 
-		int xFrom = 0;
-		int yFrom = 0;
-
-		int w = img->w;
-		int h = img->h;
-		if (xOn < 0) {
-			w += xOn;
-			xFrom = -xOn;
-			xOn = 0;
-		}
-		if (yOn < 0) {
-			h += yOn;
-			yFrom = -yOn;
-			yOn = 0;
-		}
-		if (w > resW - xOn) w = resW - xOn;
-		if (h > resH - yOn) h = resH - yOn;
-
-		const Uint8 *imgPixels = (const Uint8*)img->pixels;
-		const int imgPitch = img->pitch;
-
-		auto processLine = [&](int y) {
-			const Uint8 *src = imgPixels + (y + yFrom) * imgPitch + xFrom * 4;
-			Uint8 *dst = resPixels + (y + yOn) * resPitch + xOn * 4;
-
-			const Uint8 *dstEnd = dst + w * 4;
-			while (dst < dstEnd) {
-				const Uint16 srcA = src[Ashift / 8];
-				if (srcA == 255) {
-					*(Uint32*)dst = *(const Uint32*)src;
-				}else if (srcA) {
-					const Uint16 dstA = dst[Ashift / 8];
-
-					if (!dstA) {
-						*(Uint32*)dst = *(const Uint32*)src;
-					}else {
-						const Uint16 blend = dstA * (255 - srcA);
-						const Uint16 outA = std::min<Uint16>(srcA + (blend + 128) / 256, 255);
-						const Uint16 sA = srcA * 256 / outA;
-						const Uint16 dA = blend / outA;
-
-						const Uint8 srcR = src[Rshift / 8];
-						const Uint8 srcG = src[Gshift / 8];
-						const Uint8 srcB = src[Bshift / 8];
-
-						const Uint8 dstR = dst[Rshift / 8];
-						const Uint8 dstG = dst[Gshift / 8];
-						const Uint8 dstB = dst[Bshift / 8];
-
-						dst[Rshift / 8] = Uint8((srcR * sA + dstR * dA + 128) / 256);
-						dst[Gshift / 8] = Uint8((srcG * sA + dstG * dA + 128) / 256);
-						dst[Bshift / 8] = Uint8((srcB * sA + dstB * dA + 128) / 256);
-						dst[Ashift / 8] = Uint8(outA);
-					}
-				}
-
-				src += 4;
-				dst += 4;
-			}
-		};
-
-		if (smallImage(w, h)) {
-			for (int y = 0; y < h; ++y) {
-				processLine(y);
-			}
-		}else {
-#pragma omp parallel for
-			for (int y = 0; y < h; ++y) {
-				processLine(y);
-			}
-		}
+		SDL_SetSurfaceBlendMode(img.get(), SDL_BLENDMODE_BLEND);
+		SDL_BlitSurface(img.get(), nullptr, res.get(), &dst);
+		SDL_SetSurfaceBlendMode(img.get(), SDL_BLENDMODE_NONE);
 	}
+
 	return res;
 }
 
@@ -585,7 +452,7 @@ static SurfacePtr flip(const std::vector<std::string> &args) {
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 
-	const Uint32 *imgPixels = (const Uint32*)img->pixels;
+	const Uint32 *imgPixels = (Uint32*)img->pixels;
 	Uint32 *resPixels = (Uint32*)res->pixels;
 
 	auto processLine = [&](int y) {
@@ -628,21 +495,18 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 	const std::string matrixStr = Algo::clear(args[2]);
 	const std::vector<std::string> matrixVec = String::split(matrixStr, " ");
 	if (matrixVec.size() != 25) {
-		Utils::outError("ImageManipulator::matrixColor",
-		                "Expected matrix size is 25,\n"
-		                "Matrix: <%>",
-		                matrixStr);
+		Message::outError("ImageManipulator::matrixColor",
+		                  "Expected matrix size is 25,\n"
+		                  "Matrix: <%>", matrixStr);
 		return img;
 	}
 
-	std::vector<double> matrix;
-	const int matrixSizeToUse = 20;
-	matrix.resize(matrixSizeToUse);
-	for (size_t i = 0; i < matrixSizeToUse; ++i) {//using 20 of 25 values
+	std::array<double, 20> matrix;
+	for (size_t i = 0; i < 20; ++i) {//using 20 of 25 values
 		matrix[i] = String::toDouble(matrixVec[i]);
 	}
 
-	static const std::vector<double> identity = {
+	static const std::array<double, 20> identity = {
 		1, 0, 0, 0, 0,
 		0, 1, 0, 0, 0,
 		0, 0, 1, 0, 0,
@@ -652,7 +516,7 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 		return img;
 	}
 
-	const Uint8 *imgPixels = (const Uint8*)img->pixels;
+	const Uint8 *imgPixels = (Uint8*)img->pixels;
 
 	const int w = img->w;
 	const int h = img->h;
@@ -666,7 +530,7 @@ static SurfacePtr matrixColor(const std::vector<std::string> &args) {
 	    Math::doublesAreEq(matrix[18], 0) &&
 	    Math::doublesAreEq(matrix[19], 0))
 	{
-		::memset(resPixels, 0, size_t(w * h * 4));
+		SDL_FillSurfaceRect(res.get(), nullptr, 0);
 		return res;
 	}
 
@@ -736,7 +600,7 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 	const std::string colorsStr = Algo::clear(args[2]);
 	const std::vector<std::string> colorsVec = String::split(colorsStr, " ");
 	if (colorsVec.size() != 4) {
-		Utils::outError("ImageManipulator::reColor", "Expected 4 colors:\n<%>", colorsStr);
+		Message::outError("ImageManipulator::reColor", "Expected 4 colors:\n<%>", colorsStr);
 		return img;
 	}
 
@@ -749,7 +613,7 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 		return img;
 	}
 
-	const Uint8 *imgPixels = (const Uint8*)img->pixels;
+	const Uint8 *imgPixels = (Uint8*)img->pixels;
 
 	const int w = img->w;
 	const int h = img->h;
@@ -758,7 +622,7 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
 	Uint8 *resPixels = (Uint8*)res->pixels;
 	if (!a) {
-		::memset(resPixels, 0, size_t(w * h * 4));
+		SDL_FillSurfaceRect(res.get(), nullptr, 0);
 		return res;
 	}
 
@@ -799,13 +663,13 @@ static SurfacePtr reColor(const std::vector<std::string> &args) {
 static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	if (incorrectCount(3)) return nullptr;
 
-	SurfacePtr img = ImageManipulator::getImage(args[1], false);
+	SurfacePtr img = ImageManipulator::getImage(args[1]);
 	if (!img) return nullptr;
 
 	const int angle = int(-String::toDouble(Algo::clear(args[2])));
 	double zoom = String::toDouble(Algo::clear(args[3]));
 	if (Math::doublesAreEq(zoom, 0)) {
-		Utils::outMsg("ImageManipulator::rotozoom", "Zoom must not be 0");
+		Message::outMsg("ImageManipulator::rotozoom", "Zoom must not be 0");
 		zoom = 1;
 	}
 	if (Math::doublesAreEq(zoom, 1) && (angle % 360) == 0) {
@@ -815,41 +679,39 @@ static SurfacePtr rotozoom(const std::vector<std::string> &args) {
 	SDL_FlipMode flip = SDL_FLIP_NONE;
 	if (zoom < 0) {
 		zoom = -zoom;
-		flip = SDL_FlipMode(SDL_FLIP_HORIZONTAL | SDL_FLIP_VERTICAL);
+		flip = SDL_FLIP_HORIZONTAL_AND_VERTICAL;
 	}
 
-	const int w = std::max(int(img->w * zoom), 1);
-	const int h = std::max(int(img->h * zoom), 1);
-
-	const float absSin = std::abs(Math::getSin(angle));
-	const float absCos = std::abs(Math::getCos(angle));
-	const int resW = int(float(w) * absCos + float(h) * absSin);
-	const int resH = int(float(w) * absSin + float(h) * absCos);
-
-	const SDL_Rect dstRect = {(resW - w) / 2, (resH - h) / 2, w, h};
-
-	SurfacePtr res = SDL_CreateSurface(resW, resH, SDL_PIXELFORMAT_RGBA32);
-
-	SDL_Renderer *renderer = SDL_CreateSoftwareRenderer(res.get());
-	ScopeExit se([&]() { SDL_DestroyRenderer(renderer); });
-
-	if (!renderer) {
-		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateSoftwareRenderer", SDL_GetError());
-		return nullptr;
+	SurfacePtr res = SDL_RotateSurface(img.get(), float(angle));
+	if (!res) {
+		Message::outMsg("ImageManipulator::rotozoom, SDL_RotateSurface", SDL_GetError());
+		return img;
 	}
 
-	TexturePtr texture = SDL_CreateTextureFromSurface(renderer, img.get());
-	if (!texture) {
-		Utils::outMsg("ImageManipulator::rotozoom, SDL_CreateTextureFromSurface", SDL_GetError());
-		return nullptr;
+	if (zoom > 1 && flip != SDL_FLIP_NONE) {
+		if (!SDL_FlipSurface(res.get(), flip)) {
+			Message::outMsg("ImageManipulator::rotozoom, SDL_FlipSurface", SDL_GetError());
+			return img;
+		}
+		flip = SDL_FLIP_NONE;
 	}
 
-	SDL_FRect dstFRect;
-	SDL_RectToFRect(&dstRect, &dstFRect);
+	if (!Math::doublesAreEq(zoom, 1)) {
+		const int w = std::max(int(res->w * zoom), 1);
+		const int h = std::max(int(res->h * zoom), 1);
 
-	if (!SDL_RenderTextureRotated(renderer, texture.get(), nullptr, &dstFRect, angle, nullptr, flip)) {
-		Utils::outMsg("ImageManipulator::rotozoom, SDL_RenderTextureRotated", SDL_GetError());
-		return nullptr;
+		SurfacePtr res2 = ImageManipulator::getNewNotClear(w, h);
+		if (!SDL_BlitSurfaceScaled(res.get(), nullptr, res2.get(), nullptr, Config::getScaleQuality())) {
+			Message::outMsg("ImageManipulator::rotozoom, SDL_BlitSurfaceScaled", SDL_GetError());
+			return res;
+		}
+		res = res2;
+	}
+
+	if (flip != SDL_FLIP_NONE) {
+		if (!SDL_FlipSurface(res.get(), flip)) {
+			Message::outMsg("ImageManipulator::rotozoom, SDL_FlipSurface", SDL_GetError());
+		}
 	}
 
 	return res;
@@ -871,7 +733,7 @@ static void maskCycles(const int value,
 					   GetChannel getChannel, CmpFunc cmp,
 					   GetPixel getPixel, GetAlpha getAlphaFunc)
 {
-	const Uint8 *imgPixels = (const Uint8*)img->pixels;
+	const Uint8 *imgPixels = (Uint8*)img->pixels;
 
 	const int w = img->w;
 	const int h = img->h;
@@ -987,26 +849,26 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 	if (!mask) return nullptr;
 
 	if (img->w != mask->w || img->h != mask->h) {
-		Utils::outError("ImageManipulator::mask",
-		                "Mask sizes (%x%) != image sizes (%x%):\n<%>",
-		                mask->w, mask->h, img->w, img->h, String::join(args, ", "));
+		Message::outError("ImageManipulator::mask",
+		                  "Mask sizes (%x%) != image sizes (%x%):\n<%>",
+		                  mask->w, mask->h, img->w, img->h, String::join(args, ", "));
 		return nullptr;
 	}
 
 	const std::string channelStr = Algo::clear(args[3]);
 	if (channelStr != "r" && channelStr != "g" && channelStr != "b" && channelStr != "a") {
-		Utils::outError("ImageManipulator::mask",
-		                "Unexpected channel <%>, expected r, g, b or a:\n<%>",
-		                channelStr, String::join(args, ", "));
+		Message::outError("ImageManipulator::mask",
+		                  "Unexpected channel <%>, expected r, g, b or a:\n<%>",
+		                  channelStr, String::join(args, ", "));
 		return nullptr;
 	}
 	const char channel = channelStr[0];
 
 	const std::string valueStr = Algo::clear(args[4]);
 	if (!String::isNumber(valueStr)) {
-		Utils::outError("ImageManipulator::mask",
-		                "Value <%> must be a number:\n<%>",
-		                valueStr, String::join(args, ", "));
+		Message::outError("ImageManipulator::mask",
+		                  "Value <%> must be a number:\n<%>",
+		                  valueStr, String::join(args, ", "));
 		return nullptr;
 	}
 	const int value = int(String::toDouble(valueStr));
@@ -1014,26 +876,26 @@ static SurfacePtr mask(const std::vector<std::string> &args) {
 	const std::string cmp = Algo::clear(args[5]);
 	static const std::vector<std::string> cmps = { "l", "g", "e", "ne", "le", "ge", "<", ">", "==", "!=", "<=", ">=" };
 	if (!Algo::in(cmp, cmps)) {
-		Utils::outError("ImageManipulator::mask",
-		                "Unexpected compare function <%>, expected l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<%>",
-		                cmp, String::join(args, ", "));
+		Message::outError("ImageManipulator::mask",
+		                  "Unexpected compare function <%>, expected l(<), g(>), e(==), ne(!=), le(<=), ge(>=):\n<%>",
+		                  cmp, String::join(args, ", "));
 		return nullptr;
 	}
 
 	const std::string alphaStr = Algo::clear(args[6]);
 	if (alphaStr != "r" && alphaStr != "g" && alphaStr != "b" && alphaStr != "a") {
-		Utils::outError("ImageManipulator::mask",
-		                "Unexpected channel <%>, expected r, g, b or a:\n<%>",
-		                alphaStr, String::join(args, ", "));
+		Message::outError("ImageManipulator::mask",
+		                  "Unexpected channel <%>, expected r, g, b or a:\n<%>",
+		                  alphaStr, String::join(args, ", "));
 		return nullptr;
 	}
 	const char alphaChannel = alphaStr[0];
 
 	const std::string alphaImage = Algo::clear(args[7]);
 	if (alphaImage != "1" && alphaImage != "2") {
-		Utils::outError("ImageManipulator::mask",
-		                "Unexpected image num <%>, expected 1 (image) or 2 (mask):\n<%>",
-		                alphaImage, String::join(args, ", "));
+		Message::outError("ImageManipulator::mask",
+		                  "Unexpected image num <%>, expected 1 (image) or 2 (mask):\n<%>",
+		                  alphaImage, String::join(args, ", "));
 		return nullptr;
 	}
 	bool alphaFromImage = alphaImage == "1";
@@ -1069,13 +931,13 @@ static SurfacePtr blurH(const std::vector<std::string> &args) {
 	const int w = img->w;
 	const int h = img->h;
 	const int pitch = img->pitch;
-	const Uint8 *pixels = (const Uint8 *)img->pixels;
+	const Uint8 *pixels = (Uint8*)img->pixels;
 
 
 	const int dist = std::min(String::toInt(args[2]), w);
 	if (dist < 0) {
-		Utils::outError("ImageManipulator::blurH",
-		                "Blur distance must be >= 0:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::blurH",
+		                  "Blur distance must be >= 0:\n<%>", String::join(args, ", "));
 		return img;
 	}
 	if (!dist) {
@@ -1083,7 +945,7 @@ static SurfacePtr blurH(const std::vector<std::string> &args) {
 	}
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
-	Uint8 *resPixels = (Uint8 *)res->pixels;
+	Uint8 *resPixels = (Uint8*)res->pixels;
 
 	auto processLine = [&](int y) {
 		const Uint8 *src = pixels + y * pitch;
@@ -1151,14 +1013,13 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 
 	const int w = img->w;
 	const int h = img->h;
-	const int pitch = img->pitch;
-	const Uint8 *pixels = (const Uint8 *)img->pixels;
+	const Uint8 *pixels = (Uint8*)img->pixels;
 
 
 	const int dist = std::min(String::toInt(args[2]), w);
 	if (dist < 0) {
-		Utils::outError("ImageManipulator::blurV",
-		                "Blur distance must be >= 0:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::blurV",
+		                  "Blur distance must be >= 0:\n<%>", String::join(args, ", "));
 		return img;
 	}
 	if (!dist) {
@@ -1168,25 +1029,22 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 	const int rotateW = h;
 	const int rotateH = w;
 	const int rotatePitch = rotateW * 4;
+	const size_t bufferSize = size_t(w * h * 4);
 
-	std::unique_ptr<Uint8[]> rotateTo(new Uint8[size_t(w * h * 4)]);
+	std::unique_ptr<Uint8[]> rotateFrom(new Uint8[bufferSize]);
 
-	std::unique_ptr<Uint8[]> rotateFrom(new Uint8[size_t(w * h * 4)]);
 	auto lineToRotate = [&](int y) {
-		const Uint8 *src = pixels + y * pitch;
-		const Uint8 *srcEnd = src + pitch;
+		const Uint32 *src = (Uint32*)pixels + y * w;
+		const Uint32 *srcEnd = src + w;
 
 		const int rotateX = y;
-		Uint8 *dst = rotateFrom.get() + rotateX * 4;
+		Uint32 *dst = (Uint32*)rotateFrom.get() + rotateX;
 
 		while (src != srcEnd) {
-			dst[Rshift / 8] = src[Rshift / 8];
-			dst[Gshift / 8] = src[Gshift / 8];
-			dst[Bshift / 8] = src[Bshift / 8];
-			dst[Ashift / 8] = src[Ashift / 8];
+			*dst = *src;
 
-			src += 4;
-			dst += rotatePitch;
+			++src;
+			dst += rotateW;
 		}
 	};
 	if (smallImage(w, h)) {
@@ -1199,6 +1057,9 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 			lineToRotate(y);
 		}
 	}
+
+
+	std::unique_ptr<Uint8[]> rotateTo(new Uint8[bufferSize]);
 
 	auto processLine = [&](int y) {
 		const Uint8 *src = rotateFrom.get() + y * rotatePitch;
@@ -1257,23 +1118,20 @@ static SurfacePtr blurV(const std::vector<std::string> &args) {
 	}
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(w, h);
-	Uint8 *resPixels = (Uint8 *)res->pixels;
+	Uint8 *resPixels = (Uint8*)res->pixels;
 
 	auto rotateToLine = [&](int rotateY) {
-		const Uint8 *src = rotateTo.get() + rotateY * rotatePitch;
-		const Uint8 *srcEnd = src + rotatePitch;
+		const Uint32 *src = (Uint32*)rotateTo.get() + rotateY * rotateW;
+		const Uint32 *srcEnd = src + rotateW;
 
 		const int x = rotateY;
-		Uint8 *dst = resPixels + x * 4;
+		Uint32 *dst = (Uint32*)resPixels + x;
 
 		while (src != srcEnd) {
-			dst[Rshift / 8] = src[Rshift / 8];
-			dst[Gshift / 8] = src[Gshift / 8];
-			dst[Bshift / 8] = src[Bshift / 8];
-			dst[Ashift / 8] = src[Ashift / 8];
+			*dst = *src;
 
-			src += 4;
-			dst += pitch;
+			++src;
+			dst += w;
 		}
 	};
 	if (smallImage(w, h)) {
@@ -1299,7 +1157,7 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 
 	const int w = img->w;
 	const int h = img->h;
-	const Uint8 *pixels = (const Uint8*)img->pixels;
+	const Uint8 *pixels = (Uint8*)img->pixels;
 	const int pitch = img->pitch;
 
 	const std::string &strCX = args[2];
@@ -1309,8 +1167,8 @@ static SurfacePtr motionBlur(const std::vector<std::string> &args) {
 
 	int dist = String::toInt(args[4]);
 	if (dist <= 0 || dist > 255) {
-		Utils::outError("ImageManipulator::motionBlur",
-		                "Blur distance must be from 1 to 255:\n<%>", String::join(args, ", "));
+		Message::outError("ImageManipulator::motionBlur",
+		                  "Blur distance must be from 1 to 255:\n<%>", String::join(args, ", "));
 		dist = Math::inBounds(dist, 5, 255);
 	}
 	if (dist == 1) {
@@ -1468,7 +1326,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	const int w = img->w;
 	const int h = img->h;
 	const int imgPitch = img->pitch;
-	const Uint8 *imgPixels = (const Uint8*)img->pixels;
+	const Uint8 *imgPixels = (Uint8*)img->pixels;
 
 	int resPitch = (w + 3) & ~3;//align to 4
 	Uint8 *resPixels = (Uint8*)SDL_aligned_alloc(SDL_GetSIMDAlignment(), size_t(h * resPitch));
@@ -1477,7 +1335,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	SDL_SetSurfaceBlendMode(res.get(), SDL_BLENDMODE_NONE);
 
 	res->flags |= SDL_SURFACE_SIMD_ALIGNED;
-	res->flags &= Uint32(~SDL_SURFACE_PREALLOCATED);
+	res->flags &= ~SDL_SURFACE_PREALLOCATED;
 
 
 	std::map<Uint32, Uint32> colors;
@@ -1602,12 +1460,12 @@ void ImageManipulator::saveSurface(const SurfacePtr &img, std::string path, cons
 			SDL_SetSurfaceBlendMode(resizedImg.get(), old);
 		}
 		if (!IMG_SaveJPG(imgToSave.get(), tmpPath.c_str(), quality)) {
-			Utils::outMsg("ImageManipulator::saveSurface", SDL_GetError());
+			Message::outMsg("ImageManipulator::saveSurface", SDL_GetError());
 		}
 	}else {
 		SurfacePtr imgToSave = optimizeSurfaceFormat(resizedImg);
 		if (!IMG_SavePNG(imgToSave.get(), tmpPath.c_str())) {
-			Utils::outMsg("ImageManipulator::saveSurface", SDL_GetError());
+			Message::outMsg("ImageManipulator::saveSurface", SDL_GetError());
 		}
 	}
 
