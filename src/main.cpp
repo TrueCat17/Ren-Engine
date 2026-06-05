@@ -221,15 +221,11 @@ static void loop() {
 	std::vector<SDL_Event> tmpEvents;
 
 	while (true) {
-		while ((!GV::inGame || Scenario::initing) && !GV::exit) {
-			Utils::sleep(0.010, false);
+		while ((!GV::inGame || Scenario::initing || Renderer::needToRender) && !GV::exit) {
+			Utils::sleep(0.001, false);
 		}
 		if (GV::exit) return;
 
-
-		while (Renderer::needToRender) {
-			Utils::sleep(0.001, false);
-		}
 
 		GV::updateMutex.lock();
 
