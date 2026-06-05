@@ -2,20 +2,17 @@
 
 import os
 
-was_error = False
+ok = True
 for prog in ('g++', 'make', 'cmake'):
-	if os.system('which ' + prog + ' > /dev/null'):
-		was_error = True
-		print('You must install <' + prog + '>')
+	if os.system('command -v %s > /dev/null' % prog):
+		ok = False
+		print('You must install <%s>' % prog)
 
-if was_error:
+if not ok:
 	os.sys.exit(1)
 
 
-
 build = os.path.dirname(os.path.abspath(__file__)) + '/'
-build = build.replace('\\', '/')
-
 
 
 def set_platform():
@@ -27,46 +24,46 @@ def set_platform():
 		print('1. i686   (x32)')
 		print('2. x86_64 (x64)')
 		
-		action = input('Input number of action (empty = auto): ')
-		if action == '1':
-			platform = 'linux-i686'
-		elif action == '2':
-			platform = 'linux-x86_64'
-		else:
-			platform = 'linux-' + ('x86_64' if os.sys.maxsize > 2**32 else 'i686')
-	
+		action = input('Input number of platform (empty = auto): ')
+		if action not in ('1', '2'):
+			action = '2' if os.sys.maxsize > 2**32 else '1'
+		
+		platform = 'linux-' + ('x86_64' if action == '2' else 'i686')
 	else:
 		platform = 'win32'
 	
-	print('  platform =', platform)
+	print('  platform = %s' % platform)
 	print()
 	
-	if not os.path.exists(build + '../libs/' + platform):
+	if not os.path.isdir(build + '../libs/' + platform):
 		if platform == 'win32':
-			for_platform = ' '
+			libs_for_platform = 'libs'
 		else:
-			for_platform = ' for platform <' + platform + '> '
-		print('You must build libs' + for_platform + 'before (see libs/readme)')
+			libs_for_platform = 'libs for platform <%s>' % platform
+		print('You must build %s before (see libs/readme)' % libs_for_platform)
 		os.sys.exit(1)
 
 
 def set_lto():
 	global lto
-	lto = 'disabled'
+	lto = False
 	
 	print('2/4: LTO')
 	if platform == 'win32':
 		print('Disabled for win32')
 	else:
 		print('Link Time Optimization make building very slow.')
-		if input('Input 1 for enable LTO: ') == '1':
-			lto = 'enabled'
+		if input('Input 1 to enable LTO: ') == '1':
+			lto = True
 	
-	print('  LTO:', lto)
+	print('  LTO: %s' % ('enabled' if lto else 'disabled'))
 	print()
 	
-	if not os.path.exists(build + '../libs/' + platform + '/' + ('lto' if lto == 'enabled' else 'no_lto')):
-		print('You must build libs ' + ('with' if lto == 'enabled' else 'without') + ' LTO before (see libs/readme)')
+	mode = 'lto' if lto else 'no_lto'
+	path = build + '../libs/' + platform + '/' + mode
+	if not os.path.isdir(path):
+		with_out = 'with' if lto else 'without'
+		print('You must build libs %s LTO before (see libs/readme)' % with_out)
 		os.sys.exit(1)
 
 
@@ -77,9 +74,9 @@ def set_pgo():
 		print('Disabled for win32')
 		mode = '0'
 	else:
-		print('Profile-Guided Optimization require 2 builds. How use it:')
+		print('Profile-Guided Optimization requires 2 builds. How to use it:')
 		print(' * build with <profile-generate>')
-		print('   * run compiled Ren-Engine and start some hard mods')
+		print('   * run compiled Ren-Engine, start some hard mods and close app')
 		print(' * build with <profile-use>')
 		print('   * got final version')
 		
@@ -92,13 +89,13 @@ def set_pgo():
 			mode = input('Input 1 or 2 for generate or use PGO: ')
 			if mode == '':
 				mode = '0'
-			if mode in ('0', '1', '2'):
+			if mode in '012':
 				break
 			print('Expected 0, 1 or 2')
 	
 	global pgo
 	pgo = ['', 'generate', 'use'][int(mode)]
-	print('  PGO:', pgo or 'disabled')
+	print('  PGO: %s' % (pgo or 'disabled'))
 	print()
 
 
@@ -113,7 +110,7 @@ def set_multithreading():
 		count_threads = int(answer)
 	else:
 		count_threads = os.cpu_count()
-	print('  Using', count_threads, 'threads')
+	print('  Using %i threads' % count_threads)
 	print()
 
 
@@ -125,20 +122,19 @@ set_multithreading()
 
 cmake_cmd = (
 	'cmake ../src ' +
-		'-DCMAKE_BUILD_TYPE=Release ' +
 		'-G "Unix Makefiles"' + ' ' +
+		'-DCMAKE_CXX_FLAGS="-Wno-address" ' + # disable useless warnings of old gcc (about constexpr cmp of template param with NULL)
+		'-DCMAKE_BUILD_TYPE=Release ' +
 		'-DPLATFORM=' + platform + ' ' +
 		'-DLTO=' + ('1' if lto == 'enabled' else '0') + ' ' +
 		'-DPROFILE=' + pgo
 )
 
-error = os.system(cmake_cmd)
-if error:
-	os.sys.exit(error)
+if os.system(cmake_cmd):
+	os.sys.exit(1)
 
-make_cmd = 'make -j' + str(count_threads)
-error = os.system(make_cmd)
-if error:
-	os.sys.exit(error)
+make_cmd = 'make -j%i' % count_threads
+if os.system(make_cmd):
+	os.sys.exit(1)
 
 print('Ok!')
