@@ -126,7 +126,7 @@ cmake_cmd = (
 		'-DCMAKE_CXX_FLAGS="-Wno-address" ' + # disable useless warnings of old gcc (about constexpr cmp of template param with NULL)
 		'-DCMAKE_BUILD_TYPE=Release ' +
 		'-DPLATFORM=' + platform + ' ' +
-		'-DLTO=' + ('1' if lto == 'enabled' else '0') + ' ' +
+		'-DLTO=' + ('1' if lto else '0') + ' ' +
 		'-DPROFILE=' + pgo
 )
 
