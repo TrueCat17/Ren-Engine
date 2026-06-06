@@ -48,7 +48,15 @@ SurfacePtr ImageCaches::convertToRGBA32(const SurfacePtr &surface) {
 	if (surface->format == SDL_PIXELFORMAT_RGBA32) return surface;
 
 	SurfacePtr res = ImageManipulator::getNewNotClear(surface->w, surface->h);
-	SDL_BlitSurface(surface.get(), nullptr, res.get(), nullptr);
+	if (!surfaceIsOpaque(surface)) {
+		if (!SDL_ClearSurface(res.get(), 0, 0, 0, 0)) {
+			Message::outMsg("SDL_FillSurfaceRect", SDL_GetError());
+		}
+	}
+
+	if (!SDL_BlitSurface(surface.get(), nullptr, res.get(), nullptr)) {
+		Message::outMsg("SDL_BlitSurface", SDL_GetError());
+	}
 
 	return res;
 }
