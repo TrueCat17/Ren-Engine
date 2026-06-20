@@ -13,7 +13,8 @@ init -1000 python:
 	
 	def code_coloring__get_tokens(text):
 		text_len = len(text)
-		allowed_for_word = alphabet.upper() + alphabet + numbers + '_.'
+		allowed_for_word = alphabet.upper() + alphabet + numbers + '_'
+		allowed_for_number = numbers + '.'
 		def make_step(index):
 			if index >= text_len:
 				return index
@@ -41,8 +42,9 @@ init -1000 python:
 						index += 1
 				else:
 					# skip to disallowed symbol in id/cmd
+					allowed = allowed_for_number if first in numbers else allowed_for_word
 					while index < text_len:
-						if text[index] not in allowed_for_word:
+						if text[index] not in allowed:
 							break
 						index += 1
 			
@@ -105,7 +107,7 @@ init -1000 python:
 	build_object('code_coloring')
 	
 	
-	code_coloring.operators = '+-*/%=!><()[]{}:'
+	code_coloring.operators = '+-*/%^&|=!><()[]{}:;,.'
 	
 	code_coloring.keywords = set('''
 		$
