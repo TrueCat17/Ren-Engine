@@ -1,9 +1,9 @@
 #ifndef KEY_H
 #define KEY_H
 
-#include <SDL3/SDL_keycode.h>
-
 #include "child.h"
+
+typedef Uint32 SDL_Keycode;
 
 
 class Key: public Child {

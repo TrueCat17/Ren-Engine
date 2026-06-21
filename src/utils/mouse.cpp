@@ -7,6 +7,7 @@
 #include "utils/image_typedefs.h"
 #include "utils/math.h"
 #include "utils/string.h"
+#include "utils/thread_tasks.h"
 
 
 bool Mouse::out = false;
@@ -46,13 +47,19 @@ static SDL_Cursor* currentCursor = nullptr;
 void Mouse::setUsualMode() {
 	if (currentCursor != usualModeCursor) {
 		currentCursor = usualModeCursor;
-		SDL_SetCursor(usualModeCursor);
+
+		ThreadTasks::main.addAndWait([]() {
+			SDL_SetCursor(usualModeCursor);
+		});
 	}
 }
 void Mouse::setButtonMode() {
 	if (currentCursor != btnModeCursor) {
 		currentCursor = btnModeCursor;
-		SDL_SetCursor(btnModeCursor);
+
+		ThreadTasks::main.addAndWait([]() {
+			SDL_SetCursor(btnModeCursor);
+		});
 	}
 }
 

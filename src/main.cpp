@@ -221,7 +221,7 @@ static void loop() {
 	std::vector<SDL_Event> tmpEvents;
 
 	while (true) {
-		while ((!GV::inGame || Scenario::initing || Renderer::needToRender) && !GV::exit) {
+		while ((!GV::inGame || Scenario::initing) && !GV::exit) {
 			Utils::sleep(0.001, false);
 		}
 		if (GV::exit) return;
@@ -243,18 +243,7 @@ static void loop() {
 			events.swap(tmpEvents);
 		}
 
-		for (const SDL_Event &event : tmpEvents) {
-			Uint32 type = event.type;
-			if (
-			    type == SDL_EVENT_MOUSE_MOTION      ||
-			    type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-			    type == SDL_EVENT_MOUSE_BUTTON_UP   ||
-			    type == SDL_EVENT_MOUSE_WHEEL
-			) {
-				Mouse::setLastAction();
-				break;
-			}
-		}
+		BtnRect::checkMouseCursor();
 
 		for (const SDL_Event &event : tmpEvents) {
 			if (GV::exit) return;
@@ -336,6 +325,9 @@ static void loop() {
 		BtnRect::checkSelectedBtn();
 
 		if (!Stage::minimized) {
+			while (Renderer::needToRender && !GV::exit) {
+				Utils::sleep(0.001, false);
+			}
 			std::lock_guard g(Renderer::renderDataMutex);
 			Renderer::updateSelectedRect();
 			Renderer::renderData.clear();
@@ -484,29 +476,26 @@ static void eventLoop() {
 			//mouse events
 
 			if (type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-				BtnRect::disableSelectMode();
-
-				bool left  = event.button.button == SDL_BUTTON_LEFT;
-				bool right = event.button.button == SDL_BUTTON_RIGHT;
-				if (left || right) {
-					if (left) {
-						mouseWasDown = true;
-					}
-					BtnRect::checkMouseClick(left, false);
+				if (event.button.button == SDL_BUTTON_LEFT) {
+					mouseWasDown = true;
 				}
 			}else
-
 			if (type == SDL_EVENT_MOUSE_BUTTON_UP) {
 				mouseWasUp = true;
 				Mouse::setMouseDown(false);
 			}
 
+			if (type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+			    type == SDL_EVENT_MOUSE_BUTTON_UP   ||
+			    type == SDL_EVENT_MOUSE_MOTION      ||
+			    type == SDL_EVENT_MOUSE_WHEEL)
+			{
+				Mouse::setLastAction();
+			}
 
 			//for processing in <loop> thread
 			if (type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
 			    type == SDL_EVENT_MOUSE_BUTTON_UP   ||
-			    type == SDL_EVENT_MOUSE_MOTION      ||
-			    type == SDL_EVENT_MOUSE_WHEEL       ||
 			    type == SDL_EVENT_KEY_DOWN          ||
 			    type == SDL_EVENT_KEY_UP)
 			{
@@ -544,6 +533,7 @@ static void eventLoop() {
 		mouseOutPrevDown = mouseOutDown;
 
 		ThreadTasks::main.execAll();
+		Renderer::draw();
 
 		//for no deadlock
 		i = 0;
@@ -552,13 +542,14 @@ static void eventLoop() {
 			if (success) break;
 
 			ThreadTasks::main.execAll();
+			Renderer::draw();
+
 			Utils::sleep(0.001, false);
 		}
 		if (i == 50) continue;
 
 		Mouse::checkCursorVisible();
 		Mouse::update();
-		BtnRect::checkMouseCursor();
 
 		GV::updateMutex.unlock();
 	}
