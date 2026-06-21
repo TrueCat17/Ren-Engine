@@ -672,14 +672,25 @@ init python:
 					cells.sort(key = lambda t: t[0])
 					cells[:] = [cell for _score, cell in cells]
 				
-				while player.deficit_resource() and any(array_for.values()):
+				while player.deficit_resource():
+					# deficit resources: food, wood or stone
+					# (checks for factories - before and after)
+					
 					have_food = food + player.change_food >= 0
+					if not have_food: # food?
+						# it makes sense to turn off everything (except farms)
+						names = array_for.keys()
+					else:             # wood or stone?
+						# it makes sense to turn off barracks only
+						# other buildings consume the same resources even when turned off
+						names = ('barracks', )
 					
 					prev_score = get_common_score()
 					min_building_full_name = None
 					min_score = None
 					
-					for building_full_name, cells in array_for.items():
+					for building_full_name in names:
+						cells = array_for[building_full_name]
 						if not cells: continue
 						
 						cell = cells[0]
@@ -693,7 +704,9 @@ init python:
 							min_building_full_name = building_full_name
 							min_score = score
 					
-					# min_score is not None
+					if min_score is None:
+						break
+					
 					if have_food and min_score >= prev_score:
 						break
 					
