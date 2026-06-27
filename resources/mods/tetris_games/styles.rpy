@@ -18,3 +18,9 @@ init:
 		font     'Arial'
 		text_size 25
 		xalign 1.0
+	
+	style tetris_tetris_figure_text is text:
+		font     'Arial'
+		color    '#FFF'
+		text_size 0.05
+		xalign 0.5

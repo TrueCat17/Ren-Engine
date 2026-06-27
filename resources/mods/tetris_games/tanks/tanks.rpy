@@ -347,16 +347,13 @@ screen tetris_tanks_screen:
 							color tetris.hex_colors[tank.color]
 
 
-label tetris_tanks_start_usual:
-	$ tetris.tanks_campaign = False
-	jump tetris_tanks_start
-
-label tetris_tanks_start_campaign:
-	$ tetris.tanks_campaign = True
-	jump tetris_tanks_start
-
-
 label tetris_tanks_start:
+	menu:
+		'Usual':
+			$ tetris.tanks_campaign = False
+		'Campaign':
+			$ tetris.tanks_campaign = True
+	
 	$ tetris.tanks_init()
 	
 	window hide

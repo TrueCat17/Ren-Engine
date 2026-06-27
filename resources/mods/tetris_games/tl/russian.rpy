@@ -17,8 +17,8 @@ translate russian strings:
 	old 'Tanks'
 	new 'Танчики'
 	
-	old 'Tanks (campaign)'
-	new 'Танчики (кампания)'
+	old 'Tetris'
+	new 'Тетрис'
 	
 	
 	# life
@@ -56,6 +56,12 @@ translate russian strings:
 	
 	
 	# tanks
+	old 'Usual'
+	new 'Обычный'
+	
+	old 'Campaign'
+	new 'Кампания'
+	
 	old 'You'
 	new 'Вы'
 	
@@ -67,3 +73,14 @@ translate russian strings:
 	
 	old 'WIN'
 	new 'ПОБЕДА'
+	
+	
+	# tetris
+	old 'Easy'
+	new 'Лёгкий'
+	
+	old 'Medium'
+	new 'Средний'
+	
+	old 'Hard'
+	new 'Тяжёлый'

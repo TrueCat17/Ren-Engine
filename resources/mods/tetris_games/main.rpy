@@ -57,7 +57,7 @@ init python:
 	}
 	tetris.images = { color: im.rect(color) for color in tetris.hex_colors.values() }
 	
-	tetris.pixels = [['#0A0']]
+	tetris.pixels = [[tetris.images['#888']]]
 	
 	tetris.sides = (
 		(-1, 0),
@@ -67,13 +67,13 @@ init python:
 	)
 
 
-screen tetris_main_screen(xindent, yindent):
+screen tetris_main_screen(xindent, yindent, xalign = 1.0):
 	key 'ESCAPE' action 'tetris.pause = True'
 	
 	$ tetris.update_sizes(screen.xindent, screen.yindent)
 	xsize get_stage_width()  - screen.xindent
 	ysize get_stage_height() - screen.yindent
-	xalign 1.0
+	xalign screen.xalign
 	ypos tetris.indent
 	
 	vbox:
@@ -102,9 +102,9 @@ label tetris_main:
 		'Snake':
 			jump tetris_snake_start
 		'Tanks':
-			jump tetris_tanks_start_usual
-		'Tanks (campaign)':
-			jump tetris_tanks_start_campaign
+			jump tetris_tanks_start
+		'Tetris':
+			jump tetris_tetris_start
 		''
 		'Exit':
 			'See you later!'
