@@ -105,6 +105,10 @@ static bool init() {
 		return false;
 	}
 
+	if (!SDL_SetHint(SDL_HINT_VIDEO_SYNC_WINDOW_OPERATIONS, "1")) {
+		Message::outMsg("SDL_SetHint", SDL_GetError());
+	}
+
 	if (!TTF_Init()) {
 		Message::outMsg("TTF_Init", SDL_GetError());
 		return false;
@@ -153,8 +157,9 @@ static bool init() {
 	//after set pos
 	Stage::fullscreen = Config::get("window_fullscreen") == "True";
 	if (Stage::fullscreen) {
-		SDL_SetWindowFullscreen(Stage::window, true);
-		SDL_SyncWindow(Stage::window);
+		if (!SDL_SetWindowFullscreen(Stage::window, true)) {
+			Message::outMsg("SDL_SetWindowFullscreen", SDL_GetError());
+		}
 	}
 
 	Stage::needResize = true;

@@ -159,7 +159,6 @@ static void onResize() {
 		Config::set("window_width", std::to_string(Stage::width));
 		Config::set("window_height", std::to_string(Stage::height));
 		SDL_SetWindowSize(Stage::window, Stage::width + Stage::x * 2, Stage::height + Stage::y * 2);
-		SDL_SyncWindow(Stage::window);
 	}
 
 	Renderer::needToUpdateViewPort = true;
@@ -193,7 +192,6 @@ void Stage::setFullscreen(bool value) {
 		Config::set("window_fullscreen", value ? "True" : "False");
 
 		SDL_SetWindowFullscreen(Stage::window, value);
-		SDL_SyncWindow(Stage::window);
 
 		if (value) {
 			SDL_GetWindowSize(Stage::window, &Stage::width, &Stage::height);
@@ -245,7 +243,6 @@ void Stage::changeWindowSize(int startW, int startH, int prevWindowWidth, int pr
 			Config::set("window_fullscreen", "False");
 
 			SDL_SetWindowFullscreen(Stage::window, false);
-			SDL_SyncWindow(Stage::window);
 		}
 		Stage::width = w;
 		Stage::height = h;

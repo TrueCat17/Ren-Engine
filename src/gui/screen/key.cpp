@@ -11,6 +11,7 @@
 #include "utils/math.h"
 #include "utils/message.h"
 #include "utils/string.h"
+#include "utils/thread_tasks.h"
 #include "utils/utils.h"
 
 
@@ -101,6 +102,25 @@ void Key::setUpState(const SDL_Keycode key) {
 
 void Key::updateSize() {}
 
+
+static std::map<std::string, SDL_Keycode> nameToKey;
+static SDL_Keycode getKeyFromName(const std::string &name) {
+	auto it = nameToKey.find(name);
+	if (it != nameToKey.end()) {
+		return it->second;
+	}
+
+	const char *namePtr = name.c_str();
+	if (String::startsWith(name, "K_")) {
+		namePtr += 2;
+	}
+	SDL_Keycode res;
+	ThreadTasks::main.addAndWait([&]() {
+		res = SDL_GetKeyFromName(namePtr);
+	});
+	return nameToKey[name] = res;
+}
+
 void Key::checkEvents() {
 	if (!isModal()) return;
 
@@ -113,8 +133,7 @@ void Key::checkEvents() {
 	if (first_param != prevKeyName) {
 		prevKeyName = first_param;
 
-		const int start = String::startsWith(first_param, "K_") ? 2 : 0;
-		key = SDL_GetKeyFromName(first_param.c_str() + start);
+		key = getKeyFromName(first_param);
 
 		if ((key == SDLK_RIGHT || key == SDLK_LEFT || key == SDLK_UP || key == SDLK_DOWN) && !screen->allowArrows) {
 			static bool outedAllowArrowsError = false;
