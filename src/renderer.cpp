@@ -729,12 +729,14 @@ void Renderer::draw() {
 
 bool Renderer::init() {
 	std::string opengl = "opengl";
+	bool isOpenGL = false;
 
 	if (Config::get("software_renderer") != "True") {
 		int countRenderDrivers = SDL_GetNumRenderDrivers();
 		for (int i = 0; i < countRenderDrivers; ++i) {
 			const char* name = SDL_GetRenderDriver(i);
 			if (name == opengl) {
+				isOpenGL = true;
 				Renderer::driver = opengl;
 				break;
 			}
@@ -746,18 +748,20 @@ bool Renderer::init() {
 	
 	renderer = SDL_CreateRenderer(Stage::window, Renderer::driver.c_str());
 	if (renderer) {
-		fastOpenGL = Config::get("fast_opengl") == "True";
-		if (fastOpenGL) {
-			glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
-			if (!glBlendFuncSeparate) {
-				fastOpenGL = false;
-				Message::outMsg("Renderer::init", "glBlendFuncSeparate not found, fast_opengl disabled");
+		if (isOpenGL) {
+			fastOpenGL = Config::get("fast_opengl") == "True";
+			if (fastOpenGL) {
+				glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)SDL_GL_GetProcAddress("glBlendFuncSeparate");
+				if (!glBlendFuncSeparate) {
+					fastOpenGL = false;
+					Message::outMsg("Renderer::init", "glBlendFuncSeparate not found, fast_opengl disabled");
+				}
 			}
 		}
 	}else {
 		Message::outMsg("SDL_CreateRenderer", SDL_GetError());
 
-		if (Renderer::driver == opengl) {
+		if (isOpenGL) {
 			Renderer::driver = "software";
 			renderer = SDL_CreateRenderer(Stage::window, Renderer::driver.c_str());
 			if (!renderer) {
@@ -774,7 +778,7 @@ bool Renderer::init() {
 	Renderer::maxSize = int(SDL_GetNumberProperty(props, SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 0));
 	if (Renderer::maxSize <= 0) Renderer::maxSize = 2048;
 
-	if (Renderer::driver == opengl) {
+	if (isOpenGL) {
 		size_t countErrors = 0;
 		const size_t maxCountErrors = 10;
 
