@@ -95,7 +95,7 @@ label tetris_main:
 	
 	scene bg room_screen
 	
-	'Choose a game! Management - WASD.'
+	'Choose a game! Management: WASD + Space/Enter.'
 	menu:
 		'Life':
 			jump tetris_life_start

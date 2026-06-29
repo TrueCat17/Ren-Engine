@@ -1,5 +1,5 @@
-translate russian tetris_main_53161f71:
-	"Выбирай игру! Управление - WASD."
+translate russian tetris_main_59f752e7:
+	"Выбирай игру! Управление: WASD + Пробел/Enter."
 
 translate russian tetris_main_5061cf42:
 	"До встречи!"
