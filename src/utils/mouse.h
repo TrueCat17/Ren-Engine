@@ -6,7 +6,8 @@ public:
 	static bool out;
 
 	static void init();
-	static void update();
+	static void updateLastPos();
+	static void updateStartFramePos();
 
 	static void setUsualMode();
 	static void setButtonMode();

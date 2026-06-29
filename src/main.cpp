@@ -248,6 +248,7 @@ static void loop() {
 			events.swap(tmpEvents);
 		}
 
+		Mouse::updateStartFramePos();
 		BtnRect::checkMouseCursor();
 
 		for (const SDL_Event &event : tmpEvents) {
@@ -540,23 +541,8 @@ static void eventLoop() {
 		ThreadTasks::main.execAll();
 		Renderer::draw();
 
-		//for no deadlock
-		i = 0;
-		for (; i < 50; ++i) {
-			bool success = GV::updateMutex.try_lock();
-			if (success) break;
-
-			ThreadTasks::main.execAll();
-			Renderer::draw();
-
-			Utils::sleep(0.001, false);
-		}
-		if (i == 50) continue;
-
 		Mouse::checkCursorVisible();
-		Mouse::update();
-
-		GV::updateMutex.unlock();
+		Mouse::updateLastPos();
 	}
 }
 

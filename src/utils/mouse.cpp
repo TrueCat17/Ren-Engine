@@ -64,26 +64,30 @@ void Mouse::setButtonMode() {
 }
 
 
-static int x = 0;
-static int y = 0;
+static SDL_Point startFramePos;
+static SDL_Point lastPos;
 
-void Mouse::update() {
+void Mouse::updateLastPos() {
 	if (out) {
-		x = y = -1000000;
+		lastPos.x = lastPos.y = -1000000;
 	}else {
 		float fx, fy;
 		SDL_GetMouseState(&fx, &fy);
 
-		x = int(fx);
-		y = int(fy);
+		lastPos.x = int(fx);
+		lastPos.y = int(fy);
 	}
 }
 
+void Mouse::updateStartFramePos() {
+	startFramePos = lastPos;
+}
+
 int Mouse::getX() {
-	return x;
+	return startFramePos.x;
 }
 int Mouse::getY() {
-	return y;
+	return startFramePos.y;
 }
 
 
