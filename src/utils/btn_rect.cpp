@@ -243,7 +243,7 @@ void BtnRect::onHovered() const {
 		PyObject *hoverSoundObj = StyleManager::getProp(style, "hover_sound");
 
 		if (PyUnicode_CheckExact(hoverSoundObj)) {
-			std::string path = PyUtils::objToStr(hoverSoundObj);
+			std::string path = PyUtils::pyThreadStrToString(hoverSoundObj);
 			AudioManager::play("button_hover", path, 0, 0, 1.0, node->getFileName(), node->getNumLine());
 		}else if (hoverSoundObj != Py_None) {
 			Message::outError("BtnRect::onHovered",
@@ -288,7 +288,7 @@ void BtnRect::onLeftClick() const {
 		PyObject *activateSoundObj = StyleManager::getProp(style, "activate_sound");
 
 		if (PyUnicode_CheckExact(activateSoundObj)) {
-			std::string path = PyUtils::objToStr(activateSoundObj);
+			std::string path = PyUtils::pyThreadStrToString(activateSoundObj);
 			AudioManager::play("button_click ", path, 0, 0, 1.0,
 			                   node->getFileName(), node->getNumLine());
 		}else if (activateSoundObj != Py_None) {

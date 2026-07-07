@@ -220,7 +220,7 @@ static void restoreScreens(const std::string &loadPath) {
 					continue;
 				}
 
-				std::string name = PyUtils::objToStr(elem);
+				std::string name = PyUtils::pyThreadStrToString(elem);
 				startScreensVec.push_back(name);
 			}
 		});

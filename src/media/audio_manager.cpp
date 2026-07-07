@@ -413,7 +413,7 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 		PyUtils::callInPythonThread([&]() {
 			PyObject *paths = PyUtils::execRetObj(fileName, numLine, args[1]);
 			if (PyUnicode_CheckExact(paths)) {
-				params.paths.push_back(PyUtils::objToStr(paths));
+				params.paths.push_back(PyUtils::pyThreadStrToString(paths));
 			}else
 
 			if (PyList_CheckExact(paths) || PyTuple_CheckExact(paths)) {
@@ -423,7 +423,7 @@ static bool parseParams(const std::string &desc, const std::string &fileName, ui
 				for (size_t i = 0; i < len; ++i) {
 					PyObject *pyPath = pathItems[i];
 					if (PyUnicode_CheckExact(pyPath)) {
-						params.paths.push_back(PyUtils::objToStr(pyPath));
+						params.paths.push_back(PyUtils::pyThreadStrToString(pyPath));
 						continue;
 					}
 

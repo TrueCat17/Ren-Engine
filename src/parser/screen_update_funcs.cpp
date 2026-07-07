@@ -42,12 +42,12 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 	}
 
 	if (!obj->wasInited()) {
-		for (const Node *child : node->children) {
+		for (Node *child : node->children) {
 			if (!child->isScreenProp) continue;
 
-			if (child->command == propName || child->command + "Pre" == propName) {
-				Message::outMsg(propName, expected + '\n' + child->getPlace());
-				return;
+			if (child->command == propName) {
+				node = child;
+				break;
 			}
 		}
 
@@ -59,7 +59,7 @@ static void outError(Child *obj, const std::string &propName, size_t propIndex, 
 		if (child->isScreenProp && child->screenNum == propIndex) {
 			std::string desc = expected + '\n';
 
-			if (child->command == propName || child->command + "Pre" == propName) {
+			if (child->command == propName) {
 				desc += child->getPlace();
 			}else {
 				desc += "style <" + obj->style->name + ">";
@@ -101,7 +101,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 		var = DT(PyLong_AsLongAndOverflow(prop, &overflow)); \
 		if (overflow) { \
 			var = 0; \
-			std::string msg = Message::format("int too large (%)", PyUtils::objToStr(prop)); \
+			std::string msg = Message::format("int too large (%)", PyUtils::pyThreadObjToString(prop)); \
 			outError(obj, propName, propIndex, msg); \
 		} \
 	}
@@ -180,7 +180,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		xIsFloat = false; \
 		obj->x##propName = 0; \
 		std::string msg = Message::format("At x" #propName "-prop expected types float, absolute or int, got %", \
-		                                x->ob_type->tp_name); \
+		                                  x->ob_type->tp_name); \
 		outError(obj, "x"#propName, propIndex, msg); \
 	} \
 	updateCondition(yIsFloat, obj->y##propName, y, #propName) \
@@ -188,7 +188,7 @@ static void update_##propName(Child *obj, size_t propIndex) { \
 		yIsFloat = false; \
 		obj->y##propName = 0; \
 		std::string msg = Message::format("At y" #propName "-prop expected types float, absolute or int, got %", \
-		                                y->ob_type->tp_name); \
+		                                  y->ob_type->tp_name); \
 		outError(obj, "y"#propName, propIndex, msg); \
 	} \
 }
@@ -255,7 +255,7 @@ static void update_align(Child *obj, size_t propIndex) {
 	else { \
 		value = 0; \
 		std::string msg = Message::format("At " #part "align-prop expected types float, absolute or int, got %", \
-		                                part->ob_type->tp_name); \
+		                                  part->ob_type->tp_name); \
 		outError(obj, "align", propIndex, msg); \
 	} \
 	obj->part##pos_is_float = obj->part##anchor_is_float = isFloat; \
@@ -272,7 +272,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	Type *typedObj = static_cast<Type*>(obj); \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		typedObj->propName = PyUtils::objToStr(prop); \
+		typedObj->propName = PyUtils::pyThreadStrToString(prop); \
 	}else { \
 		typedObj->propName.clear(); \
 		std::string msg = Message::format("Expected type str, got %", prop->ob_type->tp_name); \
@@ -304,8 +304,8 @@ static void update_crop(Child *obj, size_t propIndex) {
 	updateCondition(obj->part##crop_is_float, obj->part##crop, part, #part "crop") \
 	else { \
 		obj->part##crop = 0; \
-		std::string msg = Message::format("At " #part "crop-prop expected types float, absolute or int, got %",\
-		                                part->ob_type->tp_name); \
+		std::string msg = Message::format("At " #part "crop-prop expected types float, absolute or int, got %", \
+		                                  part->ob_type->tp_name); \
 		outError(obj, #part "crop", propIndex, msg); \
 	}
 
@@ -367,7 +367,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		params.font = String::getConstPtr(PyUtils::objToStr(prop)); \
+		params.font = String::getConstPtr(PyUtils::pyThreadStrToString(prop)); \
 		params.set_font = true; \
 	}else { \
 		params.font = String::getConstPtr(TextField::DEFAULT_FONT_NAME); \
@@ -389,19 +389,20 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 	if (PyLong_CheckExact(prop)) {
 		long color = PyLong_AsLongAndOverflow(prop, &overflow);
 		if (overflow || color < 0 || color > 0xFFFFFF) {
-			error = Message::format("Expected value between 0 and 0xFFFFFF, got %", PyUtils::objToStr(prop));
+			error = Message::format("Expected value between 0 and 0xFFFFFF, got %",
+			                        PyUtils::pyThreadObjToString(prop));
 			return fail;
 		}
 		return Uint32(color);
 	}
 
 	if (PyUnicode_CheckExact(prop)) {
-		std::string str = PyUtils::objToStr(prop);
+		std::string_view str = PyUtils::pyThreadStrToStringView(prop);
 		if (String::startsWith(str, "#")) {
-			str.erase(0, 1);
+			str.remove_prefix(1);
 		}else
 		if (String::startsWith(str, "0x")) {
-			str.erase(0, 2);
+			str.remove_prefix(2);
 		}
 
 		size_t size = str.size();
@@ -413,22 +414,19 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 		int ints[6];
 		for (size_t i = 0; i < size; ++i) {
 			char c = str[i];
-			bool isNum        = c >= '0' && c <= '9';
-			bool isSmallAlpha = c >= 'a' && c <= 'f';
-			bool isBigAlpha   = c >= 'A' && c <= 'F';
-			if (!isNum && !isSmallAlpha && !isBigAlpha) {
-				error = Message::format("Expected color symbols in [0-9], [a-f] and [A-F], got <%>",
-				                      PyUtils::objToStr(prop));
-				return fail;
-			}
 
-			if (isNum) {
+			if (c >= '0' && c <= '9') {
 				ints[i] = c - '0';
 			}else
-			if (isSmallAlpha) {
+			if (c >= 'a' && c <= 'f') {
 				ints[i] = c - 'a' + 10;
-			}else {
+			}else
+			if (c >= 'A' && c <= 'F') {
 				ints[i] = c - 'A' + 10;
+			}else {
+				error = Message::format("Expected color symbols in [0-9], [a-f] and [A-F], got <%>",
+				                        PyUtils::pyThreadStrToString(prop));
+				return fail;
 			}
 		}
 
@@ -471,7 +469,8 @@ static Uint32 getColor(PyObject *prop, std::string &error, bool canBeDisabled) {
 	} \
 	long ch = PyLong_AsLongAndOverflow(item, &overflow); \
 	if (overflow || ch < 0 || ch > 255) { \
-		error = Message::format("Expected sequence with ints between 0 and 255, got %", PyUtils::objToStr(item)); \
+		error = Message::format("Expected sequence with ints between 0 and 255, got %", \
+		                        PyUtils::pyThreadObjToString(item)); \
 		return fail; \
 	}
 
@@ -520,7 +519,7 @@ static void update_##funcPostfix(Child *obj, size_t propIndex) { \
 	auto &params = text->main_or_hover##Params; \
 	\
 	if (PyUnicode_CheckExact(prop)) { \
-		std::string valueStr = PyUtils::objToStr(prop); \
+		std::string_view valueStr = PyUtils::pyThreadStrToStringView(prop); \
 		float value = 0; \
 		if (valueStr == zero) { \
 			value = 0; \
@@ -608,7 +607,7 @@ static void update_corner_sizes(Child *obj, size_t propIndex) {
 	else { \
 		value = 0; \
 		std::string msg = Message::format("At corner_sizes[" #i "] expected types float, absolute or int, got %", \
-		                                item->ob_type->tp_name); \
+		                                  item->ob_type->tp_name); \
 		outError(obj, "corner_sizes", propIndex, msg); \
 	} \
 	setCornerSize(side)

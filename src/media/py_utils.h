@@ -36,7 +36,11 @@ public:
 	static PyObject* execRetObj(const std::string &fileName, uint32_t numLine, const std::string &code);//returns new ref!!!
 	static void errorProcessing(const std::string &code);
 
-	static std::string objToStr(PyObject *obj);
+
+	//call only from python thread!
+	static std::string_view pyThreadStrToStringView(PyObject *obj);
+	static std::string      pyThreadStrToString(PyObject *obj);
+	static std::string      pyThreadObjToString(PyObject *obj);
 
 	static bool isIdentifier(std::string_view s);
 };

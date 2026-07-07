@@ -344,7 +344,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 			continue;
 		}
 
-		std::string objectFreePath = PyUtils::objToStr(pyObjectFree);
+		std::string objectFreePath = PyUtils::pyThreadStrToString(pyObjectFree);
 		int overflowX, overflowY;
 		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
 		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
@@ -371,7 +371,7 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 			continue;
 		}
 
-		std::string name = PyUtils::objToStr(pyName);
+		std::string name = PyUtils::pyThreadStrToString(pyName);
 		int overflowX, overflowY;
 		int startX = int(PyLong_AsLongAndOverflow(pyX, &overflowX));
 		int startY = int(PyLong_AsLongAndOverflow(pyY, &overflowY));
@@ -379,8 +379,8 @@ void PathFinder::updateLocation(const std::string &name, const std::string &free
 			Message::outMsg("PathFinder::updateLocation", "Place coordinates are overflowing");
 			continue;
 		}
-		std::string location = PyUtils::objToStr(pyLocation);
-		std::string place = PyUtils::objToStr(pyPlace);
+		std::string location = PyUtils::pyThreadStrToString(pyLocation);
+		std::string place = PyUtils::pyThreadStrToString(pyPlace);
 
 		params.places.push_back({name, startX, startY, location, place, false, false});
 	}
@@ -926,11 +926,11 @@ PyObject* PathFinder::findPathBetweenLocations(const std::string &startLocation,
 			continue;
 		}
 
-		std::string locationName = PyUtils::objToStr(pyLocationName);
+		std::string locationName = PyUtils::pyThreadStrToString(pyLocationName);
 		MipMap *location = getLocation(locationName);
 		if (!location) continue;
 
-		std::string placeName = PyUtils::objToStr(pyPlaceName);
+		std::string placeName = PyUtils::pyThreadStrToString(pyPlaceName);
 
 		for (LocationPlace &place : location->params.places) {
 			if (place.name == placeName) {

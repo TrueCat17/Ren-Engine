@@ -26,7 +26,7 @@ Style::Style(PyObject *style, const std::string &name):
 	while (PyDict_Next(dict, &i, &key, &value)) {
 		if (PyUnicode_CheckExact(key)) {
 			Py_INCREF(value);
-			props[PyUtils::objToStr(key)] = value;
+			props[PyUtils::pyThreadStrToString(key)] = value;
 		}
 	}
 
@@ -125,7 +125,7 @@ const Style* StyleManager::getByObject(const Child* obj, PyObject *style) {
 	}
 
 	if (PyUnicode_CheckExact(style)) {
-		res = getByName(node, PyUtils::objToStr(style));
+		res = getByName(node, PyUtils::pyThreadStrToString(style));
 	}else {
 		std::string place = propStyle->getFileName() + ":" + std::to_string(propStyle->getNumLine());
 		std::string name = "unknown (" + place + ")";

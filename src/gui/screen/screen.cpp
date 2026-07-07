@@ -200,7 +200,7 @@ static void makeScreenVars(const std::string &name,
 	Py_ssize_t i = 0;
 	PyObject *key, *value;
 	while (PyDict_Next(kwargs, &i, &key, &value)) {
-		std::string varName = PyUtils::objToStr(key);
+		std::string varName = PyUtils::pyThreadObjToString(key);
 
 		if (std::find(argsWasSet.cbegin(), argsWasSet.cend(), varName) != argsWasSet.cend()) {
 			Message::outError("Screen::addToShow",

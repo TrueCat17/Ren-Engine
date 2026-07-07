@@ -225,8 +225,8 @@ static void errorProcessingImpl(const std::string &code) {
 
 	PyErr_NormalizeException(&pyType, &pyValue, &pyTraceback);
 
-	std::string typeStr = PyUtils::objToStr(pyType);
-	std::string valueStr = PyUtils::objToStr(pyValue);
+	std::string typeStr = PyUtils::pyThreadObjToString(pyType);
+	std::string valueStr = PyUtils::pyThreadObjToString(pyValue);
 
 	std::string traceback;
 	if (pyTraceback && pyTraceback != Py_None) {
@@ -235,7 +235,7 @@ static void errorProcessingImpl(const std::string &code) {
 		size_t len = size_t(Py_SIZE(res));
 		for (size_t i = 0; i < len; ++i) {
 			PyObject *item = PyList_GET_ITEM(res, i);
-			std::string str = PyUtils::objToStr(item);
+			std::string str = PyUtils::pyThreadObjToString(item);
 
 			size_t fileNameStart = str.find("_SL_FILE_");
 			if (fileNameStart != size_t(-1)) {
@@ -257,7 +257,7 @@ static void errorProcessingImpl(const std::string &code) {
 		if (pyType == PyExc_SyntaxError) {
 			PyObject *pyFileName = PyObject_GetAttrString(pyValue, "filename");
 			if (pyFileName) {
-				std::string fileNameWithFullPath = PyUtils::objToStr(pyFileName);
+				std::string fileNameWithFullPath = PyUtils::pyThreadObjToString(pyFileName);
 				Py_DECREF(pyFileName);
 
 				valueStr.erase(fileNameStart, fileNameEnd - fileNameStart);
@@ -400,7 +400,7 @@ static std::string execImpl(const std::string &fileName, uint32_t numLine, const
 		if (ok) {
 			if (retRes) {
 				PyObject *resObj = PyDict_GetItemString(PyUtils::global, "_res");
-				res = PyUtils::objToStr(resObj);
+				res = PyUtils::pyThreadObjToString(resObj);
 
 				if (isConst) {
 					constExprs[code] = res;
@@ -481,27 +481,39 @@ PyObject* PyUtils::execRetObj(const std::string &fileName, uint32_t numLine, con
 }
 
 
-static std::string objToStrImpl(PyObject *obj) {
+std::string_view PyUtils::pyThreadStrToStringView(PyObject *obj) {
 	Py_ssize_t size;
+	const char *data = PyUnicode_AsUTF8AndSize(obj, &size);
+	return std::string_view(data, size_t(size));
+}
+std::string PyUtils::pyThreadStrToString(PyObject *obj) {
+	Py_ssize_t size;
+	const char *data = PyUnicode_AsUTF8AndSize(obj, &size);
+	return std::string(data, size_t(size));
+}
+
+std::string PyUtils::pyThreadObjToString(PyObject *obj) {
+	PyObject *objStr;
+	bool dec;
 	if (PyUnicode_CheckExact(obj)) {
-		const char *data = PyUnicode_AsUTF8AndSize(obj, &size);
-		return std::string(data, size_t(size));
+		objStr = obj;
+		dec = false;
+	}else {
+		objStr = PyObject_Str(obj);
+		dec = true;
 	}
 
-	PyObject *objStr = PyObject_Str(obj);
+	Py_ssize_t size;
 	const char *data = PyUnicode_AsUTF8AndSize(objStr, &size);
 	std::string res(data, size_t(size));
-	Py_DECREF(objStr);
+
+	if (dec) {
+		Py_DECREF(objStr);
+	}
+
 	return res;
 }
 
-std::string PyUtils::objToStr(PyObject *obj) {
-	std::string res;
-	callInPythonThread([&]() {
-		res = objToStrImpl(obj);
-	});
-	return res;
-}
 
 bool PyUtils::isIdentifier(std::string_view s) {
 	if (s.empty()) return false;
