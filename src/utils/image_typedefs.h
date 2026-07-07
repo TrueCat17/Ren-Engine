@@ -9,8 +9,26 @@
 template <typename T, void (*deleter)(T*), std::mutex *mutex>
 class SmartPtr {
 private:
+	//extra constant, because false warnings in old gcc
+	static constexpr bool USE_MUTEX = (mutex != nullptr);
+
+	static inline
+	void lock() {
+		if constexpr (USE_MUTEX) {
+			mutex->lock();
+		}
+	}
+
+	static inline
+	void unlock() {
+		if constexpr (USE_MUTEX) {
+			mutex->unlock();
+		}
+	}
+
+
 	T *ptr = nullptr;
-	mutable int *counter = nullptr;
+	int *counter = nullptr;
 
 	void clear() {
 		if (!counter || GV::exit) return;
@@ -25,9 +43,9 @@ private:
 
 public:
 	void operator=(const SmartPtr &pointer) {
-		if constexpr (mutex) {
-			mutex->lock();
-		}
+		if (ptr == pointer.ptr) return;
+
+		lock();
 
 		clear();
 
@@ -37,14 +55,12 @@ public:
 			++*counter;
 		}
 
-		if constexpr (mutex) {
-			mutex->unlock();
-		}
+		unlock();
 	}
 	void operator=(T *pointer) {
-		if constexpr (mutex) {
-			mutex->lock();
-		}
+		if (ptr == pointer) return;
+
+		lock();
 
 		clear();
 
@@ -55,9 +71,7 @@ public:
 			counter = nullptr;
 		}
 
-		if constexpr (mutex) {
-			mutex->unlock();
-		}
+		unlock();
 	}
 
 
@@ -70,15 +84,11 @@ public:
 	}
 
 	~SmartPtr() {
-		if constexpr (mutex) {
-			mutex->lock();
-		}
+		lock();
 
 		clear();
 
-		if constexpr (mutex) {
-			mutex->unlock();
-		}
+		unlock();
 	}
 
 
@@ -97,7 +107,7 @@ public:
 		return ptr != nullptr;
 	}
 	bool operator==(const SmartPtr &pointer) const {
-		return ptr == pointer.ptr && counter == pointer.counter;
+		return ptr == pointer.ptr;
 	}
 	bool operator!=(const SmartPtr &pointer) const {
 		return !(*this == pointer);
