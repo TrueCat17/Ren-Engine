@@ -29,9 +29,10 @@ struct BtnRectAndFRect {
 	FRect fRect;
 };
 
-static bool selectMode = false;
+static bool   selectMode = false;
 static Uint32 selectBtnId = Uint32(-1);
-static FRect selectBtnFRect;
+static FRect  selectBtnFRect;
+static double selectLastTime = 0;
 
 static BtnRect* getSelectedBtnRect() {
 	for (BtnRect *btnRect : btnRects) {
@@ -128,16 +129,15 @@ void BtnRect::checkMouseCursor() {
 		}
 	}
 
-	bool haveMouseActionInLastFrame = Mouse::haveActionInLastFrame();
-
 	int mouseX = Mouse::getX();
 	int mouseY = Mouse::getY();
 
+	bool skipUnhoveredRects = selectMode && Mouse::getLastTime() < selectLastTime;
 	for (BtnRect *btnRect : btnRects) {
-		if (prevHovered != btnRect && !haveMouseActionInLastFrame && selectMode) continue;
+		if (skipUnhoveredRects && prevHovered != btnRect) continue;
 		if (btnRect->needIgnore()) continue;
 
-		Child *owner = btnRect->owner;
+		const Child *owner = btnRect->owner;
 
 		float x = float(mouseX) - owner->getGlobalX() - owner->calcedXanchor;
 		float y = float(mouseY) - owner->getGlobalY() - owner->calcedYanchor;
@@ -166,7 +166,7 @@ void BtnRect::checkMouseCursor() {
 
 					selectMode = false;
 					selectBtnId = btnRect->id;
-					selectBtnFRect = getFRect(btnRect->owner);
+					selectBtnFRect = getFRect(owner);
 				}
 
 				Mouse::setButtonMode();
@@ -586,6 +586,7 @@ void BtnRect::processKey(SDL_Keycode key, bool shift) {
 		if (screen->allowArrows && screen->isModal()) return;
 	}
 
+	selectLastTime = GV::frameStartTime;
 	if (key != SDLK_RIGHT && key != SDLK_LEFT && key != SDLK_DOWN && key != SDLK_UP) {
 		if (key == SDLK_TAB) {
 			if (selectMode) {
@@ -629,11 +630,9 @@ void BtnRect::processKey(SDL_Keycode key, bool shift) {
 		}
 
 		if (selectedBtnRect) {//still not removed?
-
-			bool restoreLastBtnSelection = !selectMode && !selectedBtnRect->isHovered();
-			if (restoreLastBtnSelection) {
+			if (!selectMode) {
+				//restore select mode
 				selectMode = true;
-				selectBtnId = selectedBtnRect->id;
 				selectBtnFRect = getFRect(selectedBtnRect->owner);
 				selectedBtnRect->selectedByKeyboard = true;
 				return;

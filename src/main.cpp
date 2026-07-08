@@ -496,7 +496,7 @@ static void eventLoop() {
 			    type == SDL_EVENT_MOUSE_MOTION      ||
 			    type == SDL_EVENT_MOUSE_WHEEL)
 			{
-				Mouse::setLastAction();
+				Mouse::updateLastTime();
 			}
 
 			//for processing in <loop> thread

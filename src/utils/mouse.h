@@ -22,8 +22,8 @@ public:
 	static bool getMouseDown();
 	static void setMouseDown(bool value);
 
-	static bool haveActionInLastFrame();
-	static void setLastAction();
+	static double  getLastTime();
+	static void updateLastTime();
 	static void checkCursorVisible();
 
 	static bool getCanHide();

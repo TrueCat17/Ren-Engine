@@ -5,7 +5,6 @@
 #include "config.h"
 #include "utils/image_caches.h"
 #include "utils/image_typedefs.h"
-#include "utils/math.h"
 #include "utils/string.h"
 #include "utils/thread_tasks.h"
 
@@ -122,19 +121,19 @@ void Mouse::setCanHide(bool value) {
 }
 
 
-static double lastAction = 0;
-bool Mouse::haveActionInLastFrame() {
-	return Math::doublesAreEq(lastAction, GV::frameStartTime);
+static double lastTime = 0;
+double Mouse::getLastTime() {
+	return lastTime;
 }
-void Mouse::setLastAction() {
-	lastAction = GV::frameStartTime;
+void Mouse::updateLastTime() {
+	lastTime = GV::frameStartTime;
 }
 void Mouse::checkCursorVisible() {
 	bool show = true;
 	if (canHided) {
 		const double timeToHide = String::toDouble(Config::get("mouse_hide_time"));
 		if (timeToHide > 0) {
-			show = GV::frameStartTime - lastAction < timeToHide;
+			show = GV::frameStartTime - lastTime < timeToHide;
 		}
 	}
 	if (show) {
