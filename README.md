@@ -1,6 +1,6 @@
 # Ren-Engine
 
-**Ren-Engine Demo Screnshot:**
+**Ren-Engine Demo Screenshot:**
 
 ![Screenshot](screenshot.webp)
 
