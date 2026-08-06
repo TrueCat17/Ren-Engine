@@ -185,7 +185,7 @@ static PyObject* rem(PyObject *pyA, PyObject *pyB) {
 	return PyAbsolute_FromDouble(mod);
 }
 
-static PyObject* getFloorDiv(PyObject *pyA, PyObject *pyB) {
+static PyObject* floordiv(PyObject *pyA, PyObject *pyB) {
 	PREPARE_DOUBLES
 	if (Math::doublesAreEq(b, 0)) {
 		PyErr_SetString(PyExc_ZeroDivisionError, "absolute floor division by zero");
@@ -193,7 +193,7 @@ static PyObject* getFloorDiv(PyObject *pyA, PyObject *pyB) {
 	}
 	return PyAbsolute_FromDouble(std::floor(a / b));
 }
-static PyObject* getTrueDiv(PyObject *pyA, PyObject *pyB) {
+static PyObject* truediv(PyObject *pyA, PyObject *pyB) {
 	PREPARE_DOUBLES
 	if (Math::doublesAreEq(b, 0)) {
 		PyErr_SetString(PyExc_ZeroDivisionError, "absolute true division by zero");
@@ -229,6 +229,67 @@ static PyObject* toFloat(PyObject *pyA) {
 }
 
 
+#define PREPARE_DOUBLES_INPLACE \
+if (pyA->ob_type != &PyAbsolute_Type) { \
+	return PyErr_Format(PyExc_TypeError, \
+	    "absolute.__%s__ expected absolute type, got %s", __func__, pyA->ob_type->tp_name); \
+} \
+double b; \
+CONVERT_TO_DOUBLE(pyB, b)
+
+static PyObject* iadd(PyObject *pyA, PyObject *pyB) {
+	PREPARE_DOUBLES_INPLACE
+	PyFloat_AS_DOUBLE(pyA) += b;
+	return Py_NewRef(pyA);
+}
+static PyObject* isub(PyObject *pyA, PyObject *pyB) {
+	PREPARE_DOUBLES_INPLACE
+	PyFloat_AS_DOUBLE(pyA) -= b;
+	return Py_NewRef(pyA);
+}
+static PyObject* imul(PyObject *pyA, PyObject *pyB) {
+	PREPARE_DOUBLES_INPLACE
+	PyFloat_AS_DOUBLE(pyA) *= b;
+	return Py_NewRef(pyA);
+}
+static PyObject* irem(PyObject *pyA, PyObject *pyB) {
+	PREPARE_DOUBLES_INPLACE
+	if (Math::doublesAreEq(b, 0)) {
+		PyErr_SetString(PyExc_ZeroDivisionError, "absolute modulo");
+		return nullptr;
+	}
+
+	double &a = PyFloat_AS_DOUBLE(pyA);
+	a = std::fmod(a, b);
+	if ((b < 0) != (a < 0)) {
+		a += b;
+	}
+	return Py_NewRef(pyA);
+}
+
+static PyObject* ifloordiv(PyObject *pyA, PyObject *pyB) {
+	PREPARE_DOUBLES_INPLACE
+	if (Math::doublesAreEq(b, 0)) {
+		PyErr_SetString(PyExc_ZeroDivisionError, "absolute floor division by zero");
+		return nullptr;
+	}
+	double &a = PyFloat_AS_DOUBLE(pyA);
+	a = std::floor(a / b);
+	return Py_NewRef(pyA);
+}
+static PyObject* itruediv(PyObject *pyA, PyObject *pyB) {
+	PREPARE_DOUBLES_INPLACE
+	if (Math::doublesAreEq(b, 0)) {
+		PyErr_SetString(PyExc_ZeroDivisionError, "absolute true division by zero");
+		return nullptr;
+	}
+	PyFloat_AS_DOUBLE(pyA) /= b;
+	return Py_NewRef(pyA);
+}
+
+
+
+
 static PyNumberMethods asNumber = {
     add,         // nb_add
     sub,         // nb_subtract
@@ -249,20 +310,20 @@ static PyNumberMethods asNumber = {
     toLong,      // nb_int
     nullptr,     // nb_reserved
     toFloat,     // nb_float
-    nullptr,     // nb_inplace_add
-    nullptr,     // nb_inplace_subtract
-    nullptr,     // nb_inplace_multiply
-    nullptr,     // nb_inplace_remainder
+    iadd,        // nb_inplace_add
+    isub,        // nb_inplace_subtract
+    imul,        // nb_inplace_multiply
+    irem,        // nb_inplace_remainder
     nullptr,     // nb_inplace_power
     nullptr,     // nb_inplace_lshift
     nullptr,     // nb_inplace_rshift
     nullptr,     // nb_inplace_and
     nullptr,     // nb_inplace_xor
     nullptr,     // nb_inplace_or
-    getFloorDiv, // nb_floor_divide
-    getTrueDiv,  // nb_true_divide
-    nullptr,     // nb_inplace_floor_divide
-    nullptr,     // nb_inplace_true_divide
+    floordiv,    // nb_floor_divide
+    truediv,     // nb_true_divide
+    ifloordiv,   // nb_inplace_floor_divide
+    itruediv,    // nb_inplace_true_divide
     nullptr,     // nb_index
     nullptr,     // nb_matrix_multiply
     nullptr,     // nb_inplace_matrix_multiply
