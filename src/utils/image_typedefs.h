@@ -42,21 +42,6 @@ private:
 	}
 
 public:
-	void operator=(const SmartPtr &pointer) {
-		if (ptr == pointer.ptr) return;
-
-		lock();
-
-		clear();
-
-		ptr = pointer.ptr;
-		counter = pointer.counter;
-		if (counter) {
-			++*counter;
-		}
-
-		unlock();
-	}
 	void operator=(T *pointer) {
 		if (ptr == pointer) return;
 
@@ -73,14 +58,36 @@ public:
 
 		unlock();
 	}
+	void operator=(const SmartPtr &pointer) {
+		if (ptr == pointer.ptr) return;
+
+		lock();
+
+		clear();
+
+		ptr = pointer.ptr;
+		counter = pointer.counter;
+		if (counter) {
+			++*counter;
+		}
+
+		unlock();
+	}
+	void operator=(SmartPtr&& pointer) {
+		std::swap(ptr, pointer.ptr);
+		std::swap(counter, pointer.counter);
+	}
 
 
 	SmartPtr() {}
+	SmartPtr(T *pointer) {
+		*this = pointer;
+	}
 	SmartPtr(const SmartPtr &pointer) {
 		*this = pointer;
 	}
-	SmartPtr(T *pointer) {
-		*this = pointer;
+	SmartPtr(SmartPtr&& pointer) {
+		*this = std::move(pointer);
 	}
 
 	~SmartPtr() {
