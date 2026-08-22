@@ -121,6 +121,8 @@ label clubs__before_clubs:
 		show_character(us, 'cluster')
 		us.move_to_place('porch_left', True, 1)
 		us.rotate_after_moving = to_right
+	
+	$ un.move_to_end()
 	$ un.set_direction(to_left)
 	
 	"Пока я раздумывал, стоит ли подходить к ней, появилась {color=[hex(us.name_text_color)]}ещё одна{/color}."
