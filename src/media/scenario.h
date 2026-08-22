@@ -6,9 +6,6 @@
 
 class Scenario {
 public:
-	static bool initing;
-
-
 	static void saveStack(const std::string &path);
 
 	static void execute(const std::string &loadPath);

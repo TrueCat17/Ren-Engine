@@ -40,12 +40,12 @@
 #include "utils/utils.h"
 
 
-static long maxFps = 60;
+static int maxFps = 60;
 
-static long fps = 60;
+static int fps = 60;
 static double frameTime = 1.0 / 60;
 
-static int modStartTime = 0;
+static double modStartTime = 0;
 static int modIndex = -1;
 
 static const std::string savesPath = "../var/saves";
@@ -57,7 +57,7 @@ static void makeScreenshotHelper(const std::string &screenshotPath);
 void Game::startMod(const std::string &dir) {
 	std::thread(_startMod, dir, "").detach();
 }
-int Game::getModStartTime() {
+double Game::getModStartTime() {
 	return modStartTime;
 }
 int Game::getCurrentModIndex() {
@@ -113,7 +113,7 @@ const std::vector<std::string> Game::loadInfo(const std::string &loadPath) {
 	GV::gameTime = String::toDouble(tmp);
 
 	{
-		long fps;
+		int fps;
 		bool hideMouse;
 
 		std::getline(is, tmp);
@@ -220,7 +220,7 @@ static void _startMod(const std::string dir, const std::string loadPath) {
 	{
 		std::lock_guard g2(GV::updateMutex);
 
-		modStartTime = int(std::time(nullptr));
+		modStartTime = double(std::time(nullptr));
 
 		Logger::log("Start mod <" + dir + ">");
 		Logger::logEvent("Waiting for the running mod to stop", Utils::getTimer() - waitingStartTime);
@@ -258,10 +258,13 @@ static void _startMod(const std::string dir, const std::string loadPath) {
 	Parser p("mods/" + dir);
 	GV::mainExecNode = p.parse();
 
-	GV::gameTime = 0;
-	GV::beforeFirstFrame = true;
-	Scenario::initing = true;//before inGame = true
-	GV::inGame = true;
+	{
+		std::lock_guard g2(GV::updateMutex);
+		GV::gameTime = 0;
+		GV::inGame = true;
+		GV::initing = true;
+	}
+
 	modIndex += 1;
 	Scenario::execute(loadPath);
 
@@ -361,7 +364,7 @@ int Game::getImageHeight(const std::string &image) {
 	return 0;
 }
 
-Uint32 Game::getImagePixel(const std::string &image, int x, int y) {
+uint32_t Game::getImagePixel(const std::string &image, int x, int y) {
 	SurfacePtr surface = ImageManipulator::getImage(image, false);
 	if (!surface) {
 		Message::outMsg("Game::getImagePixel", "surface == nullptr");
@@ -369,7 +372,7 @@ Uint32 Game::getImagePixel(const std::string &image, int x, int y) {
 	}
 	SDL_Rect draw = { x, y, surface->w, surface->h };
 	SDL_Rect crop = { 0, 0, surface->w, surface->h };
-	Uint32 pixel = Utils::getPixel(surface, draw, crop);
+	uint32_t pixel = Utils::getPixel(surface, draw, crop);
 	return pixel;
 }
 
@@ -388,26 +391,26 @@ PyObject* Game::getArgs(const std::string &str) {
 }
 
 
-void Game::setMaxFps(long fps) {
+void Game::setMaxFps(int fps) {
 	maxFps = Math::inBounds(fps, 1, 60);
 }
 
 double Game::getFrameTime() {
 	return frameTime;
 }
-long Game::getFps() {
+int Game::getFps() {
 	return fps;
 }
-void Game::setFps(long newFps) {
+void Game::setFps(int newFps) {
 	newFps = Math::inBounds(newFps, 1, maxFps);
 
 	fps = newFps;
-	frameTime = 1 / double(newFps);
+	frameTime = 1.0 / newFps;
 }
 
 
 double Game::getLastTick() {
-	if (!GV::beforeFirstFrame && !GV::firstFrame) {
+	if (!GV::initing) {
 		return GV::frameStartTime - GV::prevFrameStartTime;
 	}
 	return 0;

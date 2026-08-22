@@ -29,9 +29,6 @@
 
 
 
-bool Scenario::initing;
-
-
 static std::map<std::string, Node*> declaredLabels;
 
 static void declareLabel(Node *labelNode) {
@@ -417,7 +414,7 @@ void Scenario::execute(const std::string &loadPath) {
 		if (!GV::inGame || !obj) break;
 
 
-		if (!initing && !inWithBlock) {
+		if (!GV::initing && !inWithBlock) {
 			checkToSaveStack();
 
 			static const std::string code = "can_exec_next_command()";
@@ -459,8 +456,8 @@ void Scenario::execute(const std::string &loadPath) {
 						markLabel(start->getFileName(), start->getNumLine(), "start");
 					}
 
-					initing = false;
-					GV::beforeFirstFrame = false;
+					std::lock_guard g(GV::updateMutex);
+					GV::initing = false;
 				}
 			}else
 

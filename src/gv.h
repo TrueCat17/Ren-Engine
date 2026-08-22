@@ -3,19 +3,18 @@
 
 #include <mutex>
 
-
 class Node;
 
 class GV {
 public:
 	static int numUpdate;
-	static bool inGame;
-	static bool exit;
-
-	static bool beforeFirstFrame;
-	static bool firstFrame;
 
 	static std::mutex updateMutex;
+
+	static bool inGame;
+	static bool initing;
+	static bool exit;
+
 	static double prevFrameStartTime;
 	static double frameStartTime;
 	static double gameTime;

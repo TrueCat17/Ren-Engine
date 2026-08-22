@@ -4,15 +4,13 @@
 #include <vector>
 #include <string>
 
-#include <SDL3/SDL_stdinc.h> //Uint32
-
 #include <Python.h>
 
 
 class Game {
 public:
 	static void startMod(const std::string &dir);
-	static int getModStartTime();
+	static double getModStartTime();
 	static int getCurrentModIndex();
 
 	static void load(const std::string &table, const std::string &name);
@@ -30,17 +28,17 @@ public:
 	static int getImageWidth(const std::string &image);
 	static int getImageHeight(const std::string &image);
 
-	static Uint32 getImagePixel(const std::string &image, int x, int y);
+	static uint32_t getImagePixel(const std::string &image, int x, int y);
 
 	static std::string getFromConfig(const std::string &param);
 
 	static PyObject* getArgs(const std::string &str);
 
-	static void setMaxFps(long fps);
+	static void setMaxFps(int fps);
 
 	static double getFrameTime();
-	static long getFps();
-	static void setFps(long fps);
+	static int getFps();
+	static void setFps(int fps);
 
 	static double getLastTick();
 	static double getGameTime();

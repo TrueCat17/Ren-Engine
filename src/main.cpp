@@ -16,7 +16,6 @@
 #include "media/image_manipulator.h"
 #include "media/py_utils.h"
 #include "media/py_utils/py_code_disk_cache.h"
-#include "media/scenario.h"
 
 #include "parser/mods.h"
 #include "parser/syntax_checker.h"
@@ -117,8 +116,8 @@ static bool init() {
 	Mouse::init();
 
 
-	const int fps = String::toInt(Config::get("max_fps"));
-	Game::setMaxFps(fps);
+	const int maxFps = String::toInt(Config::get("max_fps"));
+	Game::setMaxFps(maxFps);
 
 
 	Stage::updateDisplayMode();
@@ -226,13 +225,18 @@ static void loop() {
 	std::vector<SDL_Event> tmpEvents;
 
 	while (true) {
-		while ((!GV::inGame || Scenario::initing) && !GV::exit) {
-			Utils::sleep(0.001, false);
-		}
-		if (GV::exit) return;
-
-
 		GV::updateMutex.lock();
+
+		while ((!GV::inGame || GV::initing) && !GV::exit) {
+			GV::updateMutex.unlock();
+			Utils::sleep(0.001, false);
+			GV::updateMutex.lock();
+		}
+		if (GV::exit) {
+			GV::updateMutex.unlock();
+			return;
+		}
+
 
 		PyUtils::callInPythonThread([&]() { //for instant (for python) changes of 3 vars
 			GV::prevFrameStartTime = GV::frameStartTime;
@@ -364,10 +368,6 @@ static void loop() {
 		const double timeToSleep = Game::getFrameTime() - spent;
 //		printf("%.2f %.2f\n", spent * 1000, timeToSleep * 1000);
 		Utils::sleep(timeToSleep);
-
-		if (!GV::beforeFirstFrame) {
-			GV::firstFrame = false;
-		}
 	}
 }
 
