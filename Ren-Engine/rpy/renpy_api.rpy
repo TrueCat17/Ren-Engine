@@ -253,6 +253,13 @@ init -9990 python:
 		tag = sprites.get_tag_of_image_name(image_name)
 		sprites.hide_impl(tag, effect)
 	
+	def renpy__get_all_labels():
+		cache = renpy__get_all_labels.__dict__
+		res = cache.get('res')
+		if res is None:
+			res = cache['res'] = _get_all_labels()
+		return res.copy()
+	
 	build_object('renpy')
 	
 	
@@ -272,7 +279,6 @@ init -9990 python:
 	renpy.hide_screen = hide_screen
 	renpy.has_screen = has_screen
 	
-	renpy.get_all_labels = _get_all_labels
 	renpy.known_languages = _known_languages
 	
 	renpy.can_load = slots.can_load
