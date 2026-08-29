@@ -71,7 +71,7 @@ init -1 python:
 			self.need_to_forward = False
 			self.need_to_fire = False
 			
-			self.color = tetris.colors[len(tetris.tanks_players)]
+			self.color = list(tetris.colors.keys())[len(tetris.tanks_players)]
 			
 			self.x, self.y, self.team = x, y, team
 			self.to_x, self.to_y = x, y

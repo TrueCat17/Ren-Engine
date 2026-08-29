@@ -15,8 +15,8 @@ init -1 python:
 		
 		lines = tetris.get_level('snake', level)
 		
-		white = tetris.images['#FFF']
-		black = tetris.images['#000']
+		white = tetris.images['white']
+		black = tetris.images['black']
 		
 		tetris.snake_walls = [[False] * tetris.width for i in range(tetris.height)]
 		tetris.pixels      = [[white] * tetris.width for i in range(tetris.height)]
@@ -70,10 +70,10 @@ init -1 python:
 	def tetris__snake_render():
 		pixels = tetris.pixels
 		
-		wall  = tetris.images['#000']
-		empty = tetris.images['#FFF']
-		body  = tetris.images['#F80']
-		food  = tetris.images['#0A0']
+		wall  = tetris.images['black']
+		empty = tetris.images['white']
+		body  = tetris.images['orange']
+		food  = tetris.images['green']
 		
 		for y in range(tetris.height):
 			line = tetris.snake_walls[y]

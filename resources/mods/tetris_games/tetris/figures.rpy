@@ -160,14 +160,14 @@ init 1 python:
 	
 	
 	tetris.tetris_figure_colors = {
-		'square': '#DD0',
-		'line':   '#0FF',
-		'L': '#F80',
-		'Г': '#00F',
-		'S': '#0A0',
-		'Z': '#F00',
-		'T': '#808',
+		'square': 'yellow',
+		'line':   'cyan',
+		'L': 'orange',
+		'Г': 'blue',
+		'S': 'green',
+		'Z': 'red',
+		'T': 'purple',
 	}
 	
-	tetris.tetris_bg_cell   = tetris.images['#FFF']
-	tetris.tetris_hint_cell = tetris.images['#888']
+	tetris.tetris_bg_cell   = tetris.images['white']
+	tetris.tetris_hint_cell = tetris.images['gray']

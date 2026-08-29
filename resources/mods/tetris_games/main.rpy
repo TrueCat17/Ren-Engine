@@ -27,6 +27,13 @@ init -100 python:
 				out_msg('tetris.get_level (%s)' % game, 'Level %s, line %s: expected %s symbols, got %s', level, i + 1, tetris.width, len(line))
 		
 		return lines
+	
+	def tetris__make_cell_image(cell_size, color, border_size, border_color):
+		return im.composite(
+			(cell_size, cell_size),
+			(0, 0),                     im.rect(border_color, cell_size, cell_size),
+			(border_size, border_size), im.rect(color, cell_size - border_size * 2, cell_size - border_size * 2),
+		)
 
 
 init python:
@@ -42,22 +49,24 @@ init python:
 	tetris.width = 1
 	tetris.height = 1
 	
-	tetris.colors = ('green', 'orange', 'purple', 'yellow', 'blue', 'cyan', 'red')
-	tetris.hex_colors = {
-		'green' : '#0A0',
-		'orange': '#F80',
-		'purple': '#808',
-		'yellow': '#DD0',
-		'blue'  : '#00F',
-		'cyan'  : '#0FF',
-		'red'   : '#F00',
-		'gray'  : '#888',
-		'black' : '#000',
-		'white' : '#FFF',
+	tetris.colors = {
+		'green' : '#40E060',
+		'orange': '#F71',
+		'purple': '#A5D',
+		'yellow': '#FB2',
+		'blue'  : '#37B3F9',
+		'cyan'  : '#20E0F0',
+		'red'   : '#F04050',
+		'gray'  : '#AAA',
+		'black' : '#111',
+		'white' : '#FFEFD5',
 	}
-	tetris.images = { color: im.rect(color) for color in tetris.hex_colors.values() }
 	
-	tetris.pixels = [[tetris.images['#888']]]
+	tetris.images = {}
+	for name, value in tetris.colors.items():
+		tetris.images[name] = tetris.make_cell_image(32, value, 1, '#444')
+	
+	tetris.pixels = [[tetris.images['gray']]]
 	
 	tetris.sides = (
 		(-1, 0),
@@ -94,7 +103,6 @@ label tetris_main:
 	$ set_fps(60)
 	
 	scene bg room_screen
-	
 	'Choose a game! Management: WASD + Space/Enter.'
 	menu:
 		'Life':

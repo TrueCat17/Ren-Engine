@@ -20,7 +20,7 @@ init -1 python:
 		
 		lines = tetris.get_level('tanks', level)
 		
-		white = tetris.images['#FFF']
+		white = tetris.images['white']
 		
 		tetris.tanks_walls = [[0]     * tetris.width for i in range(tetris.height)]
 		tetris.pixels      = [[white] * tetris.width for i in range(tetris.height)]
@@ -134,8 +134,8 @@ init -1 python:
 	def tetris__tanks_render():
 		pixels = tetris.pixels
 		
-		white = tetris.images['#FFF']
-		black = tetris.images['#000']
+		white = tetris.images['white']
+		black = tetris.images['black']
 		
 		for y in range(tetris.height):
 			pixels[y] = [(black if v else white) for v in tetris.tanks_walls[y]]
@@ -156,13 +156,11 @@ init -1 python:
 					
 					if place > 0:
 						color_name = tank.color if place <= hp else 'gray'
-						color_hex = tetris.hex_colors[color_name]
-						pixels[y][x] = tetris.images[color_hex]
+						pixels[y][x] = tetris.images[color_name]
 		
 		for bullet in tetris.tanks_bullets:
 			color_name = 'red' if bullet.hp != 1 else 'yellow'
-			color_hex = tetris.hex_colors[color_name]
-			pixels[bullet.y][bullet.x] = tetris.images[color_hex]
+			pixels[bullet.y][bullet.x] = tetris.images[color_name]
 	
 	
 	
@@ -308,13 +306,13 @@ screen tetris_tanks_screen:
 	
 	if tetris.tanks_campaign:
 		vbox:
-			xpos 0.05
+			xpos 0.025
 			yalign 0.5
 			spacing 25
 			
 			text ('%s: %s ♥' % (_('You'), tetris.tanks_player.hp)):
 				style 'tetris_tanks_text'
-				color tetris.hex_colors[tetris.tanks_player.color]
+				color tetris.colors[tetris.tanks_player.color]
 			
 			$ screen_tmp = SimpleObject()
 			
@@ -330,7 +328,7 @@ screen tetris_tanks_screen:
 					for tank in screen_tmp.friends:
 						text ('%s ♥' % tank.hp):
 							style 'tetris_tanks_text'
-							color tetris.hex_colors[tank.color]
+							color tetris.colors[tank.color]
 			
 			$ screen_tmp.enemies = tetris.tanks_get_enemies()
 			if screen_tmp.enemies:
@@ -344,7 +342,7 @@ screen tetris_tanks_screen:
 					for tank in screen_tmp.enemies:
 						text ('%s ♥' % tank.hp):
 							style 'tetris_tanks_text'
-							color tetris.hex_colors[tank.color]
+							color tetris.colors[tank.color]
 
 
 label tetris_tanks_start:

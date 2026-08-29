@@ -31,7 +31,6 @@ init -1 python:
 							nears.append((tx, ty))
 				tetris.life_nears[(x, y)] = nears
 		
-		tetris.pixels = [['#FFF'] * tetris.width for i in range(tetris.height)]
 		tetris.life_render()
 	
 	
@@ -61,21 +60,21 @@ init -1 python:
 		tetris.life_alives = next_alifes
 	
 	def tetris__life_render():
-		white = tetris.images['#FFF']
-		black = tetris.images['#000']
+		white = tetris.life_white_without_borders
+		black = tetris.life_black_without_borders
 		
 		pixels = tetris.pixels = [[white] * tetris.width for i in range(tetris.height)]
 		
 		for x, y in tetris.life_alives:
 			pixels[y][x] = black
 		
-		x = tetris.life_rect_x
-		y = tetris.life_rect_y
-		pixels[y][x] = tetris['life_black_rect' if pixels[y][x] == black else 'life_white_rect']
+		x = tetris.life_selection_x
+		y = tetris.life_selection_y
+		pixels[y][x] = tetris['life_black_selection' if pixels[y][x] == black else 'life_white_selection']
 	
 	
 	def tetris__life_change_cell_state():
-		selected_pos = (tetris.life_rect_x, tetris.life_rect_y)
+		selected_pos = (tetris.life_selection_x, tetris.life_selection_y)
 		if selected_pos in tetris.life_alives:
 			tetris.life_alives.remove(selected_pos)
 		else:
@@ -128,28 +127,25 @@ init -1 python:
 	
 	
 	def tetris__life_on_up_press():
-		tetris.life_rect_y = (tetris.life_rect_y - 1) % tetris.height
+		tetris.life_selection_y = (tetris.life_selection_y - 1) % tetris.height
 	def tetris__life_on_down_press():
-		tetris.life_rect_y = (tetris.life_rect_y + 1) % tetris.height
+		tetris.life_selection_y = (tetris.life_selection_y + 1) % tetris.height
 	def tetris__life_on_left_press():
-		tetris.life_rect_x = (tetris.life_rect_x - 1) % tetris.width
+		tetris.life_selection_x = (tetris.life_selection_x - 1) % tetris.width
 	def tetris__life_on_right_press():
-		tetris.life_rect_x = (tetris.life_rect_x + 1) % tetris.width
+		tetris.life_selection_x = (tetris.life_selection_x + 1) % tetris.width
 
 init 1 python:
-	tetris.life_rect_x = 0
-	tetris.life_rect_y = 0
+	tetris.life_selection_x = 0
+	tetris.life_selection_y = 0
 	
 	tetris.life_fps = 20
 	
-	tetris.life_black_rect = im.composite((32, 32),
-		(0, 0), im.rect('#F00', 32, 32),
-		(3, 3), im.rect('#000', 32 - 3 * 2, 32 - 3 * 2),
-	)
-	tetris.life_white_rect = im.composite((32, 32),
-		(0, 0), im.rect('#F00', 32, 32),
-		(3, 3), im.rect('#FFF', 32 - 3 * 2, 32 - 3 * 2),
-	)
+	tetris.life_black_without_borders = im.rect(tetris.colors['black'])
+	tetris.life_white_without_borders = im.rect(tetris.colors['white'])
+	
+	tetris.life_black_selection = tetris.make_cell_image(32, tetris.colors['black'], 6, '#F00')
+	tetris.life_white_selection = tetris.make_cell_image(32, tetris.colors['white'], 6, '#F00')
 
 
 screen tetris_life_screen:
