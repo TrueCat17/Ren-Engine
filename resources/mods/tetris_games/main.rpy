@@ -103,6 +103,7 @@ label tetris_main:
 	$ set_fps(60)
 	
 	scene bg room_screen
+	
 	'Choose a game! Management: WASD + Space/Enter.'
 	menu:
 		'Life':
