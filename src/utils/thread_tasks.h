@@ -1,11 +1,11 @@
 #ifndef THREAD_TASKS_H
 #define THREAD_TASKS_H
 
-#include <deque>
 #include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <vector>
 
 
 class ThreadTasks {
@@ -19,10 +19,10 @@ public:
 
 	size_t nextTaskId = 0;
 
-	std::deque<std::pair<const std::function<void()>*, size_t>> queue;
+	std::vector<std::pair<const std::function<void()>*, size_t>> queue;
 	std::mutex queueMutex;
 
-	std::deque<size_t> calcedIds;
+	std::vector<size_t> calcedIds;
 	std::mutex calcedMutex;
 
 	void initForThread();

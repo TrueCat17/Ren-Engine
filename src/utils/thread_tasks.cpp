@@ -28,9 +28,11 @@ void ThreadTasks::addAndWait(const std::function<void()> &task) {
 	while (true) {
 		{
 			std::lock_guard g(calcedMutex);
-			if (!calcedIds.empty() && calcedIds.front() == taskId) {
-				calcedIds.pop_front();
-				return;
+			for (size_t i = 0; i < calcedIds.size(); ++i) {
+				if (calcedIds[i] == taskId) {
+					calcedIds.erase(calcedIds.begin() + long(i));
+					return;
+				}
 			}
 		}
 
@@ -58,7 +60,7 @@ bool ThreadTasks::execOne() {
 
 		task   = queue[0].first;
 		taskId = queue[0].second;
-		queue.pop_front();
+		queue.erase(queue.begin());
 	}
 	(*task)();
 

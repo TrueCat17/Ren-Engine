@@ -14,7 +14,7 @@
 #include "utils/thread_tasks.h"
 
 
-static std::mutex msgGuard;
+static std::recursive_mutex msgGuard;
 static std::set<std::string> msgErrors;
 static bool msgCloseAll = false;
 
@@ -60,6 +60,8 @@ void Message::outMsg(std::string msg, const std::string &err) {
 	if (msgCloseAll) return;
 
 	ThreadTasks::main.addAndWait([&]() {
+		if (msgCloseAll) return;
+
 		SDL_MessageBoxData data;
 		data.flags = err.empty() ? SDL_MESSAGEBOX_WARNING : SDL_MESSAGEBOX_ERROR;
 		data.window = Stage::window;
