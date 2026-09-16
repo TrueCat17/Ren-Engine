@@ -533,8 +533,7 @@ init -1000 python:
 			
 			self.queue = []
 			
-			self.interruptable = True
-			self.default_interruptable = True
+			self.interruptable = self.default_interruptable = True
 		
 		def copy(self, character):
 			res = RpgActions()
@@ -588,10 +587,7 @@ init -1000 python:
 			if self.blocked(action): return
 			
 			self.interruptable = self.default_interruptable
-			if type(action) is str:
-				self.cur_action = self.funcs[action]
-			else:
-				self.cur_action = action
+			self.cur_action = self.funcs[action] if type(action) is str else action
 			
 			self.character.set_auto(True)
 			
@@ -625,7 +621,6 @@ init -1000 python:
 				if new_state == IGNORE_STATE and not directly:
 					return
 				self.cur_action = None
-			self.interruptable = True
 		
 		def stopped(self):
 			return self.cur_action is None
