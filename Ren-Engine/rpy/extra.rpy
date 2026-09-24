@@ -3,6 +3,20 @@ init -1000001 python:
 	numbers = '0123456789'
 	
 	
+	number_types = (int, float, absolute)
+	def is_number(called_from, value, param_name):
+		if type(value) not in number_types:
+			out_msg(called_from, 'Param <%s> is not number', param_name)
+			return False
+		return True
+	
+	def is_int(called_from, value, param_name):
+		if type(value) is not int:
+			out_msg(called_from, 'Param <%s> is not int', param_name)
+			return False
+		return True
+	
+	
 	def build_object(name):
 		"""
 		name__prop -> name.prop

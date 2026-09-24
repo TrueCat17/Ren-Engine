@@ -1,47 +1,53 @@
 init -100000 python:
-	
 	_timeout_id = 0
-	_timeout_funcs = []
+	_timeout_tasks = []
+	
 	
 	def set_timeout(function, time_sec):
 		if not is_picklable_func('set_timeout', function, 'function'):
 			return 0
+		if not is_number('set_timeout', time_sec, 'time_sec'):
+			return 0
 		
 		global _timeout_id
 		_timeout_id += 1
-		_timeout_funcs.append([_timeout_id, function, time_sec])
+		
+		filename, numline = get_file_and_line(1)
+		
+		task = [_timeout_id, function, time_sec, filename, numline]
+		_timeout_tasks.append(task)
+		
 		return _timeout_id
 	
+	
 	def clear_timeout(id):
-		if id <= 0:
-			out_msg('clear_timeout', 'Invalid id <%s>', id)
-			return
-		
-		i = 0
-		while i < len(_timeout_funcs):
-			if _timeout_funcs[i][0] == id:
-				_timeout_funcs[i][1] = None
+		# just mark, dont remove directly, because clear-func can be called from exec-func
+		for task in _timeout_tasks:
+			if task[0] == id:
+				task[1] = None
 				break
-			i += 1
+	
 	
 	def exec_timeouts():
+		if not _timeout_tasks:
+			return
+		
 		dtime = get_last_tick()
-		for timeout_obj in _timeout_funcs:
-			id, function, before_exec_time = timeout_obj
-			timeout_obj[2] = before_exec_time = round(before_exec_time - dtime, 5)
+		for task in _timeout_tasks:
+			id, function, before_exec_time, filename, numline = task
+			task[2] = before_exec_time = round(before_exec_time - dtime, 5)
 			if function and before_exec_time <= 0: # not cleared and need exec
-				timeout_obj[1] = None # clear
+				task[1] = None # clear
 				try:
 					function()
 				except:
 					func_name = getattr(function, '__name__', str(function))
-					out_msg('exec_timeouts', 'Id = %s, Function = %s', id, func_name)
+					out_msg('exec_timeouts',
+						'Id = %s, Function = %s (set_timeout is called from %s:%s)',
+						id, func_name, filename, numline,
+					)
 		
-		i = 0
-		while i < len(_timeout_funcs):
-			if _timeout_funcs[i][1]: # not cleared
-				i += 1
-			else:
-				_timeout_funcs.pop(i)
+		_timeout_tasks[:] = [task for task in _timeout_tasks if task[1]]
+	
 	
 	signals.add('enter_frame', exec_timeouts)

@@ -1,6 +1,6 @@
 init -10000 python:
-	interruptable_cycles_tasks = []
 	interruptable_cycles_task_index = 0
+	interruptable_cycles_tasks = []
 	
 	
 	def interruptable_for(array, func, on_end = None):
