@@ -216,7 +216,7 @@ init -1000 python:
 			return 'end'
 	
 	
-	def rpg_action_home(character, state):
+	def rpg_action_home(character, state, run = False):
 		actions = character.get_actions()
 		home = actions.home
 		if not home:
@@ -249,7 +249,7 @@ init -1000 python:
 					actions.home_end_time = get_game_time() + 2
 					actions.old_rotation = character.get_direction()
 					return 'home_walking'
-				return rpg_action_other_place(character, 'start', home)
+				return rpg_action_other_place(character, 'start', home, run = run)
 			
 			
 			if character.location is location and (character.x, character.y) == get_place_center(place):
@@ -258,7 +258,7 @@ init -1000 python:
 				hide_character(character)
 				return 'home_walking'
 			
-			path_found = character.move_to_place([location_name, place])
+			path_found = character.move_to_place([location_name, place], run = run)
 			if path_found:
 				return 'moving'
 			return 'end'
