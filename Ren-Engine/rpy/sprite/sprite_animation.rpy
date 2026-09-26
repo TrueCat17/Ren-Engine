@@ -424,7 +424,7 @@ init -9000 python:
 		
 		out_msg(
 			'get_default_transform_actions',
-			'Use <transform> statement (not list or tuple in python), examples - <Ren-Engine/rpy/vn/sprite_animation.rpy>'
+			'Use <transform> statement (not list or tuple in python), examples - <Ren-Engine/rpy/sprite/sprite_animation.rpy>'
 		)
 		return ()
 
