@@ -12,6 +12,9 @@ init -100000 python:
 		global _interval_id
 		_interval_id += 1
 		
+		if not _interval_tasks:
+			signals.add('enter_frame', exec_intervals)
+		
 		filename, numline = get_file_and_line(1)
 		
 		task = [_interval_id, function, time_sec, time_sec, filename, numline]
@@ -29,9 +32,6 @@ init -100000 python:
 	
 	
 	def exec_intervals():
-		if not _interval_tasks:
-			return
-		
 		dtime = get_last_tick()
 		for task in _interval_tasks:
 			id, function, interval_time, before_exec_time, filename, numline = task
@@ -49,6 +49,5 @@ init -100000 python:
 			task[3] = before_exec_time
 		
 		_interval_tasks[:] = [task for task in _interval_tasks if task[1]]
-	
-	
-	signals.add('enter_frame', exec_intervals)
+		if not _interval_tasks:
+			signals.remove('enter_frame', exec_intervals)

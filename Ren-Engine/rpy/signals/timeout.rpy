@@ -9,6 +9,9 @@ init -100000 python:
 		if not is_number('set_timeout', time_sec, 'time_sec'):
 			return 0
 		
+		if not _timeout_tasks:
+			signals.add('enter_frame', exec_timeouts)
+		
 		global _timeout_id
 		_timeout_id += 1
 		
@@ -29,9 +32,6 @@ init -100000 python:
 	
 	
 	def exec_timeouts():
-		if not _timeout_tasks:
-			return
-		
 		dtime = get_last_tick()
 		for task in _timeout_tasks:
 			id, function, before_exec_time, filename, numline = task
@@ -48,6 +48,5 @@ init -100000 python:
 					)
 		
 		_timeout_tasks[:] = [task for task in _timeout_tasks if task[1]]
-	
-	
-	signals.add('enter_frame', exec_timeouts)
+		if not _timeout_tasks:
+			signals.remove('enter_frame', exec_timeouts)
