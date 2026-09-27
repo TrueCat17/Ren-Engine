@@ -34,9 +34,16 @@ init -9990 python:
 	def renpy__music__get_volume(channel, depth = 0):
 		file_name, num_line = get_file_and_line(depth + 1)
 		return _get_volume_on_channel(channel, file_name, num_line)
-	def renpy__music__set_volume(vol, channel, depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		_set_volume_on_channel(in_bounds(vol, 0, 1), channel, file_name, num_line)
+	def renpy__music__set_volume(volume, delay = 0, channel = 'music', depth = 0):
+		volume = in_bounds(volume, 0, 1)
+		if delay <= 0:
+			file_name, num_line = get_file_and_line(depth + 1)
+			_set_volume_on_channel(volume, channel, file_name, num_line)
+		else:
+			old_volume = renpy.music.get_volume(channel, depth = 1)
+			if old_volume is not None:
+				func = Function(renpy.music.set_volume, channel = channel)
+				set_interpolation(func, old_volume, volume, delay)
 	
 	def renpy__music__get_pos(channel = 'music', depth = 0):
 		file_name, num_line = get_file_and_line(depth + 1)

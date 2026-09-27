@@ -56,7 +56,7 @@ init python:
 			renpy.music.set_pos(pos, channel = 'location_ambience')
 		
 		location_ambience_path = path
-		renpy.music.set_volume(cur_location.ambience_volume, 'location_ambience')
+		renpy.music.set_volume(cur_location.ambience_volume, channel = 'location_ambience')
 	
 	def end_location_ambience(next_location):
 		path = get_location_ambience(next_location)
