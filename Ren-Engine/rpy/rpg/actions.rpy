@@ -117,7 +117,7 @@ init -1000 python:
 			return 'end'
 	
 	
-	def rpg_action_other_place(character, state, location_names = None, run = False):
+	def rpg_action_other_place(character, state, location_names = None, run = False, force = False):
 		actions = character.get_actions()
 		
 		if state == 'start':
@@ -126,7 +126,7 @@ init -1000 python:
 				location_names = [location_names]
 			
 			st = time.time()
-			for i in range(3):
+			for i in range(100 if force else 3):
 				res = rpg_random_free_point(location_names)
 				if not res: continue
 				
@@ -135,7 +135,7 @@ init -1000 python:
 				if path_found:
 					return 'moving'
 				
-				if time.time() - st > 0.015: break
+				if not force and time.time() - st > 0.015: break
 			
 			return 'end'
 		
@@ -216,7 +216,7 @@ init -1000 python:
 			return 'end'
 	
 	
-	def rpg_action_home(character, state, run = False):
+	def rpg_action_home(character, state, run = False, force = False):
 		actions = character.get_actions()
 		home = actions.home
 		if not home:
@@ -249,7 +249,7 @@ init -1000 python:
 					actions.home_end_time = get_game_time() + 2
 					actions.old_rotation = character.get_direction()
 					return 'home_walking'
-				return rpg_action_other_place(character, 'start', home, run = run)
+				return rpg_action_other_place(character, 'start', home, run = run, force = force)
 			
 			
 			if character.location is location and (character.x, character.y) == get_place_center(place):
