@@ -18,8 +18,12 @@ init -9990 python:
 		filename, numline = get_file_and_line(1)
 		_register_channel(name, mixer, loop, filename, numline)
 	
-	def renpy__music__get_audio_len(path):
-		return _get_audio_len(path)
+	def renpy__music__get_audio_len(path, use_cache = True):
+		cache = renpy__music__get_audio_len.__dict__
+		res = cache.get(path) if use_cache else None
+		if res is None:
+			res = cache[path] = _get_audio_len(path)
+		return res
 	
 	def renpy__music__get_mixer_volume(mixer):
 		return config.get(mixer + '_volume', None)
