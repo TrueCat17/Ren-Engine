@@ -15,8 +15,8 @@ init -9990 python:
 	
 	
 	def renpy__music__register_channel(name, mixer, loop):
-		file_name, num_line = get_file_and_line(1)
-		_register_channel(name, mixer, loop, file_name, num_line)
+		filename, numline = get_file_and_line(1)
+		_register_channel(name, mixer, loop, filename, numline)
 	
 	def renpy__music__get_audio_len(path):
 		return _get_audio_len(path)
@@ -26,19 +26,19 @@ init -9990 python:
 	def renpy__music__set_mixer_volume(vol, mixer, depth = 0):
 		vol = in_bounds(round(vol, 2), 0.0, 1.0)
 		config[mixer + '_volume'] = vol
-		file_name, num_line = get_file_and_line(depth + 1)
-		_set_mixer_volume(vol, mixer, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		_set_mixer_volume(vol, mixer, filename, numline)
 	def renpy__music__add_mixer_volume(d, mixer):
 		renpy.music.set_mixer_volume(config[mixer + '_volume'] + d, mixer, depth = 1)
 	
 	def renpy__music__get_volume(channel, depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		return _get_volume_on_channel(channel, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		return _get_volume_on_channel(channel, filename, numline)
 	def renpy__music__set_volume(volume, delay = 0, channel = 'music', depth = 0):
 		volume = in_bounds(volume, 0, 1)
 		if delay <= 0:
-			file_name, num_line = get_file_and_line(depth + 1)
-			_set_volume_on_channel(volume, channel, file_name, num_line)
+			filename, numline = get_file_and_line(depth + 1)
+			_set_volume_on_channel(volume, channel, filename, numline)
 		else:
 			old_volume = renpy.music.get_volume(channel, depth = 1)
 			if old_volume is not None:
@@ -46,18 +46,18 @@ init -9990 python:
 				set_interpolation(func, old_volume, volume, delay)
 	
 	def renpy__music__get_pos(channel = 'music', depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		return _get_pos_on_channel(channel, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		return _get_pos_on_channel(channel, filename, numline)
 	def renpy__music__set_pos(sec, channel = 'music', depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		return _set_pos_on_channel(sec, channel, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		return _set_pos_on_channel(sec, channel, filename, numline)
 	
 	def renpy__music__get_pause(channel = 'music', depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		return _get_pause_on_channel(channel, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		return _get_pause_on_channel(channel, filename, numline)
 	def renpy__music__set_pause(value, channel = 'music', depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		return _set_pause_on_channel(value, channel, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		return _set_pause_on_channel(value, channel, filename, numline)
 	
 	def renpy__music__play(paths, channel = 'music', depth = 0, **kwargs):
 		if type(paths) is str:
@@ -66,13 +66,13 @@ init -9990 python:
 		fadein  = kwargs.get('fadein', 0)
 		fadeout = kwargs.get('fadeout', config.fadeout_audio)
 		relative_volume = kwargs.get('relative_volume', 1.0)
-		file_name, num_line = get_file_and_line(depth + 1)
+		filename, numline = get_file_and_line(depth + 1)
 		
 		for i, path in enumerate(paths):
 			if i == 0:
-				_play(channel, path, fadeout, fadein, relative_volume, file_name, num_line)
+				_play(channel, path, fadeout, fadein, relative_volume, filename, numline)
 			else:
-				_queue(channel, path, 0, relative_volume, file_name, num_line)
+				_queue(channel, path, 0, relative_volume, filename, numline)
 	
 	def renpy__music__queue(paths, channel = 'music', depth = 0, **kwargs):
 		if type(paths) is str:
@@ -80,19 +80,19 @@ init -9990 python:
 		
 		fadein  = kwargs.get('fadein', 0)
 		relative_volume = kwargs.get('relative_volume', 1.0)
-		file_name, num_line = get_file_and_line(depth + 1)
+		filename, numline = get_file_and_line(depth + 1)
 		
 		for i, path in enumerate(paths):
-			_queue(channel, path, fadein if i == 0 else 0, relative_volume, file_name, num_line)
+			_queue(channel, path, fadein if i == 0 else 0, relative_volume, filename, numline)
 	
 	def renpy__music__stop(channel = 'music', depth = 0, **kwargs):
 		fadeout = kwargs.get('fadeout', config.fadeout_audio)
-		file_name, num_line = get_file_and_line(depth + 1)
-		_stop(channel, fadeout, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		_stop(channel, fadeout, filename, numline)
 	
 	def renpy__music__get_playing(channel = 'music', depth = 0):
-		file_name, num_line = get_file_and_line(depth + 1)
-		return _get_playing(channel, file_name, num_line)
+		filename, numline = get_file_and_line(depth + 1)
+		return _get_playing(channel, filename, numline)
 	def renpy__music__is_playing(channel = 'music', depth = 0):
 		path = renpy.music.get_playing(channel, depth + 1)
 		return bool(path)
@@ -191,14 +191,14 @@ init -9990 python:
 		return (type(label) is str) and _has_label(label)
 	def renpy__jump(label):
 		if renpy.has_label(label):
-			file_name, num_line = get_file_and_line(1)
-			_jump_next(label, False, file_name, num_line)
+			filename, numline = get_file_and_line(1)
+			_jump_next(label, False, filename, numline)
 		else:
 			out_msg('renpy.jump', 'Label <%s> not found', label)
 	def renpy__call(label):
 		if renpy.has_label(label):
-			file_name, num_line = get_file_and_line(1)
-			_jump_next(label, True, file_name, num_line)
+			filename, numline = get_file_and_line(1)
+			_jump_next(label, True, filename, numline)
 		else:
 			out_msg('renpy.call', 'Label <%s> not found', label)
 	
@@ -215,8 +215,8 @@ init -9990 python:
 	def renpy__seen_image(image):
 		return image in persistent._seen_images
 	
-	def renpy__seen_audio(file_name):
-		return file_name in persistent._seen_audio
+	def renpy__seen_audio(filename):
+		return filename in persistent._seen_audio
 	
 	def renpy__seen_label(label):
 		return label in persistent._seen_labels[get_current_mod()]

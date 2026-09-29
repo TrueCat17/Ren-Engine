@@ -190,15 +190,15 @@ init -1002 python:
 		if key in cache:
 			return cache[key]
 		
-		file_name = name
+		filename = name
 		if name_suffix:
-			file_name += '_' + name_suffix
+			filename += '_' + name_suffix
 		
-		path = get_file_with_ext(directory + file_name + '_' + mode)
+		path = get_file_with_ext(directory + filename + '_' + mode)
 		path_is_exists = path and os.path.exists(path)
 		
 		if not path_is_exists:
-			path = get_file_with_ext(directory + file_name)
+			path = get_file_with_ext(directory + filename)
 			path_is_exists = path and os.path.exists(path)
 			
 			if path_is_exists:

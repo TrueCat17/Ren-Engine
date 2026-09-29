@@ -6,8 +6,8 @@ init -10000 python:
 			if func is None: continue
 			
 			if type(func) is str:
-				file_name, num_line = get_file_and_line(1)
-				compiled = compile('\n' * (num_line - 1) + func, file_name, 'exec')
+				filename, numline = get_file_and_line(1)
+				compiled = compile('\n' * (numline - 1) + func, filename, 'exec')
 				eval(compiled, globals(), globals())
 			else:
 				func()
@@ -24,12 +24,12 @@ init -10000 python:
 	
 	
 	class EvalObject(Object):
-		def __init__(self, code, mode, depth = 0, file_name = None, num_line = None):
-			if file_name is None:
-				file_name = get_filename(depth + 1)
-			if num_line is None:
-				num_line = get_numline(depth + 1)
-			Object.__init__(self, code = code, mode = mode, file_name = file_name, num_line = num_line)
+		def __init__(self, code, mode, depth = 0, filename = None, numline = None):
+			if filename is None:
+				filename = get_filename(depth + 1)
+			if numline is None:
+				numline = get_numline(depth + 1)
+			Object.__init__(self, code = code, mode = mode, filename = filename, numline = numline)
 			self.compile(depth + 1)
 		def __call__(self):
 			res = None
@@ -44,26 +44,26 @@ init -10000 python:
 		
 		def compile(self, depth):
 			try:
-				self.compiled = compile('\n' * (self.num_line - 1) + self.code, self.file_name, self.mode)
+				self.compiled = compile('\n' * (self.numline - 1) + self.code, self.filename, self.mode)
 			except Exception as e:
 				msg = get_exception_stack_str(e, depth + 1)
 				out_msg('EvalObject.compile', msg, show_stack = False)
 		
 		# for pickle
 		def __getstate__(self):
-			return (self.file_name, self.num_line, self.code, self.mode)
+			return (self.filename, self.numline, self.code, self.mode)
 		def __setstate__(self, params):
 			Object.__init__(self)
-			self.file_name, self.num_line, self.code, self.mode = params
+			self.filename, self.numline, self.code, self.mode = params
 			self.compile(-1)
 	
 	# for get value: Eval("2 + 3")() -> 5
-	def Eval(code, file_name = None, num_line = None, depth = 0):
-		return EvalObject(code, 'eval', depth + 1, file_name, num_line)
+	def Eval(code, filename = None, numline = None, depth = 0):
+		return EvalObject(code, 'eval', depth + 1, filename, numline)
 	
 	# for exec code: Exec("v = f(2, 3)")() -> None
-	def Exec(code, file_name = None, num_line = None, depth = 0):
-		return EvalObject(code, 'exec', depth + 1, file_name, num_line)
+	def Exec(code, filename = None, numline = None, depth = 0):
+		return EvalObject(code, 'exec', depth + 1, filename, numline)
 	
 	
 	class UndefinedType:
@@ -142,8 +142,8 @@ init -10000 python:
 	def Call(label):
 		return Function(renpy.call, label)
 	
-	def Play(file_name, channel):
-		return Function(renpy.play, file_name, channel)
+	def Play(filename, channel):
+		return Function(renpy.play, filename, channel)
 	def Stop(channel):
 		return Function(renpy.stop, channel)
 	
