@@ -2,12 +2,12 @@ init -1 python:
 	
 	def lessons__add_current(tags_str):
 		file = get_filename(1)
-		file_name = os.path.basename(file)
+		filename = os.path.basename(file)
 		
-		i = file_name.index('_')
-		num = file_name[:i]
+		i = filename.index('_')
+		num = filename[:i]
 		num_int = int(num)
-		name = file_name[i+1:].replace('.rpy', '')
+		name = filename[i+1:].replace('.rpy', '')
 		
 		pretty_name = name.replace('_', ' ').capitalize()
 		

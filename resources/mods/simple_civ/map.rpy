@@ -594,7 +594,7 @@ init python:
 	signals.add('resized_stage', sc_on_resize)
 	
 	def preload_images():
-		for file_name in sc_map.image_list:
-			load_image(sc_map.image_dir + file_name)
+		for filename in sc_map.image_list:
+			load_image(sc_map.image_dir + filename)
 	preload_images()
 	set_interval(preload_images, 10) # disallow to unload from image cache
