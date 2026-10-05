@@ -16,9 +16,10 @@ public:
 
 	static int x, y, width, height;
 	static bool fullscreen;
-	static bool needResize;
 	static bool minimized;
 	static bool maximized;
+	static bool needResize;
+	static bool needSendSignalResized;
 
 	static SDL_Window *window;
 	static Group *screens;

@@ -39,10 +39,8 @@ void ThreadTasks::addAndWait(const std::function<void()> &task) {
 		bool haveTasks = false;
 		if (curThreadId == ThreadTasks::main.threadId) {
 			haveTasks = ThreadTasks::main.execOne();
-		}else
-		if (curThreadId == ThreadTasks::python.threadId) {
-			haveTasks = ThreadTasks::python.execOne();
 		}
+		//if waiting in the python thread, dont exec other tasks to prevent incorrect stack traces
 
 		if (!haveTasks) {
 			Utils::sleep(10 * 1e-6);

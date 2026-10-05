@@ -5,8 +5,6 @@
 
 #include "gui/group.h"
 
-#include "media/py_utils.h"
-
 #include "utils/math.h"
 #include "utils/message.h"
 #include "utils/scope_exit.h"
@@ -16,9 +14,10 @@
 
 int Stage::x, Stage::y, Stage::width, Stage::height;
 bool Stage::fullscreen;
-bool Stage::needResize = false;
 bool Stage::minimized = false;
 bool Stage::maximized = false;
+bool Stage::needResize = false;
+bool Stage::needSendSignalResized = false;
 
 SDL_Window *Stage::window = nullptr;
 Group *Stage::screens = nullptr;
@@ -164,7 +163,7 @@ static void onResize() {
 	Renderer::needToUpdateViewPort = true;
 
 	if (GV::inGame) {
-		pyExecFromCpp("signals.send('resized_stage')");
+		Stage::needSendSignalResized = true;
 	}
 }
 

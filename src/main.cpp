@@ -244,6 +244,11 @@ static void loop() {
 			GV::gameTime += Game::getLastTick();
 
 			pyExecFromCpp("signals.send('enter_frame')");
+
+			if (Stage::needSendSignalResized) {
+				Stage::needSendSignalResized = false;
+				pyExecFromCpp("signals.send('resized_stage')");
+			}
 		});
 
 		tmpEvents.clear();
