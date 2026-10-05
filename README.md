@@ -2,7 +2,7 @@
 
 **Ren-Engine Demo Screenshot:**
 
-![Screenshot](screenshot.webp)
+![Screenshot](screenshots/code_in_tutorial.jpg)
 
 ## \[links]
 
