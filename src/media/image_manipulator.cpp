@@ -1371,6 +1371,10 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 		return res;
 	}
 
+	return img;
+
+	//disable RGBA -> RGB, because saving of PNG in SDL3 converts surface back to RGBA
+	/*
 	if (!isRGBA) return img;//no optimizations
 
 	//check rgba -> rgb:
@@ -1387,6 +1391,7 @@ static SurfacePtr optimizeSurfaceFormat(const SurfacePtr &img) {
 	SDL_BlitSurface(img.get(), nullptr, res.get(), nullptr);
 
 	return res;
+	*/
 }
 
 //67 bytes
