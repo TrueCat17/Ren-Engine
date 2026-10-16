@@ -17,10 +17,3 @@ translate russian strings:
 	# preferences
 	old 'Animations'
 	new 'Анимации'
-	
-	
-	old 'Programmer'
-	new 'Программист'
-	
-	old 'Artist'
-	new 'Художник'
