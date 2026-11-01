@@ -1,7 +1,7 @@
 init python:
 	def authors__update_text():
-		authors.programmer = _('Programmer') + ': '
-		authors.artist = _('Artist') + ': '
+		authors.programmer = _('Программист') + ': '
+		authors.artist = _('Художник') + ': '
 	
 	def authors__get_alpha():
 		if db.visible:

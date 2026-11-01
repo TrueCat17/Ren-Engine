@@ -20,11 +20,11 @@ label music_and_sounds:
 	
 	python:
 		code.show('''
-			# в init python
+			# init python
 			music_list = {}
 			music_list["usual"] = "your/path.ogg"
 			
-			# в сценарии
+			# label
 			play music music_list["usual"]
 		''')
 	

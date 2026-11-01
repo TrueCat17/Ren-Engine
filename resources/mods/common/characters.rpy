@@ -2,9 +2,9 @@ init -990 python:
 	
 	# VN characters:
 	
-	sm = Character('I', color = '#4F0') # main character
+	sm = Character('Я', color = '#4F0') # main character
 	me = sm
-	rn = Character('Ren', color = '#FFF')
+	rn = Character('Рен', color = '#FFF')
 	
 	
 	# RPG characters:
@@ -23,5 +23,5 @@ init -990 python:
 		g[name].make_rpg('images/characters/', name, 'pioneer')
 
 init -980 python:
-	register_character_animation(sl, 'hello',   'images/characters/anim/sl_hello', 0, 0, 4, 0, 3, 1.0)
+	register_character_animation(sl, 'hello',   'images/characters/anim/sl_hello',   0, 0, 4, 0, 3, 1.0)
 	register_character_animation(us, 'cricket', 'images/characters/anim/us_cricket', 0, 0, 6, 0, 5, 1.5)

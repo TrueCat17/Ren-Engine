@@ -75,16 +75,19 @@ label simple_examples_characters:
 	python:
 		code.show('''
 			python:
-				np = Character("Новая Персона",
+				np = Character("%s",
 				               color = "#F80")
-		''')
+			''',
+			
+			'Новая Персона',
+		)
 	
 	rn "И если ты всё ещё не заглянул в [sts]mods/common/characters.rpy[ste], то ответ - вот так."
 	
 	rn "Позже задать персонажу другое имя можно так: [text_code('set_name(\"np\", \"Прохожий\")')]."
 	extend " Обрати внимание, что [sts]np[ste] здесь - тоже в кавычках."
 	
-	rn "Вообще-то класс [sts]Character[ste] может принимать огромную кучу параметров, но в этом маленьком туториале для них нет места. "
+	rn "Вообще-то класс [sts]Character[ste] может принимать огромную кучу параметров, но в этом маленьком туториале для них нет места."
 	rn "Так что в случае необходимости смотри подробности в документации, особенно обрати внимание на статью [text_code('Интерфейс (gui)')]."
 	
 	show rn 2 smile:
@@ -123,10 +126,14 @@ label simple_examples_interpolation:
 	
 	python:
 		code.show('''
-			$ player = "Имя"
+			$ player = "%s"
 			# ...
-			rn "Привет, [player]!"
-		''')
+			rn "%s, [player]!"
+			''',
+			
+			'Имя',
+			'Привет',
+		)
 	show rn 1 smile:
 		rn_moving 0.5 xpos 0.28
 	
@@ -220,9 +227,13 @@ label simple_examples_python:
 	
 	python:
 		code.show('''
-			rn "Текст."
-			$ rn("Текст.")
-		''')
+			rn "%s"
+			$ rn("%s")
+			''',
+			
+			'Текст.',
+			'Текст.',
+		)
 	
 	show rn 3 smile with dissolve
 	
@@ -244,18 +255,25 @@ label simple_examples_conditions:
 	python:
 		code.show('''
 			label example:
-				me "Как дела?"
+				me "%s"
 				
 				if rn_points < 5:
 					rn "..."
 				elif rn_points < 10:
-					rn "Нормально."
+					rn "%s"
 				else:
-					rn "Хорошо. А у тебя?"
+					rn "%s"
 				
-				me "Я думал прогуляться."
-				extend " Составишь компанию?"
-		''')
+				me "%s"
+				extend " %s"
+			''',
+			
+			'Как дела?',
+			'Нормально.',
+			'Хорошо. А у тебя?',
+			'Я думал прогуляться.',
+			'Составишь компанию?',
+		)
 	
 	rn "Условия работают точно также, как и в питоне."
 	rn "Всё начинается с ключевого слова [sts]if[ste], после него идёт нужная проверка."
@@ -276,12 +294,15 @@ label simple_examples_conditions:
 				if a == 3:
 					pass
 			
-			# ошибочное использование
+			# %s
 			label error:
 				$ a == 3
 				if a = 3:
 					pass
-		''')
+			''',
+			
+			'ошибочное использование',
+		)
 	
 	show rn 3 smile with dissolve
 	
@@ -296,17 +317,17 @@ label simple_examples_cycles:
 	
 	python:
 		code.show('''
-			np "Я считаю до 5."
-			np "Не могу до 10."
 			np ""
 			$ num = 0
 			while num < 5:
 				extend "[num + 1] "
 				$ num += 1
-			extend "- с рифмой с детства я дружу!"
-			# Последняя строка будет такой:
-			# 1 2 3 4 5 - с рифмой с детства я дружу!
-		''')
+			# %s
+			# 1 2 3 4 5
+			''',
+			
+			'Напечатает:',
+		)
 	
 	show rn 4 smile with dissolve
 	
@@ -324,12 +345,16 @@ label simple_examples_label_transitions:
 	python:
 		code.show('''
 			label example:
-				rn "Начальный текст."
+				rn "%s"
 				jump some_label
 			
 			label some_label:
-				rn "Текст из some_label."
-		''')
+				rn "%s"
+			''',
+			
+			'Начальный текст.',
+			'Текст из some_label.',
+		)
 	
 	show rn 3 smile with dissolve
 	rn "Чтобы процесс создания игры был прост и удобен, мы ни в коем случае не должны писать весь сценарий в одном файле, и тем более - в одной метке."
@@ -341,13 +366,18 @@ label simple_examples_label_transitions:
 	python:
 		code.show('''
 			label example:
-				rn "Начальный текст."
+				rn "%s"
 				call some_label
-				rn "Продолжение текста."
+				rn "%s"
 			
 			label some_label:
-				rn "Текст из some_label."
-		''')
+				rn "%s"
+			''',
+			
+			'Начальный текст.',
+			'Продолжение текста.',
+			'Текст из some_label.',
+		)
 	
 	rn "Ещё есть команда [sts]call[ste], которая после выполнения метки возвращает управление назад и продолжает исполнять дальнейшие команды."
 	
@@ -396,17 +426,23 @@ label simple_examples_menu:
 		code.show('''
 			$ energy = 10
 			$ skills = 4
-			th "Куда бы мне пойти?"
+			th "%s"
 			menu:
-				"Никуда, останусь сидеть дома.":
+				"%s":
 					pass
-				"Пора на работу.":
+				"%s":
 					$ energy -= 5
 					$ skills += 1
-				"В парк!" if energy > 2 else None:
+				"%s" if energy > 2 else None:
 					$ energy -= 2
 					call day2_park_meet
-		''')
+			''',
+			
+			'Куда бы мне пойти?',
+			'Никуда, останусь сидеть дома.',
+			'Пора на работу.',
+			'В парк!',
+		)
 	
 	show rn 2 smile:
 		rn_moving 0.5 xpos 0.28

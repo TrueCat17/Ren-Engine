@@ -27,7 +27,7 @@ init:
 	
 	style tutorial_lesson_name is text:
 		font 'Fregat_Bold'
-		text_size 0.03
+		text_size 0.0275
 		xalign 0.5
 	
 	style tutorial_tag_container is null:
@@ -36,7 +36,7 @@ init:
 	
 	style tutorial_tag_text is text:
 		font 'Fregat'
-		text_size 0.03
+		text_size 0.0275
 		text_size_min 12
 		color '#EEE'
 	

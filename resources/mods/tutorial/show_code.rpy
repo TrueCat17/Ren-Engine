@@ -3,13 +3,15 @@ init:
 		xpos 0.04
 		yalign 0.5
 		font 'Monospace'
-		text_size 0.035
-		text_size_min 14
+		text_size 0.033
+		text_size_min 12
 
 init python:
-	def code__show(text):
+	def code__show(text, *args):
 		if not has_screen('code'):
 			show_screen('code')
+		
+		text %= tuple(_(s) for s in args)
 		
 		data = SimpleObject()
 		data.show_time = get_game_time()

@@ -29,12 +29,10 @@ init -1 python:
 	
 	def lessons__start(category, num):
 		category_lessons = lessons.by_category[category.lower()]
-		name, pretty_name, image, tags1, tags2 = category_lessons[num]
+		lesson = category_lessons[num]
+		name = lesson[0]
 		
-		lessons.cur_label = name + '_' + config.language
-		if not renpy.has_label(lessons.cur_label):
-			lessons.cur_label = name
-		
+		lessons.cur_label = name
 		renpy.call('start_lesson')
 	
 	build_object('lessons')
@@ -43,6 +41,7 @@ init -1 python:
 
 
 label start_lesson:
+	$ db.skip_tab = False
 	window hide
 	$ set_timeout(show_bg_entry, black_cover.appearance_time)
 	$ tutorial_menu.hide()
@@ -50,7 +49,6 @@ label start_lesson:
 	
 	$ pause_screen.items.insert(0, ['Tutorial Menu', tutorial_menu.restart])
 	
-	$ db.skip_tab = False
 	call expression lessons.cur_label
 	$ db.skip_tab = False
 	

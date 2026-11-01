@@ -23,7 +23,7 @@ init python:
 			return 1 - dtime / current_part.appearance_time
 	
 	def current_part__get_text():
-		text = current_part.text
+		text = _(current_part.text)
 		if get_game_time() - current_part.last_update_time < current_part.selected_time:
 			text = '{color=%s}%s{/color}' % (current_part.selected_color, text)
 		

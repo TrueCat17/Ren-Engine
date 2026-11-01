@@ -19,6 +19,9 @@ init python:
 			else:
 				tag = text
 			
+			if text.startswith('~'):
+				text = text[1:]
+			
 			if tag.startswith('/'):
 				tag = tag[1:]
 				is_end = True

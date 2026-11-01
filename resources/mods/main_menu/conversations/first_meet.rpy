@@ -4,9 +4,10 @@ init python:
 	def get_random_player_name():
 		word = random.choice((
 			'Игрок', 'Кот', 'Лис', 'ЛунныйМодуль', 'ДамПамяти',
-			'=(^-^)=', 'Диванодав', 'НалогИкамни', 'Велосипедист', 'Впродакшон!',
+			'=(^-^)=', 'Диванодав', 'НалогИкамни', 'Велосипедист', 'Впродакшен!',
 			'АдамВамЛам', 'X4K3P #1337', 'Мастдайство', 'Кнопка Сделать Зашибись', 'Инженер',
 		))
+		word = _(word)
 		
 		if random.random() < 0.5 or not word[-1].isalpha():
 			return word
@@ -15,9 +16,6 @@ init python:
 		return '%s-%s' % (word, num)
 
 label first_meet:
-	if config.language != 'russian':
-		$ notification.out('Only Russian language is available now')
-	
 	show rn 2 smile with dspr
 	rn "Ты наконец-то прибыл!"
 	
