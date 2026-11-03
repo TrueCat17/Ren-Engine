@@ -1,7 +1,6 @@
 #ifndef MAKE_FUNC_H
 #define MAKE_FUNC_H
 
-#include <string>
 #include <tuple>
 #include <vector>
 

@@ -7,6 +7,7 @@
 #include "logger.h"
 
 #include "media/py_utils.h"
+#include "media/py_utils/convert_to_py.h"
 #include "media/translation.h"
 
 #include "parser/node.h"
@@ -21,7 +22,11 @@
 
 
 
+static bool disablePythonChecking = false;
+
 static void checkPythonSyntax(Node *node) {
+	if (disablePythonChecking) return;
+
 	uint32_t line = node->getNumLine() + (node->command != "$");
 	PyObject *co = PyUtils::getCompileObject(node->params, node->getFileName(), line);
 	if (!co) {
@@ -84,17 +89,24 @@ static std::vector<std::string> getFileNames(const std::string &path) {
 
 static const std::string ops = "(,+-*/=[{";
 
-Parser::Parser(const std::string &dir) {
+Parser::Parser(const std::string &dir, bool justOneFile) {
 	this->dir = dir;
 
-	double searchStartTime = Utils::getTimer();
-	std::vector<std::string> files = getFileNames(dir);
+	std::vector<std::string> files;
 
-	std::vector<std::string> commonFiles = getFileNames("mods/common/");
-	files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
-	std::vector<std::string> engineFiles = getFileNames("../Ren-Engine/rpy/");
-	files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
-	Logger::logEvent("Searching files (" + std::to_string(files.size()) + ")", Utils::getTimer() - searchStartTime);
+	if (!justOneFile) {
+		double searchStartTime = Utils::getTimer();
+
+		files = getFileNames(dir);
+		std::vector<std::string> commonFiles = getFileNames("mods/common/");
+		files.insert(files.begin(), commonFiles.begin(), commonFiles.end());
+		std::vector<std::string> engineFiles = getFileNames("../Ren-Engine/rpy/");
+		files.insert(files.begin(), engineFiles.begin(), engineFiles.end());
+
+		Logger::logEvent("Searching files (" + std::to_string(files.size()) + ")", Utils::getTimer() - searchStartTime);
+	}else {
+		files.push_back(dir);
+	}
 
 	for (const std::string &fileName : files) {
 		if (fileName.find("_SL_FILE_") != size_t(-1)) {
@@ -179,8 +191,10 @@ Parser::Parser(const std::string &dir) {
 		}
 	}
 
-	const std::string event = "Reading (" + std::to_string(countLines) + " lines from " + std::to_string(countFiles) + " files)";
-	Logger::logEvent(event, Utils::getTimer() - readStartTime);
+	if (!justOneFile) {
+		const std::string event = "Reading (" + std::to_string(countLines) + " lines from " + std::to_string(countFiles) + " files)";
+		Logger::logEvent(event, Utils::getTimer() - readStartTime);
+	}
 }
 
 Node* Parser::parse() {
@@ -785,4 +799,42 @@ uint32_t Parser::getNextStart(uint32_t start) const {
 	}
 
 	return last + 1;
+}
+
+
+
+static PyObject* getTupleForNode(Node *node) {
+	PyObject *cmd     = convertToPy(node->command);
+	PyObject *params  = convertToPy(node->params);
+	PyObject *numLine = convertToPy(node->getNumLine());
+
+	PyObject *props = PyTuple_New(3);
+	PyTuple_SET_ITEM(props, 0, cmd);
+	PyTuple_SET_ITEM(props, 1, params);
+	PyTuple_SET_ITEM(props, 2, numLine);
+
+
+	if (node->children.empty()) {
+		return props;
+	}
+
+	PyObject *children = PyTuple_New(Py_ssize_t(node->children.size()));
+	for (size_t i = 0; i < node->children.size(); ++i) {
+		PyObject *child = getTupleForNode(node->children[i]);
+		PyTuple_SET_ITEM(children, Py_ssize_t(i), child);
+	}
+
+	PyObject *res = PyTuple_New(2);
+	PyTuple_SET_ITEM(res, 0, props);
+	PyTuple_SET_ITEM(res, 1, children);
+	return res;
+}
+
+PyObject* Parser::parseFile(const std::string &path) {
+	disablePythonChecking = true;
+	Parser parser(path, true);
+	Node *node = parser.getMainNode();
+	disablePythonChecking = false;
+
+	return getTupleForNode(node);
 }

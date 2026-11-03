@@ -6,6 +6,7 @@
 #include <string>
 
 class Node;
+typedef struct _object PyObject;
 
 
 class Parser {
@@ -23,7 +24,9 @@ private:
 public:
 	static void getIsFakeOrIsProp(const std::string &type, bool &isFake, bool &isProp, bool &isEvent);
 
-	Parser(const std::string &dir);
+	static PyObject* parseFile(const std::string &path);
+
+	Parser(const std::string &dir, bool justOneFile = false);
 	Node* parse();
 };
 

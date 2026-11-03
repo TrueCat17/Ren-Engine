@@ -17,6 +17,7 @@
 #include "media/translation.h"
 
 #include "parser/mods.h"
+#include "parser/parser.h"
 
 #include "utils/clipboard.h"
 #include "utils/file_system.h"
@@ -176,4 +177,5 @@ void PySetGlobals::set(PyObject *global, PyObject *builtinDict, PyObject *builti
 	setFunc("_start_file_win32", FileSystem::startFile_win32);
 
 	setFunc("get_engine_version", Utils::getVersion);
+	setFunc("_get_file_ast", Parser::parseFile);
 }
