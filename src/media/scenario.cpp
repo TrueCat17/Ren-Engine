@@ -104,6 +104,14 @@ static void restoreStack(const std::string &loadPath) {
 		if (tmp.empty()) break;
 
 		std::vector<std::string> tmpVec = String::split(tmp, " ");
+
+		//fix translation labels
+		if (tmpVec.size() == 3 && String::startsWith(tmpVec[0], "label:")) {
+			tmpVec[0] += ' ';
+			tmpVec[0] += tmpVec[1];
+			tmpVec.erase(tmpVec.begin() + 1);
+		}
+
 		if (tmpVec.size() != 2) {
 			Message::outError("Scenario::restoreStack", "In string <%> expected 2 args", tmp);
 			return;
