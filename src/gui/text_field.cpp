@@ -615,9 +615,7 @@ void TextField::setLine(const std::string &line, const SDL_Rect &rect, size_t &w
 	if (rect.w) {
 		surface = SDL_CreateSurface(rect.w, rect.h, SDL_PIXELFORMAT_ARGB8888);
 	}
-	SurfacePtr surfacePtr = surface;
-
-	lineSurfaces.push_back(surfacePtr);
+	lineSurfaces.push_back(SurfacePtr(surface));
 
 	size_t i = 0;
 	int x = 0;
@@ -682,13 +680,14 @@ void TextField::draw() const {
 	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
 
 	for (size_t i = 0; i < lineSurfaces.size(); ++i) {
-		SurfacePtr surface = lineSurfaces[i];
+		const SurfacePtr &surface = lineSurfaces[i];
 		if (!surface) continue;
 
 		SDL_Rect srcRect = { 0, 0, surface->w, surface->h };
 
 		const SDL_Rect &rect = rects[i];
-		SDL_Rect dstIRect = DisplayObject::buildIntRect(float(rect.x) + globalX, float(rect.y) + globalY, float(rect.w), float(rect.h), true);
+		SDL_Rect dstIRect = DisplayObject::buildIntRect(float(rect.x) + globalX, float(rect.y) + globalY,
+		                                                float(rect.w), float(rect.h), true);
 
 		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, srcRect, dstIRect, center);
 	}

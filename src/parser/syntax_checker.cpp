@@ -186,7 +186,7 @@ void SyntaxChecker::init() {
 	addBlockChildren("imagemap, button, textbutton", "ground, hover");
 	addBlockChildren("imagemap", "hotspot, $, python, for, while" + conditions + simpleProps);
 
-	addBlockChildren("imagemap, button, textbutton, image", "corner_sizes");
+	addBlockChildren("button, textbutton, image", "corner_sizes");
 
 
 	setSuperParents("init, init python, translate, translate strings, label, screen", SuperParent::MAIN);

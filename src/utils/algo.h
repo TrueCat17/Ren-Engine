@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include <SDL3/SDL_rect.h>
+
 class Algo {
 public:
 
@@ -20,6 +22,21 @@ public:
 
 	static bool isLexicalValid(std::string_view s);
 	static bool isValidPyName(std::string_view s);
+
+	static bool pointInRect(int x, int y, const SDL_Rect &rect) {
+		if (x < rect.x) return false;
+		if (y < rect.y) return false;
+		if (x >= rect.x + rect.w) return false;
+		if (y >= rect.y + rect.h) return false;
+		return true;
+	}
+	static bool pointInRect(float x, float y, const SDL_FRect &rect) {
+		if (x < rect.x) return false;
+		if (y < rect.y) return false;
+		if (x >= rect.x + rect.w) return false;
+		if (y >= rect.y + rect.h) return false;
+		return true;
+	}
 };
 
 #endif // ALGO_H

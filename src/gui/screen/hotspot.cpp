@@ -15,13 +15,15 @@ void Hotspot::updatePos() {}
 void Hotspot::updateSize() {}
 
 void Hotspot::checkEvents() {
-	const Imagemap* imageMap = static_cast<Imagemap*>(parent);
+	const Imagemap *imageMap = static_cast<Imagemap*>(parent);
 
-	SurfacePtr ground = imageMap->surface;
-	float parentWidth = imageMap->getWidth();
+	const SurfacePtr &ground = imageMap->surface;
+	float parentWidth  = imageMap->getWidth();
 	float parentHeight = imageMap->getHeight();
+	float scaleX = 1;
+	float scaleY = 1;
 	if (ground && parentWidth > 0 && parentHeight > 0) {
-		scaleX = parentWidth / float(ground->w);
+		scaleX = parentWidth  / float(ground->w);
 		scaleY = parentHeight / float(ground->h);
 	}else {
 		scaleX = 1;
@@ -40,32 +42,19 @@ void Hotspot::checkEvents() {
 
 
 bool Hotspot::transparentForMouse(int x, int y) const {
-	if (!enable || globalAlpha <= 0 || globalSkipMouse) return true;
+	if (!transparentForMouseChecks(x, y)) return true;
 
 	const Imagemap *imageMap = static_cast<Imagemap*>(parent);
-	SurfacePtr ground = imageMap->surface;
-	SurfacePtr hover = imageMap->hover;
-	if (!ground || !hover) return true;
+	const SurfacePtr &hover = imageMap->hover;
+	if (!hover) return true;
 
-	float fx = float(x);
-	float fy = float(y);
+	const SDL_Rect &srcRect = parent->crop;
+	SDL_Rect dstRect = { 0, 0, int(parent->getWidth()), int(parent->getHeight()) };
 
-	if (globalClipping) {
-		if (fx + globalX < clipRect.x ||
-		    fy + globalY < clipRect.y ||
-		    fx + globalX >= clipRect.x + clipRect.w ||
-		    fy + globalY >= clipRect.y + clipRect.h
-		) return true;
-	}
+	x = srcRect.x + (int(getX()) + x) * srcRect.w / dstRect.w;
+	y = srcRect.y + (int(getY()) + y) * srcRect.h / dstRect.h;
 
-	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return true;
-
-	//sizes in prev frame (when called checkEvents)
-	float parentWidth = float(ground->w) * scaleX;
-	float parentHeight = float(ground->h) * scaleY;
-
-	SDL_Rect rect = DisplayObject::buildIntRect(fx + getX(), fy + getY(), parentWidth, parentHeight, false);
-	Uint32 color = Utils::getPixel(hover, rect, imageMap->crop);
+	Uint32 color = Utils::getPixel(hover, x, y);
 	Uint8 alpha = color & 0xFF;
 	return alpha == 0;
 }

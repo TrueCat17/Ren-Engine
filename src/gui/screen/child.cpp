@@ -102,7 +102,7 @@ void Child::updateProps() {
 	}
 
 	if (!props || props == Py_None) return;
-	if (!PyList_CheckExact(props) && ! PyTuple_CheckExact(props)) {
+	if (!PyList_CheckExact(props) && !PyTuple_CheckExact(props)) {
 		std::string type = props->ob_type->tp_name;
 		Message::outError("Child::updateProps", "Expected list or tuple, got %", type);
 		return;
@@ -177,6 +177,22 @@ void Child::updateSize() {
 		crop.y = int(std::round(y));
 		crop.w = int(std::round(x + w)) - crop.x;
 		crop.h = int(std::round(y + h)) - crop.y;
+
+		if (crop.x < 0 || crop.y < 0 ||
+		    crop.x >= surface->w || crop.y >= surface->h ||
+		    crop.w <= 0 || crop.h <= 0 ||
+		    crop.w > surface->w || crop.h > surface->h ||
+		    crop.x + crop.w > surface->w || crop.y + crop.h > surface->h)
+		{
+			Message::outError(
+			    "Child::updateSize",
+			    "Invalid crop (%, %, %, %) for surface of size %x%\n%",
+			    crop.x, crop.y, crop.w, crop.h,
+			    surface->w, surface->h,
+			    node->getPlace()
+			);
+			crop = { 0, 0, surface->w, surface->h };
+		}
 	}
 }
 

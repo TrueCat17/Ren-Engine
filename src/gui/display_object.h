@@ -9,6 +9,9 @@ class Group;
 
 class DisplayObject {
 protected:
+	bool transparentForMouseChecks(int x, int y) const;
+
+
 	//float for exact numbers, because zoom
 	SDL_FRect rect = { 0, 0, -1, -1 };
 	SDL_FRect clipRect = { 0, 0, 0, 0 };
@@ -92,8 +95,8 @@ public:
 	void setWidth(float value) { rect.w = value; }
 	void setHeight(float value) { rect.h = value; }
 
-	virtual bool transparentForMouse(int x, int y) const;
 	virtual void draw() const;
+	virtual bool transparentForMouse(int x, int y) const;
 };
 
 #endif // DISPLAY_OBJECT_H

@@ -15,7 +15,7 @@ public:
 	static double getTimer();
 	static void sleep(double sec, bool checkInGame = true);
 
-	static Uint32 getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop);
+	static Uint32 getPixel(const SurfacePtr &surface, int x, int y);
 
 	static std::string md5(const std::string &str);
 };

@@ -4,6 +4,7 @@
 
 #include "group.h"
 
+#include "utils/algo.h"
 #include "utils/math.h"
 #include "utils/message.h"
 #include "utils/stage.h"
@@ -85,65 +86,28 @@ void DisplayObject::updateGlobal() {
 	}
 }
 
-bool DisplayObject::transparentForMouse(int x, int y) const {
-	if (!enable || globalAlpha <= 0 || globalSkipMouse || !surface) return true;
 
-	if (globalClipping) {
-		float fx = float(x);
-		float fy = float(y);
-
-		if (fx + globalX < clipRect.x ||
-		    fy + globalY < clipRect.y ||
-		    fx + globalX >= clipRect.x + clipRect.w ||
-		    fy + globalY >= clipRect.y + clipRect.h
-		) return true;
-	}
-
-	if (x < 0 || y < 0 || x >= int(getWidth()) || y >= int(getHeight())) return true;
-
-	SDL_Rect rect = { x, y, int(getWidth()), int(getHeight()) };
-	Uint32 color = Utils::getPixel(surface, rect, crop);
-	Uint8 alpha = color & 0xFF;
-	return alpha == 0;
+static bool withoutCornerSizes(const DisplayObject *obj) {
+	if (!Math::floatsAreEq(obj->corner_sizes_left,   0)) return false;
+	if (!Math::floatsAreEq(obj->corner_sizes_top,    0)) return false;
+	if (!Math::floatsAreEq(obj->corner_sizes_right,  0)) return false;
+	if (!Math::floatsAreEq(obj->corner_sizes_bottom, 0)) return false;
+	return true;
 }
 
-void DisplayObject::draw() const {
-	if (!enable || globalAlpha <= 0 || !surface) return;
+template<typename T>
+static void callForEachPart(const DisplayObject *obj, const SDL_Rect &srcRect, const SDL_Rect &dstRect, T func) {
+	float width  = float(dstRect.w);
+	float height = float(dstRect.h);
 
-	float width = getWidth();
-	float height = getHeight();
-	if (width <= 0 || height <= 0) return;
-
-	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
-	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
-	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
-
-	//simple way
-	if (Math::floatsAreEq(corner_sizes_left, 0) &&
-	    Math::floatsAreEq(corner_sizes_top, 0) &&
-	    Math::floatsAreEq(corner_sizes_right, 0) &&
-	    Math::floatsAreEq(corner_sizes_bottom, 0)
-	) {
-		SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, width, height, false);
-		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, crop, dstIRect, center);
-		return;
-	}
-
-
-	//zoom with const corner-sizes:
-	// 1 2 3      1 2 2 3
-	// 4 5 6  ->  4 5 5 6
-	// 7 8 9      4 5 5 6
-	//            7 8 8 9
-
-	float cropW = float(crop.w);
-	float cropH = float(crop.h);
+	float cropW = float(srcRect.w);
+	float cropH = float(srcRect.h);
 
 #define makeSide(side, rel, defaultSize) \
 	float side = std::round( \
-	    corner_sizes_##side < 0 ? \
+	    obj->corner_sizes_##side < 0 ? \
 	        defaultSize : \
-	        corner_sizes_##side * (corner_sizes_##side##_is_float ? rel : 1) \
+	        obj->corner_sizes_##side * (obj->corner_sizes_##side##_is_float ? rel : 1) \
 	)
 	makeSide(left, cropW, std::floor(std::min(cropW, cropH) / 3));
 	makeSide(top, cropH, left);
@@ -160,23 +124,36 @@ void DisplayObject::draw() const {
 	    { cropW - (left + right), (width  * zoom - (left + right)) / zoom },
 	    { right, right / zoom }
 	};
+
 	std::pair<int, float> hs[3] = {
 	    { top, top / zoom },
 	    { cropH - (top + bottom), (height * zoom - (top + bottom)) / zoom },
 	    { bottom, bottom / zoom }
 	};
 
+	int srcRectXW = srcRect.x + srcRect.w;
+	int srcRectYH = srcRect.y + srcRect.h;
 
-	int srcY = crop.y;
-	float dstY = globalY;
+	int srcY = srcRect.y;
+	float dstY = float(dstRect.y);
 	for (auto [srcH, dstH] : hs) {
-		int srcX = crop.x;
-		float dstX = globalX;
+		if (dstH <= 0) continue;
+
+		int srcX = srcRect.x;
+		float dstX = float(dstRect.x);
 
 		for (auto [srcW, dstW] : ws) {
-			SDL_Rect dstIRect = DisplayObject::buildIntRect(dstX, dstY, dstW, dstH, false);
-			SDL_Rect partCrop = { srcX, srcY, srcW, srcH };
-			pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, partCrop, dstIRect, center);
+			if (dstW <= 0) continue;
+
+			SDL_Rect partSrcRect;
+			partSrcRect.x = Math::inBounds(srcX, 0, srcRectXW - 1);
+			partSrcRect.y = Math::inBounds(srcY, 0, srcRectYH - 1);
+			partSrcRect.w = Math::inBounds(srcW, 0, srcRectXW - partSrcRect.x);
+			partSrcRect.h = Math::inBounds(srcH, 0, srcRectYH - partSrcRect.y);
+
+			SDL_Rect partDstRect = DisplayObject::buildIntRect(dstX, dstY, dstW, dstH, false);
+
+			func(partSrcRect, partDstRect);
 
 			srcX += srcW;
 			dstX += dstW;
@@ -186,6 +163,86 @@ void DisplayObject::draw() const {
 		dstY += dstH;
 	}
 }
+
+void DisplayObject::draw() const {
+	if (!enable || globalAlpha <= 0 || !surface) return;
+	if (getWidth() <= 0 || getHeight() <= 0) return;
+
+	Uint8 intAlpha = Uint8(std::min(int(globalAlpha * 255), 255));
+	SDL_Rect clipIRect = DisplayObject::buildIntRect(clipRect.x, clipRect.y, clipRect.w, clipRect.h, false);
+	SDL_Rect dstIRect = DisplayObject::buildIntRect(globalX, globalY, getWidth(), getHeight(), false);
+	SDL_Point center = { int(calcedXanchor), int(calcedYanchor) };
+
+	//simple way
+	if (withoutCornerSizes(this)) {
+		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, crop, dstIRect, center);
+		return;
+	}
+
+	//zoom with const corner-sizes:
+	// 1 2 3      1 2 2 3
+	// 4 5 6  ->  4 5 5 6
+	// 7 8 9      4 5 5 6
+	//            7 8 8 9
+
+	auto drawPart = [&](const SDL_Rect &srcRect, const SDL_Rect &dstRect) {
+		pushToRender(surface, globalRotate, intAlpha, globalClipping, clipIRect, srcRect, dstRect, center);
+	};
+	callForEachPart(this, crop, dstIRect, drawPart);
+}
+
+
+bool DisplayObject::transparentForMouse(int x, int y) const {
+	if (!transparentForMouseChecks(x, y) || !surface) return true;
+
+	const SDL_Rect &srcRect = crop;
+	SDL_Rect dstRect = DisplayObject::buildIntRect(globalX, globalY, getWidth(), getHeight(), false);
+
+	if (withoutCornerSizes(this)) {
+		x = srcRect.x + x * srcRect.w / dstRect.w;
+		y = srcRect.y + y * srcRect.h / dstRect.h;
+
+		Uint32 color = Utils::getPixel(surface, x, y);
+		Uint8 alpha = color & 0xFF;
+		return alpha == 0;
+	}
+
+	int globalX = int(getGlobalX()) + x;
+	int globalY = int(getGlobalY()) + y;
+
+	bool calced = false;
+	bool res = true;
+	auto checkPart = [&](const SDL_Rect &partSrcRect, const SDL_Rect &partDstRect) {
+		if (calced) return;
+		if (!Algo::pointInRect(globalX, globalY, partDstRect)) return;
+
+		//calc only for need (one) part:
+
+		int xForDst = globalX - partDstRect.x;
+		int yForDst = globalY - partDstRect.y;
+
+		int xForSrc = partSrcRect.x + xForDst * partSrcRect.w / partDstRect.w;
+		int yForSrc = partSrcRect.y + yForDst * partSrcRect.h / partDstRect.h;
+
+		Uint32 color = Utils::getPixel(surface, xForSrc, yForSrc);
+		Uint8 alpha = color & 0xFF;
+
+		res = (alpha == 0);
+		calced = true;
+	};
+
+	callForEachPart(this, srcRect, dstRect, checkPart);
+	return res;
+}
+
+bool DisplayObject::transparentForMouseChecks(int x, int y) const {
+	if (!enable || globalAlpha <= 0 || globalSkipMouse) return false;
+	if (globalClipping && !Algo::pointInRect(globalX + float(x), globalY + float(y), clipRect)) return false;
+	if (!Algo::pointInRect(x, y, { 0, 0, int(getWidth()), int(getHeight()) })) return false;
+
+	return true;
+}
+
 
 DisplayObject::~DisplayObject() {
 	for (size_t i = 0; i < objects.size(); ++i) {

@@ -729,9 +729,9 @@ static inline const Uint8* get2(const Uint8 *, const Uint8 *a) { return a; }
 
 template<typename GetChannel, typename CmpFunc, typename GetPixel, typename GetAlpha>
 static void maskCycles(const int value,
-					   SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
-					   GetChannel getChannel, CmpFunc cmp,
-					   GetPixel getPixel, GetAlpha getAlphaFunc)
+                       const SurfacePtr &img, const Uint8 *maskPixels, Uint8 *resPixels,
+                       GetChannel getChannel, CmpFunc cmp,
+                       GetPixel getPixel, GetAlpha getAlphaFunc)
 {
 	const Uint8 *imgPixels = (Uint8*)img->pixels;
 
@@ -782,9 +782,9 @@ static void maskCycles(const int value,
 }
 template<typename GetChannel, typename GetPixel, typename GetAlpha>
 static void maskChooseCmp(const int value, const std::string &cmp,
-						  SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
-						  GetChannel getChannel,
-						  GetPixel getPixel, GetAlpha getAlphaFunc)
+                          const SurfacePtr &img, const Uint8 *maskPixels, Uint8 *resPixels,
+                          GetChannel getChannel,
+                          GetPixel getPixel, GetAlpha getAlphaFunc)
 {
 	if (cmp == "l" || cmp == "<") {
 		maskCycles(value, img, maskPixels, resPixels, getChannel, std::less<int>(), getPixel, getAlphaFunc);
@@ -807,8 +807,8 @@ static void maskChooseCmp(const int value, const std::string &cmp,
 template<typename GetChannel>
 static void maskChooseAlpha(const char alphaChannel, bool alphaFromImage,
                             const int value, const std::string &cmp,
-							SurfacePtr img, const Uint8 *maskPixels, Uint8 *resPixels,
-							GetChannel getChannel)
+                            const SurfacePtr &img, const Uint8 *maskPixels, Uint8 *resPixels,
+                            GetChannel getChannel)
 {
 	if (alphaChannel == 'r') {
 		if (alphaFromImage) {

@@ -77,14 +77,11 @@ void Utils::sleep(double sec, bool checkInGame) {
 }
 
 
-Uint32 Utils::getPixel(const SurfacePtr &surface, const SDL_Rect &draw, const SDL_Rect &crop) {
+Uint32 Utils::getPixel(const SurfacePtr &surface, int x, int y) {
 	if (!surface) {
 		Message::outMsg("Utils::getPixel", "surface == nullptr");
 		return 0;
 	}
-
-	int x = crop.x + draw.x * crop.w / draw.w;
-	int y = crop.y + draw.y * crop.h / draw.h;
 
 	if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) {
 		Message::outError("Utils::getPixel",

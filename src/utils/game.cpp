@@ -370,9 +370,7 @@ uint32_t Game::getImagePixel(const std::string &image, int x, int y) {
 		Message::outMsg("Game::getImagePixel", "surface == nullptr");
 		return 0;
 	}
-	SDL_Rect draw = { x, y, surface->w, surface->h };
-	SDL_Rect crop = { 0, 0, surface->w, surface->h };
-	uint32_t pixel = Utils::getPixel(surface, draw, crop);
+	uint32_t pixel = Utils::getPixel(surface, x, y);
 	return pixel;
 }
 

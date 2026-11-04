@@ -3,7 +3,6 @@
 #include <map>
 
 #include <SDL3/SDL_ttf.h>
-#undef main
 
 #include "gui/screen/hotspot.h"
 #include "gui/screen/imagemap.h"

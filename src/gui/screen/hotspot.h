@@ -7,10 +7,6 @@
 
 
 class Hotspot: public Child {
-private:
-	float scaleX = 1;
-	float scaleY = 1;
-
 public:
 	BtnRect btnRect;
 
