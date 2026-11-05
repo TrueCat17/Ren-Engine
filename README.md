@@ -1,5 +1,9 @@
 # Ren-Engine
 
+2026.11.05:  
+A full English translation is now available!  
+(With the help of AI and my poor English, but still...)
+
 **Ren-Engine Demo Screenshot:**
 
 ![Screenshot](screenshots/code_in_tutorial.jpg)
