@@ -44,11 +44,64 @@ init 1 python:
 		
 		sprite[prop] += d
 		
+		if 'crop' in prop and sprite.image:
+			props.fix_crop(sprite, prop)
+		
 		if prop == 'alpha':
 			sprite.alpha = in_bounds(sprite.alpha, 0.0, 1.0)
 	
-	def props__convert_int_float():
-		prop = props.cur_prop
+	def props__fix_crop(sprite, prop):
+		w, h = get_image_size(sprite.image)
+		v = sprite[prop]
+		t = type(v)
+		
+		# type(xcrop) can be != type(xsizecrop) since the sprite declaration is done manually
+		
+		if prop in ('xcrop', 'ycrop'):
+			if v < 0: v = t(0)
+			
+			max_size = w if prop == 'xcrop' else h
+			
+			size_prop = 'xsizecrop' if prop == 'xcrop' else 'ysizecrop'
+			size = sprite[size_prop]
+			
+			if t is float:
+				v = min(v, 1.0 - 1 / max_size)
+				if type(size) is not float:
+					size /= max_size
+				size = min(size, 1.0 - v)
+			else:
+				v = min(v, max_size - 1)
+				if type(size) is float:
+					size = round(size * max_size)
+				size = min(size, max_size - v)
+			
+			sprite[size_prop] = size
+		
+		else:
+			max_size = w if prop == 'xsizecrop' else h
+			
+			pos_prop = 'xcrop' if prop == 'xsizecrop' else 'ycrop'
+			pos = sprite[pos_prop]
+			
+			if t is float:
+				v = in_bounds(v, 1 / max_size, 1.0)
+				if type(pos) is not float:
+					pos /= max_size
+				pos = min(pos, 1.0 - v)
+			
+			else:
+				v = in_bounds(v, 1, max_size)
+				if type(pos) is float:
+					pos = round(pos * max_size)
+				pos = min(pos, max_size - v)
+			
+			sprite[pos_prop] = pos
+		
+		sprite[prop] = v
+	
+	def props__convert_int_float(prop = None):
+		prop = prop or props.cur_prop
 		sprite = sprite_panel.cur_sprite
 		
 		image = props.get_cur_image()
@@ -67,6 +120,20 @@ init 1 python:
 			v /= full
 		
 		sprite[prop] = v
+		
+		if 'crop' in prop and sprite.image and prop == props.cur_prop:
+			def is_float(prop):
+				return type(sprite[prop]) is float
+			
+			if is_float('xcrop') != is_float('xsizecrop'):
+				if prop == 'xcrop': props.convert_int_float('xsizecrop')
+				if prop == 'xsizecrop': props.convert_int_float('xcrop')
+			
+			if is_float('ycrop') != is_float('ysizecrop'):
+				if prop == 'ycrop': props.convert_int_float('ysizecrop')
+				if prop == 'ysizecrop': props.convert_int_float('ycrop')
+			
+			props.fix_crop(sprite, prop)
 	
 	def props__get_cur_image():
 		for spr in sprite_panel.cur_sprite.get_all_sprites():

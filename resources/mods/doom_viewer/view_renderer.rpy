@@ -97,7 +97,7 @@ init python:
 			tex = recolored_tex
 			
 			ysize = y2 - y1
-			tex_ysize = int(inv_scale * ysize)
+			tex_ysize = max(int(inv_scale * ysize), 1)
 			
 			repeats = math_ceil((tex_y + tex_ysize) / tex_h)
 			if repeats <= 0:
