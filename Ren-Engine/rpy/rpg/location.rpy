@@ -313,7 +313,7 @@ init -1002 python:
 			last_coords = self.last_coords
 			if self.last_zoom != location_zoom:
 				self.last_zoom = location_zoom
-				last_coords[:] = []
+				last_coords.clear()
 			
 			if last_coords:
 				prev = last_coords[-1]
@@ -332,6 +332,12 @@ init -1002 python:
 			
 			self.x = round(x / l)
 			self.y = round(y / l)
+	
+	def clear_location_coords():
+		last_coords = cur_location and cur_location.last_coords
+		if last_coords:
+			last_coords.clear()
+	signals.add('resized_stage', clear_location_coords)
 	
 	
 	class RpgPlace(SimpleObject):
