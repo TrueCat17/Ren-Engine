@@ -194,6 +194,10 @@ init python:
 	
 	
 	
+	
+	def reus__check_and_load(path):
+		reus.check(path, True)
+	
 	def reus__check(path = None, load_after = False):
 		if dont_save_reus.get('loading'):
 			return
@@ -205,13 +209,47 @@ init python:
 		dont_save_reus.there_are_updates = False
 		dont_save_reus.cur_info = None
 		
-		reus.check_next()
+		root = get_root_dir()
+		paths_to_hash = []
+		dont_save_reus.size_to_hash = 0
+		for path, (mtime, size, hash) in persistent.reus_files.items():
+			if path in reus.skip_files: continue
+			
+			full_path = root + path
+			if not os.path.exists(full_path): continue
+			
+			stat = os.stat(full_path)
+			if not hash or stat.st_mtime != mtime or str(stat.st_size) != size:
+				paths_to_hash.append(path)
+				dont_save_reus.size_to_hash += stat.st_size
+		
+		if paths_to_hash:
+			dont_save_reus.hashed_size = 0
+			on_end = Function(set_timeout, reus.check_next, 0.25)
+			interruptable_for(paths_to_hash, reus.calc_hash, on_end = on_end)
+			notification.out(reus.get_hashing_progress)
+		else:
+			reus.check_next()
 	
-	def reus__check_and_load(path):
-		reus.check(path, True)
+	
+	def reus__get_hashing_progress():
+		if 'size_to_hash' not in dont_save_reus:
+			return None
+		
+		cur = dont_save_reus.hashed_size
+		total = dont_save_reus.size_to_hash
+		return 'sha256sum: %i%%%%' % (round(cur / total * 100) if total else 100)
+	
+	def reus__calc_hash(path):
+		reus.get_hash(path)
+		size = os.stat(get_root_dir() + path).st_size
+		dont_save_reus.hashed_size += size
 	
 	
 	def reus__check_next():
+		if 'size_to_hash' in dont_save_reus:
+			del dont_save_reus.size_to_hash
+		
 		loaded_without_data = 'check_index' not in dont_save_reus
 		if loaded_without_data:
 			return
@@ -526,12 +564,11 @@ init python:
 			path = make_sure_dir(path[root_len:])
 			
 			for f in fs:
-				if f == reus.info_fn: continue
-				if f == reus.info_fn + '.z': continue
-				if f == reus.version_fn: continue
 				if f.startswith('_remove_'): continue
 				
 				f = path + f
+				if f in reus.skip_files: continue
+				
 				_mtime, size, hash = reus_files[f]
 				to_remove[(size, hash)].append(root + f)
 		
@@ -618,6 +655,12 @@ init python:
 	reus.upd_link_fn = 'upd_link.txt'
 	reus.version_fn = 'version.txt'
 	reus.info_fn = 'info.txt'
+	
+	reus.skip_files = (
+		reus.var_dir + reus.info_fn,
+		reus.var_dir + reus.info_fn + '.z',
+		reus.var_dir + reus.version_fn,
+	)
 	
 	reus.allowed_root_dirs = ('Ren-Engine', 'resources', 'var')
 	
